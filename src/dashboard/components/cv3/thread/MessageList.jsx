@@ -1257,69 +1257,72 @@ function MessageList({ roomType = 'agent' }) {
                       {msg.user_name}
                     </div>
                   )}
-                  {/* Text bubble */}
-                  {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url || msg.metadata?.attachments?.length > 0) && (msg.text.startsWith('Attached file: ') || /^Attached \d+ files?: /.test(msg.text))) && (() => {
-                    const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
-                    // Subtle outline on the bubble whose context-menu is open.
-                    const isMenuTarget = msgMenu?.message?.id === msg.id
-                    const menuOutline = isMenuTarget ? '1.5px solid rgba(52,211,153,0.55)' : null
-                    if (isUser) {
+                  {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. */}
+                  <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                    {/* Text bubble */}
+                    {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url || msg.metadata?.attachments?.length > 0) && (msg.text.startsWith('Attached file: ') || /^Attached \d+ files?: /.test(msg.text))) && (() => {
+                      const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
+                      // Subtle outline on the bubble whose context-menu is open.
+                      const isMenuTarget = msgMenu?.message?.id === msg.id
+                      const menuOutline = isMenuTarget ? '1.5px solid rgba(52,211,153,0.55)' : null
+                      if (isUser) {
+                        return (
+                          <div data-bubble="user" data-menu-target={isMenuTarget || undefined} style={{
+                            padding: '10px 16px',
+                            borderRadius: '18px 18px 4px 18px',
+                            fontSize: 14, lineHeight: 1.6,
+                            color: '#fff',
+                            background: senderColor,
+                            border: 'none',
+                            outline: menuOutline,
+                            outlineOffset: isMenuTarget ? 1 : 0,
+                            wordBreak: 'break-word',
+                            fontFamily: "'Inter', sans-serif",
+                            letterSpacing: '-0.01em',
+                            whiteSpace: 'pre-wrap',
+                            transition: 'outline-color 120ms ease',
+                          }}>
+                            <LinkifyText text={msg.text} />
+                          </div>
+                        )
+                      }
                       return (
-                        <div data-bubble="user" data-menu-target={isMenuTarget || undefined} style={{
-                          padding: '10px 16px',
-                          borderRadius: '18px 18px 4px 18px',
-                          fontSize: 14, lineHeight: 1.6,
-                          color: '#fff',
-                          background: senderColor,
-                          border: 'none',
-                          outline: menuOutline,
-                          outlineOffset: isMenuTarget ? 1 : 0,
-                          wordBreak: 'break-word',
-                          fontFamily: "'Inter', sans-serif",
-                          letterSpacing: '-0.01em',
-                          whiteSpace: 'pre-wrap',
-                          transition: 'outline-color 120ms ease',
-                        }}>
-                          <LinkifyText text={msg.text} />
+                        <div
+                          data-bubble="assistant"
+                          data-menu-target={isMenuTarget || undefined}
+                          data-testid={hasChain ? 'assistant-final-message' : undefined}
+                          style={{
+                            padding: hasChain ? '12px 14px' : (isMenuTarget ? '4px 8px' : '2px 0'),
+                            borderRadius: hasChain ? 8 : (isMenuTarget ? 6 : 0),
+                            border: hasChain ? '1px solid rgba(255,255,255,0.08)' : 'none',
+                            outline: menuOutline,
+                            outlineOffset: isMenuTarget ? 1 : 0,
+                            marginTop: hasChain ? 8 : 0,
+                            fontSize: 14, lineHeight: 1.6,
+                            color: '#E2E8F0',
+                            background: 'transparent',
+                            wordBreak: 'break-word',
+                            fontFamily: "'Inter', sans-serif",
+                            letterSpacing: '-0.01em',
+                            transition: 'outline-color 120ms ease',
+                          }}
+                        >
+                          <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
                         </div>
                       )
-                    }
-                    return (
-                      <div
-                        data-bubble="assistant"
-                        data-menu-target={isMenuTarget || undefined}
-                        data-testid={hasChain ? 'assistant-final-message' : undefined}
-                        style={{
-                          padding: hasChain ? '12px 14px' : (isMenuTarget ? '4px 8px' : '2px 0'),
-                          borderRadius: hasChain ? 8 : (isMenuTarget ? 6 : 0),
-                          border: hasChain ? '1px solid rgba(255,255,255,0.08)' : 'none',
-                          outline: menuOutline,
-                          outlineOffset: isMenuTarget ? 1 : 0,
-                          marginTop: hasChain ? 8 : 0,
-                          fontSize: 14, lineHeight: 1.6,
-                          color: '#E2E8F0',
-                          background: 'transparent',
-                          wordBreak: 'break-word',
-                          fontFamily: "'Inter', sans-serif",
-                          letterSpacing: '-0.01em',
-                          transition: 'outline-color 120ms ease',
-                        }}
-                      >
-                        <ChatMessageRenderer content={msg.text} style={{ fontSize: 14, lineHeight: 1.6, color: '#E2E8F0' }} />
+                    })()}
+                    {/* R65-impl: live-thread step chain below assistant reply. */}
+                    {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
+                      <div style={{ marginTop: msg.text ? 10 : 0 }}>
+                        <StepThread
+                          steps={stepsByMessageId[msg.id]}
+                          settled={Boolean(msg.text)}
+                          isError={msg.metadata?.status === 'error'}
+                          agentColor={roomColor}
+                        />
                       </div>
-                    )
-                  })()}
-                  {/* R65-impl: live-thread step chain below assistant reply. */}
-                  {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
-                    <div style={{ marginTop: msg.text ? 10 : 0 }}>
-                      <StepThread
-                        steps={stepsByMessageId[msg.id]}
-                        settled={Boolean(msg.text)}
-                        isError={msg.metadata?.status === 'error'}
-                        agentColor={roomColor}
-                      />
-                    </div>
-                  )}
+                    )}
+                  </div>
                   {/* corner:suggested-responses — tap-to-send chips under the
                        assistant bubble. Quiet pills, hover to lift, click to
                        send the chip text as the user's next message. Absence
@@ -1798,7 +1801,7 @@ function MessageList({ roomType = 'agent' }) {
                 }
                 if (!displaySteps || displaySteps.length === 0) return null
                 return (
-                  <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12 }}>
+                  <div style={{ paddingLeft: 38, paddingTop: 6, paddingBottom: 12, order: 1 }}>
                     <StepThread
                       steps={displaySteps}
                       settled={settledFlag}
@@ -1819,7 +1822,7 @@ function MessageList({ roomType = 'agent' }) {
           user-bubble chain doesn't cover). Otherwise the inline render owns
           the chain so it's tightly coupled to the user's bubble. */}
       {inFlight && lastUserMsgIdx !== visibleMessages.length - 1 && (
-        <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
+        <div style={{ paddingLeft: 38, paddingBottom: 4, order: 999 }}>
           <StepThread
             steps={syntheticSteps.length > 0 ? syntheticSteps : [{
               id: 'synthetic-thinking',
