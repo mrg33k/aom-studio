@@ -1413,16 +1413,18 @@ function TeamView({ user, onLogout }) {
 
   async function handleAddClient(e) {
     e.preventDefault()
-    if (!addForm.name.trim()) return
+    if (!addForm.name.trim() || !addForm.email.trim()) return
     setAddingSaving(true)
     setAddError(null)
     const access_code = generateAccessCode(clients.length)
+    const client_name = addForm.name.trim()
+    const client_email = addForm.email.trim()
     const { data, error } = await supabase
       .from('ai_hours_clients')
       .insert({
         access_code,
-        client_name: addForm.name.trim(),
-        email: addForm.email.trim() || null,
+        client_name,
+        email: client_email,
         current_session: 1,
         granted_by: 'aom',
         notes: addForm.notes.trim() || null,
@@ -1434,7 +1436,17 @@ function TeamView({ user, onLogout }) {
       setAddingSaving(false)
       return
     }
-    setNewClientConfirm({ access_code, client_name: addForm.name.trim() })
+    // Send welcome email to client + confirmation to facilitator
+    try {
+      await fetch('/api/ai-hours/send-client-welcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_name, client_email, access_code }),
+      })
+    } catch {
+      // Non-fatal — client was created; email failure shouldn't block the flow
+    }
+    setNewClientConfirm({ access_code, client_name })
     setAddForm({ name: '', email: '', notes: '' })
     setAddingSaving(false)
     await loadClients()
@@ -1976,13 +1988,14 @@ function TeamView({ user, onLogout }) {
                       textTransform: 'uppercase', color: INK_MUTED,
                       display: 'block', marginBottom: 6,
                     }}>
-                      Email <span style={{ color: LOCK_GRAY, fontWeight: 400 }}>(optional)</span>
+                      Email <span style={{ color: AOM_ORANGE, fontWeight: 700, fontSize: 13 }}>*</span>
                     </label>
                     <input
                       type="email"
                       placeholder="client@example.com"
                       value={addForm.email}
                       onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
+                      required
                       style={{
                         ...styles.input, letterSpacing: 'normal', textTransform: 'none',
                         padding: '12px 14px', fontSize: 15,
@@ -2020,10 +2033,10 @@ function TeamView({ user, onLogout }) {
                     </button>
                     <button
                       type="submit"
-                      disabled={!addForm.name.trim() || addingSaving}
+                      disabled={!addForm.name.trim() || !addForm.email.trim() || addingSaving}
                       style={{
                         ...styles.btn, flex: 2, justifyContent: 'center',
-                        opacity: (!addForm.name.trim() || addingSaving) ? 0.65 : 1,
+                        opacity: (!addForm.name.trim() || !addForm.email.trim() || addingSaving) ? 0.65 : 1,
                       }}
                     >
                       {addingSaving ? 'Adding...' : 'Add Client →'}
