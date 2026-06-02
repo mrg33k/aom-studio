@@ -414,6 +414,8 @@ function StepPrompts({ category, answers, onNext }) {
   const promptList = PROMPTS[category]?.(answers) || [];
   const [email, setEmail] = useState('');
   const [emailState, setEmailState] = useState('idle'); // idle | loading | sent | error
+  const [ctaHovered, setCtaHovered] = useState(false);
+  const [ctaPressed, setCtaPressed] = useState(false);
 
   const validEmail = email.trim().length > 3 && email.includes('@') && email.includes('.');
 
@@ -547,14 +549,31 @@ function StepPrompts({ category, answers, onNext }) {
         </div>
       </div>
 
-      <div className="flex justify-center">
+      <div className="flex justify-center mt-2">
         <button
           onClick={onNext}
-          className="inline-flex items-center gap-2 px-9 py-4 rounded-xl font-headline text-base tracking-wide"
-          style={{ background: ORANGE, color: '#fff', boxShadow: '0 4px 18px rgba(232,93,38,0.3)' }}
+          onMouseEnter={() => setCtaHovered(true)}
+          onMouseLeave={() => { setCtaHovered(false); setCtaPressed(false); }}
+          onMouseDown={() => setCtaPressed(true)}
+          onMouseUp={() => setCtaPressed(false)}
+          className="inline-flex items-center justify-center gap-3 w-full max-w-md px-10 py-5 rounded-2xl font-headline text-lg tracking-wide select-none"
+          style={{
+            background: ORANGE,
+            color: '#fff',
+            boxShadow: ctaHovered
+              ? '0 8px 32px rgba(232,93,38,0.45)'
+              : '0 4px 18px rgba(232,93,38,0.3)',
+            transform: ctaPressed
+              ? 'scale(0.97) translateY(1px)'
+              : ctaHovered
+                ? 'scale(1.025) translateY(-2px)'
+                : 'scale(1) translateY(0)',
+            transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+            cursor: 'pointer',
+          }}
         >
           Want AI across your whole business?
-          <ArrowRight size={16} />
+          <ArrowRight size={18} />
         </button>
       </div>
     </motion.div>
