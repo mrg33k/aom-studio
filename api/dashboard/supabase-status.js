@@ -73,11 +73,27 @@ export default async function handler(req, res) {
       // V2 done/failed tasks for completed section
       supabaseGet('tasks', `status=in.(done,failed)&order=completed_at.desc&limit=50${clientFilter}`).catch(() => []),
     ]);
-    const tasks = [...activeTasks, ...recentDone];
+    // corner:dashboard-speed (2026-06-02): task rows carry the full brief in
+    // `text` and `description` (~3.6KB each). The dashboard feed/bar only render
+    // a single line from them, but the raw payload was ~427KB for tasksV2 alone
+    // (80% of the supabase-status response) and re-fired on every realtime change
+    // + 60s poll — the page-load slowness Patrik + Courtney reported. Truncate the
+    // two text columns to a display length here; the full brief is fetched
+    // separately by any task-detail surface that needs it. All other fields
+    // (id/status/title/agent_identity/project/error/metadata/...) pass through.
+    const TASK_TEXT_MAX = 280;
+    const slimTask = (t) => {
+      if (!t || typeof t !== 'object') return t;
+      const out = { ...t };
+      if (typeof out.text === 'string' && out.text.length > TASK_TEXT_MAX) out.text = out.text.slice(0, TASK_TEXT_MAX);
+      if (typeof out.description === 'string' && out.description.length > TASK_TEXT_MAX) out.description = out.description.slice(0, TASK_TEXT_MAX);
+      return out;
+    };
+    const tasks = [...activeTasks, ...recentDone].map(slimTask);
 
     // Architecture v2: task-runner tasks (building/qa = Right Now, queued/planning = queue)
     // Separate from legacy tasks to avoid double-counting in existing pill logic.
-    const tasksV2 = [...tasksV2Active, ...tasksV2Done];
+    const tasksV2 = [...tasksV2Active, ...tasksV2Done].map(slimTask);
 
     // Events are scoped by client_id at the DB level (migration 010 added the column + RLS).
     // No post-filter needed -- all tenants including AOM see only their own events.
