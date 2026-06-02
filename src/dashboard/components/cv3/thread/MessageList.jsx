@@ -1831,27 +1831,11 @@ function MessageList({ roomType = 'agent' }) {
           )
         })}
 
-      {/* R75-r65-g: progressive synthetic chain + stall-CTA typing indicator.
-          corner:mission-rooms — only fires when the user message is NOT the
-          last visible item (which is the only case where the inline-under-
-          user-bubble chain doesn't cover). Otherwise the inline render owns
-          the chain so it's tightly coupled to the user's bubble. */}
-      {inFlight && lastUserMsgIdx !== visibleMessages.length - 1 && (
-        <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
-          <StepThread
-            steps={syntheticSteps.length > 0 ? syntheticSteps : [{
-              id: 'synthetic-thinking',
-              step_index: 0,
-              text: `${roomName}${isProject ? ' agent' : ''} is thinking…`,
-              status: 'in_progress',
-            }]}
-            settled={false}
-            isError={false}
-            isStalled={chainStalled}
-            agentColor={roomColor}
-          />
-        </div>
-      )}
+      {/* R11 FIXED — removed this synthetic chain render that was clustering
+          steps at the bottom. Steps now render ONLY inline with their parent
+          message (lines 1797-1829 for user, 1326-1339 for assistant).
+          The separate end-of-list render was breaking the message → steps →
+          message → steps interspersing pattern. */}
       {/* corner:chat-reliability CR-2 -- task-room failure final step. */}
       {(taskTerminalFailed || followupFailed) && inFlightRaw && (
         <div style={{ paddingLeft: 38, paddingBottom: 4 }}>
