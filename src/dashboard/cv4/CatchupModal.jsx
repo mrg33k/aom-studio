@@ -83,7 +83,7 @@ function ConfettiPiece({ index }) {
 // ── Notification Card ─────────────────────────────────────────────────────────
 
 function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, onOpenRoom }) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(notif.messagePreview.length > 200)
   const [inputVal, setInputVal] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [selectedChip, setSelectedChip] = useState(null)
