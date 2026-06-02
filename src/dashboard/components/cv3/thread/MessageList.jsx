@@ -1263,7 +1263,7 @@ function MessageList({ roomType = 'agent' }) {
                     flexDirection: 'column',
                     width: '100%',
                     ...((!isUser && stepsByMessageId[msg.id]?.length > 0) ? {
-                      background: 'rgba(255,255,255,0.04)',
+                      background: 'rgba(255,255,255,0.15)',
                       borderRadius: 10,
                       padding: '8px 0',
                       paddingLeft: 12,
