@@ -580,11 +580,11 @@ function DrawerBody({
         onClose={onClose}
       />
 
-      {/* Projects first — above Agents + Skills per Patrik 2026-05-28 */}
+      {/* Projects first — above Agents + Skills per Patrik 2026-05-28.
+          Always open (no defaultCollapsed) + sorted by most recent activity. */}
       <TreeSection
         title="Projects"
         collapsible
-        defaultCollapsed
         action={onNewProject ? (
           <button
             data-cv4-new-project
@@ -606,7 +606,25 @@ function DrawerBody({
         {projectRooms.length === 0 ? (
           <Empty label="No projects" />
         ) : (
-          projectRooms.map(p => {
+          // Sort by most recent mission activity — project with the newest
+          // last_message_at across any of its missions floats to the top.
+          // Projects with no activity data fall to the bottom alphabetically.
+          [...projectRooms].sort((a, b) => {
+            const getRecent = (slug) => {
+              const meta = tasksByProject?.get(slug)?.missionMeta
+              if (!meta || meta.size === 0) return 0
+              let max = 0
+              for (const m of meta.values()) {
+                const t = m?.last_message_at ? new Date(m.last_message_at).getTime() : 0
+                if (t > max) max = t
+              }
+              return max
+            }
+            const ta = getRecent(a.slug)
+            const tb = getRecent(b.slug)
+            if (ta !== tb) return tb - ta  // most recent first
+            return (a.name || '').localeCompare(b.name || '')  // alpha fallback
+          }).map(p => {
             // R4 — prefer the live registry-backed tree (from missions-tree
             // API), fall back to the static missions.json catalog. The
             // registry is authoritative; the static catalog is stale.
