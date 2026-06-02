@@ -9,7 +9,13 @@ import { supabase } from '../dashboard/lib/supabase.js'
 //   Client (access code): session progress view for their current engagement
 // ─────────────────────────────────────────────────────────────────────────────
 
-const AOM_TEAM_EMAILS = ['patrikmatheson@gmail.com', 'hello@aom-inhouse.com']
+// Any @aom-inhouse.com email gets admin access automatically.
+// patrikmatheson@gmail.com is explicitly included as it's not an @aom-inhouse.com address.
+function isAOMTeamMember(email) {
+  if (!email) return false
+  const normalized = email.trim().toLowerCase()
+  return normalized.endsWith('@aom-inhouse.com') || normalized === 'patrikmatheson@gmail.com'
+}
 
 const AOM_ORANGE = '#E85D26'
 const AOM_ORANGE_LIGHT = '#F47A48'
@@ -716,12 +722,34 @@ function AccessCodeGate({ onClientSuccess }) {
 
   async function handleAdminSubmit(e) {
     e.preventDefault()
-    if (!adminEmail.trim() || !adminPassword.trim()) return
     setAdminLoading(true)
     setAdminError(null)
 
     try {
       if (!supabase) throw new Error('Service unavailable')
+
+      // Always check for an existing session first — never call signIn if one exists,
+      // because signIn overwrites the active Corner session and logs the user out.
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        if (isAOMTeamMember(session.user.email)) {
+          // Already logged in as AOM team — go straight to admin, no signIn needed
+          window.location.replace('/ai-hours/admin')
+          return
+        } else {
+          setAdminError('This account does not have admin access.')
+          setAdminLoading(false)
+          return
+        }
+      }
+
+      // No active session — safe to sign in without clobbering anything
+      if (!adminEmail.trim() || !adminPassword.trim()) {
+        setAdminError('Please enter your email and password.')
+        setAdminLoading(false)
+        return
+      }
+
       const { data, error: authErr } = await supabase.auth.signInWithPassword({
         email: adminEmail.trim(),
         password: adminPassword,
@@ -733,7 +761,7 @@ function AccessCodeGate({ onClientSuccess }) {
         return
       }
 
-      if (!AOM_TEAM_EMAILS.includes(data.user.email)) {
+      if (!isAOMTeamMember(data.user.email)) {
         await supabase.auth.signOut()
         setAdminError('This account does not have admin access.')
         setAdminLoading(false)
@@ -1975,7 +2003,7 @@ export default function AIHoursLearning() {
       // AOM team members go to the admin route — redirect silently
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
-        if (user && AOM_TEAM_EMAILS.includes(user.email)) {
+        if (user && isAOMTeamMember(user.email)) {
           window.location.replace('/ai-hours/admin')
           return
         }
