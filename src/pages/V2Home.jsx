@@ -72,10 +72,9 @@ const BUDGET_OPTIONS = ['$2k - $5k', '$5k - $10k', '$10k - $25k', '$25k+']
 const TIMING_OPTIONS = ['ASAP', 'This month', 'Next 30-60 days', 'Ongoing']
 
 const EXPLORE_CARDS = [
-  { label: 'AI OPERATIONS', title: 'The System', desc: 'See how AOM builds AI-powered operations for small businesses.', href: '/system', color: 'sage' },
-  { label: 'STRATEGY', title: 'Briefs Hub', desc: 'Market research, competitive analysis, and sprint plans.', href: '/briefs', color: 'orange' },
-  { label: 'PRODUCT', title: 'AI Advisory Sprint Plan', desc: 'The roadmap for AOM\'s AI advisory product launch.', href: '/briefs/sprint-plan', color: 'sage' },
-  { label: 'INSIGHTS', title: 'Competitor Deep Dive', desc: 'How AOM stacks up against 20+ agencies and AI consultancies.', href: '/briefs/competitors', color: 'orange' },
+  { label: 'AI OPERATIONS', title: 'The System', href: '/system' },
+  { label: 'STRATEGY', title: 'Briefs Hub', href: '/briefs' },
+  { label: 'INSIGHTS', title: 'Competitor Deep Dive', href: '/briefs/competitors' },
 ]
 
 // ============================================================
@@ -288,8 +287,8 @@ const ProgressBar = ({ activeSlide, totalSlides, goToSlide }) => {
       {/* Label row */}
       <div className="h-[36px] flex items-center justify-between px-6 md:px-12 border-b border-white/[0.06]">
         <div className="flex items-center gap-3">
-          <a href="/v2#hero" onClick={(e) => { e.preventDefault(); goToSlide(0) }} className="font-headline text-base font-extrabold text-[#F0ECE6] tracking-[-0.03em] hover:text-[#E85D26] transition-colors">
-            AOM<span className="text-[#E85D26]">.</span>
+          <a href="/#hero" onClick={(e) => { e.preventDefault(); goToSlide(0) }}>
+            <img src="/brand/aom-horizontal-white.svg" alt="AOM" className="h-5 w-auto" />
           </a>
           <span className="w-px h-3 bg-white/10" />
           <motion.span
@@ -353,7 +352,7 @@ const NavBar = ({ activeSlide, goToSlide, openDrawer }) => {
     <>
       <nav className="fixed top-0 left-0 right-0 z-[45] h-16 flex items-center px-6 md:px-12 bg-[#0C0C0C]/40 backdrop-blur-[12px]">
         <div>
-          <a href="/v2#hero" onClick={(e) => { e.preventDefault(); goToSlide(0) }} className="flex-shrink-0">
+          <a href="/#hero" onClick={(e) => { e.preventDefault(); goToSlide(0) }} className="flex-shrink-0">
             <img src="/brand/aom-horizontal-white.svg" alt="AOM" className="h-7" />
           </a>
         </div>
@@ -564,9 +563,9 @@ const SlideHero = ({ goToSlide }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.15, ease: ENTER_EASE }}
-          className="font-headline text-[clamp(28px,7vw,80px)] font-black uppercase leading-[0.92] tracking-[-0.03em] text-[#FDF6EC] max-w-[900px] px-2"
+          className="font-display-serif text-[clamp(28px,7vw,80px)] font-black leading-[0.92] tracking-[-0.03em] text-[#FDF6EC] max-w-[900px] px-2"
         >
-          WE MAKE COMPANIES IMPOSSIBLE TO IGNORE.
+          We make companies impossible to <em className="font-display-italic italic font-medium text-[#E85D26]">ignore.</em>
         </motion.h1>
 
         {/* Subhead */}
@@ -666,9 +665,9 @@ const SlideHook = () => {
             </motion.p>
             <motion.h2
               {...stagger(1)}
-              className="font-headline text-[clamp(28px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+              className="font-display-serif text-[clamp(28px,5vw,52px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
             >
-              SMALL TEAM. CINEMA-GRADE. NO BS.
+              Small team. Cinema-grade. <em className="font-display-italic italic font-medium text-[#E85D26]">No BS.</em>
             </motion.h2>
             <motion.p
               {...stagger(2)}
@@ -812,8 +811,8 @@ const SlideServices = ({ goToSlide }) => {
           </p>
         </motion.div>
         <motion.div {...stagger(1)} className="text-center mb-12">
-          <h2 className="font-headline text-[clamp(28px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
-            PICK YOUR LANE.
+          <h2 className="font-display-serif text-[clamp(28px,5vw,52px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
+            Pick your <em className="font-display-italic italic font-medium text-[#E85D26]">lane.</em>
           </h2>
         </motion.div>
 
@@ -869,9 +868,9 @@ const SlideConstruction = ({ openDrawer }) => {
             </motion.p>
             <motion.h2
               {...stagger(1)}
-              className="font-headline text-[clamp(26px,4.5vw,48px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+              className="font-display-serif text-[clamp(26px,4.5vw,48px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
             >
-              YOUR CREWS BUILD IT. WE MAKE SURE PEOPLE SEE IT.
+              Your crews build it. We make sure <em className="font-display-italic italic font-medium text-[#E85D26]">the world sees it.</em>
             </motion.h2>
             <motion.p
               {...stagger(2)}
@@ -947,15 +946,15 @@ const SlideAI = () => {
           <div className="w-full md:w-[40%]">
             <motion.p
               {...stagger(0)}
-              className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#7C9A72] mb-4"
+              className="font-mono text-[12px] font-bold uppercase tracking-[0.2em] text-[#E85D26] mb-4"
             >
               AI OPERATIONS
             </motion.p>
             <motion.h2
               {...stagger(1)}
-              className="font-headline text-[clamp(28px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
+              className="font-display-serif text-[clamp(28px,5vw,52px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]"
             >
-              THE NEXT GEEK SQUAD FOR AI.
+              The next Geek Squad <em className="font-display-italic italic font-medium text-[#E85D26]">for AI.</em>
             </motion.h2>
             <motion.p
               {...stagger(2)}
@@ -965,14 +964,14 @@ const SlideAI = () => {
             </motion.p>
             <motion.p
               {...stagger(3)}
-              className="font-headline text-[22px] md:text-[28px] font-extrabold text-[#7C9A72] mt-8 tracking-[-0.01em]"
+              className="font-headline text-[22px] md:text-[28px] font-extrabold text-[#E85D26] mt-8 tracking-[-0.01em]"
             >
               Starting at $2,500
             </motion.p>
             <motion.a
               {...stagger(4)}
               href="/system"
-              className="inline-flex items-center gap-2 mt-6 font-body text-base font-semibold uppercase tracking-[0.05em] text-[#7C9A72] hover:text-[#9BB593] transition-colors"
+              className="inline-flex items-center gap-2 mt-6 font-body text-base font-semibold uppercase tracking-[0.05em] text-[#E85D26] hover:text-[#D14E1C] transition-colors"
             >
               EXPLORE THE SYSTEM <ArrowRight size={16} />
             </motion.a>
@@ -982,8 +981,8 @@ const SlideAI = () => {
           <div className="w-full md:w-[60%] flex flex-col gap-5">
             {steps.map((step, i) => (
               <motion.div key={step.num} {...stagger(i, 0.3, 0.12)}>
-                <div className="bg-[#7C9A72]/5 border border-[#7C9A72]/[0.12] hover:border-[#7C9A72]/25 hover:bg-[#7C9A72]/[0.08] transition-all duration-200 px-8 py-7 flex items-start gap-6">
-                  <span className="font-headline text-[32px] md:text-[40px] font-extrabold text-[#7C9A72] leading-none flex-shrink-0">
+                <div className="bg-[#E85D26]/5 border border-[#E85D26]/[0.12] hover:border-[#E85D26]/25 hover:bg-[#E85D26]/[0.08] transition-all duration-200 px-8 py-7 flex items-start gap-6">
+                  <span className="font-headline text-[32px] md:text-[40px] font-extrabold text-[#E85D26] leading-none flex-shrink-0">
                     {step.num}
                   </span>
                   <div>
@@ -1014,8 +1013,8 @@ const SlideProof = () => (
         </p>
       </motion.div>
       <motion.div {...stagger(1)} className="text-center mb-12">
-        <h2 className="font-headline text-[clamp(28px,5vw,52px)] font-extrabold uppercase leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
-          DON'T TAKE OUR WORD FOR IT.
+        <h2 className="font-display-serif text-[clamp(28px,5vw,52px)] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#FDF6EC]">
+          Don't take our <em className="font-display-italic italic font-medium text-[#E85D26]">word</em> for it.
         </h2>
       </motion.div>
 
@@ -1054,9 +1053,9 @@ const SlideContact = () => (
         <div className="w-full md:w-[45%]">
           <motion.h2
             {...stagger(0)}
-            className="font-headline text-[clamp(32px,6vw,64px)] font-black uppercase leading-[0.95] tracking-[-0.03em] text-[#FDF6EC] max-w-[500px]"
+            className="font-display-serif text-[clamp(32px,6vw,64px)] font-black leading-[0.95] tracking-[-0.03em] text-[#FDF6EC] max-w-[500px]"
           >
-            LET'S BUILD SOMETHING.
+            Let's build <em className="font-display-italic italic font-medium text-[#E85D26]">something.</em>
           </motion.h2>
           <motion.p
             {...stagger(1)}
@@ -1113,11 +1112,11 @@ const KeepExploring = () => {
   return (
     <div ref={sectionRef} className="bg-[#141412]">
       <PatternStrip height={6} />
-      <div className="max-w-[960px] mx-auto px-6 md:px-12 pt-20 pb-16">
-        <h2 className="font-headline text-[32px] font-bold text-[#8A847C] text-center mb-12">
-          KEEP EXPLORING
+      <div className="max-w-[960px] mx-auto px-6 md:px-12 pt-24 pb-20">
+        <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-[#8A847C] text-center mb-16">
+          Keep Exploring
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="flex flex-col md:flex-row justify-center gap-5">
           {EXPLORE_CARDS.map((card, i) => (
             <motion.a
               key={card.title}
@@ -1125,17 +1124,12 @@ const KeepExploring = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={visible ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.4, delay: i * 0.1, ease: 'easeOut' }}
-              className="relative block bg-white/[0.03] border border-white/[0.06] hover:border-[#E85D26]/20 hover:bg-white/[0.05] transition-all duration-200 p-8 group"
+              className="relative block bg-white/[0.03] border border-white/[0.06] hover:border-[#E85D26]/20 hover:bg-white/[0.05] transition-all duration-200 px-8 py-10 group md:flex-1 md:max-w-[280px]"
             >
-              <p
-                className={`font-mono text-[11px] font-bold uppercase tracking-[0.15em] mb-2 ${
-                  card.color === 'sage' ? 'text-[#7C9A72]' : 'text-[#E85D26]'
-                }`}
-              >
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.15em] mb-4 text-[#E85D26]">
                 {card.label}
               </p>
-              <h3 className="font-body text-xl font-semibold text-[#F0ECE6] mb-2">{card.title}</h3>
-              <p className="font-body text-base text-[#8A847C] leading-relaxed">{card.desc}</p>
+              <h3 className="font-body text-lg font-semibold text-[#F0ECE6]">{card.title}</h3>
               <ArrowUpRight
                 size={16}
                 className="absolute top-8 right-8 text-[#8A847C] group-hover:text-[#E85D26] transition-colors"
@@ -1248,7 +1242,7 @@ export default function V2Home() {
 
     // Update hash
     const hash = SLIDES[index]?.id
-    if (hash) history.replaceState(null, '', `/v2#${hash}`)
+    if (hash) history.replaceState(null, '', `/#${hash}`)
 
     // Transition lock: 0.6s total (0.25 exit + 0.35 enter)
     setTimeout(() => setIsTransitioning(false), 700)
