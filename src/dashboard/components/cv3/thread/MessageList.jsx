@@ -1257,8 +1257,19 @@ function MessageList({ roomType = 'agent' }) {
                       {msg.user_name}
                     </div>
                   )}
-                  {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. */}
-                  <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+                  {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. R12: add subtle background when steps exist to group message + context as cohesive unit. */}
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    width: '100%',
+                    ...((!isUser && stepsByMessageId[msg.id]?.length > 0) ? {
+                      background: 'rgba(255,255,255,0.04)',
+                      borderRadius: 10,
+                      padding: '8px 0',
+                      paddingLeft: 12,
+                      paddingRight: 12,
+                    } : {}),
+                  }}>
                     {/* Text bubble */}
                     {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url || msg.metadata?.attachments?.length > 0) && (msg.text.startsWith('Attached file: ') || /^Attached \d+ files?: /.test(msg.text))) && (() => {
                       const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
@@ -1311,9 +1322,13 @@ function MessageList({ roomType = 'agent' }) {
                         </div>
                       )
                     })()}
-                    {/* R65-impl: live-thread step chain below assistant reply. */}
+                    {/* R65-impl: live-thread step chain below assistant reply. R12: refined styling to feel more attached to message — reduced margin, darker text, tighter line-height. */}
                     {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
-                      <div style={{ marginTop: msg.text ? 10 : 0 }}>
+                      <div style={{
+                        marginTop: msg.text ? 8 : 4,
+                        paddingTop: msg.text ? 4 : 0,
+                        borderTop: msg.text ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                      }}>
                         <StepThread
                           steps={stepsByMessageId[msg.id]}
                           settled={Boolean(msg.text)}
