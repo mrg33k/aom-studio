@@ -494,27 +494,34 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
   const backdropRef = useRef(null)
   const modalRef = useRef(null)
 
-  // Reset state when modal opens. Intentionally NOT depending on
-  // `notifications` — the parent builds that array inline so the
-  // reference is unstable across every parent re-render, which would
-  // snap currentIndex back to 0 on every dataPipe tick and make the
-  // user feel like cards never advance ("they stack"). We only need
-  // to reset when the modal transitions from closed → open or the
-  // notification count changes.
-  const notifCount = notifications ? notifications.length : 0
+  // Reset state only when the modal transitions closed → open.
+  // Bug fix (R3b): previously depended on `notifCount` so any new
+  // notification arriving while the modal was open re-ran this effect,
+  // snapped currentIndex back to 0, remounted the card, and wiped
+  // whatever the user was typing. Now we track the previous isOpen value
+  // and only reset on the false→true edge.
+  const prevOpenRef = useRef(false)
   useEffect(() => {
-    if (!isOpen || notifCount === 0) return
+    const justOpened = isOpen && !prevOpenRef.current
+    prevOpenRef.current = isOpen
+    if (!justOpened) return
     setCurrentIndex(0)
     setDirection('forward')
     setReplied(0)
     setSkipped(0)
     setIsComplete(false)
-  }, [isOpen, notifCount])
+  }, [isOpen])
 
   // Keyboard navigation
   useEffect(() => {
     if (!isOpen) return
     const handler = (e) => {
+      // Bug fix (R3b): never intercept shortcuts while the user is typing
+      // in an input or textarea. Without this guard, typing any letter 's'
+      // (extremely common — "let's", "is", "yes") fired handleSkip() and
+      // advanced to the next card mid-composition.
+      const tag = (e.target?.tagName || '').toLowerCase()
+      if (tag === 'textarea' || tag === 'input') return
       if (e.key === 'Escape') { onClose(); return }
       if (e.key === 'ArrowRight') goForward()
       if (e.key === 'ArrowLeft') goBack()
