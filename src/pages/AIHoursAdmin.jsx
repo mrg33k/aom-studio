@@ -2,11 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../dashboard/lib/supabase.js'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// AI Hours Learning Center
-// Route: /ai-hours
-// Two views:
-//   AOM Team (authenticated): full facilitator view with all sessions + client mgmt
-//   Client (access code): session progress view for their current engagement
+// AI Hours Admin — Facilitator / AOM Team View
+// Route: /ai-hours/admin  (not linked from client-facing pages)
+// Bookmark this URL. Do not share with clients.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const AOM_TEAM_EMAILS = ['patrikmatheson@gmail.com', 'hello@aom-inhouse.com']
@@ -159,8 +157,8 @@ const SESSIONS = [
     goal: 'Second tool, first connected workflow, OS starting to take shape.',
     duration: '2 hours',
     leaveWith: 'Tool 2 complete, first workflow sequence running, OS sketch',
-    description: `Session 4 is where individual tools become a system. You\'re building Tool 2 and — for the first time — connecting tools into a workflow sequence. The client starts to see what an AI Operating System actually looks like when the parts work together.`,
-    clientNotes: `Today we build Tool 2 and start connecting your tools into actual workflows. Instead of individual tricks, you\'ll start to see the bigger picture: a sequence of AI-powered steps that runs the parts of your business that used to run you.`,
+    description: `Session 4 is where individual tools become a system. You're building Tool 2 and — for the first time — connecting tools into a workflow sequence. The client starts to see what an AI Operating System actually looks like when the parts work together.`,
+    clientNotes: `Today we build Tool 2 and start connecting your tools into actual workflows. Instead of individual tricks, you'll start to see the bigger picture: a sequence of AI-powered steps that runs the parts of your business that used to run you.`,
     facilitatorNotes: {
       prep: [
         'Review Tool 1 usage since Session 3 — where did it work, where did it break?',
@@ -201,8 +199,8 @@ const SESSIONS = [
     goal: 'Take stock of everything. Make a clear path forward recommendation.',
     duration: '2 hours',
     leaveWith: 'Full OS review doc, clear next step (more sessions / retainer / Corner / solo)',
-    description: `Session 5 is the graduation session. You\'re reviewing what was built, celebrating progress, identifying gaps, and making an honest recommendation for what comes next — whether that\'s more sessions, a retainer arrangement, Corner access, or flying solo. The client leaves with a complete picture and a clear path.`,
-    clientNotes: `Today we review everything you\'ve built and where you want to take it. You\'ll leave with a complete picture of your AI Operating System: what\'s working, what\'s next, and a honest recommendation from us on the best way to keep building on what we started.`,
+    description: `Session 5 is the graduation session. You're reviewing what was built, celebrating progress, identifying gaps, and making an honest recommendation for what comes next — whether that's more sessions, a retainer arrangement, Corner access, or flying solo. The client leaves with a complete picture and a clear path.`,
+    clientNotes: `Today we review everything you've built and where you want to take it. You'll leave with a complete picture of your AI Operating System: what's working, what's next, and a honest recommendation from us on the best way to keep building on what we started.`,
     facilitatorNotes: {
       prep: [
         'Compile a full summary of what was built across all 5 sessions',
@@ -611,8 +609,6 @@ const styles = {
     background: '#fff',
     outline: 'none',
     boxSizing: 'border-box',
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
   },
   errorBox: {
     background: '#FFF0EE',
@@ -669,38 +665,37 @@ function SessionStatusIcon({ status }) {
   return null
 }
 
-// ─── Access Code Gate ─────────────────────────────────────────────────────────
-// Client-only gate — no admin UI visible here.
-// AOM team uses /ai-hours/admin (separate hidden route).
+// ─── Admin Login Gate ─────────────────────────────────────────────────────────
 
-function AccessCodeGate({ onClientSuccess }) {
-  const [code, setCode] = useState('')
+function AdminLoginGate({ onSuccess }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
-  async function handleClientSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
-    if (!code.trim()) return
+    if (!email.trim() || !password) return
     setLoading(true)
     setError(null)
-
     try {
       if (!supabase) throw new Error('Service unavailable')
-      const { data, error: dbErr } = await supabase
-        .from('ai_hours_clients')
-        .select('*')
-        .eq('access_code', code.trim().toUpperCase())
-        .single()
-
-      if (dbErr || !data) {
-        setError('Access code not found. Please check your code and try again.')
+      const { data, error: authErr } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
+      if (authErr) {
+        setError('Invalid email or password.')
         setLoading(false)
         return
       }
-
-      // Store in localStorage for session persistence
-      localStorage.setItem('ai_hours_client', JSON.stringify(data))
-      onClientSuccess(data)
+      if (!data.user || !AOM_TEAM_EMAILS.includes(data.user.email)) {
+        await supabase.auth.signOut()
+        setError('This login is for AOM team members only.')
+        setLoading(false)
+        return
+      }
+      onSuccess(data.user)
     } catch {
       setError('Something went wrong. Please try again.')
     }
@@ -708,456 +703,105 @@ function AccessCodeGate({ onClientSuccess }) {
   }
 
   return (
-    <div style={{ ...styles.page, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.headerInner}>
-          <div style={styles.logo}>
-            <span style={styles.logoAccent}>AOM</span> AI Hours
-          </div>
-        </div>
-      </header>
-
-      {/* Gate */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 24px' }}>
-        <div style={{ maxWidth: 440, width: '100%' }}>
-          <div style={{ textAlign: 'center', marginBottom: 36 }}>
-            <h1 style={{
-              fontFamily: '"Instrument Serif", Georgia, serif',
-              fontSize: 36,
-              fontWeight: 400,
-              color: INK,
-              marginBottom: 12,
-              letterSpacing: '-0.02em',
-            }}>
-              Welcome back
-            </h1>
-            <p style={{ fontSize: 16, color: INK_MUTED, lineHeight: 1.6, margin: 0 }}>
-              Enter the access code AOM provided to view your sessions.
-            </p>
-          </div>
-
-          <form onSubmit={handleClientSubmit}>
-            <div style={{ marginBottom: 16 }}>
-              <input
-                type="text"
-                value={code}
-                onChange={e => setCode(e.target.value)}
-                placeholder="AOM-XXXX-000"
-                style={styles.input}
-                autoFocus
-                disabled={loading}
-              />
-            </div>
-            {error && <div style={styles.errorBox}>{error}</div>}
-            <button
-              type="submit"
-              style={{ ...styles.btn, width: '100%', justifyContent: 'center', marginTop: 16, opacity: loading ? 0.7 : 1 }}
-              disabled={loading}
-            >
-              {loading ? 'Checking...' : 'Access My Sessions'}
-            </button>
-          </form>
-
-          <p style={{ fontSize: 13, color: INK_MUTED, textAlign: 'center', marginTop: 24 }}>
-            Don't have a code? <a href="mailto:hello@aom-inhouse.com" style={{ color: AOM_ORANGE, textDecoration: 'none' }}>Contact AOM</a> to get started.
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Client Session View ──────────────────────────────────────────────────────
-
-function ClientView({ client, onLogout, onClientUpdate }) {
-  const [expandedSession, setExpandedSession] = useState(client.current_session)
-  const [advancing, setAdvancing] = useState(false)
-  const [advanceConfirmed, setAdvanceConfirmed] = useState(false)
-  const [advanceError, setAdvanceError] = useState(null)
-  const [showContact, setShowContact] = useState(false)
-  const [contactMessage, setContactMessage] = useState('')
-  const [contactSent, setContactSent] = useState(false)
-  const currentSession = client.current_session || 1
-  const completedCount = currentSession - 1
-  const progressPct = Math.round((completedCount / 5) * 100)
-  const isLastSession = currentSession === 5
-  const isComplete = currentSession > 5
-
-  function getStatus(sessionNum) {
-    if (sessionNum < currentSession) return 'done'
-    if (sessionNum === currentSession && !isComplete) return 'current'
-    return 'locked'
-  }
-
-  async function handleAdvance() {
-    if (advancing || isLastSession && advanceConfirmed) return
-    setAdvancing(true)
-    setAdvanceError(null)
-    try {
-      const newSession = currentSession + 1
-      const { data, error: dbErr } = await supabase
-        .from('ai_hours_clients')
-        .update({ current_session: newSession })
-        .eq('access_code', client.access_code)
-        .select()
-        .single()
-      if (dbErr || !data) {
-        setAdvanceError('Could not update your progress. Please try again or contact AOM.')
-        setAdvancing(false)
-        return
-      }
-      // Update localStorage and parent state
-      localStorage.setItem('ai_hours_client', JSON.stringify(data))
-      onClientUpdate(data)
-      setAdvanceConfirmed(true)
-      setExpandedSession(newSession <= 5 ? newSession : null)
-    } catch {
-      setAdvanceError('Something went wrong. Please try again.')
-    }
-    setAdvancing(false)
-  }
-
-  function handleContactSubmit(e) {
-    e.preventDefault()
-    if (!contactMessage.trim()) return
-    const subject = encodeURIComponent(`AI Hours Question — ${client.client_name}`)
-    const body = encodeURIComponent(`Hi Courtney,\n\n${contactMessage.trim()}\n\n— ${client.client_name}`)
-    window.location.href = `mailto:hello@aom-inhouse.com?subject=${subject}&body=${body}`
-    setContactSent(true)
-    setTimeout(() => {
-      setShowContact(false)
-      setContactMessage('')
-      setContactSent(false)
-    }, 3000)
-  }
-
-  return (
-    <div style={styles.page}>
-      {/* Header */}
-      <header style={styles.header}>
-        <div style={styles.headerInner}>
-          <div style={styles.logo}>
-            <span style={styles.logoAccent}>AOM</span> AI Hours
-          </div>
-          <div style={styles.nav}>
-            <span style={{ fontSize: 14, color: INK_MUTED }}>{client.client_name}</span>
-            <button
-              onClick={onLogout}
-              style={{ ...styles.btn, ...styles.btnSecondary, padding: '8px 16px', fontSize: 13 }}
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* Progress hero */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${BORDER}`, padding: '40px 40px 36px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ ...styles.heroEyebrow, color: AOM_ORANGE, marginBottom: 12 }}>
-            Your AI Hours Journey
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24, marginBottom: 28 }}>
-            <div>
-              <h1 style={{
-                fontFamily: '"Instrument Serif", Georgia, serif',
-                fontSize: 32,
-                fontWeight: 400,
-                color: INK,
-                letterSpacing: '-0.02em',
-                marginBottom: 8,
-              }}>
-                {client.client_name}
-              </h1>
-              <p style={{ fontSize: 15, color: INK_MUTED }}>
-                Session {currentSession} of 5 &mdash; {completedCount === 0 ? 'Just getting started' : `${completedCount} session${completedCount > 1 ? 's' : ''} complete`}
-              </p>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 36, fontFamily: '"Instrument Serif", Georgia, serif', fontWeight: 400, color: INK }}>
-                {progressPct}<span style={{ fontSize: 20, color: INK_MUTED }}>%</span>
-              </div>
-              <div style={{ fontSize: 12, color: INK_MUTED }}>complete</div>
-            </div>
-          </div>
-          <div style={styles.progressBar}>
-            <div style={styles.progressFill(progressPct)} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: INK_MUTED }}>
-            <span>Session 1</span>
-            <span>Session 5</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Sessions */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 40px' }}>
-        <div style={styles.sectionLabel}>Your Sessions</div>
-        <div style={styles.sessionsGrid}>
-          {SESSIONS.map((session, i) => {
-            const sessionNum = i + 1
-            const status = getStatus(sessionNum)
-            const isExpanded = expandedSession === sessionNum && status !== 'locked'
-
-            return (
-              <div
-                key={sessionNum}
-                style={{
-                  ...styles.sessionCard,
-                  ...(status === 'current' ? styles.sessionCardActive : {}),
-                  ...(status === 'locked' ? styles.sessionCardLocked : {}),
-                }}
-              >
-                <div
-                  style={styles.sessionHeader}
-                  onClick={() => {
-                    if (status === 'locked') return
-                    setExpandedSession(isExpanded ? null : sessionNum)
-                  }}
-                >
-                  <div style={{
-                    ...styles.sessionNumber,
-                    ...(status === 'current' ? styles.sessionNumberActive : {}),
-                    ...(status === 'done' ? { color: GREEN_CHECK } : {}),
-                  }}>
-                    {session.number}
-                  </div>
-                  <div style={styles.sessionInfo}>
-                    <div style={styles.sessionTitle}>{session.title}</div>
-                    <div style={styles.sessionGoal}>{session.goal}</div>
-                  </div>
-                  <div style={styles.sessionMeta}>
-                    <div style={{
-                      ...styles.sessionBadge,
-                      ...(status === 'current' ? styles.sessionBadgeCurrent : {}),
-                      ...(status === 'done' ? styles.sessionBadgeDone : {}),
-                      ...(status === 'locked' ? styles.sessionBadgeLocked : {}),
-                    }}>
-                      {status === 'current' ? 'Current' : status === 'done' ? 'Complete' : 'Upcoming'}
-                    </div>
-                    <div style={styles.sessionDuration}>{session.duration}</div>
-                    <SessionStatusIcon status={status} />
-                  </div>
-                </div>
-
-                {isExpanded && (
-                  <div style={styles.sessionBody}>
-                    <p style={styles.sessionDesc}>{session.clientNotes}</p>
-                    <div style={styles.leaveWith}>
-                      <span style={styles.leaveWithLabel}>You'll leave with:</span>
-                      <span>{session.leaveWith}</span>
-                    </div>
-
-                    {/* Advance button — only for current session, not last */}
-                    {status === 'current' && !isLastSession && !advanceConfirmed && (
-                      <div style={{
-                        marginTop: 28,
-                        paddingTop: 28,
-                        borderTop: `1px solid ${BORDER_SOFT}`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                        maxWidth: 560,
-                      }}>
-                        <div style={{ fontSize: 14, color: INK_MUTED, lineHeight: 1.6 }}>
-                          Completed this session with your AOM facilitator? Mark it done to unlock the next session.
-                        </div>
-                        {advanceError && <div style={styles.errorBox}>{advanceError}</div>}
-                        <button
-                          onClick={handleAdvance}
-                          disabled={advancing}
-                          style={{
-                            ...styles.btn,
-                            alignSelf: 'flex-start',
-                            opacity: advancing ? 0.7 : 1,
-                          }}
-                        >
-                          {advancing
-                            ? 'Saving...'
-                            : `Mark Session ${sessionNum} Complete → Advance to Session ${sessionNum + 1}`}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Last session — program complete CTA */}
-                    {status === 'current' && isLastSession && !advanceConfirmed && (
-                      <div style={{
-                        marginTop: 28,
-                        paddingTop: 28,
-                        borderTop: `1px solid ${BORDER_SOFT}`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                        maxWidth: 560,
-                      }}>
-                        <div style={{ fontSize: 14, color: INK_MUTED, lineHeight: 1.6 }}>
-                          This is your final session. Once you've completed it with your AOM facilitator, mark the program complete.
-                        </div>
-                        {advanceError && <div style={styles.errorBox}>{advanceError}</div>}
-                        <button
-                          onClick={handleAdvance}
-                          disabled={advancing}
-                          style={{
-                            ...styles.btn,
-                            alignSelf: 'flex-start',
-                            opacity: advancing ? 0.7 : 1,
-                            background: GREEN_CHECK,
-                          }}
-                        >
-                          {advancing ? 'Saving...' : 'Mark Program Complete →'}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Advance confirmed */}
-                    {status === 'current' && advanceConfirmed && (
-                      <div style={{
-                        marginTop: 28,
-                        paddingTop: 28,
-                        borderTop: `1px solid ${BORDER_SOFT}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        maxWidth: 560,
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
-                          <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
-                          <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: GREEN_CHECK }}>
-                            {isLastSession ? 'Program complete! Great work.' : `Session ${sessionNum} marked complete.`}
-                          </div>
-                          {!isLastSession && (
-                            <div style={{ fontSize: 13, color: INK_MUTED, marginTop: 2 }}>
-                              Session {sessionNum + 1} is now unlocked above.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
+    <div style={{
+      minHeight: '100vh',
+      background: INK,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    }}>
+      <div style={{
+        background: '#fff',
+        borderRadius: 12,
+        padding: 48,
+        maxWidth: 420,
+        width: '100%',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.4)',
+      }}>
+        {/* Logo */}
         <div style={{
-          background: '#fff',
-          border: `1px solid ${BORDER}`,
-          borderRadius: 8,
-          padding: '28px 32px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 20,
+          fontFamily: '"Instrument Serif", Georgia, serif',
+          fontSize: 22,
+          fontWeight: 400,
+          color: INK,
+          marginBottom: 8,
         }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 4 }}>Questions between sessions?</div>
-            <div style={{ fontSize: 14, color: INK_MUTED }}>AOM is here to help. Reach out anytime.</div>
-          </div>
-          <button
-            onClick={() => setShowContact(true)}
-            style={{ ...styles.btn }}
-          >
-            Contact AOM
-          </button>
+          <span style={{ color: AOM_ORANGE }}>AOM</span> AI Hours
         </div>
-      </div>
+        <div style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: AOM_ORANGE,
+          background: AOM_ORANGE_PALE,
+          padding: '4px 10px',
+          borderRadius: 4,
+          marginBottom: 36,
+        }}>
+          Facilitator Access
+        </div>
 
-      {/* ── Contact Modal ── */}
-      {showContact && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(26,26,22,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 9000, padding: 24,
-          }}
-          onClick={() => { setShowContact(false); setContactMessage(''); setContactSent(false) }}
-        >
-          <div
-            style={{
-              background: '#fff', borderRadius: 12, padding: 40, maxWidth: 460, width: '100%',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            {contactSent ? (
-              <>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                  <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                    <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
-                    <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: GREEN_CHECK }}>Message sent</span>
-                </div>
-                <p style={{ fontSize: 14, color: INK_MUTED, margin: 0 }}>
-                  Your email app should have opened. AOM will be in touch soon.
-                </p>
-              </>
-            ) : (
-              <>
-                <div style={{ fontSize: 20, fontWeight: 700, color: INK, marginBottom: 8 }}>Send AOM a message</div>
-                <p style={{ fontSize: 14, color: INK_MUTED, marginTop: 0, marginBottom: 24 }}>
-                  Have a question between sessions? Reach out and we'll get back to you.
-                </p>
-                <form onSubmit={handleContactSubmit}>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: INK, marginBottom: 8 }}>
-                    Your message
-                  </label>
-                  <textarea
-                    value={contactMessage}
-                    onChange={e => setContactMessage(e.target.value)}
-                    placeholder="What's on your mind?"
-                    rows={5}
-                    style={{
-                      width: '100%',
-                      boxSizing: 'border-box',
-                      border: `1px solid ${BORDER}`,
-                      borderRadius: 6,
-                      padding: '12px 14px',
-                      fontSize: 14,
-                      color: INK,
-                      resize: 'vertical',
-                      fontFamily: 'inherit',
-                      outline: 'none',
-                    }}
-                    autoFocus
-                  />
-                  <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-                    <button
-                      type="submit"
-                      disabled={!contactMessage.trim()}
-                      style={{
-                        ...styles.btn,
-                        opacity: contactMessage.trim() ? 1 : 0.5,
-                        cursor: contactMessage.trim() ? 'pointer' : 'default',
-                      }}
-                    >
-                      Send message
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setShowContact(false); setContactMessage('') }}
-                      style={{ ...styles.btn, ...styles.btnSecondary }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </>
-            )}
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+              textTransform: 'uppercase', color: INK_MUTED,
+              display: 'block', marginBottom: 6,
+            }}>
+              Email
+            </label>
+            <input
+              type="email"
+              placeholder="you@aom-inhouse.com"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              autoFocus
+              style={{ ...styles.input, padding: '12px 14px', fontSize: 15 }}
+            />
           </div>
-        </div>
-      )}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+              textTransform: 'uppercase', color: INK_MUTED,
+              display: 'block', marginBottom: 6,
+            }}>
+              Password
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              style={{ ...styles.input, padding: '12px 14px', fontSize: 15 }}
+            />
+          </div>
+          {error && <div style={{ ...styles.errorBox, marginBottom: 16 }}>{error}</div>}
+          <button
+            type="submit"
+            disabled={loading || !email.trim() || !password}
+            style={{
+              ...styles.btn,
+              width: '100%',
+              justifyContent: 'center',
+              opacity: (loading || !email.trim() || !password) ? 0.65 : 1,
+            }}
+          >
+            {loading ? 'Signing in...' : 'Sign In →'}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }
 
-// ─── AOM Team View ────────────────────────────────────────────────────────────
+// ─── Team View ────────────────────────────────────────────────────────────────
 
 function TeamView({ user, onLogout }) {
   const [expandedSession, setExpandedSession] = useState(null)
@@ -1490,7 +1134,7 @@ function TeamView({ user, onLogout }) {
         {activeTab === 'clients' && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-              <div style={styles.sectionLabel} style={{ marginBottom: 0, paddingBottom: 0, borderBottom: 'none' }}>
+              <div style={{ ...styles.sectionLabel, marginBottom: 0, paddingBottom: 0, borderBottom: 'none' }}>
                 Client Management
               </div>
               <button
@@ -1825,83 +1469,46 @@ function TeamView({ user, onLogout }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export default function AIHoursLearning() {
-  const [mode, setMode] = useState('loading') // 'loading' | 'gate' | 'client'
-  const [clientData, setClientData] = useState(null)
+export default function AIHoursAdmin() {
+  const [mode, setMode] = useState('loading') // 'loading' | 'login' | 'team'
+  const [teamUser, setTeamUser] = useState(null)
 
   useEffect(() => {
     async function init() {
-      // AOM team members go to the admin route — redirect silently
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser()
         if (user && AOM_TEAM_EMAILS.includes(user.email)) {
-          window.location.replace('/ai-hours/admin')
+          setTeamUser(user)
+          setMode('team')
           return
         }
-        // Authenticated but not AOM team — fall through to client gate
       }
-
-      // Check for stored client session
-      const stored = localStorage.getItem('ai_hours_client')
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored)
-          if (parsed?.access_code) {
-            // Refresh from DB to get latest session status
-            if (supabase) {
-              const { data } = await supabase
-                .from('ai_hours_clients')
-                .select('*')
-                .eq('access_code', parsed.access_code)
-                .single()
-              if (data) {
-                setClientData(data)
-                setMode('client')
-                return
-              }
-            }
-          }
-        } catch {
-          localStorage.removeItem('ai_hours_client')
-        }
-      }
-
-      setMode('gate')
+      setMode('login')
     }
     init()
   }, [])
 
   async function handleLogout() {
-    localStorage.removeItem('ai_hours_client')
-    setMode('gate')
-    setClientData(null)
+    if (supabase) await supabase.auth.signOut()
+    setTeamUser(null)
+    setMode('login')
   }
 
   if (mode === 'loading') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: CREAM }}>
-        <div style={{ width: 20, height: 20, borderRadius: '50%', border: `2px solid ${BORDER}`, borderTop: `2px solid ${AOM_ORANGE}`, animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: INK }}>
+        <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.2)', borderTop: `2px solid ${AOM_ORANGE}`, animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
-  if (mode === 'gate') {
-    return (
-      <AccessCodeGate
-        onClientSuccess={data => { setClientData(data); setMode('client') }}
-      />
-    )
+  if (mode === 'login') {
+    return <AdminLoginGate onSuccess={user => { setTeamUser(user); setMode('team') }} />
   }
 
-  if (mode === 'client') {
-    return (
-      <ClientView
-        client={clientData}
-        onLogout={handleLogout}
-        onClientUpdate={newData => setClientData(newData)}
-      />
-    )
+  if (mode === 'team') {
+    return <TeamView user={teamUser} onLogout={handleLogout} />
   }
 
   return null

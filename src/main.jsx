@@ -89,6 +89,7 @@ const AOMStats = lazy(() => import('./pages/AOMStats.jsx'))
 const HigherOrbitsPitch = lazy(() => import('./pages/HigherOrbitsPitch.jsx'))
 const HigherOrbitsPitchAZCT = lazy(() => import('./pages/HigherOrbitsPitchAZCT.jsx'))
 const AIHoursLearning = lazy(() => import('./pages/AIHoursLearning.jsx'))
+const AIHoursAdmin = lazy(() => import('./pages/AIHoursAdmin.jsx'))
 const Marketplace = lazy(() => import('./pages/Marketplace.jsx'))
 const AIGuide = lazy(() => import('./pages/AIGuide.jsx'))
 // corner:files-in-app R79-f2 — local demo of the ProjectFileReader primitive.
@@ -298,6 +299,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/artlink-pitch" element={<ArtlinkSitePitch />} />
           <Route path="/blacknight" element={<Blacknight />} />
           <Route path="/ai-hours" element={<AIHoursLearning />} />
+          <Route path="/ai-hours/admin" element={<AIHoursAdmin />} />
           <Route path="/:tenantSlug/signup" element={<TenantSignupPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
