@@ -1659,7 +1659,7 @@ function TeamView({ user, onLogout }) {
         {activeTab === 'clients' && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-              <div style={styles.sectionLabel} style={{ marginBottom: 0, paddingBottom: 0, borderBottom: 'none' }}>
+              <div style={{ ...styles.sectionLabel, marginBottom: 0, paddingBottom: 0, borderBottom: 'none' }}>
                 Client Management
               </div>
               <button

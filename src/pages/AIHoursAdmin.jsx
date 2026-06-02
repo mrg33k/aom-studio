@@ -822,6 +822,7 @@ function TeamView({ user, onLogout }) {
   const [newClientConfirm, setNewClientConfirm] = useState(null)
   const [markStates, setMarkStates] = useState({}) // { [clientId]: 'loading' | 'done' }
   const [markConfirm, setMarkConfirm] = useState(null) // { client_name, new_session }
+  const [previewClient, setPreviewClient] = useState(null) // client row to preview
 
   const WORDLIST = ['APEX', 'NOVA', 'EDGE', 'PEAK', 'CORE', 'GRID', 'LINK', 'MARK', 'NEXT', 'PLUS', 'RISE', 'STAR', 'BOLD', 'CALM', 'FLUX', 'GLOW', 'IRON', 'JADE', 'KEEN', 'LOFT', 'MINT', 'NODE', 'OPEN', 'PORT', 'REEF', 'SAGE', 'TIDE', 'VAST', 'WAVE', 'ZINC', 'ECHO', 'FAST', 'HERO', 'JUMP', 'LEAD', 'ONYX', 'PINE', 'RUBY', 'SAFE', 'WARD']
 
@@ -1253,6 +1254,23 @@ function TeamView({ user, onLogout }) {
                               {markStates[client.id] === 'loading' ? 'Saving…' : 'Mark Complete'}
                             </button>
                           )}
+                          <button
+                            onClick={() => setPreviewClient(client)}
+                            style={{
+                              display: 'block',
+                              marginTop: 7,
+                              fontSize: 11,
+                              color: INK_MUTED,
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              padding: 0,
+                              textDecoration: 'underline',
+                              fontFamily: 'inherit',
+                            }}
+                          >
+                            View Portal
+                          </button>
                         </td>
                         <td style={{ ...styles.td, fontSize: 13, color: INK_MUTED, maxWidth: 200 }}>
                           {client.notes || '—'}
@@ -1304,6 +1322,207 @@ function TeamView({ user, onLogout }) {
           </div>
         </div>
       </div>
+
+      {/* ── Client Portal Preview Modal ── */}
+      {previewClient && (() => {
+        const pc = previewClient
+        const completedCount = Math.max(0, pc.current_session - 1)
+        const progressPct = Math.round((completedCount / 5) * 100)
+        const getStatus = (n) => n < pc.current_session ? 'done' : n === pc.current_session ? 'current' : 'locked'
+        return (
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9100,
+              background: 'rgba(26,26,22,0.7)',
+              overflowY: 'auto',
+            }}
+            onClick={() => setPreviewClient(null)}
+          >
+            <div
+              style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 16px 48px' }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Admin banner */}
+              <div style={{
+                width: '100%', maxWidth: 720,
+                background: INK,
+                borderRadius: '10px 10px 0 0',
+                padding: '14px 20px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+                    color: AOM_ORANGE, background: 'rgba(232,93,38,0.18)',
+                    padding: '3px 9px', borderRadius: 4,
+                  }}>Admin Preview</span>
+                  <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+                    Viewing portal as <strong style={{ color: '#fff' }}>{pc.client_name}</strong>
+                  </span>
+                </div>
+                <button
+                  onClick={() => setPreviewClient(null)}
+                  style={{
+                    background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)',
+                    cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '4px 8px',
+                    transition: 'color 0.15s',
+                  }}
+                  title="Close preview"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Client view container */}
+              <div style={{
+                width: '100%', maxWidth: 720,
+                background: CREAM,
+                borderRadius: '0 0 10px 10px',
+                overflow: 'hidden',
+              }}>
+                {/* Progress hero */}
+                <div style={{
+                  background: INK,
+                  padding: '40px 32px 32px',
+                }}>
+                  <div style={{
+                    fontFamily: '"Instrument Serif", Georgia, serif',
+                    fontSize: 22, fontWeight: 400, color: '#fff', marginBottom: 4,
+                  }}>
+                    <span style={{ color: AOM_ORANGE }}>AOM</span> AI Hours
+                  </div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
+                    {pc.client_name}
+                  </div>
+                  <div style={{ fontSize: 14, color: 'rgba(255,255,255,0.5)', marginBottom: 24 }}>
+                    Session {pc.current_session} of 5
+                    {completedCount > 0 && ` · ${completedCount} session${completedCount !== 1 ? 's' : ''} complete`}
+                  </div>
+                  <div style={{ ...styles.progressBar, background: 'rgba(255,255,255,0.12)', marginBottom: 6 }}>
+                    <div style={{ ...styles.progressFill(progressPct) }} />
+                  </div>
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                    {progressPct}% complete
+                  </div>
+                </div>
+
+                {/* Sessions list */}
+                <div style={{ padding: '28px 32px' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: INK_MUTED, marginBottom: 16 }}>
+                    Your Sessions
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {SESSIONS.map((session, i) => {
+                      const sessionNum = i + 1
+                      const status = getStatus(sessionNum)
+                      const isCurrent = status === 'current'
+                      const isDone = status === 'done'
+                      const isLocked = status === 'locked'
+                      return (
+                        <div
+                          key={session.number}
+                          style={{
+                            background: '#fff',
+                            border: `1px solid ${isCurrent ? AOM_ORANGE : BORDER}`,
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            opacity: isLocked ? 0.55 : 1,
+                          }}
+                        >
+                          {/* Session header */}
+                          <div style={{
+                            display: 'flex', alignItems: 'center', gap: 14,
+                            padding: '16px 20px',
+                            background: isCurrent ? '#FFF8F5' : '#fff',
+                          }}>
+                            <SessionStatusIcon status={status} />
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                                <span style={{
+                                  fontSize: 10, fontWeight: 700, letterSpacing: '0.1em',
+                                  textTransform: 'uppercase',
+                                  color: isCurrent ? AOM_ORANGE : isDone ? GREEN_CHECK : LOCK_GRAY,
+                                }}>
+                                  Session {sessionNum}
+                                </span>
+                                {isCurrent && (
+                                  <span style={{
+                                    fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                                    textTransform: 'uppercase', color: AOM_ORANGE,
+                                    background: AOM_ORANGE_PALE, padding: '2px 7px', borderRadius: 3,
+                                  }}>Current</span>
+                                )}
+                                {isDone && (
+                                  <span style={{
+                                    fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                                    textTransform: 'uppercase', color: GREEN_CHECK,
+                                    background: '#F0FBF4', padding: '2px 7px', borderRadius: 3,
+                                  }}>Complete</span>
+                                )}
+                              </div>
+                              <div style={{
+                                fontSize: 15, fontWeight: 600,
+                                color: isLocked ? LOCK_GRAY : INK,
+                                marginTop: 2,
+                              }}>
+                                {session.title}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Session body — only for current (like client sees it) */}
+                          {isCurrent && (
+                            <div style={{
+                              padding: '0 20px 20px',
+                              borderTop: `1px solid ${BORDER_SOFT}`,
+                            }}>
+                              <p style={{ fontSize: 14, lineHeight: 1.75, color: INK_SOFT, margin: '16px 0 0' }}>
+                                {session.clientNotes}
+                              </p>
+                              {/* Advance button is intentionally hidden in admin preview */}
+                              <div style={{
+                                marginTop: 16, fontSize: 11, color: LOCK_GRAY,
+                                fontStyle: 'italic',
+                              }}>
+                                [Session advance button hidden in admin preview]
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Contact AOM section */}
+                  <div style={{
+                    marginTop: 32, padding: '24px 24px',
+                    background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 8,
+                  }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: INK, marginBottom: 6 }}>
+                      Questions between sessions?
+                    </div>
+                    <div style={{ fontSize: 14, color: INK_MUTED, marginBottom: 16, lineHeight: 1.6 }}>
+                      Reach out to your AOM facilitator any time.
+                    </div>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      padding: '10px 20px',
+                      background: CREAM_WARM,
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 6,
+                      fontSize: 13, fontWeight: 600, color: INK_MUTED,
+                      cursor: 'default',
+                    }}>
+                      Contact AOM
+                      <span style={{ fontSize: 11, fontWeight: 400, color: LOCK_GRAY }}>(disabled in preview)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Add Client Modal ── */}
       {showAddClient && (
