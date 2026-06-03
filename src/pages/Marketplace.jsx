@@ -71,14 +71,8 @@ const PRODUCTS = [
 
 // ─── ProductCard (grid tile) ────────────────────────────────────────────────
 function ProductCard({ product, onSelect, selected }) {
-  const navigate = useNavigate();
-
   function handleClick() {
-    if (product.free && product.href) {
-      navigate(product.href);
-    } else {
-      onSelect(product);
-    }
+    onSelect(product);
   }
 
   return (
