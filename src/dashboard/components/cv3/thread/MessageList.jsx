@@ -1078,12 +1078,13 @@ function MessageList({ roomType = 'agent' }) {
           const senderAvatar = senderProfile?.avatar_url || null
           const msgFlagged = needsVerificationIds?.has?.(msg.id)
 
-          // R12 fix: steps are parented to the latest USER message, not to the assistant's own ID.
-          // Find the most recent user message at or before this index.
-          const userMsgForSteps = isUser ? msg : arr.slice(0, idx).reverse().find(m => m.role === 'user')
+          // Steps are keyed to the USER message that triggered the work.
+          // Only user messages carry userBubbleSteps — assistant messages do NOT look up
+          // the parent user message's steps (R13 revert: that caused every assistant message
+          // in a turn to duplicate the same step chain, producing 3x repeats in the thread).
+          // The under-user floating render (lines ~1803-1835) handles step display for all cases.
           const userBubbleSteps = isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
             ? stepsByMessageId[msg.id]
-            : !isUser && userMsgForSteps ? (stepsByMessageId[userMsgForSteps.id] || null)
             : null
           // R75-b5: settle when the assistant reply arrives (not just on next user msg).
           // This dims the chain and flips data-status to 'done' the moment the reply lands.
@@ -1803,7 +1804,11 @@ function MessageList({ roomType = 'agent' }) {
               {(() => {
                 const isLast = isUser && idx === arr.length - 1
                 const liveMerge = isLast && inFlight && !hasAssistantReply
-                if (!liveMerge && !userBubbleSteps) return null
+                // R12e: once an assistant reply exists, steps render under the assistant bubble
+                // (via the wrapper in the message loop), not here. Only keep the user-bubble
+                // render for live in-flight animation (liveMerge) or the edge case where
+                // there are steps but no reply yet.
+                if (!liveMerge && (!userBubbleSteps || hasAssistantReply)) return null
                 let displaySteps
                 let settledFlag
                 if (liveMerge) {
