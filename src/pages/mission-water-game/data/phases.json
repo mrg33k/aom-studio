@@ -1,0 +1,347 @@
+{
+  "$schema": "phases.schema.json",
+  "start_phase": "ch1_intro",
+  "phases": {
+    "ch1_intro": {
+      "id": "ch1_intro",
+      "chapter": 1,
+      "title": "Earth is running out",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#0B132B",
+          "far": "#1C2541",
+          "mid": "#3A506B",
+          "ground": "#0B132B",
+          "accents": ["stars", "horizon_glow"]
+        },
+        "parallax_offset": 0.0
+      },
+      "hud_state": {
+        "water_crisis": 100,
+        "investigation_progress": 0,
+        "discoveries": 0
+      },
+      "narrative": "Pete Conrad believed anyone could reach the stars. He never got to see the Moon's ice. You will. But first — Earth. Three regions. Three crises. The same problem from different altitudes. The Conrad Council needs an answer in 72 hours. Choose where to start.",
+      "choices": [
+        {
+          "id": "begin",
+          "text": "Begin the investigation",
+          "next_phase": "ch1_region_select",
+          "discovery": null
+        }
+      ]
+    },
+
+    "ch1_region_select": {
+      "id": "ch1_region_select",
+      "chapter": 1,
+      "title": "Where do you go first?",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#13294B",
+          "far": "#1E3A5F",
+          "mid": "#2E5266",
+          "ground": "#0E1E2B",
+          "accents": ["earth", "satellite_grid"]
+        },
+        "parallax_offset": 0.15
+      },
+      "hud_state": {
+        "water_crisis": 100,
+        "investigation_progress": 5,
+        "discoveries": 0
+      },
+      "narrative": "Three signals are flashing on the Mission Water board. Each region has a water emergency the Council can't ignore. You have one trip to spend. Pick the one that calls to you — every choice opens a different science.",
+      "choices": [
+        {
+          "id": "pick_phoenix",
+          "text": "Phoenix — the Ogallala is failing",
+          "next_phase": "ch1_phoenix_arrive",
+          "discovery": null,
+          "tag": "groundwater"
+        },
+        {
+          "id": "pick_mumbai",
+          "text": "Mumbai — chemicals in the drinking water",
+          "next_phase": "ch1_mumbai_arrive",
+          "discovery": null,
+          "tag": "chemistry"
+        },
+        {
+          "id": "pick_sao_paulo",
+          "text": "São Paulo — three years without rain",
+          "next_phase": "ch1_sao_paulo_arrive",
+          "discovery": null,
+          "tag": "climate"
+        }
+      ]
+    },
+
+    "ch1_phoenix_arrive": {
+      "id": "ch1_phoenix_arrive",
+      "chapter": 1,
+      "title": "Phoenix — the Ogallala Aquifer",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#F4A261",
+          "far": "#E76F51",
+          "mid": "#A0522D",
+          "ground": "#3E2A1F",
+          "accents": ["sun", "cracked_earth", "windmill"]
+        },
+        "parallax_offset": 0.35
+      },
+      "hud_state": {
+        "water_crisis": 90,
+        "investigation_progress": 20,
+        "discoveries": 0,
+        "region": "Phoenix"
+      },
+      "narrative": "The Ogallala Aquifer fed eight states for a century. Now the wells are pulling sand. Farmers stand at the edge of a field that hasn't grown in two seasons. A research team has a sensor rig you can deploy — but their hydrologist wants to talk first. What do you do?",
+      "choices": [
+        {
+          "id": "drill_sensors",
+          "text": "Deploy the sensor rig — measure the drawdown",
+          "next_phase": "ch1_phoenix_findings",
+          "discovery": "groundwater_hydrology"
+        },
+        {
+          "id": "talk_farmers",
+          "text": "Talk to the farmers first — hear the history",
+          "next_phase": "ch1_phoenix_findings",
+          "discovery": "social_impact"
+        }
+      ]
+    },
+
+    "ch1_phoenix_findings": {
+      "id": "ch1_phoenix_findings",
+      "chapter": 1,
+      "title": "Phoenix — findings",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#E9C46A",
+          "far": "#E76F51",
+          "mid": "#7C3F00",
+          "ground": "#2E1B0D",
+          "accents": ["sun_low", "well", "windmill"]
+        },
+        "parallax_offset": 0.55
+      },
+      "hud_state": {
+        "water_crisis": 88,
+        "investigation_progress": 45,
+        "discoveries": 1,
+        "region": "Phoenix"
+      },
+      "narrative": "The Ogallala loses 2.5 km³ a year. Recharge from rainfall is one-tenth of withdrawal. It took the aquifer 6,000 years to fill. It is emptying in 100. The number on your tablet says the same thing the farmer said: this place is on the clock. The Conrad Council is waiting.",
+      "choices": [
+        {
+          "id": "report_phoenix",
+          "text": "Report back to the Conrad Council",
+          "next_phase": "ch1_council_reveal",
+          "discovery": null
+        }
+      ]
+    },
+
+    "ch1_mumbai_arrive": {
+      "id": "ch1_mumbai_arrive",
+      "chapter": 1,
+      "title": "Mumbai — chemicals in the water",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#5B7C8C",
+          "far": "#3D5A6C",
+          "mid": "#2A4356",
+          "ground": "#152935",
+          "accents": ["skyline", "pipes", "monsoon_cloud"]
+        },
+        "parallax_offset": 0.35
+      },
+      "hud_state": {
+        "water_crisis": 92,
+        "investigation_progress": 20,
+        "discoveries": 0,
+        "region": "Mumbai"
+      },
+      "narrative": "The drinking water in three districts tests positive for PFAS — \"forever chemicals\" that don't break down. A municipal lab has clean samples and a story; a community health team has bad samples and a wider story. Where do you spend the morning?",
+      "choices": [
+        {
+          "id": "lab_samples",
+          "text": "Run the lab samples — find the source",
+          "next_phase": "ch1_mumbai_findings",
+          "discovery": "environmental_chemistry"
+        },
+        {
+          "id": "community_health",
+          "text": "Meet the health team — map the exposure",
+          "next_phase": "ch1_mumbai_findings",
+          "discovery": "public_health"
+        }
+      ]
+    },
+
+    "ch1_mumbai_findings": {
+      "id": "ch1_mumbai_findings",
+      "chapter": 1,
+      "title": "Mumbai — findings",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#456478",
+          "far": "#2E4856",
+          "mid": "#1E3340",
+          "ground": "#0E1E2B",
+          "accents": ["skyline_dense", "pipes", "rain"]
+        },
+        "parallax_offset": 0.55
+      },
+      "hud_state": {
+        "water_crisis": 89,
+        "investigation_progress": 45,
+        "discoveries": 1,
+        "region": "Mumbai"
+      },
+      "narrative": "PFAS readings in the affected districts are 14× the WHO safe limit. The molecules have carbon-fluorine bonds that don't decompose for thousands of years. The water plant strips bacteria, not chemistry. Mumbai needs a treatment system that doesn't exist yet at scale — or a different source. The Conrad Council needs to hear this.",
+      "choices": [
+        {
+          "id": "report_mumbai",
+          "text": "Report back to the Conrad Council",
+          "next_phase": "ch1_council_reveal",
+          "discovery": null
+        }
+      ]
+    },
+
+    "ch1_sao_paulo_arrive": {
+      "id": "ch1_sao_paulo_arrive",
+      "chapter": 1,
+      "title": "São Paulo — three years without rain",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#D4A256",
+          "far": "#B07B3E",
+          "mid": "#6B4423",
+          "ground": "#2D1F12",
+          "accents": ["sun_haze", "dry_reservoir", "farmland"]
+        },
+        "parallax_offset": 0.35
+      },
+      "hud_state": {
+        "water_crisis": 95,
+        "investigation_progress": 20,
+        "discoveries": 0,
+        "region": "São Paulo"
+      },
+      "narrative": "The Cantareira reservoir system is at 4% capacity. A La Niña pattern has held three years longer than any model predicted. A climatologist wants to show you the upstream data; a farmer wants to show you the downstream cost. You can do one before the council meets.",
+      "choices": [
+        {
+          "id": "climate_data",
+          "text": "Review the climate models",
+          "next_phase": "ch1_sao_paulo_findings",
+          "discovery": "climate_science"
+        },
+        {
+          "id": "farmer_story",
+          "text": "Walk the farmland with the grower",
+          "next_phase": "ch1_sao_paulo_findings",
+          "discovery": "food_water_nexus"
+        }
+      ]
+    },
+
+    "ch1_sao_paulo_findings": {
+      "id": "ch1_sao_paulo_findings",
+      "chapter": 1,
+      "title": "São Paulo — findings",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#B07B3E",
+          "far": "#7C5230",
+          "mid": "#4A2F17",
+          "ground": "#1F140A",
+          "accents": ["dry_reservoir", "cracked_ground", "haze"]
+        },
+        "parallax_offset": 0.55
+      },
+      "hud_state": {
+        "water_crisis": 93,
+        "investigation_progress": 45,
+        "discoveries": 1,
+        "region": "São Paulo"
+      },
+      "narrative": "Atmospheric rivers that used to deliver moisture inland have shifted south by 400 km. The climate hasn't broken — it has moved. São Paulo's water system was built for a place that no longer exists at this latitude. Adaptation is no longer optional. The Conrad Council needs to hear this.",
+      "choices": [
+        {
+          "id": "report_sao_paulo",
+          "text": "Report back to the Conrad Council",
+          "next_phase": "ch1_council_reveal",
+          "discovery": null
+        }
+      ]
+    },
+
+    "ch1_council_reveal": {
+      "id": "ch1_council_reveal",
+      "chapter": 1,
+      "title": "The Conrad Council",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#1A1F2E",
+          "far": "#2D3142",
+          "mid": "#4C5470",
+          "ground": "#11141C",
+          "accents": ["moon_silhouette", "data_grid", "stars"]
+        },
+        "parallax_offset": 0.75
+      },
+      "hud_state": {
+        "water_crisis": 90,
+        "investigation_progress": 80,
+        "discoveries": 2
+      },
+      "narrative": "You stand in front of the Conrad Council. The three crises overlay on the same screen: groundwater going, chemistry contaminating, climate moving. Nancy Conrad speaks first. \"It is the same problem from three altitudes. We do not have new water on Earth. The water that exists is the water we have. So we look up.\" The lights dim. A new map appears. The Moon. Polar craters. Ice.",
+      "choices": [
+        {
+          "id": "accept_mission",
+          "text": "Accept the mission to the Moon",
+          "next_phase": "ch1_end",
+          "discovery": "lunar_water_connection"
+        }
+      ]
+    },
+
+    "ch1_end": {
+      "id": "ch1_end",
+      "chapter": 1,
+      "title": "End of Chapter 1",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#050810",
+          "far": "#0C1326",
+          "mid": "#1A2238",
+          "ground": "#000004",
+          "accents": ["earth_distant", "moon_close", "stars_dense"]
+        },
+        "parallax_offset": 1.0
+      },
+      "hud_state": {
+        "water_crisis": 90,
+        "investigation_progress": 100,
+        "discoveries": 3
+      },
+      "narrative": "Earth is behind you. The journey begins. Chapter 2 — \"The Journey to the Moon\" — opens soon. Bring your discoveries.",
+      "choices": []
+    }
+  }
+}
