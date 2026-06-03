@@ -222,7 +222,7 @@ body {
 .hero-inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 100px 40px 80px;
+    padding: 48px 40px 80px;
     display: grid;
     grid-template-columns: 1fr 300px;
     gap: 80px;
