@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Praevideo — Direction B: Established Trust</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600&family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #F7F4EF;
+            --cream-deep: #EDE8E0;
+            --navy: #1B2B4B;
+            --navy-light: #2A3F6B;
+            --navy-mid: #3D5488;
+            --gold: #B8963E;
+            --gold-light: #D4AB56;
+            --text-primary: #1A1A1A;
+            --text-secondary: #4A4A4A;
+            --text-muted: #8A8A8A;
+            --border-light: rgba(0,0,0,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--cream);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 48px;
+        }
+
+        /* NAV */
+        nav {
+            background: var(--navy);
+            padding: 20px 0;
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.02em;
+        }
+
+        .logo-sub {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.5);
+            display: block;
+            margin-top: -2px;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .nav-link {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+        .nav-cta {
+            background: var(--gold);
+            color: #fff;
+            padding: 10px 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            letter-spacing: 0.02em;
+        }
+
+        .nav-cta:hover {
+            background: var(--gold-light);
+        }
+
+        /* HERO */
+        .hero {
+            background: var(--navy);
+            padding: 100px 0 0;
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Subtle grid pattern */
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 80px 80px;
+        }
+
+        /* Bottom wave/diagonal */
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: var(--cream);
+            clip-path: polygon(0 60%, 100% 0, 100% 100%, 0 100%);
+        }
+
+        .hero .container {
+            position: relative;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+            padding-bottom: 120px;
+        }
+
+        .hero-left {}
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(184, 150, 62, 0.15);
+            border: 1px solid rgba(184, 150, 62, 0.4);
+            color: var(--gold-light);
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            padding: 7px 14px;
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 3.8rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #fff;
+            margin-bottom: 28px;
+        }
+
+        h1 em {
+            font-style: italic;
+            color: var(--gold-light);
+        }
+
+        .hero-sub {
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.65);
+            line-height: 1.75;
+            margin-bottom: 44px;
+            max-width: 440px;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .cta-gold {
+            background: var(--gold);
+            color: #fff;
+            padding: 16px 40px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border: none;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+        }
+
+        .cta-gold:hover {
+            background: var(--gold-light);
+        }
+
+        .cta-outline {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Credential panel */
+        .hero-credentials {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 48px 44px;
+        }
+
+        .cred-title {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 32px;
+        }
+
+        .cred-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .cred-icon {
+            width: 36px;
+            height: 36px;
+            border: 1px solid rgba(184,150,62,0.4);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold);
+            font-size: 1rem;
+        }
+
+        .cred-text strong {
+            display: block;
+            color: #fff;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .cred-text span {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.85rem;
+        }
+
+        .cred-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 28px 0;
+        }
+
+        /* MISSION */
+        .mission {
+            padding: 96px 0;
+            background: var(--cream);
+        }
+
+        .mission .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+        }
+
+        .section-eyebrow {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        h2 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--navy);
+            margin-bottom: 24px;
+        }
+
+        .mission-text {
+            font-size: 1.05rem;
+            line-height: 1.9;
+            color: var(--text-secondary);
+        }
+
+        .mission-right {
+            background: var(--navy);
+            padding: 56px 48px;
+            position: relative;
+        }
+
+        .mission-right::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gold);
+        }
+
+        .pull-quote {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.35rem;
+            font-style: italic;
+            color: #fff;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .quote-attr {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+            color: var(--gold);
+        }
+
+        /* SERVICES */
+        .services {
+            padding: 96px 0;
+            background: var(--cream-deep);
+        }
+
+        .services-header {
+            text-align: center;
+            margin-bottom: 64px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .service-card {
+            background: var(--cream);
+            padding: 44px 40px;
+            border-bottom: 3px solid transparent;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .service-card:hover {
+            border-color: var(--gold);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .service-num {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 16px;
+        }
+
+        .service-card h3 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 14px;
+        }
+
+        .service-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.75;
+        }
+
+        /* CTA SECTION */
+        .cta-section {
+            padding: 100px 0;
+            background: var(--navy);
+            text-align: center;
+            position: relative;
+        }
+
+        .cta-section .section-eyebrow {
+            color: var(--gold);
+        }
+
+        .cta-section h2 {
+            color: #fff;
+            max-width: 600px;
+            margin: 0 auto 20px;
+        }
+
+        .cta-section p {
+            color: rgba(255,255,255,0.6);
+            font-size: 1.05rem;
+            margin-bottom: 48px;
+            max-width: 440px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Partners */
+        .partners {
+            padding: 56px 0;
+            background: var(--cream);
+            border-top: 1px solid var(--border-light);
+        }
+
+        .partners-label {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .partners-logos {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 60px;
+        }
+
+        .partner-logo {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+
+        .partner-logo:hover { opacity: 0.6; }
+
+        /* FOOTER */
+        footer {
+            background: #0D1B33;
+            padding: 64px 0 28px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 60px;
+            margin-bottom: 56px;
+        }
+
+        .footer-logo {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            display: block;
+            margin-bottom: 16px;
+        }
+
+        .footer-brand p {
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .footer-col h4 {
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 20px;
+        }
+
+        .footer-col a {
+            display: block;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
+            text-decoration: none;
+            line-height: 2.4;
+            transition: color 0.2s;
+        }
+
+        .footer-col a:hover {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .footer-bottom {
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            text-align: center;
+            color: rgba(255,255,255,0.25);
+            font-size: 0.8rem;
+        }
+
+        /* Direction label */
+        .direction-label {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            background: var(--gold);
+            color: #fff;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 6px 14px;
+            z-index: 9999;
+        }
+
+        @media (max-width: 900px) {
+            .hero .container { grid-template-columns: 1fr; }
+            .mission .container { grid-template-columns: 1fr; }
+            h1 { font-size: 2.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="direction-label">Direction B — Established Trust</div>
+
+    <nav>
+        <div class="container">
+            <div class="nav-inner">
+                <div>
+                    <span class="logo">Praevideo</span>
+                    <span class="logo-sub">Physical Security Integration</span>
+                </div>
+                <div class="nav-actions">
+                    <a href="#" class="nav-link">Services</a>
+                    <a href="#" class="nav-link">About</a>
+                    <a href="#" class="nav-cta">Get Assessment</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-left">
+                <div class="hero-badge">Phoenix, AZ — Since 2025</div>
+                <h1>Security Systems<br>Built for the<br><em>Long Term</em></h1>
+                <p class="hero-sub">We deploy cameras, surveillance trailers, and access control systems for Arizona enterprises. Not a software company. Not a franchise. A Phoenix team that shows up and gets the job done right.</p>
+                <div class="hero-actions">
+                    <button class="cta-gold">Start Your Assessment</button>
+                    <button class="cta-outline">Learn more →</button>
+                </div>
+            </div>
+            <div class="hero-credentials">
+                <div class="cred-title">What sets us apart</div>
+                <div class="cred-item">
+                    <div class="cred-icon">✓</div>
+                    <div class="cred-text">
+                        <strong>Real site assessment first</strong>
+                        <span>We evaluate your property before recommending anything</span>
+                    </div>
+                </div>
+                <div class="cred-divider"></div>
+                <div class="cred-item">
+                    <div class="cred-icon">✓</div>
+                    <div class="cred-text">
+                        <strong>Full project management</strong>
+                        <span>From assessment to installation to ongoing support</span>
+                    </div>
+                </div>
+                <div class="cred-divider"></div>
+                <div class="cred-item">
+                    <div class="cred-icon">✓</div>
+                    <div class="cred-text">
+                        <strong>Phoenix-based team</strong>
+                        <span>We know Arizona facilities and what they require</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MISSION -->
+    <section class="mission">
+        <div class="container">
+            <div>
+                <span class="section-eyebrow">Our commitment</span>
+                <h2>Partners in<br>Long-Term Security</h2>
+                <p class="mission-text">Making security decisions for your organization is no easy task. You need to know that your people, property, and assets are protected. You need systems that work reliably in all conditions. You need partners who understand your specific challenges. At Praevideo, we combine intelligent visual surveillance with industry expertise to help you protect what matters most.</p>
+            </div>
+            <div class="mission-right">
+                <p class="pull-quote">"Organizations across Arizona trust us to deliver security systems that work in the real world."</p>
+                <span class="quote-attr">— Praevideo Mission Statement</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section class="services">
+        <div class="container">
+            <div class="services-header">
+                <span class="section-eyebrow">What we deploy</span>
+                <h2>Four Core Services,<br>One Reliable Partner</h2>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-num">Security Systems / 01</div>
+                    <h3>Camera Systems</h3>
+                    <p>Professional-grade camera systems deployed for your specific environment, with AI-powered monitoring and analytics to catch what matters.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-num">Mobile Security / 02</div>
+                    <h3>Surveillance Trailers</h3>
+                    <p>Mobile surveillance solutions for temporary or high-security monitoring. Deploy quickly, monitor in real time, scale as needed.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-num">Access Management / 03</div>
+                    <h3>Access Control</h3>
+                    <p>Intelligent entry point management with credential verification, audit trails, and integration with your existing security infrastructure.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-num">Project Services / 04</div>
+                    <h3>Project Management</h3>
+                    <p>End-to-end coordination from assessment through installation and ongoing support. We handle the logistics so you can focus on running your operation.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="container">
+            <span class="section-eyebrow">Get Started</span>
+            <h2>Not Sure What<br>Your Facility Needs?</h2>
+            <p>Our 2-minute security assessment tool identifies your specific requirements based on your property type, size, and concerns.</p>
+            <button class="cta-gold" style="font-size: 1rem; padding: 18px 52px;">Find Out What You Need</button>
+        </div>
+    </section>
+
+    <!-- Partners -->
+    <section class="partners">
+        <div class="container">
+            <p class="partners-label">Trusted by leading manufacturers</p>
+            <div class="partners-logos">
+                <span class="partner-logo">Axis</span>
+                <span class="partner-logo">Hikvision</span>
+                <span class="partner-logo">Hanwha</span>
+                <span class="partner-logo">Milestone</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <span class="footer-logo">Praevideo</span>
+                    <p>221 East Indianola Ave<br>Phoenix, AZ 85012<br><br>Physical security integration for Arizona enterprises and organizations.</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Services</h4>
+                    <a href="#">Camera Systems</a>
+                    <a href="#">Surveillance Trailers</a>
+                    <a href="#">Access Control</a>
+                    <a href="#">Project Management</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Company</h4>
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Privacy</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 Praevideo LLC. All rights reserved. Phoenix, Arizona.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
