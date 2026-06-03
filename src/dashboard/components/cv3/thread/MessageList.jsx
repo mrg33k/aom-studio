@@ -1262,13 +1262,14 @@ function MessageList({ roomType = 'agent' }) {
                       {msg.user_name}
                     </div>
                   )}
-                  {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. R12: add subtle background when steps exist to group message + context as cohesive unit. */}
+                  {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. R12: subtle background + border when steps exist so message + steps read as one unit. Bumped from 0.04 to 0.07 opacity so grouping is actually visible on dark bg. */}
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     width: '100%',
                     ...((!isUser && stepsByMessageId[msg.id]?.length > 0) ? {
-                      background: 'rgba(255,255,255,0.04)',
+                      background: 'rgba(255,255,255,0.07)',
+                      border: '1px solid rgba(255,255,255,0.08)',
                       borderRadius: 10,
                       padding: '8px 0',
                       paddingLeft: 12,
@@ -1327,12 +1328,12 @@ function MessageList({ roomType = 'agent' }) {
                         </div>
                       )
                     })()}
-                    {/* R65-impl: live-thread step chain below assistant reply. R12: refined styling to feel more attached to message — reduced margin, darker text, tighter line-height. */}
+                    {/* R65-impl: live-thread step chain below assistant reply. R12: tightened attachment — steps feel like they hang from the message, not a separate component. */}
                     {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
                       <div style={{
-                        marginTop: msg.text ? 8 : 4,
-                        paddingTop: msg.text ? 4 : 0,
-                        borderTop: msg.text ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                        marginTop: msg.text ? 6 : 3,
+                        paddingTop: msg.text ? 6 : 0,
+                        borderTop: msg.text ? '1px solid rgba(255,255,255,0.10)' : 'none',
                       }}>
                         <StepThread
                           steps={stepsByMessageId[msg.id]}
