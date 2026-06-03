@@ -49,15 +49,31 @@ export default function Canvas({ phase }) {
     const prevPhase = animRef.current.prevPhase;
     const DURATION = prevPhase ? 700 : 0;
 
-    const W = cnv.width / (window.devicePixelRatio || 1);
-    const H = cnv.height / (window.devicePixelRatio || 1);
+    // Read CSS dimensions FRESH from the canvas every paint — the resize
+    // effect can write cnv.width/height after this effect mounts, so we
+    // never want to capture stale values in the closure.
+    const cssDims = () => {
+      const dpr = window.devicePixelRatio || 1;
+      return {
+        W: Math.max(1, Math.floor(cnv.width / dpr)),
+        H: Math.max(1, Math.floor(cnv.height / dpr)),
+      };
+    };
 
+    let imgFadeStartedAt = bgImg && bgImg.complete ? startedAt : null;
     const tick = (now) => {
       const elapsed = now - startedAt;
       const t = DURATION === 0 ? 1 : Math.min(1, elapsed / DURATION);
       animRef.current.t = t;
-      paint(ctx, W, H, phase, prevPhase, easeOutCubic(t));
-      if (t < 1) {
+      const { W, H } = cssDims();
+      // Image fade-in (0→1 over 400ms after the image becomes available).
+      const imgAlpha = imgFadeStartedAt
+        ? Math.min(1, (now - imgFadeStartedAt) / 400)
+        : 0;
+      paint(ctx, W, H, phase, prevPhase, easeOutCubic(t), imgAlpha);
+      // Keep animating until both the parallax swap AND the image fade are done.
+      const stillFading = imgFadeStartedAt != null && imgAlpha < 1;
+      if (t < 1 || stillFading) {
         animRef.current.raf = requestAnimationFrame(tick);
       } else {
         animRef.current.prevPhase = phase;
@@ -67,10 +83,13 @@ export default function Canvas({ phase }) {
     cancelAnimationFrame(animRef.current.raf);
     animRef.current.raf = requestAnimationFrame(tick);
 
-    // If the image wasn't ready, repaint when it loads.
+    // If the image wasn't ready, start fade once it loads — and re-arm the RAF
+    // loop so the paint actually happens.
     if (bgImg && !bgImg.complete) {
       const onLoad = () => {
-        paint(ctx, W, H, phase, animRef.current.prevPhase, 1);
+        imgFadeStartedAt = performance.now();
+        cancelAnimationFrame(animRef.current.raf);
+        animRef.current.raf = requestAnimationFrame(tick);
       };
       bgImg.addEventListener('load', onLoad, { once: true });
       return () => {
@@ -133,41 +152,47 @@ export default function Canvas({ phase }) {
 
 // ─── painter ─────────────────────────────────────────────────────────────────
 
-function paint(ctx, W, H, phase, prevPhase, t) {
+function paint(ctx, W, H, phase, prevPhase, t, imgAlpha = 0) {
   ctx.clearRect(0, 0, W, H);
   // Render the previous composite first, sliding out left as t→1.
   if (prevPhase && t < 1) {
     ctx.save();
     ctx.translate(-W * t * 0.4, 0);
-    drawPhase(ctx, W, H, prevPhase, t, true);
+    drawPhase(ctx, W, H, prevPhase, t, true, imgAlpha);
     ctx.restore();
   }
   // Render the new composite sliding in from the right.
   ctx.save();
   ctx.translate(W * (1 - t) * 0.4, 0);
-  drawPhase(ctx, W, H, phase, t, false);
+  drawPhase(ctx, W, H, phase, t, false, imgAlpha);
   ctx.restore();
 }
 
-function drawPhase(ctx, W, H, phase, t, isOutgoing) {
+function drawPhase(ctx, W, H, phase, t, isOutgoing, imgAlpha = 0) {
   if (!phase) return;
   const v = phase.visuals || {};
 
-  // RASTER MODE — draw Cleo's Nano Banana background scaled to fill (cover).
-  // Falls back to procedural layers when the image isn't ready or absent.
+  // Always paint procedural first as the floor — guarantees something is
+  // visible the moment the canvas mounts, no waiting on a 3MB PNG.
+  drawProceduralLayers(ctx, W, H, v.procedural || defaultPalette(), v.parallax_offset || 0);
+  drawAccents(ctx, W, H, v.procedural || defaultPalette(), phase, t);
+
+  // RASTER MODE — fade Cleo's Nano Banana background in OVER the procedural
+  // once it's available. imgAlpha drives the 400ms fade from 0→1.
   const bgImg = v.background ? loadImage(v.background) : null;
-  if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+  if (bgImg && bgImg.complete && bgImg.naturalWidth > 0 && imgAlpha > 0) {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, imgAlpha));
     drawCoverImage(ctx, W, H, bgImg, v.parallax_offset || 0);
-    // Subtle bottom vignette so the narrative card has somewhere to live.
-    const vg = ctx.createLinearGradient(0, H * 0.45, 0, H);
-    vg.addColorStop(0, 'rgba(8,10,16,0)');
-    vg.addColorStop(1, 'rgba(8,10,16,0.55)');
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, H * 0.45, W, H * 0.55);
-  } else {
-    drawProceduralLayers(ctx, W, H, v.procedural || defaultPalette(), v.parallax_offset || 0);
-    drawAccents(ctx, W, H, v.procedural || defaultPalette(), phase, t);
+    ctx.restore();
   }
+
+  // Subtle bottom vignette so the narrative card has somewhere to live.
+  const vg = ctx.createLinearGradient(0, H * 0.45, 0, H);
+  vg.addColorStop(0, 'rgba(8,10,16,0)');
+  vg.addColorStop(1, 'rgba(8,10,16,0.55)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, H * 0.45, W, H * 0.55);
 
   // Fade the outgoing composite so the swap reads even at the seam.
   if (isOutgoing) {

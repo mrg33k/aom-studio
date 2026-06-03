@@ -344,11 +344,11 @@ const styles = {
   // ── top bar ────
   topBar: {
     pointerEvents: 'auto',
-    display: 'grid',
-    gridTemplateColumns: 'auto 1fr auto',
-    alignItems: 'start',
-    gap: 28,
-    padding: '20px 28px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 16,
+    padding: '18px 22px',
     background:
       'linear-gradient(to bottom, rgba(7,12,28,0.72) 0%, rgba(7,12,28,0) 100%)',
   },
@@ -382,15 +382,17 @@ const styles = {
   statRow: {
     display: 'flex',
     justifyContent: 'center',
-    gap: 14,
+    gap: 12,
     flexWrap: 'wrap',
+    flex: 1,
   },
   statCard: {
     display: 'flex',
     alignItems: 'center',
     gap: 10,
     padding: '8px 12px',
-    minWidth: 220,
+    minWidth: 0,
+    width: 200,
     borderRadius: 14,
     background:
       'linear-gradient(135deg, rgba(11,30,55,0.86) 0%, rgba(7,18,38,0.86) 100%)',
@@ -399,8 +401,9 @@ const styles = {
       '0 0 14px rgba(127,233,255,0.22), inset 0 0 18px rgba(127,233,255,0.06)',
   },
   statIconTile: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
+    flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
