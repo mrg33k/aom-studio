@@ -96,7 +96,9 @@
     { "source": "/ai-hours", "destination": "/index.html" },
     { "source": "/ai-hours/admin", "destination": "/index.html" },
     { "source": "/internal/scope/higher-orbits-biz7tkhq9h", "destination": "/scope-higher-orbits-biz7tkhq9h.html" },
-    { "source": "/agreements/included-health", "destination": "/agreements/included-health.html" }
+    { "source": "/agreements/included-health", "destination": "/agreements/included-health.html" },
+    { "source": "/praevideo", "destination": "/praevideo/index.html" },
+    { "source": "/praevideo/:path*", "destination": "/praevideo/:path*" }
   ],
   "redirects": [
     { "source": "/higher-orbits", "destination": "/higherorbits", "permanent": true }
