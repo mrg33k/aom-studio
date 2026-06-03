@@ -206,41 +206,68 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
           }}>
             Earlier in this thread
           </div>
-          {contextMsgs.map((m) => {
-            const fromUser = m.role === 'user'
-            return (
-              <div key={m.id} style={{
-                display: 'flex',
-                justifyContent: fromUser ? 'flex-end' : 'flex-start',
-              }}>
-                <div style={{
-                  maxWidth: '88%',
-                  background: fromUser ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${fromUser ? 'rgba(59,130,246,0.14)' : C.border}`,
-                  borderRadius: 8,
-                  padding: '8px 11px',
-                  fontSize: 12,
-                  lineHeight: 1.5,
-                  color: C.muted,
-                  fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
-                  whiteSpace: 'pre-wrap',
-                  wordBreak: 'break-word',
+          {/* R5 — scrollable context so user can read back the full conversation */}
+          <div style={{
+            maxHeight: 220,
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            paddingRight: 2,
+          }}>
+            {contextMsgs.map((m) => {
+              const fromUser = m.role === 'user'
+              // R5 — resolve image URL from single or multi-attachment shapes
+              const imgUrl = m.attachment?.url || (m.attachments?.[0]?.url) || null
+              return (
+                <div key={m.id} style={{
+                  display: 'flex',
+                  justifyContent: fromUser ? 'flex-end' : 'flex-start',
                 }}>
-                  <span style={{
-                    display: 'block',
-                    fontSize: 10,
-                    color: C.dim || C.muted,
-                    marginBottom: 2,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    letterSpacing: '0.02em',
+                  <div style={{
+                    maxWidth: '88%',
+                    background: fromUser ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${fromUser ? 'rgba(59,130,246,0.14)' : C.border}`,
+                    borderRadius: 8,
+                    padding: '8px 11px',
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    color: C.muted,
+                    fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
                   }}>
-                    {m.senderName}
-                  </span>
-                  {(m.text || '').length > 220 ? (m.text.slice(0, 220) + '…') : m.text}
+                    <span style={{
+                      display: 'block',
+                      fontSize: 10,
+                      color: C.dim || C.muted,
+                      marginBottom: 2,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      letterSpacing: '0.02em',
+                    }}>
+                      {m.senderName}
+                    </span>
+                    {/* R5 — render image attachments in context bubbles */}
+                    {imgUrl && (
+                      <img
+                        src={imgUrl}
+                        alt="attachment"
+                        style={{
+                          display: 'block',
+                          maxWidth: '100%',
+                          maxHeight: 180,
+                          borderRadius: 6,
+                          marginBottom: m.text ? 6 : 0,
+                          objectFit: 'contain',
+                        }}
+                      />
+                    )}
+                    {m.text}
+                  </div>
                 </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -251,10 +278,27 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
         borderRadius: 8,
         padding: '14px 16px',
       }}>
+        {/* R5 — render image attachment on the notification itself */}
+        {(notif.attachment?.url || notif.attachments?.[0]?.url) && (
+          <img
+            src={notif.attachment?.url || notif.attachments?.[0]?.url}
+            alt="attachment"
+            style={{
+              display: 'block',
+              maxWidth: '100%',
+              maxHeight: 220,
+              borderRadius: 6,
+              marginBottom: 10,
+              objectFit: 'contain',
+            }}
+          />
+        )}
         <p style={{
           fontSize: 14, color: C.text, lineHeight: 1.55, margin: 0,
           fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
-          display: '-webkit-box',
+          // R5 — switch to block display when expanded so -webkit-box
+          // clamping is fully removed (unset alone isn't reliable cross-browser)
+          display: expanded ? 'block' : '-webkit-box',
           WebkitBoxOrient: 'vertical',
           WebkitLineClamp: expanded ? 'unset' : 2,
           overflow: expanded ? 'visible' : 'hidden',

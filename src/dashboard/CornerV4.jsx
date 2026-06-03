@@ -875,6 +875,9 @@ export default function CornerV4() {
         badgeType: 'message',
         messagePreview: item.text || '',
         suggestedReplies,
+        // R5 — pass image attachments so the card can render them
+        attachment: item.metadata?.attachment || null,
+        attachments: item.metadata?.attachments || null,
         // raw timestamp + routing keys for fetchCatchupContext
         timestamp: item.timestamp,
         _agent: item.agent,
@@ -962,7 +965,7 @@ export default function CornerV4() {
       if (notif._project) params.set('project', notif._project)
       if (notif._missionSlug) params.set('mission_slug', notif._missionSlug)
       if (notif.timestamp) params.set('before', notif.timestamp)
-      params.set('limit', '2')
+      params.set('limit', '10')
       const res = await authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
       if (!res.ok) return []
       const data = await res.json()
@@ -974,6 +977,9 @@ export default function CornerV4() {
         text: m.text || '',
         timestamp: m.timestamp,
         senderName: m.user_name || m.agent || 'Agent',
+        // R5 — pass image attachments through so context renders them
+        attachment: m.metadata?.attachment || null,
+        attachments: m.metadata?.attachments || null,
       }))
     } catch (e) {
       console.warn('[CatchupModal] context fetch failed', e)
