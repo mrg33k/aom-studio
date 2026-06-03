@@ -81,6 +81,16 @@ function showRecommendations(propertyType, installationType, concern, entryPoint
     resultsDiv.style.display = 'block';
 }
 
+// Hide video reveal after 2 seconds (fallback if video doesn't load)
+setTimeout(function() {
+    const videoReveal = document.getElementById('videoReveal');
+    if (videoReveal) {
+        videoReveal.style.opacity = '0';
+        videoReveal.style.visibility = 'hidden';
+        videoReveal.style.pointerEvents = 'none';
+    }
+}, 2000);
+
 // Close modal on background click
 document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('scopingModal');
