@@ -89,9 +89,14 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
   // R3 — context messages from the same room that landed BEFORE this unread
   // notification, so the user reads it as a thread instead of a cold one-liner.
   const [contextMsgs, setContextMsgs] = useState(null)  // null=loading, []=none, [..]=loaded
+  // R7 — lightbox for full-screen image preview
+  const [lightboxUrl, setLightboxUrl] = useState(null)
   const inputRef = useRef(null)
-  // R6 — ref for the unified thread container so we can scroll to bottom
-  const threadRef = useRef(null)
+  // R7 — ref for the outer card div so we can scroll it to the bottom after
+  // context loads, ensuring the last (unread) message is always fully visible.
+  // Moved from the inner threadRef so the scroll covers ALL card content,
+  // not just the 300px-capped sub-container.
+  const cardRef = useRef(null)
 
   // Fetch context whenever a new notification mounts.
   useEffect(() => {
@@ -104,11 +109,13 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
     return () => { cancelled = true }
   }, [notif?.id, onLoadContext])
 
-  // R6 — auto-scroll the thread to the bottom so the unread notification
-  // is visible on card mount and again after context messages load in.
+  // R7 (was R6) — auto-scroll the card to the bottom so the unread notification
+  // is fully visible. Using cardRef (the outer card container) instead of the
+  // inner thread sub-container so long messages are never clipped by a
+  // secondary scroll area.
   useEffect(() => {
-    if (threadRef.current) {
-      threadRef.current.scrollTop = threadRef.current.scrollHeight
+    if (cardRef.current) {
+      cardRef.current.scrollTop = cardRef.current.scrollHeight
     }
   }, [contextMsgs])
 
@@ -149,16 +156,19 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
   const animationName = direction === 'back' ? 'cnCardInLeft' : 'cnCardInRight'
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '18px 20px 20px',
-      gap: 14,
-      overflowY: 'auto',
-      overscrollBehavior: 'contain',
-      animation: `${animationName} 0.28s cubic-bezier(0.16, 1, 0.3, 1)`,
-      maxHeight: '100%',
-    }}>
+    <div
+      ref={cardRef}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '18px 20px 20px',
+        gap: 14,
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
+        animation: `${animationName} 0.28s cubic-bezier(0.16, 1, 0.3, 1)`,
+        maxHeight: '100%',
+      }}
+    >
 
       {/* Sender row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -217,11 +227,12 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
             Earlier in this thread
           </div>
         )}
+        {/* R7 — thread container no longer has its own maxHeight / scroll.
+            The outer cardRef container handles scrolling, so messages
+            (including the last unread one) are never clipped by a
+            secondary fixed-height scroll area. */}
         <div
-          ref={threadRef}
           style={{
-            maxHeight: 300,
-            overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
             gap: 6,
@@ -264,6 +275,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
                     <img
                       src={imgUrl}
                       alt="attachment"
+                      onClick={() => setLightboxUrl(imgUrl)}
                       style={{
                         display: 'block',
                         maxWidth: '100%',
@@ -271,6 +283,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
                         borderRadius: 6,
                         marginBottom: m.text ? 6 : 0,
                         objectFit: 'contain',
+                        cursor: 'zoom-in',
                       }}
                     />
                   )}
@@ -280,48 +293,6 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
             )
           })}
 
-          {/* The unread notification — last bubble, styled like other agent messages (no accent) */}
-          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <div style={{
-              maxWidth: '88%',
-              background: 'rgba(255,255,255,0.03)',
-              border: `1px solid ${C.border}`,
-              borderRadius: 8,
-              padding: '8px 11px',
-              fontSize: 12,
-              lineHeight: 1.5,
-              color: C.muted,
-              fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}>
-              <span style={{
-                display: 'block',
-                fontSize: 10,
-                color: C.dim || C.muted,
-                marginBottom: 2,
-                fontFamily: "'JetBrains Mono', monospace",
-                letterSpacing: '0.02em',
-              }}>
-                {notif.senderName}
-              </span>
-              {(notif.attachment?.url || notif.attachments?.[0]?.url) && (
-                <img
-                  src={notif.attachment?.url || notif.attachments?.[0]?.url}
-                  alt="attachment"
-                  style={{
-                    display: 'block',
-                    maxWidth: '100%',
-                    maxHeight: 180,
-                    borderRadius: 6,
-                    marginBottom: notif.messagePreview ? 6 : 0,
-                    objectFit: 'contain',
-                  }}
-                />
-              )}
-              {notif.messagePreview}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -439,6 +410,62 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
           </svg>
         </button>
       </div>
+
+      {/* R7 — Image lightbox overlay. Rendered inside the card so it escapes
+          any parent stacking context issues. position:fixed ensures it covers
+          the full viewport including the catch-up modal itself. */}
+      {lightboxUrl && (
+        <div
+          onClick={() => setLightboxUrl(null)}
+          style={{
+            position: 'fixed', inset: 0,
+            background: 'rgba(0,0,0,0.85)',
+            backdropFilter: 'blur(6px)',
+            WebkitBackdropFilter: 'blur(6px)',
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            animation: 'cnLightboxIn 0.18s ease',
+          }}
+          role="dialog"
+          aria-label="Image preview"
+        >
+          {/* Close button */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setLightboxUrl(null) }}
+            aria-label="Close preview"
+            style={{
+              position: 'absolute', top: 16, right: 16,
+              width: 36, height: 36,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,255,255,0.1)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: 8,
+              cursor: 'pointer',
+              color: '#fff',
+              zIndex: 1,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+          {/* Image — stop propagation so clicking on the image doesn't close */}
+          <img
+            src={lightboxUrl}
+            alt="Preview"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: 'min(90vw, 1200px)',
+              maxHeight: '85dvh',
+              objectFit: 'contain',
+              borderRadius: 8,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.5)',
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -690,6 +717,10 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
           0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 0.9; }
           80% { opacity: 0.7; }
           100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot, 360deg)) scale(0.2); opacity: 0; }
+        }
+        @keyframes cnLightboxIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
         }
       `}</style>
 
