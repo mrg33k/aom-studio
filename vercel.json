@@ -91,6 +91,8 @@
     { "source": "/nancy", "destination": "/index.html" },
     { "source": "/conradfoundation2", "destination": "/index.html" },
     { "source": "/missionwater", "destination": "/index.html" },
+    { "source": "/MissionWaterGame", "destination": "/index.html" },
+    { "source": "/mission-water-game", "destination": "/index.html" },
     { "source": "/higherorbits", "destination": "/index.html" },
     { "source": "/stats", "destination": "/index.html" },
     { "source": "/ai-hours", "destination": "/index.html" },
