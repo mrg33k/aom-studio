@@ -681,6 +681,226 @@ function SessionStatusIcon({ status }) {
   return null
 }
 
+// ─── Session Step Indicator ───────────────────────────────────────────────────
+
+function SessionStepIndicator({ currentSession }) {
+  const isComplete = currentSession > 5
+
+  function getStepStatus(sessionNum) {
+    if (sessionNum < currentSession) return 'done'
+    if (sessionNum === currentSession && !isComplete) return 'current'
+    return 'locked'
+  }
+
+  return (
+    <div style={{ padding: '28px 40px 24px', background: '#fff', borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+        <div style={{ ...styles.heroEyebrow, color: AOM_ORANGE, marginBottom: 20 }}>
+          Your AI Hours Journey
+        </div>
+        <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+          {SESSIONS.map((session, i) => {
+            const sessionNum = i + 1
+            const status = getStepStatus(sessionNum)
+            const isLast = sessionNum === 5
+
+            return (
+              <React.Fragment key={sessionNum}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1 }}>
+                  <div style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: status === 'done' ? GREEN_CHECK : status === 'current' ? AOM_ORANGE : 'transparent',
+                    border: status === 'locked' ? `2px solid ${BORDER}` : 'none',
+                    flexShrink: 0,
+                  }}>
+                    {status === 'done' ? (
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M4 9.5l3 3 7-7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <span style={{
+                        fontSize: 15,
+                        fontWeight: 700,
+                        color: status === 'current' ? '#fff' : LOCK_GRAY,
+                      }}>
+                        {sessionNum}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{
+                    fontSize: 11,
+                    fontWeight: status === 'current' ? 700 : 500,
+                    color: status === 'done' ? GREEN_CHECK : status === 'current' ? AOM_ORANGE : LOCK_GRAY,
+                    textAlign: 'center',
+                    lineHeight: 1.3,
+                  }}>
+                    {status === 'done' ? 'Complete' : `Session ${sessionNum}`}
+                    {status === 'current' && (
+                      <span style={{ display: 'block', fontSize: 10, fontWeight: 700, marginTop: 2 }}>↑ Current</span>
+                    )}
+                  </div>
+                </div>
+                {!isLast && (
+                  <div style={{
+                    height: 2,
+                    flex: 1,
+                    background: status === 'done' ? GREEN_CHECK : BORDER,
+                    marginTop: 20,
+                    maxWidth: 64,
+                  }} />
+                )}
+              </React.Fragment>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Completion Screen ────────────────────────────────────────────────────────
+
+function CompletionScreen({ completedSession, newSession, onContinue }) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: CREAM,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 40,
+    }}>
+      <div style={{ maxWidth: 520, width: '100%', textAlign: 'center' }}>
+        {/* Check circle */}
+        <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: '#E8F5ED',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+              <circle cx="22" cy="22" r="22" fill={GREEN_CHECK} />
+              <path d="M12 22.5l7 7 13-13" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        </div>
+
+        <h1 style={{
+          fontFamily: '"Instrument Serif", Georgia, serif',
+          fontSize: 38,
+          fontWeight: 400,
+          color: INK,
+          letterSpacing: '-0.02em',
+          lineHeight: 1.15,
+          marginBottom: 16,
+        }}>
+          Great work on Session {completedSession}.
+        </h1>
+
+        <p style={{
+          fontSize: 17,
+          color: INK_MUTED,
+          lineHeight: 1.65,
+          marginBottom: 48,
+        }}>
+          Looking forward to the next session with you — AOM
+        </p>
+
+        {/* Progress preview */}
+        <div style={{
+          background: '#fff',
+          border: `1px solid ${BORDER}`,
+          borderRadius: 12,
+          padding: '24px 28px',
+          marginBottom: 36,
+        }}>
+          <div style={{
+            fontSize: 11,
+            color: INK_MUTED,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            marginBottom: 20,
+          }}>
+            Your progress
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+            {SESSIONS.map((session, i) => {
+              const sessionNum = i + 1
+              const isDone = sessionNum < newSession
+              const isCurrent = sessionNum === newSession
+              const isLast = sessionNum === 5
+
+              return (
+                <React.Fragment key={sessionNum}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <div style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: isDone ? GREEN_CHECK : isCurrent ? AOM_ORANGE : 'transparent',
+                      border: !isDone && !isCurrent ? `2px solid ${BORDER}` : 'none',
+                    }}>
+                      {isDone ? (
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <path d="M3 7l2.5 2.5 5.5-5.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        <span style={{ fontSize: 13, fontWeight: 700, color: isCurrent ? '#fff' : LOCK_GRAY }}>
+                          {sessionNum}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{
+                      fontSize: 10,
+                      color: isDone ? GREEN_CHECK : isCurrent ? AOM_ORANGE : LOCK_GRAY,
+                      fontWeight: isCurrent ? 700 : 500,
+                    }}>
+                      {isCurrent ? 'Next' : `S${sessionNum}`}
+                    </span>
+                  </div>
+                  {!isLast && (
+                    <div style={{
+                      height: 2,
+                      flex: 1,
+                      background: isDone ? GREEN_CHECK : BORDER,
+                      marginTop: 17,
+                    }} />
+                  )}
+                </React.Fragment>
+              )
+            })}
+          </div>
+        </div>
+
+        <button
+          onClick={onContinue}
+          style={{
+            ...styles.btn,
+            padding: '14px 36px',
+            fontSize: 15,
+          }}
+        >
+          View Session {newSession} →
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── Access Code Gate ─────────────────────────────────────────────────────────
 // Client-only gate — admin link is intentionally hidden at the bottom.
 // AOM team clicks the tiny "Admin" link to reveal the email/password form.
@@ -983,52 +1203,18 @@ function AccessCodeGate({ onClientSuccess }) {
 
 // ─── Client Session View ──────────────────────────────────────────────────────
 
-function ClientView({ client, onLogout, onClientUpdate }) {
+function ClientView({ client, onLogout }) {
   const [expandedSession, setExpandedSession] = useState(client.current_session)
-  const [advancing, setAdvancing] = useState(false)
-  const [advanceConfirmed, setAdvanceConfirmed] = useState(false)
-  const [advanceError, setAdvanceError] = useState(null)
   const [showContact, setShowContact] = useState(false)
   const [contactMessage, setContactMessage] = useState('')
   const [contactSent, setContactSent] = useState(false)
   const currentSession = client.current_session || 1
-  const completedCount = currentSession - 1
-  const progressPct = Math.round((completedCount / 5) * 100)
-  const isLastSession = currentSession === 5
   const isComplete = currentSession > 5
 
   function getStatus(sessionNum) {
     if (sessionNum < currentSession) return 'done'
     if (sessionNum === currentSession && !isComplete) return 'current'
     return 'locked'
-  }
-
-  async function handleAdvance() {
-    if (advancing || isLastSession && advanceConfirmed) return
-    setAdvancing(true)
-    setAdvanceError(null)
-    try {
-      const newSession = currentSession + 1
-      const { data, error: dbErr } = await supabase
-        .from('ai_hours_clients')
-        .update({ current_session: newSession })
-        .eq('access_code', client.access_code)
-        .select()
-        .single()
-      if (dbErr || !data) {
-        setAdvanceError('Could not update your progress. Please try again or contact AOM.')
-        setAdvancing(false)
-        return
-      }
-      // Update localStorage and parent state
-      localStorage.setItem('ai_hours_client', JSON.stringify(data))
-      onClientUpdate(data)
-      setAdvanceConfirmed(true)
-      setExpandedSession(newSession <= 5 ? newSession : null)
-    } catch {
-      setAdvanceError('Something went wrong. Please try again.')
-    }
-    setAdvancing(false)
   }
 
   function handleContactSubmit(e) {
@@ -1065,44 +1251,8 @@ function ClientView({ client, onLogout, onClientUpdate }) {
         </div>
       </header>
 
-      {/* Progress hero */}
-      <div style={{ background: '#fff', borderBottom: `1px solid ${BORDER}`, padding: '40px 40px 36px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ ...styles.heroEyebrow, color: AOM_ORANGE, marginBottom: 12 }}>
-            Your AI Hours Journey
-          </div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24, marginBottom: 28 }}>
-            <div>
-              <h1 style={{
-                fontFamily: '"Instrument Serif", Georgia, serif',
-                fontSize: 32,
-                fontWeight: 400,
-                color: INK,
-                letterSpacing: '-0.02em',
-                marginBottom: 8,
-              }}>
-                {client.client_name}
-              </h1>
-              <p style={{ fontSize: 15, color: INK_MUTED }}>
-                Session {currentSession} of 5 &mdash; {completedCount === 0 ? 'Just getting started' : `${completedCount} session${completedCount > 1 ? 's' : ''} complete`}
-              </p>
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: 36, fontFamily: '"Instrument Serif", Georgia, serif', fontWeight: 400, color: INK }}>
-                {progressPct}<span style={{ fontSize: 20, color: INK_MUTED }}>%</span>
-              </div>
-              <div style={{ fontSize: 12, color: INK_MUTED }}>complete</div>
-            </div>
-          </div>
-          <div style={styles.progressBar}>
-            <div style={styles.progressFill(progressPct)} />
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: INK_MUTED }}>
-            <span>Session 1</span>
-            <span>Session 5</span>
-          </div>
-        </div>
-      </div>
+      {/* Session step indicator */}
+      <SessionStepIndicator currentSession={currentSession} />
 
       {/* Sessions */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 40px' }}>
@@ -1162,94 +1312,7 @@ function ClientView({ client, onLogout, onClientUpdate }) {
                       <span>{session.leaveWith}</span>
                     </div>
 
-                    {/* Advance button — only for current session, not last */}
-                    {status === 'current' && !isLastSession && !advanceConfirmed && (
-                      <div style={{
-                        marginTop: 28,
-                        paddingTop: 28,
-                        borderTop: `1px solid ${BORDER_SOFT}`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                        maxWidth: 560,
-                      }}>
-                        <div style={{ fontSize: 14, color: INK_MUTED, lineHeight: 1.6 }}>
-                          Completed this session with your AOM facilitator? Mark it done to unlock the next session.
-                        </div>
-                        {advanceError && <div style={styles.errorBox}>{advanceError}</div>}
-                        <button
-                          onClick={handleAdvance}
-                          disabled={advancing}
-                          style={{
-                            ...styles.btn,
-                            alignSelf: 'flex-start',
-                            opacity: advancing ? 0.7 : 1,
-                          }}
-                        >
-                          {advancing
-                            ? 'Saving...'
-                            : `Mark Session ${sessionNum} Complete → Advance to Session ${sessionNum + 1}`}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Last session — program complete CTA */}
-                    {status === 'current' && isLastSession && !advanceConfirmed && (
-                      <div style={{
-                        marginTop: 28,
-                        paddingTop: 28,
-                        borderTop: `1px solid ${BORDER_SOFT}`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 12,
-                        maxWidth: 560,
-                      }}>
-                        <div style={{ fontSize: 14, color: INK_MUTED, lineHeight: 1.6 }}>
-                          This is your final session. Once you've completed it with your AOM facilitator, mark the program complete.
-                        </div>
-                        {advanceError && <div style={styles.errorBox}>{advanceError}</div>}
-                        <button
-                          onClick={handleAdvance}
-                          disabled={advancing}
-                          style={{
-                            ...styles.btn,
-                            alignSelf: 'flex-start',
-                            opacity: advancing ? 0.7 : 1,
-                            background: GREEN_CHECK,
-                          }}
-                        >
-                          {advancing ? 'Saving...' : 'Mark Program Complete →'}
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Advance confirmed */}
-                    {status === 'current' && advanceConfirmed && (
-                      <div style={{
-                        marginTop: 28,
-                        paddingTop: 28,
-                        borderTop: `1px solid ${BORDER_SOFT}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        maxWidth: 560,
-                      }}>
-                        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
-                          <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
-                          <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        <div>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: GREEN_CHECK }}>
-                            {isLastSession ? 'Program complete! Great work.' : `Session ${sessionNum} marked complete.`}
-                          </div>
-                          {!isLastSession && (
-                            <div style={{ fontSize: 13, color: INK_MUTED, marginTop: 2 }}>
-                              Session {sessionNum + 1} is now unlocked above.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                    {/* AOM advances sessions from the admin panel — no client-side advance */}
                   </div>
                 )}
               </div>
@@ -2052,8 +2115,9 @@ function TeamView({ user, onLogout }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AIHoursLearning() {
-  const [mode, setMode] = useState('loading') // 'loading' | 'gate' | 'client'
+  const [mode, setMode] = useState('loading') // 'loading' | 'gate' | 'client' | 'completion'
   const [clientData, setClientData] = useState(null)
+  const [completedSession, setCompletedSession] = useState(null) // { from, to }
 
   useEffect(() => {
     async function init() {
@@ -2075,6 +2139,17 @@ export default function AIHoursLearning() {
                 .eq('access_code', parsed.access_code)
                 .single()
               if (data) {
+                const storedSession = parsed.current_session || 1
+                const dbSession = data.current_session || 1
+                // Detect if AOM advanced the client since their last visit
+                if (dbSession > storedSession) {
+                  setClientData(data)
+                  setCompletedSession({ from: storedSession, to: dbSession })
+                  setMode('completion')
+                  return
+                }
+                // No advancement — update localStorage with fresh data and go to client view
+                localStorage.setItem('ai_hours_client', JSON.stringify(data))
                 setClientData(data)
                 setMode('client')
                 return
@@ -2095,6 +2170,16 @@ export default function AIHoursLearning() {
     localStorage.removeItem('ai_hours_client')
     setMode('gate')
     setClientData(null)
+    setCompletedSession(null)
+  }
+
+  function handleCompletionContinue() {
+    // Update localStorage with new session data so next visit won't re-trigger the screen
+    if (clientData) {
+      localStorage.setItem('ai_hours_client', JSON.stringify(clientData))
+    }
+    setCompletedSession(null)
+    setMode('client')
   }
 
   if (mode === 'loading') {
@@ -2109,7 +2194,21 @@ export default function AIHoursLearning() {
   if (mode === 'gate') {
     return (
       <AccessCodeGate
-        onClientSuccess={data => { setClientData(data); setMode('client') }}
+        onClientSuccess={data => {
+          localStorage.setItem('ai_hours_client', JSON.stringify(data))
+          setClientData(data)
+          setMode('client')
+        }}
+      />
+    )
+  }
+
+  if (mode === 'completion' && completedSession) {
+    return (
+      <CompletionScreen
+        completedSession={completedSession.from}
+        newSession={completedSession.to}
+        onContinue={handleCompletionContinue}
       />
     )
   }
@@ -2119,7 +2218,6 @@ export default function AIHoursLearning() {
       <ClientView
         client={clientData}
         onLogout={handleLogout}
-        onClientUpdate={newData => setClientData(newData)}
       />
     )
   }
