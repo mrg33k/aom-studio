@@ -120,16 +120,23 @@ function ChapterRow({ n, title, state }) {
 
 // ─── styles ──────────────────────────────────────────────────────────────────
 
+// ─── NASA space palette ───────────────────────────────────────────────────────
+const CYAN  = '#00E5CC';
+const AMBER = '#FFB703';
+const SPACE_DARK  = '#070B14';
+const PANEL_BG    = '#0A1628';
+const TEXT_SOFT   = '#C8D8F0';
+
 const styles = {
   root: {
     display: 'grid',
     gridTemplateColumns: 'minmax(0, 7fr) minmax(280px, 3fr)',
     width: '100vw',
     height: '100vh',
-    background: '#06080F',
+    background: SPACE_DARK,
     overflow: 'hidden',
-    fontFamily: '"Hanken Grotesk", system-ui, sans-serif',
-    color: '#F4ECDC',
+    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
+    color: '#FFFFFF',
   },
   gamePanel: {
     position: 'relative',
@@ -140,8 +147,8 @@ const styles = {
     inset: 0,
   },
   sidebar: {
-    background: '#0B0F1A',
-    borderLeft: '1px solid rgba(244,236,220,0.08)',
+    background: '#050810',
+    borderLeft: `1px solid rgba(0,229,204,0.12)`,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
@@ -154,23 +161,28 @@ const styles = {
     height: '100%',
   },
   sidebarKicker: {
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 10,
-    letterSpacing: 1.8,
-    color: '#E9C46A',
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 9,
+    letterSpacing: '0.28em',
+    color: CYAN,
     textTransform: 'uppercase',
   },
   sidebarTitle: {
-    fontFamily: '"Instrument Serif", serif',
-    fontSize: 28,
-    lineHeight: 1.1,
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 20,
+    fontWeight: 700,
+    lineHeight: 1.15,
     margin: 0,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: '#FFFFFF',
   },
   sidebarLead: {
     margin: 0,
-    fontSize: 13,
+    fontSize: 14,
+    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
     lineHeight: 1.5,
-    color: 'rgba(244,236,220,0.6)',
+    color: TEXT_SOFT,
   },
   chapterList: {
     display: 'flex',
@@ -184,49 +196,54 @@ const styles = {
     alignItems: 'baseline',
     gap: 10,
     padding: '12px 14px',
-    border: '1px solid rgba(244,236,220,0.1)',
-    borderRadius: 8,
+    border: `1px solid rgba(0,229,204,0.12)`,
+    borderRadius: 4,
     transition: 'background 120ms ease, border-color 120ms ease',
   },
   chRowActive: {
-    background: 'rgba(231,111,81,0.16)',
-    borderColor: 'rgba(231,111,81,0.55)',
+    background: 'rgba(0,229,204,0.10)',
+    borderColor: 'rgba(0,229,204,0.55)',
   },
   chRowDone: {
-    background: 'rgba(148,210,189,0.06)',
-    borderColor: 'rgba(148,210,189,0.25)',
+    background: 'rgba(0,229,204,0.04)',
+    borderColor: 'rgba(0,229,204,0.20)',
   },
   chRowLocked: {
     background: 'transparent',
-    opacity: 0.45,
+    opacity: 0.40,
   },
   chNum: {
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 12,
-    letterSpacing: 1.2,
-    color: '#E9C46A',
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 11,
+    letterSpacing: '0.18em',
+    color: AMBER,
   },
   chTitle: {
-    fontFamily: '"Instrument Serif", serif',
-    fontSize: 17,
+    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
+    fontSize: 15,
+    fontWeight: 600,
     lineHeight: 1.2,
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
   },
   chState: {
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 9,
-    letterSpacing: 1.4,
-    color: 'rgba(244,236,220,0.55)',
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    letterSpacing: '0.2em',
+    color: TEXT_SOFT,
   },
   sidebarFooter: {
     marginTop: 'auto',
     paddingTop: 18,
-    borderTop: '1px solid rgba(244,236,220,0.06)',
+    borderTop: `1px solid rgba(0,229,204,0.08)`,
   },
   footLine: {
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 10,
-    letterSpacing: 1,
-    color: 'rgba(244,236,220,0.4)',
-    lineHeight: 1.6,
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    letterSpacing: '0.15em',
+    color: 'rgba(200,216,240,0.4)',
+    lineHeight: 1.7,
+    textTransform: 'uppercase',
   },
 };

@@ -1,21 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 /**
- * HUD — overlays the Canvas with the Mission Water dashboard.
+ * HUD — Mission Water Game instrument panel overlay.
  *
- *   Top-left:   Chapter pill (CH 01 / CH 02 / CH 03)
- *   Top-center: Three stat widgets (Water Crisis, Investigation, Discoveries)
- *               styled to match hud_stat_widgets.png — cyan-glow card with
- *               icon tile + gradient progress bar + value readout.
- *   Top-right:  Earned discovery badges — Cleo's circular badge artwork.
- *   Bottom:     Narrative card + pill-shaped choice buttons styled to match
- *               hud_choice_buttons.png — NORMAL / HOVER / SELECTED.
- *   Council reveal phase: badges are presented inside the ornate gold frame
- *               (hud_badge_frame.png) as a celebratory award moment.
+ * R2-REVISED: Full NASA space game aesthetic redesign.
+ *   - Orbitron font for all HUD labels, chapter identifiers, stat readouts
+ *   - Rajdhani font for narrative text and choice buttons
+ *   - #070B14 deep space background, #00E5CC mission cyan, #FFB703 amber alerts
+ *   - Instrument panel stat cards with scanline texture + CRT glow
+ *   - Hardware-style choice buttons (squared, uppercase, letter-spaced)
+ *   - Circular NASA mission-patch badge frames
+ *   - Phase titles: ALL CAPS, cyan accent line above
  *
- * Keyboard:
- *   ↑/↓/←/→  move focus across choice buttons
- *   Enter    commit focused choice
+ * Layout:
+ *   Top-left:   Mission chapter identifier (MISSION — CH 01)
+ *   Top-center: Instrument stat panels (H2O LEVEL / INVESTIGATION / DISCOVERIES)
+ *   Top-right:  Earned discovery badges (circular mission-patch style)
+ *   Bottom:     Narrative debrief card + hardware control buttons
+ *   Council:    Framed award ceremony moment
  */
 
 const BADGE_ART = {
@@ -28,17 +30,16 @@ const BADGE_ART = {
 };
 
 const DISCOVERY_LABELS = {
-  groundwater_hydrology: 'Groundwater Hydrology',
-  environmental_chemistry: 'Environmental Chemistry',
-  climate_science: 'Climate Science',
-  water_security: 'Water Security',
-  mission_imperative: 'Mission Imperative',
-  pete_conrad_legacy: 'Pete Conrad Legacy',
-  // Legacy / branch-secondary IDs still rendered as text-only chips.
-  social_impact: 'Social Impact',
-  public_health: 'Public Health',
-  food_water_nexus: 'Food–Water Nexus',
-  lunar_water_connection: 'Lunar Water Connection',
+  groundwater_hydrology: 'GROUNDWATER HYDROLOGY',
+  environmental_chemistry: 'ENVIRONMENTAL CHEMISTRY',
+  climate_science: 'CLIMATE SCIENCE',
+  water_security: 'WATER SECURITY',
+  mission_imperative: 'MISSION IMPERATIVE',
+  pete_conrad_legacy: 'PETE CONRAD LEGACY',
+  social_impact: 'SOCIAL IMPACT',
+  public_health: 'PUBLIC HEALTH',
+  food_water_nexus: 'FOOD–WATER NEXUS',
+  lunar_water_connection: 'LUNAR WATER CONNECTION',
 };
 
 const BADGE_FRAME = '/mission-water/chapter-1/hud/hud_badge_frame.png';
@@ -49,7 +50,6 @@ export default function HUD({ phase, hud, onChoose }) {
   const btnsRef = useRef([]);
   const choices = (phase && phase.choices) || [];
 
-  // Reset focus to first choice on phase change.
   useEffect(() => {
     setFocusIdx(0);
     setHoverIdx(-1);
@@ -59,7 +59,6 @@ export default function HUD({ phase, hud, onChoose }) {
     return () => clearTimeout(t);
   }, [phase && phase.id]);
 
-  // Global key handler for arrow keys + Enter.
   useEffect(() => {
     if (choices.length === 0) return undefined;
     const onKey = (e) => {
@@ -95,24 +94,28 @@ export default function HUD({ phase, hud, onChoose }) {
 
   return (
     <div style={styles.root}>
-      {/* ── TOP BAR ─────────────────────────────────────────────── */}
+      {/* ── TOP INSTRUMENT BAR ──────────────────────────────────── */}
       <div style={styles.topBar}>
-        <ChapterPill chapter={phase.chapter} />
-        <StatRow hud={hud} />
-        <BadgeRow ids={hud.discovery_ids || []} />
+        <MissionIdent chapter={phase.chapter} />
+        <InstrumentRow hud={hud} />
+        <BadgeRack ids={hud.discovery_ids || []} />
       </div>
 
-      {/* ── COUNCIL FRAMED AWARD (mid-stage) ───────────────────── */}
+      {/* ── COUNCIL AWARD CEREMONY ──────────────────────────────── */}
       {isCouncil && (hud.discovery_ids || []).length > 0 && (
         <FramedAwards ids={hud.discovery_ids} />
       )}
 
-      {/* ── NARRATIVE + CHOICES ─────────────────────────────────── */}
+      {/* ── MISSION DEBRIEF + CHOICES ───────────────────────────── */}
       <div style={styles.bottom}>
-        <div style={styles.narrativeCard}>
+        <div style={styles.debriefCard}>
           {phase.title && (
-            <div style={styles.kicker}>
-              {hud.region ? `${hud.region.toUpperCase()} · ` : ''}{phase.title}
+            <div style={styles.objectiveHeader}>
+              <div style={styles.objectiveAccentLine} />
+              <div style={styles.objectiveKicker}>
+                {hud.region ? `${hud.region.toUpperCase()} SECTOR · ` : 'MISSION OBJECTIVE · '}
+                {phase.title.toUpperCase()}
+              </div>
             </div>
           )}
           <p style={styles.narrative}>{phase.narrative}</p>
@@ -121,11 +124,6 @@ export default function HUD({ phase, hud, onChoose }) {
               {choices.map((c, idx) => {
                 const isSelected = focusIdx === idx;
                 const isHover = hoverIdx === idx && !isSelected;
-                const btnStyle = {
-                  ...styles.choiceBtn,
-                  ...(isHover ? styles.choiceBtnHover : null),
-                  ...(isSelected ? styles.choiceBtnSelected : null),
-                };
                 return (
                   <button
                     key={c.id}
@@ -134,29 +132,32 @@ export default function HUD({ phase, hud, onChoose }) {
                     onFocus={() => setFocusIdx(idx)}
                     onMouseEnter={() => setHoverIdx(idx)}
                     onMouseLeave={() => setHoverIdx(-1)}
-                    style={btnStyle}
+                    style={{
+                      ...styles.choiceBtn,
+                      ...(isHover ? styles.choiceBtnHover : null),
+                      ...(isSelected ? styles.choiceBtnSelected : null),
+                    }}
                   >
-                    <span
-                      style={{
-                        ...styles.choiceDot,
-                        ...(isSelected ? styles.choiceDotSelected : null),
-                      }}
-                    />
-                    <span
-                      style={{
-                        ...styles.choiceText,
-                        ...(isSelected ? styles.choiceTextSelected : null),
-                      }}
-                    >
-                      {c.text}
+                    <span style={{
+                      ...styles.choiceIndicator,
+                      ...(isSelected ? styles.choiceIndicatorSelected : null),
+                    }}>
+                      {isSelected ? '▶' : '○'}
                     </span>
-                    {isSelected && <span style={styles.choiceCheck}>✓</span>}
+                    <span style={{
+                      ...styles.choiceText,
+                      ...(isSelected ? styles.choiceTextSelected : null),
+                      ...(isHover ? styles.choiceTextHover : null),
+                    }}>
+                      {c.text.toUpperCase()}
+                    </span>
+                    {isSelected && <span style={styles.choiceConfirm}>CONFIRM</span>}
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div style={styles.terminal}>End of chapter — more is coming.</div>
+            <div style={styles.terminal}>■ END OF CHAPTER — NEXT PHASE INCOMING</div>
           )}
         </div>
       </div>
@@ -166,101 +167,140 @@ export default function HUD({ phase, hud, onChoose }) {
 
 // ─── subcomponents ────────────────────────────────────────────────────────────
 
-function ChapterPill({ chapter }) {
+function MissionIdent({ chapter }) {
   const n = String(chapter || 1).padStart(2, '0');
   return (
-    <div style={styles.chapterPill}>
-      <span style={styles.chapterDot} />
-      <span style={styles.chapterLabel}>CH {n}</span>
-    </div>
-  );
-}
-
-function StatRow({ hud }) {
-  if (!hud) return null;
-  return (
-    <div style={styles.statRow}>
-      <StatCard
-        icon={<DropIcon />}
-        label="Water Crisis"
-        value={hud.water_crisis}
-        suffix="%"
-      />
-      <StatCard
-        icon={<MagnifyIcon />}
-        label="Investigation"
-        value={hud.investigation_progress}
-        suffix="%"
-      />
-      <StatCard
-        icon={<BadgeIcon />}
-        label="Discoveries"
-        value={Math.min(100, ((hud.discoveries || 0) / 3) * 100)}
-        displayValue={hud.discoveries || 0}
-        suffix=""
-      />
-    </div>
-  );
-}
-
-function StatCard({ icon, label, value, suffix = '%', displayValue }) {
-  const pct = Math.max(0, Math.min(100, Number(value) || 0));
-  const shown = displayValue != null ? displayValue : Math.round(pct);
-  return (
-    <div style={styles.statCard}>
-      <div style={styles.statIconTile}>{icon}</div>
-      <div style={styles.statBody}>
-        <div style={styles.statLabel}>{label}</div>
-        <div style={styles.statBarRow}>
-          <div style={styles.statBarTrack}>
-            <div style={{ ...styles.statBarFill, width: `${pct}%` }} />
-          </div>
-          <div style={styles.statBarValue}>
-            {shown}
-            {suffix}
-          </div>
+    <div style={styles.missionIdent}>
+      <div style={styles.identBadge}>
+        <div style={styles.identTopLine}>MISSION WATER</div>
+        <div style={styles.identChapter}>CH {n}</div>
+        <div style={styles.identStatus}>
+          <span style={styles.statusDot} />
+          ACTIVE
         </div>
       </div>
     </div>
   );
 }
 
-function BadgeRow({ ids }) {
-  if (!ids || ids.length === 0) {
-    return (
-      <div style={styles.badgeRow}>
-        <div style={styles.badgeEmpty}>NO DISCOVERIES YET</div>
-      </div>
-    );
-  }
+function InstrumentRow({ hud }) {
+  if (!hud) return null;
   return (
-    <div style={styles.badgeRow}>
-      {ids.map((id) => {
-        const art = BADGE_ART[id];
-        const label = DISCOVERY_LABELS[id] || id;
-        return (
-          <div key={id} style={styles.badgeTile} title={label}>
-            {art ? (
-              <img src={art} alt={label} style={styles.badgeImg} />
-            ) : (
-              <div style={styles.badgeTextOnly}>{label}</div>
-            )}
-          </div>
-        );
-      })}
+    <div style={styles.instrumentRow}>
+      <InstrumentPanel
+        label="H2O LEVEL"
+        value={hud.water_crisis}
+        suffix="%"
+        icon={<WaterIcon />}
+        dangerBelow={30}
+        warningBelow={60}
+      />
+      <InstrumentPanel
+        label="INVESTIGATION"
+        value={hud.investigation_progress}
+        suffix="%"
+        icon={<ScanIcon />}
+      />
+      <InstrumentPanel
+        label="DISCOVERIES"
+        value={Math.min(100, ((hud.discoveries || 0) / 3) * 100)}
+        displayValue={hud.discoveries || 0}
+        suffix=""
+        icon={<BadgeSystemIcon />}
+        rawDisplay
+      />
+    </div>
+  );
+}
+
+function InstrumentPanel({ label, value, suffix = '%', displayValue, icon, dangerBelow, warningBelow, rawDisplay }) {
+  const pct = Math.max(0, Math.min(100, Number(value) || 0));
+  const shown = displayValue != null ? displayValue : Math.round(pct);
+  const isDanger = dangerBelow != null && pct < dangerBelow;
+  const isWarning = warningBelow != null && pct < warningBelow && !isDanger;
+  const barColor = isDanger ? '#FF4444' : isWarning ? '#FFB703' : CYAN;
+  const barGlow = isDanger
+    ? '0 0 10px rgba(255,68,68,0.6)'
+    : isWarning
+    ? '0 0 10px rgba(255,183,3,0.6)'
+    : `0 0 10px rgba(0,229,204,0.5)`;
+
+  return (
+    <div style={{
+      ...styles.instrPanel,
+      borderColor: isDanger ? 'rgba(255,68,68,0.6)' : isWarning ? 'rgba(255,183,3,0.6)' : 'rgba(0,229,204,0.35)',
+      boxShadow: isDanger
+        ? '0 0 16px rgba(255,68,68,0.2), inset 0 0 20px rgba(255,68,68,0.04)'
+        : isWarning
+        ? '0 0 16px rgba(255,183,3,0.2), inset 0 0 20px rgba(255,183,3,0.04)'
+        : '0 0 16px rgba(0,229,204,0.1), inset 0 0 20px rgba(0,229,204,0.04)',
+    }}>
+      {/* Scanline overlay (pure CSS) */}
+      <div style={styles.scanlineOverlay} />
+      <div style={styles.instrIconBox}>{icon}</div>
+      <div style={styles.instrBody}>
+        <div style={styles.instrLabel}>{label}</div>
+        <div style={styles.instrBarTrack}>
+          <div style={{
+            ...styles.instrBarFill,
+            width: `${pct}%`,
+            background: `linear-gradient(90deg, ${barColor}88 0%, ${barColor} 100%)`,
+            boxShadow: barGlow,
+          }} />
+        </div>
+        <div style={{
+          ...styles.instrReadout,
+          color: isDanger ? '#FF4444' : isWarning ? '#FFB703' : CYAN,
+          textShadow: isDanger ? '0 0 8px rgba(255,68,68,0.8)' : isWarning ? '0 0 8px rgba(255,183,3,0.8)' : `0 0 8px rgba(0,229,204,0.8)`,
+        }}>
+          {rawDisplay ? `${shown} / 3` : `${shown}${suffix}`}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BadgeRack({ ids }) {
+  return (
+    <div style={styles.badgeRack}>
+      {ids.length === 0 ? (
+        <div style={styles.badgeRackEmpty}>
+          <span style={styles.badgeEmptyLine}>NO BADGES</span>
+          <span style={styles.badgeEmptyLine}>ACQUIRED</span>
+        </div>
+      ) : (
+        ids.map((id) => {
+          const art = BADGE_ART[id];
+          const label = DISCOVERY_LABELS[id] || id;
+          return (
+            <div key={id} style={styles.badgePatch} title={label}>
+              {/* Outer ring — mission patch border */}
+              <div style={styles.badgePatchRing}>
+                {/* Inner glow ring */}
+                <div style={styles.badgePatchInner}>
+                  {art ? (
+                    <img src={art} alt={label} style={styles.badgePatchImg} />
+                  ) : (
+                    <div style={styles.badgePatchText}>{label.slice(0, 2)}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })
+      )}
     </div>
   );
 }
 
 function FramedAwards({ ids }) {
-  // Show framed awards for badges that have artwork (filters out legacy
-  // text-only discovery ids like social_impact, public_health, etc.).
   const awarded = ids.filter((id) => BADGE_ART[id]);
   if (awarded.length === 0) return null;
   return (
     <div style={styles.awardRow}>
       {awarded.map((id) => (
         <div key={id} style={styles.awardSlot}>
+          <div style={styles.awardGlow} />
           <img src={BADGE_FRAME} alt="" style={styles.awardFrame} />
           <img src={BADGE_ART[id]} alt="" style={styles.awardBadge} />
           <div style={styles.awardLabel}>{DISCOVERY_LABELS[id] || id}</div>
@@ -270,64 +310,72 @@ function FramedAwards({ ids }) {
   );
 }
 
-// ─── inline SVG icons (match the cyan reference aesthetic) ────────────────────
+// ─── inline SVG icons ─────────────────────────────────────────────────────────
 
-function DropIcon() {
+function WaterIcon() {
   return (
-    <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden>
-      <defs>
-        <linearGradient id="dropG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#7FE9FF" />
-          <stop offset="100%" stopColor="#2BC0E4" />
-        </linearGradient>
-      </defs>
+    <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden>
       <path
-        d="M16 4 C 22 12, 26 17, 26 22 A 10 10 0 0 1 6 22 C 6 17, 10 12, 16 4 Z"
-        fill="url(#dropG)"
-        stroke="#9EF1FF"
-        strokeWidth="1"
-      />
-      <ellipse cx="16" cy="27" rx="8" ry="1.6" fill="none" stroke="#9EF1FF" strokeWidth="1" opacity="0.6" />
-    </svg>
-  );
-}
-
-function MagnifyIcon() {
-  return (
-    <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden>
-      <circle cx="13" cy="13" r="7.5" fill="none" stroke="#7FE9FF" strokeWidth="2" />
-      <path d="M19 19 L26 26" stroke="#7FE9FF" strokeWidth="2.4" strokeLinecap="round" />
-      <path d="M9 14 L12 11 L15 14 L19 9" fill="none" stroke="#2BC0E4" strokeWidth="1.4" />
-    </svg>
-  );
-}
-
-function BadgeIcon() {
-  return (
-    <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden>
-      <path
-        d="M16 4 L26 9 L26 17 A10 10 0 0 1 16 27 A10 10 0 0 1 6 17 L6 9 Z"
+        d="M16 4 C22 12 27 18 27 23 A11 11 0 0 1 5 23 C5 18 10 12 16 4Z"
         fill="none"
-        stroke="#7FE9FF"
-        strokeWidth="2"
+        stroke={CYAN}
+        strokeWidth="1.5"
       />
       <path
-        d="M16 9 L17.8 13 L22 13.6 L18.8 16.4 L19.6 20.4 L16 18.4 L12.4 20.4 L13.2 16.4 L10 13.6 L14.2 13 Z"
-        fill="#2BC0E4"
-        stroke="#9EF1FF"
-        strokeWidth="0.6"
+        d="M16 8 C20 14 23 18 23 22 A7 7 0 0 1 9 22 C9 18 12 14 16 8Z"
+        fill={CYAN}
+        opacity="0.25"
       />
+      <line x1="10" y1="22" x2="22" y2="22" stroke={CYAN} strokeWidth="1" opacity="0.5" />
     </svg>
   );
 }
+
+function ScanIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden>
+      <rect x="6" y="6" width="20" height="20" rx="2" fill="none" stroke={CYAN} strokeWidth="1.5" />
+      <circle cx="16" cy="16" r="5" fill="none" stroke={CYAN} strokeWidth="1.2" />
+      <line x1="16" y1="6" x2="16" y2="10" stroke={CYAN} strokeWidth="1.5" />
+      <line x1="16" y1="22" x2="16" y2="26" stroke={CYAN} strokeWidth="1.5" />
+      <line x1="6" y1="16" x2="10" y2="16" stroke={CYAN} strokeWidth="1.5" />
+      <line x1="22" y1="16" x2="26" y2="16" stroke={CYAN} strokeWidth="1.5" />
+      <rect x="14" y="14" width="4" height="4" fill={CYAN} opacity="0.4" />
+    </svg>
+  );
+}
+
+function BadgeSystemIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden>
+      <polygon
+        points="16,4 28,10 28,22 16,28 4,22 4,10"
+        fill="none"
+        stroke={CYAN}
+        strokeWidth="1.5"
+      />
+      <polygon
+        points="16,10 21,13 21,19 16,22 11,19 11,13"
+        fill={CYAN}
+        opacity="0.2"
+        stroke={CYAN}
+        strokeWidth="0.8"
+      />
+      <circle cx="16" cy="16" r="2.5" fill={CYAN} opacity="0.7" />
+    </svg>
+  );
+}
+
+// ─── color constants ──────────────────────────────────────────────────────────
+
+const CYAN = '#00E5CC';
+const AMBER = '#FFB703';
+const SPACE_DARK = '#070B14';
+const PANEL_BG = '#0A1628';
+const WHITE = '#FFFFFF';
+const TEXT_SOFT = '#C8D8F0';
 
 // ─── styles ───────────────────────────────────────────────────────────────────
-
-const CYAN = '#7FE9FF';
-const CYAN_DEEP = '#2BC0E4';
-const NAVY = '#0B132B';
-const NAVY_DEEP = '#070C1C';
-const BONE = '#F4ECDC';
 
 const styles = {
   root: {
@@ -337,170 +385,242 @@ const styles = {
     flexDirection: 'column',
     justifyContent: 'space-between',
     pointerEvents: 'none',
-    fontFamily: '"Hanken Grotesk", system-ui, sans-serif',
-    color: BONE,
+    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
+    color: WHITE,
   },
 
-  // ── top bar ────
+  // ── top instrument bar ────
   topBar: {
     pointerEvents: 'auto',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    gap: 16,
-    padding: '18px 22px',
+    gap: 12,
+    padding: '16px 20px',
     background:
-      'linear-gradient(to bottom, rgba(7,12,28,0.72) 0%, rgba(7,12,28,0) 100%)',
+      'linear-gradient(to bottom, rgba(7,11,20,0.88) 0%, rgba(7,11,20,0) 100%)',
   },
 
-  // ── chapter pill ────
-  chapterPill: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-    padding: '6px 14px',
-    borderRadius: 999,
-    background: 'rgba(127,233,255,0.08)',
-    border: `1px solid rgba(127,233,255,0.4)`,
-    boxShadow: '0 0 10px rgba(127,233,255,0.25)',
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 11,
-    letterSpacing: 1.6,
+  // ── mission ident (top-left) ────
+  missionIdent: {
+    flexShrink: 0,
+  },
+  identBadge: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+    padding: '8px 14px',
+    background: 'rgba(10,22,40,0.85)',
+    border: `1px solid rgba(0,229,204,0.4)`,
+    boxShadow: `0 0 12px rgba(0,229,204,0.15), inset 0 0 12px rgba(0,229,204,0.05)`,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  identTopLine: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 7,
+    fontWeight: 600,
+    letterSpacing: '0.3em',
     color: CYAN,
-    height: 'fit-content',
+    textTransform: 'uppercase',
+    opacity: 0.7,
   },
-  chapterDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
+  identChapter: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 22,
+    fontWeight: 800,
+    letterSpacing: '0.08em',
+    color: WHITE,
+    lineHeight: 1,
+  },
+  identStatus: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 7,
+    fontWeight: 500,
+    letterSpacing: '0.25em',
+    color: CYAN,
+    marginTop: 2,
+  },
+  statusDot: {
+    width: 5,
+    height: 5,
+    borderRadius: '50%',
     background: CYAN,
-    boxShadow: '0 0 8px rgba(127,233,255,0.9)',
+    boxShadow: `0 0 6px ${CYAN}`,
+    animation: 'none',
   },
-  chapterLabel: { fontWeight: 700 },
 
-  // ── stat row ────
-  statRow: {
+  // ── instrument panels (top-center) ────
+  instrumentRow: {
     display: 'flex',
     justifyContent: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
+    gap: 10,
     flex: 1,
+    flexWrap: 'wrap',
   },
-  statCard: {
+  instrPanel: {
+    position: 'relative',
     display: 'flex',
     alignItems: 'center',
-    gap: 10,
-    padding: '8px 12px',
-    minWidth: 0,
-    width: 200,
-    borderRadius: 14,
-    background:
-      'linear-gradient(135deg, rgba(11,30,55,0.86) 0%, rgba(7,18,38,0.86) 100%)',
-    border: `1px solid rgba(127,233,255,0.55)`,
-    boxShadow:
-      '0 0 14px rgba(127,233,255,0.22), inset 0 0 18px rgba(127,233,255,0.06)',
+    gap: 8,
+    padding: '7px 12px',
+    width: 190,
+    minWidth: 160,
+    background: `linear-gradient(135deg, rgba(10,22,40,0.92) 0%, rgba(7,14,28,0.92) 100%)`,
+    border: `1px solid rgba(0,229,204,0.35)`,
+    borderRadius: 0,
+    overflow: 'hidden',
   },
-  statIconTile: {
-    width: 36,
-    height: 36,
+  // CSS scanline overlay — pure CSS, no image
+  scanlineOverlay: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 3px)',
+    zIndex: 1,
+  },
+  instrIconBox: {
+    width: 32,
+    height: 32,
     flexShrink: 0,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
-    background: 'rgba(8,18,38,0.95)',
-    border: `1px solid rgba(127,233,255,0.55)`,
-    boxShadow: 'inset 0 0 10px rgba(127,233,255,0.18)',
+    background: 'rgba(5,12,25,0.9)',
+    border: `1px solid rgba(0,229,204,0.3)`,
+    position: 'relative',
+    zIndex: 2,
   },
-  statBody: { flex: 1, display: 'flex', flexDirection: 'column', gap: 4 },
-  statLabel: {
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 9,
-    letterSpacing: 1.6,
-    color: 'rgba(244,236,220,0.62)',
+  instrBody: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    minWidth: 0,
+    position: 'relative',
+    zIndex: 2,
+  },
+  instrLabel: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 7,
+    fontWeight: 600,
+    letterSpacing: '0.22em',
+    color: 'rgba(200,216,240,0.7)',
     textTransform: 'uppercase',
   },
-  statBarRow: { display: 'flex', alignItems: 'center', gap: 8 },
-  statBarTrack: {
-    flex: 1,
-    height: 14,
-    borderRadius: 999,
-    background: 'rgba(5,12,28,0.95)',
-    border: '1px solid rgba(127,233,255,0.45)',
+  instrBarTrack: {
+    height: 8,
+    background: 'rgba(0,0,0,0.7)',
+    border: `1px solid rgba(0,229,204,0.2)`,
     overflow: 'hidden',
     position: 'relative',
   },
-  statBarFill: {
+  instrBarFill: {
     height: '100%',
-    background:
-      'linear-gradient(90deg, #2563D9 0%, #2BC0E4 55%, #6EE7B7 100%)',
-    boxShadow: '0 0 10px rgba(127,233,255,0.55)',
-    transition: 'width 320ms cubic-bezier(.2,.8,.2,1)',
+    transition: 'width 400ms cubic-bezier(.2,.8,.2,1)',
   },
-  statBarValue: {
-    minWidth: 38,
-    textAlign: 'right',
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 13,
+  instrReadout: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 14,
     fontWeight: 700,
-    color: BONE,
-    letterSpacing: 0.5,
+    letterSpacing: '0.06em',
+    lineHeight: 1,
+    color: CYAN,
+    textAlign: 'right',
   },
 
-  // ── badge row (top-right earned) ────
-  badgeRow: {
+  // ── badge rack (top-right) ────
+  badgeRack: {
     display: 'flex',
+    gap: 8,
     flexWrap: 'wrap',
     justifyContent: 'flex-end',
-    gap: 8,
-    maxWidth: 200,
+    maxWidth: 180,
+    flexShrink: 0,
+    alignItems: 'flex-start',
   },
-  badgeTile: {
-    width: 46,
-    height: 46,
-    borderRadius: 999,
-    overflow: 'hidden',
-    background: 'rgba(7,12,28,0.6)',
-    border: '1px solid rgba(127,233,255,0.5)',
-    boxShadow: '0 0 10px rgba(127,233,255,0.35)',
+  badgeRackEmpty: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 2,
+    padding: '6px 0',
+  },
+  badgeEmptyLine: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 7,
+    letterSpacing: '0.2em',
+    color: 'rgba(200,216,240,0.3)',
+  },
+  badgePatch: {
+    width: 52,
+    height: 52,
+    flexShrink: 0,
+  },
+  badgePatchRing: {
+    width: '100%',
+    height: '100%',
+    borderRadius: '50%',
+    background: `conic-gradient(${AMBER} 0deg, #A07800 60deg, ${AMBER} 120deg, #A07800 180deg, ${AMBER} 240deg, #A07800 300deg, ${AMBER} 360deg)`,
+    padding: 3,
+    boxShadow: `0 0 14px rgba(255,183,3,0.45), inset 0 0 8px rgba(0,0,0,0.6)`,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  badgeTextOnly: {
-    padding: '2px 6px',
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 8,
-    letterSpacing: 0.4,
-    color: '#C5E5D6',
-    textAlign: 'center',
-    lineHeight: 1.1,
+  badgePatchInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: '50%',
+    background: `rgba(7,11,20,0.95)`,
+    border: `1px solid rgba(0,229,204,0.3)`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    boxShadow: `inset 0 0 10px rgba(0,229,204,0.15)`,
   },
-  badgeEmpty: {
-    fontFamily: '"JetBrains Mono", monospace',
+  badgePatchImg: {
+    width: '90%',
+    height: '90%',
+    objectFit: 'cover',
+    borderRadius: '50%',
+  },
+  badgePatchText: {
+    fontFamily: '"Orbitron", monospace',
     fontSize: 9,
-    letterSpacing: 1.6,
-    color: 'rgba(244,236,220,0.4)',
+    fontWeight: 700,
+    color: CYAN,
+    textAlign: 'center',
+    letterSpacing: '0.05em',
   },
 
-  // ── council framed awards ────
+  // ── council framed award ceremony ────
   awardRow: {
     pointerEvents: 'none',
     display: 'flex',
     justifyContent: 'center',
-    gap: 30,
-    padding: '0 28px',
-    marginTop: -20,
+    gap: 24,
+    padding: '0 24px',
+    marginTop: -16,
   },
   awardSlot: {
     position: 'relative',
-    width: 180,
-    height: 200,
+    width: 168,
+    height: 188,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    filter: 'drop-shadow(0 0 14px rgba(127,233,255,0.4))',
+  },
+  awardGlow: {
+    position: 'absolute',
+    inset: -12,
+    borderRadius: '50%',
+    background: `radial-gradient(circle, rgba(255,183,3,0.25) 0%, transparent 70%)`,
+    pointerEvents: 'none',
   },
   awardFrame: {
     position: 'absolute',
@@ -508,7 +628,6 @@ const styles = {
     width: '100%',
     height: '100%',
     objectFit: 'contain',
-    pointerEvents: 'none',
   },
   awardBadge: {
     position: 'absolute',
@@ -517,135 +636,160 @@ const styles = {
     width: '60%',
     height: '60%',
     objectFit: 'contain',
-    borderRadius: 999,
+    borderRadius: '50%',
   },
   awardLabel: {
     position: 'absolute',
     bottom: '6%',
-    left: '12%',
-    right: '12%',
+    left: '10%',
+    right: '10%',
     textAlign: 'center',
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 9,
-    letterSpacing: 1.4,
-    color: '#E9C46A',
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    fontWeight: 600,
+    letterSpacing: '0.15em',
+    color: AMBER,
     textTransform: 'uppercase',
-    textShadow: '0 1px 0 rgba(0,0,0,0.6)',
+    textShadow: '0 1px 3px rgba(0,0,0,0.8)',
   },
 
-  // ── bottom narrative card ────
+  // ── bottom debrief card ────
   bottom: {
     pointerEvents: 'auto',
-    padding: '0 28px 28px',
+    padding: '0 24px 24px',
   },
-  narrativeCard: {
-    background: 'rgba(7,12,28,0.82)',
-    border: '1px solid rgba(127,233,255,0.28)',
-    borderRadius: 14,
-    padding: '22px 26px 22px',
-    maxWidth: 760,
+  debriefCard: {
+    background: 'rgba(7,11,20,0.88)',
+    border: `1px solid rgba(0,229,204,0.22)`,
+    borderRadius: 0,
+    padding: '18px 22px 18px',
+    maxWidth: 780,
     margin: '0 auto',
-    backdropFilter: 'blur(6px)',
-    WebkitBackdropFilter: 'blur(6px)',
-    boxShadow: '0 0 24px rgba(127,233,255,0.08)',
-  },
-  kicker: {
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 11,
-    letterSpacing: 1.8,
-    color: CYAN,
-    marginBottom: 10,
-  },
-  narrative: {
-    fontFamily: '"Instrument Serif", serif',
-    fontSize: 22,
-    lineHeight: 1.4,
-    margin: 0,
-    color: BONE,
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    boxShadow: '0 0 28px rgba(0,229,204,0.06), inset 0 0 24px rgba(0,229,204,0.03)',
+    position: 'relative',
+    overflow: 'hidden',
   },
 
-  // ── choice buttons (pill, cyan-glow, three states) ────
+  // Phase title — ALL CAPS, cyan accent line above
+  objectiveHeader: {
+    marginBottom: 10,
+  },
+  objectiveAccentLine: {
+    height: 2,
+    width: 36,
+    background: CYAN,
+    boxShadow: `0 0 8px ${CYAN}`,
+    marginBottom: 6,
+  },
+  objectiveKicker: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: '0.2em',
+    color: CYAN,
+    textTransform: 'uppercase',
+    textShadow: `0 0 8px rgba(0,229,204,0.5)`,
+  },
+
+  // Narrative text — Rajdhani, debrief style
+  narrative: {
+    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
+    fontSize: 19,
+    fontWeight: 500,
+    lineHeight: 1.45,
+    letterSpacing: '0.01em',
+    margin: 0,
+    color: TEXT_SOFT,
+  },
+
+  // ── choice buttons — hardware control panel style ────
   choices: {
-    marginTop: 18,
+    marginTop: 16,
     display: 'flex',
     flexDirection: 'column',
-    gap: 10,
+    gap: 8,
   },
-  // NORMAL — dark navy interior, cyan border + dot.
+  // NORMAL — dark panel interior, squared border, cool text
   choiceBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: 14,
+    gap: 12,
     width: '100%',
-    padding: '12px 18px',
-    borderRadius: 999,
-    border: `1.5px solid ${CYAN}`,
-    background: 'linear-gradient(180deg, #0F1B3A 0%, #0A1226 100%)',
-    color: CYAN,
-    fontFamily: '"Hanken Grotesk", system-ui, sans-serif',
-    fontSize: 15,
+    padding: '10px 16px',
+    borderRadius: 4,
+    border: `1.5px solid #1A2A4A`,
+    background: `linear-gradient(180deg, rgba(26,42,74,0.85) 0%, rgba(10,18,40,0.85) 100%)`,
+    color: TEXT_SOFT,
+    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
+    fontSize: 13,
     fontWeight: 600,
-    letterSpacing: 0.4,
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase',
     textAlign: 'left',
     cursor: 'pointer',
     outline: 'none',
-    boxShadow:
-      '0 0 12px rgba(127,233,255,0.28), inset 0 0 14px rgba(127,233,255,0.06)',
-    transition:
-      'box-shadow 140ms ease, background 140ms ease, color 140ms ease, border-color 140ms ease, transform 140ms ease',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
+    transition: 'all 120ms ease',
+    position: 'relative',
   },
-  // HOVER — brighter aqua background, stronger glow.
+  // HOVER — mission cyan border + subtle glow
   choiceBtnHover: {
-    background:
-      'linear-gradient(180deg, rgba(80,200,235,0.34) 0%, rgba(43,192,228,0.18) 100%)',
-    boxShadow:
-      '0 0 18px rgba(127,233,255,0.45), inset 0 0 18px rgba(127,233,255,0.18)',
-    transform: 'translateY(-1px)',
+    border: `1.5px solid #1A90FF`,
+    background: `linear-gradient(180deg, rgba(26,144,255,0.15) 0%, rgba(10,60,140,0.15) 100%)`,
+    boxShadow: `0 0 14px rgba(26,144,255,0.3), inset 0 0 10px rgba(26,144,255,0.08)`,
+    color: WHITE,
   },
-  // SELECTED — solid cyan fill, dark bold text, checkmark visible.
+  // SELECTED — mission cyan border + strong glow
   choiceBtnSelected: {
-    background: 'linear-gradient(180deg, #9EF1FF 0%, #5DDDF7 100%)',
-    color: '#0A1226',
-    borderColor: '#9EF1FF',
-    boxShadow:
-      '0 0 22px rgba(158,241,255,0.65), inset 0 0 14px rgba(255,255,255,0.4)',
+    border: `1.5px solid ${CYAN}`,
+    background: `linear-gradient(180deg, rgba(0,229,204,0.12) 0%, rgba(0,100,90,0.12) 100%)`,
+    boxShadow: `0 0 20px rgba(0,229,204,0.35), inset 0 0 14px rgba(0,229,204,0.08)`,
+    color: WHITE,
   },
-  choiceDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 999,
-    background: 'transparent',
-    border: `2px solid ${CYAN}`,
-    boxShadow: `0 0 8px rgba(127,233,255,0.55)`,
+  choiceIndicator: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    color: 'rgba(200,216,240,0.5)',
     flexShrink: 0,
+    width: 14,
+    textAlign: 'center',
   },
-  choiceDotSelected: {
-    background: '#0A1226',
-    border: '2px solid #0A1226',
-    boxShadow: '0 0 8px rgba(10,18,38,0.55)',
+  choiceIndicatorSelected: {
+    color: CYAN,
+    textShadow: `0 0 6px ${CYAN}`,
   },
   choiceText: {
     flex: 1,
-    color: CYAN,
-    textShadow: '0 0 6px rgba(127,233,255,0.35)',
+    color: TEXT_SOFT,
+  },
+  choiceTextHover: {
+    color: WHITE,
   },
   choiceTextSelected: {
-    color: '#0A1226',
-    textShadow: 'none',
+    color: WHITE,
+    textShadow: `0 0 8px rgba(0,229,204,0.4)`,
+  },
+  choiceConfirm: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 7,
     fontWeight: 700,
+    letterSpacing: '0.18em',
+    color: CYAN,
+    textShadow: `0 0 6px ${CYAN}`,
+    flexShrink: 0,
+    border: `1px solid rgba(0,229,204,0.4)`,
+    padding: '2px 6px',
   },
-  choiceCheck: {
-    fontSize: 18,
-    fontWeight: 800,
-    color: '#0A1226',
-    marginLeft: 8,
-  },
+
   terminal: {
-    marginTop: 16,
-    fontFamily: '"JetBrains Mono", monospace',
-    fontSize: 11,
-    letterSpacing: 1.4,
-    color: 'rgba(244,236,220,0.55)',
+    marginTop: 14,
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 9,
+    fontWeight: 600,
+    letterSpacing: '0.18em',
+    color: 'rgba(200,216,240,0.45)',
     textTransform: 'uppercase',
   },
 };
