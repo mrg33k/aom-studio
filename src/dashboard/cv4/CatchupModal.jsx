@@ -83,7 +83,6 @@ function ConfettiPiece({ index }) {
 // ── Notification Card ─────────────────────────────────────────────────────────
 
 function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, onOpenRoom }) {
-  const [expanded, setExpanded] = useState(notif.messagePreview.length > 200)
   const [inputVal, setInputVal] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [selectedChip, setSelectedChip] = useState(null)
@@ -91,6 +90,8 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
   // notification, so the user reads it as a thread instead of a cold one-liner.
   const [contextMsgs, setContextMsgs] = useState(null)  // null=loading, []=none, [..]=loaded
   const inputRef = useRef(null)
+  // R6 — ref for the unified thread container so we can scroll to bottom
+  const threadRef = useRef(null)
 
   // Fetch context whenever a new notification mounts.
   useEffect(() => {
@@ -102,6 +103,14 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
       .catch(() => { if (!cancelled) setContextMsgs([]) })
     return () => { cancelled = true }
   }, [notif?.id, onLoadContext])
+
+  // R6 — auto-scroll the thread to the bottom so the unread notification
+  // is visible on card mount and again after context messages load in.
+  useEffect(() => {
+    if (threadRef.current) {
+      threadRef.current.scrollTop = threadRef.current.scrollHeight
+    }
+  }, [contextMsgs])
 
   const badgeStyle = BADGE_COLORS[notif.badgeType] || BADGE_COLORS.message
 
@@ -193,12 +202,13 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
         </div>
       </div>
 
-      {/* R3 — context messages from the same room that came BEFORE the unread
-          one. Rendered as a quiet thread above the highlighted preview so the
-          user can see what the agent is replying to instead of reading a cold
-          one-liner. Hidden until loaded; empty when there are no prior msgs. */}
-      {contextMsgs && contextMsgs.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {/* R6 — Unified thread: earlier context + unread notification as the
+          final bubble. One scrollable container so the user reads the full
+          conversation in flow. The unread message is always last and
+          highlighted with an accent border so it stands out without being
+          separated from its context. */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {contextMsgs && contextMsgs.length > 0 && (
           <div style={{
             fontSize: 9, fontFamily: "'JetBrains Mono', monospace",
             color: C.muted, textTransform: 'uppercase', letterSpacing: '0.10em',
@@ -206,118 +216,113 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
           }}>
             Earlier in this thread
           </div>
-          {/* R5 — scrollable context so user can read back the full conversation */}
-          <div style={{
-            maxHeight: 220,
+        )}
+        <div
+          ref={threadRef}
+          style={{
+            maxHeight: 300,
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
             gap: 6,
             paddingRight: 2,
-          }}>
-            {contextMsgs.map((m) => {
-              const fromUser = m.role === 'user'
-              // R5 — resolve image URL from single or multi-attachment shapes
-              const imgUrl = m.attachment?.url || (m.attachments?.[0]?.url) || null
-              return (
-                <div key={m.id} style={{
-                  display: 'flex',
-                  justifyContent: fromUser ? 'flex-end' : 'flex-start',
+          }}
+        >
+          {/* Earlier context messages */}
+          {contextMsgs && contextMsgs.map((m) => {
+            const fromUser = m.role === 'user'
+            const imgUrl = m.attachment?.url || (m.attachments?.[0]?.url) || null
+            return (
+              <div key={m.id} style={{
+                display: 'flex',
+                justifyContent: fromUser ? 'flex-end' : 'flex-start',
+              }}>
+                <div style={{
+                  maxWidth: '88%',
+                  background: fromUser ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${fromUser ? 'rgba(59,130,246,0.14)' : C.border}`,
+                  borderRadius: 8,
+                  padding: '8px 11px',
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  color: C.muted,
+                  fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
                 }}>
-                  <div style={{
-                    maxWidth: '88%',
-                    background: fromUser ? 'rgba(59,130,246,0.06)' : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${fromUser ? 'rgba(59,130,246,0.14)' : C.border}`,
-                    borderRadius: 8,
-                    padding: '8px 11px',
-                    fontSize: 12,
-                    lineHeight: 1.5,
-                    color: C.muted,
-                    fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
+                  <span style={{
+                    display: 'block',
+                    fontSize: 10,
+                    color: C.dim || C.muted,
+                    marginBottom: 2,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.02em',
                   }}>
-                    <span style={{
-                      display: 'block',
-                      fontSize: 10,
-                      color: C.dim || C.muted,
-                      marginBottom: 2,
-                      fontFamily: "'JetBrains Mono', monospace",
-                      letterSpacing: '0.02em',
-                    }}>
-                      {m.senderName}
-                    </span>
-                    {/* R5 — render image attachments in context bubbles */}
-                    {imgUrl && (
-                      <img
-                        src={imgUrl}
-                        alt="attachment"
-                        style={{
-                          display: 'block',
-                          maxWidth: '100%',
-                          maxHeight: 180,
-                          borderRadius: 6,
-                          marginBottom: m.text ? 6 : 0,
-                          objectFit: 'contain',
-                        }}
-                      />
-                    )}
-                    {m.text}
-                  </div>
+                    {m.senderName}
+                  </span>
+                  {imgUrl && (
+                    <img
+                      src={imgUrl}
+                      alt="attachment"
+                      style={{
+                        display: 'block',
+                        maxWidth: '100%',
+                        maxHeight: 180,
+                        borderRadius: 6,
+                        marginBottom: m.text ? 6 : 0,
+                        objectFit: 'contain',
+                      }}
+                    />
+                  )}
+                  {m.text}
                 </div>
-              )
-            })}
+              </div>
+            )
+          })}
+
+          {/* The unread notification — last bubble, styled like other agent messages (no accent) */}
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{
+              maxWidth: '88%',
+              background: 'rgba(255,255,255,0.03)',
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              padding: '8px 11px',
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: C.muted,
+              fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+            }}>
+              <span style={{
+                display: 'block',
+                fontSize: 10,
+                color: C.dim || C.muted,
+                marginBottom: 2,
+                fontFamily: "'JetBrains Mono', monospace",
+                letterSpacing: '0.02em',
+              }}>
+                {notif.senderName}
+              </span>
+              {(notif.attachment?.url || notif.attachments?.[0]?.url) && (
+                <img
+                  src={notif.attachment?.url || notif.attachments?.[0]?.url}
+                  alt="attachment"
+                  style={{
+                    display: 'block',
+                    maxWidth: '100%',
+                    maxHeight: 180,
+                    borderRadius: 6,
+                    marginBottom: notif.messagePreview ? 6 : 0,
+                    objectFit: 'contain',
+                  }}
+                />
+              )}
+              {notif.messagePreview}
+            </div>
           </div>
         </div>
-      )}
-
-      {/* Message preview (the unread one — highlighted) */}
-      <div style={{
-        background: C.s1,
-        border: `1px solid ${C.border}`,
-        borderRadius: 8,
-        padding: '14px 16px',
-      }}>
-        {/* R5 — render image attachment on the notification itself */}
-        {(notif.attachment?.url || notif.attachments?.[0]?.url) && (
-          <img
-            src={notif.attachment?.url || notif.attachments?.[0]?.url}
-            alt="attachment"
-            style={{
-              display: 'block',
-              maxWidth: '100%',
-              maxHeight: 220,
-              borderRadius: 6,
-              marginBottom: 10,
-              objectFit: 'contain',
-            }}
-          />
-        )}
-        <p style={{
-          fontSize: 14, color: C.text, lineHeight: 1.55, margin: 0,
-          fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
-          // R5 — switch to block display when expanded so -webkit-box
-          // clamping is fully removed (unset alone isn't reliable cross-browser)
-          display: expanded ? 'block' : '-webkit-box',
-          WebkitBoxOrient: 'vertical',
-          WebkitLineClamp: expanded ? 'unset' : 2,
-          overflow: expanded ? 'visible' : 'hidden',
-        }}>
-          {notif.messagePreview}
-        </p>
-        {notif.messagePreview.length > 160 && (
-          <button
-            onClick={() => setExpanded(e => !e)}
-            style={{
-              marginTop: 6, fontSize: 12, color: C.accent,
-              cursor: 'pointer', background: 'none', border: 'none',
-              padding: 0, fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
-              display: 'flex', alignItems: 'center', gap: 3,
-            }}
-          >
-            {expanded ? 'Show less ↑' : 'Show full message ↓'}
-          </button>
-        )}
       </div>
 
       {/* Open room link — navigate into the full conversation */}

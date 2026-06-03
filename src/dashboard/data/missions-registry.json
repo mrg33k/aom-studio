@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-03T01:08:10.373Z",
+  "generated_at": "2026-06-03T02:18:44.864Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -3197,8 +3197,8 @@
     },
     {
       "slug": "conrad-foundation",
-      "total": 4,
-      "in_flight": 4,
+      "total": 3,
+      "in_flight": 3,
       "done": 0
     },
     {
