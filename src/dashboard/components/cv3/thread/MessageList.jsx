@@ -1804,11 +1804,10 @@ function MessageList({ roomType = 'agent' }) {
               {(() => {
                 const isLast = isUser && idx === arr.length - 1
                 const liveMerge = isLast && inFlight && !hasAssistantReply
-                // R12e: once an assistant reply exists, steps render under the assistant bubble
-                // (via the wrapper in the message loop), not here. Only keep the user-bubble
-                // render for live in-flight animation (liveMerge) or the edge case where
-                // there are steps but no reply yet.
-                if (!liveMerge && (!userBubbleSteps || hasAssistantReply)) return null
+                // R15: R14 already prevents assistant bubbles from getting userBubbleSteps (null).
+                // R12e's hasAssistantReply gate was redundant after R14 and was hiding steps
+                // from settled conversations entirely. Just gate on whether steps exist.
+                if (!liveMerge && !userBubbleSteps) return null
                 let displaySteps
                 let settledFlag
                 if (liveMerge) {
