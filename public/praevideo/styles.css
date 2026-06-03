@@ -1,5 +1,5 @@
-/* Praevideo — Direction C v0.5: Operator's Precision */
-/* Near-black #070B14 / Electric Blue #0EA5E9 / Cold White #ECF2FF */
+/* Praevideo — Direction C v0.6: Operator's Precision */
+/* Near-black #070B14 / Teal-Cyan #06B6D4 / Cold White #ECF2FF */
 /* Fonts: JetBrains Mono (stats/display) + DM Sans (body) */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;0,800;1,700&display=swap');
@@ -9,15 +9,15 @@
     --ink-1:    #0B1120;
     --ink-2:    #111928;
     --ink-3:    #1A2535;
-    --blue:     #0EA5E9;
-    --blue-glow: rgba(14, 165, 233, 0.35);
-    --blue-dim: rgba(14, 165, 233, 0.15);
-    --blue-faint: rgba(14, 165, 233, 0.07);
+    --blue:     #06B6D4;
+    --blue-glow: rgba(6, 182, 212, 0.40);
+    --blue-dim: rgba(6, 182, 212, 0.15);
+    --blue-faint: rgba(6, 182, 212, 0.07);
     --cold:     #ECF2FF;
     --cold-dim: #7A8FA8;
     --cold-muted: #3D4E62;
-    --border:   rgba(14, 165, 233, 0.14);
-    --border-strong: rgba(14, 165, 233, 0.30);
+    --border:   rgba(6, 182, 212, 0.18);
+    --border-strong: rgba(6, 182, 212, 0.35);
 }
 
 *, *::before, *::after {
@@ -115,7 +115,7 @@ body {
 }
 
 .nav-cta:hover {
-    background: #38BDF8;
+    background: #22D3EE;
     box-shadow: 0 0 16px var(--blue-glow);
 }
 
@@ -129,13 +129,22 @@ body {
 ───────────────────────────────────────── */
 @keyframes grid-drift {
     0%   { background-position: 0 0, 0 0; }
-    50%  { background-position: 2px 4px, 4px 2px; }
+    50%  { background-position: 60px 40px, 40px 60px; }
     100% { background-position: 0 0, 0 0; }
 }
 
 @keyframes scan-drift {
-    0%   { background-position: 0 0; }
-    100% { background-position: 0 80px; }
+    0%   { background-position: 0 0; opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { background-position: 0 100vh; opacity: 0; }
+}
+
+@keyframes scan-sweep {
+    0%   { transform: translateY(-100%); opacity: 0; }
+    5%   { opacity: 1; }
+    95%  { opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
 }
 
 .hero {
@@ -177,32 +186,25 @@ body {
     z-index: 2;
     pointer-events: none;
 
-    /* Grid lines */
+    /* Grid lines — visible, high contrast */
     background-image:
         repeating-linear-gradient(
             0deg,
             transparent 0px,
             transparent 59px,
-            rgba(14, 165, 233, 0.055) 59px,
-            rgba(14, 165, 233, 0.055) 60px
+            rgba(6, 182, 212, 0.22) 59px,
+            rgba(6, 182, 212, 0.22) 60px
         ),
         repeating-linear-gradient(
             90deg,
             transparent 0px,
             transparent 79px,
-            rgba(14, 165, 233, 0.045) 79px,
-            rgba(14, 165, 233, 0.045) 80px
-        ),
-        repeating-linear-gradient(
-            0deg,
-            rgba(14, 165, 233, 0.028) 0px,
-            rgba(14, 165, 233, 0.028) 1px,
-            transparent 1px,
-            transparent 5px
+            rgba(6, 182, 212, 0.18) 79px,
+            rgba(6, 182, 212, 0.18) 80px
         );
 
-    background-size: 60px 60px, 80px 80px, 100% 5px;
-    animation: grid-drift 3s ease-in-out infinite;
+    background-size: 60px 60px, 80px 80px;
+    animation: grid-drift 6s ease-in-out infinite;
 }
 
 /* Scan line sweep — separate element inside hero */
@@ -211,15 +213,29 @@ body {
     inset: 0;
     z-index: 3;
     pointer-events: none;
-    background-image: repeating-linear-gradient(
-        0deg,
-        transparent 0px,
-        transparent 3px,
-        rgba(14, 165, 233, 0.022) 3px,
-        rgba(14, 165, 233, 0.022) 4px
+    overflow: hidden;
+}
+
+.hero-scan::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(6, 182, 212, 0.0) 10%,
+        rgba(6, 182, 212, 0.6) 40%,
+        rgba(6, 182, 212, 0.9) 50%,
+        rgba(6, 182, 212, 0.6) 60%,
+        rgba(6, 182, 212, 0.0) 90%,
+        transparent 100%
     );
-    background-size: 100% 4px;
-    animation: scan-drift 8s linear infinite;
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.5), 0 0 30px rgba(6, 182, 212, 0.3);
+    animation: scan-sweep 4s ease-in-out infinite;
+    animation-delay: 1s;
+    top: 0;
 }
 
 .hero-inner {
@@ -305,7 +321,7 @@ body {
 }
 
 .cta-primary:hover {
-    background: #38BDF8;
+    background: #22D3EE;
     transform: translateY(-2px);
     box-shadow: 0 8px 24px var(--blue-glow);
 }
@@ -1017,6 +1033,6 @@ body {
 }
 
 .button-submit:hover {
-    background: #38BDF8;
+    background: #22D3EE;
     box-shadow: 0 4px 20px var(--blue-glow);
 }
