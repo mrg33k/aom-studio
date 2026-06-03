@@ -1267,7 +1267,7 @@ function MessageList({ roomType = 'agent' }) {
                     display: 'flex',
                     flexDirection: 'column',
                     width: '100%',
-                    ...((!isUser && stepsByMessageId[msg.id]?.length > 0) ? {
+                    ...((!isUser && userBubbleSteps?.length > 0) ? {
                       background: 'rgba(255,255,255,0.12)',
                       border: '1px solid rgba(255,255,255,0.15)',
                       borderRadius: 10,
@@ -1278,7 +1278,7 @@ function MessageList({ roomType = 'agent' }) {
                   }}>
                     {/* Text bubble */}
                     {msg.text && !((msg.attachment_url || msg.metadata?.attachment?.url || msg.metadata?.attachments?.length > 0) && (msg.text.startsWith('Attached file: ') || /^Attached \d+ files?: /.test(msg.text))) && (() => {
-                      const hasChain = !isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0
+                      const hasChain = !isUser && userBubbleSteps && userBubbleSteps.length > 0
                       // Subtle outline on the bubble whose context-menu is open.
                       const isMenuTarget = msgMenu?.message?.id === msg.id
                       const menuOutline = isMenuTarget ? '1.5px solid rgba(52,211,153,0.55)' : null
@@ -1329,14 +1329,14 @@ function MessageList({ roomType = 'agent' }) {
                       )
                     })()}
                     {/* R65-impl: live-thread step chain below assistant reply. R12: tightened attachment — steps feel like they hang from the message, not a separate component. */}
-                    {!isUser && stepsByMessageId[msg.id] && stepsByMessageId[msg.id].length > 0 && (
+                    {!isUser && userBubbleSteps && userBubbleSteps.length > 0 && (
                       <div style={{
                         marginTop: msg.text ? 6 : 3,
                         paddingTop: msg.text ? 6 : 0,
                         borderTop: msg.text ? '1px solid rgba(255,255,255,0.10)' : 'none',
                       }}>
                         <StepThread
-                          steps={stepsByMessageId[msg.id]}
+                          steps={userBubbleSteps}
                           settled={Boolean(msg.text)}
                           isError={msg.metadata?.status === 'error'}
                           agentColor={roomColor}
