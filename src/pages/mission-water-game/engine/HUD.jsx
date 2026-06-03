@@ -614,6 +614,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    background: '#070B14',  // solid deep-space fill — prevents transparent gaps behind framed awards
   },
   awardGlow: {
     position: 'absolute',

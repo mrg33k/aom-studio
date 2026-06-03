@@ -153,7 +153,11 @@ export default function Canvas({ phase }) {
 // ─── painter ─────────────────────────────────────────────────────────────────
 
 function paint(ctx, W, H, phase, prevPhase, t, imgAlpha = 0) {
-  ctx.clearRect(0, 0, W, H);
+  // Fill with deep space base color — prevents transparent canvas edges from
+  // showing the CSS container black (#000) during phase transition animations.
+  // clearRect would leave alpha=0 gaps; fillRect gives a solid #070B14 floor.
+  ctx.fillStyle = '#070B14';
+  ctx.fillRect(0, 0, W, H);
   // Render the previous composite first, sliding out left as t→1.
   if (prevPhase && t < 1) {
     ctx.save();
