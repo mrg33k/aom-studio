@@ -248,6 +248,40 @@ const SESSIONS = [
   },
 ]
 
+// ─── Checklist Items Per Session ─────────────────────────────────────────────
+
+const SESSION_CHECKLISTS = {
+  1: [
+    'Attended the discovery call',
+    'Got Claude Code set up',
+    'Completed my first live automation',
+    'Received my homework assignment',
+  ],
+  2: [
+    'Reviewed my homework results',
+    'Mapped out my weekly workflow',
+    'Identified my top 3 bottlenecks',
+    'Started my business brain doc',
+  ],
+  3: [
+    'Picked my highest-value bottleneck',
+    'Built Tool 1 with AOM',
+    'Documented how to use it',
+    'Used it at least once',
+  ],
+  4: [
+    'Reported friction on Tool 1',
+    'Built Tool 2 with AOM',
+    'Connected Tools 1 and 2',
+    'Identified what\'s still missing',
+  ],
+  5: [
+    'Completed the full OS review',
+    'Identified remaining gaps',
+    'Chose my path forward',
+  ],
+}
+
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = {
@@ -1201,6 +1235,190 @@ function AccessCodeGate({ onClientSuccess }) {
   )
 }
 
+// ─── Session Checklist Component ─────────────────────────────────────────────
+
+function SessionChecklist({ sessionNumber, accessCode }) {
+  const items = SESSION_CHECKLISTS[sessionNumber] || []
+  const storageKey = `ai_hours_checklist_${accessCode}_${sessionNumber}`
+
+  // Load from localStorage on mount, then sync from Supabase in background
+  const [checked, setChecked] = useState(() => {
+    try {
+      const stored = localStorage.getItem(storageKey)
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+  const [animating, setAnimating] = useState(null) // index of recently-checked item
+
+  // Sync from Supabase on mount
+  useEffect(() => {
+    if (!accessCode) return
+    fetch(`/api/ai-hours/checklist?access_code=${encodeURIComponent(accessCode)}&session=${sessionNumber}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok && Array.isArray(data.checked_items) && data.checked_items.length > 0) {
+          setChecked(data.checked_items)
+          try { localStorage.setItem(storageKey, JSON.stringify(data.checked_items)) } catch {}
+        }
+      })
+      .catch(() => {}) // localStorage is the fallback; silence network errors
+  }, [accessCode, sessionNumber, storageKey])
+
+  function toggle(index) {
+    const next = checked.includes(index)
+      ? checked.filter(i => i !== index)
+      : [...checked, index]
+    setChecked(next)
+    try { localStorage.setItem(storageKey, JSON.stringify(next)) } catch {}
+    // animate the check
+    if (!checked.includes(index)) {
+      setAnimating(index)
+      setTimeout(() => setAnimating(null), 600)
+    }
+    // persist to Supabase in background (best-effort)
+    fetch('/api/ai-hours/checklist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_code: accessCode, session_number: sessionNumber, checked_items: next }),
+    }).catch(() => {})
+  }
+
+  if (items.length === 0) return null
+  const doneCount = checked.length
+  const totalCount = items.length
+  const allDone = doneCount === totalCount
+
+  return (
+    <div style={{
+      marginTop: 20,
+      padding: '20px 24px',
+      background: allDone ? '#F0FFF4' : CREAM_WARM,
+      border: `1px solid ${allDone ? '#B7E5C8' : BORDER_SOFT}`,
+      borderRadius: 8,
+      transition: 'background 0.4s ease, border-color 0.4s ease',
+    }}>
+      {/* Progress counter */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+      }}>
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: INK_MUTED }}>
+          Your progress
+        </span>
+        <span style={{
+          fontSize: 13,
+          fontWeight: 600,
+          color: allDone ? GREEN_CHECK : AOM_ORANGE,
+          transition: 'color 0.3s ease',
+        }}>
+          {doneCount} of {totalCount} completed
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div style={{
+        height: 4,
+        background: BORDER,
+        borderRadius: 2,
+        marginBottom: 18,
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          height: '100%',
+          width: `${(doneCount / totalCount) * 100}%`,
+          background: allDone ? GREEN_CHECK : AOM_ORANGE,
+          borderRadius: 2,
+          transition: 'width 0.4s ease, background 0.4s ease',
+        }} />
+      </div>
+
+      {/* Checklist items */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {items.map((item, index) => {
+          const isChecked = checked.includes(index)
+          const isAnimating = animating === index
+          return (
+            <button
+              key={index}
+              onClick={() => toggle(index)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                background: 'none',
+                border: 'none',
+                padding: '6px 0',
+                cursor: 'pointer',
+                textAlign: 'left',
+                borderRadius: 4,
+                transition: 'opacity 0.15s ease',
+              }}
+            >
+              {/* Checkbox */}
+              <div style={{
+                width: 20,
+                height: 20,
+                minWidth: 20,
+                borderRadius: 4,
+                border: `2px solid ${isChecked ? GREEN_CHECK : BORDER}`,
+                background: isChecked ? GREEN_CHECK : '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'border-color 0.2s ease, background 0.2s ease',
+                transform: isAnimating ? 'scale(1.2)' : 'scale(1)',
+                boxShadow: isAnimating ? `0 0 0 3px rgba(45,122,79,0.2)` : 'none',
+              }}>
+                {isChecked && (
+                  <svg width="11" height="9" viewBox="0 0 11 9" fill="none" style={{
+                    opacity: isAnimating ? 0.7 : 1,
+                    transition: 'opacity 0.2s ease',
+                  }}>
+                    <path d="M1 4.5L4 7.5L10 1.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              {/* Label */}
+              <span style={{
+                fontSize: 14,
+                color: isChecked ? INK_MUTED : INK_SOFT,
+                textDecoration: isChecked ? 'line-through' : 'none',
+                transition: 'color 0.2s ease, text-decoration 0.2s ease',
+              }}>
+                {item}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* All-done celebration */}
+      {allDone && (
+        <div style={{
+          marginTop: 16,
+          paddingTop: 16,
+          borderTop: `1px solid #B7E5C8`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="8" fill={GREEN_CHECK} />
+            <path d="M4.5 8.5l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span style={{ fontSize: 13, fontWeight: 600, color: GREEN_CHECK }}>
+            Session complete — great work.
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Client Session View ──────────────────────────────────────────────────────
 
 function ClientView({ client, onLogout }) {
@@ -1311,6 +1529,14 @@ function ClientView({ client, onLogout }) {
                       <span style={styles.leaveWithLabel}>You'll leave with:</span>
                       <span>{session.leaveWith}</span>
                     </div>
+
+                    {/* Inline checklist — only shown for current or completed sessions */}
+                    {(status === 'current' || status === 'done') && (
+                      <SessionChecklist
+                        sessionNumber={sessionNum}
+                        accessCode={client.access_code}
+                      />
+                    )}
 
                     {/* AOM advances sessions from the admin panel — no client-side advance */}
                   </div>
