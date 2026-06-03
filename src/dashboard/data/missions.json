@@ -39,6 +39,6 @@
     { "slug": "space-rising-content",      "name": "Content engine",        "projectSlug": "space-rising",             "status": "in-progress" },
 
     { "slug": "masterclass-pitch-deck",    "name": "Pitch deck",            "projectSlug": "conrad-foundation",        "status": "in-progress" },
-    { "slug": "mission-water-game",        "name": "Water Game",            "projectSlug": "conrad-foundation",        "status": "in-progress" }
+    { "slug": "interactive-game",          "name": "Interactive Game",      "projectSlug": "conrad-foundation",        "status": "in-progress" }
   ]
 }

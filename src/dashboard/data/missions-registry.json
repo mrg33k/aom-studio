@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-02T19:27:54.006Z",
+  "generated_at": "2026-06-03T01:08:10.373Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -546,6 +546,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/sdk-native-dispatch"
+    },
+    {
+      "slug": "corner:session-manager",
+      "raw_slug": "session-manager",
+      "folder_name": "session-manager",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Session Manager",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/session-manager"
     },
     {
       "slug": "corner:share-preview",
@@ -1528,6 +1542,20 @@
       "path": "corner/users/aom/projects/aheadofmarket.com/missions/ai"
     },
     {
+      "slug": "aheadofmarket.com:brand",
+      "raw_slug": "brand",
+      "folder_name": "brand",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aheadofmarket.com",
+      "workstream": null,
+      "name": "Brand",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aheadofmarket.com/missions/brand"
+    },
+    {
       "slug": "aheadofmarket.com:brands",
       "raw_slug": "brands",
       "folder_name": "brands",
@@ -2452,6 +2480,20 @@
       "path": "corner/users/aom/projects/brandon-wiley-documentary/missions/wiley-park-launch"
     },
     {
+      "slug": "conrad-foundation:interactive-game",
+      "raw_slug": "interactive-game",
+      "folder_name": "interactive-game",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "conrad-foundation",
+      "workstream": null,
+      "name": "Interactive Game",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/conrad-foundation/missions/interactive-game"
+    },
+    {
       "slug": "conrad-foundation:masterclass-pitch-deck",
       "raw_slug": "masterclass-pitch-deck",
       "folder_name": "masterclass-pitch-deck",
@@ -3113,14 +3155,14 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 52,
-      "in_flight": 52,
+      "total": 53,
+      "in_flight": 53,
       "done": 0
     },
     {
       "slug": "aheadofmarket.com",
-      "total": 111,
-      "in_flight": 111,
+      "total": 112,
+      "in_flight": 112,
       "done": 0
     },
     {
@@ -3155,8 +3197,8 @@
     },
     {
       "slug": "conrad-foundation",
-      "total": 2,
-      "in_flight": 2,
+      "total": 4,
+      "in_flight": 4,
       "done": 0
     },
     {

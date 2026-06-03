@@ -1311,16 +1311,6 @@
           <div class="msg-bubble">
             <p>Morning. Ready for the brand refresh. What's the brief?</p>
           </div>
-          <div class="msg-steps">
-            <div class="msg-step done">
-              <div class="msg-step-dot"></div>
-              <div class="msg-step-body"><span class="msg-step-label">Read Ambition CONTEXT + VISION</span></div>
-            </div>
-            <div class="msg-step done">
-              <div class="msg-step-dot"></div>
-              <div class="msg-step-body"><span class="msg-step-label">Loaded previous brand guidelines</span></div>
-            </div>
-          </div>
         </div>
 
         <div class="msg user">
@@ -2080,15 +2070,6 @@ Direction C (Engineering Blue) → Coral to blue ⚠ full identity shift</pre>
         }
       }
     }
-
-    /* ─── Step item expand on click ─────────────────────────────────────── */
-
-    document.addEventListener('click', (e) => {
-      const step = e.target.closest('.msg-step');
-      if (step && !e.target.closest('.step-group-header')) {
-        step.classList.toggle('expanded');
-      }
-    });
 
     /* ─── Init ──────────────────────────────────────────────────────────── */
 
