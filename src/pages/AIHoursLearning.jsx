@@ -1276,6 +1276,7 @@ function AccessCodeGate({ onClientSuccess }) {
 }
 
 // ─── Session Checklist Component ─────────────────────────────────────────────
+// Design: accordion per task, grayscale only → green at completion (Stripe/Linear style)
 
 function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedComplete = false, onMarkComplete }) {
   const items = SESSION_CHECKLISTS[sessionNumber] || []
@@ -1290,8 +1291,6 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
       return []
     }
   })
-  const [animating, setAnimating] = useState(null) // index of recently-checked item
-  const [justCompleted, setJustCompleted] = useState(false) // milestone flash
 
   // Sync from Supabase on mount
   useEffect(() => {
@@ -1311,7 +1310,6 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
   }, [accessCode, sessionNumber, storageKey])
 
   function toggle(index) {
-    // When section is already marked complete, items are read-only
     if (isMarkedComplete) return
     const wasChecked = checked.includes(index)
     const next = wasChecked
@@ -1320,18 +1318,7 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
     setChecked(next)
     try { localStorage.setItem(storageKey, JSON.stringify(next)) } catch {}
 
-    // animate the check
-    if (!wasChecked) {
-      setAnimating(index)
-      setTimeout(() => setAnimating(null), 700)
-    }
-
-    // milestone moment: all items now checked
     const allNowDone = next.length >= items.length
-    if (allNowDone && !wasChecked) {
-      setJustCompleted(true)
-      setTimeout(() => setJustCompleted(false), 2000)
-    }
     if (onAllChecked) onAllChecked(sessionNumber, allNowDone)
 
     // persist to Supabase in background (best-effort)
@@ -1346,148 +1333,154 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
   const doneCount = checked.length
   const totalCount = items.length
   const allDone = doneCount >= totalCount
-  const colors = getProgressColor(doneCount, totalCount)
 
   return (
     <div style={{
       marginTop: 24,
-      padding: '0',
-      borderRadius: 12,
-      border: `1.5px solid ${colors.border}`,
-      background: colors.card,
+      borderRadius: 10,
+      border: `1.5px solid ${allDone ? GREEN_CHECK_BORDER : BORDER}`,
+      background: allDone ? 'rgba(45,122,79,0.03)' : '#fff',
       overflow: 'hidden',
-      transition: 'background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease',
-      boxShadow: allDone
-        ? `0 0 0 3px rgba(45,122,79,0.12), 0 4px 20px rgba(45,122,79,0.1)`
-        : justCompleted
-        ? `0 0 0 4px rgba(45,122,79,0.2), 0 6px 24px rgba(45,122,79,0.18)`
-        : '0 1px 4px rgba(26,26,22,0.06)',
+      transition: 'border-color 0.45s ease, background 0.45s ease',
     }}>
-      {/* Progress bar — sits at top, full width */}
-      <div style={{ height: 5, background: 'rgba(0,0,0,0.06)', position: 'relative' }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          height: '100%',
-          width: doneCount === 0 ? '0%' : `${(doneCount / totalCount) * 100}%`,
-          background: colors.bg,
-          borderRadius: '0 3px 3px 0',
-          transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1), background 0.5s ease',
-        }} />
+
+      {/* Header */}
+      <div style={{
+        padding: '14px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: `1px solid ${allDone ? GREEN_CHECK_BORDER : BORDER_SOFT}`,
+        transition: 'border-color 0.45s ease',
+      }}>
+        <span style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: allDone ? PROGRESS_GREEN : INK_MUTED,
+          transition: 'color 0.45s ease',
+        }}>
+          Session checklist
+        </span>
+        <span style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: allDone ? PROGRESS_GREEN : INK_MUTED,
+          transition: 'color 0.45s ease',
+        }}>
+          {doneCount}/{totalCount}
+        </span>
       </div>
 
-      <div style={{ padding: '20px 24px' }}>
-        {/* Header row */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 18,
-        }}>
-          <span style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: doneCount === 0 ? INK_MUTED : colors.text,
-            transition: 'color 0.4s ease',
-          }}>
-            Session milestones
-          </span>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}>
-            {/* Dot indicators */}
-            {items.map((_, i) => (
-              <div key={i} style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: checked.includes(i) ? colors.bg : BORDER,
-                transition: 'background 0.4s ease',
-              }} />
-            ))}
-          </div>
-        </div>
+      {/* Accordion items — each item is its own accordion */}
+      <div style={{ padding: '6px 0' }}>
+        {items.map((item, index) => {
+          const isChecked = checked.includes(index)
 
-        {/* Checklist items */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {items.map((item, index) => {
-            const isChecked = checked.includes(index)
-            const isAnimating = animating === index
+          if (isChecked) {
+            // ── Collapsed: compact single-line done state ──────────────────────
             return (
               <button
                 key={index}
-                onClick={() => toggle(index)}
+                onClick={() => !isMarkedComplete && toggle(index)}
+                title={isMarkedComplete ? undefined : 'Click to uncheck'}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 14,
-                  background: isChecked ? 'rgba(0,0,0,0.03)' : 'transparent',
-                  border: 'none',
-                  padding: '10px 12px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  borderRadius: 8,
-                  transition: 'background 0.2s ease',
+                  gap: 12,
+                  padding: '9px 20px',
                   width: '100%',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: isMarkedComplete ? 'default' : 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 0.15s ease',
                 }}
+                onMouseEnter={e => { if (!isMarkedComplete) e.currentTarget.style.background = 'rgba(45,122,79,0.05)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
               >
-                {/* Checkbox — 26px, satisfying scale */}
+                {/* Small green check badge */}
                 <div style={{
-                  width: 26,
-                  height: 26,
-                  minWidth: 26,
-                  borderRadius: 6,
-                  border: `2px solid ${isChecked ? PROGRESS_GREEN : BORDER}`,
-                  background: isChecked ? PROGRESS_GREEN : '#fff',
+                  width: 20,
+                  height: 20,
+                  minWidth: 20,
+                  borderRadius: 5,
+                  background: PROGRESS_GREEN,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  transition: 'border-color 0.25s ease, background 0.25s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease',
-                  transform: isAnimating ? 'scale(1.18)' : 'scale(1)',
-                  boxShadow: isAnimating
-                    ? `0 0 0 4px rgba(45,122,79,0.22), 0 2px 8px rgba(45,122,79,0.18)`
-                    : isChecked
-                    ? `0 1px 4px rgba(45,122,79,0.2)`
-                    : 'none',
                   flexShrink: 0,
                 }}>
-                  {isChecked && (
-                    <svg width="13" height="10" viewBox="0 0 13 10" fill="none" style={{
-                      opacity: 1,
-                      transition: 'opacity 0.15s ease',
-                      transform: isAnimating ? 'scale(0.85)' : 'scale(1)',
-                    }}>
-                      <path d="M1.5 5L5 8.5L11.5 1.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l2.5 2.5L9 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
-                {/* Label */}
+                {/* Task name — muted, gray */}
                 <span style={{
-                  fontSize: 14,
-                  lineHeight: 1.45,
-                  color: isChecked ? INK_MUTED : INK_SOFT,
-                  textDecoration: 'none',
-                  transition: 'color 0.25s ease',
-                  fontWeight: isChecked ? 400 : 500,
+                  fontSize: 13,
+                  lineHeight: 1.4,
+                  color: INK_MUTED,
+                  fontWeight: 400,
                 }}>
                   {item}
                 </span>
               </button>
             )
-          })}
-        </div>
+          }
 
-        {/* All-done: show "Mark as Completed" CTA or read-only confirmed state */}
-        {allDone && !isMarkedComplete && (
+          // ── Expanded: full item with gray unchecked checkbox ───────────────────
+          return (
+            <button
+              key={index}
+              onClick={() => toggle(index)}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 14,
+                padding: '13px 20px',
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'background 0.15s ease',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.02)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
+            >
+              {/* Gray unchecked checkbox — 22px */}
+              <div style={{
+                width: 22,
+                height: 22,
+                minWidth: 22,
+                marginTop: 1,
+                borderRadius: 5,
+                border: `2px solid ${BORDER}`,
+                background: '#fff',
+                flexShrink: 0,
+                transition: 'border-color 0.2s ease',
+              }} />
+              {/* Task text */}
+              <span style={{
+                fontSize: 14,
+                lineHeight: 1.5,
+                color: INK_SOFT,
+                fontWeight: 500,
+              }}>
+                {item}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* All-done: "Mark as Completed" CTA — only color in the component */}
+      {allDone && !isMarkedComplete && (
+        <div style={{ padding: '4px 16px 16px' }}>
           <button
             onClick={() => onMarkComplete && onMarkComplete()}
             style={{
-              marginTop: 16,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -1500,38 +1493,35 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
               cursor: 'pointer',
               transition: 'opacity 0.15s ease, transform 0.15s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = '0.92'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)' }}
             onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)' }}
           >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <circle cx="9" cy="9" r="9" fill="rgba(255,255,255,0.25)" />
-              <path d="M5.5 9.5l2.5 2.5 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="8" fill="rgba(255,255,255,0.25)" />
+              <path d="M4.5 8.5l2 2L12 5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: '#fff',
-              letterSpacing: '0.02em',
-            }}>
-              Mark as Completed ✓
+            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: '0.02em' }}>
+              Mark as Completed
             </span>
           </button>
-        )}
-        {/* When already marked complete — read-only confirmation badge */}
-        {isMarkedComplete && (
+        </div>
+      )}
+
+      {/* Already marked complete — read-only confirmation */}
+      {isMarkedComplete && (
+        <div style={{ padding: '4px 16px 14px' }}>
           <div style={{
-            marginTop: 16,
             display: 'flex',
             alignItems: 'center',
-            gap: 10,
+            gap: 8,
             padding: '10px 14px',
-            background: 'rgba(45,122,79,0.08)',
+            background: 'rgba(45,122,79,0.06)',
             border: `1px solid ${GREEN_CHECK_BORDER}`,
             borderRadius: 8,
           }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="8" fill={PROGRESS_GREEN} />
-              <path d="M4.5 8.5l2 2L12 5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="7" fill={PROGRESS_GREEN} />
+              <path d="M4 7.5l2 2L10 5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span style={{ fontSize: 13, fontWeight: 600, color: PROGRESS_GREEN }}>
               Section completed
@@ -1540,8 +1530,8 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
               Read-only
             </span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
