@@ -458,7 +458,7 @@ export default function Marketplace() {
             </div>
           </motion.div>
 
-          {/* Right: guide preview card */}
+          {/* Right: guide preview card — clean, airy, no clutter */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -466,47 +466,41 @@ export default function Marketplace() {
             className="hidden lg:block"
           >
             <div
-              className="rounded-2xl p-6"
+              className="rounded-2xl p-8"
               style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
             >
-              <div className="flex items-center justify-between mb-5">
-                <span className="font-headline text-sm text-white/70">The AI Business Guide</span>
+              <div className="flex items-center justify-between mb-6">
+                <span className="font-headline text-base text-white/80">The AI Business Guide</span>
                 <span
-                  className="text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+                  className="text-xs font-body font-semibold tracking-widest px-2.5 py-1 rounded"
                   style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80' }}
                 >
                   FREE
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-5">
-                {heroProduct?.categories?.slice(0, 6).map(({ icon: Icon, title }) => (
+              <div className="space-y-3">
+                {heroProduct?.categories?.slice(0, 4).map(({ icon: Icon, title, desc }) => (
                   <div
                     key={title}
-                    className="flex items-center gap-2.5 p-3 rounded-lg"
+                    className="flex items-center gap-3.5 p-4 rounded-xl"
                     style={{ background: 'rgba(255,255,255,0.04)' }}
                   >
                     <div
-                      className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ background: 'rgba(232,93,38,0.12)' }}
                     >
-                      <Icon size={13} style={{ color: ORANGE }} />
+                      <Icon size={15} style={{ color: ORANGE }} />
                     </div>
-                    <span className="font-body text-xs text-white/70 leading-tight">{title}</span>
+                    <div>
+                      <div className="font-headline text-sm text-white/85 leading-tight">{title}</div>
+                      <div className="font-body text-xs text-white/40 mt-0.5 leading-snug">{desc.split('—')[0].trim()}</div>
+                    </div>
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                {(heroProduct?.stats || []).map((s) => (
-                  <div
-                    key={s.label}
-                    className="text-center py-3 rounded-lg"
-                    style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.15)' }}
-                  >
-                    <div className="font-headline text-lg text-white">{s.value}</div>
-                    <div className="font-body text-xs text-white/40 uppercase tracking-wider mt-0.5">{s.label}</div>
-                  </div>
-                ))}
-              </div>
+              <p className="font-body text-xs text-white/30 text-center mt-5">
+                + 2 more categories · 30 prompts total
+              </p>
             </div>
           </motion.div>
         </div>
@@ -618,24 +612,50 @@ export default function Marketplace() {
         </>
       )}
 
-      {/* ── Bottom CTA: AI Flow ── */}
-      <section className="py-20 px-6 max-w-6xl mx-auto">
-        <div className="border-t border-white/10 pt-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <h3 className="font-headline text-2xl text-white mb-2">Want the full picture?</h3>
-            <p className="font-body text-sm text-white/50 max-w-sm">
-              The AI Flow goes deeper — a full look at your business and a custom roadmap
-              for where AI can save you the most time.
-            </p>
+      {/* ── Bottom CTA: AI Flow — prominent booking section ── */}
+      <section className="py-16 px-6 max-w-6xl mx-auto">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.45 }}
+          className="rounded-2xl p-10 md:p-14"
+          style={{
+            background: 'linear-gradient(135deg, rgba(232,93,38,0.12) 0%, rgba(232,93,38,0.04) 100%)',
+            border: '1px solid rgba(232,93,38,0.25)',
+          }}
+        >
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+            <div className="flex-1">
+              <span
+                className="inline-block text-xs font-body font-semibold tracking-widest mb-4 px-3 py-1 rounded-full"
+                style={{ background: 'rgba(232,93,38,0.15)', color: ORANGE }}
+              >
+                PERSONALIZED SERVICE
+              </span>
+              <h3 className="font-headline text-3xl md:text-4xl text-white mb-3 leading-tight">
+                Want the full picture?
+              </h3>
+              <p className="font-body text-base text-white/60 max-w-md leading-relaxed">
+                The AI Flow goes deeper — a real look at your business and a custom roadmap
+                for where AI saves you the most time. AOM meets with you directly.
+              </p>
+            </div>
+            <div className="flex flex-col items-start md:items-end gap-3 flex-shrink-0">
+              <a
+                href="/book"
+                className="flex items-center gap-2.5 px-8 py-4 rounded-xl font-headline text-base tracking-wide hover:brightness-110 active:scale-95 transition-all duration-200 whitespace-nowrap"
+                style={{ background: ORANGE, color: '#fff' }}
+              >
+                Book an AI Flow
+                <ArrowRight size={18} />
+              </a>
+              <span className="font-body text-xs text-white/35">
+                Free consultation · No commitment
+              </span>
+            </div>
           </div>
-          <a
-            href="/book"
-            className="flex items-center gap-2 px-6 py-3 rounded-xl font-headline text-sm tracking-wide border border-white/20 text-white hover:border-white/50 transition-all whitespace-nowrap"
-          >
-            Book an AI Flow
-            <ArrowRight size={16} />
-          </a>
-        </div>
+        </motion.div>
       </section>
 
       <SiteFooter />
