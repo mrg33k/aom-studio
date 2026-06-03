@@ -1277,7 +1277,7 @@ function AccessCodeGate({ onClientSuccess }) {
 
 // ─── Session Checklist Component ─────────────────────────────────────────────
 
-function SessionChecklist({ sessionNumber, accessCode, onAllChecked }) {
+function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedComplete = false, onMarkComplete }) {
   const items = SESSION_CHECKLISTS[sessionNumber] || []
   const storageKey = `ai_hours_checklist_${accessCode}_${sessionNumber}`
 
@@ -1311,6 +1311,8 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked }) {
   }, [accessCode, sessionNumber, storageKey])
 
   function toggle(index) {
+    // When section is already marked complete, items are read-only
+    if (isMarkedComplete) return
     const wasChecked = checked.includes(index)
     const next = wasChecked
       ? checked.filter(i => i !== index)
@@ -1469,7 +1471,7 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked }) {
                   fontSize: 14,
                   lineHeight: 1.45,
                   color: isChecked ? INK_MUTED : INK_SOFT,
-                  textDecoration: isChecked ? 'line-through' : 'none',
+                  textDecoration: 'none',
                   transition: 'color 0.25s ease',
                   fontWeight: isChecked ? 400 : 500,
                 }}>
@@ -1480,30 +1482,62 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked }) {
           })}
         </div>
 
-        {/* All-done milestone banner */}
-        {allDone && (
-          <div style={{
-            marginTop: 16,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 10,
-            padding: '12px 16px',
-            background: PROGRESS_GREEN,
-            borderRadius: 8,
-            animation: justCompleted ? 'none' : undefined,
-          }}>
+        {/* All-done: show "Mark as Completed" CTA or read-only confirmed state */}
+        {allDone && !isMarkedComplete && (
+          <button
+            onClick={() => onMarkComplete && onMarkComplete()}
+            style={{
+              marginTop: 16,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 10,
+              padding: '13px 20px',
+              width: '100%',
+              background: PROGRESS_GREEN,
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              transition: 'opacity 0.15s ease, transform 0.15s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = '0.92'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)' }}
+          >
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <circle cx="9" cy="9" r="9" fill="rgba(255,255,255,0.25)" />
               <path d="M5.5 9.5l2.5 2.5 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             <span style={{
               fontSize: 14,
-              fontWeight: 600,
+              fontWeight: 700,
               color: '#fff',
-              letterSpacing: '0.01em',
+              letterSpacing: '0.02em',
             }}>
-              Session complete — well done.
+              Mark as Completed ✓
+            </span>
+          </button>
+        )}
+        {/* When already marked complete — read-only confirmation badge */}
+        {isMarkedComplete && (
+          <div style={{
+            marginTop: 16,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '10px 14px',
+            background: 'rgba(45,122,79,0.08)',
+            border: `1px solid ${GREEN_CHECK_BORDER}`,
+            borderRadius: 8,
+          }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="8" fill={PROGRESS_GREEN} />
+              <path d="M4.5 8.5l2 2L12 5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span style={{ fontSize: 13, fontWeight: 600, color: PROGRESS_GREEN }}>
+              Section completed
+            </span>
+            <span style={{ fontSize: 12, color: INK_MUTED, marginLeft: 'auto' }}>
+              Read-only
             </span>
           </div>
         )}
@@ -1523,6 +1557,12 @@ function ClientView({ client, onLogout }) {
   const currentSession = client.current_session || 1
   const isComplete = currentSession > 5
 
+  // Client-side "I'm done with this section" state — persisted to localStorage
+  const sectionCompleteKey = `ai_hours_section_complete_${client.access_code}`
+  const [sectionMarkedComplete, setSectionMarkedComplete] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(sectionCompleteKey) || '{}') } catch { return {} }
+  })
+
   function getStatus(sessionNum) {
     if (sessionNum < currentSession) return 'done'
     if (sessionNum === currentSession && !isComplete) return 'current'
@@ -1531,6 +1571,14 @@ function ClientView({ client, onLogout }) {
 
   function handleChecklistComplete(sessionNum, allDone) {
     setChecklistCompleted(prev => ({ ...prev, [sessionNum]: allDone }))
+  }
+
+  function handleMarkComplete(sessionNum) {
+    const next = { ...sectionMarkedComplete, [sessionNum]: true }
+    setSectionMarkedComplete(next)
+    try { localStorage.setItem(sectionCompleteKey, JSON.stringify(next)) } catch {}
+    // Collapse the section after marking complete
+    setExpandedSession(null)
   }
 
   function handleContactSubmit(e) {
@@ -1577,8 +1625,76 @@ function ClientView({ client, onLogout }) {
           {SESSIONS.map((session, i) => {
             const sessionNum = i + 1
             const status = getStatus(sessionNum)
+            const isClientComplete = !!sectionMarkedComplete[sessionNum]
+            // Collapsed green state = AOM-marked done OR client clicked "Mark as Completed"
+            const isCollapsedGreen = status === 'done' || isClientComplete
             const isExpanded = expandedSession === sessionNum && status !== 'locked'
 
+            // ── Compact collapsed green row for completed sessions ──────────────
+            if (isCollapsedGreen && !isExpanded) {
+              return (
+                <div
+                  key={sessionNum}
+                  onClick={() => setExpandedSession(sessionNum)}
+                  style={{
+                    ...styles.sessionCard,
+                    borderColor: GREEN_CHECK_BORDER,
+                    background: 'rgba(45,122,79,0.04)',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s ease, box-shadow 0.2s ease',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,122,79,0.08)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(45,122,79,0.04)' }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: '16px 24px',
+                  }}>
+                    {/* Green circle with check */}
+                    <div style={{
+                      width: 34,
+                      height: 34,
+                      minWidth: 34,
+                      borderRadius: '50%',
+                      background: PROGRESS_GREEN,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+                        <path d="M1.5 5.5L5.5 9.5L12.5 1.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                    {/* Session number + title */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: PROGRESS_GREEN, marginBottom: 1 }}>
+                        Session {sessionNum}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {session.title}
+                      </div>
+                    </div>
+                    {/* Complete badge */}
+                    <div style={{
+                      ...styles.sessionBadge,
+                      ...styles.sessionBadgeDone,
+                      flexShrink: 0,
+                    }}>
+                      Complete
+                    </div>
+                    {/* Chevron ▼ to expand */}
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: INK_MUTED }}>
+                      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+              )
+            }
+
+            // ── Full expanded card (current, locked, or re-expanded done session) ─
             return (
               <div
                 key={sessionNum}
@@ -1586,19 +1702,26 @@ function ClientView({ client, onLogout }) {
                   ...styles.sessionCard,
                   ...(status === 'current' ? styles.sessionCardActive : {}),
                   ...(status === 'locked' ? styles.sessionCardLocked : {}),
+                  // When re-expanded after being done/client-complete, keep green border
+                  ...(isCollapsedGreen ? { borderColor: GREEN_CHECK_BORDER, background: 'rgba(45,122,79,0.04)' } : {}),
                 }}
               >
                 <div
                   style={styles.sessionHeader}
                   onClick={() => {
                     if (status === 'locked') return
+                    // Collapse back to compact row if done/client-complete; otherwise toggle
+                    if (isCollapsedGreen) {
+                      setExpandedSession(null)
+                      return
+                    }
                     setExpandedSession(isExpanded ? null : sessionNum)
                   }}
                 >
                   <div style={{
                     ...styles.sessionNumber,
                     ...(status === 'current' ? styles.sessionNumberActive : {}),
-                    ...(status === 'done' ? { color: GREEN_CHECK } : {}),
+                    ...(isCollapsedGreen ? { color: PROGRESS_GREEN } : status === 'done' ? { color: GREEN_CHECK } : {}),
                   }}>
                     {session.number}
                   </div>
@@ -1610,13 +1733,20 @@ function ClientView({ client, onLogout }) {
                     <div style={{
                       ...styles.sessionBadge,
                       ...(status === 'current' ? styles.sessionBadgeCurrent : {}),
-                      ...(status === 'done' ? styles.sessionBadgeDone : {}),
+                      ...(isCollapsedGreen ? styles.sessionBadgeDone : status === 'done' ? styles.sessionBadgeDone : {}),
                       ...(status === 'locked' ? styles.sessionBadgeLocked : {}),
                     }}>
-                      {status === 'current' ? 'Current' : status === 'done' ? 'Complete' : 'Upcoming'}
+                      {status === 'current' ? 'Current' : (status === 'done' || isCollapsedGreen) ? 'Complete' : 'Upcoming'}
                     </div>
                     <div style={styles.sessionDuration}>{session.duration}</div>
-                    <SessionStatusIcon status={status} />
+                    {/* Chevron ▲ to collapse (shown when re-expanding a done session) */}
+                    {isCollapsedGreen ? (
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: INK_MUTED }}>
+                        <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    ) : (
+                      <SessionStatusIcon status={status} />
+                    )}
                   </div>
                 </div>
 
@@ -1629,11 +1759,13 @@ function ClientView({ client, onLogout }) {
                     </div>
 
                     {/* Inline checklist — only shown for current or completed sessions */}
-                    {(status === 'current' || status === 'done') && (
+                    {(status === 'current' || status === 'done' || isClientComplete) && (
                       <SessionChecklist
                         sessionNumber={sessionNum}
                         accessCode={client.access_code}
                         onAllChecked={handleChecklistComplete}
+                        isMarkedComplete={isClientComplete}
+                        onMarkComplete={() => handleMarkComplete(sessionNum)}
                       />
                     )}
 
