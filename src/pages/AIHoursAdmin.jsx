@@ -1360,13 +1360,14 @@ function TeamView({ user, onLogout }) {
               style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 16px 48px' }}
               onClick={e => e.stopPropagation()}
             >
-              {/* Admin banner */}
+              {/* Admin banner — sticky so the ✕ close button stays visible while scrolling */}
               <div style={{
                 width: '100%', maxWidth: 720,
                 background: INK,
                 borderRadius: '10px 10px 0 0',
                 padding: '14px 20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                position: 'sticky', top: 0, zIndex: 10,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{
@@ -1534,6 +1535,25 @@ function TeamView({ user, onLogout }) {
                       Contact AOM
                       <span style={{ fontSize: 11, fontWeight: 400, color: LOCK_GRAY }}>(disabled in preview)</span>
                     </div>
+                  </div>
+
+                  {/* Bottom close button — visible without scrolling back up */}
+                  <div style={{ marginTop: 28, textAlign: 'center' }}>
+                    <button
+                      onClick={() => setPreviewClient(null)}
+                      style={{
+                        padding: '11px 32px',
+                        background: INK,
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 6,
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Close Preview
+                    </button>
                   </div>
                 </div>
               </div>

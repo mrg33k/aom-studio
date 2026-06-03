@@ -30,8 +30,24 @@ export default async function handler(req, res) {
     return res.status(503).json({ ok: false, error: 'Service unavailable' });
   }
 
-  // GET — fetch all clients
+  // GET — fetch clients (all, or single by access_code)
   if (req.method === 'GET') {
+    const { access_code } = req.query;
+    if (access_code) {
+      // Client portal lookup: find a single client by access code
+      const encoded = encodeURIComponent(access_code.trim().toUpperCase());
+      const r = await supa(`ai_hours_clients?select=*&access_code=eq.${encoded}`);
+      if (!r.ok) {
+        const err = await r.text();
+        return res.status(r.status).json({ ok: false, error: err });
+      }
+      const data = await r.json();
+      if (!data || data.length === 0) {
+        return res.status(404).json({ ok: false, error: 'Access code not found' });
+      }
+      return res.status(200).json({ ok: true, client: data[0] });
+    }
+    // Admin use: return all clients ordered by created_at
     const r = await supa('ai_hours_clients?select=*&order=created_at.desc');
     if (!r.ok) {
       const err = await r.text();

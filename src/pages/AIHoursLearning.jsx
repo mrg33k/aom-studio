@@ -705,22 +705,19 @@ function AccessCodeGate({ onClientSuccess }) {
     setError(null)
 
     try {
-      if (!supabase) throw new Error('Service unavailable')
-      const { data, error: dbErr } = await supabase
-        .from('ai_hours_clients')
-        .select('*')
-        .eq('access_code', code.trim().toUpperCase())
-        .single()
+      // Use the service-role API endpoint so RLS policies don't block anon reads
+      const res = await fetch(`/api/ai-hours/clients?access_code=${encodeURIComponent(code.trim().toUpperCase())}`)
+      const result = await res.json()
 
-      if (dbErr || !data) {
+      if (!result.ok || !result.client) {
         setError('Access code not found. Please check your code and try again.')
         setLoading(false)
         return
       }
 
       // Store in localStorage for session persistence
-      localStorage.setItem('ai_hours_client', JSON.stringify(data))
-      onClientSuccess(data)
+      localStorage.setItem('ai_hours_client', JSON.stringify(result.client))
+      onClientSuccess(result.client)
     } catch {
       setError('Something went wrong. Please try again.')
     }
