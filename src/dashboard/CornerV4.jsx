@@ -641,7 +641,9 @@ export default function CornerV4() {
     setTab('chat')
     setUnreadChat(0)
     if (agent?.slug) {
-      setNotifReadAt(prev => ({ ...prev, [agent.slug]: new Date().toISOString() }))
+      // corner:notifications R2 — opening the 1:1 agent thread clears its
+      // notification dot (roomKey = 'agent:<slug>' per useDataPipe roomKey logic).
+      setNotifReadAt(prev => ({ ...prev, [`agent:${agent.slug}`]: new Date().toISOString() }))
     }
     // R7.21: Preserve the entry-point base path (/dashboard or /cv4) so the
     // URL bar doesn't snap from /dashboard → /cv4 when the user navigates.
