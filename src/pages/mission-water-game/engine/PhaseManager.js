@@ -73,9 +73,16 @@ export function applyChoice(graph, runState, choiceId) {
   if (!graph.phases[nextId]) {
     throw new Error(`PhaseManager: choice "${choiceId}" points at unknown phase "${nextId}"`);
   }
-  const nextDiscoveries = choice.discovery
-    ? appendUnique(runState.discoveries, choice.discovery)
-    : runState.discoveries;
+  // Accept either choice.discovery (string) or choice.discoveries (array)
+  // so a single choice can award multiple badges (e.g. council reveal).
+  let nextDiscoveries = runState.discoveries;
+  if (Array.isArray(choice.discoveries)) {
+    for (const d of choice.discoveries) {
+      if (d) nextDiscoveries = appendUnique(nextDiscoveries, d);
+    }
+  } else if (choice.discovery) {
+    nextDiscoveries = appendUnique(nextDiscoveries, choice.discovery);
+  }
   return {
     phase_id: nextId,
     discoveries: nextDiscoveries,

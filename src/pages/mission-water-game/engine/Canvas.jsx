@@ -1,5 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 
+// Cache loaded background images so phase swaps don't re-download.
+const _imageCache = new Map();
+function loadImage(src) {
+  if (!src) return null;
+  if (_imageCache.has(src)) return _imageCache.get(src);
+  const img = new Image();
+  img.src = src;
+  _imageCache.set(src, img);
+  return img;
+}
+
 /**
  * Canvas — pixel-art parallax background renderer.
  *
@@ -28,17 +39,24 @@ export default function Canvas({ phase }) {
     const cnv = canvasRef.current;
     if (!cnv) return;
     const ctx = cnv.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true; // raster backgrounds want smoothing
+
+    // Pre-load background image (raster mode) so it's ready before painting.
+    const bgSrc = phase && phase.visuals && phase.visuals.background;
+    const bgImg = bgSrc ? loadImage(bgSrc) : null;
 
     const startedAt = performance.now();
     const prevPhase = animRef.current.prevPhase;
     const DURATION = prevPhase ? 700 : 0;
 
+    const W = cnv.width / (window.devicePixelRatio || 1);
+    const H = cnv.height / (window.devicePixelRatio || 1);
+
     const tick = (now) => {
       const elapsed = now - startedAt;
       const t = DURATION === 0 ? 1 : Math.min(1, elapsed / DURATION);
       animRef.current.t = t;
-      paint(ctx, cnv.width, cnv.height, phase, prevPhase, easeOutCubic(t));
+      paint(ctx, W, H, phase, prevPhase, easeOutCubic(t));
       if (t < 1) {
         animRef.current.raf = requestAnimationFrame(tick);
       } else {
@@ -48,6 +66,18 @@ export default function Canvas({ phase }) {
 
     cancelAnimationFrame(animRef.current.raf);
     animRef.current.raf = requestAnimationFrame(tick);
+
+    // If the image wasn't ready, repaint when it loads.
+    if (bgImg && !bgImg.complete) {
+      const onLoad = () => {
+        paint(ctx, W, H, phase, animRef.current.prevPhase, 1);
+      };
+      bgImg.addEventListener('load', onLoad, { once: true });
+      return () => {
+        cancelAnimationFrame(animRef.current.raf);
+        bgImg.removeEventListener('load', onLoad);
+      };
+    }
     return () => cancelAnimationFrame(animRef.current.raf);
   }, [phase]);
 
@@ -95,7 +125,6 @@ export default function Canvas({ phase }) {
           display: 'block',
           width: '100%',
           height: '100%',
-          imageRendering: 'pixelated',
         }}
       />
     </div>
@@ -123,9 +152,23 @@ function paint(ctx, W, H, phase, prevPhase, t) {
 function drawPhase(ctx, W, H, phase, t, isOutgoing) {
   if (!phase) return;
   const v = phase.visuals || {};
-  // Future: if v.background is an asset URL, draw the cached image here.
-  drawProceduralLayers(ctx, W, H, v.procedural || defaultPalette(), v.parallax_offset || 0);
-  drawAccents(ctx, W, H, v.procedural || defaultPalette(), phase, t);
+
+  // RASTER MODE — draw Cleo's Nano Banana background scaled to fill (cover).
+  // Falls back to procedural layers when the image isn't ready or absent.
+  const bgImg = v.background ? loadImage(v.background) : null;
+  if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+    drawCoverImage(ctx, W, H, bgImg, v.parallax_offset || 0);
+    // Subtle bottom vignette so the narrative card has somewhere to live.
+    const vg = ctx.createLinearGradient(0, H * 0.45, 0, H);
+    vg.addColorStop(0, 'rgba(8,10,16,0)');
+    vg.addColorStop(1, 'rgba(8,10,16,0.55)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, H * 0.45, W, H * 0.55);
+  } else {
+    drawProceduralLayers(ctx, W, H, v.procedural || defaultPalette(), v.parallax_offset || 0);
+    drawAccents(ctx, W, H, v.procedural || defaultPalette(), phase, t);
+  }
+
   // Fade the outgoing composite so the swap reads even at the seam.
   if (isOutgoing) {
     ctx.globalCompositeOperation = 'destination-out';
@@ -133,6 +176,19 @@ function drawPhase(ctx, W, H, phase, t, isOutgoing) {
     ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'source-over';
   }
+}
+
+function drawCoverImage(ctx, W, H, img, parallaxOffset) {
+  const iw = img.naturalWidth;
+  const ih = img.naturalHeight;
+  // Cover fit (preserve aspect, fill viewport, crop overflow).
+  const scale = Math.max(W / iw, H / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  // Slight downward bias keyed off parallax_offset so later phases sit lower.
+  const dy = (H - dh) / 2 + parallaxOffset * 6;
+  const dx = (W - dw) / 2;
+  ctx.drawImage(img, dx, dy, dw, dh);
 }
 
 function drawProceduralLayers(ctx, W, H, p, offset) {
