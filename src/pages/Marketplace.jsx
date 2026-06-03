@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText, Users, Zap, Star, Clock,
-  Check, ArrowRight, Download,
+  Check, ArrowRight, Download, Eye,
   MessageSquare, TrendingUp, LayoutGrid, PenTool, BarChart2,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
 import SiteFooter from '../components/SiteFooter';
 
@@ -14,6 +14,7 @@ const ORANGE = '#E85D26';
 // ─── Product catalog ────────────────────────────────────────────────────────
 // To add a new product: add an object to this array.
 // Free products: set `free: true` + `href: '/internal-route'` (no gumroadUrl needed).
+// Hidden products: set `hidden: true` — invisible to public, visible in admin preview (?preview=aom).
 const PRODUCTS = [
   {
     id: 'ai-guide',
@@ -40,6 +41,7 @@ const PRODUCTS = [
   },
   {
     id: 'ai-prompt-playbook',
+    hidden: true,  // Hidden from public — flagged for future launch
     badge: 'DIGITAL DOWNLOAD',
     title: "The Business Owner's AI Playbook",
     subtitle:
@@ -273,45 +275,178 @@ function ProductDetail({ product }) {
   );
 }
 
+// ─── Admin Preview Card ─────────────────────────────────────────────────────
+function AdminPreviewCard({ product, onSelect, selected }) {
+  return (
+    <motion.button
+      onClick={() => onSelect(product)}
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+      className="text-left w-full rounded-xl p-5 cursor-pointer transition-all duration-200 relative"
+      style={{
+        background: selected ? 'rgba(232,93,38,0.08)' : 'rgba(255,255,255,0.02)',
+        border: selected ? `1px solid ${ORANGE}` : '1px dashed rgba(255,165,0,0.3)',
+      }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <span
+          className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+          style={{ background: 'rgba(232,93,38,0.15)', color: ORANGE }}
+        >
+          {product.badge}
+        </span>
+        <span
+          className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+          style={{ background: 'rgba(255,165,0,0.12)', color: '#FFA500' }}
+        >
+          HIDDEN
+        </span>
+      </div>
+      <h3 className="font-headline text-lg text-white mb-1 leading-snug">{product.title}</h3>
+      <p className="font-body text-sm text-white/50 mb-4 leading-relaxed">{product.subtitle}</p>
+      <div className="flex items-center justify-between">
+        <span className="font-headline text-xl text-white">${product.price}</span>
+        <span className="text-xs font-body text-white/40">Not published</span>
+      </div>
+    </motion.button>
+  );
+}
+
 // ─── Page ───────────────────────────────────────────────────────────────────
 export default function Marketplace() {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState(PRODUCTS[0]);
+  const location = useLocation();
+  const isAdminPreview = new URLSearchParams(location.search).get('preview') === 'aom';
+
+  const publicProducts = PRODUCTS.filter((p) => !p.hidden);
+  const hiddenProducts = PRODUCTS.filter((p) => p.hidden);
+
+  const [selected, setSelected] = useState(publicProducts[0]);
 
   return (
     <div className="min-h-screen" style={{ background: '#0C0C0C', color: '#F0ECE6' }}>
       <SiteNav />
 
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-6 max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <span
-            className="inline-block text-xs font-body font-semibold tracking-widest mb-4 px-3 py-1 rounded-full"
-            style={{ background: 'rgba(232,93,38,0.12)', color: ORANGE }}
+      {/* ── Hero: Free AI Guide as the primary driver ── */}
+      <section className="pt-32 pb-20 px-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+          {/* Left: headline + CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            AOM MARKETPLACE
-          </span>
-          <h1 className="font-display-serif text-5xl md:text-6xl text-white leading-tight mb-5">
-            Tools that do<br />
-            <span style={{ color: ORANGE }}>the work for you.</span>
-          </h1>
-          <p className="font-body text-lg text-white/55 max-w-xl leading-relaxed">
-            Digital products built from what actually works at AOM. No fluff — just tools
-            that save time and move your business forward.
-          </p>
-        </motion.div>
+            <span
+              className="inline-block text-xs font-body font-semibold tracking-widest mb-5 px-3 py-1 rounded-full"
+              style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80' }}
+            >
+              FREE TOOL
+            </span>
+            <h1 className="font-display-serif text-5xl md:text-6xl text-white leading-tight mb-6">
+              Get AI working<br />
+              for your business.
+            </h1>
+            <p className="font-body text-lg text-white/60 leading-relaxed mb-8 max-w-lg">
+              The AI Business Guide walks you through using AI for client communications,
+              hiring, sales, operations, and more. Pick your challenge, answer two questions,
+              walk away with prompts you can use today.
+            </p>
+
+            {/* Key proof points */}
+            <ul className="space-y-3 mb-10">
+              {[
+                '30+ personalized AI prompts, ready to copy',
+                'Covers 6 key areas of running a business',
+                'Works with ChatGPT, Claude, or any AI tool',
+                'Takes under 5 minutes. No signup required.',
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-3">
+                  <Check size={15} className="flex-shrink-0 mt-0.5" style={{ color: '#4ade80' }} />
+                  <span className="font-body text-sm text-white/70">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
+              <button
+                onClick={() => navigate('/ai-guide')}
+                className="flex items-center gap-2 px-8 py-4 rounded-xl font-headline text-base tracking-wide hover:brightness-110 active:scale-95 transition-all duration-200"
+                style={{ background: ORANGE, color: '#fff' }}
+              >
+                <ArrowRight size={18} />
+                Start the Guide — Free
+              </button>
+              <span className="font-body text-xs text-white/30 self-center sm:self-auto pt-1">
+                No account. No credit card. Free forever.
+              </span>
+            </div>
+          </motion.div>
+
+          {/* Right: guide preview card */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="hidden lg:block"
+          >
+            <div
+              className="rounded-2xl p-6"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <span className="font-headline text-sm text-white/70">The AI Business Guide</span>
+                <span
+                  className="text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+                  style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80' }}
+                >
+                  FREE
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-5">
+                {publicProducts[0]?.categories?.slice(0, 6).map(({ icon: Icon, title }) => (
+                  <div
+                    key={title}
+                    className="flex items-center gap-2.5 p-3 rounded-lg"
+                    style={{ background: 'rgba(255,255,255,0.04)' }}
+                  >
+                    <div
+                      className="w-7 h-7 rounded flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'rgba(232,93,38,0.12)' }}
+                    >
+                      <Icon size={13} style={{ color: ORANGE }} />
+                    </div>
+                    <span className="font-body text-xs text-white/70 leading-tight">{title}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {[{ value: '30+', label: 'Prompts' }, { value: '6', label: 'Categories' }, { value: 'Free', label: 'Forever' }].map((s) => (
+                  <div
+                    key={s.label}
+                    className="text-center py-3 rounded-lg"
+                    style={{ background: 'rgba(232,93,38,0.06)', border: '1px solid rgba(232,93,38,0.15)' }}
+                  >
+                    <div className="font-headline text-lg text-white">{s.value}</div>
+                    <div className="font-body text-xs text-white/40 uppercase tracking-wider mt-0.5">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       <div className="border-t border-white/10 max-w-6xl mx-auto" />
 
-      {/* Product grid + detail */}
+      {/* Product grid + detail (public products only) */}
       <section className="py-16 px-6 max-w-6xl mx-auto">
+        <div className="mb-8">
+          <h2 className="font-headline text-2xl text-white mb-1">All tools</h2>
+          <p className="font-body text-sm text-white/40">Free and paid resources for business owners.</p>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {PRODUCTS.map((p) => (
+          {publicProducts.map((p) => (
             <ProductCard
               key={p.id}
               product={p}
@@ -324,6 +459,59 @@ export default function Marketplace() {
 
         <ProductDetail product={selected} />
       </section>
+
+      {/* ── Admin Preview Section (gated by ?preview=aom) ── */}
+      {isAdminPreview && hiddenProducts.length > 0 && (
+        <section className="py-12 px-6 max-w-6xl mx-auto">
+          <div
+            className="rounded-2xl p-8"
+            style={{ background: 'rgba(255,165,0,0.04)', border: '1px solid rgba(255,165,0,0.2)' }}
+          >
+            {/* Admin header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: 'rgba(255,165,0,0.15)' }}
+              >
+                <Eye size={15} style={{ color: '#FFA500' }} />
+              </div>
+              <div>
+                <h3 className="font-headline text-lg text-white">Admin Preview</h3>
+                <p className="font-body text-xs text-white/40">
+                  Hidden products — visible to you only at <code className="text-white/60">?preview=aom</code>
+                </p>
+              </div>
+              <span
+                className="ml-auto text-xs font-body font-semibold tracking-widest px-3 py-1 rounded-full"
+                style={{ background: 'rgba(255,165,0,0.15)', color: '#FFA500' }}
+              >
+                NOT PUBLIC
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {hiddenProducts.map((p) => (
+                <AdminPreviewCard
+                  key={p.id}
+                  product={p}
+                  onSelect={setSelected}
+                  selected={selected?.id === p.id}
+                />
+              ))}
+            </div>
+
+            {selected?.hidden && (
+              <div className="mt-8">
+                <ProductDetail product={selected} />
+              </div>
+            )}
+
+            <p className="font-body text-xs text-white/25 text-center mt-8">
+              To launch a product, remove <code>hidden: true</code> from its entry in <code>Marketplace.jsx</code>.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Bottom CTA */}
       <section className="py-20 px-6 max-w-6xl mx-auto">
