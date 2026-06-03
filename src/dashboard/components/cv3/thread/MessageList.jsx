@@ -1262,14 +1262,14 @@ function MessageList({ roomType = 'agent' }) {
                       {msg.user_name}
                     </div>
                   )}
-                  {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. R12: card background + border when steps exist so message + steps read as one unit. 0.12/0.15 opacity — enough to read as a card on the dark ground. */}
+                  {/* R9: wrap bubble + steps as atomic unit (flex column) so parent flex alignment doesn't separate them. R12: dark-native card — cool-tinted surface elevation + subtle border so message + steps group without a "white box on dark" look. */}
                   <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     width: '100%',
                     ...((!isUser && userBubbleSteps?.length > 0) ? {
-                      background: 'rgba(255,255,255,0.12)',
-                      border: '1px solid rgba(255,255,255,0.15)',
+                      background: 'rgba(96,125,150,0.12)',
+                      border: '1px solid rgba(148,163,184,0.15)',
                       borderRadius: 10,
                       padding: '8px 0',
                       paddingLeft: 12,
