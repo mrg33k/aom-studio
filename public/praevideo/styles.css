@@ -1,4 +1,4 @@
-/* Praevideo — Direction C v0.6: Operator's Precision */
+/* Praevideo — Direction C v0.7: Animation Intensity Boost */
 /* Near-black #070B14 / Teal-Cyan #06B6D4 / Cold White #ECF2FF */
 /* Fonts: JetBrains Mono (stats/display) + DM Sans (body) */
 
@@ -129,8 +129,16 @@ body {
 ───────────────────────────────────────── */
 @keyframes grid-drift {
     0%   { background-position: 0 0, 0 0; }
-    50%  { background-position: 60px 40px, 40px 60px; }
+    25%  { background-position: 80px 60px, 50px 70px; }
+    50%  { background-position: 120px 80px, 80px 100px; }
+    75%  { background-position: 40px 100px, 100px 40px; }
     100% { background-position: 0 0, 0 0; }
+}
+
+@keyframes grid-pulse {
+    0%   { opacity: 0.65; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.65; }
 }
 
 @keyframes scan-drift {
@@ -142,9 +150,9 @@ body {
 
 @keyframes scan-sweep {
     0%   { transform: translateY(-100%); opacity: 0; }
-    5%   { opacity: 1; }
-    95%  { opacity: 1; }
-    100% { transform: translateY(100vh); opacity: 0; }
+    3%   { opacity: 1; }
+    97%  { opacity: 1; }
+    100% { transform: translateY(110vh); opacity: 0; }
 }
 
 .hero {
@@ -186,25 +194,25 @@ body {
     z-index: 2;
     pointer-events: none;
 
-    /* Grid lines — visible, high contrast */
+    /* Grid lines — high contrast, strongly visible */
     background-image:
         repeating-linear-gradient(
             0deg,
             transparent 0px,
             transparent 59px,
-            rgba(6, 182, 212, 0.22) 59px,
-            rgba(6, 182, 212, 0.22) 60px
+            rgba(6, 182, 212, 0.42) 59px,
+            rgba(6, 182, 212, 0.42) 60px
         ),
         repeating-linear-gradient(
             90deg,
             transparent 0px,
-            transparent 79px,
-            rgba(6, 182, 212, 0.18) 79px,
-            rgba(6, 182, 212, 0.18) 80px
+            transparent 59px,
+            rgba(6, 182, 212, 0.32) 59px,
+            rgba(6, 182, 212, 0.32) 60px
         );
 
-    background-size: 60px 60px, 80px 80px;
-    animation: grid-drift 6s ease-in-out infinite;
+    background-size: 60px 60px, 60px 60px;
+    animation: grid-drift 2.5s ease-in-out infinite, grid-pulse 3s ease-in-out infinite;
 }
 
 /* Scan line sweep — separate element inside hero */
@@ -221,20 +229,25 @@ body {
     position: absolute;
     left: 0;
     right: 0;
-    height: 2px;
+    height: 4px;
     background: linear-gradient(
         90deg,
         transparent 0%,
-        rgba(6, 182, 212, 0.0) 10%,
-        rgba(6, 182, 212, 0.6) 40%,
-        rgba(6, 182, 212, 0.9) 50%,
-        rgba(6, 182, 212, 0.6) 60%,
-        rgba(6, 182, 212, 0.0) 90%,
+        rgba(6, 182, 212, 0.0) 5%,
+        rgba(6, 182, 212, 0.85) 30%,
+        rgba(6, 182, 212, 1.0) 50%,
+        rgba(6, 182, 212, 0.85) 70%,
+        rgba(6, 182, 212, 0.0) 95%,
         transparent 100%
     );
-    box-shadow: 0 0 12px rgba(6, 182, 212, 0.5), 0 0 30px rgba(6, 182, 212, 0.3);
-    animation: scan-sweep 4s ease-in-out infinite;
-    animation-delay: 1s;
+    box-shadow:
+        0 0 8px rgba(6, 182, 212, 0.9),
+        0 0 20px rgba(6, 182, 212, 0.6),
+        0 0 50px rgba(6, 182, 212, 0.4),
+        0 -2px 20px rgba(6, 182, 212, 0.3),
+        0 2px 20px rgba(6, 182, 212, 0.3);
+    animation: scan-sweep 3s linear infinite;
+    animation-delay: 0.3s;
     top: 0;
 }
 

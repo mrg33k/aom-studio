@@ -34,7 +34,23 @@ const INK_MUTED = '#6A6660'
 const BORDER = '#E8E2D8'
 const BORDER_SOFT = '#F0EBE3'
 const GREEN_CHECK = '#2D7A4F'
+const GREEN_CHECK_LIGHT = '#F0FFF4'
+const GREEN_CHECK_BORDER = '#B7E5C8'
 const LOCK_GRAY = '#B8B2A8'
+// Milestone progress colors: red → amber → green
+const PROGRESS_RED = '#DC2626'
+const PROGRESS_RED_PALE = '#FEF2F2'
+const PROGRESS_AMBER = '#D97706'
+const PROGRESS_AMBER_PALE = '#FFFBEB'
+const PROGRESS_GREEN = '#2D7A4F'
+const PROGRESS_GREEN_PALE = '#F0FFF4'
+
+function getProgressColor(checked, total) {
+  if (checked === 0) return { bg: BORDER, text: INK_MUTED, card: CREAM_WARM, border: BORDER_SOFT, pale: CREAM_WARM }
+  if (checked < total - 1) return { bg: PROGRESS_RED, text: PROGRESS_RED, card: PROGRESS_RED_PALE, border: '#FCA5A5', pale: PROGRESS_RED_PALE }
+  if (checked < total) return { bg: PROGRESS_AMBER, text: PROGRESS_AMBER, card: PROGRESS_AMBER_PALE, border: '#FCD34D', pale: PROGRESS_AMBER_PALE }
+  return { bg: PROGRESS_GREEN, text: PROGRESS_GREEN, card: PROGRESS_GREEN_PALE, border: GREEN_CHECK_BORDER, pale: PROGRESS_GREEN_PALE }
+}
 
 // ─── Session Data ─────────────────────────────────────────────────────────────
 
@@ -252,33 +268,29 @@ const SESSIONS = [
 
 const SESSION_CHECKLISTS = {
   1: [
-    'Attended the discovery call',
-    'Got Claude Code set up',
-    'Completed my first live automation',
-    'Received my homework assignment',
+    'Had my discovery conversation with AOM',
+    'Got Claude Code running on my machine',
+    'Built my first automation live',
   ],
   2: [
-    'Reviewed my homework results',
-    'Mapped out my weekly workflow',
-    'Identified my top 3 bottlenecks',
-    'Started my business brain doc',
+    'Reviewed what I built in Session 1',
+    'Mapped out my business workflow with AOM',
+    'Identified my top bottlenecks',
   ],
   3: [
-    'Picked my highest-value bottleneck',
-    'Built Tool 1 with AOM',
-    'Documented how to use it',
-    'Used it at least once',
+    'Picked my highest-value use case',
+    'Built Tool 1 live with AOM',
+    'Know how to use and modify it',
   ],
   4: [
-    'Reported friction on Tool 1',
-    'Built Tool 2 with AOM',
-    'Connected Tools 1 and 2',
-    'Identified what\'s still missing',
+    'Reviewed Tool 1 with AOM and noted friction',
+    'Built Tool 2 live with AOM',
+    'Connected my two tools into a workflow',
   ],
   5: [
-    'Completed the full OS review',
-    'Identified remaining gaps',
-    'Chose my path forward',
+    'Completed my full OS review',
+    'Know my gaps and what\'s next',
+    'Chose my path forward with AOM',
   ],
 }
 
@@ -717,7 +729,7 @@ function SessionStatusIcon({ status }) {
 
 // ─── Session Step Indicator ───────────────────────────────────────────────────
 
-function SessionStepIndicator({ currentSession }) {
+function SessionStepIndicator({ currentSession, checklistCompleted = {} }) {
   const isComplete = currentSession > 5
 
   function getStepStatus(sessionNum) {
@@ -737,33 +749,61 @@ function SessionStepIndicator({ currentSession }) {
             const sessionNum = i + 1
             const status = getStepStatus(sessionNum)
             const isLast = sessionNum === 5
+            const checklistDone = !!checklistCompleted[sessionNum]
 
             return (
               <React.Fragment key={sessionNum}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1 }}>
-                  <div style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: status === 'done' ? GREEN_CHECK : status === 'current' ? AOM_ORANGE : 'transparent',
-                    border: status === 'locked' ? `2px solid ${BORDER}` : 'none',
-                    flexShrink: 0,
-                  }}>
-                    {status === 'done' ? (
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M4 9.5l3 3 7-7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    ) : (
-                      <span style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        color: status === 'current' ? '#fff' : LOCK_GRAY,
+                  {/* Step circle + optional milestone badge */}
+                  <div style={{ position: 'relative', display: 'inline-flex' }}>
+                    <div style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: status === 'done' ? GREEN_CHECK : status === 'current' ? AOM_ORANGE : 'transparent',
+                      border: status === 'locked' ? `2px solid ${BORDER}` : 'none',
+                      flexShrink: 0,
+                      transition: 'background 0.4s ease',
+                    }}>
+                      {status === 'done' ? (
+                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                          <path d="M4 9.5l3 3 7-7" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        <span style={{
+                          fontSize: 15,
+                          fontWeight: 700,
+                          color: status === 'current' ? '#fff' : LOCK_GRAY,
+                        }}>
+                          {sessionNum}
+                        </span>
+                      )}
+                    </div>
+                    {/* Milestone badge: small green check that appears when all checklist items are done */}
+                    {checklistDone && status !== 'locked' && (
+                      <div style={{
+                        position: 'absolute',
+                        bottom: -2,
+                        right: -4,
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: PROGRESS_GREEN,
+                        border: '2px solid #fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 1px 4px rgba(45,122,79,0.35)',
+                        transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1)',
+                        transform: 'scale(1)',
                       }}>
-                        {sessionNum}
-                      </span>
+                        <svg width="8" height="7" viewBox="0 0 8 7" fill="none">
+                          <path d="M1 3.5l2 2 4-4" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
                     )}
                   </div>
                   <div style={{
@@ -1237,7 +1277,7 @@ function AccessCodeGate({ onClientSuccess }) {
 
 // ─── Session Checklist Component ─────────────────────────────────────────────
 
-function SessionChecklist({ sessionNumber, accessCode }) {
+function SessionChecklist({ sessionNumber, accessCode, onAllChecked }) {
   const items = SESSION_CHECKLISTS[sessionNumber] || []
   const storageKey = `ai_hours_checklist_${accessCode}_${sessionNumber}`
 
@@ -1251,6 +1291,7 @@ function SessionChecklist({ sessionNumber, accessCode }) {
     }
   })
   const [animating, setAnimating] = useState(null) // index of recently-checked item
+  const [justCompleted, setJustCompleted] = useState(false) // milestone flash
 
   // Sync from Supabase on mount
   useEffect(() => {
@@ -1261,22 +1302,36 @@ function SessionChecklist({ sessionNumber, accessCode }) {
         if (data.ok && Array.isArray(data.checked_items) && data.checked_items.length > 0) {
           setChecked(data.checked_items)
           try { localStorage.setItem(storageKey, JSON.stringify(data.checked_items)) } catch {}
+          if (data.checked_items.length >= items.length && onAllChecked) {
+            onAllChecked(sessionNumber, true)
+          }
         }
       })
       .catch(() => {}) // localStorage is the fallback; silence network errors
   }, [accessCode, sessionNumber, storageKey])
 
   function toggle(index) {
-    const next = checked.includes(index)
+    const wasChecked = checked.includes(index)
+    const next = wasChecked
       ? checked.filter(i => i !== index)
       : [...checked, index]
     setChecked(next)
     try { localStorage.setItem(storageKey, JSON.stringify(next)) } catch {}
+
     // animate the check
-    if (!checked.includes(index)) {
+    if (!wasChecked) {
       setAnimating(index)
-      setTimeout(() => setAnimating(null), 600)
+      setTimeout(() => setAnimating(null), 700)
     }
+
+    // milestone moment: all items now checked
+    const allNowDone = next.length >= items.length
+    if (allNowDone && !wasChecked) {
+      setJustCompleted(true)
+      setTimeout(() => setJustCompleted(false), 2000)
+    }
+    if (onAllChecked) onAllChecked(sessionNumber, allNowDone)
+
     // persist to Supabase in background (best-effort)
     fetch('/api/ai-hours/checklist', {
       method: 'POST',
@@ -1288,133 +1343,171 @@ function SessionChecklist({ sessionNumber, accessCode }) {
   if (items.length === 0) return null
   const doneCount = checked.length
   const totalCount = items.length
-  const allDone = doneCount === totalCount
+  const allDone = doneCount >= totalCount
+  const colors = getProgressColor(doneCount, totalCount)
 
   return (
     <div style={{
-      marginTop: 20,
-      padding: '20px 24px',
-      background: allDone ? '#F0FFF4' : CREAM_WARM,
-      border: `1px solid ${allDone ? '#B7E5C8' : BORDER_SOFT}`,
-      borderRadius: 8,
-      transition: 'background 0.4s ease, border-color 0.4s ease',
+      marginTop: 24,
+      padding: '0',
+      borderRadius: 12,
+      border: `1.5px solid ${colors.border}`,
+      background: colors.card,
+      overflow: 'hidden',
+      transition: 'background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease',
+      boxShadow: allDone
+        ? `0 0 0 3px rgba(45,122,79,0.12), 0 4px 20px rgba(45,122,79,0.1)`
+        : justCompleted
+        ? `0 0 0 4px rgba(45,122,79,0.2), 0 6px 24px rgba(45,122,79,0.18)`
+        : '0 1px 4px rgba(26,26,22,0.06)',
     }}>
-      {/* Progress counter */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 16,
-      }}>
-        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: INK_MUTED }}>
-          Your progress
-        </span>
-        <span style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: allDone ? GREEN_CHECK : AOM_ORANGE,
-          transition: 'color 0.3s ease',
-        }}>
-          {doneCount} of {totalCount} completed
-        </span>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{
-        height: 4,
-        background: BORDER,
-        borderRadius: 2,
-        marginBottom: 18,
-        overflow: 'hidden',
-      }}>
+      {/* Progress bar — sits at top, full width */}
+      <div style={{ height: 5, background: 'rgba(0,0,0,0.06)', position: 'relative' }}>
         <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
           height: '100%',
-          width: `${(doneCount / totalCount) * 100}%`,
-          background: allDone ? GREEN_CHECK : AOM_ORANGE,
-          borderRadius: 2,
-          transition: 'width 0.4s ease, background 0.4s ease',
+          width: doneCount === 0 ? '0%' : `${(doneCount / totalCount) * 100}%`,
+          background: colors.bg,
+          borderRadius: '0 3px 3px 0',
+          transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1), background 0.5s ease',
         }} />
       </div>
 
-      {/* Checklist items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {items.map((item, index) => {
-          const isChecked = checked.includes(index)
-          const isAnimating = animating === index
-          return (
-            <button
-              key={index}
-              onClick={() => toggle(index)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                background: 'none',
-                border: 'none',
-                padding: '6px 0',
-                cursor: 'pointer',
-                textAlign: 'left',
-                borderRadius: 4,
-                transition: 'opacity 0.15s ease',
-              }}
-            >
-              {/* Checkbox */}
-              <div style={{
-                width: 20,
-                height: 20,
-                minWidth: 20,
-                borderRadius: 4,
-                border: `2px solid ${isChecked ? GREEN_CHECK : BORDER}`,
-                background: isChecked ? GREEN_CHECK : '#fff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'border-color 0.2s ease, background 0.2s ease',
-                transform: isAnimating ? 'scale(1.2)' : 'scale(1)',
-                boxShadow: isAnimating ? `0 0 0 3px rgba(45,122,79,0.2)` : 'none',
-              }}>
-                {isChecked && (
-                  <svg width="11" height="9" viewBox="0 0 11 9" fill="none" style={{
-                    opacity: isAnimating ? 0.7 : 1,
-                    transition: 'opacity 0.2s ease',
-                  }}>
-                    <path d="M1 4.5L4 7.5L10 1.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </div>
-              {/* Label */}
-              <span style={{
-                fontSize: 14,
-                color: isChecked ? INK_MUTED : INK_SOFT,
-                textDecoration: isChecked ? 'line-through' : 'none',
-                transition: 'color 0.2s ease, text-decoration 0.2s ease',
-              }}>
-                {item}
-              </span>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* All-done celebration */}
-      {allDone && (
+      <div style={{ padding: '20px 24px' }}>
+        {/* Header row */}
         <div style={{
-          marginTop: 16,
-          paddingTop: 16,
-          borderTop: `1px solid #B7E5C8`,
           display: 'flex',
           alignItems: 'center',
-          gap: 8,
+          justifyContent: 'space-between',
+          marginBottom: 18,
         }}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="8" fill={GREEN_CHECK} />
-            <path d="M4.5 8.5l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span style={{ fontSize: 13, fontWeight: 600, color: GREEN_CHECK }}>
-            Session complete — great work.
+          <span style={{
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: doneCount === 0 ? INK_MUTED : colors.text,
+            transition: 'color 0.4s ease',
+          }}>
+            Session milestones
           </span>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+          }}>
+            {/* Dot indicators */}
+            {items.map((_, i) => (
+              <div key={i} style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: checked.includes(i) ? colors.bg : BORDER,
+                transition: 'background 0.4s ease',
+              }} />
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* Checklist items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {items.map((item, index) => {
+            const isChecked = checked.includes(index)
+            const isAnimating = animating === index
+            return (
+              <button
+                key={index}
+                onClick={() => toggle(index)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 14,
+                  background: isChecked ? 'rgba(0,0,0,0.03)' : 'transparent',
+                  border: 'none',
+                  padding: '10px 12px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  borderRadius: 8,
+                  transition: 'background 0.2s ease',
+                  width: '100%',
+                }}
+              >
+                {/* Checkbox — 26px, satisfying scale */}
+                <div style={{
+                  width: 26,
+                  height: 26,
+                  minWidth: 26,
+                  borderRadius: 6,
+                  border: `2px solid ${isChecked ? PROGRESS_GREEN : BORDER}`,
+                  background: isChecked ? PROGRESS_GREEN : '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'border-color 0.25s ease, background 0.25s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease',
+                  transform: isAnimating ? 'scale(1.18)' : 'scale(1)',
+                  boxShadow: isAnimating
+                    ? `0 0 0 4px rgba(45,122,79,0.22), 0 2px 8px rgba(45,122,79,0.18)`
+                    : isChecked
+                    ? `0 1px 4px rgba(45,122,79,0.2)`
+                    : 'none',
+                  flexShrink: 0,
+                }}>
+                  {isChecked && (
+                    <svg width="13" height="10" viewBox="0 0 13 10" fill="none" style={{
+                      opacity: 1,
+                      transition: 'opacity 0.15s ease',
+                      transform: isAnimating ? 'scale(0.85)' : 'scale(1)',
+                    }}>
+                      <path d="M1.5 5L5 8.5L11.5 1.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                {/* Label */}
+                <span style={{
+                  fontSize: 14,
+                  lineHeight: 1.45,
+                  color: isChecked ? INK_MUTED : INK_SOFT,
+                  textDecoration: isChecked ? 'line-through' : 'none',
+                  transition: 'color 0.25s ease',
+                  fontWeight: isChecked ? 400 : 500,
+                }}>
+                  {item}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* All-done milestone banner */}
+        {allDone && (
+          <div style={{
+            marginTop: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            padding: '12px 16px',
+            background: PROGRESS_GREEN,
+            borderRadius: 8,
+            animation: justCompleted ? 'none' : undefined,
+          }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="9" fill="rgba(255,255,255,0.25)" />
+              <path d="M5.5 9.5l2.5 2.5 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#fff',
+              letterSpacing: '0.01em',
+            }}>
+              Session complete — well done.
+            </span>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -1426,6 +1519,7 @@ function ClientView({ client, onLogout }) {
   const [showContact, setShowContact] = useState(false)
   const [contactMessage, setContactMessage] = useState('')
   const [contactSent, setContactSent] = useState(false)
+  const [checklistCompleted, setChecklistCompleted] = useState({}) // { sessionNum: bool }
   const currentSession = client.current_session || 1
   const isComplete = currentSession > 5
 
@@ -1433,6 +1527,10 @@ function ClientView({ client, onLogout }) {
     if (sessionNum < currentSession) return 'done'
     if (sessionNum === currentSession && !isComplete) return 'current'
     return 'locked'
+  }
+
+  function handleChecklistComplete(sessionNum, allDone) {
+    setChecklistCompleted(prev => ({ ...prev, [sessionNum]: allDone }))
   }
 
   function handleContactSubmit(e) {
@@ -1470,7 +1568,7 @@ function ClientView({ client, onLogout }) {
       </header>
 
       {/* Session step indicator */}
-      <SessionStepIndicator currentSession={currentSession} />
+      <SessionStepIndicator currentSession={currentSession} checklistCompleted={checklistCompleted} />
 
       {/* Sessions */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 40px' }}>
@@ -1535,6 +1633,7 @@ function ClientView({ client, onLogout }) {
                       <SessionChecklist
                         sessionNumber={sessionNum}
                         accessCode={client.access_code}
+                        onAllChecked={handleChecklistComplete}
                       />
                     )}
 
