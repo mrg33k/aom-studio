@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FileText, Users, Zap, Star, Clock,
-  Check, ArrowRight, Download, Eye,
+  Check, ArrowRight, Download, Eye, Sparkles,
   MessageSquare, TrendingUp, LayoutGrid, PenTool, BarChart2,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -10,14 +10,25 @@ import SiteNav from '../components/SiteNav';
 import SiteFooter from '../components/SiteFooter';
 
 const ORANGE = '#E85D26';
+const AMBER = '#FFA500';
 
 // ─── Product catalog ────────────────────────────────────────────────────────
-// To add a new product: add an object to this array.
-// Free products: set `free: true` + `href: '/internal-route'` (no gumroadUrl needed).
-// Hidden products: set `hidden: true` — invisible to public, visible in admin preview (?preview=aom).
+// Each product has:
+//   status:     'live' | 'hidden' | 'coming-soon' | 'soft-launch'
+//   visibility: 'public' | 'preview-only'
+//
+// Public marketplace renders products with visibility:'public' and status in
+// ('live', 'soft-launch'). Admin preview (?preview=aom) also surfaces hidden
+// + coming-soon items so the pipeline is inspectable without shipping.
+//
+// To soft-launch a product: status:'soft-launch' + visibility:'public' (lives
+// on the page with a "Limited Release" label) OR + visibility:'preview-only'
+// (still gated to admin). To ship publicly: status:'live' + visibility:'public'.
 const PRODUCTS = [
   {
     id: 'ai-guide',
+    status: 'live',
+    visibility: 'public',
     badge: 'FREE TOOL',
     title: 'The AI Business Guide',
     subtitle:
@@ -41,7 +52,8 @@ const PRODUCTS = [
   },
   {
     id: 'ai-prompt-playbook',
-    hidden: true,  // Hidden from public — flagged for future launch
+    status: 'hidden',
+    visibility: 'preview-only',
     badge: 'DIGITAL DOWNLOAD',
     title: "The Business Owner's AI Playbook",
     subtitle:
@@ -69,34 +81,92 @@ const PRODUCTS = [
     ],
     callout: "The exact prompts AOM's team uses every day.",
   },
+  // ── Pipeline (preview-only, not yet built) ────────────────────────────────
+  {
+    id: 'ai-templates-bundle',
+    status: 'coming-soon',
+    visibility: 'preview-only',
+    badge: 'TEMPLATE BUNDLE',
+    title: 'AI-Ready Templates',
+    subtitle:
+      'Plug-and-play templates for proposals, SOPs, hiring docs, and client onboarding — pre-wired to work with your favorite AI tool.',
+    targetPrice: 97,
+    eta: 'Q3 2026',
+  },
+  {
+    id: 'ai-workflow-builder',
+    status: 'coming-soon',
+    visibility: 'preview-only',
+    badge: 'INTERACTIVE TOOL',
+    title: 'AI Workflow Builder',
+    subtitle:
+      'Map a repetitive task in your business, get a step-by-step AI workflow back — with prompts, tools, and the exact order of operations.',
+    targetPrice: 197,
+    eta: 'Q3 2026',
+  },
+  {
+    id: 'business-owner-ai-course',
+    status: 'coming-soon',
+    visibility: 'preview-only',
+    badge: 'COURSE',
+    title: "The Business Owner's AI Course",
+    subtitle:
+      'A 4-week course that takes you from AI-curious to running a leaner operation — the same playbook AOM used internally.',
+    targetPrice: 497,
+    eta: 'Q4 2026',
+  },
 ];
 
-// ─── ProductCard (grid tile) ────────────────────────────────────────────────
-function ProductCard({ product, onSelect, selected }) {
-  function handleClick() {
-    onSelect(product);
-  }
+// ─── Helpers ────────────────────────────────────────────────────────────────
+const STATUS_LABEL = {
+  hidden: 'HIDDEN',
+  'coming-soon': 'COMING SOON',
+  'soft-launch': 'LIMITED RELEASE',
+  live: 'LIVE',
+};
 
+// ─── ProductCard (used in soft-launch grid + admin hidden grid) ─────────────
+function ProductCard({ product, onSelect, selected }) {
+  const isInteractive = typeof onSelect === 'function';
   return (
     <motion.button
-      onClick={handleClick}
-      whileHover={{ y: -4 }}
+      onClick={isInteractive ? () => onSelect(product) : undefined}
+      whileHover={isInteractive ? { y: -4 } : undefined}
       transition={{ duration: 0.2 }}
-      className="text-left w-full rounded-xl p-6 cursor-pointer transition-all duration-200"
+      className="text-left w-full rounded-xl p-6 transition-all duration-200"
       style={{
         background: selected ? 'rgba(232,93,38,0.08)' : 'rgba(255,255,255,0.03)',
         border: selected ? `1px solid ${ORANGE}` : '1px solid rgba(255,255,255,0.1)',
+        cursor: isInteractive ? 'pointer' : 'default',
       }}
     >
-      <span
-        className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded mb-4"
-        style={{
-          background: product.free ? 'rgba(74,222,128,0.12)' : 'rgba(232,93,38,0.15)',
-          color: product.free ? '#4ade80' : ORANGE,
-        }}
-      >
-        {product.badge}
-      </span>
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        <span
+          className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+          style={{
+            background: product.free ? 'rgba(74,222,128,0.12)' : 'rgba(232,93,38,0.15)',
+            color: product.free ? '#4ade80' : ORANGE,
+          }}
+        >
+          {product.badge}
+        </span>
+        {product.status === 'hidden' && (
+          <span
+            className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+            style={{ background: 'rgba(255,165,0,0.12)', color: AMBER }}
+          >
+            HIDDEN
+          </span>
+        )}
+        {product.status === 'soft-launch' && (
+          <span
+            className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+            style={{ background: 'rgba(255,165,0,0.15)', color: AMBER }}
+          >
+            LIMITED RELEASE
+          </span>
+        )}
+      </div>
       <h3 className="font-headline text-xl text-white mb-2 leading-snug">{product.title}</h3>
       <p className="font-body text-sm text-white/60 mb-5 leading-relaxed">{product.subtitle}</p>
       <div className="flex items-center justify-between">
@@ -105,30 +175,59 @@ function ProductCard({ product, onSelect, selected }) {
         ) : (
           <span className="font-headline text-2xl text-white">${product.price}</span>
         )}
-        <span
-          className="text-xs font-body font-semibold tracking-wide px-3 py-1.5 rounded"
-          style={{ background: ORANGE, color: '#fff' }}
-        >
-          {product.free ? 'Explore free →' : 'Get it →'}
-        </span>
+        {isInteractive && (
+          <span
+            className="text-xs font-body font-semibold tracking-wide px-3 py-1.5 rounded"
+            style={{ background: ORANGE, color: '#fff' }}
+          >
+            {product.free ? 'Explore →' : 'Preview →'}
+          </span>
+        )}
+        {!isInteractive && product.status === 'soft-launch' && (
+          <span
+            className="text-xs font-body font-semibold tracking-wide px-3 py-1.5 rounded"
+            style={{ background: 'rgba(255,165,0,0.15)', color: AMBER }}
+          >
+            Request access
+          </span>
+        )}
       </div>
     </motion.button>
   );
 }
 
-// ─── ComingSoonCard ─────────────────────────────────────────────────────────
-function ComingSoonCard() {
+// ─── ComingSoonTile (preview-only pipeline slot) ────────────────────────────
+function ComingSoonTile({ product }) {
   return (
     <div
-      className="rounded-xl p-6 flex flex-col justify-between min-h-[220px]"
-      style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.1)' }}
+      className="rounded-xl p-6 flex flex-col min-h-[200px]"
+      style={{ background: 'rgba(255,255,255,0.02)', border: '1px dashed rgba(255,255,255,0.12)' }}
     >
-      <span className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded bg-white/5 text-white/25">
-        COMING SOON
-      </span>
-      <div>
-        <h3 className="font-headline text-xl text-white/20 mb-2">New product in development</h3>
-        <p className="font-body text-sm text-white/20">More tools for business owners launching soon.</p>
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span
+          className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+          style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.45)' }}
+        >
+          {product.badge}
+        </span>
+        <span
+          className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+          style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.35)' }}
+        >
+          COMING SOON
+        </span>
+      </div>
+      <h4 className="font-headline text-lg text-white/70 mb-1 leading-snug">{product.title}</h4>
+      <p className="font-body text-sm text-white/40 mb-4 leading-relaxed flex-1">{product.subtitle}</p>
+      <div className="flex items-center justify-between pt-3 border-t border-white/5">
+        <span className="font-body text-xs text-white/35 uppercase tracking-wider">
+          Target {product.eta}
+        </span>
+        {product.targetPrice && (
+          <span className="font-headline text-base text-white/55">
+            ~${product.targetPrice}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -137,7 +236,7 @@ function ComingSoonCard() {
 // ─── ProductDetail (expanded view + sticky buy card) ────────────────────────
 function ProductDetail({ product }) {
   const navigate = useNavigate();
-  if (!product) return null;
+  if (!product || !product.categories || !product.stats) return null;
 
   return (
     <motion.div
@@ -192,12 +291,14 @@ function ProductDetail({ product }) {
         </div>
 
         {/* Callout */}
-        <div
-          className="rounded-xl p-5"
-          style={{ background: 'rgba(232,93,38,0.06)', borderLeft: `3px solid ${ORANGE}` }}
-        >
-          <p className="font-body text-sm text-white/75 italic">{product.callout}</p>
-        </div>
+        {product.callout && (
+          <div
+            className="rounded-xl p-5"
+            style={{ background: 'rgba(232,93,38,0.06)', borderLeft: `3px solid ${ORANGE}` }}
+          >
+            <p className="font-body text-sm text-white/75 italic">{product.callout}</p>
+          </div>
+        )}
       </div>
 
       {/* Right: sticky buy card */}
@@ -246,7 +347,7 @@ function ProductDetail({ product }) {
                   <div className="font-body text-sm text-white/40 mt-0.5">One-time purchase</div>
                 </div>
                 <ul className="space-y-2">
-                  {product.includes.map((item) => (
+                  {(product.includes || []).map((item) => (
                     <li key={item} className="flex items-start gap-2.5">
                       <Check size={14} className="flex-shrink-0 mt-0.5" style={{ color: ORANGE }} />
                       <span className="font-body text-sm text-white/70">{item}</span>
@@ -275,59 +376,33 @@ function ProductDetail({ product }) {
   );
 }
 
-// ─── Admin Preview Card ─────────────────────────────────────────────────────
-function AdminPreviewCard({ product, onSelect, selected }) {
-  return (
-    <motion.button
-      onClick={() => onSelect(product)}
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2 }}
-      className="text-left w-full rounded-xl p-5 cursor-pointer transition-all duration-200 relative"
-      style={{
-        background: selected ? 'rgba(232,93,38,0.08)' : 'rgba(255,255,255,0.02)',
-        border: selected ? `1px solid ${ORANGE}` : '1px dashed rgba(255,165,0,0.3)',
-      }}
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <span
-          className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
-          style={{ background: 'rgba(232,93,38,0.15)', color: ORANGE }}
-        >
-          {product.badge}
-        </span>
-        <span
-          className="inline-block text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
-          style={{ background: 'rgba(255,165,0,0.12)', color: '#FFA500' }}
-        >
-          HIDDEN
-        </span>
-      </div>
-      <h3 className="font-headline text-lg text-white mb-1 leading-snug">{product.title}</h3>
-      <p className="font-body text-sm text-white/50 mb-4 leading-relaxed">{product.subtitle}</p>
-      <div className="flex items-center justify-between">
-        <span className="font-headline text-xl text-white">${product.price}</span>
-        <span className="text-xs font-body text-white/40">Not published</span>
-      </div>
-    </motion.button>
-  );
-}
-
 // ─── Page ───────────────────────────────────────────────────────────────────
 export default function Marketplace() {
   const navigate = useNavigate();
   const location = useLocation();
   const isAdminPreview = new URLSearchParams(location.search).get('preview') === 'aom';
 
-  const publicProducts = PRODUCTS.filter((p) => !p.hidden);
-  const hiddenProducts = PRODUCTS.filter((p) => p.hidden);
+  // Public-facing products: only visibility:'public' AND status in ('live', 'soft-launch').
+  const publicProducts = PRODUCTS.filter(
+    (p) => p.visibility === 'public' && (p.status === 'live' || p.status === 'soft-launch')
+  );
+  const hiddenProducts = PRODUCTS.filter((p) => p.status === 'hidden');
+  const comingSoonProducts = PRODUCTS.filter((p) => p.status === 'coming-soon');
+  const softLaunchProducts = PRODUCTS.filter(
+    (p) => p.status === 'soft-launch' && p.visibility === 'public'
+  );
 
-  const [selected, setSelected] = useState(publicProducts[0]);
+  // Hero product = the free AI Guide (primary path)
+  const heroProduct = publicProducts.find((p) => p.free) || publicProducts[0];
+
+  // Selected hidden product for admin ProductDetail panel
+  const [selectedHidden, setSelectedHidden] = useState(hiddenProducts[0] || null);
 
   return (
     <div className="min-h-screen" style={{ background: '#0C0C0C', color: '#F0ECE6' }}>
       <SiteNav />
 
-      {/* ── Hero: Free AI Guide as the primary driver ── */}
+      {/* ── HERO: Free AI Guide as the primary conversion driver ── */}
       <section className="pt-32 pb-20 px-6 max-w-6xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
 
@@ -341,11 +416,11 @@ export default function Marketplace() {
               className="inline-block text-xs font-body font-semibold tracking-widest mb-5 px-3 py-1 rounded-full"
               style={{ background: 'rgba(74,222,128,0.12)', color: '#4ade80' }}
             >
-              FREE TOOL
+              FREE — NO SIGNUP
             </span>
             <h1 className="font-display-serif text-5xl md:text-6xl text-white leading-tight mb-6">
               Get AI working<br />
-              for your business.
+              <span style={{ color: ORANGE }}>for your business.</span>
             </h1>
             <p className="font-body text-lg text-white/60 leading-relaxed mb-8 max-w-lg">
               The AI Business Guide walks you through using AI for client communications,
@@ -368,17 +443,17 @@ export default function Marketplace() {
               ))}
             </ul>
 
-            <div className="flex flex-col sm:flex-row gap-4 items-start">
+            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <button
-                onClick={() => navigate('/ai-guide')}
+                onClick={() => navigate(heroProduct?.href || '/ai-guide')}
                 className="flex items-center gap-2 px-8 py-4 rounded-xl font-headline text-base tracking-wide hover:brightness-110 active:scale-95 transition-all duration-200"
                 style={{ background: ORANGE, color: '#fff' }}
               >
                 <ArrowRight size={18} />
                 Start the Guide — Free
               </button>
-              <span className="font-body text-xs text-white/30 self-center sm:self-auto pt-1">
-                No account. No credit card. Free forever.
+              <span className="font-body text-xs text-white/30">
+                No account. No credit card.
               </span>
             </div>
           </motion.div>
@@ -404,7 +479,7 @@ export default function Marketplace() {
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3 mb-5">
-                {publicProducts[0]?.categories?.slice(0, 6).map(({ icon: Icon, title }) => (
+                {heroProduct?.categories?.slice(0, 6).map(({ icon: Icon, title }) => (
                   <div
                     key={title}
                     className="flex items-center gap-2.5 p-3 rounded-lg"
@@ -421,7 +496,7 @@ export default function Marketplace() {
                 ))}
               </div>
               <div className="grid grid-cols-3 gap-3">
-                {[{ value: '30+', label: 'Prompts' }, { value: '6', label: 'Categories' }, { value: 'Free', label: 'Forever' }].map((s) => (
+                {(heroProduct?.stats || []).map((s) => (
                   <div
                     key={s.label}
                     className="text-center py-3 rounded-lg"
@@ -437,83 +512,113 @@ export default function Marketplace() {
         </div>
       </section>
 
-      <div className="border-t border-white/10 max-w-6xl mx-auto" />
-
-      {/* Product grid + detail (public products only) */}
-      <section className="py-16 px-6 max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h2 className="font-headline text-2xl text-white mb-1">All tools</h2>
-          <p className="font-body text-sm text-white/40">Free and paid resources for business owners.</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {publicProducts.map((p) => (
-            <ProductCard
-              key={p.id}
-              product={p}
-              onSelect={setSelected}
-              selected={selected?.id === p.id}
-            />
-          ))}
-          <ComingSoonCard />
-        </div>
-
-        <ProductDetail product={selected} />
-      </section>
-
-      {/* ── Admin Preview Section (gated by ?preview=aom) ── */}
-      {isAdminPreview && hiddenProducts.length > 0 && (
+      {/* ── Public soft-launch grid (lives on public page; "Limited Release" label) ── */}
+      {softLaunchProducts.length > 0 && (
         <section className="py-12 px-6 max-w-6xl mx-auto">
-          <div
-            className="rounded-2xl p-8"
-            style={{ background: 'rgba(255,165,0,0.04)', border: '1px solid rgba(255,165,0,0.2)' }}
-          >
-            {/* Admin header */}
-            <div className="flex items-center gap-3 mb-6">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: 'rgba(255,165,0,0.15)' }}
-              >
-                <Eye size={15} style={{ color: '#FFA500' }} />
-              </div>
-              <div>
-                <h3 className="font-headline text-lg text-white">Admin Preview</h3>
-                <p className="font-body text-xs text-white/40">
-                  Hidden products — visible to you only at <code className="text-white/60">?preview=aom</code>
-                </p>
-              </div>
+          <div className="border-t border-white/10 pt-12">
+            <div className="flex items-center gap-3 mb-6 flex-wrap">
+              <h2 className="font-headline text-2xl text-white">Limited Release</h2>
               <span
-                className="ml-auto text-xs font-body font-semibold tracking-widest px-3 py-1 rounded-full"
-                style={{ background: 'rgba(255,165,0,0.15)', color: '#FFA500' }}
+                className="text-xs font-body font-semibold tracking-widest px-2 py-1 rounded"
+                style={{ background: 'rgba(255,165,0,0.12)', color: AMBER }}
               >
-                NOT PUBLIC
+                EARLY ACCESS
               </span>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {hiddenProducts.map((p) => (
-                <AdminPreviewCard
-                  key={p.id}
-                  product={p}
-                  onSelect={setSelected}
-                  selected={selected?.id === p.id}
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {softLaunchProducts.map((p) => (
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
-
-            {selected?.hidden && (
-              <div className="mt-8">
-                <ProductDetail product={selected} />
-              </div>
-            )}
-
-            <p className="font-body text-xs text-white/25 text-center mt-8">
-              To launch a product, remove <code>hidden: true</code> from its entry in <code>Marketplace.jsx</code>.
-            </p>
           </div>
         </section>
       )}
 
-      {/* Bottom CTA */}
+      {/* ── ADMIN PREVIEW (gated by ?preview=aom) ── */}
+      {isAdminPreview && (
+        <>
+          {/* Admin banner */}
+          <section className="py-6 px-6 max-w-6xl mx-auto">
+            <div
+              className="rounded-xl px-5 py-4 flex items-center gap-3"
+              style={{ background: 'rgba(255,165,0,0.06)', border: '1px solid rgba(255,165,0,0.25)' }}
+            >
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(255,165,0,0.15)' }}
+              >
+                <Eye size={15} style={{ color: AMBER }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-headline text-sm text-white">Admin preview mode</div>
+                <div className="font-body text-xs text-white/45">
+                  Showing hidden + pipeline products. Remove <code className="text-white/70">?preview=aom</code> for the public view.
+                </div>
+              </div>
+              <span
+                className="text-xs font-body font-semibold tracking-widest px-3 py-1 rounded-full whitespace-nowrap"
+                style={{ background: 'rgba(255,165,0,0.15)', color: AMBER }}
+              >
+                NOT PUBLIC
+              </span>
+            </div>
+          </section>
+
+          {/* Hidden products section */}
+          {hiddenProducts.length > 0 && (
+            <section className="py-12 px-6 max-w-6xl mx-auto">
+              <div className="flex items-center gap-3 mb-6 flex-wrap">
+                <h2 className="font-headline text-2xl text-white/85">Hidden products</h2>
+                <span className="font-body text-sm text-white/40">
+                  Flagged for future launch — not visible to the public.
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {hiddenProducts.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    onSelect={setSelectedHidden}
+                    selected={selectedHidden?.id === p.id}
+                  />
+                ))}
+              </div>
+
+              {selectedHidden && <ProductDetail product={selectedHidden} />}
+            </section>
+          )}
+
+          {/* Coming-soon section */}
+          {comingSoonProducts.length > 0 && (
+            <section className="py-12 px-6 max-w-6xl mx-auto">
+              <div className="border-t border-white/10 pt-12">
+                <div className="flex items-center gap-3 mb-2">
+                  <Sparkles size={18} className="text-white/40" />
+                  <h2 className="font-headline text-2xl text-white/85">Coming soon</h2>
+                </div>
+                <p className="font-body text-sm text-white/40 mb-6">
+                  Product pipeline — not yet built. Flip <code className="text-white/60">status</code> to <code className="text-white/60">'soft-launch'</code> or <code className="text-white/60">'live'</code> when ready.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {comingSoonProducts.map((p) => (
+                    <ComingSoonTile key={p.id} product={p} />
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Admin footer hint */}
+          <section className="py-6 px-6 max-w-6xl mx-auto">
+            <p className="font-body text-xs text-white/25 text-center">
+              To soft-launch a product: <code>status: 'soft-launch'</code> + <code>visibility: 'public'</code> in <code>Marketplace.jsx</code>.
+              {' '}To ship publicly: <code>status: 'live'</code> + <code>visibility: 'public'</code>.
+            </p>
+          </section>
+        </>
+      )}
+
+      {/* ── Bottom CTA: AI Flow ── */}
       <section className="py-20 px-6 max-w-6xl mx-auto">
         <div className="border-t border-white/10 pt-16 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
