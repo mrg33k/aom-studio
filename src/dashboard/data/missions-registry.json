@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-03T19:53:28.949Z",
+  "generated_at": "2026-06-04T17:28:30.159Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -56,6 +56,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/attachments"
+    },
+    {
+      "slug": "corner:billing-june-15",
+      "raw_slug": "billing-june-15",
+      "folder_name": "billing-june-15",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Billing June 15",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/billing-june-15"
     },
     {
       "slug": "corner:bridge",
@@ -2606,6 +2620,20 @@
       "path": "corner/users/aom/projects/included-health/missions/client-summit-video"
     },
     {
+      "slug": "included-health:june-2026",
+      "raw_slug": "june-2026",
+      "folder_name": "june-2026",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "included-health",
+      "workstream": null,
+      "name": "June 2026",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/included-health/missions/june-2026"
+    },
+    {
       "slug": "intelliplay:media-retainer-engine",
       "raw_slug": "media-retainer-engine",
       "folder_name": "media-retainer-engine",
@@ -3155,8 +3183,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 53,
-      "in_flight": 53,
+      "total": 54,
+      "in_flight": 54,
       "done": 0
     },
     {
@@ -3215,8 +3243,8 @@
     },
     {
       "slug": "included-health",
-      "total": 1,
-      "in_flight": 1,
+      "total": 2,
+      "in_flight": 2,
       "done": 0
     },
     {
