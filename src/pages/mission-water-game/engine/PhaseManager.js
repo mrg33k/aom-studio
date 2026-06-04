@@ -104,6 +104,7 @@ export function resolveHud(phase, runState) {
   const base = phase.hud_state || {};
   return {
     ...base,
+    chapter: phase.chapter || 1,
     discoveries: runState.discoveries.length,
     discovery_ids: runState.discoveries,
   };

@@ -21,15 +21,22 @@ import React, { useEffect, useRef, useState } from 'react';
  */
 
 const BADGE_ART = {
+  // Chapter 1
   groundwater_hydrology: '/mission-water/chapter-1/badges/badge_groundwater_hydrology.png',
   environmental_chemistry: '/mission-water/chapter-1/badges/badge_environmental_chemistry.png',
   climate_science: '/mission-water/chapter-1/badges/badge_climate_science.png',
   water_security: '/mission-water/chapter-1/badges/badge_water_security.png',
   mission_imperative: '/mission-water/chapter-1/badges/badge_mission_imperative.png',
   pete_conrad_legacy: '/mission-water/chapter-1/badges/badge_pete_conrad_legacy.png',
+  // Chapter 2
+  badge_ch2_space_hydrology: '/mission-water/chapter-2/badges/badge_ch2_space_hydrology.png',
+  badge_ch2_life_support: '/mission-water/chapter-2/badges/badge_ch2_life_support.png',
+  badge_ch2_orbital_mechanics: '/mission-water/chapter-2/badges/badge_ch2_orbital_mechanics.png',
+  badge_ch2_lunar_water_theory: '/mission-water/chapter-2/badges/badge_ch2_lunar_water_theory.png',
 };
 
 const DISCOVERY_LABELS = {
+  // Chapter 1
   groundwater_hydrology: 'GROUNDWATER HYDROLOGY',
   environmental_chemistry: 'ENVIRONMENTAL CHEMISTRY',
   climate_science: 'CLIMATE SCIENCE',
@@ -40,6 +47,11 @@ const DISCOVERY_LABELS = {
   public_health: 'PUBLIC HEALTH',
   food_water_nexus: 'FOOD–WATER NEXUS',
   lunar_water_connection: 'LUNAR WATER CONNECTION',
+  // Chapter 2
+  badge_ch2_space_hydrology: 'SPACE HYDROLOGY',
+  badge_ch2_life_support: 'LIFE SUPPORT SYSTEMS',
+  badge_ch2_orbital_mechanics: 'ORBITAL MECHANICS',
+  badge_ch2_lunar_water_theory: 'LUNAR WATER THEORY',
 };
 
 const BADGE_FRAME = '/mission-water/chapter-1/hud/hud_badge_frame.png';
@@ -90,14 +102,18 @@ export default function HUD({ phase, hud, onChoose }) {
 
   if (!phase) return null;
 
-  const isCouncil = phase.id === 'ch1_council_reveal' || phase.id === 'ch1_end';
+  const isCouncil = (
+    phase.id === 'ch1_council_reveal' ||
+    phase.id === 'ch1_end' ||
+    phase.id === 'ch2_chapter_reveal'
+  );
 
   return (
     <div style={styles.root}>
       {/* ── TOP INSTRUMENT BAR ──────────────────────────────────── */}
       <div style={styles.topBar}>
         <MissionIdent chapter={phase.chapter} />
-        <InstrumentRow hud={hud} />
+        <InstrumentRow hud={hud} chapter={phase.chapter} />
         <BadgeRack ids={hud.discovery_ids || []} />
       </div>
 
@@ -183,8 +199,48 @@ function MissionIdent({ chapter }) {
   );
 }
 
-function InstrumentRow({ hud }) {
+function InstrumentRow({ hud, chapter }) {
   if (!hud) return null;
+
+  // Chapter 2 — space mission instruments
+  if (chapter === 2) {
+    return (
+      <div style={styles.instrumentRow}>
+        <InstrumentPanel
+          label="WATER RES"
+          value={hud.water_res}
+          suffix="%"
+          icon={<WaterIcon />}
+          dangerBelow={30}
+          warningBelow={60}
+        />
+        <InstrumentPanel
+          label="O2 LEVEL"
+          value={hud.o2}
+          suffix="%"
+          icon={<OxygenIcon />}
+          dangerBelow={40}
+          warningBelow={70}
+        />
+        <InstrumentPanel
+          label="DIST TO LZ"
+          value={hud.dist}
+          suffix="%"
+          icon={<DistanceIcon />}
+        />
+        <InstrumentPanel
+          label="HULL INT"
+          value={hud.hull}
+          suffix="%"
+          icon={<HullIcon />}
+          dangerBelow={50}
+          warningBelow={75}
+        />
+      </div>
+    );
+  }
+
+  // Chapter 1 (default) — Earth investigation instruments
   return (
     <div style={styles.instrumentRow}>
       <InstrumentPanel
@@ -362,6 +418,50 @@ function BadgeSystemIcon() {
         strokeWidth="0.8"
       />
       <circle cx="16" cy="16" r="2.5" fill={CYAN} opacity="0.7" />
+    </svg>
+  );
+}
+
+// Chapter 2 icons
+function OxygenIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden>
+      <circle cx="16" cy="16" r="11" fill="none" stroke={CYAN} strokeWidth="1.5" />
+      <circle cx="16" cy="16" r="7" fill={CYAN} opacity="0.12" />
+      <text x="16" y="20.5" textAnchor="middle" fontFamily="monospace" fontSize="10" fontWeight="700" fill={CYAN}>O₂</text>
+    </svg>
+  );
+}
+
+function DistanceIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden>
+      <line x1="4" y1="16" x2="28" y2="16" stroke={CYAN} strokeWidth="1.5" />
+      <polygon points="22,10 28,16 22,22" fill={CYAN} opacity="0.8" />
+      <circle cx="6" cy="16" r="2.5" fill={CYAN} opacity="0.6" />
+      <line x1="10" y1="12" x2="10" y2="20" stroke={CYAN} strokeWidth="1" opacity="0.4" />
+      <line x1="16" y1="12" x2="16" y2="20" stroke={CYAN} strokeWidth="1" opacity="0.4" />
+    </svg>
+  );
+}
+
+function HullIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="20" height="20" aria-hidden>
+      <path
+        d="M16 4 L26 10 L26 22 L16 28 L6 22 L6 10 Z"
+        fill="none"
+        stroke={CYAN}
+        strokeWidth="1.5"
+      />
+      <path
+        d="M16 8 L22 12 L22 20 L16 24 L10 20 L10 12 Z"
+        fill={CYAN}
+        opacity="0.15"
+      />
+      <line x1="16" y1="4" x2="16" y2="8" stroke={CYAN} strokeWidth="2" />
+      <line x1="26" y1="10" x2="22" y2="12" stroke={CYAN} strokeWidth="1" opacity="0.6" />
+      <line x1="6" y1="10" x2="10" y2="12" stroke={CYAN} strokeWidth="1" opacity="0.6" />
     </svg>
   );
 }

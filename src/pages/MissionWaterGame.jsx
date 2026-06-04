@@ -49,6 +49,19 @@ export default function MissionWaterGame() {
     });
   };
 
+  // Jump to the intro phase of a chapter. Resets run state so discoveries
+  // restart — this is intentional: each chapter is a fresh run arc.
+  const onJumpToPhase = (phaseId) => {
+    if (!phaseGraph.phases[phaseId]) return; // guard against stale ids
+    setRunState({
+      phase_id: phaseId,
+      discoveries: [],
+      history: [phaseId],
+    });
+  };
+
+  const activeChapter = phase ? (phase.chapter || 1) : 1;
+
   // Mount-time: set <title> for browser tab.
   useEffect(() => {
     const prev = document.title;
@@ -65,7 +78,7 @@ export default function MissionWaterGame() {
         </div>
       </main>
       <aside style={styles.sidebar}>
-        <SidebarPlaceholder phase={phase} />
+        <SidebarPlaceholder phase={phase} activeChapter={activeChapter} onJumpToPhase={onJumpToPhase} />
       </aside>
     </div>
   );
@@ -73,22 +86,28 @@ export default function MissionWaterGame() {
 
 // ─── sidebar (course placeholder) ────────────────────────────────────────────
 
-function SidebarPlaceholder({ phase }) {
+function SidebarPlaceholder({ phase, activeChapter, onJumpToPhase }) {
   return (
     <div style={styles.sidebarInner}>
       <div style={styles.sidebarKicker}>Mission Water</div>
       <div style={styles.sidebarTitle}>Course Selection</div>
       <p style={styles.sidebarLead}>
-        Coming soon. Chapter pick, progress, and discovery wall live here.
+        Select a chapter to begin. Complete each to unlock the next.
       </p>
 
       <div style={styles.chapterList}>
         <ChapterRow
           n={1}
           title="Earth is running out"
-          state={phase && phase.chapter === 1 ? 'active' : 'done'}
+          state={activeChapter === 1 ? 'active' : 'done'}
+          onJump={() => onJumpToPhase('ch1_intro')}
         />
-        <ChapterRow n={2} title="The journey to the Moon" state="locked" />
+        <ChapterRow
+          n={2}
+          title="The journey to the Moon"
+          state={activeChapter === 2 ? 'active' : 'available'}
+          onJump={() => onJumpToPhase('ch2_intro')}
+        />
         <ChapterRow n={3} title="The Moon holds the answer" state="locked" />
       </div>
 
@@ -100,18 +119,40 @@ function SidebarPlaceholder({ phase }) {
   );
 }
 
-function ChapterRow({ n, title, state }) {
+function ChapterRow({ n, title, state, onJump }) {
+  const isClickable = state !== 'locked' && typeof onJump === 'function';
   const tone =
     state === 'active' ? styles.chRowActive
     : state === 'done' ? styles.chRowDone
+    : state === 'available' ? styles.chRowAvailable
     : styles.chRowLocked;
+
+  const handleKeyDown = (e) => {
+    if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onJump();
+    }
+  };
+
   return (
-    <div style={{ ...styles.chRow, ...tone }}>
+    <div
+      style={{
+        ...styles.chRow,
+        ...tone,
+        cursor: isClickable ? 'pointer' : 'default',
+      }}
+      onClick={isClickable ? onJump : undefined}
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onKeyDown={isClickable ? handleKeyDown : undefined}
+      aria-label={isClickable ? `Go to Chapter ${n}: ${title}` : undefined}
+    >
       <div style={styles.chNum}>0{n}</div>
       <div style={styles.chTitle}>{title}</div>
       <div style={styles.chState}>
         {state === 'active' && '— ACTIVE'}
-        {state === 'done' && '— OPEN'}
+        {state === 'done' && '— REPLAY'}
+        {state === 'available' && '— START'}
         {state === 'locked' && '— SOON'}
       </div>
     </div>
@@ -207,6 +248,10 @@ const styles = {
   chRowDone: {
     background: 'rgba(0,229,204,0.04)',
     borderColor: 'rgba(0,229,204,0.20)',
+  },
+  chRowAvailable: {
+    background: 'rgba(255,183,3,0.08)',
+    borderColor: 'rgba(255,183,3,0.45)',
   },
   chRowLocked: {
     background: 'transparent',

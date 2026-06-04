@@ -342,6 +342,199 @@
       },
       "narrative": "Earth is behind you. The journey begins. Chapter 2 — \"The Journey to the Moon\" — opens soon. Bring your discoveries.",
       "choices": []
+    },
+
+    "ch2_intro": {
+      "id": "ch2_intro",
+      "chapter": 2,
+      "title": "The Journey Begins",
+      "visuals": {
+        "background": "/mission-water/chapter-2/backgrounds/ch2_bg_intro.jpg",
+        "procedural": {
+          "sky": "#020408",
+          "far": "#060C1A",
+          "mid": "#0A1628",
+          "ground": "#020408",
+          "accents": ["stars", "earth"]
+        },
+        "parallax_offset": 0.0
+      },
+      "hud_state": {
+        "water_res": 100,
+        "o2": 100,
+        "dist": 100,
+        "hull": 100
+      },
+      "narrative": "The shuttle bay is pressurized. Mission Water Phase Two begins with a question the Conrad Council left unanswered: how does water survive a 384,000-kilometer journey? Your mission pack carries two dossiers — one on closed-loop recycling, one on life support chemistry. Forty seconds to launch window.",
+      "choices": [
+        {
+          "id": "focus_recycling",
+          "text": "Study the water recycling systems",
+          "next_phase": "ch2_light_side",
+          "discovery": "badge_ch2_space_hydrology",
+          "tag": "engineering"
+        },
+        {
+          "id": "focus_life_support",
+          "text": "Review the life support chemistry",
+          "next_phase": "ch2_light_side",
+          "discovery": "badge_ch2_space_hydrology",
+          "tag": "chemistry"
+        }
+      ]
+    },
+
+    "ch2_light_side": {
+      "id": "ch2_light_side",
+      "chapter": 2,
+      "title": "Orbit — Light Side",
+      "visuals": {
+        "background": "/mission-water/chapter-2/backgrounds/ch2_bg_light_side.jpg",
+        "procedural": {
+          "sky": "#030A1A",
+          "far": "#071428",
+          "mid": "#0D2040",
+          "ground": "#030A1A",
+          "accents": ["stars", "earth", "horizon_glow"]
+        },
+        "parallax_offset": 0.25
+      },
+      "hud_state": {
+        "water_res": 95,
+        "o2": 98,
+        "dist": 80,
+        "hull": 100
+      },
+      "narrative": "Earth fills the viewport. The shuttle recovers 95% of cabin moisture — every exhale becomes tomorrow's drinking water. Below, three billion people share watersheds that cross borders and don't care about politics. Ahead, the Moon has no water politics yet. The terminator line is forty minutes out.",
+      "choices": [
+        {
+          "id": "proceed_to_terminator",
+          "text": "Continue toward the terminator line",
+          "next_phase": "ch2_terminator",
+          "discovery": "badge_ch2_life_support"
+        }
+      ]
+    },
+
+    "ch2_terminator": {
+      "id": "ch2_terminator",
+      "chapter": 2,
+      "title": "The Terminator Line",
+      "visuals": {
+        "background": "/mission-water/chapter-2/backgrounds/ch2_bg_terminator.jpg",
+        "procedural": {
+          "sky": "#050C1E",
+          "far": "#0A1830",
+          "mid": "#152840",
+          "ground": "#050C1E",
+          "accents": ["stars", "earth"]
+        },
+        "parallax_offset": 0.45
+      },
+      "hud_state": {
+        "water_res": 88,
+        "o2": 95,
+        "dist": 60,
+        "hull": 100
+      },
+      "narrative": "The terminator — the boundary between day and night — cuts across the lunar surface like a blade. Conrad Institute models place ice in permanently shadowed craters near the south pole. At absolute zero. Untouched since the solar system formed. The mission is nominal. The question is no longer whether there is water on the Moon.",
+      "choices": [
+        {
+          "id": "enter_dark_side",
+          "text": "Cross into the far side — comms blackout ahead",
+          "next_phase": "ch2_far_dark",
+          "discovery": "badge_ch2_orbital_mechanics"
+        }
+      ]
+    },
+
+    "ch2_far_dark": {
+      "id": "ch2_far_dark",
+      "chapter": 2,
+      "title": "Far Side — Comms Blackout",
+      "visuals": {
+        "background": "/mission-water/chapter-2/backgrounds/ch2_bg_far_dark.jpg",
+        "procedural": {
+          "sky": "#010205",
+          "far": "#020408",
+          "mid": "#050810",
+          "ground": "#010205",
+          "accents": ["stars_dense"]
+        },
+        "parallax_offset": 0.65
+      },
+      "hud_state": {
+        "water_res": 40,
+        "o2": 60,
+        "dist": 40,
+        "hull": 90
+      },
+      "narrative": "Comms blackout. Thirty-eight minutes behind the Moon's far side. No signal from Earth. The water recycler cycles at reduced efficiency. O2 reading: sixty percent. This is the math of closed-system survival — every molecule counts, nothing wasted, everything a resource. The south pole crater fields are twenty minutes out.",
+      "choices": [
+        {
+          "id": "approach_south_pole",
+          "text": "Emerge from blackout — begin south pole approach",
+          "next_phase": "ch2_water_ice",
+          "discovery": "badge_ch2_lunar_water_theory"
+        }
+      ]
+    },
+
+    "ch2_water_ice": {
+      "id": "ch2_water_ice",
+      "chapter": 2,
+      "title": "South Pole — Water Ice",
+      "visuals": {
+        "background": "/mission-water/chapter-2/backgrounds/ch2_bg_water_ice.jpg",
+        "procedural": {
+          "sky": "#050A14",
+          "far": "#0A1428",
+          "mid": "#141E32",
+          "ground": "#050A14",
+          "accents": ["stars", "moon_silhouette"]
+        },
+        "parallax_offset": 0.85
+      },
+      "hud_state": {
+        "water_res": 35,
+        "o2": 55,
+        "dist": 0,
+        "hull": 88
+      },
+      "narrative": "South Pole approach. DIST reads zero. Shackleton crater — 14 kilometers wide, perpetually dark, averaging minus 173 degrees Celsius. The LEND instrument detected hydrogen here. The LRO confirmed it. Now your instruments confirm what the data predicted: the neutron signature of water ice. Millions of cubic meters. The Moon is not dry.",
+      "choices": [
+        {
+          "id": "confirm_discovery",
+          "text": "Confirm the discovery — report to the Conrad Council",
+          "next_phase": "ch2_chapter_reveal",
+          "discovery": null
+        }
+      ]
+    },
+
+    "ch2_chapter_reveal": {
+      "id": "ch2_chapter_reveal",
+      "chapter": 2,
+      "title": "End of Chapter 2",
+      "visuals": {
+        "background": "/mission-water/chapter-2/backgrounds/ch2_bg_chapter_reveal.jpg",
+        "procedural": {
+          "sky": "#060C1E",
+          "far": "#0C1830",
+          "mid": "#182440",
+          "ground": "#060C1E",
+          "accents": ["stars", "moon_close", "earth_distant"]
+        },
+        "parallax_offset": 1.0
+      },
+      "hud_state": {
+        "water_res": 35,
+        "o2": 55,
+        "dist": 0,
+        "hull": 88
+      },
+      "narrative": "Discovery confirmed. The water is real — frozen in the dark, waiting in craters that have not seen sunlight in billions of years. Pete Conrad would have loved this moment. Nancy Conrad built a foundation to reach it. You found it. Chapter 3 — \"Mining the Moon\" — begins when the team is ready.",
+      "choices": []
     }
   }
 }
