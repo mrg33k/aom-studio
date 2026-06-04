@@ -1279,7 +1279,7 @@ function AccessCodeGate({ onClientSuccess }) {
 // Design: strikethrough "crossing off the list" style — items stay visible,
 // checked items get strikethrough + green checkbox. No collapse. No accordion.
 
-function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly = false }) {
+function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly = false, onMarkComplete, markedComplete = false }) {
   const items = SESSION_CHECKLISTS[sessionNumber] || []
   const allIndices = items.map((_, i) => i)
   const storageKey = `ai_hours_checklist_${accessCode}_${sessionNumber}`
@@ -1448,14 +1448,66 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly 
         })}
       </div>
 
-      {/* All-done confirmation — subtle, no button */}
-      {allDone && (
+      {/* All-done footer: button when active, confirmation when already marked */}
+      {allDone && !isReadOnly && (
         <div style={{ padding: '4px 20px 14px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
+          {markedComplete ? (
+            /* After button click — just the confirmation text, no button */
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="7" fill={PROGRESS_GREEN} />
+                <path d="M4 7.5l2 2L10 5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span style={{ fontSize: 13, color: PROGRESS_GREEN, fontWeight: 600 }}>
+                Session marked complete
+              </span>
+            </div>
+          ) : (
+            /* Show the button — this is the decisive action */
+            <button
+              onClick={onMarkComplete}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 20px',
+                background: PROGRESS_GREEN,
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: 'pointer',
+                letterSpacing: '0.01em',
+                marginTop: 4,
+                transition: 'background 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease',
+                boxShadow: '0 2px 8px rgba(45,122,79,0.22)',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = '#236040'
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(45,122,79,0.32)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = PROGRESS_GREEN
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(45,122,79,0.22)'
+              }}
+              onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.97)' }}
+              onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <circle cx="7" cy="7" r="7" fill="rgba(255,255,255,0.25)" />
+                <path d="M4 7.5l2 2L10 5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Mark as Completed
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* AOM-advanced (isReadOnly): just show quiet confirmation */}
+      {allDone && isReadOnly && (
+        <div style={{ padding: '4px 20px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <circle cx="7" cy="7" r="7" fill={PROGRESS_GREEN} />
               <path d="M4 7.5l2 2L10 5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -1477,6 +1529,15 @@ function ClientView({ client, onLogout }) {
   const [contactMessage, setContactMessage] = useState('')
   const [contactSent, setContactSent] = useState(false)
   const [checklistCompleted, setChecklistCompleted] = useState({}) // { sessionNum: bool }
+  // Client-side "I clicked Mark as Completed" — persisted to localStorage
+  // This is separate from AOM advancing current_session; it's the client's own signal.
+  const [clientMarkedDone, setClientMarkedDone] = useState(() => {
+    try {
+      const key = `ai_hours_client_marked_done_${client.access_code}`
+      const stored = localStorage.getItem(key)
+      return stored ? JSON.parse(stored) : {}
+    } catch { return {} }
+  })
   const currentSession = client.current_session || 1
   const isComplete = currentSession > 5
 
@@ -1488,6 +1549,15 @@ function ClientView({ client, onLogout }) {
 
   function handleChecklistComplete(sessionNum, allDone) {
     setChecklistCompleted(prev => ({ ...prev, [sessionNum]: allDone }))
+  }
+
+  function handleClientMarkDone(sessionNum) {
+    const next = { ...clientMarkedDone, [sessionNum]: true }
+    setClientMarkedDone(next)
+    try {
+      const key = `ai_hours_client_marked_done_${client.access_code}`
+      localStorage.setItem(key, JSON.stringify(next))
+    } catch {}
   }
 
   function handleContactSubmit(e) {
@@ -1506,6 +1576,12 @@ function ClientView({ client, onLogout }) {
 
   return (
     <div style={styles.page}>
+      <style>{`
+        @keyframes aihours-fadein {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
       {/* Header */}
       <header style={styles.header}>
         <div style={styles.headerInner}>
@@ -1535,65 +1611,100 @@ function ClientView({ client, onLogout }) {
             const sessionNum = i + 1
             const status = getStatus(sessionNum)
             const isDone = status === 'done'
+            // Client has clicked "Mark as Completed" on this session
+            const clientDone = !!clientMarkedDone[sessionNum]
+            // Visual complete state: either AOM-advanced OR client self-marked
+            const showComplete = isDone || clientDone
 
             // All sessions always fully visible — no collapse/expand.
             // Done sessions get green header/border; current gets orange accent; locked is grayed.
             return (
-              <div
-                key={sessionNum}
-                style={{
-                  ...styles.sessionCard,
-                  ...(status === 'current' ? styles.sessionCardActive : {}),
-                  ...(status === 'locked' ? styles.sessionCardLocked : {}),
-                  ...(isDone ? { borderColor: GREEN_CHECK_BORDER, background: 'rgba(45,122,79,0.03)' } : {}),
-                }}
-              >
-                {/* Session header — not clickable, no collapse toggle */}
-                <div style={styles.sessionHeader}>
-                  <div style={{
-                    ...styles.sessionNumber,
-                    ...(status === 'current' ? styles.sessionNumberActive : {}),
-                    ...(isDone ? { color: PROGRESS_GREEN } : {}),
-                  }}>
-                    {session.number}
-                  </div>
-                  <div style={styles.sessionInfo}>
-                    <div style={styles.sessionTitle}>{session.title}</div>
-                    <div style={styles.sessionGoal}>{session.goal}</div>
-                  </div>
-                  <div style={styles.sessionMeta}>
+              <React.Fragment key={sessionNum}>
+                <div
+                  style={{
+                    ...styles.sessionCard,
+                    ...(status === 'current' && !clientDone ? styles.sessionCardActive : {}),
+                    ...(status === 'locked' ? styles.sessionCardLocked : {}),
+                    ...(showComplete ? {
+                      borderColor: GREEN_CHECK_BORDER,
+                      background: 'rgba(45,122,79,0.03)',
+                      transition: 'border-color 0.45s ease, background 0.45s ease',
+                    } : {}),
+                  }}
+                >
+                  {/* Session header — not clickable, no collapse toggle */}
+                  <div style={styles.sessionHeader}>
                     <div style={{
-                      ...styles.sessionBadge,
-                      ...(status === 'current' ? styles.sessionBadgeCurrent : {}),
-                      ...(isDone ? styles.sessionBadgeDone : {}),
-                      ...(status === 'locked' ? styles.sessionBadgeLocked : {}),
+                      ...styles.sessionNumber,
+                      ...(status === 'current' && !clientDone ? styles.sessionNumberActive : {}),
+                      ...(showComplete ? { color: PROGRESS_GREEN } : {}),
                     }}>
-                      {status === 'current' ? 'Current' : isDone ? 'Complete' : 'Upcoming'}
+                      {session.number}
                     </div>
-                    <div style={styles.sessionDuration}>{session.duration}</div>
-                    <SessionStatusIcon status={status} />
+                    <div style={styles.sessionInfo}>
+                      <div style={styles.sessionTitle}>{session.title}</div>
+                      <div style={styles.sessionGoal}>{session.goal}</div>
+                    </div>
+                    <div style={styles.sessionMeta}>
+                      <div style={{
+                        ...styles.sessionBadge,
+                        ...(status === 'current' && !clientDone ? styles.sessionBadgeCurrent : {}),
+                        ...(showComplete ? styles.sessionBadgeDone : {}),
+                        ...(status === 'locked' ? styles.sessionBadgeLocked : {}),
+                      }}>
+                        {showComplete ? 'Complete' : status === 'current' ? 'Current' : 'Upcoming'}
+                      </div>
+                      <div style={styles.sessionDuration}>{session.duration}</div>
+                      <SessionStatusIcon status={showComplete ? 'done' : status} />
+                    </div>
                   </div>
+
+                  {/* Session body — always visible unless locked */}
+                  {status !== 'locked' && (
+                    <div style={styles.sessionBody}>
+                      <p style={styles.sessionDesc}>{session.clientNotes}</p>
+                      <div style={styles.leaveWith}>
+                        <span style={styles.leaveWithLabel}>You'll leave with:</span>
+                        <span>{session.leaveWith}</span>
+                      </div>
+
+                      {/* Inline checklist — current and done sessions */}
+                      <SessionChecklist
+                        sessionNumber={sessionNum}
+                        accessCode={client.access_code}
+                        onAllChecked={handleChecklistComplete}
+                        isReadOnly={isDone || clientDone}
+                        onMarkComplete={() => handleClientMarkDone(sessionNum)}
+                        markedComplete={clientDone}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {/* Session body — always visible unless locked */}
-                {status !== 'locked' && (
-                  <div style={styles.sessionBody}>
-                    <p style={styles.sessionDesc}>{session.clientNotes}</p>
-                    <div style={styles.leaveWith}>
-                      <span style={styles.leaveWithLabel}>You'll leave with:</span>
-                      <span>{session.leaveWith}</span>
-                    </div>
-
-                    {/* Inline checklist — current and done sessions */}
-                    <SessionChecklist
-                      sessionNumber={sessionNum}
-                      accessCode={client.access_code}
-                      onAllChecked={handleChecklistComplete}
-                      isReadOnly={isDone}
-                    />
+                {/* "Next up" teaser — appears below a session the client just marked complete */}
+                {clientDone && !isDone && sessionNum < 5 && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '14px 20px',
+                    margin: '-12px 0 0',
+                    background: '#F5FBF8',
+                    border: `1px solid ${GREEN_CHECK_BORDER}`,
+                    borderTop: 'none',
+                    borderRadius: '0 0 10px 10px',
+                    animation: 'aihours-fadein 0.4s ease',
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                      <circle cx="8" cy="8" r="8" fill={PROGRESS_GREEN} opacity="0.15" />
+                      <path d="M6 8l2 2 4-4" stroke={PROGRESS_GREEN} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <span style={{ fontSize: 13, color: PROGRESS_GREEN, fontWeight: 600 }}>
+                      Next up: Session {sessionNum + 1} — {SESSIONS[sessionNum].title}
+                    </span>
                   </div>
                 )}
-              </div>
+              </React.Fragment>
             )
           })}
         </div>
