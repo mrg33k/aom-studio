@@ -1,5 +1,6 @@
 import { C } from '../../../lib/cv3Colors.js'
 import { useEffect, useState } from 'react'
+import { useCornerNav } from '../../../CornerContext.jsx'
 
 // R75-h1: compact "doc updated" card. Fetches /api/dashboard/doc-updates
 // scoped by project (+ optional mission) and renders the latest N as a
@@ -43,6 +44,15 @@ export default function DocUpdatesStripe({ project, mission = '', limit = 5, com
   const [updates, setUpdates] = useState([])
   const [missions, setMissions] = useState([])
   const [expanded, setExpanded] = useState(!compact)
+  const { handleSelectProject, handleSelectMission } = useCornerNav()
+
+  const openRoom = (u) => {
+    if (u.mission) {
+      handleSelectMission({ slug: u.mission, name: u.mission }, { slug: u.project, name: u.project })
+    } else {
+      handleSelectProject({ slug: u.project, name: u.project })
+    }
+  }
 
   useEffect(() => {
     if (!project) return
@@ -144,22 +154,44 @@ export default function DocUpdatesStripe({ project, mission = '', limit = 5, com
             borderRadius: 8,
             padding: '10px 12px',
             background: C.surfaceAlt || 'rgba(255,255,255,0.02)',
-            display: 'flex', alignItems: 'flex-start', gap: 10,
+            display: 'flex', flexDirection: 'column', gap: 6,
             fontSize: 13, color: C.text,
           }}
         >
-          <span style={{ fontSize: 16, lineHeight: '18px' }}>{docIcon(u.doc_type)}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-              <span style={{ fontWeight: 600 }}>{docLabel(u.doc_type)}</span>
-              <span style={{ color: C.muted, fontSize: 11 }}>
-                {u.doc_type === 'MISSION'
-                  ? `${u.project}/${u.mission}${u.file_count ? ` · ${u.file_count} files` : ''}`
-                  : (u.mission ? `${u.project}/${u.mission}` : u.project)}
-              </span>
-              <span style={{ color: C.muted, fontSize: 11, marginLeft: 'auto' }}>{relTime(u.timestamp)}</span>
+          {/* Room link — the first thing in the card, one-click jump into the room */}
+          <button
+            onClick={() => openRoom(u)}
+            style={{
+              alignSelf: 'flex-start',
+              background: 'none', border: 'none', cursor: 'pointer',
+              padding: 0, margin: 0,
+              fontSize: 11, fontWeight: 600,
+              color: C.accent || '#c8a96e',
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+              letterSpacing: '0.02em',
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            Open room
+          </button>
+          {/* Card body — icon + label + path + summary */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <span style={{ fontSize: 16, lineHeight: '18px' }}>{docIcon(u.doc_type)}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 600 }}>{docLabel(u.doc_type)}</span>
+                <span style={{ color: C.muted, fontSize: 11 }}>
+                  {u.doc_type === 'MISSION'
+                    ? `${u.project}/${u.mission}${u.file_count ? ` · ${u.file_count} files` : ''}`
+                    : (u.mission ? `${u.project}/${u.mission}` : u.project)}
+                </span>
+                <span style={{ color: C.muted, fontSize: 11, marginLeft: 'auto' }}>{relTime(u.timestamp)}</span>
+              </div>
+              <div style={{ color: C.muted, marginTop: 2, wordBreak: 'break-word' }}>{u.summary}</div>
             </div>
-            <div style={{ color: C.muted, marginTop: 2, wordBreak: 'break-word' }}>{u.summary}</div>
           </div>
         </div>
       ))}
