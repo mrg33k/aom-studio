@@ -617,20 +617,8 @@ function StepPrompts({ category, answers, onNext, onBack }) {
     >
       <ProgressDots step={2} total={3} />
       {insightText && <AOMInsightCard text={insightText} />}
-      <h2 className="font-display-serif text-3xl md:text-4xl text-[#0C0C0C] mb-2 leading-snug">
-        Your personalized prompts.
-      </h2>
-      <p className="font-body text-black/45 mb-8">
-        Copy any of these directly into ChatGPT or Claude.
-      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        {promptList.map((p) => (
-          <PromptCard key={p.label} label={p.label} prompt={p.prompt} />
-        ))}
-      </div>
-
-      {/* Email capture — optional, sends prompts to inbox */}
+      {/* Email capture — moved above prompts so users commit before seeing all the goods */}
       <div
         className="rounded-xl p-8 mb-8"
         style={{ background: '#fff', border: '2px solid rgba(232,93,38,0.25)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
@@ -638,11 +626,11 @@ function StepPrompts({ category, answers, onNext, onBack }) {
         <div className="flex items-center gap-2 mb-2">
           <Mail size={16} style={{ color: ORANGE }} />
           <h3 className="font-headline text-lg text-[#0C0C0C]">
-            Get these sent to your inbox
+            Get ALL these prompts sent to you
           </h3>
         </div>
         <p className="font-body text-base text-black/65 mb-5 leading-relaxed">
-          Enter your email and we&apos;ll send your personalized prompts directly to you.
+          Enter your email and we&apos;ll send every single one of your personalized prompts directly to your inbox — all of them, ready to use.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -698,7 +686,7 @@ function StepPrompts({ category, answers, onNext, onBack }) {
             )}
             {(emailState === 'idle' || emailState === 'error') && (
               <>
-                Send my prompts
+                Send me all my prompts
                 <ArrowRight size={14} />
               </>
             )}
@@ -717,6 +705,19 @@ function StepPrompts({ category, answers, onNext, onBack }) {
             </p>
           )}
         </div>
+      </div>
+
+      <h2 className="font-display-serif text-3xl md:text-4xl text-[#0C0C0C] mb-2 leading-snug">
+        Your personalized prompts.
+      </h2>
+      <p className="font-body text-black/45 mb-8">
+        Copy any of these directly into ChatGPT or Claude.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        {promptList.map((p) => (
+          <PromptCard key={p.label} label={p.label} prompt={p.prompt} />
+        ))}
       </div>
 
       <div className="flex flex-col items-center gap-3 mt-2">
