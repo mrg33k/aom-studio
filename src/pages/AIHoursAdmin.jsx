@@ -829,7 +829,7 @@ function TeamView({ user, onLogout }) {
   const [addError, setAddError] = useState(null)
   const [newClientConfirm, setNewClientConfirm] = useState(null)
   const [markStates, setMarkStates] = useState({}) // { [clientId]: 'loading' | 'done' }
-  const [markConfirm, setMarkConfirm] = useState(null) // { client_name, new_session }
+  const [markConfirm, setMarkConfirm] = useState(null) // { client_name, new_session, direction }
   const [previewClient, setPreviewClient] = useState(null) // client row to preview
 
   const WORDLIST = ['APEX', 'NOVA', 'EDGE', 'PEAK', 'CORE', 'GRID', 'LINK', 'MARK', 'NEXT', 'PLUS', 'RISE', 'STAR', 'BOLD', 'CALM', 'FLUX', 'GLOW', 'IRON', 'JADE', 'KEEN', 'LOFT', 'MINT', 'NODE', 'OPEN', 'PORT', 'REEF', 'SAGE', 'TIDE', 'VAST', 'WAVE', 'ZINC', 'ECHO', 'FAST', 'HERO', 'JUMP', 'LEAD', 'ONYX', 'PINE', 'RUBY', 'SAFE', 'WARD']
@@ -898,7 +898,7 @@ function TeamView({ user, onLogout }) {
     setNewClientConfirm(null)
   }
 
-  async function handleMarkComplete(client) {
+  async function handleAdvance(client) {
     if (client.current_session >= 5) return
     const clientId = client.id
     setMarkStates(prev => ({ ...prev, [clientId]: 'loading' }))
@@ -911,7 +911,31 @@ function TeamView({ user, onLogout }) {
       })
       const result = await res.json()
       if (!result.ok) throw new Error(result.error)
-      setMarkConfirm({ client_name: client.client_name, new_session: newSession })
+      setMarkConfirm({ client_name: client.client_name, new_session: newSession, direction: 'advance' })
+      await loadClients()
+      setTimeout(() => {
+        setMarkStates(prev => { const s = { ...prev }; delete s[clientId]; return s })
+        setMarkConfirm(null)
+      }, 6000)
+    } catch {
+      setMarkStates(prev => { const s = { ...prev }; delete s[clientId]; return s })
+    }
+  }
+
+  async function handlePushBack(client) {
+    if (client.current_session <= 1) return
+    const clientId = client.id
+    setMarkStates(prev => ({ ...prev, [clientId]: 'loading' }))
+    try {
+      const newSession = client.current_session - 1
+      const res = await fetch(`/api/ai-hours/clients?id=${clientId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_session: newSession }),
+      })
+      const result = await res.json()
+      if (!result.ok) throw new Error(result.error)
+      setMarkConfirm({ client_name: client.client_name, new_session: newSession, direction: 'pushback' })
       await loadClients()
       setTimeout(() => {
         setMarkStates(prev => { const s = { ...prev }; delete s[clientId]; return s })
@@ -1251,27 +1275,53 @@ function TeamView({ user, onLogout }) {
                           </div>
                         </td>
                         <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
-                          {client.current_session >= 5 ? (
-                            <span style={{ fontSize: 12, color: GREEN_CHECK, fontWeight: 600 }}>✓ Complete</span>
-                          ) : (
+                          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                            {/* Push Back */}
                             <button
-                              onClick={() => handleMarkComplete(client)}
-                              disabled={markStates[client.id] === 'loading'}
+                              onClick={() => handlePushBack(client)}
+                              disabled={client.current_session <= 1 || markStates[client.id] === 'loading'}
+                              title="Move back one session"
                               style={{
                                 fontSize: 12,
-                                padding: '6px 14px',
-                                background: markStates[client.id] === 'loading' ? BORDER : AOM_ORANGE,
-                                color: markStates[client.id] === 'loading' ? INK_MUTED : '#fff',
-                                border: 'none',
+                                padding: '5px 10px',
+                                background: (client.current_session <= 1 || markStates[client.id] === 'loading') ? CREAM_WARM : '#fff',
+                                color: (client.current_session <= 1 || markStates[client.id] === 'loading') ? LOCK_GRAY : INK_SOFT,
+                                border: `1px solid ${(client.current_session <= 1 || markStates[client.id] === 'loading') ? BORDER : INK_MUTED}`,
                                 borderRadius: 4,
-                                cursor: markStates[client.id] === 'loading' ? 'default' : 'pointer',
-                                fontWeight: 600,
-                                transition: 'background 0.15s',
+                                cursor: (client.current_session <= 1 || markStates[client.id] === 'loading') ? 'default' : 'pointer',
+                                fontWeight: 500,
+                                transition: 'all 0.15s',
+                                fontFamily: 'inherit',
                               }}
                             >
-                              {markStates[client.id] === 'loading' ? 'Saving…' : 'Mark Complete'}
+                              ← Back
                             </button>
-                          )}
+
+                            {/* Advance / Complete */}
+                            {client.current_session >= 5 ? (
+                              <span style={{ fontSize: 12, color: GREEN_CHECK, fontWeight: 600, padding: '5px 4px' }}>✓ Done</span>
+                            ) : (
+                              <button
+                                onClick={() => handleAdvance(client)}
+                                disabled={markStates[client.id] === 'loading'}
+                                title="Advance to next session"
+                                style={{
+                                  fontSize: 12,
+                                  padding: '5px 10px',
+                                  background: markStates[client.id] === 'loading' ? BORDER : AOM_ORANGE,
+                                  color: markStates[client.id] === 'loading' ? INK_MUTED : '#fff',
+                                  border: 'none',
+                                  borderRadius: 4,
+                                  cursor: markStates[client.id] === 'loading' ? 'default' : 'pointer',
+                                  fontWeight: 600,
+                                  transition: 'background 0.15s',
+                                  fontFamily: 'inherit',
+                                }}
+                              >
+                                {markStates[client.id] === 'loading' ? 'Saving…' : 'Advance →'}
+                              </button>
+                            )}
+                          </div>
                           <button
                             onClick={() => setPreviewClient(client)}
                             style={{
@@ -1303,20 +1353,29 @@ function TeamView({ user, onLogout }) {
             {markConfirm && (
               <div style={{
                 marginTop: 20,
-                background: '#F0FBF4',
-                border: `1px solid ${GREEN_CHECK}`,
+                background: markConfirm.direction === 'pushback' ? '#FFF8F5' : '#F0FBF4',
+                border: `1px solid ${markConfirm.direction === 'pushback' ? AOM_ORANGE : GREEN_CHECK}`,
                 borderRadius: 8,
                 padding: '14px 20px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 10,
               }}>
-                <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
-                  <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
-                  <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span style={{ fontSize: 14, color: GREEN_CHECK, fontWeight: 600 }}>
-                  Session {markConfirm.new_session} unlocked for {markConfirm.client_name}
+                {markConfirm.direction === 'pushback' ? (
+                  <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
+                    <circle cx="11" cy="11" r="11" fill={AOM_ORANGE} />
+                    <path d="M14.5 11H8m0 0l3-3m-3 3l3 3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                ) : (
+                  <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
+                    <circle cx="11" cy="11" r="11" fill={GREEN_CHECK} />
+                    <path d="M6.5 11.5l3 3 6-6" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+                <span style={{ fontSize: 14, color: markConfirm.direction === 'pushback' ? AOM_ORANGE : GREEN_CHECK, fontWeight: 600 }}>
+                  {markConfirm.direction === 'pushback'
+                    ? `${markConfirm.client_name} moved back to Session ${markConfirm.new_session}`
+                    : `Session ${markConfirm.new_session} unlocked for ${markConfirm.client_name}`}
                 </span>
               </div>
             )}
