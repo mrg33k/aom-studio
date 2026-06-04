@@ -686,7 +686,7 @@ const styles = {
   badgePatchImg: {
     width: '90%',
     height: '90%',
-    objectFit: 'cover',
+    objectFit: 'contain',
     borderRadius: '50%',
   },
   badgePatchText: {
@@ -714,7 +714,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#070B14',  // solid deep-space fill — prevents transparent gaps behind framed awards
   },
   awardGlow: {
     position: 'absolute',
