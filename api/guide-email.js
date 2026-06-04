@@ -10,6 +10,14 @@
 //   RESEND_API_KEY            — Resend API key
 //   SUPABASE_URL              — Supabase project URL
 //   SUPABASE_SERVICE_ROLE_KEY — Supabase service role key
+//
+// NOTE on FROM address (2026-06-04):
+//   Resend plan only allows 1 verified domain. `sourcing.directory` is the active one.
+//   `aheadofmarket.com` is NOT verified — sending from that address silently fails.
+//   Emails are sent from hello@sourcing.directory with reply_to hello@aheadofmarket.com
+//   until the Resend plan is upgraded to support multiple domains OR aheadofmarket.com
+//   DNS records (SPF, DKIM, DMARC) are verified at https://resend.com/domains.
+//   TO FIX PROPERLY: upgrade Resend plan and add aheadofmarket.com domain.
 
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
@@ -96,15 +104,25 @@ export default async function handler(req, res) {
 
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: 'AOM <hello@aheadofmarket.com>',
+    // Resend SDK v6 returns { data, error } — does NOT throw on API errors.
+    // Must check error explicitly or 403/4xx responses are silently swallowed.
+    // FROM: sourcing.directory is the verified domain on the current Resend plan.
+    // REPLY-TO: hello@aheadofmarket.com so replies reach the right inbox.
+    const { data, error: resendError } = await resend.emails.send({
+      from: 'AOM <hello@sourcing.directory>',
+      reply_to: 'hello@aheadofmarket.com',
       to: cleanEmail,
       subject: `Your AI prompts for ${categoryLabel}`,
       html,
     });
+    if (resendError) {
+      console.error('Resend error:', resendError);
+      return res.status(500).json({ error: 'Failed to send email', details: resendError.message });
+    }
+    console.log('Email sent successfully:', data?.id);
     return res.status(200).json({ ok: true });
   } catch (err) {
-    console.error('Resend error:', err);
+    console.error('Resend error (unexpected throw):', err);
     return res.status(500).json({ error: 'Failed to send email' });
   }
 }
