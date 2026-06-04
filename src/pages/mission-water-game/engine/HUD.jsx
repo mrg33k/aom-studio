@@ -20,14 +20,18 @@ import React, { useEffect, useRef, useState } from 'react';
  *   Council:    Framed award ceremony moment
  */
 
+// Cache-bust version: bump when the Ch1 badge/frame PNGs are re-processed so
+// browsers + CDN refetch instead of serving stale opaque (checkerboard) bytes.
+const ASSET_V = '?v=2';
+
 const BADGE_ART = {
   // Chapter 1
-  groundwater_hydrology: '/mission-water/chapter-1/badges/badge_groundwater_hydrology.png',
-  environmental_chemistry: '/mission-water/chapter-1/badges/badge_environmental_chemistry.png',
-  climate_science: '/mission-water/chapter-1/badges/badge_climate_science.png',
-  water_security: '/mission-water/chapter-1/badges/badge_water_security.png',
-  mission_imperative: '/mission-water/chapter-1/badges/badge_mission_imperative.png',
-  pete_conrad_legacy: '/mission-water/chapter-1/badges/badge_pete_conrad_legacy.png',
+  groundwater_hydrology: '/mission-water/chapter-1/badges/badge_groundwater_hydrology.png' + ASSET_V,
+  environmental_chemistry: '/mission-water/chapter-1/badges/badge_environmental_chemistry.png' + ASSET_V,
+  climate_science: '/mission-water/chapter-1/badges/badge_climate_science.png' + ASSET_V,
+  water_security: '/mission-water/chapter-1/badges/badge_water_security.png' + ASSET_V,
+  mission_imperative: '/mission-water/chapter-1/badges/badge_mission_imperative.png' + ASSET_V,
+  pete_conrad_legacy: '/mission-water/chapter-1/badges/badge_pete_conrad_legacy.png' + ASSET_V,
   // Chapter 2
   badge_ch2_space_hydrology: '/mission-water/chapter-2/badges/badge_ch2_space_hydrology.png',
   badge_ch2_life_support: '/mission-water/chapter-2/badges/badge_ch2_life_support.png',
@@ -54,7 +58,7 @@ const DISCOVERY_LABELS = {
   badge_ch2_lunar_water_theory: 'LUNAR WATER THEORY',
 };
 
-const BADGE_FRAME = '/mission-water/chapter-1/hud/hud_badge_frame.png';
+const BADGE_FRAME = '/mission-water/chapter-1/hud/hud_badge_frame.png' + ASSET_V;
 
 export default function HUD({ phase, hud, onChoose }) {
   const [focusIdx, setFocusIdx] = useState(0);
