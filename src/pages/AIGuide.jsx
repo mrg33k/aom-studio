@@ -571,14 +571,18 @@ function StepCategory({ onNext, onBack, initialSelected }) {
 }
 
 // ─── Step 2: Questions ──────────────────────────────────────────────────────
-function StepQuestions({ category, onNext, onBack, initialAnswers }) {
+function StepQuestions({ category, onNext, onBack, initialAnswers, onAnswerChange }) {
   const questions = CATEGORY_QUESTIONS[category] || [];
   const [answers, setAnswers] = useState(initialAnswers || {});
 
   const allFilled = questions.every((q) => (answers[q.id] || '').trim().length > 0);
 
   function handleChange(id, value) {
-    setAnswers((prev) => ({ ...prev, [id]: value }));
+    setAnswers((prev) => {
+      const next = { ...prev, [id]: value };
+      onAnswerChange?.(next); // propagate partial answers up so Back → Forward doesn't wipe them
+      return next;
+    });
   }
 
   return (
@@ -876,11 +880,13 @@ export default function AIGuide() {
   const [step, setStep] = useState(-1); // -1 = welcome
   const [category, setCategory] = useState(null);
   const [answers, setAnswers] = useState(null);
+  const [partialAnswers, setPartialAnswers] = useState(null); // preserves typed text when navigating Back
 
   function reset() {
     setStep(-1);
     setCategory(null);
     setAnswers(null);
+    setPartialAnswers(null);
   }
 
   return (
@@ -907,10 +913,12 @@ export default function AIGuide() {
             <StepQuestions
               key="questions"
               category={category}
-              initialAnswers={answers}
+              initialAnswers={answers || partialAnswers}
+              onAnswerChange={setPartialAnswers}
               onBack={() => setStep(0)}
               onNext={(ans) => {
                 setAnswers(ans);
+                setPartialAnswers(ans);
                 setStep(2);
               }}
             />
