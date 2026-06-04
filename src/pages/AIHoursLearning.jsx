@@ -1538,6 +1538,22 @@ function ClientView({ client, onLogout }) {
       return stored ? JSON.parse(stored) : {}
     } catch { return {} }
   })
+  // Collapse state for completed sessions — persisted to localStorage
+  // { sessionNum: true } means collapsed. Default: completed sessions start collapsed.
+  const [collapsedSessions, setCollapsedSessions] = useState(() => {
+    try {
+      const key = `ai_hours_collapsed_${client.access_code}`
+      const stored = localStorage.getItem(key)
+      if (stored) return JSON.parse(stored)
+      // First visit: collapse all AOM-completed sessions by default
+      const defaults = {}
+      const currentSession = client.current_session || 1
+      for (let n = 1; n < currentSession; n++) {
+        defaults[n] = true
+      }
+      return defaults
+    } catch { return {} }
+  })
   const currentSession = client.current_session || 1
   const isComplete = currentSession > 5
 
@@ -1558,6 +1574,22 @@ function ClientView({ client, onLogout }) {
       const key = `ai_hours_client_marked_done_${client.access_code}`
       localStorage.setItem(key, JSON.stringify(next))
     } catch {}
+    // Auto-collapse once the client marks it done
+    toggleCollapsed(sessionNum, true)
+  }
+
+  function toggleCollapsed(sessionNum, forceCollapse) {
+    setCollapsedSessions(prev => {
+      const next = {
+        ...prev,
+        [sessionNum]: forceCollapse !== undefined ? forceCollapse : !prev[sessionNum],
+      }
+      try {
+        const key = `ai_hours_collapsed_${client.access_code}`
+        localStorage.setItem(key, JSON.stringify(next))
+      } catch {}
+      return next
+    })
   }
 
   function handleContactSubmit(e) {
@@ -1580,6 +1612,28 @@ function ClientView({ client, onLogout }) {
         @keyframes aihours-fadein {
           from { opacity: 0; transform: translateY(-6px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes aihours-expand {
+          from { opacity: 0; transform: translateY(-4px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .aihours-collapse-chevron {
+          transition: transform 0.22s ease;
+        }
+        .aihours-collapse-chevron.open {
+          transform: rotate(180deg);
+        }
+        .aihours-session-body-collapsed {
+          display: none;
+        }
+        .aihours-session-body-expanded {
+          animation: aihours-expand 0.2s ease;
+        }
+        /* Touch target helpers for mobile */
+        @media (max-width: 640px) {
+          .aihours-collapse-header {
+            min-height: 52px;
+          }
         }
       `}</style>
       {/* Header */}
@@ -1615,9 +1669,10 @@ function ClientView({ client, onLogout }) {
             const clientDone = !!clientMarkedDone[sessionNum]
             // Visual complete state: either AOM-advanced OR client self-marked
             const showComplete = isDone || clientDone
+            // Collapsed state — only applies to completed sessions
+            const isCollapsed = showComplete && !!collapsedSessions[sessionNum]
+            const isExpandable = showComplete // only completed sessions can collapse/expand
 
-            // All sessions always fully visible — no collapse/expand.
-            // Done sessions get green header/border; current gets orange accent; locked is grayed.
             return (
               <React.Fragment key={sessionNum}>
                 <div
@@ -1632,20 +1687,32 @@ function ClientView({ client, onLogout }) {
                     } : {}),
                   }}
                 >
-                  {/* Session header — not clickable, no collapse toggle */}
-                  <div style={styles.sessionHeader}>
+                  {/* Session header — clickable to collapse/expand when completed */}
+                  <div
+                    className="aihours-collapse-header"
+                    style={{
+                      ...styles.sessionHeader,
+                      cursor: isExpandable ? 'pointer' : 'default',
+                      ...(isCollapsed ? { padding: '16px 28px' } : {}),
+                    }}
+                    onClick={isExpandable ? () => toggleCollapsed(sessionNum) : undefined}
+                    role={isExpandable ? 'button' : undefined}
+                    aria-expanded={isExpandable ? !isCollapsed : undefined}
+                    aria-label={isExpandable ? `Session ${sessionNum}: ${session.title} — ${isCollapsed ? 'expand' : 'collapse'}` : undefined}
+                  >
                     <div style={{
                       ...styles.sessionNumber,
                       ...(status === 'current' && !clientDone ? styles.sessionNumberActive : {}),
                       ...(showComplete ? { color: PROGRESS_GREEN } : {}),
+                      ...(isCollapsed ? { fontSize: 24 } : {}),
                     }}>
                       {session.number}
                     </div>
                     <div style={styles.sessionInfo}>
                       <div style={styles.sessionTitle}>{session.title}</div>
-                      <div style={styles.sessionGoal}>{session.goal}</div>
+                      {!isCollapsed && <div style={styles.sessionGoal}>{session.goal}</div>}
                     </div>
-                    <div style={styles.sessionMeta}>
+                    <div style={{ ...styles.sessionMeta, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                       <div style={{
                         ...styles.sessionBadge,
                         ...(status === 'current' && !clientDone ? styles.sessionBadgeCurrent : {}),
@@ -1654,14 +1721,29 @@ function ClientView({ client, onLogout }) {
                       }}>
                         {showComplete ? 'Complete' : status === 'current' ? 'Current' : 'Upcoming'}
                       </div>
-                      <div style={styles.sessionDuration}>{session.duration}</div>
                       <SessionStatusIcon status={showComplete ? 'done' : status} />
+                      {/* Chevron for expandable completed sessions */}
+                      {isExpandable && (
+                        <svg
+                          className={`aihours-collapse-chevron${isCollapsed ? '' : ' open'}`}
+                          width="16"
+                          height="16"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          style={{ flexShrink: 0, opacity: 0.5 }}
+                        >
+                          <path d="M4 6l4 4 4-4" stroke={GREEN_CHECK} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
                     </div>
                   </div>
 
-                  {/* Session body — always visible unless locked */}
-                  {status !== 'locked' && (
-                    <div style={styles.sessionBody}>
+                  {/* Session body — collapsible for completed, always visible for current */}
+                  {status !== 'locked' && !isCollapsed && (
+                    <div
+                      className="aihours-session-body-expanded"
+                      style={styles.sessionBody}
+                    >
                       <p style={styles.sessionDesc}>{session.clientNotes}</p>
                       <div style={styles.leaveWith}>
                         <span style={styles.leaveWithLabel}>You'll leave with:</span>
