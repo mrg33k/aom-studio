@@ -185,6 +185,40 @@ export default async function handler(req, res) {
     }
   } catch { /* swallow — registry missions still render */ }
 
+  // corner:mission-panel — fetch CLI-scaffolded missions from the events store.
+  // missions-tree previously saw missions from only two sources: the static
+  // registry (built at deploy time by build-missions-registry.cjs) and
+  // agent_status (drawer-created). Missions scaffolded via scripts/new-mission.py
+  // write `mission_created` events to the `events` table — a third source the
+  // tree never read, so a CLI-created mission (e.g. corner:billing-june-15)
+  // never appeared until the next build+deploy. This query closes that gap so
+  // new missions show LIVE. Payload mirrors missions-created.js:
+  //   { project, mission|mission_slug, description, file_count }; agent="<project>:<mission>".
+  // NOT client-scoped (mission events carry no reliable client_id), so tenant
+  // isolation is enforced at merge time via allowedProjectSlugs below.
+  const eventMissions = []
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/events?event_type=eq.mission_created&select=agent,payload,timestamp&order=timestamp.desc&limit=500`,
+      { headers: supabaseHeaders() },
+    )
+    if (r.ok) {
+      const rows = await r.json()
+      for (const row of (rows || [])) {
+        const p = row?.payload || {}
+        const projectSlug = (p.project || '').toString()
+        const missionSlug = (p.mission || p.mission_slug || '').toString()
+        if (!projectSlug || !missionSlug) continue
+        eventMissions.push({
+          projectSlug,
+          missionSlug,
+          name: deriveDisplayName(missionSlug),
+          last_updated: row.timestamp || null,
+        })
+      }
+    }
+  } catch { /* swallow — registry + agent_status missions still render */ }
+
   // mission-rooms reframe: the mission is the unit of work, not the task.
   // Seed every project + mission from the on-disk registry (built at
   // build time by scripts/build-missions-registry.cjs from corner/missions
@@ -231,6 +265,26 @@ export default async function handler(req, res) {
         status: 'in-progress',
         is_done: false,
         last_message_at: missionLastSeenAt.get(dm.missionSlug) || missionLastSeenAt.get(dm.fullSlug) || null,
+        tasks: [],
+      })
+    }
+  }
+
+  // Add events-store missions (CLI-scaffolded via new-mission.py) if not
+  // already present from the registry or agent_status. Tenant isolation is
+  // enforced HERE because the events query above is not client-scoped.
+  for (const em of eventMissions) {
+    if (allowedProjectSlugs !== null && !allowedProjectSlugs.has(em.projectSlug)) continue
+    const proj = getProject(em.projectSlug)
+    const fullSlug = `${em.projectSlug}:${em.missionSlug}`
+    if (!proj.missions.has(em.missionSlug) && !proj.missions.has(fullSlug)) {
+      proj.missions.set(em.missionSlug, {
+        slug: em.missionSlug,
+        name: em.name,
+        status: 'in-progress',
+        is_done: false,
+        last_updated: em.last_updated,
+        last_message_at: missionLastSeenAt.get(em.missionSlug) || missionLastSeenAt.get(fullSlug) || null,
         tasks: [],
       })
     }
