@@ -1276,9 +1276,10 @@ function AccessCodeGate({ onClientSuccess }) {
 }
 
 // ─── Session Checklist Component ─────────────────────────────────────────────
-// Design: accordion per task, grayscale only → green at completion (Stripe/Linear style)
+// Design: strikethrough "crossing off the list" style — items stay visible,
+// checked items get strikethrough + green checkbox. No collapse. No accordion.
 
-function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedComplete = false, onMarkComplete }) {
+function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly = false }) {
   const items = SESSION_CHECKLISTS[sessionNumber] || []
   const storageKey = `ai_hours_checklist_${accessCode}_${sessionNumber}`
 
@@ -1310,7 +1311,7 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
   }, [accessCode, sessionNumber, storageKey])
 
   function toggle(index) {
-    if (isMarkedComplete) return
+    if (isReadOnly) return
     const wasChecked = checked.includes(index)
     const next = wasChecked
       ? checked.filter(i => i !== index)
@@ -1361,7 +1362,7 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
           color: allDone ? PROGRESS_GREEN : INK_MUTED,
           transition: 'color 0.45s ease',
         }}>
-          Session checklist
+          {allDone ? 'Session checklist — complete' : 'Session checklist'}
         </span>
         <span style={{
           fontSize: 12,
@@ -1373,100 +1374,61 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
         </span>
       </div>
 
-      {/* Accordion items — each item is its own accordion */}
+      {/* Checklist items — always fully visible, strikethrough when checked */}
       <div style={{ padding: '6px 0' }}>
         {items.map((item, index) => {
           const isChecked = checked.includes(index)
 
-          if (isChecked) {
-            // ── Collapsed: compact single-line done state ──────────────────────
-            return (
-              <button
-                key={index}
-                onClick={() => !isMarkedComplete && toggle(index)}
-                title={isMarkedComplete ? undefined : 'Click to uncheck'}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '9px 20px',
-                  width: '100%',
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: isMarkedComplete ? 'default' : 'pointer',
-                  textAlign: 'left',
-                  transition: 'background 0.15s ease',
-                }}
-                onMouseEnter={e => { if (!isMarkedComplete) e.currentTarget.style.background = 'rgba(45,122,79,0.05)' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
-              >
-                {/* Small green check badge */}
-                <div style={{
-                  width: 20,
-                  height: 20,
-                  minWidth: 20,
-                  borderRadius: 5,
-                  background: PROGRESS_GREEN,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4l2.5 2.5L9 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-                {/* Task name — muted, gray */}
-                <span style={{
-                  fontSize: 13,
-                  lineHeight: 1.4,
-                  color: INK_MUTED,
-                  fontWeight: 400,
-                }}>
-                  {item}
-                </span>
-              </button>
-            )
-          }
-
-          // ── Expanded: full item with gray unchecked checkbox ───────────────────
           return (
             <button
               key={index}
               onClick={() => toggle(index)}
+              disabled={isReadOnly}
+              title={isReadOnly ? undefined : isChecked ? 'Click to uncheck' : 'Click to check off'}
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: 14,
-                padding: '13px 20px',
+                padding: '12px 20px',
                 width: '100%',
                 background: 'transparent',
                 border: 'none',
-                cursor: 'pointer',
+                cursor: isReadOnly ? 'default' : 'pointer',
                 textAlign: 'left',
                 transition: 'background 0.15s ease',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.02)' }}
+              onMouseEnter={e => { if (!isReadOnly) e.currentTarget.style.background = isChecked ? 'rgba(45,122,79,0.04)' : 'rgba(0,0,0,0.02)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
             >
-              {/* Gray unchecked checkbox — 22px */}
+              {/* Checkbox — green filled when checked, gray border when unchecked */}
               <div style={{
-                width: 22,
-                height: 22,
-                minWidth: 22,
-                marginTop: 1,
+                width: 20,
+                height: 20,
+                minWidth: 20,
+                marginTop: 2,
                 borderRadius: 5,
-                border: `2px solid ${BORDER}`,
-                background: '#fff',
+                background: isChecked ? PROGRESS_GREEN : '#fff',
+                border: isChecked ? `2px solid ${PROGRESS_GREEN}` : `2px solid ${BORDER}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 flexShrink: 0,
-                transition: 'border-color 0.2s ease',
-              }} />
-              {/* Task text */}
+                transition: 'background 0.2s ease, border-color 0.2s ease',
+              }}>
+                {isChecked && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l2.5 2.5L9 1" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
+              {/* Task text — strikethrough when checked */}
               <span style={{
                 fontSize: 14,
                 lineHeight: 1.5,
-                color: INK_SOFT,
-                fontWeight: 500,
+                color: isChecked ? INK_MUTED : INK_SOFT,
+                fontWeight: isChecked ? 400 : 500,
+                textDecoration: isChecked ? 'line-through' : 'none',
+                transition: 'color 0.2s ease, text-decoration 0.2s ease',
               }}>
                 {item}
               </span>
@@ -1475,59 +1437,20 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
         })}
       </div>
 
-      {/* All-done: "Mark as Completed" CTA — only color in the component */}
-      {allDone && !isMarkedComplete && (
-        <div style={{ padding: '4px 16px 16px' }}>
-          <button
-            onClick={() => onMarkComplete && onMarkComplete()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              padding: '13px 20px',
-              width: '100%',
-              background: PROGRESS_GREEN,
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              transition: 'opacity 0.15s ease, transform 0.15s ease',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = '0.9'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)' }}
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="8" fill="rgba(255,255,255,0.25)" />
-              <path d="M4.5 8.5l2 2L12 5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span style={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: '0.02em' }}>
-              Mark as Completed
-            </span>
-          </button>
-        </div>
-      )}
-
-      {/* Already marked complete — read-only confirmation */}
-      {isMarkedComplete && (
-        <div style={{ padding: '4px 16px 14px' }}>
+      {/* All-done confirmation — subtle, no button */}
+      {allDone && (
+        <div style={{ padding: '4px 20px 14px' }}>
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            padding: '10px 14px',
-            background: 'rgba(45,122,79,0.06)',
-            border: `1px solid ${GREEN_CHECK_BORDER}`,
-            borderRadius: 8,
           }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <circle cx="7" cy="7" r="7" fill={PROGRESS_GREEN} />
               <path d="M4 7.5l2 2L10 5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span style={{ fontSize: 13, fontWeight: 600, color: PROGRESS_GREEN }}>
-              Section completed
-            </span>
-            <span style={{ fontSize: 12, color: INK_MUTED, marginLeft: 'auto' }}>
-              Read-only
+            <span style={{ fontSize: 13, color: PROGRESS_GREEN, fontWeight: 600 }}>
+              All items checked off
             </span>
           </div>
         </div>
@@ -1539,19 +1462,12 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isMarkedCom
 // ─── Client Session View ──────────────────────────────────────────────────────
 
 function ClientView({ client, onLogout }) {
-  const [expandedSession, setExpandedSession] = useState(client.current_session)
   const [showContact, setShowContact] = useState(false)
   const [contactMessage, setContactMessage] = useState('')
   const [contactSent, setContactSent] = useState(false)
   const [checklistCompleted, setChecklistCompleted] = useState({}) // { sessionNum: bool }
   const currentSession = client.current_session || 1
   const isComplete = currentSession > 5
-
-  // Client-side "I'm done with this section" state — persisted to localStorage
-  const sectionCompleteKey = `ai_hours_section_complete_${client.access_code}`
-  const [sectionMarkedComplete, setSectionMarkedComplete] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(sectionCompleteKey) || '{}') } catch { return {} }
-  })
 
   function getStatus(sessionNum) {
     if (sessionNum < currentSession) return 'done'
@@ -1561,14 +1477,6 @@ function ClientView({ client, onLogout }) {
 
   function handleChecklistComplete(sessionNum, allDone) {
     setChecklistCompleted(prev => ({ ...prev, [sessionNum]: allDone }))
-  }
-
-  function handleMarkComplete(sessionNum) {
-    const next = { ...sectionMarkedComplete, [sessionNum]: true }
-    setSectionMarkedComplete(next)
-    try { localStorage.setItem(sectionCompleteKey, JSON.stringify(next)) } catch {}
-    // Collapse the section after marking complete
-    setExpandedSession(null)
   }
 
   function handleContactSubmit(e) {
@@ -1615,76 +1523,10 @@ function ClientView({ client, onLogout }) {
           {SESSIONS.map((session, i) => {
             const sessionNum = i + 1
             const status = getStatus(sessionNum)
-            const isClientComplete = !!sectionMarkedComplete[sessionNum]
-            // Collapsed green state = AOM-marked done OR client clicked "Mark as Completed"
-            const isCollapsedGreen = status === 'done' || isClientComplete
-            const isExpanded = expandedSession === sessionNum && status !== 'locked'
+            const isDone = status === 'done'
 
-            // ── Compact collapsed green row for completed sessions ──────────────
-            if (isCollapsedGreen && !isExpanded) {
-              return (
-                <div
-                  key={sessionNum}
-                  onClick={() => setExpandedSession(sessionNum)}
-                  style={{
-                    ...styles.sessionCard,
-                    borderColor: GREEN_CHECK_BORDER,
-                    background: 'rgba(45,122,79,0.04)',
-                    cursor: 'pointer',
-                    transition: 'background 0.2s ease, box-shadow 0.2s ease',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,122,79,0.08)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(45,122,79,0.04)' }}
-                >
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                    padding: '16px 24px',
-                  }}>
-                    {/* Green circle with check */}
-                    <div style={{
-                      width: 34,
-                      height: 34,
-                      minWidth: 34,
-                      borderRadius: '50%',
-                      background: PROGRESS_GREEN,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                    }}>
-                      <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
-                        <path d="M1.5 5.5L5.5 9.5L12.5 1.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </div>
-                    {/* Session number + title */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: PROGRESS_GREEN, marginBottom: 1 }}>
-                        Session {sessionNum}
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: INK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {session.title}
-                      </div>
-                    </div>
-                    {/* Complete badge */}
-                    <div style={{
-                      ...styles.sessionBadge,
-                      ...styles.sessionBadgeDone,
-                      flexShrink: 0,
-                    }}>
-                      Complete
-                    </div>
-                    {/* Chevron ▼ to expand */}
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: INK_MUTED }}>
-                      <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              )
-            }
-
-            // ── Full expanded card (current, locked, or re-expanded done session) ─
+            // All sessions always fully visible — no collapse/expand.
+            // Done sessions get green header/border; current gets orange accent; locked is grayed.
             return (
               <div
                 key={sessionNum}
@@ -1692,26 +1534,15 @@ function ClientView({ client, onLogout }) {
                   ...styles.sessionCard,
                   ...(status === 'current' ? styles.sessionCardActive : {}),
                   ...(status === 'locked' ? styles.sessionCardLocked : {}),
-                  // When re-expanded after being done/client-complete, keep green border
-                  ...(isCollapsedGreen ? { borderColor: GREEN_CHECK_BORDER, background: 'rgba(45,122,79,0.04)' } : {}),
+                  ...(isDone ? { borderColor: GREEN_CHECK_BORDER, background: 'rgba(45,122,79,0.03)' } : {}),
                 }}
               >
-                <div
-                  style={styles.sessionHeader}
-                  onClick={() => {
-                    if (status === 'locked') return
-                    // Collapse back to compact row if done/client-complete; otherwise toggle
-                    if (isCollapsedGreen) {
-                      setExpandedSession(null)
-                      return
-                    }
-                    setExpandedSession(isExpanded ? null : sessionNum)
-                  }}
-                >
+                {/* Session header — not clickable, no collapse toggle */}
+                <div style={styles.sessionHeader}>
                   <div style={{
                     ...styles.sessionNumber,
                     ...(status === 'current' ? styles.sessionNumberActive : {}),
-                    ...(isCollapsedGreen ? { color: PROGRESS_GREEN } : status === 'done' ? { color: GREEN_CHECK } : {}),
+                    ...(isDone ? { color: PROGRESS_GREEN } : {}),
                   }}>
                     {session.number}
                   </div>
@@ -1723,24 +1554,18 @@ function ClientView({ client, onLogout }) {
                     <div style={{
                       ...styles.sessionBadge,
                       ...(status === 'current' ? styles.sessionBadgeCurrent : {}),
-                      ...(isCollapsedGreen ? styles.sessionBadgeDone : status === 'done' ? styles.sessionBadgeDone : {}),
+                      ...(isDone ? styles.sessionBadgeDone : {}),
                       ...(status === 'locked' ? styles.sessionBadgeLocked : {}),
                     }}>
-                      {status === 'current' ? 'Current' : (status === 'done' || isCollapsedGreen) ? 'Complete' : 'Upcoming'}
+                      {status === 'current' ? 'Current' : isDone ? 'Complete' : 'Upcoming'}
                     </div>
                     <div style={styles.sessionDuration}>{session.duration}</div>
-                    {/* Chevron ▲ to collapse (shown when re-expanding a done session) */}
-                    {isCollapsedGreen ? (
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ color: INK_MUTED }}>
-                        <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    ) : (
-                      <SessionStatusIcon status={status} />
-                    )}
+                    <SessionStatusIcon status={status} />
                   </div>
                 </div>
 
-                {isExpanded && (
+                {/* Session body — always visible unless locked */}
+                {status !== 'locked' && (
                   <div style={styles.sessionBody}>
                     <p style={styles.sessionDesc}>{session.clientNotes}</p>
                     <div style={styles.leaveWith}>
@@ -1748,18 +1573,13 @@ function ClientView({ client, onLogout }) {
                       <span>{session.leaveWith}</span>
                     </div>
 
-                    {/* Inline checklist — only shown for current or completed sessions */}
-                    {(status === 'current' || status === 'done' || isClientComplete) && (
-                      <SessionChecklist
-                        sessionNumber={sessionNum}
-                        accessCode={client.access_code}
-                        onAllChecked={handleChecklistComplete}
-                        isMarkedComplete={isClientComplete}
-                        onMarkComplete={() => handleMarkComplete(sessionNum)}
-                      />
-                    )}
-
-                    {/* AOM advances sessions from the admin panel — no client-side advance */}
+                    {/* Inline checklist — current and done sessions */}
+                    <SessionChecklist
+                      sessionNumber={sessionNum}
+                      accessCode={client.access_code}
+                      onAllChecked={handleChecklistComplete}
+                      isReadOnly={isDone}
+                    />
                   </div>
                 )}
               </div>
