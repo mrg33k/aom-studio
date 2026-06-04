@@ -1281,10 +1281,13 @@ function AccessCodeGate({ onClientSuccess }) {
 
 function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly = false }) {
   const items = SESSION_CHECKLISTS[sessionNumber] || []
+  const allIndices = items.map((_, i) => i)
   const storageKey = `ai_hours_checklist_${accessCode}_${sessionNumber}`
 
-  // Load from localStorage on mount, then sync from Supabase in background
+  // If session is read-only (AOM-marked complete), show all items checked.
+  // Otherwise load from localStorage with Supabase as background sync source.
   const [checked, setChecked] = useState(() => {
+    if (isReadOnly) return allIndices
     try {
       const stored = localStorage.getItem(storageKey)
       return stored ? JSON.parse(stored) : []
@@ -1293,9 +1296,17 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly 
     }
   })
 
-  // Sync from Supabase on mount
+  // If isReadOnly becomes true after mount (e.g. prop change), ensure all show checked
   useEffect(() => {
-    if (!accessCode) return
+    if (isReadOnly) {
+      setChecked(allIndices)
+      if (onAllChecked) onAllChecked(sessionNumber, true)
+    }
+  }, [isReadOnly]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync from Supabase on mount (active sessions only — done sessions always show all checked)
+  useEffect(() => {
+    if (!accessCode || isReadOnly) return
     fetch(`/api/ai-hours/checklist?access_code=${encodeURIComponent(accessCode)}&session=${sessionNumber}`)
       .then(r => r.json())
       .then(data => {
@@ -1308,7 +1319,7 @@ function SessionChecklist({ sessionNumber, accessCode, onAllChecked, isReadOnly 
         }
       })
       .catch(() => {}) // localStorage is the fallback; silence network errors
-  }, [accessCode, sessionNumber, storageKey])
+  }, [accessCode, sessionNumber, storageKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggle(index) {
     if (isReadOnly) return
