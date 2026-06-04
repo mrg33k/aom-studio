@@ -227,7 +227,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Suspense fallback={<div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-[#8A847C] font-body text-sm">Loading...</div>}>
         <Routes>
-          <Route path="/" element={<V2Home />} />
+          <Route path="/" element={<App />} />
+          <Route path="/home-v2" element={<V2Home />} />
           <Route path="/r4" element={<HomeR4Preview />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandRedirect />} />
