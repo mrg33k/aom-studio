@@ -208,6 +208,50 @@ const PROMPTS = {
   ],
 };
 
+// ─── AOM Insights ──────────────────────────────────────────────────────────
+const AOM_INSIGHTS = {
+  'client-comms': (answers) =>
+    `Running a ${answers.business_type || 'business'} means your client relationships are everything — and ${answers.main_challenge || 'client communication'} is often where trust gets made or lost. The businesses that get this right don't just communicate more, they communicate with intention. The prompts below give you the words to do exactly that.`,
+
+  'hiring': (answers) =>
+    `A ${answers.business_type || 'business'} rises or falls on the team behind it. Finding the right ${answers.role_hiring || 'person'} isn't just about filling a seat — it's about protecting the standard you've built. These prompts cover every stage, so you can hire with confidence.`,
+
+  'sales': (answers) =>
+    `Most ${answers.business_type || 'businesses'} don't have a sales problem — they have a consistency problem. ${answers.sales_challenge ? `"${answers.sales_challenge}"` : 'The breakdown in the pipeline'} is almost always fixable with the right words and the right sequence. The prompts below give you both.`,
+
+  'operations': (answers) =>
+    `When ${answers.ops_pain || 'day-to-day operations'} is taking over your time, you're running your ${answers.business_type || 'business'} instead of building it. The owners who break out of that cycle don't work harder — they build systems that work without them. Start here.`,
+
+  'content': (answers) =>
+    `For a ${answers.business_type || 'business'}, showing up consistently on ${answers.content_platform || 'social media'} is the difference between being found and being invisible. The businesses that win at content aren't posting more — they're posting with a point. These prompts will help you do the same.`,
+
+  'finance': (answers) =>
+    `The most successful ${answers.business_type || 'business'} owners aren't finance experts — they're people who know their numbers well enough to make confident decisions. ${answers.finance_challenge ? `"${answers.finance_challenge}"` : 'Financial clarity'} is closer than it seems. The prompts below will get you there.`,
+};
+
+// ─── AOM Insight card ──────────────────────────────────────────────────────
+function AOMInsightCard({ text }) {
+  return (
+    <div
+      className="rounded-xl px-6 py-5 mb-8"
+      style={{
+        background: 'rgba(232,93,38,0.05)',
+        borderLeft: '3px solid #E85D26',
+      }}
+    >
+      <span
+        className="block font-headline text-xs tracking-widest mb-3"
+        style={{ color: '#E85D26' }}
+      >
+        FROM AOM
+      </span>
+      <p className="font-body text-base text-[#0C0C0C] leading-relaxed">
+        {text}
+      </p>
+    </div>
+  );
+}
+
 // ─── Progress dots ─────────────────────────────────────────────────────────
 function ProgressDots({ step, total }) {
   return (
@@ -436,6 +480,7 @@ function StepQuestions({ category, onNext }) {
 // ─── Step 3: Prompts ────────────────────────────────────────────────────────
 function StepPrompts({ category, answers, onNext }) {
   const promptList = PROMPTS[category]?.(answers) || [];
+  const insightText = AOM_INSIGHTS[category]?.(answers);
   const [email, setEmail] = useState('');
   const [emailState, setEmailState] = useState('idle'); // idle | loading | sent | error
   const [ctaHovered, setCtaHovered] = useState(false);
@@ -471,6 +516,7 @@ function StepPrompts({ category, answers, onNext }) {
       transition={{ duration: 0.35 }}
     >
       <ProgressDots step={2} total={3} />
+      {insightText && <AOMInsightCard text={insightText} />}
       <h2 className="font-display-serif text-3xl md:text-4xl text-[#0C0C0C] mb-2 leading-snug">
         Your personalized prompts.
       </h2>
