@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MessageSquare, Users, TrendingUp, LayoutGrid,
-  PenTool, BarChart2, ArrowRight, Copy, Check, RotateCcw, Mail, Send,
+  PenTool, BarChart2, ArrowRight, ArrowLeft, Copy, Check, RotateCcw, Mail, Send,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SiteNav from '../components/SiteNav';
@@ -426,8 +426,8 @@ function StepWelcome({ onNext }) {
 }
 
 // ─── Step 1: Category picker ────────────────────────────────────────────────
-function StepCategory({ onNext }) {
-  const [selected, setSelected] = useState(null);
+function StepCategory({ onNext, onBack, initialSelected }) {
+  const [selected, setSelected] = useState(initialSelected || null);
 
   return (
     <motion.div
@@ -474,27 +474,38 @@ function StepCategory({ onNext }) {
         })}
       </div>
 
-      <button
-        onClick={() => selected && onNext(selected)}
-        disabled={!selected}
-        className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-headline text-sm tracking-wide transition-all duration-200"
-        style={{
-          background: selected ? ORANGE : 'rgba(0,0,0,0.06)',
-          color: selected ? '#fff' : 'rgba(0,0,0,0.25)',
-          cursor: selected ? 'pointer' : 'not-allowed',
-        }}
-      >
-        Continue
-        <ArrowRight size={16} />
-      </button>
+      <div className="flex items-center gap-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl font-body text-sm text-black/45 hover:text-black/70 transition-colors duration-200"
+          >
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        )}
+        <button
+          onClick={() => selected && onNext(selected)}
+          disabled={!selected}
+          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-headline text-sm tracking-wide transition-all duration-200"
+          style={{
+            background: selected ? ORANGE : 'rgba(0,0,0,0.06)',
+            color: selected ? '#fff' : 'rgba(0,0,0,0.25)',
+            cursor: selected ? 'pointer' : 'not-allowed',
+          }}
+        >
+          Continue
+          <ArrowRight size={16} />
+        </button>
+      </div>
     </motion.div>
   );
 }
 
 // ─── Step 2: Questions ──────────────────────────────────────────────────────
-function StepQuestions({ category, onNext }) {
+function StepQuestions({ category, onNext, onBack, initialAnswers }) {
   const questions = CATEGORY_QUESTIONS[category] || [];
-  const [answers, setAnswers] = useState({});
+  const [answers, setAnswers] = useState(initialAnswers || {});
 
   const allFilled = questions.every((q) => (answers[q.id] || '').trim().length > 0);
 
@@ -538,25 +549,36 @@ function StepQuestions({ category, onNext }) {
         ))}
       </div>
 
-      <button
-        onClick={() => allFilled && onNext(answers)}
-        disabled={!allFilled}
-        className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-headline text-sm tracking-wide transition-all duration-200"
-        style={{
-          background: allFilled ? ORANGE : 'rgba(0,0,0,0.06)',
-          color: allFilled ? '#fff' : 'rgba(0,0,0,0.25)',
-          cursor: allFilled ? 'pointer' : 'not-allowed',
-        }}
-      >
-        Get my prompts
-        <ArrowRight size={16} />
-      </button>
+      <div className="flex items-center gap-4">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 px-4 py-3 rounded-xl font-body text-sm text-black/45 hover:text-black/70 transition-colors duration-200"
+          >
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        )}
+        <button
+          onClick={() => allFilled && onNext(answers)}
+          disabled={!allFilled}
+          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-headline text-sm tracking-wide transition-all duration-200"
+          style={{
+            background: allFilled ? ORANGE : 'rgba(0,0,0,0.06)',
+            color: allFilled ? '#fff' : 'rgba(0,0,0,0.25)',
+            cursor: allFilled ? 'pointer' : 'not-allowed',
+          }}
+        >
+          Get my prompts
+          <ArrowRight size={16} />
+        </button>
+      </div>
     </motion.div>
   );
 }
 
 // ─── Step 3: Prompts ────────────────────────────────────────────────────────
-function StepPrompts({ category, answers, onNext }) {
+function StepPrompts({ category, answers, onNext, onBack }) {
   const promptList = PROMPTS[category]?.(answers) || [];
   const insightText = AOM_INSIGHTS[category]?.(answers);
   const [email, setEmail] = useState('');
@@ -697,7 +719,7 @@ function StepPrompts({ category, answers, onNext }) {
         </div>
       </div>
 
-      <div className="flex justify-center mt-2">
+      <div className="flex flex-col items-center gap-3 mt-2">
         <button
           onClick={onNext}
           onMouseEnter={() => setCtaHovered(true)}
@@ -723,6 +745,15 @@ function StepPrompts({ category, answers, onNext }) {
           Want AI across your whole business?
           <ArrowRight size={18} />
         </button>
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-body text-sm text-black/40 hover:text-black/65 transition-colors duration-200"
+          >
+            <ArrowLeft size={14} />
+            Change my answers
+          </button>
+        )}
       </div>
     </motion.div>
   );
@@ -795,6 +826,8 @@ export default function AIGuide() {
           {step === 0 && (
             <StepCategory
               key="category"
+              initialSelected={category}
+              onBack={() => setStep(-1)}
               onNext={(cat) => {
                 setCategory(cat);
                 setStep(1);
@@ -805,6 +838,8 @@ export default function AIGuide() {
             <StepQuestions
               key="questions"
               category={category}
+              initialAnswers={answers}
+              onBack={() => setStep(0)}
               onNext={(ans) => {
                 setAnswers(ans);
                 setStep(2);
@@ -816,6 +851,7 @@ export default function AIGuide() {
               key="prompts"
               category={category}
               answers={answers}
+              onBack={() => setStep(1)}
               onNext={() => setStep(3)}
             />
           )}
