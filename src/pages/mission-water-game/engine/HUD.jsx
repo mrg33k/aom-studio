@@ -1348,13 +1348,13 @@ const styles = {
     wordBreak: 'break-word',
   },
 
-  // Blippy companion — lower-left
+  // Blippy companion — lower-left, above the debrief card
   blippyRow: {
     position: 'absolute',
-    bottom: 90, // above the bottom debrief card
+    bottom: 240, // debrief card is ~200-220px tall; sit clearly above it
     left: 16,
     pointerEvents: 'none',
-    zIndex: 5,
+    zIndex: 20,  // above debriefCard's backdrop-filter stacking context
   },
   blippyCircle: {
     width: 72,
