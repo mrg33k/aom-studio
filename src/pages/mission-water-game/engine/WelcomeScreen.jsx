@@ -552,6 +552,7 @@ export default function WelcomeScreen({ onStart }) {
                   color: '#00E5CC',
                   textTransform: 'uppercase',
                   marginBottom: 20,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 SELECT YOUR MISSION
