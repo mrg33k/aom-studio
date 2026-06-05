@@ -130,7 +130,7 @@ export default function MissionWaterGame() {
     try {
       const choices = phase?.choices || [];
       const chosen = choices.find((c) => c.id === choiceId);
-      if (chosen) nextPhaseId = chosen.next_phase_id || chosen.next || null;
+      if (chosen) nextPhaseId = chosen.next_phase || chosen.next_phase_id || null;
     } catch (_) {
       // non-critical peek
     }
