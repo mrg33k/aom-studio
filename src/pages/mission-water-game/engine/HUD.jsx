@@ -64,7 +64,7 @@ const BADGE_FRAME = '/mission-water/chapter-1/hud/hud_badge_frame.png' + ASSET_V
  * HUD also accepts:
  *   resources  {Object|null}  investigationResources from game state
  */
-export default function HUD({ phase, hud, onChoose, resources }) {
+export default function HUD({ phase, hud, onChoose, resources, playerName }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const [hoverIdx, setHoverIdx] = useState(-1);
   const [kitOpen, setKitOpen] = useState(false);
@@ -129,7 +129,7 @@ export default function HUD({ phase, hud, onChoose, resources }) {
     <div style={styles.root}>
       {/* ── TOP INSTRUMENT BAR ──────────────────────────────────── */}
       <div style={styles.topBar}>
-        <MissionIdent chapter={phase.chapter} />
+        <MissionIdent chapter={phase.chapter} playerName={playerName} />
         <InstrumentRow hud={hud} chapter={phase.chapter} />
         <div style={styles.topBarRight}>
           <BadgeRack ids={hud.discovery_ids || []} />
@@ -231,12 +231,15 @@ export default function HUD({ phase, hud, onChoose, resources }) {
 
 // ─── subcomponents ────────────────────────────────────────────────────────────
 
-function MissionIdent({ chapter }) {
+function MissionIdent({ chapter, playerName }) {
   const n = String(chapter || 1).padStart(2, '0');
   return (
     <div style={styles.missionIdent}>
       <div style={styles.identBadge}>
         <div style={styles.identTopLine}>MISSION WATER</div>
+        {playerName ? (
+          <div style={styles.identCadet}>CADET: {playerName}</div>
+        ) : null}
         <div style={styles.identChapter}>CH {n}</div>
         <div style={styles.identStatus}>
           <span style={styles.statusDot} />
@@ -704,6 +707,20 @@ const styles = {
     color: CYAN,
     textTransform: 'uppercase',
     opacity: 0.7,
+  },
+  identCadet: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 7,
+    fontWeight: 600,
+    letterSpacing: '0.22em',
+    color: CYAN,
+    textTransform: 'uppercase',
+    opacity: 0.9,
+    marginTop: 2,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: 120,
   },
   identChapter: {
     fontFamily: '"Orbitron", monospace',

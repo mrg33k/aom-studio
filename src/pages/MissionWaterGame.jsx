@@ -7,6 +7,7 @@ import HUD from './mission-water-game/engine/HUD.jsx';
 import RoleSelect from './mission-water-game/engine/RoleSelect.jsx';
 import BudgetPlanning from './mission-water-game/engine/BudgetPlanning.jsx';
 import WelcomeScreen from './mission-water-game/engine/WelcomeScreen.jsx';
+import NameEntryScreen from './mission-water-game/engine/NameEntryScreen.jsx';
 import {
   initRunState,
   getCurrentPhase,
@@ -30,8 +31,12 @@ import {
  */
 
 export default function MissionWaterGame() {
-  // R7b — Welcome screen gate: welcome → role select → budget → game
+  // R7b — Welcome screen gate: welcome → name entry → role select → budget → game
   const [hasStarted, setHasStarted] = useState(false);
+
+  // R9 — Name entry gate
+  const [nameEntered, setNameEntered] = useState(false);
+  const [playerName, setPlayerName] = useState('');
 
   // R6 — Oregon Trail gate: role select → budget planning → game
   const [selectedRole, setSelectedRole] = useState(null);
@@ -86,6 +91,18 @@ export default function MissionWaterGame() {
     return <WelcomeScreen onStart={() => setHasStarted(true)} />;
   }
 
+  // ── R9 gate: name entry ──────────────────────────────────────────
+  if (!nameEntered) {
+    return (
+      <NameEntryScreen
+        onConfirm={(name) => {
+          setPlayerName(name);
+          setNameEntered(true);
+        }}
+      />
+    );
+  }
+
   // ── R6 gate: role select ─────────────────────────────────────────
   if (!selectedRole) {
     return (
@@ -117,7 +134,7 @@ export default function MissionWaterGame() {
       <main style={styles.gamePanel}>
         <div style={styles.canvasFrame}>
           <Canvas phase={phase} />
-          <HUD phase={phase} hud={hud} onChoose={onChoose} resources={investigationResources} />
+          <HUD phase={phase} hud={hud} onChoose={onChoose} resources={investigationResources} playerName={playerName} />
         </div>
       </main>
       <aside style={styles.sidebar}>
