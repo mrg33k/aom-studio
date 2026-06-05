@@ -9,43 +9,45 @@ import React, { useEffect, useRef, useState } from 'react';
  *   - Background image (welcome_bg_grand_opening.jpg) once loaded
  *   - Parallax PNG layers (space_layer_1, _2, _3) with slow drift
  *   - Game title: SPACE MISSION / WATER
- *   - Blippy companion character (welcome pose PNG)
+ *   - Blippy companion — floats OUTSIDE the instrument panel to the left
  *   - Mission selector cards (Water = active + BEGIN MISSION, 2 future = locked)
  *
  * Props:
  *   onStart — called when player clicks BEGIN MISSION on the active card
  *
  * Mission: conrad-foundation:interactive-game
- * Round: R7e — title as own foreground img element (mix-blend-mode:screen over star bg)
+ * Round: R12 — one-column layout, Blippy floats left of panel, redesigned mission cards
  */
 
 // ─── prefers-reduced-motion ───────────────────────────────────────────────────
 const REDUCED = typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// ─── Star canvas background (two layers, slow procedural drift) ───────────────
+// ─── Colour palette ───────────────────────────────────────────────────────────
+const SPACE_DARK  = '#070B14';
+const CYAN        = '#00E5CC';
+const TEXT_SOFT   = '#C8D8F0';
 
+// ─── Star canvas background (two layers, slow procedural drift) ───────────────
 function StarCanvas() {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-  const animRef = useRef({ raf: 0, offsetX: 0 });
+  const animRef = useRef({ raf: 0 });
 
   useEffect(() => {
     const cnv = canvasRef.current;
     const container = containerRef.current;
     if (!cnv || !container) return;
 
-    // Stars: two layers. Layer A: slow, small. Layer B: faster, slightly larger.
     const STAR_COUNTS = [120, 60];
-    const SPEEDS = [0.012, 0.024]; // px/frame
+    const SPEEDS = [0.012, 0.024];
     const SIZES = [1.5, 2.5];
 
-    // Deterministic star positions keyed per layer.
     function starPositions(count, seed) {
       const rng = mulberry32(seed);
       return Array.from({ length: count }, () => ({
-        x: rng(),  // 0–1 fraction of W
-        y: rng() * 0.85, // 0–0.85 fraction of H (top sky area)
+        x: rng(),
+        y: rng() * 0.85,
         alpha: 0.4 + rng() * 0.6,
       }));
     }
@@ -55,7 +57,6 @@ function StarCanvas() {
     ];
 
     let W = 0, H = 0;
-
     const resize = () => {
       const rect = container.getBoundingClientRect();
       W = Math.max(320, Math.floor(rect.width));
@@ -68,21 +69,16 @@ function StarCanvas() {
       const ctx = cnv.getContext('2d');
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
-
     const ro = new ResizeObserver(resize);
     ro.observe(container);
     resize();
 
     const ctx = cnv.getContext('2d');
-
     let offsets = [0, 0];
 
     const tick = () => {
       if (!W || !H) { animRef.current.raf = requestAnimationFrame(tick); return; }
-
       ctx.clearRect(0, 0, W, H);
-
-      // Paint each star layer, offset by its drift.
       layers.forEach((stars, li) => {
         offsets[li] = (offsets[li] + SPEEDS[li]) % W;
         const sz = SIZES[li];
@@ -93,7 +89,6 @@ function StarCanvas() {
           ctx.fillRect(Math.round(x), Math.round(y), sz, sz);
         });
       });
-
       animRef.current.raf = requestAnimationFrame(tick);
     };
 
@@ -105,23 +100,16 @@ function StarCanvas() {
   }, []);
 
   return (
-    <div
-      ref={containerRef}
-      style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}
-    >
-      <canvas
-        ref={canvasRef}
-        style={{ display: 'block', width: '100%', height: '100%' }}
-      />
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
     </div>
   );
 }
 
 // ─── Parallax PNG layers (space layer 1/2/3 from Cleo) ───────────────────────
-
 function ParallaxLayer({ src, speed, style }) {
   const ref = useRef(null);
-  const animRef = useRef({ raf: 0, x: 0 });
+  const animRef = useRef({ raf: 0 });
 
   useEffect(() => {
     let x = 0;
@@ -129,7 +117,7 @@ function ParallaxLayer({ src, speed, style }) {
       x += speed;
       if (x > 0) x = -window.innerWidth;
       if (ref.current) {
-        ref.current.style.transform = `translateX(${x % (window.innerWidth)}px)`;
+        ref.current.style.transform = `translateX(${x % window.innerWidth}px)`;
       }
       animRef.current.raf = requestAnimationFrame(tick);
     };
@@ -155,7 +143,6 @@ function ParallaxLayer({ src, speed, style }) {
 }
 
 // ─── Entry animations ─────────────────────────────────────────────────────────
-
 function useEntryAnim() {
   const [overlayFaded, setOverlayFaded] = useState(REDUCED);
   const [starsReady,   setStarsReady]   = useState(REDUCED);
@@ -168,14 +155,14 @@ function useEntryAnim() {
 
   useEffect(() => {
     if (REDUCED) return;
-    const t0 = setTimeout(() => setOverlayFaded(true), 0);   // fade-from-black starts immediately
-    const t1 = setTimeout(() => setStarsReady(true),   200); // star parallax fades in
-    const t2 = setTimeout(() => setPanelReady(true),   400); // instrument panel slides up
-    const t3 = setTimeout(() => setBlippyReady(true),  500); // Blippy scale+fade
-    const t4 = setTimeout(() => setCard0Ready(true),   600); // card 1 fans in
-    const t5 = setTimeout(() => setCard1Ready(true),   750); // card 2 fans in
-    const t6 = setTimeout(() => setBubbleReady(true),  800); // speech bubble (300ms after Blippy)
-    const t7 = setTimeout(() => setCard2Ready(true),   900); // card 3 fans in
+    const t0 = setTimeout(() => setOverlayFaded(true), 0);
+    const t1 = setTimeout(() => setStarsReady(true),   200);
+    const t2 = setTimeout(() => setPanelReady(true),   400);
+    const t3 = setTimeout(() => setBlippyReady(true),  500);
+    const t4 = setTimeout(() => setCard0Ready(true),   600);
+    const t5 = setTimeout(() => setCard1Ready(true),   750);
+    const t6 = setTimeout(() => setBubbleReady(true),  800);
+    const t7 = setTimeout(() => setCard2Ready(true),   900);
     return () => {
       clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       clearTimeout(t4); clearTimeout(t5); clearTimeout(t6); clearTimeout(t7);
@@ -185,141 +172,162 @@ function useEntryAnim() {
   return { overlayFaded, starsReady, panelReady, blippyReady, bubbleReady, card0Ready, card1Ready, card2Ready };
 }
 
-// ─── Mission cards ────────────────────────────────────────────────────────────
-
-function MissionCard({ active, locked, title, subtitle, icon, index, visible, onStart }) {
+// ─── Mission card (R12 redesign: horizontal layout + left accent border) ─────
+function MissionCard({ active, locked, title, icon, subtitle, missionNum, visible, onStart }) {
   const [hovered, setHovered] = useState(false);
-
-  const cardStyle = {
-    background: locked ? 'rgba(7,11,20,0.65)' : active ? 'rgba(0,22,40,0.90)' : 'rgba(10,22,40,0.82)',
-    border: locked
-      ? '1px solid rgba(200,216,240,0.12)'
-      : active
-        ? `2px solid ${hovered ? CYAN_BRIGHT : CYAN}`
-        : '1px solid rgba(0,229,204,0.22)',
-    borderRadius: 6,
-    padding: '20px 18px',
-    width: '100%',
-    boxSizing: 'border-box',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 10,
-    opacity: visible ? (locked ? 0.45 : 1) : 0,
-    transform: visible ? 'translateY(0)' : 'translateY(32px)',
-    transition: `opacity 350ms ease 0ms, transform 350ms ease 0ms, border-color 120ms ease`,
-    cursor: active && !locked ? (hovered ? 'pointer' : 'default') : 'default',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-  };
 
   return (
     <div
       className={active && !locked && visible ? 'wg-active-card' : ''}
-      style={cardStyle}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 14,
+        padding: '14px 16px',
+        // Left accent border is the hero design element
+        borderLeft: locked
+          ? '2px solid rgba(200,216,240,0.15)'
+          : `3px solid ${CYAN}`,
+        borderTop: locked
+          ? '1px solid rgba(200,216,240,0.08)'
+          : '1px solid rgba(0,229,204,0.2)',
+        borderRight: locked
+          ? '1px solid rgba(200,216,240,0.08)'
+          : '1px solid rgba(0,229,204,0.18)',
+        borderBottom: locked
+          ? '1px solid rgba(200,216,240,0.08)'
+          : '1px solid rgba(0,229,204,0.18)',
+        borderRadius: 4,
+        background: locked ? 'rgba(7,11,20,0.6)' : 'rgba(0,18,36,0.92)',
+        opacity: visible ? (locked ? 0.4 : 1) : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(28px)',
+        transition: 'opacity 350ms ease, transform 350ms ease',
+        cursor: 'default',
+        width: '100%',
+        boxSizing: 'border-box',
+        position: 'relative',
+      }}
       onMouseEnter={() => active && !locked && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {/* Icon area */}
+      {/* Mission icon — square frame, no circle */}
       <div style={{
-        width: 52,
-        height: 52,
-        borderRadius: 6,
-        background: locked ? 'rgba(200,216,240,0.06)' : 'rgba(0,229,204,0.1)',
-        border: locked ? '1px solid rgba(200,216,240,0.1)' : `1px solid rgba(0,229,204,0.3)`,
+        width: 48,
+        height: 48,
+        flexShrink: 0,
+        border: locked
+          ? '1px solid rgba(200,216,240,0.1)'
+          : '1px solid rgba(0,229,204,0.2)',
+        background: locked
+          ? 'rgba(200,216,240,0.04)'
+          : 'rgba(0,229,204,0.08)',
+        borderRadius: 2,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 24,
-        flexShrink: 0,
+        fontSize: 22,
+        marginTop: 3,
       }}>
         {icon}
       </div>
 
-      {/* Mission name */}
-      <div>
+      {/* Content column */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Top row: mission number + status badge */}
         <div style={{
-          fontFamily: '"Orbitron", monospace',
-          fontSize: 9,
-          letterSpacing: '0.28em',
-          color: locked ? 'rgba(200,216,240,0.3)' : AMBER,
-          textTransform: 'uppercase',
-          marginBottom: 4,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 5,
         }}>
-          {locked ? 'COMING SOON' : 'MISSION'}
+          <div style={{
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: 700,
+            fontSize: 11,
+            letterSpacing: '0.2em',
+            color: locked ? 'rgba(200,216,240,0.3)' : 'rgba(0,229,204,0.65)',
+            textTransform: 'uppercase',
+          }}>
+            MISSION #{missionNum}
+          </div>
+          <div style={{
+            fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: 700,
+            fontSize: 10,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: locked ? 'rgba(200,216,240,0.3)' : CYAN,
+          }}>
+            {locked ? '◉ COMING SOON' : '● ACTIVE'}
+          </div>
         </div>
+
+        {/* Thin divider */}
         <div style={{
-          fontFamily: '"Orbitron", monospace',
-          fontSize: 15,
+          height: 1,
+          background: locked
+            ? 'rgba(200,216,240,0.05)'
+            : 'rgba(0,229,204,0.12)',
+          marginBottom: 8,
+        }} />
+
+        {/* Mission title */}
+        <div style={{
+          fontFamily: 'Orbitron, sans-serif',
           fontWeight: 700,
-          color: locked ? 'rgba(200,216,240,0.35)' : '#FFFFFF',
+          fontSize: 'clamp(17px, 2.8vw, 22px)',
+          color: locked ? 'rgba(200,216,240,0.3)' : '#FFFFFF',
           textTransform: 'uppercase',
           letterSpacing: '0.04em',
-          lineHeight: 1.2,
+          lineHeight: 1.1,
+          marginBottom: 6,
         }}>
           {title}
         </div>
-      </div>
 
-      {/* Subtitle */}
-      <div style={{
-        fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
-        fontSize: 13,
-        lineHeight: 1.45,
-        color: locked ? 'rgba(200,216,240,0.25)' : TEXT_SOFT,
-        flexGrow: 1,
-      }}>
-        {subtitle}
-      </div>
-
-      {/* CTA */}
-      {active && !locked && (
-        <button
-          onClick={onStart}
-          style={{
-            background: hovered ? 'rgba(0,229,204,0.12)' : 'transparent',
-            color: CYAN,
-            fontFamily: '"Orbitron", monospace',
-            fontSize: 13,
-            fontWeight: 900,
-            letterSpacing: '0.22em',
-            textTransform: 'uppercase',
-            border: `2px solid ${CYAN}`,
-            borderRadius: 4,
-            padding: '14px 20px',
-            cursor: 'pointer',
-            transition: 'background 120ms ease, transform 80ms ease, box-shadow 120ms ease',
-            transform: hovered ? 'scale(1.04)' : 'scale(1)',
-            boxShadow: hovered
-              ? `0 0 22px rgba(0,229,204,0.5), 0 0 44px rgba(0,229,204,0.20)`
-              : `0 0 14px rgba(0,229,204,0.25)`,
-            marginTop: 8,
-            width: '100%',
-          }}
-        >
-          BEGIN MISSION ▶
-        </button>
-      )}
-
-      {locked && (
+        {/* Description */}
         <div style={{
-          fontFamily: '"Orbitron", monospace',
-          fontSize: 9,
-          letterSpacing: '0.2em',
-          color: 'rgba(200,216,240,0.2)',
-          textTransform: 'uppercase',
-          marginTop: 4,
-          paddingTop: 8,
-          borderTop: '1px solid rgba(200,216,240,0.08)',
+          fontFamily: 'Rajdhani, sans-serif',
+          fontSize: 14,
+          lineHeight: 1.5,
+          color: locked ? 'rgba(200,216,240,0.22)' : TEXT_SOFT,
         }}>
-          ⊘ CLASSIFIED
+          {subtitle}
         </div>
-      )}
+
+        {/* BEGIN MISSION — right-aligned, transparent CTA per DESIGN.md */}
+        {active && !locked && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
+            <button
+              onClick={onStart}
+              style={{
+                background: hovered ? 'rgba(0,229,204,0.12)' : 'transparent',
+                color: CYAN,
+                fontFamily: 'Rajdhani, sans-serif',
+                fontWeight: 700,
+                fontSize: 14,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
+                border: `2px solid ${CYAN}`,
+                borderRadius: 4,
+                padding: '10px 20px',
+                cursor: 'pointer',
+                transition: 'background 120ms ease, box-shadow 120ms ease',
+                boxShadow: hovered
+                  ? '0 0 18px rgba(0,229,204,0.5)'
+                  : '0 0 8px rgba(0,229,204,0.2)',
+              }}
+            >
+              BEGIN MISSION ▶
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 // ─── WelcomeScreen main ───────────────────────────────────────────────────────
-
 export default function WelcomeScreen({ onStart }) {
   const {
     overlayFaded, starsReady, panelReady,
@@ -329,8 +337,19 @@ export default function WelcomeScreen({ onStart }) {
   const [bgLoaded, setBgLoaded] = useState(false);
 
   return (
-    <div style={styles.root} className="wg-root">
-      {/* Responsive overrides + pulse animation keyframes */}
+    <div
+      className="wg-root"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: SPACE_DARK,
+        overflow: 'hidden',
+        fontFamily: 'Rajdhani, sans-serif',
+        color: '#FFFFFF',
+        zIndex: 10,
+      }}
+    >
+      {/* ─ Global keyframes + layout overrides ─────────────────────────── */}
       <style>{`
         @keyframes wg-card-pulse {
           0%   { box-shadow: 0 0 18px rgba(0,229,204,0.55), 0 0 40px rgba(0,229,204,0.22); }
@@ -345,41 +364,108 @@ export default function WelcomeScreen({ onStart }) {
         .wg-active-card {
           animation: wg-card-pulse 2s ease-in-out infinite;
         }
-        /* Instrument panel — dark glass card per DESIGN.md */
-        .wg-instrument-panel {
+
+        /* Desktop: Blippy floats left beside the panel */
+        .wg-outer-wrapper {
+          display: flex;
+          flex-direction: row;
+          align-items: flex-end;
+          justify-content: center;
+          width: 100%;
+          max-width: 720px;
+          padding: 0 16px;
+          box-sizing: border-box;
+          gap: 0;
+        }
+        .wg-blippy-float {
+          flex-shrink: 0;
+          width: 160px;
+          margin-right: -12px; /* Slight overlap at the panel edge */
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          padding-bottom: 20px;
+        }
+        .wg-blippy-img {
+          height: 180px;
+          width: auto;
+          display: block;
+          filter: drop-shadow(0 0 16px rgba(0,229,204,0.35));
+        }
+        .wg-panel-outer {
+          flex: 1;
+          max-width: 520px;
+          min-width: 0;
+          z-index: 1;
+        }
+        .wg-panel-inner {
           background: rgba(7,11,20,0.88);
           border: 1px solid rgba(0,229,204,0.25);
           border-radius: 4px;
           box-shadow: 0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08);
-          padding: 40px 48px;
-          max-width: min(640px,90vw);
+          padding: 36px 32px;
           width: 100%;
           box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
         }
-        @media (max-width: 900px) {
-          .wg-scroll { align-items: flex-start !important; }
-        }
-        @media (max-width: 600px) {
-          .wg-instrument-panel { padding: 24px 20px !important; max-width: 94vw !important; }
-          .wg-content { padding: 0 !important; gap: 20px !important; }
-          .wg-bg-img { background-position: center center !important; }
-          .wg-main-row {
-            flex-direction: column !important;
-            align-items: center !important;
-            gap: 16px !important;
-            max-width: 100% !important;
+
+        /* Mobile (≤ 599px): stack — panel above, Blippy below in a row */
+        @media (max-width: 599px) {
+          .wg-outer-wrapper {
+            flex-direction: column;
+            align-items: center;
+            max-width: 100%;
+            padding: 0 12px;
+            gap: 16px;
           }
-          .wg-blippy { flex-direction: row !important; align-items: center !important; gap: 12px !important; padding-bottom: 0 !important; }
-          .wg-blippy-circle { width: 64px !important; height: 64px !important; }
-          .wg-card { width: 100% !important; box-sizing: border-box !important; }
-          .wg-select-headline { font-size: clamp(13px, 4vw, 18px) !important; letter-spacing: 0.3em !important; }
+          .wg-blippy-float {
+            width: auto;
+            margin-right: 0;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 0;
+            order: 2;
+          }
+          .wg-blippy-img {
+            height: 80px !important;
+          }
+          .wg-speech-bubble {
+            max-width: 160px !important;
+            border-radius: 8px !important;
+          }
+          .wg-panel-outer {
+            max-width: 100%;
+            width: 100%;
+            order: 1;
+          }
+          .wg-panel-inner {
+            padding: 24px 18px !important;
+            gap: 18px !important;
+          }
+        }
+
+        /* Narrow desktop without room for blippy beside panel */
+        @media (max-width: 720px) and (min-width: 600px) {
+          .wg-outer-wrapper {
+            max-width: 560px;
+          }
+          .wg-blippy-float {
+            width: 130px;
+          }
+          .wg-blippy-img {
+            height: 140px !important;
+          }
         }
       `}</style>
 
-      {/* Fade-from-black entrance overlay */}
+      {/* ─ Fade-from-black entrance ────────────────────────────────────── */}
       <div style={{
-        position: 'fixed',
-        inset: 0,
+        position: 'fixed', inset: 0,
         background: '#000',
         opacity: overlayFaded ? 0 : 1,
         transition: 'opacity 600ms ease',
@@ -387,16 +473,16 @@ export default function WelcomeScreen({ onStart }) {
         zIndex: 100,
       }} />
 
-      {/* Procedural star canvas — always visible as immediate background */}
+      {/* ─ Procedural star canvas ──────────────────────────────────────── */}
       <StarCanvas />
 
-      {/* Background image (grand opening) — fades in once loaded */}
+      {/* ─ Background photo ───────────────────────────────────────────── */}
       <div
-        className="wg-bg-img"
         style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage: bgLoaded ? `url(/mission-water/welcome/welcome_bg_grand_opening.jpg)` : 'none',
+          position: 'absolute', inset: 0,
+          backgroundImage: bgLoaded
+            ? 'url(/mission-water/welcome/welcome_bg_grand_opening.jpg)'
+            : 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center 30%',
           opacity: bgLoaded ? 0.55 : 0,
@@ -404,7 +490,6 @@ export default function WelcomeScreen({ onStart }) {
           pointerEvents: 'none',
         }}
       />
-      {/* Preload trigger */}
       <img
         src="/mission-water/welcome/welcome_bg_grand_opening.jpg"
         alt=""
@@ -412,119 +497,72 @@ export default function WelcomeScreen({ onStart }) {
         onLoad={() => setBgLoaded(true)}
       />
 
-      {/* Parallax PNG layers from Cleo — very slow drift */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: starsReady ? 0.3 : 0, transition: 'opacity 400ms ease' }}>
+      {/* ─ Parallax PNG layers ────────────────────────────────────────── */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        pointerEvents: 'none',
+        opacity: starsReady ? 0.3 : 0,
+        transition: 'opacity 400ms ease',
+      }}>
         <ParallaxLayer src="/mission-water/welcome/welcome_space_layer_1.png" speed={0.008} />
         <ParallaxLayer src="/mission-water/welcome/welcome_space_layer_2.png" speed={0.014} style={{ opacity: 0.7 }} />
-        <ParallaxLayer src="/mission-water/welcome/welcome_space_layer_3.png" speed={0.02} style={{ opacity: 0.5 }} />
+        <ParallaxLayer src="/mission-water/welcome/welcome_space_layer_3.png" speed={0.02}  style={{ opacity: 0.5 }} />
       </div>
 
-      {/* Bottom vignette for depth */}
+      {/* ─ Vignettes for depth ────────────────────────────────────────── */}
       <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: '40%',
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%',
         background: 'linear-gradient(to top, rgba(7,11,20,0.88) 0%, transparent 100%)',
         pointerEvents: 'none',
       }} />
-
-      {/* Top vignette */}
       <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '15%',
+        position: 'absolute', top: 0, left: 0, right: 0, height: '15%',
         background: 'linear-gradient(to bottom, rgba(7,11,20,0.6) 0%, transparent 100%)',
         pointerEvents: 'none',
       }} />
 
-      {/* ── Scrollable content layer (transparent — bg layers show through) ── */}
-      <div className="wg-scroll" style={styles.scrollContainer}>
+      {/* ─ Scrollable content ─────────────────────────────────────────── */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        zIndex: 2,
+      }}>
+        {/* Top flex spacer — centers content on desktop, collapses on scroll */}
+        <div style={{ flex: '1 0 0' }} />
 
-      {/* flex spacer — grows to fill empty space when content fits the viewport,
-          centering the content. Collapses to 0 when content overflows (no auto-
-          margin flexbox bug). flex-shrink:0 prevents browser from computing a
-          negative margin that pushes content above scroll origin. */}
-      <div style={{ flex: '1 0 0' }} />
+        {/* ── Outer layout: [Blippy][Panel] ────────────────────────────── */}
+        <div className="wg-outer-wrapper">
 
-      {/* ── Main content area ─────────────────────────────────────────── */}
-      <div
-        className="wg-instrument-panel"
-        style={{
-          background: 'rgba(7,11,20,0.88)',
-          border: '1px solid rgba(0,229,204,0.25)',
-          borderRadius: 4,
-          boxShadow: '0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08)',
-          padding: '40px 48px',
-          maxWidth: 'min(640px,90vw)',
-          width: '100%',
-          opacity:    panelReady ? 1 : 0,
-          transform:  panelReady ? 'translateY(0)' : 'translateY(30px)',
-          transition: 'opacity 400ms ease, transform 400ms ease',
-        }}
-      >
-      <div style={styles.content} className="wg-content">
-
-        {/* Title block — R7e: title as own foreground element, scales on any viewport */}
-        <div style={{
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 6,
-          opacity: panelReady ? 1 : 0,
-          transform: panelReady ? 'translateY(0)' : 'translateY(-20px)',
-          transition: 'opacity 400ms ease, transform 400ms ease',
-        }}>
-          {/* Kicker */}
-          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: 'clamp(12px, 2.5vw, 20px)', letterSpacing: '0.4em', color: '#00E5CC', textTransform: 'uppercase', opacity: 0.85, marginBottom: 4 }}>Space Mission:</div>
-          {/* Main word */}
-          <div style={{ fontFamily: 'Orbitron, sans-serif', fontWeight: 900, fontSize: 'clamp(56px, 10vw, 112px)', letterSpacing: '0.06em', color: '#FFFFFF', textTransform: 'uppercase', textShadow: '0 0 40px rgba(0,229,204,0.75), 0 0 90px rgba(0,229,204,0.35)', lineHeight: 1 }}>Water</div>
-          {/* Attribution */}
-          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 400, fontSize: 'clamp(10px, 1.5vw, 13px)', letterSpacing: '0.25em', color: 'rgba(232,240,248,0.45)', textTransform: 'uppercase', marginTop: 8 }}>Conrad Foundation</div>
-        </div>
-
-        {/* Blippy + mission selector row */}
-        <div className="wg-main-row" style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          gap: 32,
-          width: '100%',
-          maxWidth: 860,
-        }}>
-
-          {/* Blippy companion */}
-          <div className="wg-blippy" style={{
-            flexShrink: 0,
-            opacity: blippyReady ? 1 : 0,
-            transform: blippyReady ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(20px)',
-            transition: 'opacity 300ms ease-out, transform 300ms ease-out',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 8,
-            position: 'relative',
-            paddingBottom: 4,
-          }}>
-            {/* Speech bubble */}
-            <div style={{
-              background: 'rgba(10,22,40,0.88)',
-              border: `1px solid rgba(0,229,204,0.3)`,
-              borderRadius: 8,
-              padding: '8px 14px',
-              maxWidth: 160,
-              position: 'relative',
-              backdropFilter: 'blur(6px)',
-              WebkitBackdropFilter: 'blur(6px)',
-              opacity: bubbleReady ? 1 : 0,
-              transform: bubbleReady ? 'translateY(0)' : 'translateY(6px)',
-              transition: 'opacity 250ms ease, transform 250ms ease',
-            }}>
+          {/* Blippy floats to the LEFT of the panel */}
+          <div
+            className="wg-blippy-float"
+            style={{
+              opacity: blippyReady ? 1 : 0,
+              transform: blippyReady ? 'translateX(0) translateY(0)' : 'translateX(-12px) translateY(16px)',
+              transition: 'opacity 350ms ease-out, transform 350ms ease-out',
+            }}
+          >
+            {/* Speech bubble — above Blippy on desktop, beside on mobile */}
+            <div
+              className="wg-speech-bubble"
+              style={{
+                background: 'rgba(10,22,40,0.90)',
+                border: '1px solid rgba(0,229,204,0.35)',
+                borderRadius: '8px 8px 8px 2px',
+                padding: '9px 13px',
+                maxWidth: 148,
+                position: 'relative',
+                opacity: bubbleReady ? 1 : 0,
+                transform: bubbleReady ? 'translateY(0)' : 'translateY(6px)',
+                transition: 'opacity 250ms ease, transform 250ms ease',
+              }}
+            >
               <div style={{
-                fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
+                fontFamily: 'Rajdhani, sans-serif',
                 fontSize: 13,
                 fontWeight: 600,
                 color: TEXT_SOFT,
@@ -533,245 +571,194 @@ export default function WelcomeScreen({ onStart }) {
               }}>
                 Ready for your mission, Cadet?
               </div>
-              {/* Bubble tail */}
+              {/* Tail pointing down toward Blippy */}
               <div style={{
                 position: 'absolute',
                 bottom: -7,
                 left: '50%',
                 transform: 'translateX(-50%)',
-                width: 0,
-                height: 0,
+                width: 0, height: 0,
                 borderLeft: '6px solid transparent',
                 borderRight: '6px solid transparent',
-                borderTop: '7px solid rgba(0,229,204,0.3)',
+                borderTop: '7px solid rgba(0,229,204,0.35)',
               }} />
             </div>
 
-            {/* Blippy image */}
-            <div className="wg-blippy-circle" style={{
-              width: 120,
-              height: 120,
-              borderRadius: '50%',
-              border: `2px solid rgba(0,229,204,0.25)`,
-              overflow: 'hidden',
-              background: 'rgba(10,22,40,0.6)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <img
-                src="/mission-water/welcome/blippy_welcome_pose.png"
-                alt="Blippy, your mission companion"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  objectPosition: 'center',
-                }}
-                onError={(e) => {
-                  // Fallback: silver placeholder circle if PNG fails to load
-                  e.target.style.display = 'none';
-                  e.target.parentElement.style.background = '#C0C0C0';
-                  e.target.parentElement.innerHTML = '<div style="color:#333;font-size:32px;font-weight:700;line-height:1">B</div>';
-                }}
-              />
-            </div>
+            {/* Blippy image — full character, NO circle clip */}
+            <img
+              className="wg-blippy-img"
+              src="/mission-water/welcome/blippy_v2_welcome_pose.png"
+              alt="Blippy, your mission companion"
+              onError={(e) => {
+                e.target.src = '/mission-water/welcome/blippy_welcome_pose.png';
+              }}
+            />
           </div>
 
-          {/* Mission selector */}
-          <div style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-            opacity: panelReady ? 1 : 0,
-            transition: 'opacity 300ms ease 100ms',
-          }}>
-            {/* Commanding SELECT YOUR MISSION headline */}
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              gap: 4,
-              marginBottom: 6,
-            }}>
-              <div
-                className="wg-select-headline"
-                style={{
+          {/* ── Instrument panel: single column ─────────────────────────── */}
+          <div
+            className="wg-panel-outer"
+            style={{
+              opacity: panelReady ? 1 : 0,
+              transform: panelReady ? 'translateY(0)' : 'translateY(30px)',
+              transition: 'opacity 400ms ease, transform 400ms ease',
+            }}
+          >
+            <div className="wg-panel-inner">
+
+              {/* Title block: SPACE MISSION: WATER */}
+              <div style={{
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 4,
+              }}>
+                <div style={{
+                  fontFamily: 'Rajdhani, sans-serif',
+                  fontWeight: 600,
+                  fontSize: 'clamp(11px, 1.8vw, 15px)',
+                  letterSpacing: '0.4em',
+                  color: CYAN,
+                  textTransform: 'uppercase',
+                  opacity: 0.85,
+                }}>
+                  Space Mission:
+                </div>
+                <div style={{
+                  fontFamily: 'Orbitron, sans-serif',
+                  fontWeight: 900,
+                  fontSize: 'clamp(48px, 8.5vw, 92px)',
+                  letterSpacing: '0.06em',
+                  color: '#FFFFFF',
+                  textTransform: 'uppercase',
+                  textShadow: '0 0 40px rgba(0,229,204,0.75), 0 0 90px rgba(0,229,204,0.35)',
+                  lineHeight: 1,
+                }}>
+                  Water
+                </div>
+                <div style={{
+                  fontFamily: 'Rajdhani, sans-serif',
+                  fontWeight: 400,
+                  fontSize: 'clamp(10px, 1.4vw, 13px)',
+                  letterSpacing: '0.25em',
+                  color: 'rgba(232,240,248,0.45)',
+                  textTransform: 'uppercase',
+                  marginTop: 2,
+                }}>
+                  Conrad Foundation
+                </div>
+              </div>
+
+              {/* SELECT YOUR MISSION headline */}
+              <div>
+                <div style={{
                   fontFamily: 'Orbitron, sans-serif',
                   fontWeight: 700,
-                  fontSize: 'clamp(13px, 2.2vw, 18px)',
+                  fontSize: 'clamp(12px, 1.9vw, 16px)',
                   letterSpacing: '0.3em',
-                  color: '#00E5CC',
-                  textTransform: 'uppercase',
-                  marginBottom: 20,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                SELECT YOUR MISSION
-              </div>
-              <div style={{
-                fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
-                fontSize: 14,
-                fontWeight: 600,
-                color: 'rgba(200,216,240,0.6)',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}>
-                Choose your investigation to begin
-              </div>
-              {/* Directional chevron */}
-              <div
-                style={{
-                  marginTop: 6,
                   color: CYAN,
-                  fontSize: 20,
-                  lineHeight: 1,
-                  textShadow: `0 0 12px rgba(0,229,204,0.7)`,
+                  textTransform: 'uppercase',
+                  marginBottom: 6,
+                }}>
+                  SELECT YOUR MISSION
+                </div>
+                <div style={{
+                  fontFamily: 'Rajdhani, sans-serif',
+                  fontSize: 13,
+                  color: 'rgba(200,216,240,0.5)',
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  marginBottom: 4,
+                }}>
+                  Choose your investigation to begin
+                </div>
+                <div style={{
+                  color: CYAN,
+                  fontSize: 18,
+                  textShadow: '0 0 12px rgba(0,229,204,0.7)',
                   animation: card0Ready ? 'wg-chevron-bob 1.6s ease-in-out infinite' : 'none',
                   display: 'inline-block',
-                }}
-              >
-                ⌄
+                }}>
+                  ⌄
+                </div>
               </div>
-            </div>
 
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-            }}>
-              <MissionCard
-                active
-                locked={false}
-                title="WATER"
-                subtitle="Earth is running out of fresh water. Investigate the crisis — then take the mission to the Moon."
-                icon="💧"
-                index={0}
-                visible={card0Ready}
-                onStart={onStart}
-              />
-              <MissionCard
-                active={false}
-                locked
-                title="OXYGEN"
-                subtitle="Sustain life in deep space. Master the systems that keep a crew alive between worlds."
-                icon="⚗️"
-                index={1}
-                visible={card1Ready}
-              />
-              <MissionCard
-                active={false}
-                locked
-                title="ENERGY"
-                subtitle="Power a lunar settlement from scratch. Design the systems that will light civilization's next chapter."
-                icon="⚡"
-                index={2}
-                visible={card2Ready}
-              />
-            </div>
-          </div>
-        </div>
+              {/* Mission cards — stacked single column */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <MissionCard
+                  active
+                  locked={false}
+                  title="WATER"
+                  subtitle="Earth is running out of fresh water. Investigate the crisis — then take the mission to the Moon."
+                  icon="💧"
+                  missionNum="01"
+                  visible={card0Ready}
+                  onStart={onStart}
+                />
+                <MissionCard
+                  active={false}
+                  locked
+                  title="OXYGEN"
+                  subtitle="Sustain life in deep space. Master the systems that keep a crew alive between worlds."
+                  icon="⚗️"
+                  missionNum="02"
+                  visible={card1Ready}
+                />
+                <MissionCard
+                  active={false}
+                  locked
+                  title="ENERGY"
+                  subtitle="Power a lunar settlement from scratch. Design the systems that will light civilization's next chapter."
+                  icon="⚡"
+                  missionNum="03"
+                  visible={card2Ready}
+                />
+              </div>
 
-        {/* Footer badge — Conrad Foundation attribution always visible */}
-        <div style={{
-          opacity: card0Ready ? 0.75 : 0,
-          transition: 'opacity 400ms ease 600ms',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          borderTop: '1px solid rgba(0,229,204,0.1)',
-          paddingTop: 14,
-          width: '100%',
-          maxWidth: 860,
-        }}>
-          <div style={{
-            fontFamily: '"Orbitron", monospace',
-            fontSize: 8,
-            letterSpacing: '0.18em',
-            color: 'rgba(200,216,240,0.4)',
-            textTransform: 'uppercase',
-          }}>
-            Conrad Foundation × Ahead of Market
-          </div>
-          <div style={{
-            fontFamily: '"Orbitron", monospace',
-            fontSize: 8,
-            letterSpacing: '0.12em',
-            color: 'rgba(200,216,240,0.25)',
-            textTransform: 'uppercase',
-            marginLeft: 'auto',
-          }}>
-            EDUCATIONAL MISSION PLATFORM
-          </div>
-        </div>
+              {/* Footer attribution */}
+              <div style={{
+                opacity: card0Ready ? 0.75 : 0,
+                transition: 'opacity 400ms ease 600ms',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderTop: '1px solid rgba(0,229,204,0.1)',
+                paddingTop: 12,
+              }}>
+                <div style={{
+                  fontFamily: 'Orbitron, monospace',
+                  fontSize: 8,
+                  letterSpacing: '0.18em',
+                  color: 'rgba(200,216,240,0.4)',
+                  textTransform: 'uppercase',
+                }}>
+                  Conrad Foundation × Ahead of Market
+                </div>
+                <div style={{
+                  fontFamily: 'Orbitron, monospace',
+                  fontSize: 8,
+                  letterSpacing: '0.12em',
+                  color: 'rgba(200,216,240,0.25)',
+                  textTransform: 'uppercase',
+                }}>
+                  EDUCATIONAL MISSION PLATFORM
+                </div>
+              </div>
 
-      </div>{/* /wg-content */}
-      </div>{/* /wg-instrument-panel */}
+            </div>{/* /wg-panel-inner */}
+          </div>{/* /wg-panel-outer */}
 
-      {/* flex spacer — mirrors the top spacer so content stays centred when
-          there is room to spare. Collapses to 0 when content overflows. */}
-      <div style={{ flex: '1 0 0' }} />
+        </div>{/* /wg-outer-wrapper */}
 
-      </div>{/* /wg-scroll */}
+        {/* Bottom flex spacer — mirrors top spacer for centering */}
+        <div style={{ flex: '1 0 0' }} />
+      </div>{/* /scrollable content */}
     </div>
   );
 }
 
-// ─── Colour palette (matches game engine) ────────────────────────────────────
-const SPACE_DARK   = '#070B14';
-const CYAN         = '#00E5CC';
-const CYAN_BRIGHT  = '#33F5DE';
-const AMBER        = '#FFB703';
-const TEXT_SOFT    = '#C8D8F0';
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = {
-  root: {
-    // Fixed frame — provides overflow:hidden clipping for background layers.
-    // Does NOT flex-center: that's handled by scrollContainer.
-    position: 'fixed',
-    inset: 0,
-    background: SPACE_DARK,
-    overflow: 'hidden',
-    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
-    color: '#FFFFFF',
-    zIndex: 10,
-  },
-  scrollContainer: {
-    // Transparent overlay that carries the scrollable content.
-    // Sits above all background layers (z-index 2).
-    // overflow-y: auto + -webkit-overflow-scrolling: touch enables momentum
-    // scroll on iPad/iOS Safari.
-    // Centering is handled by flex-spacer divs (flex:'1 0 0') before and after
-    // the content div — they grow to fill empty space on desktop and collapse to
-    // 0 when content overflows on iPad/mobile. This avoids the flexbox auto-margin
-    // overflow bug where marginTop/Bottom:auto pushes content above scroll origin.
-    position: 'absolute',
-    inset: 0,
-    overflowY: 'auto',
-    WebkitOverflowScrolling: 'touch',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    zIndex: 2,
-  },
-  content: {
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: 36,
-    padding: '32px 24px',
-    width: '100%',
-    maxWidth: 960,
-    boxSizing: 'border-box',
-    // No marginTop/Bottom:auto here — centering handled by flex spacer divs.
-    // (auto margins in a flex overflow container push content above scroll origin.)
-  },
-};
-
-// ─── Tiny RNG (matches Canvas.jsx) ───────────────────────────────────────────
+// ─── Tiny RNG (deterministic star seeding) ───────────────────────────────────
 function mulberry32(a) {
   return function () {
     a |= 0; a = (a + 0x6D2B79F5) | 0;
