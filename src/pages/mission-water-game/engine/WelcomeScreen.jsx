@@ -171,7 +171,7 @@ function MissionCard({ active, locked, title, subtitle, icon, index, visible, on
   const [hovered, setHovered] = useState(false);
 
   const cardStyle = {
-    background: locked ? 'rgba(7,11,20,0.65)' : 'rgba(10,22,40,0.82)',
+    background: locked ? 'rgba(7,11,20,0.65)' : active ? 'rgba(0,22,40,0.90)' : 'rgba(10,22,40,0.82)',
     border: locked
       ? '1px solid rgba(200,216,240,0.12)'
       : active
@@ -186,15 +186,15 @@ function MissionCard({ active, locked, title, subtitle, icon, index, visible, on
     gap: 10,
     opacity: visible ? (locked ? 0.45 : 1) : 0,
     transform: visible ? 'translateY(0)' : 'translateY(32px)',
-    transition: `opacity 350ms ease ${index * 120}ms, transform 350ms ease ${index * 120}ms, border-color 120ms ease, box-shadow 120ms ease`,
+    transition: `opacity 350ms ease ${index * 120}ms, transform 350ms ease ${index * 120}ms, border-color 120ms ease`,
     cursor: active && !locked ? (hovered ? 'pointer' : 'default') : 'default',
-    boxShadow: active && hovered ? `0 0 18px rgba(0,229,204,0.22)` : 'none',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
   };
 
   return (
     <div
+      className={active && !locked && visible ? 'wg-active-card' : ''}
       style={cardStyle}
       onMouseEnter={() => active && !locked && setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -259,17 +259,21 @@ function MissionCard({ active, locked, title, subtitle, icon, index, visible, on
             background: hovered ? CYAN_BRIGHT : CYAN,
             color: SPACE_DARK,
             fontFamily: '"Orbitron", monospace',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.2em',
+            fontSize: 13,
+            fontWeight: 900,
+            letterSpacing: '0.22em',
             textTransform: 'uppercase',
             border: 'none',
             borderRadius: 4,
-            padding: '10px 14px',
+            padding: '14px 20px',
             cursor: 'pointer',
-            transition: 'background 120ms ease, transform 80ms ease',
-            transform: hovered ? 'scale(1.02)' : 'scale(1)',
-            marginTop: 4,
+            transition: 'background 120ms ease, transform 80ms ease, box-shadow 120ms ease',
+            transform: hovered ? 'scale(1.04)' : 'scale(1)',
+            boxShadow: hovered
+              ? `0 0 22px rgba(0,229,204,0.8), 0 0 44px rgba(0,229,204,0.35)`
+              : `0 0 14px rgba(0,229,204,0.5), 0 0 28px rgba(0,229,204,0.2)`,
+            marginTop: 8,
+            width: '100%',
           }}
         >
           BEGIN MISSION ▶
@@ -302,8 +306,21 @@ export default function WelcomeScreen({ onStart }) {
 
   return (
     <div style={styles.root} className="wg-root">
-      {/* Responsive overrides — handles mobile layout for Bug 1 (background/scroll) */}
+      {/* Responsive overrides + pulse animation keyframes */}
       <style>{`
+        @keyframes wg-card-pulse {
+          0%   { box-shadow: 0 0 18px rgba(0,229,204,0.55), 0 0 40px rgba(0,229,204,0.22); }
+          50%  { box-shadow: 0 0 28px rgba(0,229,204,0.85), 0 0 60px rgba(0,229,204,0.38); }
+          100% { box-shadow: 0 0 18px rgba(0,229,204,0.55), 0 0 40px rgba(0,229,204,0.22); }
+        }
+        @keyframes wg-chevron-bob {
+          0%   { transform: translateY(0); }
+          50%  { transform: translateY(6px); }
+          100% { transform: translateY(0); }
+        }
+        .wg-active-card {
+          animation: wg-card-pulse 2s ease-in-out infinite;
+        }
         @media (max-width: 600px) {
           .wg-root { overflow-y: auto !important; align-items: flex-start !important; }
           .wg-content { padding: 20px 14px !important; gap: 20px !important; }
@@ -317,6 +334,7 @@ export default function WelcomeScreen({ onStart }) {
           .wg-blippy { flex-direction: row !important; align-items: center !important; gap: 12px !important; padding-bottom: 0 !important; }
           .wg-blippy-circle { width: 64px !important; height: 64px !important; }
           .wg-card { width: 100% !important; box-sizing: border-box !important; }
+          .wg-select-headline { font-size: clamp(22px, 6vw, 32px) !important; letter-spacing: 0.18em !important; }
         }
       `}</style>
       {/* Procedural star canvas — always visible as immediate background */}
@@ -534,14 +552,57 @@ export default function WelcomeScreen({ onStart }) {
             opacity: animPhase >= 2 ? 1 : 0,
             transition: 'opacity 300ms ease 100ms',
           }}>
+            {/* Commanding SELECT YOUR MISSION headline */}
             <div style={{
-              fontFamily: '"Orbitron", monospace',
-              fontSize: 9,
-              letterSpacing: '0.35em',
-              color: 'rgba(200,216,240,0.5)',
-              textTransform: 'uppercase',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              gap: 4,
+              marginBottom: 6,
             }}>
-              SELECT YOUR MISSION
+              <div
+                className="wg-select-headline"
+                style={{
+                  fontFamily: '"Orbitron", monospace',
+                  fontSize: 'clamp(22px, 2.8vw, 38px)',
+                  fontWeight: 900,
+                  letterSpacing: '0.22em',
+                  color: CYAN,
+                  textTransform: 'uppercase',
+                  lineHeight: 1.1,
+                  textShadow: `
+                    0 0 20px rgba(0,229,204,0.8),
+                    0 0 40px rgba(0,229,204,0.45),
+                    0 0 70px rgba(0,229,204,0.2)
+                  `,
+                }}
+              >
+                SELECT YOUR MISSION
+              </div>
+              <div style={{
+                fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'rgba(200,216,240,0.6)',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+              }}>
+                Choose your investigation to begin
+              </div>
+              {/* Directional chevron */}
+              <div
+                style={{
+                  marginTop: 6,
+                  color: CYAN,
+                  fontSize: 20,
+                  lineHeight: 1,
+                  textShadow: `0 0 12px rgba(0,229,204,0.7)`,
+                  animation: animPhase >= 3 ? 'wg-chevron-bob 1.6s ease-in-out infinite' : 'none',
+                  display: 'inline-block',
+                }}
+              >
+                ⌄
+              </div>
             </div>
 
             <div style={{
