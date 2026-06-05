@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
+// ─── prefers-reduced-motion ───────────────────────────────────────────────────
+const REDUCED = typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // ─── palette ────────────────────────────────────────────────────────────────
 const SPACE_DARK = '#070B14';
 const PANEL_BG   = '#0A1628';
@@ -162,6 +166,21 @@ export default function RoleSelect({ rolesData, onConfirm }) {
   const [focusedIdx, setFocusedIdx] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
 
+  // ── Entrance animations ──────────────────────────────────────────────────
+  // headerReady: header fades in at 100ms
+  // cardVisible[i]: card fan-in at 200 / 350 / 500ms
+  const [headerReady,   setHeaderReady]   = useState(REDUCED);
+  const [cardVisible,   setCardVisible]   = useState(REDUCED ? [true, true, true] : [false, false, false]);
+
+  useEffect(() => {
+    if (REDUCED) return;
+    const t0 = setTimeout(() => setHeaderReady(true), 100);
+    const t1 = setTimeout(() => setCardVisible((v) => { const n=[...v]; n[0]=true; return n; }), 200);
+    const t2 = setTimeout(() => setCardVisible((v) => { const n=[...v]; n[1]=true; return n; }), 350);
+    const t3 = setTimeout(() => setCardVisible((v) => { const n=[...v]; n[2]=true; return n; }), 500);
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
   // keyboard nav
   const handleKeyDown = useCallback(
     (e) => {
@@ -201,8 +220,13 @@ export default function RoleSelect({ rolesData, onConfirm }) {
       {/* scanline overlay */}
       <div style={styles.scanlines} />
 
-      {/* header */}
-      <div style={styles.header}>
+      {/* header — fades in at 100ms */}
+      <div style={{
+        ...styles.header,
+        opacity:    headerReady ? 1 : 0,
+        transform:  headerReady ? 'translateY(0)' : 'translateY(-12px)',
+        transition: 'opacity 350ms ease, transform 350ms ease',
+      }}>
         <div style={styles.headerKicker}>MISSION WATER — INVESTIGATOR SELECTION</div>
         <h1 style={styles.headerTitle}>SELECT YOUR INVESTIGATOR ROLE</h1>
         <div style={styles.headerSub}>
@@ -211,17 +235,28 @@ export default function RoleSelect({ rolesData, onConfirm }) {
         </div>
       </div>
 
-      {/* cards */}
+      {/* cards — fan in from center, staggered 150ms */}
       <div style={styles.cardsRow}>
         {roles.map((role, idx) => (
-          <RoleCard
+          <div
             key={role.id}
-            role={role}
-            isSelected={selectedId === role.id}
-            isFocused={focusedIdx === idx && selectedId !== role.id}
-            onClick={() => handleCardClick(role)}
-            onFocus={() => setFocusedIdx(idx)}
-          />
+            style={{
+              flex: '1 1 0',
+              maxWidth: 340,
+              opacity:    cardVisible[idx] ? 1 : 0,
+              transform:  cardVisible[idx] ? 'translateY(0)' : 'translateY(24px)',
+              transition: 'opacity 300ms ease, transform 300ms ease',
+              display: 'flex',
+            }}
+          >
+            <RoleCard
+              role={role}
+              isSelected={selectedId === role.id}
+              isFocused={focusedIdx === idx && selectedId !== role.id}
+              onClick={() => handleCardClick(role)}
+              onFocus={() => setFocusedIdx(idx)}
+            />
+          </div>
         ))}
       </div>
 

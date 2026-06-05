@@ -1,4 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
+// ─── prefers-reduced-motion ───────────────────────────────────────────────────
+const REDUCED = typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * HubScreen — Between-phase action hub.
@@ -30,6 +34,17 @@ export default function HubScreen({
   const [fieldInterviewResult, setFieldInterviewResult] = useState(null);
   const [labAnalysisResult, setLabAnalysisResult] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
+
+  // ─── Entrance animation state ─────────────────────────────────────────────
+  const [headerReady, setHeaderReady] = useState(REDUCED);
+  const [blippyReady, setBlippyReady] = useState(REDUCED);
+
+  useEffect(() => {
+    if (REDUCED) return;
+    const t0 = setTimeout(() => setHeaderReady(true), 0);
+    const t1 = setTimeout(() => setBlippyReady(true), 400);
+    return () => { clearTimeout(t0); clearTimeout(t1); };
+  }, []);
 
   // Resource token counts
   const communityTokens = currentResources?.community_partnerships ?? 0;
@@ -158,6 +173,17 @@ export default function HubScreen({
 
   return (
     <div style={styles.root}>
+      {/* ── Keyframes for card entrance flicker ── */}
+      <style>{`
+        @keyframes hub-card-flicker {
+          0%   { opacity: 0;   }
+          25%  { opacity: 0.3; }
+          100% { opacity: 1;   }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hub-card { animation: none !important; opacity: 1 !important; }
+        }
+      `}</style>
       {/* ── Space background ── */}
       <img
         src="/mission-water/chapter-1/backgrounds/ch1_intro_earth.jpg"
@@ -171,15 +197,20 @@ export default function HubScreen({
       <div style={styles.scrollLayer}>
         <div style={styles.centerFrame}>
 
-          {/* Header */}
-          <div style={styles.header}>
+          {/* Header — fades in immediately on mount */}
+          <div style={{
+            ...styles.header,
+            opacity:    headerReady ? 1 : 0,
+            transform:  headerReady ? 'translateY(0)' : 'translateY(-8px)',
+            transition: 'opacity 350ms ease, transform 350ms ease',
+          }}>
             <div style={styles.headerKicker}>MISSION HUB</div>
             <div style={styles.headerContext}>{phaseContext}</div>
           </div>
 
           {/* Card grid: 2 columns on desktop, 1 column on mobile */}
           <div style={styles.cardGrid}>
-            {hubOptions.map((opt) => {
+            {hubOptions.map((opt, idx) => {
               const isLocked = !opt.free && (opt.tokenAvail ?? 0) <= 0;
               const isHovered = hoveredCard === opt.id;
               const hasResult = !!opt.result;
@@ -187,6 +218,14 @@ export default function HubScreen({
               return (
                 <div
                   key={opt.id}
+                  className="hub-card"
+                  style={{
+                    opacity: 0,
+                    animation: 'hub-card-flicker 200ms ease forwards',
+                    animationDelay: `${200 + idx * 80}ms`,
+                  }}
+                >
+                <div
                   onClick={isLocked ? undefined : opt.action}
                   onMouseEnter={() => !isLocked && setHoveredCard(opt.id)}
                   onMouseLeave={() => setHoveredCard(null)}
@@ -288,14 +327,20 @@ export default function HubScreen({
                     </div>
                   )}
                 </div>
+                </div>
               );
             })}
           </div>
         </div>
       </div>
 
-      {/* ── Blippy lower-left ── */}
-      <div style={styles.blippy}>
+      {/* ── Blippy lower-left — slides in from right at 400ms ── */}
+      <div style={{
+        ...styles.blippy,
+        opacity:    blippyReady ? 1 : 0,
+        transform:  blippyReady ? 'translateX(0) scale(1)' : 'translateX(40px) scale(0.8)',
+        transition: 'opacity 300ms ease-out, transform 300ms ease-out',
+      }}>
         <div style={styles.blippyBubble}>
           <span style={styles.blippyText}>{blippyText}</span>
         </div>

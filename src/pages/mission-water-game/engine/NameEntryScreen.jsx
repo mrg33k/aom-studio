@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * NameEntryScreen — R9 Conrad Foundation Mission Water Game
@@ -9,6 +9,36 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
  * Props:
  *   onConfirm(playerName: string) — called with trimmed name when user submits
  */
+
+// ─── prefers-reduced-motion ───────────────────────────────────────────────────
+const REDUCED = typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ─── Entry animation hook ─────────────────────────────────────────────────────
+/**
+ * Returns { panelReady, headlineReady, blippyReady, bubbleReady }
+ *   panelReady    → panel scales 0.92→1 + fades in  (immediate)
+ *   headlineReady → headline word "WATER" slides in from left (200ms)
+ *   blippyReady   → Blippy scale+opacity+slide from bottom (500ms)
+ *   bubbleReady   → speech bubble appears 300ms after Blippy (800ms total)
+ */
+function useEntryAnim() {
+  const [panelReady,    setPanelReady]    = useState(REDUCED);
+  const [headlineReady, setHeadlineReady] = useState(REDUCED);
+  const [blippyReady,   setBlippyReady]   = useState(REDUCED);
+  const [bubbleReady,   setBubbleReady]   = useState(REDUCED);
+
+  useEffect(() => {
+    if (REDUCED) return;
+    const t0 = setTimeout(() => setPanelReady(true),    60);
+    const t1 = setTimeout(() => setHeadlineReady(true), 200);
+    const t2 = setTimeout(() => setBlippyReady(true),   500);
+    const t3 = setTimeout(() => setBubbleReady(true),   800);
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  return { panelReady, headlineReady, blippyReady, bubbleReady };
+}
 
 // ─── RNG (same mulberry32 pattern as WelcomeScreen) ──────────────────────────
 function mulberry32(seed) {
@@ -101,6 +131,7 @@ export default function NameEntryScreen({ onConfirm }) {
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const inputRef              = useRef(null);
+  const { panelReady, headlineReady, blippyReady, bubbleReady } = useEntryAnim();
 
   // Auto-focus input after mount
   useEffect(() => {
@@ -139,12 +170,32 @@ export default function NameEntryScreen({ onConfirm }) {
 
         <div style={S.panelOuter}>
           {/* ── Instrument panel ─────────────────────────────────────────── */}
-          <div style={S.panel}>
+          <div style={{
+            ...S.panel,
+            opacity:    panelReady ? 1 : 0,
+            transform:  panelReady ? 'scale(1)' : 'scale(0.92)',
+            transition: 'opacity 400ms ease, transform 400ms ease',
+          }}>
 
             {/* Title block */}
             <div>
               <div style={S.kicker}>CADET REGISTRATION</div>
-              <h1 style={S.headline}>WHAT IS YOUR NAME, CADET?</h1>
+              <h1 style={{
+                ...S.headline,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.25em',
+                alignItems: 'baseline',
+              }}>
+                <span>WHAT IS YOUR NAME,</span>
+                {/* "CADET" slides in from the left */}
+                <span style={{
+                  display:    'inline-block',
+                  opacity:    headlineReady ? 1 : 0,
+                  transform:  headlineReady ? 'translateX(0)' : 'translateX(-20px)',
+                  transition: 'opacity 300ms ease, transform 300ms ease',
+                }}>CADET?</span>
+              </h1>
               <p  style={S.subtext}>EPIC. BADGE DAY.</p>
             </div>
 
@@ -189,7 +240,12 @@ export default function NameEntryScreen({ onConfirm }) {
           {/* ── end instrument panel ─────────────────────────────────────── */}
 
           {/* Blippy companion */}
-          <div style={S.blippyRow}>
+          <div style={{
+            ...S.blippyRow,
+            opacity:    blippyReady ? 1 : 0,
+            transform:  blippyReady ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(20px)',
+            transition: 'opacity 300ms ease-out, transform 300ms ease-out',
+          }}>
             <div style={S.blippyCircle}>
               <img
                 src="/mission-water/welcome/blippy_welcome_pose.png"
@@ -198,7 +254,12 @@ export default function NameEntryScreen({ onConfirm }) {
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
-            <div style={S.bubble}>Ready to meet you, Cadet!</div>
+            <div style={{
+              ...S.bubble,
+              opacity:    bubbleReady ? 1 : 0,
+              transform:  bubbleReady ? 'translateY(0)' : 'translateY(6px)',
+              transition: 'opacity 250ms ease, transform 250ms ease',
+            }}>Ready to meet you, Cadet!</div>
           </div>
 
         </div>

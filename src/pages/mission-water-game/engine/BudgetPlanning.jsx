@@ -157,6 +157,17 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
 
   return (
     <div style={styles.root}>
+      {/* Flicker keyframe for row entrance animations */}
+      <style>{`
+        @keyframes bp-row-flicker {
+          0%   { opacity: 0;   }
+          25%  { opacity: 0.3; }
+          100% { opacity: 1;   }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .bp-alloc-row { animation: none !important; opacity: 1 !important; }
+        }
+      `}</style>
       <div style={styles.scanlines} />
 
       {/* header */}
@@ -190,20 +201,29 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
           </div>
         </div>
 
-        {/* allocation rows */}
+        {/* allocation rows — staggered flicker entrance */}
         <div style={styles.rowsWrap}>
-          {Object.keys(selectedRole.starting_resources).map((type) => (
-            <AllocRow
+          {Object.keys(selectedRole.starting_resources).map((type, idx) => (
+            <div
               key={type}
-              type={type}
-              value={resources[type] ?? 0}
-              ringColor={ringColor}
-              spent={spent}
-              total={TOTAL}
-              maxVal={MAXPER}
-              onInc={() => adjust(type, 1)}
-              onDec={() => adjust(type, -1)}
-            />
+              className="bp-alloc-row"
+              style={{
+                opacity: 0,
+                animation: 'bp-row-flicker 200ms ease forwards',
+                animationDelay: `${300 + idx * 120}ms`,
+              }}
+            >
+              <AllocRow
+                type={type}
+                value={resources[type] ?? 0}
+                ringColor={ringColor}
+                spent={spent}
+                total={TOTAL}
+                maxVal={MAXPER}
+                onInc={() => adjust(type, 1)}
+                onDec={() => adjust(type, -1)}
+              />
+            </div>
           ))}
         </div>
 

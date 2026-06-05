@@ -19,6 +19,10 @@ import React, { useEffect, useRef, useState } from 'react';
  * Round: R7e — title as own foreground img element (mix-blend-mode:screen over star bg)
  */
 
+// ─── prefers-reduced-motion ───────────────────────────────────────────────────
+const REDUCED = typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // ─── Star canvas background (two layers, slow procedural drift) ───────────────
 
 function StarCanvas() {
@@ -153,16 +157,32 @@ function ParallaxLayer({ src, speed, style }) {
 // ─── Entry animations ─────────────────────────────────────────────────────────
 
 function useEntryAnim() {
-  const [phase, setPhase] = useState(0); // 0=hidden, 1=title, 2=blippy, 3=cards
+  const [overlayFaded, setOverlayFaded] = useState(REDUCED);
+  const [starsReady,   setStarsReady]   = useState(REDUCED);
+  const [panelReady,   setPanelReady]   = useState(REDUCED);
+  const [blippyReady,  setBlippyReady]  = useState(REDUCED);
+  const [bubbleReady,  setBubbleReady]  = useState(REDUCED);
+  const [card0Ready,   setCard0Ready]   = useState(REDUCED);
+  const [card1Ready,   setCard1Ready]   = useState(REDUCED);
+  const [card2Ready,   setCard2Ready]   = useState(REDUCED);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 80);   // title fades in
-    const t2 = setTimeout(() => setPhase(2), 500);  // blippy slides up
-    const t3 = setTimeout(() => setPhase(3), 820);  // cards appear
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    if (REDUCED) return;
+    const t0 = setTimeout(() => setOverlayFaded(true), 0);   // fade-from-black starts immediately
+    const t1 = setTimeout(() => setStarsReady(true),   200); // star parallax fades in
+    const t2 = setTimeout(() => setPanelReady(true),   400); // instrument panel slides up
+    const t3 = setTimeout(() => setBlippyReady(true),  500); // Blippy scale+fade
+    const t4 = setTimeout(() => setCard0Ready(true),   600); // card 1 fans in
+    const t5 = setTimeout(() => setCard1Ready(true),   750); // card 2 fans in
+    const t6 = setTimeout(() => setBubbleReady(true),  800); // speech bubble (300ms after Blippy)
+    const t7 = setTimeout(() => setCard2Ready(true),   900); // card 3 fans in
+    return () => {
+      clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      clearTimeout(t4); clearTimeout(t5); clearTimeout(t6); clearTimeout(t7);
+    };
   }, []);
 
-  return phase;
+  return { overlayFaded, starsReady, panelReady, blippyReady, bubbleReady, card0Ready, card1Ready, card2Ready };
 }
 
 // ─── Mission cards ────────────────────────────────────────────────────────────
@@ -186,7 +206,7 @@ function MissionCard({ active, locked, title, subtitle, icon, index, visible, on
     gap: 10,
     opacity: visible ? (locked ? 0.45 : 1) : 0,
     transform: visible ? 'translateY(0)' : 'translateY(32px)',
-    transition: `opacity 350ms ease ${index * 120}ms, transform 350ms ease ${index * 120}ms, border-color 120ms ease`,
+    transition: `opacity 350ms ease 0ms, transform 350ms ease 0ms, border-color 120ms ease`,
     cursor: active && !locked ? (hovered ? 'pointer' : 'default') : 'default',
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
@@ -301,7 +321,11 @@ function MissionCard({ active, locked, title, subtitle, icon, index, visible, on
 // ─── WelcomeScreen main ───────────────────────────────────────────────────────
 
 export default function WelcomeScreen({ onStart }) {
-  const animPhase = useEntryAnim();
+  const {
+    overlayFaded, starsReady, panelReady,
+    blippyReady, bubbleReady,
+    card0Ready, card1Ready, card2Ready,
+  } = useEntryAnim();
   const [bgLoaded, setBgLoaded] = useState(false);
 
   return (
@@ -351,6 +375,18 @@ export default function WelcomeScreen({ onStart }) {
           .wg-select-headline { font-size: clamp(13px, 4vw, 18px) !important; letter-spacing: 0.3em !important; }
         }
       `}</style>
+
+      {/* Fade-from-black entrance overlay */}
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        background: '#000',
+        opacity: overlayFaded ? 0 : 1,
+        transition: 'opacity 600ms ease',
+        pointerEvents: 'none',
+        zIndex: 100,
+      }} />
+
       {/* Procedural star canvas — always visible as immediate background */}
       <StarCanvas />
 
@@ -377,7 +413,7 @@ export default function WelcomeScreen({ onStart }) {
       />
 
       {/* Parallax PNG layers from Cleo — very slow drift */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.3 }}>
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: starsReady ? 0.3 : 0, transition: 'opacity 400ms ease' }}>
         <ParallaxLayer src="/mission-water/welcome/welcome_space_layer_1.png" speed={0.008} />
         <ParallaxLayer src="/mission-water/welcome/welcome_space_layer_2.png" speed={0.014} style={{ opacity: 0.7 }} />
         <ParallaxLayer src="/mission-water/welcome/welcome_space_layer_3.png" speed={0.02} style={{ opacity: 0.5 }} />
@@ -415,7 +451,21 @@ export default function WelcomeScreen({ onStart }) {
       <div style={{ flex: '1 0 0' }} />
 
       {/* ── Main content area ─────────────────────────────────────────── */}
-      <div className="wg-instrument-panel" style={{ background: 'rgba(7,11,20,0.88)', border: '1px solid rgba(0,229,204,0.25)', borderRadius: 4, boxShadow: '0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08)', padding: '40px 48px', maxWidth: 'min(640px,90vw)', width: '100%' }}>
+      <div
+        className="wg-instrument-panel"
+        style={{
+          background: 'rgba(7,11,20,0.88)',
+          border: '1px solid rgba(0,229,204,0.25)',
+          borderRadius: 4,
+          boxShadow: '0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08)',
+          padding: '40px 48px',
+          maxWidth: 'min(640px,90vw)',
+          width: '100%',
+          opacity:    panelReady ? 1 : 0,
+          transform:  panelReady ? 'translateY(0)' : 'translateY(30px)',
+          transition: 'opacity 400ms ease, transform 400ms ease',
+        }}
+      >
       <div style={styles.content} className="wg-content">
 
         {/* Title block — R7e: title as own foreground element, scales on any viewport */}
@@ -425,8 +475,8 @@ export default function WelcomeScreen({ onStart }) {
           flexDirection: 'column',
           alignItems: 'center',
           gap: 6,
-          opacity: animPhase >= 1 ? 1 : 0,
-          transform: animPhase >= 1 ? 'translateY(0)' : 'translateY(-20px)',
+          opacity: panelReady ? 1 : 0,
+          transform: panelReady ? 'translateY(0)' : 'translateY(-20px)',
           transition: 'opacity 400ms ease, transform 400ms ease',
         }}>
           {/* Kicker */}
@@ -449,9 +499,9 @@ export default function WelcomeScreen({ onStart }) {
           {/* Blippy companion */}
           <div className="wg-blippy" style={{
             flexShrink: 0,
-            opacity: animPhase >= 2 ? 1 : 0,
-            transform: animPhase >= 2 ? 'translateY(0)' : 'translateY(40px)',
-            transition: 'opacity 300ms ease, transform 300ms ease',
+            opacity: blippyReady ? 1 : 0,
+            transform: blippyReady ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(20px)',
+            transition: 'opacity 300ms ease-out, transform 300ms ease-out',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -469,6 +519,9 @@ export default function WelcomeScreen({ onStart }) {
               position: 'relative',
               backdropFilter: 'blur(6px)',
               WebkitBackdropFilter: 'blur(6px)',
+              opacity: bubbleReady ? 1 : 0,
+              transform: bubbleReady ? 'translateY(0)' : 'translateY(6px)',
+              transition: 'opacity 250ms ease, transform 250ms ease',
             }}>
               <div style={{
                 fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
@@ -531,7 +584,7 @@ export default function WelcomeScreen({ onStart }) {
             display: 'flex',
             flexDirection: 'column',
             gap: 12,
-            opacity: animPhase >= 2 ? 1 : 0,
+            opacity: panelReady ? 1 : 0,
             transition: 'opacity 300ms ease 100ms',
           }}>
             {/* Commanding SELECT YOUR MISSION headline */}
@@ -575,7 +628,7 @@ export default function WelcomeScreen({ onStart }) {
                   fontSize: 20,
                   lineHeight: 1,
                   textShadow: `0 0 12px rgba(0,229,204,0.7)`,
-                  animation: animPhase >= 3 ? 'wg-chevron-bob 1.6s ease-in-out infinite' : 'none',
+                  animation: card0Ready ? 'wg-chevron-bob 1.6s ease-in-out infinite' : 'none',
                   display: 'inline-block',
                 }}
               >
@@ -595,7 +648,7 @@ export default function WelcomeScreen({ onStart }) {
                 subtitle="Earth is running out of fresh water. Investigate the crisis — then take the mission to the Moon."
                 icon="💧"
                 index={0}
-                visible={animPhase >= 3}
+                visible={card0Ready}
                 onStart={onStart}
               />
               <MissionCard
@@ -605,7 +658,7 @@ export default function WelcomeScreen({ onStart }) {
                 subtitle="Sustain life in deep space. Master the systems that keep a crew alive between worlds."
                 icon="⚗️"
                 index={1}
-                visible={animPhase >= 3}
+                visible={card1Ready}
               />
               <MissionCard
                 active={false}
@@ -614,7 +667,7 @@ export default function WelcomeScreen({ onStart }) {
                 subtitle="Power a lunar settlement from scratch. Design the systems that will light civilization's next chapter."
                 icon="⚡"
                 index={2}
-                visible={animPhase >= 3}
+                visible={card2Ready}
               />
             </div>
           </div>
@@ -622,7 +675,7 @@ export default function WelcomeScreen({ onStart }) {
 
         {/* Footer badge — Conrad Foundation attribution always visible */}
         <div style={{
-          opacity: animPhase >= 3 ? 0.75 : 0,
+          opacity: card0Ready ? 0.75 : 0,
           transition: 'opacity 400ms ease 600ms',
           display: 'flex',
           alignItems: 'center',

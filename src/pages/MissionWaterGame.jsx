@@ -117,6 +117,43 @@ export default function MissionWaterGame() {
   // Ref callback so HubScreen can open the MissionKit inside HUD
   const openKitRef = useRef(null);
 
+  // R10 — Phase wipe transition
+  const wipeRef        = useRef(null);
+  const prevPhaseIdRef = useRef(null);
+
+  const triggerWipe = () => {
+    const el = wipeRef.current;
+    if (!el) return;
+    // Reset bar to left edge with no transition
+    el.style.transition = 'none';
+    el.style.transform  = 'translateX(-100%)';
+    // Double-rAF forces a repaint before re-adding the transition
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.transition = 'transform 150ms linear';
+        el.style.transform  = 'translateX(0%)';     // sweep in (left → centre)
+        setTimeout(() => {
+          el.style.transform = 'translateX(100%)';  // sweep out (centre → right)
+        }, 150);
+      });
+    });
+  };
+
+  useEffect(() => {
+    if (!budgetConfirmed || showHub) {
+      prevPhaseIdRef.current = runState.phase_id;
+      return;
+    }
+    if (prevPhaseIdRef.current === null) {
+      prevPhaseIdRef.current = runState.phase_id;
+      return;
+    }
+    if (runState.phase_id !== prevPhaseIdRef.current) {
+      prevPhaseIdRef.current = runState.phase_id;
+      triggerWipe();
+    }
+  }, [runState.phase_id, budgetConfirmed, showHub]);
+
   const phase = useMemo(
     () => getCurrentPhase(phaseGraph, runState),
     [runState.phase_id],
@@ -272,6 +309,18 @@ export default function MissionWaterGame() {
             resources={investigationResources}
             playerName={playerName}
             openKitRef={openKitRef}
+          />
+          {/* R10 — Phase wipe transition overlay */}
+          <div
+            ref={wipeRef}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: '#000',
+              pointerEvents: 'none',
+              zIndex: 50,
+              transform: 'translateX(-100%)',
+            }}
           />
         </div>
       </main>
