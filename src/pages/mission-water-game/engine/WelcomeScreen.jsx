@@ -179,8 +179,8 @@ function MissionCard({ active, locked, title, subtitle, icon, index, visible, on
         : '1px solid rgba(0,229,204,0.22)',
     borderRadius: 6,
     padding: '20px 18px',
-    flex: '0 0 220px',
-    minWidth: 200,
+    width: '100%',
+    boxSizing: 'border-box',
     display: 'flex',
     flexDirection: 'column',
     gap: 10,
@@ -301,18 +301,36 @@ export default function WelcomeScreen({ onStart }) {
   const [bgLoaded, setBgLoaded] = useState(false);
 
   return (
-    <div style={styles.root}>
+    <div style={styles.root} className="wg-root">
+      {/* Responsive overrides — handles mobile layout for Bug 1 (background/scroll) */}
+      <style>{`
+        @media (max-width: 600px) {
+          .wg-root { overflow-y: auto !important; align-items: flex-start !important; }
+          .wg-content { padding: 20px 14px !important; gap: 20px !important; }
+          .wg-bg-img { background-position: center center !important; }
+          .wg-main-row {
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 16px !important;
+            max-width: 100% !important;
+          }
+          .wg-blippy { flex-direction: row !important; align-items: center !important; gap: 12px !important; padding-bottom: 0 !important; }
+          .wg-blippy-circle { width: 64px !important; height: 64px !important; }
+          .wg-card { width: 100% !important; box-sizing: border-box !important; }
+        }
+      `}</style>
       {/* Procedural star canvas — always visible as immediate background */}
       <StarCanvas />
 
       {/* Background image (grand opening) — fades in once loaded */}
       <div
+        className="wg-bg-img"
         style={{
           position: 'absolute',
           inset: 0,
           backgroundImage: bgLoaded ? `url(/mission-water/welcome/welcome_bg_grand_opening.jpg)` : 'none',
           backgroundSize: 'cover',
-          backgroundPosition: 'center bottom',
+          backgroundPosition: 'center 30%',
           opacity: bgLoaded ? 0.55 : 0,
           transition: 'opacity 600ms ease',
           pointerEvents: 'none',
@@ -356,7 +374,7 @@ export default function WelcomeScreen({ onStart }) {
       }} />
 
       {/* ── Main content area ─────────────────────────────────────────── */}
-      <div style={styles.content}>
+      <div style={styles.content} className="wg-content">
 
         {/* Title block */}
         <div style={{
@@ -420,7 +438,7 @@ export default function WelcomeScreen({ onStart }) {
         </div>
 
         {/* Blippy + mission selector row */}
-        <div style={{
+        <div className="wg-main-row" style={{
           display: 'flex',
           alignItems: 'flex-end',
           gap: 32,
@@ -429,7 +447,7 @@ export default function WelcomeScreen({ onStart }) {
         }}>
 
           {/* Blippy companion */}
-          <div style={{
+          <div className="wg-blippy" style={{
             flexShrink: 0,
             opacity: animPhase >= 2 ? 1 : 0,
             transform: animPhase >= 2 ? 'translateY(0)' : 'translateY(40px)',
@@ -477,7 +495,7 @@ export default function WelcomeScreen({ onStart }) {
             </div>
 
             {/* Blippy image */}
-            <div style={{
+            <div className="wg-blippy-circle" style={{
               width: 120,
               height: 120,
               borderRadius: '50%',
@@ -528,8 +546,8 @@ export default function WelcomeScreen({ onStart }) {
 
             <div style={{
               display: 'flex',
+              flexDirection: 'column',
               gap: 14,
-              flexWrap: 'wrap',
             }}>
               <MissionCard
                 active
