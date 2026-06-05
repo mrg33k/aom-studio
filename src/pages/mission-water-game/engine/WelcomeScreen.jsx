@@ -321,11 +321,23 @@ export default function WelcomeScreen({ onStart }) {
         .wg-active-card {
           animation: wg-card-pulse 2s ease-in-out infinite;
         }
+        /* Instrument panel — dark glass card per DESIGN.md */
+        .wg-instrument-panel {
+          background: rgba(7,11,20,0.88);
+          border: 1px solid rgba(0,229,204,0.25);
+          border-radius: 4px;
+          box-shadow: 0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08);
+          padding: 40px 48px;
+          max-width: min(640px,90vw);
+          width: 100%;
+          box-sizing: border-box;
+        }
         @media (max-width: 900px) {
           .wg-scroll { align-items: flex-start !important; }
         }
         @media (max-width: 600px) {
-          .wg-content { padding: 20px 14px !important; gap: 20px !important; }
+          .wg-instrument-panel { padding: 24px 20px !important; max-width: 94vw !important; }
+          .wg-content { padding: 0 !important; gap: 20px !important; }
           .wg-bg-img { background-position: center center !important; }
           .wg-main-row {
             flex-direction: column !important;
@@ -336,7 +348,7 @@ export default function WelcomeScreen({ onStart }) {
           .wg-blippy { flex-direction: row !important; align-items: center !important; gap: 12px !important; padding-bottom: 0 !important; }
           .wg-blippy-circle { width: 64px !important; height: 64px !important; }
           .wg-card { width: 100% !important; box-sizing: border-box !important; }
-          .wg-select-headline { font-size: clamp(22px, 6vw, 32px) !important; letter-spacing: 0.18em !important; }
+          .wg-select-headline { font-size: clamp(13px, 4vw, 18px) !important; letter-spacing: 0.3em !important; }
         }
       `}</style>
       {/* Procedural star canvas — always visible as immediate background */}
@@ -403,6 +415,7 @@ export default function WelcomeScreen({ onStart }) {
       <div style={{ flex: '1 0 0' }} />
 
       {/* ── Main content area ─────────────────────────────────────────── */}
+      <div className="wg-instrument-panel" style={{ background: 'rgba(7,11,20,0.88)', border: '1px solid rgba(0,229,204,0.25)', borderRadius: 4, boxShadow: '0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08)', padding: '40px 48px', maxWidth: 'min(640px,90vw)', width: '100%' }}>
       <div style={styles.content} className="wg-content">
 
         {/* Title block — R7e: title as own foreground element, scales on any viewport */}
@@ -416,35 +429,12 @@ export default function WelcomeScreen({ onStart }) {
           transform: animPhase >= 1 ? 'translateY(0)' : 'translateY(-20px)',
           transition: 'opacity 400ms ease, transform 400ms ease',
         }}>
-          {/* Conrad Foundation attribution — own element, always visible, never cropped */}
-          <div style={{
-            fontFamily: '"Orbitron", monospace',
-            fontSize: 11,
-            letterSpacing: '0.42em',
-            color: CYAN,
-            textTransform: 'uppercase',
-            textShadow: `0 0 12px rgba(0,229,204,0.5)`,
-          }}>
-            CONRAD FOUNDATION
-          </div>
-
-          {/* Game title as foreground img — scales cleanly on any viewport.
-              mix-blend-mode:screen makes the dark bg transparent so the glowing
-              title floats over the star-field background. */}
-          <img
-            src="/mission-water/welcome/title_treatment_reference.png"
-            alt="Space Mission: Water"
-            style={{
-              width: 'min(500px, 88vw)',
-              height: 'min(280px, 35vh)',
-              objectFit: 'contain',
-              objectPosition: 'center',
-              display: 'block',
-              mixBlendMode: 'screen',
-              filter: 'brightness(1.05) saturate(1.1)',
-              pointerEvents: 'none',
-            }}
-          />
+          {/* Kicker */}
+          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: 'clamp(12px, 2.5vw, 20px)', letterSpacing: '0.4em', color: '#00E5CC', textTransform: 'uppercase', opacity: 0.85, marginBottom: 4 }}>Space Mission:</div>
+          {/* Main word */}
+          <div style={{ fontFamily: 'Orbitron, sans-serif', fontWeight: 900, fontSize: 'clamp(56px, 10vw, 112px)', letterSpacing: '0.06em', color: '#FFFFFF', textTransform: 'uppercase', textShadow: '0 0 40px rgba(0,229,204,0.75), 0 0 90px rgba(0,229,204,0.35)', lineHeight: 1 }}>Water</div>
+          {/* Attribution */}
+          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 400, fontSize: 'clamp(10px, 1.5vw, 13px)', letterSpacing: '0.25em', color: 'rgba(232,240,248,0.45)', textTransform: 'uppercase', marginTop: 8 }}>Conrad Foundation</div>
         </div>
 
         {/* Blippy + mission selector row */}
@@ -555,18 +545,13 @@ export default function WelcomeScreen({ onStart }) {
               <div
                 className="wg-select-headline"
                 style={{
-                  fontFamily: '"Orbitron", monospace',
-                  fontSize: 'clamp(22px, 2.8vw, 38px)',
-                  fontWeight: 900,
-                  letterSpacing: '0.22em',
-                  color: CYAN,
+                  fontFamily: 'Orbitron, sans-serif',
+                  fontWeight: 700,
+                  fontSize: 'clamp(13px, 2.2vw, 18px)',
+                  letterSpacing: '0.3em',
+                  color: '#00E5CC',
                   textTransform: 'uppercase',
-                  lineHeight: 1.1,
-                  textShadow: `
-                    0 0 20px rgba(0,229,204,0.8),
-                    0 0 40px rgba(0,229,204,0.45),
-                    0 0 70px rgba(0,229,204,0.2)
-                  `,
+                  marginBottom: 20,
                 }}
               >
                 SELECT YOUR MISSION
@@ -667,7 +652,8 @@ export default function WelcomeScreen({ onStart }) {
           </div>
         </div>
 
-      </div>
+      </div>{/* /wg-content */}
+      </div>{/* /wg-instrument-panel */}
 
       {/* flex spacer — mirrors the top spacer so content stays centred when
           there is room to spare. Collapses to 0 when content overflows. */}
