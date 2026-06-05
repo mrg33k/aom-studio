@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Space Rising — Field Dispatch · Week of June 5, 2026</title>
+<meta name="description" content="A week in orbit. Everything built for Space Rising and Space OS, May 29 – June 5, 2026 — plus an honest map of what's still ahead." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>document.documentElement.className+=' js';</script>
+<style>
+  :root{
+    --bg:#0B0B0D;
+    --bg-1:#0F0F12;
+    --bg-2:#141418;
+    --tx:#E8E4DA;
+    --tx-dim:#9A968C;
+    --tx-faint:#615E57;
+    --accent:#E8A23A;
+    --accent-deep:#C8842A;
+    --line:rgba(232,228,218,0.12);
+    --line-soft:rgba(232,228,218,0.07);
+    --maxw:1180px;
+    --display:'Space Grotesk',system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--tx);
+    font-family:var(--display);
+    font-weight:400;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+
+  /* ---- type primitives ---- */
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11.5px;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--accent);
+    font-weight:500;
+  }
+  .eyebrow.dim{color:var(--tx-dim)}
+  .period{color:var(--accent)}
+  h1,h2,h3{font-weight:600;letter-spacing:-0.02em;line-height:1.04}
+  .lede{color:var(--tx-dim);font-weight:300;font-size:clamp(17px,2.1vw,21px);line-height:1.55}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
+  section{position:relative}
+
+  /* ---- reveal (progressive enhancement: only hidden when JS is on) ---- */
+  .js .rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+  .js .rv.in{opacity:1;transform:none}
+  @media print{.js .rv{opacity:1!important;transform:none!important}}
+  @media (prefers-reduced-motion:reduce){.js .rv{opacity:1!important;transform:none!important;transition:none}}
+
+  /* ---- top bar ---- */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 28px;
+    background:rgba(11,11,13,0.72);
+    backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .mark{display:flex;align-items:center;gap:11px;font-weight:600;letter-spacing:-0.01em;font-size:15px}
+  .mark .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px 1px rgba(232,162,58,.6)}
+  .topbar .tag{font-family:var(--mono);font-size:11px;letter-spacing:0.18em;color:var(--tx-faint);text-transform:uppercase}
+
+  /* ---- hero ---- */
+  .hero{position:relative;min-height:92vh;display:flex;align-items:flex-end;overflow:hidden}
+  .hero-bg{position:absolute;inset:0;z-index:0}
+  .hero-bg img{width:100%;height:100%;object-fit:cover;opacity:.62;transform:scale(1.04)}
+  .hero-bg::after{content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(120% 90% at 78% 12%, rgba(232,162,58,0.10), transparent 55%),
+      linear-gradient(180deg, rgba(11,11,13,0.35) 0%, rgba(11,11,13,0.55) 45%, var(--bg) 99%);}
+  .hero-inner{position:relative;z-index:2;width:100%;padding-bottom:64px}
+  .hero h1{font-size:clamp(46px,8.4vw,108px);font-weight:600;margin:18px 0 22px;max-width:14ch}
+  .hero .lede{max-width:46ch}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:28px;margin-top:34px;padding-top:24px;border-top:1px solid var(--line)}
+  .hero-meta .mi{display:flex;flex-direction:column;gap:4px}
+  .hero-meta .mi .k{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx-faint)}
+  .hero-meta .mi .v{font-size:15px;color:var(--tx)}
+
+  /* ---- stat band ---- */
+  .stats{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--bg-1)}
+  .stats .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+  .stat{padding:40px 26px;border-right:1px solid var(--line-soft);position:relative}
+  .stat:nth-child(4n){border-right:none}
+  .stat .num{font-size:clamp(40px,5vw,62px);font-weight:600;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;line-height:1}
+  .stat .num .pre,.stat .num .suf{color:var(--accent)}
+  .stat .bar{height:2px;width:0;background:var(--accent);margin:14px 0 12px;transition:width 1.3s cubic-bezier(.2,.7,.2,1)}
+  .stat.in .bar{width:46px}
+  .stat .lab{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-dim);line-height:1.45}
+
+  /* ---- generic section header ---- */
+  .sec{padding:96px 0}
+  .sec-head{max-width:62ch;margin-bottom:14px}
+  .sec-head h2{font-size:clamp(30px,4.6vw,52px);margin:14px 0 18px}
+  .sec-head .lede{max-width:60ch}
+
+  /* ---- headline block (V2 live) ---- */
+  .headline{background:var(--bg)}
+  .figure{border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--bg-2)}
+  .figure img{width:100%}
+  .figure .cap{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx-faint);padding:12px 16px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;gap:14px}
+  .figure .cap .badge{color:var(--accent)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media(max-width:820px){.two{grid-template-columns:1fr}}
+
+  /* ---- timeline ---- */
+  .timeline{position:relative;margin-top:48px;padding-left:0}
+  .round{display:grid;grid-template-columns:118px 1fr;gap:30px;padding:34px 0;border-top:1px solid var(--line)}
+  .round:last-child{border-bottom:1px solid var(--line)}
+  .round .meta{position:relative}
+  .round .rcode{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--accent);letter-spacing:.04em}
+  .round .rdate{font-family:var(--mono);font-size:11px;color:var(--tx-faint);margin-top:6px;letter-spacing:.08em;text-transform:uppercase}
+  .round h3{font-size:clamp(21px,2.6vw,27px);margin-bottom:12px;font-weight:600}
+  .round p{color:var(--tx-dim);font-weight:300;font-size:15.5px;max-width:64ch}
+  .round .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .chip{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--tx);background:var(--bg-2);border:1px solid var(--line);padding:5px 11px;border-radius:2px}
+  .chip.live{border-color:rgba(232,162,58,.4);color:var(--accent)}
+  @media(max-width:680px){.round{grid-template-columns:1fr;gap:14px}}
+
+  /* ---- area cards ---- */
+  .areas{background:var(--bg-1);border-top:1px solid var(--line)}
+  .area{display:grid;grid-template-columns:1fr 1fr;gap:46px;align-items:center;padding:70px 0;border-bottom:1px solid var(--line-soft)}
+  .area:nth-child(even) .area-fig{order:2}
+  .area-body .eyebrow{margin-bottom:14px;display:block}
+  .area-body h3{font-size:clamp(24px,3.2vw,34px);margin-bottom:16px;font-weight:600}
+  .area-body ul{list-style:none;margin-top:18px;display:flex;flex-direction:column;gap:11px}
+  .area-body li{position:relative;padding-left:22px;color:var(--tx-dim);font-weight:300;font-size:15.5px;line-height:1.5}
+  .area-body li::before{content:"";position:absolute;left:0;top:10px;width:7px;height:7px;background:var(--accent);border-radius:1px}
+  .area-body li b{color:var(--tx);font-weight:500}
+  @media(max-width:820px){.area{grid-template-columns:1fr;gap:26px;padding:48px 0}.area:nth-child(even) .area-fig{order:0}}
+
+  /* ---- asset gallery ---- */
+  .assets-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:16px;margin-top:40px}
+  .assets-grid .figure:first-child{grid-row:span 1}
+  @media(max-width:820px){.assets-grid{grid-template-columns:1fr 1fr}.assets-grid .figure:first-child{grid-column:span 2}}
+
+  /* ---- gaps ---- */
+  .gaps{background:var(--bg)}
+  .gaps .sec-head h2{}
+  .gap-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);margin-top:46px}
+  .gap{background:var(--bg);padding:30px 28px}
+  .gap .gh{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  .gap .gh .pri{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:2px;border:1px solid var(--line)}
+  .gap .gh .pri.now{color:var(--accent);border-color:rgba(232,162,58,.45)}
+  .gap .gh .pri.next{color:var(--tx-dim)}
+  .gap .gh .pri.watch{color:var(--tx-faint)}
+  .gap h4{font-size:18px;font-weight:600;letter-spacing:-0.01em}
+  .gap p{color:var(--tx-dim);font-weight:300;font-size:14.5px;margin-top:8px;line-height:1.55}
+  .gap ul{list-style:none;margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .gap li{position:relative;padding-left:18px;font-size:14px;color:var(--tx-dim);font-weight:300}
+  .gap li::before{content:"→";position:absolute;left:0;color:var(--accent);font-family:var(--mono);font-size:12px}
+  @media(max-width:680px){.gap-grid{grid-template-columns:1fr}}
+
+  /* verified-live strip */
+  .verified{margin-top:44px;border:1px solid rgba(232,162,58,.28);border-radius:3px;background:linear-gradient(180deg,rgba(232,162,58,0.05),rgba(232,162,58,0.01));padding:30px 30px 26px}
+  .verified .vh{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+  .verified .vh::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px 1px rgba(232,162,58,.6)}
+  .vlist{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:13px 36px}
+  .vlist li{position:relative;padding-left:26px;font-size:15px;color:var(--tx);font-weight:300;line-height:1.4}
+  .vlist li::before{content:"✓";position:absolute;left:0;top:0;color:var(--accent);font-weight:600;font-size:14px}
+  .vlist li b{font-weight:500}
+  @media(max-width:680px){.vlist{grid-template-columns:1fr}}
+  .subhead{margin:80px 0 0;font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx-dim)}
+
+  /* ---- pull quote / context ---- */
+  .context{border-top:1px solid var(--line);background:var(--bg-1)}
+  .context .wrap{padding-top:84px;padding-bottom:84px}
+  .context blockquote{font-size:clamp(22px,3.4vw,34px);font-weight:300;line-height:1.32;letter-spacing:-0.01em;max-width:24ch}
+  .context blockquote b{font-weight:600}
+  .context .src{font-family:var(--mono);font-size:12px;color:var(--tx-faint);letter-spacing:.1em;text-transform:uppercase;margin-top:24px}
+
+  /* ---- footer ---- */
+  footer{border-top:1px solid var(--line);padding:64px 0 80px;background:var(--bg)}
+  .foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:32px;align-items:flex-end}
+  .foot .big{font-size:clamp(28px,4vw,44px);font-weight:600;letter-spacing:-0.02em;max-width:18ch}
+  .foot .links{display:flex;flex-direction:column;gap:10px}
+  .foot .links a{font-family:var(--mono);font-size:13px;letter-spacing:.04em;color:var(--tx-dim);transition:color .2s}
+  .foot .links a:hover{color:var(--accent)}
+  .foot .links a .ar{color:var(--accent)}
+  .colophon{margin-top:54px;padding-top:24px;border-top:1px solid var(--line-soft);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tx-faint);display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px}
+
+  .accent-rule{width:46px;height:3px;background:var(--accent);margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="mark"><span class="dot"></span> Space&nbsp;Rising <span style="color:var(--tx-faint);font-weight:400">/ Space&nbsp;OS</span></div>
+  <div class="tag">Field Dispatch · 06.05.26</div>
+</div>
+
+<!-- ======================= HERO ======================= -->
+<section class="hero">
+  <div class="hero-bg"><img src="assets/hero-earth.jpg" alt="Earth from orbit, warm sunrise on the limb"></div>
+  <div class="hero-inner">
+    <div class="wrap">
+      <div class="eyebrow">Field Dispatch &nbsp;·&nbsp; Week of June 5, 2026</div>
+      <h1>A week in&nbsp;orbit<span class="period">.</span></h1>
+      <p class="lede">In seven days Space Rising's public face went from a working prototype to a live platform of record. The marketing site, the Space&nbsp;OS directory, membership, signup, payments and a motion layer all shipped — and the new look went live as the default at spacerising.org. Here's everything, in detail, and an honest map of what's still ahead.</p>
+      <div class="hero-meta">
+        <div class="mi"><span class="k">Reporting period</span><span class="v">May 29 – June 5, 2026</span></div>
+        <div class="mi"><span class="k">Surface</span><span class="v">spacerising.org — site + Space&nbsp;OS</span></div>
+        <div class="mi"><span class="k">Status</span><span class="v">V2 live · production default</span></div>
+        <div class="mi"><span class="k">Prepared for</span><span class="v">Taryn, Tim &amp; the Space Rising team</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= STAT BAND ======================= -->
+<section class="stats">
+  <div class="wrap" style="padding:0">
+    <div class="grid">
+      <div class="stat"><div class="num" data-to="79"><span class="pre"></span>0</div><div class="bar"></div><div class="lab">Code changes shipped<br>this week</div></div>
+      <div class="stat"><div class="num" data-to="10">0</div><div class="bar"></div><div class="lab">Build rounds<br>R1 → R10</div></div>
+      <div class="stat"><div class="num" data-to="59">0</div><div class="bar"></div><div class="lab">Companies live<br>in the directory</div></div>
+      <div class="stat"><div class="num" data-to="8">0</div><div class="bar"></div><div class="lab">Marketing pages<br>rebuilt</div></div>
+      <div class="stat"><div class="num" data-to="6">0</div><div class="bar"></div><div class="lab">Directory sub-pages<br>jobs · events · reports · more</div></div>
+      <div class="stat"><div class="num" data-to="178">0</div><div class="bar"></div><div class="lab">Deals flowing into<br>the Deal Bank</div></div>
+      <div class="stat"><div class="num" data-to="12">0</div><div class="bar"></div><div class="lab">Original hero images<br>generated for the brand</div></div>
+      <div class="stat"><div class="num"><span class="pre">$</span><span data-to="27">0</span></div><div class="bar"></div><div class="lab">Total AI generation<br>spend for the week</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= THE HEADLINE ======================= -->
+<section class="sec headline">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="accent-rule"></div>
+      <div class="eyebrow">The headline</div>
+      <h2>V2 went live<span class="period">.</span></h2>
+      <p class="lede">The whole public surface moved from the old look to the new National Geographic–style editorial design — and we flipped it on as the default. Deep-ink ground, warm bone text, a single amber accent, real photography in every zone. spacerising.org now looks like the platform of record for the space industry, not another blue-link directory.</p>
+    </div>
+    <div class="two rv" style="margin-top:38px">
+      <div class="figure">
+        <img src="assets/live-home.jpg" alt="Space Rising marketing home, live on production">
+        <div class="cap"><span>spacerising.org — home</span><span class="badge">LIVE</span></div>
+      </div>
+      <div class="figure">
+        <img src="assets/live-directory.jpg" alt="Space OS directory, live on production">
+        <div class="cap"><span>Space OS — directory</span><span class="badge">LIVE</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= THE WEEK, ROUND BY ROUND ======================= -->
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="accent-rule"></div>
+      <div class="eyebrow">The build, step by step</div>
+      <h2>How the week unfolded<span class="period">.</span></h2>
+      <p class="lede">Ten rounds, each one shippable on its own and verified live before the next began. Nothing was rebuilt in the dark — the old site stayed running the entire time as a safety net until the new one was ready to take over.</p>
+    </div>
+
+    <div class="timeline">
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R1</div><div class="rdate">May 30</div></div>
+        <div class="body">
+          <h3>A clean copy of everything</h3>
+          <p>Both the marketing site and the directory were cloned, pixel-for-pixel, onto a new set of "V2" pages. Zero visual change on purpose — this gave us a complete second copy to rebuild on while the live site kept serving visitors untouched. The safety net for the whole week.</p>
+          <div class="chips"><span class="chip">Marketing site</span><span class="chip">Space OS</span><span class="chip">Zero-risk rebuild</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R2</div><div class="rdate">May 30</div></div>
+        <div class="body">
+          <h3>The brand system, locked</h3>
+          <p>The new look's foundation: a single typeface (Space Grotesk) for headlines and body, a warmer near-black background, bone-colored text, and one disciplined amber accent — no second color anywhere. The "period treatment" on headings ("Companies." "Reports.") became a signature. This is the editorial DNA every page now inherits.</p>
+          <div class="chips"><span class="chip">Typography</span><span class="chip">Color system</span><span class="chip">Amber accent</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R3</div><div class="rdate">May 30</div></div>
+        <div class="body">
+          <h3>An original photography library</h3>
+          <p>Twelve custom hero images generated to a locked house style — Earth from orbit, the sun's corona, rockets at ascent, asteroid fields, starfields. Deep cool ground, one warm key light, photographic grain, no cheesy glow or lens flare. Because the subject of the space industry <em>is</em> planets and rockets, the editorial look is earned, not borrowed. Total cost: about $1.50.</p>
+          <div class="chips"><span class="chip">12 hero images</span><span class="chip">House style</span><span class="chip">~$1.48</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R4</div><div class="rdate">May 30</div></div>
+        <div class="body">
+          <h3>The directory grew up</h3>
+          <p>The company list was rebuilt as a clean, single-row directory with an Earth-from-orbit hero, and we added <b>instant live search</b> — type "Phoenix," "Tucson," or "ITAR" and the list filters as you go, matching on name, city, state, sector and certifications all at once. The old "loading…" search delay is gone. This is the moment the directory started feeling like a real tool.</p>
+          <div class="chips"><span class="chip">List view</span><span class="chip">Live fuzzy search</span><span class="chip">49 companies</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R5</div><div class="rdate">May 30–31</div></div>
+        <div class="body">
+          <h3>The whole product, built out</h3>
+          <p>The biggest round of the week. Jobs, Events, Reports, Marketplace and the Deal Bank all shipped as full pages sharing one navigation and one visual language. A real membership page landed with tier cards and pricing. A full-screen, step-by-step signup flow went in — five steps for free members, eight for premium — ending on a "Welcome to the room" moment. Company profile pages got their own detailed template. And the payment flow was wired end-to-end through Stripe.</p>
+          <div class="chips"><span class="chip">6 sub-pages</span><span class="chip">Membership</span><span class="chip">Signup flow</span><span class="chip">Company profiles</span><span class="chip">Stripe checkout</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R6</div><div class="rdate">May 31</div></div>
+        <div class="body">
+          <h3>The marketing site, rebuilt</h3>
+          <p>All eight marketing pages — About, Space&nbsp;OS, Arizona, Space Congress, Partnerships, Events, Media and Sign Up — rebuilt in the new editorial style with proper navigation between them and a footer call-to-action that pulls visitors into the directory. Leadership grids, partner lists, the Areas-of-Interest signup chips — all reworked to feel like one publication.</p>
+          <div class="chips"><span class="chip">8 marketing pages</span><span class="chip">Footer promo</span><span class="chip">Live content</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R7</div><div class="rdate">May 31</div></div>
+        <div class="body">
+          <h3>The page came alive</h3>
+          <p>A motion layer for the home page: a generated <b>Earth-from-orbit video</b> drifting behind the hero, tied to scroll so it moves with you — with a still-image fallback for anyone who prefers reduced motion. Plus the editorial touches that make it feel considered: numbers that count up as they scroll into view, content that fades in with a gentle stagger, cards that lift on hover. Restrained on purpose — authority, not fireworks.</p>
+          <div class="chips"><span class="chip">Video hero</span><span class="chip">Scroll motion</span><span class="chip">Count-up stats</span><span class="chip">Reduced-motion safe</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R10</div><div class="rdate">May 31</div></div>
+        <div class="body">
+          <h3>The switch</h3>
+          <p>The new design was promoted to the default. Visitors hitting spacerising.org now land on the new site and the new Space&nbsp;OS directory automatically. The old version was kept archived for instant rollback and so existing links never break. This is the moment the week's work became the real, public Space Rising.</p>
+          <div class="chips"><span class="chip live">Live · production default</span><span class="chip">Rollback ready</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">R10b</div><div class="rdate">May 31</div></div>
+        <div class="body">
+          <h3>Tightening the bolts</h3>
+          <p>The post-launch sweep: a handful of links still pointing at the old pages were fixed, the Space&nbsp;OS tiles (Companies / Jobs / Events / Resources) were wired to actually go somewhere, and the Media and Events lists were connected to live, up-to-date content with working outbound links.</p>
+          <div class="chips"><span class="chip">Link audit</span><span class="chip">Tiles wired</span><span class="chip">Live content</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">Jun 2</div><div class="rdate">Mid-week</div></div>
+        <div class="body">
+          <h3>Pricing, sign-in and the back office</h3>
+          <p>With the new site live, the week turned to finishing the rest. <b>Pricing was finalized</b> to a company-size model — small, mid and large, each with an annual or monthly option. The <b>sign-in page was rebuilt</b> in the new editorial style. The <b>admin panel and member portal were reskinned</b> to match the front door — same dark ground, Space&nbsp;Grotesk and amber wordmark — so the back office no longer looks like a different product. Articles and Grants pages were added, and the post-submission forms across Jobs, Events and Marketplace were wired up.</p>
+          <div class="chips"><span class="chip live">Pricing live</span><span class="chip">V2 sign-in</span><span class="chip">Admin + portal reskinned</span><span class="chip">Articles · Grants</span></div>
+        </div>
+      </div>
+
+      <div class="round rv">
+        <div class="meta"><div class="rcode">Jun 5</div><div class="rdate">This week</div></div>
+        <div class="body">
+          <h3>The directory data fix</h3>
+          <p>A real bug, found and fixed: newly joined free companies weren't showing up in the directory because they were being saved without a proper home tag, and approving them never set it either. Both paths were corrected and a backfill recovered <b>nine companies that had been stranded</b> — the live directory went from 50 to 59. Members can now also edit their own company information.</p>
+          <div class="chips"><span class="chip">Signup bug fixed</span><span class="chip">9 companies recovered</span><span class="chip">59 live</span><span class="chip">Member self-edit</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CONTEXT QUOTE ======================= -->
+<section class="context">
+  <div class="wrap rv">
+    <div class="eyebrow dim" style="margin-bottom:24px">Why the look</div>
+    <blockquote>Every other sourcing directory defaults to a white page and blue links. A dark editorial publication in this category is the <b>wedge</b> — it signals "platform of record" before anyone reads a word<span class="period">.</span></blockquote>
+    <div class="src">— Direction note, Nat Geo reference read · May 30</div>
+  </div>
+</section>
+
+<!-- ======================= BY AREA ======================= -->
+<section class="areas">
+  <div class="wrap">
+    <div class="sec-head rv" style="padding-top:88px">
+      <div class="accent-rule"></div>
+      <div class="eyebrow">A closer look</div>
+      <h2>What shipped, by area<span class="period">.</span></h2>
+    </div>
+
+    <!-- Marketing -->
+    <div class="area rv">
+      <div class="area-fig figure">
+        <img src="assets/about.jpg" alt="Space Rising About page in the new editorial style">
+        <div class="cap"><span>spacerising.org/about</span><span class="badge">LIVE</span></div>
+      </div>
+      <div class="area-body">
+        <span class="eyebrow">The marketing site</span>
+        <h3>One publication, eight pages</h3>
+        <ul>
+          <li><b>About, Space OS, Arizona, Space Congress, Partnerships, Events, Media, Sign Up</b> — all rebuilt in the editorial style with consistent navigation.</li>
+          <li><b>Forms now do something.</b> The subscribe form and event/media submissions are wired to real backends — the goal being subscribers and signups, not a dead contact box.</li>
+          <li><b>Footer call-to-action</b> pulls every visitor toward the directory: "Browse the directory →".</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Directory -->
+    <div class="area rv">
+      <div class="area-fig figure">
+        <img src="assets/live-directory.jpg" alt="Space OS directory list view">
+        <div class="cap"><span>Space OS — directory + search</span><span class="badge">LIVE</span></div>
+      </div>
+      <div class="area-body">
+        <span class="eyebrow">The Space OS directory</span>
+        <h3>A real tool, not a list</h3>
+        <ul>
+          <li><b>Live search across everything</b> — name, description, city, state, sector, sub-sector and certifications, all at once, filtering as you type.</li>
+          <li><b>Jobs, Events, Reports, Marketplace, Deal Bank</b> all ship as full pages with the same look and feel. The Deal Bank pulls 178 real completed deals.</li>
+          <li><b>Company profile pages</b> with an about section, certifications, related listings, contact, and a clean "not found" state.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Membership -->
+    <div class="area rv">
+      <div class="area-fig figure">
+        <img src="assets/membership.jpg" alt="Membership landing page">
+        <div class="cap"><span>Space OS — membership</span><span class="badge">LIVE</span></div>
+      </div>
+      <div class="area-body">
+        <span class="eyebrow">Membership &amp; pricing</span>
+        <h3>Free and premium, both feel earned</h3>
+        <ul>
+          <li><b>Two equal-weight tiers</b> — free and premium — with five benefit strips, a feature comparison table and a final call-to-action.</li>
+          <li><b>Pricing finalized this week</b> to an employee-count model: small, mid and large companies, each with annual or monthly billing.</li>
+          <li><b>Premium feel held across both doors</b> — joining free never feels like the consolation prize.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Signup + payments -->
+    <div class="area rv">
+      <div class="area-fig figure">
+        <img src="assets/welcome.jpg" alt="Signup welcome screen">
+        <div class="cap"><span>Signup — welcome moment</span><span class="badge">LIVE</span></div>
+      </div>
+      <div class="area-body">
+        <span class="eyebrow">Signup &amp; payments</span>
+        <h3>A guided, full-screen join</h3>
+        <ul>
+          <li><b>Step-by-step signup</b> — five steps for free, eight for premium — with clean line inputs and a progress counter, ending on "Welcome to the room, [name]."</li>
+          <li><b>Stripe checkout is live</b> — keys configured, real hosted checkout for every paid plan, with a webhook that flips a company to premium on payment. Card details never touch our servers.</li>
+          <li>Annual and monthly billing for small, mid and large companies, all wired.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Admin -->
+    <div class="area rv">
+      <div class="area-fig figure">
+        <img src="assets/admin.jpg" alt="Admin panel in the V2 style">
+        <div class="cap"><span>Admin + member portal</span><span class="badge">V2 RESKIN</span></div>
+      </div>
+      <div class="area-body">
+        <span class="eyebrow">Behind the scenes</span>
+        <h3>Admin &amp; member portal, reskinned</h3>
+        <ul>
+          <li><b>The admin panel and member portal</b> got the new look so the back office matches the front door.</li>
+          <li><b>Approve, edit, delete and bulk-move</b> companies — plus a fix so newly approved members actually appear in the directory.</li>
+          <li>Articles and Grants pages rebuilt; post-submission forms across Jobs, Events and Marketplace wired up.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Motion -->
+    <div class="area rv">
+      <div class="area-fig figure">
+        <img src="assets/veo3.jpg" alt="Veo3 generated Earth video hero, live">
+        <div class="cap"><span>Home — generated video hero</span><span class="badge">LIVE</span></div>
+      </div>
+      <div class="area-body">
+        <span class="eyebrow">The motion layer</span>
+        <h3>Earth, drifting behind the headline</h3>
+        <ul>
+          <li><b>A generated Earth-from-orbit video</b> behind the home hero, tied to scroll — four iterations to get the composition right.</li>
+          <li><b>Accessible by default</b> — anyone with reduced-motion settings gets a crisp still image instead.</li>
+          <li>This is the first of the motion layer; the rest of the surfaces are queued (see what's ahead).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= ASSET LIBRARY ======================= -->
+<section class="sec">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="accent-rule"></div>
+      <div class="eyebrow">Made for Space Rising</div>
+      <h2>An original image library<span class="period">.</span></h2>
+      <p class="lede">No stock photos. Every hero on the site comes from a custom-generated library built to one house style — so the look is unmistakably Space Rising and nobody else.</p>
+    </div>
+    <div class="assets-grid rv">
+      <div class="figure"><img src="assets/hero-earth.jpg" alt="Earth from orbit"><div class="cap"><span>Earth from orbit</span><span class="badge">HERO</span></div></div>
+      <div class="figure"><img src="assets/hero-sun.jpg" alt="Sun corona"><div class="cap"><span>Sun corona</span></div></div>
+      <div class="figure"><img src="assets/hero-rocket.jpg" alt="Orbital rocket"><div class="cap"><span>Orbital ascent</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= GAPS ======================= -->
+<section class="sec gaps">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <div class="accent-rule"></div>
+      <div class="eyebrow">A true status check</div>
+      <h2>Where things actually stand<span class="period">.</span></h2>
+      <p class="lede">This was checked against the live site and the real code before it was written — not from memory. The short version: most of what was unfinished a week ago is now done and live. Here is the verified state, and the genuinely open items, separated honestly.</p>
+    </div>
+
+    <div class="verified rv">
+      <div class="vh">Live and working — verified today</div>
+      <ul class="vlist">
+        <li><b>The new site &amp; Space&nbsp;OS directory</b> — live as the default at spacerising.org</li>
+        <li><b>Stripe checkout</b> — live and configured; real hosted payment + webhook for every paid plan</li>
+        <li><b>Sign-in</b> — on the new design</li>
+        <li><b>Admin &amp; member portal</b> — on the new design</li>
+        <li><b>Company profiles</b> — live, detailed, on-brand</li>
+        <li><b>Live directory search</b> — instant filtering across the list</li>
+        <li><b>Pricing</b> — small / mid / large, annual or monthly, all wired</li>
+        <li><b>Member self-service</b> — companies can edit their own info</li>
+      </ul>
+    </div>
+
+    <div class="subhead rv">What's genuinely left — small, and honest about it</div>
+
+    <div class="gap-grid rv">
+
+      <div class="gap">
+        <div class="gh"><span class="pri now">Confirm</span></div>
+        <h4>One real payment test</h4>
+        <p>The Stripe keys are set and the checkout flow is wired end to end. Before pushing premium hard, it's worth running a single real join&nbsp;→&nbsp;pay&nbsp;→&nbsp;upgraded transaction to confirm it's in live mode (not test) and the webhook flips the account as expected.</p>
+        <ul>
+          <li>One end-to-end test transaction</li>
+          <li>Confirm live vs. test mode</li>
+        </ul>
+      </div>
+
+      <div class="gap">
+        <div class="gh"><span class="pri now">Fix</span></div>
+        <h4>Two small data-display bugs</h4>
+        <p>Caught while walking the live site: a company asset (a logo) returns a "not found" in the background on profile pages, and each row in the directory list shows a stray "0" where a count belongs. Both are cosmetic and quick — no impact on the data itself.</p>
+        <ul>
+          <li>Missing logo asset on profiles</li>
+          <li>Stray "0" in directory rows</li>
+        </ul>
+      </div>
+
+      <div class="gap">
+        <div class="gh"><span class="pri next">Roadmap</span></div>
+        <h4>Motion beyond the home page</h4>
+        <p>The generated video hero lives on the home page today; the directory and the eight marketing pages still use beautiful still images. If we want it, the same restrained motion can extend across those surfaces — an enhancement, not a gap.</p>
+        <ul>
+          <li>Optional video heroes on more pages</li>
+          <li>Subtle entrance animations</li>
+        </ul>
+      </div>
+
+      <div class="gap">
+        <div class="gh"><span class="pri next">Roadmap</span></div>
+        <h4>Deal Bank depth &amp; legacy tidy-up</h4>
+        <p>The Deal Bank is live with real deals; its richer data views are a later phase on the platform side. And one old-style member screen (a legacy portal route) still exists as a backward-compatibility fallback and can be retired.</p>
+        <ul>
+          <li>Deal Bank deeper views (platform side)</li>
+          <li>Retire the last legacy portal screen</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ======================= FOOTER ======================= -->
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div class="big">From a prototype to a platform — in one week<span class="period">.</span></div>
+      <div class="links">
+        <a href="https://spacerising.org" target="_blank" rel="noopener">spacerising.org <span class="ar">↗</span></a>
+        <a href="https://spacerising.org/space-rising-v2" target="_blank" rel="noopener">Space OS directory <span class="ar">↗</span></a>
+        <a href="https://spacerising.org/space-rising-v2/membership" target="_blank" rel="noopener">Membership <span class="ar">↗</span></a>
+      </div>
+    </div>
+    <div class="colophon">
+      <span>Space Rising · Space OS — Field Dispatch</span>
+      <span>Reporting period May 29 – June 5, 2026</span>
+      <span>Prepared by Ahead of Market</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // reveal on scroll
+  const rvEls = Array.from(document.querySelectorAll('.rv'));
+  const revealAll = ()=>rvEls.forEach(el=>el.classList.add('in'));
+  if('IntersectionObserver' in window){
+    const rio = new IntersectionObserver((es)=>{
+      es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); rio.unobserve(e.target);} });
+    },{threshold:0.08, rootMargin:'0px 0px -6% 0px'});
+    rvEls.forEach(el=>rio.observe(el));
+    // safety net: if anything is still hidden after 4s (no scroll, odd viewport), show it
+    setTimeout(()=>rvEls.forEach(el=>{ const r=el.getBoundingClientRect(); if(r.top < window.innerHeight*1.2) el.classList.add('in'); }),1200);
+  } else {
+    revealAll();
+  }
+  window.addEventListener('beforeprint', revealAll);
+
+  // count-up stats + bar
+  function countUp(el){
+    const to = parseInt(el.getAttribute('data-to'),10);
+    const dur = 1300, t0 = performance.now();
+    function step(now){
+      const p = Math.min(1,(now-t0)/dur);
+      const eased = 1-Math.pow(1-p,3);
+      el.textContent = Math.round(eased*to).toLocaleString();
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  const sio = new IntersectionObserver((es)=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        e.target.querySelectorAll('[data-to]').forEach(countUp);
+        sio.unobserve(e.target);
+      }
+    });
+  },{threshold:0.4});
+  document.querySelectorAll('.stat').forEach(s=>sio.observe(s));
+</script>
+</body>
+</html>
