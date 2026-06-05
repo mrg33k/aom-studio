@@ -64,7 +64,12 @@ const BADGE_FRAME = '/mission-water/chapter-1/hud/hud_badge_frame.png' + ASSET_V
  * HUD also accepts:
  *   resources  {Object|null}  investigationResources from game state
  */
-export default function HUD({ phase, hud, onChoose, resources, playerName }) {
+/**
+ * openKitRef — optional React ref; if provided, HUD wires openKitRef.current
+ *   to a function that opens the Mission Kit overlay. Allows HubScreen to
+ *   trigger the kit from outside the HUD component tree (R8).
+ */
+export default function HUD({ phase, hud, onChoose, resources, playerName, openKitRef }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const [hoverIdx, setHoverIdx] = useState(-1);
   const [kitOpen, setKitOpen] = useState(false);
@@ -73,6 +78,16 @@ export default function HUD({ phase, hud, onChoose, resources, playerName }) {
 
   // Active resources: prefer hud-injected, fall back to prop
   const activeResources = (hud && hud.investigationResources) || resources || null;
+
+  // R8 — expose openKit to parent via ref (for HubScreen "Review Mission Kit" action)
+  useEffect(() => {
+    if (openKitRef) {
+      openKitRef.current = () => setKitOpen(true);
+    }
+    return () => {
+      if (openKitRef) openKitRef.current = null;
+    };
+  }, [openKitRef]);
 
   useEffect(() => {
     setFocusIdx(0);

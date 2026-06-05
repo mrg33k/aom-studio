@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import phaseGraph from './mission-water-game/data/phases.json';
 import rolesData from './mission-water-game/data/roles.json';
 import Canvas from './mission-water-game/engine/Canvas.jsx';
 import HUD from './mission-water-game/engine/HUD.jsx';
+import HubScreen from './mission-water-game/engine/HubScreen.jsx';
 import RoleSelect from './mission-water-game/engine/RoleSelect.jsx';
 import BudgetPlanning from './mission-water-game/engine/BudgetPlanning.jsx';
 import WelcomeScreen from './mission-water-game/engine/WelcomeScreen.jsx';
@@ -14,6 +15,70 @@ import {
   applyChoice,
   resolveHud,
 } from './mission-water-game/engine/PhaseManager.js';
+
+// ─── Hub logic helpers ────────────────────────────────────────────────────────
+
+/**
+ * Returns true if the hub should appear before entering nextPhaseId.
+ * Hub shows only between investigation phases:
+ *   - Before arrive phases (from region select)
+ *   - Before findings phases (from arrive)
+ * Not before council reveal, not before ch1_intro, not before ch2+.
+ */
+const HUB_TRIGGER_PHASES = new Set([
+  'ch1_phoenix_arrive',
+  'ch1_mumbai_arrive',
+  'ch1_sao_paulo_arrive',
+  'ch1_phoenix_findings',
+  'ch1_mumbai_findings',
+  'ch1_sao_paulo_findings',
+]);
+
+function shouldShowHub(nextPhaseId) {
+  return HUB_TRIGGER_PHASES.has(nextPhaseId);
+}
+
+const REGION_LABELS = {
+  ch1_phoenix_arrive: 'Phoenix',
+  ch1_mumbai_arrive: 'Mumbai',
+  ch1_sao_paulo_arrive: 'São Paulo',
+  ch1_phoenix_findings: 'Phoenix',
+  ch1_mumbai_findings: 'Mumbai',
+  ch1_sao_paulo_findings: 'São Paulo',
+};
+
+/**
+ * Build a human-readable context string for the hub header.
+ * E.g. "Phoenix investigation complete. 2 regions remain."
+ */
+function buildHubContext(currentPhaseId, nextPhaseId, history) {
+  const region = REGION_LABELS[nextPhaseId] || '';
+  // Count unique arrive phases in history to determine how many are done
+  const arriveIds = ['ch1_phoenix_arrive', 'ch1_mumbai_arrive', 'ch1_sao_paulo_arrive'];
+  const completedArrive = arriveIds.filter((id) => history.includes(id)).length;
+  const remaining = 3 - completedArrive;
+
+  if (nextPhaseId.endsWith('_arrive')) {
+    // About to arrive at a region
+    if (completedArrive === 0) {
+      return `Heading to ${region}. Investigation begins.`;
+    }
+    return `Heading to ${region}. ${remaining} region${remaining === 1 ? '' : 's'} remaining.`;
+  }
+  if (nextPhaseId.endsWith('_findings')) {
+    // About to review findings
+    return `${region} data collected. Reviewing findings.`;
+  }
+  return 'Investigation checkpoint.';
+}
+
+/**
+ * Count how many investigation regions are fully visited (arrive phase done).
+ */
+function countRegionsCompleted(history) {
+  const arriveIds = ['ch1_phoenix_arrive', 'ch1_mumbai_arrive', 'ch1_sao_paulo_arrive'];
+  return arriveIds.filter((id) => history.includes(id)).length;
+}
 
 /**
  * MissionWaterGame — R1 Pixel Engine Scaffold.
@@ -45,25 +110,74 @@ export default function MissionWaterGame() {
 
   const [runState, setRunState] = useState(() => initRunState(phaseGraph));
 
+  // R8 — Between-phase action hub
+  const [showHub, setShowHub] = useState(false);
+  const [pendingChoiceId, setPendingChoiceId] = useState(null);
+  const [hubNextPhaseId, setHubNextPhaseId] = useState(null);
+  // Ref callback so HubScreen can open the MissionKit inside HUD
+  const openKitRef = useRef(null);
+
   const phase = useMemo(
     () => getCurrentPhase(phaseGraph, runState),
     [runState.phase_id],
   );
   const hud = useMemo(() => resolveHud(phase, runState), [phase, runState]);
 
+  // R8 — Intercept choices and gate on hub between investigation phases
   const onChoose = (choiceId) => {
+    // Peek at where this choice leads before committing
+    let nextPhaseId = null;
+    try {
+      const choices = phase?.choices || [];
+      const chosen = choices.find((c) => c.id === choiceId);
+      if (chosen) nextPhaseId = chosen.next_phase_id || chosen.next || null;
+    } catch (_) {
+      // non-critical peek
+    }
+
+    if (nextPhaseId && shouldShowHub(nextPhaseId)) {
+      // Gate: show hub before advancing
+      setPendingChoiceId(choiceId);
+      setHubNextPhaseId(nextPhaseId);
+      setShowHub(true);
+      return;
+    }
+
+    // No hub — apply directly
     setRunState((prev) => {
       try {
         return applyChoice(phaseGraph, prev, choiceId);
       } catch (err) {
-        // Defensive: if data is malformed we don't want to wedge the game.
-        // Log once and stay on the current phase.
         if (typeof console !== 'undefined' && console.warn) {
           console.warn('[MissionWaterGame] choice failed:', err.message);
         }
         return prev;
       }
     });
+  };
+
+  // R8 — Called when player hits "Continue Investigation" in the hub
+  const onHubContinue = () => {
+    setShowHub(false);
+    const choiceId = pendingChoiceId;
+    setPendingChoiceId(null);
+    setHubNextPhaseId(null);
+    if (choiceId == null) return;
+    setRunState((prev) => {
+      try {
+        return applyChoice(phaseGraph, prev, choiceId);
+      } catch (err) {
+        if (typeof console !== 'undefined' && console.warn) {
+          console.warn('[MissionWaterGame] hub continue failed:', err.message);
+        }
+        return prev;
+      }
+    });
+  };
+
+  // R8 — Called when player opens Mission Kit from hub
+  const onHubOpenKit = () => {
+    if (openKitRef.current) openKitRef.current();
   };
 
   // Jump to the intro phase of a chapter. Resets run state so discoveries
@@ -129,12 +243,36 @@ export default function MissionWaterGame() {
     );
   }
 
+  // R8 — Hub gate: show between-phase action hub
+  if (showHub) {
+    const regionsCompleted = countRegionsCompleted(runState.history || []);
+    const hubContext = buildHubContext(runState.phase_id, hubNextPhaseId, runState.history || []);
+    return (
+      <HubScreen
+        phaseContext={hubContext}
+        currentResources={investigationResources}
+        regionsCompleted={regionsCompleted}
+        regionsTotal={3}
+        completedPhaseIds={runState.history || []}
+        onContinue={onHubContinue}
+        onOpenKit={onHubOpenKit}
+      />
+    );
+  }
+
   return (
     <div style={styles.root}>
       <main style={styles.gamePanel}>
         <div style={styles.canvasFrame}>
           <Canvas phase={phase} />
-          <HUD phase={phase} hud={hud} onChoose={onChoose} resources={investigationResources} playerName={playerName} />
+          <HUD
+            phase={phase}
+            hud={hud}
+            onChoose={onChoose}
+            resources={investigationResources}
+            playerName={playerName}
+            openKitRef={openKitRef}
+          />
         </div>
       </main>
       <aside style={styles.sidebar}>
