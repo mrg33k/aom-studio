@@ -321,8 +321,10 @@ export default function WelcomeScreen({ onStart }) {
         .wg-active-card {
           animation: wg-card-pulse 2s ease-in-out infinite;
         }
+        @media (max-width: 900px) {
+          .wg-scroll { align-items: flex-start !important; }
+        }
         @media (max-width: 600px) {
-          .wg-root { overflow-y: auto !important; align-items: flex-start !important; }
           .wg-content { padding: 20px 14px !important; gap: 20px !important; }
           .wg-bg-img { background-position: center center !important; }
           .wg-main-row {
@@ -390,6 +392,9 @@ export default function WelcomeScreen({ onStart }) {
         background: 'linear-gradient(to bottom, rgba(7,11,20,0.6) 0%, transparent 100%)',
         pointerEvents: 'none',
       }} />
+
+      {/* ── Scrollable content layer (transparent — bg layers show through) ── */}
+      <div className="wg-scroll" style={styles.scrollContainer}>
 
       {/* ── Main content area ─────────────────────────────────────────── */}
       <div style={styles.content} className="wg-content">
@@ -657,6 +662,8 @@ export default function WelcomeScreen({ onStart }) {
         </div>
 
       </div>
+
+      </div>{/* /wg-scroll */}
     </div>
   );
 }
@@ -671,20 +678,34 @@ const TEXT_SOFT    = '#C8D8F0';
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = {
   root: {
+    // Fixed frame — provides overflow:hidden clipping for background layers.
+    // Does NOT flex-center: that's handled by scrollContainer.
     position: 'fixed',
     inset: 0,
     background: SPACE_DARK,
     overflow: 'hidden',
     fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
     color: '#FFFFFF',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 10,
+  },
+  scrollContainer: {
+    // Transparent overlay that carries the scrollable content.
+    // Sits above all background layers (z-index 2).
+    // overflow-y: auto + -webkit-overflow-scrolling: touch enables momentum
+    // scroll on iPad/iOS Safari.
+    // On desktop (content fits): marginTop/Bottom:auto on content centers it.
+    // On iPad/mobile (content overflows): content starts at top, user scrolls.
+    position: 'absolute',
+    inset: 0,
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    zIndex: 2,
   },
   content: {
     position: 'relative',
-    zIndex: 2,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -692,6 +713,12 @@ const styles = {
     padding: '32px 24px',
     width: '100%',
     maxWidth: 960,
+    boxSizing: 'border-box',
+    // auto margins center the content vertically when the container is taller
+    // than the content. When content overflows, they collapse to 0 and the
+    // scrollContainer's overflow-y:auto handles scrolling.
+    marginTop: 'auto',
+    marginBottom: 'auto',
   },
 };
 
