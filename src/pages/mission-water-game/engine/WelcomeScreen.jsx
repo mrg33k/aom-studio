@@ -199,7 +199,7 @@ function MissionCard({ active, locked, title, icon, subtitle, missionNum, visibl
           : '1px solid rgba(0,229,204,0.18)',
         borderRadius: 4,
         background: locked ? 'rgba(7,11,20,0.6)' : 'rgba(0,18,36,0.92)',
-        opacity: visible ? (locked ? 0.4 : 1) : 0,
+        opacity: visible ? (locked ? 0.6 : 1) : 0,
         transform: visible ? 'translateY(0)' : 'translateY(28px)',
         transition: 'opacity 350ms ease, transform 350ms ease',
         cursor: 'default',
@@ -379,7 +379,7 @@ export default function WelcomeScreen({ onStart }) {
         }
         .wg-blippy-float {
           flex-shrink: 0;
-          width: 160px;
+          width: 180px;
           margin-right: -12px; /* Slight overlap at the panel edge */
           z-index: 2;
           display: flex;
@@ -389,7 +389,7 @@ export default function WelcomeScreen({ onStart }) {
           padding-bottom: 20px;
         }
         .wg-blippy-img {
-          height: 180px;
+          height: 220px;
           width: auto;
           display: block;
           filter: drop-shadow(0 0 16px rgba(0,229,204,0.35));
@@ -455,10 +455,10 @@ export default function WelcomeScreen({ onStart }) {
             max-width: 560px;
           }
           .wg-blippy-float {
-            width: 130px;
+            width: 150px;
           }
           .wg-blippy-img {
-            height: 140px !important;
+            height: 165px !important;
           }
         }
       `}</style>
