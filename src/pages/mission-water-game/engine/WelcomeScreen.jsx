@@ -16,7 +16,7 @@ import React, { useEffect, useRef, useState } from 'react';
  *   onStart — called when player clicks BEGIN MISSION on the active card
  *
  * Mission: conrad-foundation:interactive-game
- * Round: R7b-welcome-engine
+ * Round: R7e — title as own foreground img element (mix-blend-mode:screen over star bg)
  */
 
 // ─── Star canvas background (two layers, slow procedural drift) ───────────────
@@ -394,65 +394,46 @@ export default function WelcomeScreen({ onStart }) {
       {/* ── Main content area ─────────────────────────────────────────── */}
       <div style={styles.content} className="wg-content">
 
-        {/* Title block */}
+        {/* Title block — R7e: title as own foreground element, scales on any viewport */}
         <div style={{
           textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 6,
           opacity: animPhase >= 1 ? 1 : 0,
           transform: animPhase >= 1 ? 'translateY(0)' : 'translateY(-20px)',
           transition: 'opacity 400ms ease, transform 400ms ease',
         }}>
-          {/* Kicker */}
+          {/* Conrad Foundation attribution — own element, always visible, never cropped */}
           <div style={{
             fontFamily: '"Orbitron", monospace',
             fontSize: 11,
             letterSpacing: '0.42em',
             color: CYAN,
             textTransform: 'uppercase',
-            marginBottom: 10,
             textShadow: `0 0 12px rgba(0,229,204,0.5)`,
           }}>
             CONRAD FOUNDATION
           </div>
 
-          {/* SPACE MISSION */}
-          <div style={{
-            fontFamily: '"Orbitron", monospace',
-            fontSize: 'clamp(24px, 3.5vw, 42px)',
-            fontWeight: 700,
-            letterSpacing: '0.28em',
-            color: TEXT_SOFT,
-            textTransform: 'uppercase',
-            lineHeight: 1,
-            marginBottom: 4,
-          }}>
-            SPACE MISSION
-          </div>
-
-          {/* WATER — hero title */}
-          <div style={{
-            fontFamily: '"Orbitron", monospace',
-            fontSize: 'clamp(52px, 9vw, 112px)',
-            fontWeight: 900,
-            letterSpacing: '0.06em',
-            color: CYAN_BRIGHT,
-            textTransform: 'uppercase',
-            lineHeight: 0.9,
-            textShadow: `
-              0 0 40px rgba(0,229,204,0.5),
-              0 0 80px rgba(0,229,204,0.25),
-              0 2px 0 rgba(0,0,0,0.6)
-            `,
-          }}>
-            WATER
-          </div>
-
-          {/* Accent line */}
-          <div style={{
-            width: 80,
-            height: 2,
-            background: `linear-gradient(to right, transparent, ${CYAN}, transparent)`,
-            margin: '16px auto 0',
-          }} />
+          {/* Game title as foreground img — scales cleanly on any viewport.
+              mix-blend-mode:screen makes the dark bg transparent so the glowing
+              title floats over the star-field background. */}
+          <img
+            src="/mission-water/welcome/title_treatment_reference.png"
+            alt="Space Mission: Water"
+            style={{
+              width: 'min(500px, 88vw)',
+              height: 'min(280px, 35vh)',
+              objectFit: 'contain',
+              objectPosition: 'center',
+              display: 'block',
+              mixBlendMode: 'screen',
+              filter: 'brightness(1.05) saturate(1.1)',
+              pointerEvents: 'none',
+            }}
+          />
         </div>
 
         {/* Blippy + mission selector row */}
@@ -642,9 +623,9 @@ export default function WelcomeScreen({ onStart }) {
           </div>
         </div>
 
-        {/* Footer badge */}
+        {/* Footer badge — Conrad Foundation attribution always visible */}
         <div style={{
-          opacity: animPhase >= 3 ? 0.5 : 0,
+          opacity: animPhase >= 3 ? 0.75 : 0,
           transition: 'opacity 400ms ease 600ms',
           display: 'flex',
           alignItems: 'center',
