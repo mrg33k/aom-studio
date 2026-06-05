@@ -1351,7 +1351,7 @@ const styles = {
   // Blippy companion — lower-left, above the debrief card
   blippyRow: {
     position: 'absolute',
-    bottom: 240, // debrief card is ~200-220px tall; sit clearly above it
+    bottom: 360, // debrief card is ~300px tall on mobile; measured from screenshot
     left: 16,
     pointerEvents: 'none',
     zIndex: 20,  // above debriefCard's backdrop-filter stacking context
