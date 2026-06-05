@@ -117,9 +117,14 @@ export default function Canvas({ phase }) {
       cnv.style.width = `${W}px`;
       cnv.style.height = `${H}px`;
       const ctx = cnv.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingEnabled = true; // raster backgrounds want smoothing
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      paint(ctx, W, H, phase, animRef.current.prevPhase, 1);
+      // If the current phase has a loaded background image, show it at full
+      // opacity immediately on resize (don't let imgAlpha silently default to 0).
+      const bgSrc = phase && phase.visuals && phase.visuals.background;
+      const bgImg = bgSrc ? loadImage(bgSrc) : null;
+      const resizeImgAlpha = (bgImg && bgImg.complete && bgImg.naturalWidth > 0) ? 1 : 0;
+      paint(ctx, W, H, phase, animRef.current.prevPhase, 1, resizeImgAlpha);
     };
 
     resize();

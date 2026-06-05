@@ -276,22 +276,22 @@ function MissionCard({ active, locked, title, subtitle, icon, index, visible, on
         <button
           onClick={onStart}
           style={{
-            background: hovered ? CYAN_BRIGHT : CYAN,
-            color: SPACE_DARK,
+            background: hovered ? 'rgba(0,229,204,0.12)' : 'transparent',
+            color: CYAN,
             fontFamily: '"Orbitron", monospace',
             fontSize: 13,
             fontWeight: 900,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
-            border: 'none',
+            border: `2px solid ${CYAN}`,
             borderRadius: 4,
             padding: '14px 20px',
             cursor: 'pointer',
             transition: 'background 120ms ease, transform 80ms ease, box-shadow 120ms ease',
             transform: hovered ? 'scale(1.04)' : 'scale(1)',
             boxShadow: hovered
-              ? `0 0 22px rgba(0,229,204,0.8), 0 0 44px rgba(0,229,204,0.35)`
-              : `0 0 14px rgba(0,229,204,0.5), 0 0 28px rgba(0,229,204,0.2)`,
+              ? `0 0 22px rgba(0,229,204,0.5), 0 0 44px rgba(0,229,204,0.20)`
+              : `0 0 14px rgba(0,229,204,0.25)`,
             marginTop: 8,
             width: '100%',
           }}

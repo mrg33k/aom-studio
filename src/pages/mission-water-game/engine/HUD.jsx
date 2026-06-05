@@ -168,6 +168,18 @@ export default function HUD({ phase, hud, onChoose, resources, playerName, openK
         <FramedAwards ids={hud.discovery_ids} />
       )}
 
+      {/* ── BLIPPY COMPANION — lower-left, per DESIGN.md ───────── */}
+      <div style={styles.blippyRow}>
+        <div style={styles.blippyCircle}>
+          <img
+            src="/mission-water/welcome/blippy_welcome_pose.png"
+            alt="Blippy"
+            style={styles.blippyImg}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+        </div>
+      </div>
+
       {/* ── MISSION DEBRIEF + CHOICES ───────────────────────────── */}
       <div style={styles.bottom}>
         <div style={styles.debriefCard}>
@@ -1334,5 +1346,31 @@ const styles = {
     lineHeight: 1.3,
     maxWidth: 72,
     wordBreak: 'break-word',
+  },
+
+  // Blippy companion — lower-left
+  blippyRow: {
+    position: 'absolute',
+    bottom: 90, // above the bottom debrief card
+    left: 16,
+    pointerEvents: 'none',
+    zIndex: 5,
+  },
+  blippyCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: '50%',
+    border: `2px solid ${CYAN}`,
+    overflow: 'hidden',
+    background: 'rgba(0,229,204,0.06)',
+    boxShadow: `0 0 10px rgba(0,229,204,0.18)`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blippyImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
   },
 };
