@@ -6,6 +6,7 @@ import Canvas from './mission-water-game/engine/Canvas.jsx';
 import HUD from './mission-water-game/engine/HUD.jsx';
 import RoleSelect from './mission-water-game/engine/RoleSelect.jsx';
 import BudgetPlanning from './mission-water-game/engine/BudgetPlanning.jsx';
+import WelcomeScreen from './mission-water-game/engine/WelcomeScreen.jsx';
 import {
   initRunState,
   getCurrentPhase,
@@ -29,6 +30,9 @@ import {
  */
 
 export default function MissionWaterGame() {
+  // R7b — Welcome screen gate: welcome → role select → budget → game
+  const [hasStarted, setHasStarted] = useState(false);
+
   // R6 — Oregon Trail gate: role select → budget planning → game
   const [selectedRole, setSelectedRole] = useState(null);
   const [budgetConfirmed, setBudgetConfirmed] = useState(false);
@@ -76,6 +80,11 @@ export default function MissionWaterGame() {
     document.title = 'Mission Water — Conrad Foundation';
     return () => { document.title = prev; };
   }, []);
+
+  // ── R7b gate: welcome screen ─────────────────────────────────────
+  if (!hasStarted) {
+    return <WelcomeScreen onStart={() => setHasStarted(true)} />;
+  }
 
   // ── R6 gate: role select ─────────────────────────────────────────
   if (!selectedRole) {
