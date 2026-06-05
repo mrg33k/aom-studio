@@ -305,7 +305,7 @@ const styles = {
     gap: 20,
     justifyContent: 'center',
     alignItems: 'stretch',
-    flex: 1,
+    flex: '0 0 auto',
     width: '100%',
     maxWidth: 1100,
     zIndex: 2,
