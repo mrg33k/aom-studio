@@ -396,6 +396,12 @@ export default function WelcomeScreen({ onStart }) {
       {/* ── Scrollable content layer (transparent — bg layers show through) ── */}
       <div className="wg-scroll" style={styles.scrollContainer}>
 
+      {/* flex spacer — grows to fill empty space when content fits the viewport,
+          centering the content. Collapses to 0 when content overflows (no auto-
+          margin flexbox bug). flex-shrink:0 prevents browser from computing a
+          negative margin that pushes content above scroll origin. */}
+      <div style={{ flex: '1 0 0' }} />
+
       {/* ── Main content area ─────────────────────────────────────────── */}
       <div style={styles.content} className="wg-content">
 
@@ -663,6 +669,10 @@ export default function WelcomeScreen({ onStart }) {
 
       </div>
 
+      {/* flex spacer — mirrors the top spacer so content stays centred when
+          there is room to spare. Collapses to 0 when content overflows. */}
+      <div style={{ flex: '1 0 0' }} />
+
       </div>{/* /wg-scroll */}
     </div>
   );
@@ -693,8 +703,10 @@ const styles = {
     // Sits above all background layers (z-index 2).
     // overflow-y: auto + -webkit-overflow-scrolling: touch enables momentum
     // scroll on iPad/iOS Safari.
-    // On desktop (content fits): marginTop/Bottom:auto on content centers it.
-    // On iPad/mobile (content overflows): content starts at top, user scrolls.
+    // Centering is handled by flex-spacer divs (flex:'1 0 0') before and after
+    // the content div — they grow to fill empty space on desktop and collapse to
+    // 0 when content overflows on iPad/mobile. This avoids the flexbox auto-margin
+    // overflow bug where marginTop/Bottom:auto pushes content above scroll origin.
     position: 'absolute',
     inset: 0,
     overflowY: 'auto',
@@ -714,11 +726,8 @@ const styles = {
     width: '100%',
     maxWidth: 960,
     boxSizing: 'border-box',
-    // auto margins center the content vertically when the container is taller
-    // than the content. When content overflows, they collapse to 0 and the
-    // scrollContainer's overflow-y:auto handles scrolling.
-    marginTop: 'auto',
-    marginBottom: 'auto',
+    // No marginTop/Bottom:auto here — centering handled by flex spacer divs.
+    // (auto margins in a flex overflow container push content above scroll origin.)
   },
 };
 
