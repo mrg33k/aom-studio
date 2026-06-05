@@ -1,0 +1,60 @@
+{
+  "roles": [
+    {
+      "id": "hydrologist",
+      "name": "Hydrologist",
+      "description": "I map where water goes — underground, overground, in clouds and chemistry. I read aquifer drawdown rates the way a doctor reads a pulse.",
+      "flavor": "Field scientist. Reads the aquifer. Measures what the Earth is losing.",
+      "image": "/mission-water/roles/role_hydrologist.png",
+      "ring_color": "#00E5CC",
+      "starting_resources": {
+        "sampling_kits": 3,
+        "data_access": 2,
+        "community_partnerships": 1,
+        "media_coverage": 1
+      }
+    },
+    {
+      "id": "policy_analyst",
+      "name": "Policy Analyst",
+      "description": "I move water policy. I translate science into decisions governments can act on and communities can survive. Data without policy is just data.",
+      "flavor": "Mission coordinator. Bridges science to governance. Talks to the right rooms.",
+      "image": "/mission-water/roles/role_policy_analyst.png",
+      "ring_color": "#1A90FF",
+      "starting_resources": {
+        "sampling_kits": 1,
+        "data_access": 2,
+        "community_partnerships": 3,
+        "media_coverage": 1
+      }
+    },
+    {
+      "id": "community_organizer",
+      "name": "Community Organizer",
+      "description": "I work where the water crisis lands — with the families, the farmers, the neighborhood health teams. I build the coalitions that make change possible.",
+      "flavor": "Field operator. Embedded in the community. The story belongs to the people.",
+      "image": "/mission-water/roles/role_community_organizer.png",
+      "ring_color": "#FFB703",
+      "starting_resources": {
+        "sampling_kits": 1,
+        "data_access": 1,
+        "community_partnerships": 3,
+        "media_coverage": 2
+      }
+    }
+  ],
+  "resource_labels": {
+    "sampling_kits": "SAMPLING KITS",
+    "data_access": "DATA ACCESS",
+    "community_partnerships": "PARTNERSHIPS",
+    "media_coverage": "MEDIA REACH"
+  },
+  "resource_icons": {
+    "sampling_kits": "flask",
+    "data_access": "database",
+    "community_partnerships": "people",
+    "media_coverage": "broadcast"
+  },
+  "budget_total": 10,
+  "budget_per_type_max": 4
+}

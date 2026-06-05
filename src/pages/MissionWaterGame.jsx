@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
 import phaseGraph from './mission-water-game/data/phases.json';
+import rolesData from './mission-water-game/data/roles.json';
 import Canvas from './mission-water-game/engine/Canvas.jsx';
 import HUD from './mission-water-game/engine/HUD.jsx';
+import RoleSelect from './mission-water-game/engine/RoleSelect.jsx';
+import BudgetPlanning from './mission-water-game/engine/BudgetPlanning.jsx';
 import {
   initRunState,
   getCurrentPhase,
@@ -26,6 +29,11 @@ import {
  */
 
 export default function MissionWaterGame() {
+  // R6 — Oregon Trail gate: role select → budget planning → game
+  const [selectedRole, setSelectedRole] = useState(null);
+  const [budgetConfirmed, setBudgetConfirmed] = useState(false);
+  const [investigationResources, setInvestigationResources] = useState(null);
+
   const [runState, setRunState] = useState(() => initRunState(phaseGraph));
 
   const phase = useMemo(
@@ -69,12 +77,38 @@ export default function MissionWaterGame() {
     return () => { document.title = prev; };
   }, []);
 
+  // ── R6 gate: role select ─────────────────────────────────────────
+  if (!selectedRole) {
+    return (
+      <RoleSelect
+        rolesData={rolesData}
+        onConfirm={(role) => setSelectedRole(role)}
+      />
+    );
+  }
+
+  // ── R6 gate: budget planning ─────────────────────────────────────
+  if (!budgetConfirmed) {
+    return (
+      <BudgetPlanning
+        selectedRole={selectedRole}
+        rolesData={rolesData}
+        onConfirm={(resources) => {
+          setInvestigationResources(resources);
+          setRunState(initRunState(phaseGraph, resources));
+          setBudgetConfirmed(true);
+        }}
+        onBack={() => setSelectedRole(null)}
+      />
+    );
+  }
+
   return (
     <div style={styles.root}>
       <main style={styles.gamePanel}>
         <div style={styles.canvasFrame}>
           <Canvas phase={phase} />
-          <HUD phase={phase} hud={hud} onChoose={onChoose} />
+          <HUD phase={phase} hud={hud} onChoose={onChoose} resources={investigationResources} />
         </div>
       </main>
       <aside style={styles.sidebar}>

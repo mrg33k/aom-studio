@@ -106,13 +106,15 @@
           "id": "drill_sensors",
           "text": "Deploy the sensor rig — measure the drawdown",
           "next_phase": "ch1_phoenix_findings",
-          "discovery": "groundwater_hydrology"
+          "discovery": "groundwater_hydrology",
+          "resource_cost": { "type": "sampling_kits", "amount": 1 }
         },
         {
           "id": "talk_farmers",
           "text": "Talk to the farmers first — hear the history",
           "next_phase": "ch1_phoenix_findings",
-          "discovery": "groundwater_hydrology"
+          "discovery": "groundwater_hydrology",
+          "resource_cost": { "type": "community_partnerships", "amount": 1 }
         }
       ]
     },
@@ -176,13 +178,15 @@
           "id": "lab_samples",
           "text": "Run the lab samples — find the source",
           "next_phase": "ch1_mumbai_findings",
-          "discovery": "environmental_chemistry"
+          "discovery": "environmental_chemistry",
+          "resource_cost": { "type": "data_access", "amount": 1 }
         },
         {
           "id": "community_health",
           "text": "Meet the health team — map the exposure",
           "next_phase": "ch1_mumbai_findings",
-          "discovery": "environmental_chemistry"
+          "discovery": "environmental_chemistry",
+          "resource_cost": { "type": "community_partnerships", "amount": 1 }
         }
       ]
     },
@@ -246,13 +250,15 @@
           "id": "climate_data",
           "text": "Review the climate models",
           "next_phase": "ch1_sao_paulo_findings",
-          "discovery": "climate_science"
+          "discovery": "climate_science",
+          "resource_cost": { "type": "data_access", "amount": 1 }
         },
         {
           "id": "farmer_story",
           "text": "Walk the farmland with the grower",
           "next_phase": "ch1_sao_paulo_findings",
-          "discovery": "climate_science"
+          "discovery": "climate_science",
+          "resource_cost": { "type": "community_partnerships", "amount": 1 }
         }
       ]
     },

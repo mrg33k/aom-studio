@@ -60,11 +60,19 @@ const DISCOVERY_LABELS = {
 
 const BADGE_FRAME = '/mission-water/chapter-1/hud/hud_badge_frame.png' + ASSET_V;
 
-export default function HUD({ phase, hud, onChoose }) {
+/**
+ * HUD also accepts:
+ *   resources  {Object|null}  investigationResources from game state
+ */
+export default function HUD({ phase, hud, onChoose, resources }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const [hoverIdx, setHoverIdx] = useState(-1);
+  const [kitOpen, setKitOpen] = useState(false);
   const btnsRef = useRef([]);
   const choices = (phase && phase.choices) || [];
+
+  // Active resources: prefer hud-injected, fall back to prop
+  const activeResources = (hud && hud.investigationResources) || resources || null;
 
   useEffect(() => {
     setFocusIdx(0);
@@ -76,8 +84,13 @@ export default function HUD({ phase, hud, onChoose }) {
   }, [phase && phase.id]);
 
   useEffect(() => {
-    if (choices.length === 0) return undefined;
     const onKey = (e) => {
+      // Escape closes the kit overlay
+      if (e.key === 'Escape') {
+        if (kitOpen) { setKitOpen(false); return; }
+      }
+      if (kitOpen) return; // block choice nav when kit open
+      if (choices.length === 0) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
         e.preventDefault();
         setFocusIdx((i) => {
@@ -102,7 +115,7 @@ export default function HUD({ phase, hud, onChoose }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [choices, focusIdx, onChoose]);
+  }, [choices, focusIdx, onChoose, kitOpen]);
 
   if (!phase) return null;
 
@@ -118,8 +131,22 @@ export default function HUD({ phase, hud, onChoose }) {
       <div style={styles.topBar}>
         <MissionIdent chapter={phase.chapter} />
         <InstrumentRow hud={hud} chapter={phase.chapter} />
-        <BadgeRack ids={hud.discovery_ids || []} />
+        <div style={styles.topBarRight}>
+          <BadgeRack ids={hud.discovery_ids || []} />
+          {activeResources && (
+            <KitButton onClick={() => setKitOpen(true)} />
+          )}
+        </div>
       </div>
+
+      {/* ── MISSION KIT OVERLAY ─────────────────────────────────── */}
+      {kitOpen && activeResources && (
+        <MissionKit
+          resources={activeResources}
+          discoveryIds={hud.discovery_ids || []}
+          onClose={() => setKitOpen(false)}
+        />
+      )}
 
       {/* ── COUNCIL AWARD CEREMONY ──────────────────────────────── */}
       {isCouncil && (hud.discovery_ids || []).length > 0 && (
@@ -144,6 +171,12 @@ export default function HUD({ phase, hud, onChoose }) {
               {choices.map((c, idx) => {
                 const isSelected = focusIdx === idx;
                 const isHover = hoverIdx === idx && !isSelected;
+                // Resource cost + LOW indicator
+                const cost = c.resource_cost;
+                const costType = cost?.type;
+                const costAmt = cost?.amount ?? 0;
+                const currentRes = costType && activeResources ? (activeResources[costType] ?? 0) : Infinity;
+                const isLow = costType && currentRes < costAmt;
                 return (
                   <button
                     key={c.id}
@@ -171,7 +204,18 @@ export default function HUD({ phase, hud, onChoose }) {
                     }}>
                       {c.text.toUpperCase()}
                     </span>
-                    {isSelected && <span style={styles.choiceConfirm}>CONFIRM</span>}
+                    {/* Resource cost badge */}
+                    {cost && (
+                      <span style={{
+                        ...styles.costBadge,
+                        color: isLow ? '#FF4C4C' : AMBER,
+                        borderColor: isLow ? 'rgba(255,76,76,0.5)' : 'rgba(255,183,3,0.4)',
+                      }}>
+                        {isLow ? 'LOW' : `−${costAmt}`}
+                      </span>
+                    )}
+                    {isSelected && !cost && <span style={styles.choiceConfirm}>CONFIRM</span>}
+                    {isSelected && cost && <span style={styles.choiceConfirm}>CONFIRM</span>}
                   </button>
                 );
               })}
@@ -366,6 +410,138 @@ function FramedAwards({ ids }) {
           <div style={styles.awardLabel}>{DISCOVERY_LABELS[id] || id}</div>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ─── Kit button (top-right of HUD) ───────────────────────────────────────────
+
+function KitButton({ onClick }) {
+  return (
+    <button
+      style={styles.kitBtn}
+      onClick={onClick}
+      title="Mission Kit"
+      aria-label="Open mission kit overlay"
+    >
+      <KitIcon />
+      <span style={styles.kitBtnLabel}>KIT</span>
+    </button>
+  );
+}
+
+function KitIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <rect x="3" y="7" width="18" height="14" rx="1" />
+      <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
+      <line x1="12" y1="12" x2="12" y2="16" />
+      <line x1="10" y1="14" x2="14" y2="14" />
+    </svg>
+  );
+}
+
+// ─── Mission Kit overlay ──────────────────────────────────────────────────────
+
+const KIT_RESOURCE_DEFS = [
+  { key: 'sampling_kits',          label: 'SAMPLING KITS', color: '#00E5CC' },
+  { key: 'data_access',            label: 'DATA ACCESS',   color: '#1A90FF' },
+  { key: 'community_partnerships', label: 'PARTNERSHIPS',  color: '#FFB703' },
+  { key: 'media_coverage',         label: 'MEDIA REACH',   color: '#C877FF' },
+];
+const KIT_RES_MAX = 4;
+
+function MissionKit({ resources, discoveryIds, onClose }) {
+  const allBadgeIds = Object.keys(BADGE_ART);
+
+  return (
+    <div style={styles.kitOverlay}>
+      {/* Backdrop click closes */}
+      <div style={styles.kitBackdrop} onClick={onClose} />
+
+      <div style={styles.kitPanel}>
+        {/* Scanline texture */}
+        <div style={styles.kitScanlines} />
+
+        {/* Header */}
+        <div style={styles.kitHeader}>
+          <div style={styles.kitAccentLine} />
+          <div style={styles.kitTitle}>INVESTIGATION LOADOUT</div>
+          <div style={styles.kitSub}>MISSION KIT — RESOURCE STATUS</div>
+          <button style={styles.kitCloseBtn} onClick={onClose} aria-label="Close mission kit">
+            ✕
+          </button>
+        </div>
+
+        {/* Resource meters */}
+        <div style={styles.kitSection}>
+          <div style={styles.kitSectionLabel}>FIELD RESOURCES</div>
+          <div style={styles.kitResList}>
+            {KIT_RESOURCE_DEFS.map(({ key, label, color }) => {
+              const val = Math.max(0, Math.min(KIT_RES_MAX, (resources && resources[key]) ?? 0));
+              const isEmpty = val === 0;
+              return (
+                <div key={key} style={styles.kitResRow}>
+                  <div style={styles.kitResLabel}>{label}</div>
+                  <div style={styles.kitResPips}>
+                    {Array.from({ length: KIT_RES_MAX }, (_, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          ...styles.kitResPip,
+                          background: i < val ? color : 'rgba(255,255,255,0.08)',
+                          boxShadow: i < val ? `0 0 6px ${color}80` : 'none',
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div style={{
+                    ...styles.kitResVal,
+                    color: isEmpty ? '#FF4C4C' : color,
+                    textShadow: isEmpty ? '0 0 6px rgba(255,76,76,0.6)' : `0 0 6px ${color}80`,
+                  }}>
+                    {val}<span style={styles.kitResMax}>/{KIT_RES_MAX}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Badge grid */}
+        <div style={styles.kitSection}>
+          <div style={styles.kitSectionLabel}>FIELD BADGES</div>
+          <div style={styles.kitBadgeGrid}>
+            {allBadgeIds.map((id) => {
+              const earned = discoveryIds.includes(id);
+              const label = DISCOVERY_LABELS[id] || id;
+              return (
+                <div
+                  key={id}
+                  style={{ ...styles.kitBadgeSlot, opacity: earned ? 1 : 0.22 }}
+                  title={label}
+                >
+                  <div style={{
+                    ...styles.kitBadgeRing,
+                    boxShadow: earned
+                      ? '0 0 12px rgba(255,183,3,0.5), inset 0 0 6px rgba(0,0,0,0.6)'
+                      : 'none',
+                  }}>
+                    <img
+                      src={BADGE_ART[id]}
+                      alt={label}
+                      style={styles.kitBadgeImg}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  </div>
+                  <div style={styles.kitBadgeLabel}>{label}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -895,5 +1071,236 @@ const styles = {
     letterSpacing: '0.18em',
     color: 'rgba(200,216,240,0.45)',
     textTransform: 'uppercase',
+  },
+
+  // ── top-right container (badge rack + kit button) ────
+  topBarRight: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 8,
+    flexShrink: 0,
+  },
+
+  // ── resource cost badge on choice buttons ────
+  costBadge: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    fontWeight: 700,
+    letterSpacing: '0.15em',
+    padding: '2px 6px',
+    border: '1px solid',
+    borderRadius: 2,
+    flexShrink: 0,
+  },
+
+  // ── kit button ────
+  kitBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 5,
+    padding: '5px 10px',
+    background: 'rgba(10,22,40,0.85)',
+    border: '1px solid rgba(0,229,204,0.35)',
+    borderRadius: 3,
+    color: '#00E5CC',
+    cursor: 'pointer',
+    outline: 'none',
+    boxShadow: '0 0 8px rgba(0,229,204,0.12)',
+    transition: 'all 150ms ease',
+  },
+  kitBtnLabel: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    fontWeight: 700,
+    letterSpacing: '0.2em',
+    color: '#00E5CC',
+    textTransform: 'uppercase',
+  },
+
+  // ── mission kit overlay ────
+  kitOverlay: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 50,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'auto',
+  },
+  kitBackdrop: {
+    position: 'absolute',
+    inset: 0,
+    background: 'rgba(0,0,0,0.72)',
+    cursor: 'pointer',
+  },
+  kitPanel: {
+    position: 'relative',
+    zIndex: 1,
+    background: 'linear-gradient(160deg, rgba(10,22,40,0.97) 0%, rgba(7,11,20,0.97) 100%)',
+    border: '1px solid rgba(0,229,204,0.3)',
+    borderRadius: 4,
+    padding: '24px 28px',
+    width: '100%',
+    maxWidth: 560,
+    maxHeight: '85vh',
+    overflowY: 'auto',
+    boxShadow: '0 0 40px rgba(0,229,204,0.12), inset 0 0 30px rgba(0,229,204,0.04)',
+    overflow: 'hidden',
+  },
+  kitScanlines: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 1px, transparent 1px, transparent 3px)',
+    zIndex: 0,
+  },
+  kitHeader: {
+    position: 'relative',
+    zIndex: 1,
+    marginBottom: 20,
+    paddingRight: 32,
+  },
+  kitAccentLine: {
+    height: 2,
+    width: 40,
+    background: '#00E5CC',
+    boxShadow: '0 0 8px #00E5CC',
+    marginBottom: 8,
+  },
+  kitTitle: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 16,
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+  },
+  kitSub: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    fontWeight: 500,
+    letterSpacing: '0.25em',
+    color: 'rgba(0,229,204,0.6)',
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
+  kitCloseBtn: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    background: 'transparent',
+    border: '1px solid rgba(0,229,204,0.3)',
+    borderRadius: 2,
+    color: 'rgba(200,216,240,0.7)',
+    cursor: 'pointer',
+    width: 28,
+    height: 28,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 13,
+    outline: 'none',
+    transition: 'all 150ms ease',
+  },
+  kitSection: {
+    position: 'relative',
+    zIndex: 1,
+    marginBottom: 20,
+  },
+  kitSectionLabel: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    fontWeight: 600,
+    letterSpacing: '0.25em',
+    color: 'rgba(200,216,240,0.5)',
+    textTransform: 'uppercase',
+    borderBottom: '1px solid rgba(0,229,204,0.15)',
+    paddingBottom: 6,
+    marginBottom: 12,
+  },
+  kitResList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  kitResRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  kitResLabel: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    letterSpacing: '0.18em',
+    color: 'rgba(200,216,240,0.7)',
+    textTransform: 'uppercase',
+    width: 110,
+    flexShrink: 0,
+  },
+  kitResPips: {
+    display: 'flex',
+    gap: 4,
+    flex: 1,
+  },
+  kitResPip: {
+    width: 18,
+    height: 18,
+    borderRadius: 3,
+    transition: 'background 200ms ease, box-shadow 200ms ease',
+  },
+  kitResVal: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 13,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    flexShrink: 0,
+    width: 36,
+    textAlign: 'right',
+  },
+  kitResMax: {
+    fontSize: 9,
+    opacity: 0.5,
+  },
+  kitBadgeGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(72px, 1fr))',
+    gap: 12,
+  },
+  kitBadgeSlot: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 5,
+    transition: 'opacity 200ms ease',
+  },
+  kitBadgeRing: {
+    width: 56,
+    height: 56,
+    borderRadius: '50%',
+    background: 'conic-gradient(#FFB703 0deg, #A07800 60deg, #FFB703 120deg, #A07800 180deg, #FFB703 240deg, #A07800 300deg, #FFB703 360deg)',
+    padding: 3,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kitBadgeImg: {
+    width: 50,
+    height: 50,
+    borderRadius: '50%',
+    objectFit: 'cover',
+    background: 'rgba(7,11,20,0.95)',
+  },
+  kitBadgeLabel: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 6,
+    fontWeight: 600,
+    letterSpacing: '0.1em',
+    color: 'rgba(200,216,240,0.6)',
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    lineHeight: 1.3,
+    maxWidth: 72,
+    wordBreak: 'break-word',
   },
 };

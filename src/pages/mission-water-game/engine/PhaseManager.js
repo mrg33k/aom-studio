@@ -25,9 +25,10 @@
 /**
  * Build the starting run state for a phase graph.
  * @param {Object} graph - The parsed phases.json object.
+ * @param {Object} [investigationResources] - Optional starting resources from budget planning.
  * @returns {Object} initial run state
  */
-export function initRunState(graph) {
+export function initRunState(graph, investigationResources) {
   if (!graph || !graph.start_phase || !graph.phases) {
     throw new Error('PhaseManager: graph missing start_phase or phases map');
   }
@@ -38,6 +39,7 @@ export function initRunState(graph) {
     phase_id: graph.start_phase,
     discoveries: [],
     history: [graph.start_phase],
+    investigationResources: investigationResources || null,
   };
 }
 
@@ -83,10 +85,23 @@ export function applyChoice(graph, runState, choiceId) {
   } else if (choice.discovery) {
     nextDiscoveries = appendUnique(nextDiscoveries, choice.discovery);
   }
+
+  // Decrement resources if the choice has a cost.
+  // We never block the choice — low resources just show a warning indicator.
+  let nextResources = runState.investigationResources;
+  if (nextResources && choice.resource_cost) {
+    const { type, amount } = choice.resource_cost;
+    if (type && amount && nextResources[type] !== undefined) {
+      const newVal = Math.max(0, nextResources[type] - amount);
+      nextResources = { ...nextResources, [type]: newVal };
+    }
+  }
+
   return {
     phase_id: nextId,
     discoveries: nextDiscoveries,
     history: [...runState.history, nextId],
+    investigationResources: nextResources,
   };
 }
 
@@ -107,6 +122,7 @@ export function resolveHud(phase, runState) {
     chapter: phase.chapter || 1,
     discoveries: runState.discoveries.length,
     discovery_ids: runState.discoveries,
+    investigationResources: runState.investigationResources || null,
   };
 }
 
