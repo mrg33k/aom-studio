@@ -71,8 +71,12 @@ export default function RightMenu() {
         )}
       </div>
 
-      {/* File browser — scoped to mission when drilled in, else project or world */}
-      <div style={{ flex: 1, overflow: 'hidden' }}>
+      {/* File browser — scoped to mission when drilled in, else project or world.
+          overflowY:auto + minHeight:0 lets the file list scroll inside the rail
+          instead of getting clipped (the flex child needs minHeight:0 or it
+          refuses to shrink below its content height and the scroll never kicks
+          in). */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         <FilesPanel projectSlug={projectSlug} missionSlug={missionSlug} />
       </div>
     </div>

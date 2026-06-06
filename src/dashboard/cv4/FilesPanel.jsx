@@ -661,6 +661,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
   const [loading, setLoading] = useState(false)
   const [activeFile, setActiveFile] = useState(null)
   const [activeCat, setActiveCat] = useState('all')
+  const [query, setQuery] = useState('')  // R13 — name/path search filter
   // R3 — right-click + long-press context menu
   const [ctxMenu, setCtxMenu] = useState(null) // { x, y, file } | null
   const isMobile = useIsMobile()
@@ -1097,6 +1098,25 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
 
   const visibleCount = filterFn ? countFiles(tree, filterFn) : files.length
 
+  // R13 — search. When the query is non-empty, we bypass the folder tree and
+  // render a flat list of every file whose name OR path contains the query
+  // (case-insensitive), still respecting the active category filter. Flat is
+  // the right UX for search: the user wants matches surfaced regardless of
+  // which folders happen to be expanded.
+  const trimmedQuery = query.trim().toLowerCase()
+  const searchActive = trimmedQuery.length > 0
+  const searchResults = useMemo(() => {
+    if (!searchActive) return []
+    return files
+      .filter(f => {
+        if (filterFn && !filterFn(f)) return false
+        const hay = `${f.relativePath || ''} ${f.name || ''}`.toLowerCase()
+        return hay.includes(trimmedQuery)
+      })
+      .sort((a, b) => (b._ts || 0) - (a._ts || 0))
+    // filterFn is recomputed each render from activeCat; depend on activeCat.
+  }, [files, searchActive, trimmedQuery, activeCat]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // R12 — compute folder paths from the current tree for "Move to" submenu.
   const folders = useMemo(() => {
     const result = []
@@ -1114,6 +1134,42 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
   return (
     <div style={{ position: 'relative' }}>
       <CategoryFilters active={activeCat} onChange={handleCatChange} />
+
+      {/* R13 — search box */}
+      <div style={{
+        padding: '8px 12px',
+        borderBottom: '1px solid ' + C.border,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 7,
+        background: 'rgba(15,23,42,0.35)',
+      }}>
+        <span style={{ fontSize: 11, color: C.muted, flexShrink: 0, lineHeight: 1 }}>⌕</span>
+        <input
+          value={query}
+          onChange={e => { setQuery(e.target.value); setActiveFile(null) }}
+          onKeyDown={e => { if (e.key === 'Escape') setQuery('') }}
+          placeholder="Search files…"
+          style={{
+            flex: 1, minWidth: 0,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            padding: 0,
+            fontSize: 12,
+            color: C.text,
+            fontFamily: "'Inter', sans-serif",
+          }}
+        />
+        {query && (
+          <button
+            onClick={() => setQuery('')}
+            title="Clear search"
+            aria-label="Clear search"
+            style={{ background: 'none', border: 'none', color: C.muted, cursor: 'pointer', fontSize: 13, padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
+          >✕</button>
+        )}
+      </div>
 
       {/* R12 — + Folder toolbar */}
       {projectSlug && (
@@ -1180,12 +1236,32 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
             : 'No files yet. Upload from chat to see them here.'} />
       )}
 
-      {!loading && files.length > 0 && visibleCount === 0 && (
+      {!loading && !searchActive && files.length > 0 && visibleCount === 0 && (
         <EmptyState text={`No ${activeCat} files${projectSlug ? ` in ${projectSlug}` : ''}.`} />
       )}
 
+      {/* R13 — search results: flat list, bypasses the folder tree. Shows the
+          file's path so duplicates in different folders stay distinguishable. */}
+      {!loading && searchActive && files.length > 0 && (
+        searchResults.length === 0
+          ? <EmptyState text={`No files matching "${query.trim()}".`} />
+          : searchResults.map(f => (
+              <FileRow
+                key={f.url}
+                file={{ ...f, name: f.relativePath || f.name }}
+                isActive={activeFile?.url === f.url}
+                isSelected={selectedFiles.has(f.url)}
+                onClick={() => handleFileClick(f)}
+                onContextMenu={(e) => handleFileContextMenu(e, f)}
+                onLongPress={openCtxMenu}
+                onSelect={handleSelectFile}
+                indent={0}
+              />
+            ))
+      )}
+
       {/* Top-level files (no folder) */}
-      {!loading && tree.files.filter(filterFn || (() => true)).map(f => (
+      {!loading && !searchActive && tree.files.filter(filterFn || (() => true)).map(f => (
         <FileRow
           key={f.url}
           file={{ ...f, name: f.displayName || f.name }}
@@ -1200,7 +1276,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
       ))}
 
       {/* Folder tree */}
-      {!loading && [...tree.children.entries()].map(([name, child]) => (
+      {!loading && !searchActive && [...tree.children.entries()].map(([name, child]) => (
         <TreeNode
           key={name}
           name={name}
