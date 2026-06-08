@@ -29,7 +29,7 @@ window.CURRICULUM.thursday = {
       "<strong>Math — Ratios.</strong> 2 cookies for every 3 kids — that\'s a ratio. They\'re everywhere once you see them, and they unlock 7th-grade math.",
       "<strong>Maker — Soldering.</strong> Safety first, then the first real joint. The single biggest unlock in electronics. You\'ll need adult supervision in person — today is the theory."
     ],
-    howItWorks: "Same rule. Every block ends with you typing. Character count + spell-check. Read your answer, send it to Mom & Dad. No clicking past."
+    howItWorks: "Same rule. Every block ends with you typing. Spell-check catches misspelled words. Read your answer, send it to Mom & Dad. No clicking past."
   },
 
   typingTarget: 'Today I make it real. Less talking about, more doing.',
@@ -57,8 +57,8 @@ window.CURRICULUM.thursday = {
       title: 'Kickoff video — Author\'s Purpose with PIE',
       video: { title: 'Finding the Authors Purpose with P.I.E.', ytId: 'pGmR1HiW9H0', creditLine: 'Whimsical Teacher Tube' },
       typedQuestions: [
-        { q: 'What do the three letters in PIE stand for? Write each one out.', minChars: 120 },
-        { q: 'Pick one — Persuade, Inform, or Entertain. Give one real example of something you\'ve read that was written for that purpose.', minChars: 140 }
+        { q: 'What do the three letters in PIE stand for? Write each one out. Keep going until you have said everything that matters -- your first answer is probably not enough.' },
+        { q: 'Pick one — Persuade, Inform, or Entertain. Give one real example of something you\'ve read that was written for that purpose. Say everything you know about this -- don't stop when you think you're done.' }
       ],
       cta: 'Done' },
 
@@ -66,8 +66,8 @@ window.CURRICULUM.thursday = {
       title: 'Kickoff video — How-To (Procedural) Writing',
       video: { title: 'How to Write: How-To (Procedural) Writing', ytId: 'bvUh3FrhFY8', creditLine: 'Small Act Big Impact' },
       typedQuestions: [
-        { q: 'What makes a how-to different from a story? Use the word "steps" or "order" somewhere.', minChars: 140 },
-        { q: 'Name one thing you know how to do well enough that you could write a how-to about it. Why that one?', minChars: 140 }
+        { q: 'What makes a how-to different from a story? Use the word "steps" or "order" somewhere. Write until it is complete. Your first sentence is not the answer.' },
+        { q: 'Name one thing you know how to do well enough that you could write a how-to about it. Why that one? Don't stop at one sentence. Keep explaining until there is nothing left to say.' }
       ],
       cta: 'Done' },
 
@@ -75,8 +75,8 @@ window.CURRICULUM.thursday = {
       title: 'Kickoff video — Introduction to Ratios',
       video: { title: 'Introduction to ratios — Ratios, rates, and percentages — 6th grade', ytId: 'bIKmw0aTmYc', creditLine: 'Khan Academy' },
       typedQuestions: [
-        { q: 'What is a ratio, in your own words? Give one example from the video or your own life.', minChars: 140 },
-        { q: 'The video showed three ways to write a ratio. Name two of them (like "2 to 3" or "2:3" or "2/3").', minChars: 120 }
+        { q: 'What is a ratio, in your own words? Give one example from the video or your own life. Be thorough -- write until you have actually said what you mean.' },
+        { q: 'The video showed three ways to write a ratio. Name two of them (like "2 to 3" or "2:3" or "2/3"). Push past your first answer. The real answer comes after that.' }
       ],
       cta: 'Done' },
 
@@ -84,8 +84,8 @@ window.CURRICULUM.thursday = {
       title: 'Kickoff video — How to Solder (Beginner\'s Guide)',
       video: { title: 'HOW TO SOLDER! (Beginner\'s Guide)', ytId: '3jAw41LRBxU', creditLine: 'HackMakeMod' },
       typedQuestions: [
-        { q: 'Name TWO safety rules the video showed for soldering. Why does each one matter?', minChars: 160 },
-        { q: 'What\'s the basic technique for making a good solder joint, in your own words?', minChars: 140 }
+        { q: 'Name TWO safety rules the video showed for soldering. Why does each one matter? Write until you feel like you really explained it -- do not stop at your first thought.' },
+        { q: 'What\'s the basic technique for making a good solder joint, in your own words? Keep going until you have said everything that matters -- your first answer is probably not enough.' }
       ],
       cta: 'Done' },
 
@@ -99,7 +99,7 @@ window.CURRICULUM.thursday = {
         '<strong>E — Entertain.</strong> Make you feel something. (Novels. Comic books. Most movies.)',
         'Once you can name the purpose, you read smarter — you know what the author is doing to you.'
       ],
-      typedCheck: { q: 'What do the three letters in PIE stand for?', minChars: 60 },
+      typedCheck: { q: 'What do the three letters in PIE stand for? Say everything you know about this -- don't stop when you think you're done.' },
       cta: 'Got it' },
 
     { id: 'thu-w-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 01 of 10',
@@ -109,7 +109,7 @@ window.CURRICULUM.thursday = {
         'Examples: recipe ("how to make pancakes"), assembly instructions ("how to build the IKEA shelf"), a tutorial ("how to draw a dragon"), an explainer ("how to tie a bowtie").',
         'It\'s the most USEFUL kind of writing in real life. Every job uses it. Every parent uses it. Every YouTuber making a tutorial is doing it.'
       ],
-      typedCheck: { q: 'What is the goal of a how-to piece of writing? What does the reader learn?', minChars: 70 },
+      typedCheck: { q: 'What is the goal of a how-to piece of writing? What does the reader learn? Write until it is complete. Your first sentence is not the answer.' },
       cta: 'Got it' },
 
     { id: 'thu-m-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 01 of 10',
@@ -121,7 +121,7 @@ window.CURRICULUM.thursday = {
         '"5 wins for every 1 loss." That\'s a ratio.',
         'Whenever you say "for every... there are..." — you\'re using a ratio.'
       ],
-      typedCheck: { q: 'What does a ratio compare? Give one example.', minChars: 70 },
+      typedCheck: { q: 'What does a ratio compare? Give one example. Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
       cta: 'Got it' },
 
     { id: 'thu-k-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Maker', tag: 'Maker · 01 of 10',
@@ -131,7 +131,7 @@ window.CURRICULUM.thursday = {
         'You touch a hot soldering iron to the joint, feed in a little solder, the solder melts and flows, and when it cools it forms a solid metal bond between the parts.',
         'It\'s the difference between "wires touching each other" (fragile) and "wires actually joined" (permanent and conductive). Soldering is the single biggest unlock in electronics.'
       ],
-      typedCheck: { q: 'What does soldering do to two pieces of metal? Use the word "melt" or "bond" somewhere.', minChars: 80 },
+      typedCheck: { q: 'What does soldering do to two pieces of metal? Use the word "melt" or "bond" somewhere. Be thorough -- write until you have actually said what you mean.' },
       cta: 'Got it' },
 
     { id: 'thu-r-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 02 of 10',
@@ -141,7 +141,7 @@ window.CURRICULUM.thursday = {
         'Signs: strong opinions stated as facts. Words like "should," "must," "the best." Emotional examples. A clear call to action at the end.',
         'Where you see it: ads, op-eds, election speeches, that one Amazon review that talked you into buying the wrong shoes.'
       ],
-      typedCheck: { q: 'Name two clues that tell you a piece of writing is trying to PERSUADE you.', minChars: 70 },
+      typedCheck: { q: 'Name two clues that tell you a piece of writing is trying to PERSUADE you. Push past your first answer. The real answer comes after that.' },
       cta: 'Got it' },
 
     { id: 'thu-w-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 02 of 10',
@@ -153,7 +153,7 @@ window.CURRICULUM.thursday = {
         '<strong>4. Result.</strong> One sentence saying what the reader should have at the end.',
         'That\'s the shape. Recipes, tutorials, manuals — same four parts every time.'
       ],
-      typedCheck: { q: 'What are the four parts of a how-to, in order?', minChars: 70 },
+      typedCheck: { q: 'What are the four parts of a how-to, in order? Write until you feel like you really explained it -- do not stop at your first thought.' },
       cta: 'Got it' },
 
     { id: 'thu-m-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 02 of 10',
@@ -165,7 +165,7 @@ window.CURRICULUM.thursday = {
         '<strong>Fraction:</strong> "2/3" (yes, ratios look like fractions — that\'s not a coincidence)',
         'All three mean the same thing. Pick the one that fits where you\'re writing.'
       ],
-      typedCheck: { q: 'Write the ratio "5 to 4" in TWO different formats (colon and fraction).', minChars: 60 },
+      typedCheck: { q: 'Write the ratio "5 to 4" in TWO different formats (colon and fraction). Keep going until you have said everything that matters -- your first answer is probably not enough.' },
       cta: 'Got it' },
 
     { id: 'thu-k-02', kind: 'topic', type: 'concept', minutes: 5, subject: 'Maker', tag: 'Maker · 02 of 10',
@@ -179,7 +179,7 @@ window.CURRICULUM.thursday = {
         '<strong>5. Stand the iron in its holder when not soldering.</strong> Never put it on the table.',
         '<strong>6. Tie back long hair</strong> and roll up sleeves.'
       ],
-      typedCheck: { q: 'Name three safety rules for soldering and why each one matters.', minChars: 120 },
+      typedCheck: { q: 'Name three safety rules for soldering and why each one matters. Say everything you know about this -- don't stop when you think you're done.' },
       cta: 'Got it' },
 
     { id: 'thu-r-03', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 03 of 10',
@@ -189,28 +189,28 @@ window.CURRICULUM.thursday = {
         'Signs: lots of facts, numbers, dates. Headings and sections to organize information. Neutral tone — no strong opinions on either side.',
         'Where you see it: textbooks, science articles, Wikipedia, how-to guides, recipe steps, instruction manuals.'
       ],
-      typedCheck: { q: 'How is the TONE of informational writing different from persuasive writing?', minChars: 70 },
+      typedCheck: { q: 'How is the TONE of informational writing different from persuasive writing? Write until it is complete. Your first sentence is not the answer.' },
       cta: 'Got it' },
 
     { id: 'thu-w-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Writing', tag: 'Writing · 03 of 10',
       title: 'Teach it back — the 4 parts',
       prompt: 'In your own words, explain the 4 parts of a how-to. Then pick a how-to you\'ve used recently (recipe, video tutorial, instructions) and say if it had all four parts or what was missing.',
-      minChars: 200, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'thu-m-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Math', tag: 'Math · 03 of 10',
       title: 'Teach it back — what is a ratio?',
       prompt: 'In your own words, explain what a ratio is and what it does. Give one example of a ratio you\'d see in real life (sports, cooking, money, anything). Write your example in two formats.',
-      minChars: 200, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'thu-k-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Maker', tag: 'Maker · 03 of 10',
       title: 'Teach it back — the safety rules',
       prompt: 'In your own words, list the safety rules for soldering. Then say WHY each one matters — what bad thing could happen if you skipped it?',
-      minChars: 220, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'thu-r-04', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Reading', tag: 'Reading · 04 of 10',
       title: 'Teach it back — explain PIE',
       prompt: 'In your own words, explain the PIE framework. Give one example of something written to Persuade, one to Inform, and one to Entertain. Use real examples (a movie, a textbook, an ad you saw).',
-      minChars: 240, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'thu-w-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 04 of 10',
       title: 'The golden rule — one action per step',
@@ -220,7 +220,7 @@ window.CURRICULUM.thursday = {
         'Why? Because if the reader skips ahead or loses their place, mashed-together steps are confusing. One step = one action.',
         'When in doubt, BREAK steps into smaller ones. Never combine.'
       ],
-      typedCheck: { q: 'Why should each step in a how-to be just one action, not multiple?', minChars: 80 },
+      typedCheck: { q: 'Why should each step in a how-to be just one action, not multiple? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
       cta: 'Got it' },
 
     { id: 'thu-m-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 04 of 10',
@@ -232,7 +232,7 @@ window.CURRICULUM.thursday = {
         'Always read the words FIRST. Then write the numbers in the same order.',
         '"For every 4 apples, there are 6 oranges" → apples first, oranges second → 4:6.'
       ],
-      typedCheck: { q: 'Why does the order of the numbers in a ratio matter? Give an example.', minChars: 80 },
+      typedCheck: { q: 'Why does the order of the numbers in a ratio matter? Give an example. Be thorough -- write until you have actually said what you mean.' },
       cta: 'Got it' },
 
     { id: 'thu-k-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Maker', tag: 'Maker · 04 of 10',
@@ -246,7 +246,7 @@ window.CURRICULUM.thursday = {
         '<strong>Helping hands</strong> (clamp with alligator clips) — holds your work so you have two free hands.',
         'You don\'t need a $200 kit. A $40 starter setup does fine.'
       ],
-      typedCheck: { q: 'Name three tools you need to solder. What does each one do?', minChars: 100 },
+      typedCheck: { q: 'Name three tools you need to solder. What does each one do? Push past your first answer. The real answer comes after that.' },
       cta: 'Got it' },
 
     { id: 'thu-r-05', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 05 of 10',
@@ -256,7 +256,7 @@ window.CURRICULUM.thursday = {
         'Signs: characters, plot, dialogue, made-up scenes (or true scenes told dramatically). Vivid descriptions. Tension. Surprise.',
         'Where you see it: novels, comic books, song lyrics, sketches, most movie scripts. Sometimes informational stuff WANTS to feel entertaining — that\'s a mix.'
       ],
-      typedCheck: { q: 'What\'s the writer trying to do when their purpose is ENTERTAIN?', minChars: 60 },
+      typedCheck: { q: 'What\'s the writer trying to do when their purpose is ENTERTAIN? Write until you feel like you really explained it -- do not stop at your first thought.' },
       cta: 'Got it' },
 
     { id: 'thu-w-05', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 05 of 10',
@@ -268,7 +268,7 @@ window.CURRICULUM.thursday = {
         'Ends: "Finally," "Last," "When you\'re done."',
         'Sprinkle them in. Even if you also number the steps. Belt AND suspenders for clarity.'
       ],
-      typedCheck: { q: 'Name three transition words and what part of the sequence they belong in (start/middle/end).', minChars: 80 },
+      typedCheck: { q: 'Name three transition words and what part of the sequence they belong in (start/middle/end). Keep going until you have said everything that matters -- your first answer is probably not enough.' },
       cta: 'Got it' },
 
     { id: 'thu-m-05', kind: 'topic', type: 'concept', minutes: 5, subject: 'Math', tag: 'Math · 05 of 10',
@@ -279,7 +279,7 @@ window.CURRICULUM.thursday = {
         'How? You multiplied (or divided) BOTH sides by the same number. 2×2=4 and 3×2=6 → 4:6. Same ratio, doubled.',
         'This trick is huge. If you have "3 cookies for every 4 kids" and 12 kids show up, you need 9 cookies (3×3 : 4×3). Same ratio, scaled up.'
       ],
-      typedCheck: { q: 'If the ratio is 2:5 and you multiply both sides by 4, what\'s the equivalent ratio?', minChars: 60 },
+      typedCheck: { q: 'If the ratio is 2:5 and you multiply both sides by 4, what\'s the equivalent ratio? Say everything you know about this -- don't stop when you think you're done.' },
       cta: 'Got it' },
 
     { id: 'thu-k-05', kind: 'topic', type: 'concept', minutes: 5, subject: 'Maker', tag: 'Maker · 05 of 10',
@@ -292,7 +292,7 @@ window.CURRICULUM.thursday = {
         '<strong>4. Remove solder first, then the iron.</strong> Let the joint cool without moving it (3-5 seconds).',
         '<strong>5. Clean the tip on the sponge.</strong> Repeat for the next joint.'
       ],
-      typedCheck: { q: 'In step 3 of soldering, do you feed solder onto the iron or into the joint? Why?', minChars: 80 },
+      typedCheck: { q: 'In step 3 of soldering, do you feed solder onto the iron or into the joint? Why? Write until it is complete. Your first sentence is not the answer.' },
       cta: 'Got it' },
 
     { id: 'thu-r-06', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Reading', tag: 'Reading · 06 of 10',
@@ -328,7 +328,7 @@ window.CURRICULUM.thursday = {
         'A novel entertains you (story) BUT also persuades you to think about something the author cares about.',
         'When you read smart, ask: "what\'s the MAIN purpose, and is there a SECOND purpose hiding in there?"'
       ],
-      typedCheck: { q: 'Give one example of a piece of media (movie, show, article) that has TWO purposes mixed.', minChars: 80 },
+      typedCheck: { q: 'Give one example of a piece of media (movie, show, article) that has TWO purposes mixed. Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
       cta: 'Got it' },
 
     { id: 'thu-w-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 07 of 10',
@@ -340,7 +340,7 @@ window.CURRICULUM.thursday = {
         '<strong>Right:</strong> "Fold the paper in half. You should see two equal halves."',
         'Direct. Present-tense. Like you\'re standing next to them coaching it.'
       ],
-      typedCheck: { q: 'Why use "you" and present tense in a how-to? What\'s the feel?', minChars: 70 },
+      typedCheck: { q: 'Why use "you" and present tense in a how-to? What\'s the feel? Be thorough -- write until you have actually said what you mean.' },
       cta: 'Got it' },
 
     { id: 'thu-m-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 07 of 10',
@@ -353,7 +353,7 @@ window.CURRICULUM.thursday = {
         '<strong>Mixing:</strong> Paint that says "2 parts blue to 1 part white" (2:1).',
         'Try spotting three of these in your day today.'
       ],
-      typedCheck: { q: 'Name two places ratios show up in everyday life, not from school.', minChars: 80 },
+      typedCheck: { q: 'Name two places ratios show up in everyday life, not from school. Push past your first answer. The real answer comes after that.' },
       cta: 'Got it' },
 
     { id: 'thu-k-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Maker', tag: 'Maker · 07 of 10',
@@ -365,23 +365,23 @@ window.CURRICULUM.thursday = {
         '<strong>Volcano-shaped.</strong> Flows from the wire down to the pad like a tiny hill.',
         'BAD signs: dull (cold joint), ball-shaped (didn\'t flow), too much solder (a blob), or too little (gap visible). Bad joints break later. Redo them.'
       ],
-      typedCheck: { q: 'Name two visual signs of a GOOD solder joint and one sign of a BAD one.', minChars: 100 },
+      typedCheck: { q: 'Name two visual signs of a GOOD solder joint and one sign of a BAD one. Write until you feel like you really explained it -- do not stop at your first thought.' },
       cta: 'Got it' },
 
     { id: 'thu-r-08', kind: 'topic', type: 'teach-back', minutes: 7, subject: 'Reading', tag: 'Reading · 08 of 10',
       title: 'Practice — identify the purpose',
       prompt: 'Pick any three things you\'ve read or watched in the last week (a book, a YouTube video, a TikTok, an article, a sign, a text — anything). For each one, name the PRIMARY purpose (P, I, or E) and explain one clue that tells you so.',
-      minChars: 240, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'thu-w-08', kind: 'topic', type: 'teach-back', minutes: 10, subject: 'Writing', tag: 'Writing · 08 of 10',
       title: 'Write a real how-to',
       prompt: 'Pick something you can actually do. Tying shoes, making a sandwich, opening Roblox Studio, anything. Write a real how-to. Include all 4 parts: Title, Materials (if any), Steps (numbered, one action each), Result. Use at least 3 transition words. Aim for 5-8 steps total.',
-      minChars: 300, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'thu-m-08', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Math', tag: 'Math · 08 of 10',
       title: 'Solve and explain',
       prompt: 'Problem: A smoothie recipe says "2 cups of milk for every 3 bananas." You\'re making a bigger batch with 9 bananas. How much milk do you need? Show your work step by step. Use equivalent ratios to solve it. Then explain in one sentence why your method works.',
-      minChars: 200, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'thu-k-08', kind: 'topic', type: 'concept', minutes: 4, subject: 'Maker', tag: 'Maker · 08 of 10',
       title: 'Common mistakes',
@@ -392,7 +392,7 @@ window.CURRICULUM.thursday = {
         '<strong>4. Burning the part.</strong> Held the iron on too long. Always feed and remove fast — joint heats in seconds.',
         '<strong>5. Forgetting to clean the tip.</strong> A dirty tip won\'t transfer heat well. Wipe it on the sponge between joints.'
       ],
-      typedCheck: { q: 'Pick ONE common mistake and explain how to avoid it.', minChars: 80 },
+      typedCheck: { q: 'Pick ONE common mistake and explain how to avoid it. Keep going until you have said everything that matters -- your first answer is probably not enough.' },
       cta: 'Got it' },
 
     { id: 'thu-r-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 09 of 10',
@@ -404,7 +404,7 @@ window.CURRICULUM.thursday = {
         'Entertaining? Enjoy it — but don\'t take its made-up world as the real one.',
         'Without naming the purpose, you can\'t do any of that. PIE gives you a thinking tool for everything you\'ll ever read.'
       ],
-      typedCheck: { q: 'Why is it useful to know an author\'s PURPOSE before you take their writing seriously?', minChars: 80 },
+      typedCheck: { q: 'Why is it useful to know an author\'s PURPOSE before you take their writing seriously? Say everything you know about this -- don't stop when you think you're done.' },
       cta: 'Got it' },
 
     { id: 'thu-w-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 09 of 10',
@@ -414,7 +414,7 @@ window.CURRICULUM.thursday = {
         'Every place they get confused = a step you missed or wrote badly. Every place they had to guess = something you forgot to mention.',
         'Pro writers always test their how-tos this way. The reader IS the test.'
       ],
-      typedCheck: { q: 'How do you really know if your how-to is clear enough? What\'s the test?', minChars: 70 },
+      typedCheck: { q: 'How do you really know if your how-to is clear enough? What\'s the test? Write until it is complete. Your first sentence is not the answer.' },
       cta: 'Got it' },
 
     { id: 'thu-m-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 09 of 10',
@@ -424,13 +424,13 @@ window.CURRICULUM.thursday = {
         'A <strong>unit rate</strong> is a rate where the second number is 1. "60 miles per 1 hour" → 60 mph.',
         'Unit rates are super useful because they make comparison easy. Two cars: one goes "150 miles in 3 hours" (50 mph). The other goes "180 miles in 4 hours" (45 mph). The first car\'s faster — easy to see in unit rate, harder to see in raw ratio.'
       ],
-      typedCheck: { q: 'What\'s the difference between a rate and a unit rate? Why is a unit rate useful?', minChars: 80 },
+      typedCheck: { q: 'What\'s the difference between a rate and a unit rate? Why is a unit rate useful? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
       cta: 'Got it' },
 
     { id: 'thu-k-09', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Maker', tag: 'Maker · 09 of 10',
       title: 'Plan YOUR first solder project',
       prompt: 'Imagine you\'re about to solder for the first time. Type out: (1) what safety gear you\'ll have, (2) what tools you\'ll need, (3) the five-step technique in order, (4) what a good joint looks like when you\'re done. Be specific — you should be able to use this list as your own checklist before touching the iron.',
-      minChars: 280, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'thu-r-10', kind: 'topic', type: 'concept', minutes: 3, subject: 'Reading', tag: 'Reading · 10 of 10',
       title: 'Lock it in — Reading done',
@@ -438,7 +438,7 @@ window.CURRICULUM.thursday = {
         'You know PIE now. Persuade, Inform, Entertain. Plus the trick: some things mix.',
         'Practice this week: every time you read anything substantial, name the purpose first. 10 seconds of naming saves you from being tricked.'
       ],
-      typedCheck: { q: 'What\'s the 10-second move to make every time you read something substantial?', minChars: 70 },
+      typedCheck: { q: 'What\'s the 10-second move to make every time you read something substantial? Be thorough -- write until you have actually said what you mean.' },
       cta: 'Done' },
 
     // ===== SUBJECT 2 — WRITING (How-To / Procedural) =====
@@ -448,7 +448,7 @@ window.CURRICULUM.thursday = {
         'You learned the 4 parts (title, materials, steps, result), the one-action-per-step rule, transition words, and the "you + present tense" voice.',
         'Try this: this week, teach someone in your house something using a how-to YOU wrote. Watch them follow it. You\'ll instantly see what to fix.'
       ],
-      typedCheck: { q: 'What\'s ONE skill you\'ll write a how-to about and test on someone this week?', minChars: 70 },
+      typedCheck: { q: 'What\'s ONE skill you\'ll write a how-to about and test on someone this week? Push past your first answer. The real answer comes after that.' },
       cta: 'Done' },
 
     // ===== SUBJECT 3 — MATH (Ratios) =====
@@ -458,7 +458,7 @@ window.CURRICULUM.thursday = {
         'You\'ve got ratios (compare two amounts), three formats (words, colon, fraction), equivalent ratios (multiply both sides), and the leap into rates and unit rates.',
         'This is the foundation of a TON of 7th-grade math: proportions, percentages, scaling, even some algebra. Get it solid now, save yourself headaches later.'
       ],
-      typedCheck: { q: 'Where in your life this week will you go look for a real ratio?', minChars: 70 },
+      typedCheck: { q: 'Where in your life this week will you go look for a real ratio? Write until you feel like you really explained it -- do not stop at your first thought.' },
       cta: 'Done' },
 
     // ===== SUBJECT 4 — MAKER (Soldering Basics) =====
@@ -469,7 +469,7 @@ window.CURRICULUM.thursday = {
         'Next step is hands-on with an adult. Get a $40 starter kit (try MakerHart or any beginner kit on Amazon). Practice on scrap wire before any real project.',
         'Once you can solder, every electronics project — Arduino, Raspberry Pi, custom Roblox controllers, anything — opens up to you.'
       ],
-      typedCheck: { q: 'What\'s your next step toward actually getting to solder for the first time?', minChars: 70 },
+      typedCheck: { q: 'What\'s your next step toward actually getting to solder for the first time? Keep going until you have said everything that matters -- your first answer is probably not enough.' },
       cta: 'Done' },
 
     { id: 'report-card-thu', kind: 'drill', type: 'report-card', title: 'Thursday — show Mom & Dad', minutes: 2 }

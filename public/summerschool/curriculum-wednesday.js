@@ -32,7 +32,7 @@ window.CURRICULUM.wednesday = {
       "<strong>Math — Word Problems.</strong> The thing every kid hates. Today you learn CUBES — a step-by-step strategy that turns words into numbers without panic.",
       "<strong>Entrepreneurship — 3-Bucket Money Rule.</strong> Save, Spend, Give. The simplest money system that'll save you a thousand wrong decisions over the next 20 years."
     ],
-    howItWorks: "Same rule. Every block ends with you typing. Character count + spell-check. Read your answer, send it to Mom & Dad. No clicking past."
+    howItWorks: "Same rule. Every block ends with you typing. Spell-check catches misspelled words. Read your answer, send it to Mom & Dad. No clicking past."
   },
 
   typingTarget: 'I will read between the lines, persuade with reasons, and split my money three ways.',
@@ -60,8 +60,8 @@ window.CURRICULUM.wednesday = {
       title: 'Kickoff video — Making Inferences',
       video: { title: 'Making Inferences for Kids — What is an inference?', ytId: 'M3ZKbnBw7NY', creditLine: 'Learn Bright' },
       typedQuestions: [
-        { q: 'What is an inference, in your own words? Use the word "clues" somewhere in your answer.', minChars: 140 },
-        { q: 'What two things does the video say you combine to make an inference?', minChars: 120 }
+        { q: 'What is an inference, in your own words? Use the word "clues" somewhere in your answer. Keep going until you have said everything that matters -- your first answer is probably not enough.' },
+        { q: 'What two things does the video say you combine to make an inference? Say everything you know about this -- don't stop when you think you're done.' }
       ],
       cta: 'Done' },
 
@@ -69,8 +69,8 @@ window.CURRICULUM.wednesday = {
       title: 'Kickoff video — What is Persuasive Writing?',
       video: { title: 'Persuasive Writing for Kids — Episode 1: What is It?', ytId: 'hD9arWXIddM', creditLine: 'Teaching Without Frills' },
       typedQuestions: [
-        { q: 'What is persuasive writing, in your own words? What\'s the writer trying to do to the reader?', minChars: 140 },
-        { q: 'Name one place in real life where persuasive writing actually matters. Why does it matter there?', minChars: 140 }
+        { q: 'What is persuasive writing, in your own words? What\'s the writer trying to do to the reader? Write until it is complete. Your first sentence is not the answer.' },
+        { q: 'Name one place in real life where persuasive writing actually matters. Why does it matter there? Don't stop at one sentence. Keep explaining until there is nothing left to say.' }
       ],
       cta: 'Done' },
 
@@ -78,8 +78,8 @@ window.CURRICULUM.wednesday = {
       title: 'Kickoff video — CUBES for Word Problems',
       video: { title: 'CUBES — Solving Math Word Problems (Video Lesson)', ytId: 'vdF88CW1XHQ', creditLine: 'IPDAE' },
       typedQuestions: [
-        { q: 'What do the five letters in CUBES stand for? Spell each one out.', minChars: 120 },
-        { q: 'Which CUBES step do you think you\'ve been skipping the most before today? Why?', minChars: 140 }
+        { q: 'What do the five letters in CUBES stand for? Spell each one out. Be thorough -- write until you have actually said what you mean.' },
+        { q: 'Which CUBES step do you think you\'ve been skipping the most before today? Why? Push past your first answer. The real answer comes after that.' }
       ],
       cta: 'Done' },
 
@@ -87,8 +87,8 @@ window.CURRICULUM.wednesday = {
       title: 'Kickoff video — Saving and Spending',
       video: { title: 'Economics for Kids: Saving and Spending', ytId: 'NfurkrZEn3Q', creditLine: 'Teaching Without Frills' },
       typedQuestions: [
-        { q: 'What\'s the difference between saving and spending the way the video defined it?', minChars: 140 },
-        { q: 'Give one example from your own life of something you\'d save for and one thing you\'d spend on.', minChars: 140 }
+        { q: 'What\'s the difference between saving and spending the way the video defined it? Write until you feel like you really explained it -- do not stop at your first thought.' },
+        { q: 'Give one example from your own life of something you\'d save for and one thing you\'d spend on. Keep going until you have said everything that matters -- your first answer is probably not enough.' }
       ],
       cta: 'Done' },
 
@@ -100,7 +100,7 @@ window.CURRICULUM.wednesday = {
         'Example: "Sarah grabbed her umbrella and ran for the bus." The story doesn\'t say "it was raining." But you INFER it was raining — because (a) clue: she grabbed an umbrella, and (b) you know: people grab umbrellas when it rains.',
         'Good readers do this without thinking. Great readers know they\'re doing it and can do it on purpose.'
       ],
-      typedCheck: { q: 'What two things do you combine to make an inference? Use the word "clues" somewhere.', minChars: 70 },
+      typedCheck: { q: 'What two things do you combine to make an inference? Use the word "clues" somewhere. Say everything you know about this -- don't stop when you think you're done.' },
       cta: 'Got it' },
 
     { id: 'wed-w-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 01 of 10',
@@ -110,7 +110,7 @@ window.CURRICULUM.wednesday = {
         'It\'s different from a story (which tells what happened) or an explanation (which tells how something works). Persuasive writing argues a point.',
         'Examples: asking your parents to get a dog, writing a school petition, an Amazon review trying to warn people about a bad product. Anywhere you want someone to agree.'
       ],
-      typedCheck: { q: 'What is the writer trying to do to the reader in persuasive writing?', minChars: 70 },
+      typedCheck: { q: 'What is the writer trying to do to the reader in persuasive writing? Write until it is complete. Your first sentence is not the answer.' },
       cta: 'Got it' },
 
     { id: 'wed-m-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 01 of 10',
@@ -120,7 +120,7 @@ window.CURRICULUM.wednesday = {
         'The good news: there\'s a step-by-step strategy that works on almost any word problem ever written. It\'s called <strong>CUBES</strong>.',
         'Five letters, five steps. By the end of today\'s subject, you\'ll trust the process more than you\'ll trust your panic.'
       ],
-      typedCheck: { q: 'Why do most kids find word problems harder than plain number problems?', minChars: 70 },
+      typedCheck: { q: 'Why do most kids find word problems harder than plain number problems? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
       cta: 'Got it' },
 
     { id: 'wed-e-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 01 of 10',
@@ -132,7 +132,7 @@ window.CURRICULUM.wednesday = {
         '<strong>Give.</strong> Money for someone else. A gift, a donation, a friend in need.',
         'That\'s it. One rule, three buckets. Used by smart adults all over the world.'
       ],
-      typedCheck: { q: 'What are the three buckets every dollar gets split into?', minChars: 60 },
+      typedCheck: { q: 'What are the three buckets every dollar gets split into? Be thorough -- write until you have actually said what you mean.' },
       cta: 'Got it' },
 
     { id: 'wed-r-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 02 of 10',
@@ -142,7 +142,7 @@ window.CURRICULUM.wednesday = {
         'Two reasons. First, telling everything is BORING. "He was sad. She was angry. He went home." That\'s not a story; that\'s a recipe.',
         'Second, when YOU figure something out, you remember it 10x better than if someone told you. The author leaves space on purpose so your brain has to lean in.'
       ],
-      typedCheck: { q: 'Why do good authors leave things for the reader to infer instead of just stating them?', minChars: 70 },
+      typedCheck: { q: 'Why do good authors leave things for the reader to infer instead of just stating them? Push past your first answer. The real answer comes after that.' },
       cta: 'Got it' },
 
     { id: 'wed-w-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 02 of 10',
@@ -153,7 +153,7 @@ window.CURRICULUM.wednesday = {
         '<strong>3. Conclusion.</strong> Restate your position and tell the reader what to do. "More recess = better learning. Tell the principal it\'s time to add 15 minutes."',
         'That\'s it. Position, reasons, conclusion. Same shape every time.'
       ],
-      typedCheck: { q: 'What are the three parts of a persuasive piece, in order?', minChars: 70 },
+      typedCheck: { q: 'What are the three parts of a persuasive piece, in order? Write until you feel like you really explained it -- do not stop at your first thought.' },
       cta: 'Got it' },
 
     { id: 'wed-m-02', kind: 'topic', type: 'concept', minutes: 5, subject: 'Math', tag: 'Math · 02 of 10',
@@ -166,7 +166,7 @@ window.CURRICULUM.wednesday = {
         '<strong>S — Solve</strong> and check.',
         'Five steps. Same order every time. Practice them on three problems and you\'ll see them in your sleep.'
       ],
-      typedCheck: { q: 'What do the five letters in CUBES stand for? Write them all out.', minChars: 80 },
+      typedCheck: { q: 'What do the five letters in CUBES stand for? Write them all out. Keep going until you have said everything that matters -- your first answer is probably not enough.' },
       cta: 'Got it' },
 
     { id: 'wed-e-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 02 of 10',
@@ -176,28 +176,28 @@ window.CURRICULUM.wednesday = {
         'Kids who only spend grow into adults who can\'t buy a car, can\'t buy a house, and never have money to help anyone else. Not because they didn\'t earn enough — because they never trained themselves to split.',
         'Starting young, with small amounts, builds the muscle. Every $10 split now teaches your brain how to split $10,000 later.'
       ],
-      typedCheck: { q: 'What happens to adults who never train themselves to save and give as kids?', minChars: 70 },
+      typedCheck: { q: 'What happens to adults who never train themselves to save and give as kids? Say everything you know about this -- don't stop when you think you're done.' },
       cta: 'Got it' },
 
     { id: 'wed-r-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Reading', tag: 'Reading · 03 of 10',
       title: 'Teach it back — what is an inference?',
       prompt: 'In your own words, explain what an inference is. Give one example from a book, movie, or show — something the story didn\'t say directly but you figured out anyway.',
-      minChars: 180, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-w-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Writing', tag: 'Writing · 03 of 10',
       title: 'Teach it back — the three parts',
       prompt: 'Type out the three parts of a persuasive piece in your own words. Then say which one you think is the hardest to do well, and why.',
-      minChars: 180, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-m-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Math', tag: 'Math · 03 of 10',
       title: 'Teach it back — CUBES in your own words',
       prompt: 'In your own words, type out what each letter in CUBES means and why each step helps you avoid mistakes on word problems.',
-      minChars: 200, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-e-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 03 of 10',
       title: 'Teach it back — the 3-Bucket rule',
       prompt: 'In your own words, explain the 3-Bucket Money Rule. Use the words "save," "spend," and "give." Then say why splitting matters more than how much you have.',
-      minChars: 200, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-r-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 04 of 10',
       title: 'The "Clue + What I Know" formula',
@@ -206,7 +206,7 @@ window.CURRICULUM.wednesday = {
         '<strong>CLUE:</strong> "What did the text actually say?"<br><strong>WHAT I KNOW:</strong> "What do I know from real life that connects to this?"<br><strong>INFERENCE:</strong> "Combining those, what\'s probably true?"',
         'Example. Text: "Marco\'s hands were shaking when he opened the envelope." Clue: shaking hands. What I know: hands shake when you\'re nervous or scared. Inference: Marco was nervous about what was inside.'
       ],
-      typedCheck: { q: 'Write out the three parts of the inference formula in order.', minChars: 70 },
+      typedCheck: { q: 'Write out the three parts of the inference formula in order. Write until it is complete. Your first sentence is not the answer.' },
       cta: 'Got it' },
 
     { id: 'wed-w-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 04 of 10',
@@ -217,7 +217,7 @@ window.CURRICULUM.wednesday = {
         '<strong>Strong:</strong> "Every family should have a dog." (Clear. Confident. Reader knows where you stand.)',
         'Even if you\'re not totally sure, write like you are. Save the doubts for your private journal.'
       ],
-      typedCheck: { q: 'What\'s wrong with the sentence "I kind of think dogs are nice" as an opinion statement?', minChars: 80 },
+      typedCheck: { q: 'What\'s wrong with the sentence "I kind of think dogs are nice" as an opinion statement? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
       cta: 'Got it' },
 
     { id: 'wed-m-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 04 of 10',
@@ -230,7 +230,7 @@ window.CURRICULUM.wednesday = {
         '<strong>Divide:</strong> per, quotient, split, shared equally, ratio, each gets, average.',
         'When you BOX these in step B of CUBES, you basically write the equation for yourself.'
       ],
-      typedCheck: { q: 'Name two action words that mean "subtract" and two that mean "multiply."', minChars: 80 },
+      typedCheck: { q: 'Name two action words that mean "subtract" and two that mean "multiply.". Be thorough -- write until you have actually said what you mean.' },
       cta: 'Got it' },
 
     { id: 'wed-e-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 04 of 10',
@@ -241,7 +241,7 @@ window.CURRICULUM.wednesday = {
         '$100 birthday money? $50 Spend, $30 Save, $20 Give.',
         'You can tweak it. Saving for something specific (a game, a bike)? Bump Save to 50%. Found a real cause you care about? Bump Give to 30%. The percentages are guidelines, not laws. The HABIT of splitting is the law.'
       ],
-      typedCheck: { q: 'In the 50/30/20 starter split, which bucket gets 50%? Why does that one start biggest?', minChars: 80 },
+      typedCheck: { q: 'In the 50/30/20 starter split, which bucket gets 50%? Why does that one start biggest? Push past your first answer. The real answer comes after that.' },
       cta: 'Got it' },
 
     { id: 'wed-r-05', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Reading', tag: 'Reading · 05 of 10',
@@ -258,7 +258,7 @@ window.CURRICULUM.wednesday = {
         '"Dogs lower stress" → fact. "My grandma got a dog after her surgery and recovered faster" → example. "The American Heart Association says pet owners have lower blood pressure" → expert quote.',
         'Mix all three types in a piece. Way more powerful than just opinions stacked on opinions.'
       ],
-      typedCheck: { q: 'Name two kinds of evidence you can use to back up a reason in persuasive writing.', minChars: 70 },
+      typedCheck: { q: 'Name two kinds of evidence you can use to back up a reason in persuasive writing. Write until you feel like you really explained it -- do not stop at your first thought.' },
       cta: 'Got it' },
 
     { id: 'wed-m-05', kind: 'topic', type: 'concept', minutes: 5, subject: 'Math', tag: 'Math · 05 of 10',
@@ -272,7 +272,7 @@ window.CURRICULUM.wednesday = {
         '<strong>S</strong>olve: 24 − 15 = 9. Maya has 9 stickers left.',
         'CUBES turned a confusing sentence into two clean math operations.'
       ],
-      typedCheck: { q: 'In the example, what math operations did CUBES tell you to do, in what order?', minChars: 80 },
+      typedCheck: { q: 'In the example, what math operations did CUBES tell you to do, in what order? Keep going until you have said everything that matters -- your first answer is probably not enough.' },
       cta: 'Got it' },
 
     { id: 'wed-e-05', kind: 'topic', type: 'concept', minutes: 4, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 05 of 10',
@@ -282,7 +282,7 @@ window.CURRICULUM.wednesday = {
         'You SET A GOAL: "I want X. It costs $Y. So I need to save $Z per week to get there." Then your Save bucket actually has a job.',
         'Saving without a goal is boring — money just sits there. Saving WITH a goal is exciting — every dollar you drop in gets you closer to a thing you want.'
       ],
-      typedCheck: { q: 'What\'s the trick to make saving feel exciting instead of boring?', minChars: 70 },
+      typedCheck: { q: 'What\'s the trick to make saving feel exciting instead of boring? Say everything you know about this -- don't stop when you think you're done.' },
       cta: 'Got it' },
 
     { id: 'wed-r-06', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 06 of 10',
@@ -292,7 +292,7 @@ window.CURRICULUM.wednesday = {
         'Authors give you clues like: facial expressions ("she crossed her arms"), word choice ("he muttered"), actions ("he slammed the door"), what they DON\'T do ("she didn\'t look up").',
         'Each clue is a tiny piece of evidence about what\'s going on inside the character. Stack the clues, infer the feeling.'
       ],
-      typedCheck: { q: 'Name two kinds of clues authors give to hint at how a character feels.', minChars: 80 },
+      typedCheck: { q: 'Name two kinds of clues authors give to hint at how a character feels. Write until it is complete. Your first sentence is not the answer.' },
       cta: 'Got it' },
 
     { id: 'wed-w-06', kind: 'topic', type: 'typing-precise', minutes: 5, subject: 'Writing', tag: 'Writing · 06 of 10',
@@ -316,7 +316,7 @@ window.CURRICULUM.wednesday = {
     { id: 'wed-r-07', kind: 'topic', type: 'teach-back', minutes: 7, subject: 'Reading', tag: 'Reading · 07 of 10',
       title: 'Practice — what\'s the inference?',
       prompt: 'Read this short scene and type out what you infer: "Jake walked into the lunchroom, scanned every table, then walked back out without sitting down. He pulled his hood up and went to eat alone outside." — What can you infer about Jake? List the clues you used.',
-      minChars: 160, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-w-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 07 of 10',
       title: 'Anticipate the other side',
@@ -325,7 +325,7 @@ window.CURRICULUM.wednesday = {
         '"Some people say dogs are too expensive. But the average vet bill is less than a single family vacation, and a dog provides 10+ years of company. The cost is real, but it\'s spread out, and the value is huge."',
         'This trick (called a <strong>counter-argument</strong>) makes you sound smarter and fairer. The reader thinks: "Oh, this person actually thought about it."'
       ],
-      typedCheck: { q: 'Why does naming the other side\'s argument make your own writing stronger, not weaker?', minChars: 80 },
+      typedCheck: { q: 'Why does naming the other side\'s argument make your own writing stronger, not weaker? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
       cta: 'Got it' },
 
     { id: 'wed-m-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 07 of 10',
@@ -335,7 +335,7 @@ window.CURRICULUM.wednesday = {
         'Kids see "24 stickers" and "3 friends" and immediately do 24 ÷ 3 = 8 — without underlining what was actually asked. Half the time, that\'s the wrong operation entirely.',
         'CUBES step U (UNDERLINE the question) exists specifically to slow you down on this exact mistake. Read the whole question. THEN start the math.'
       ],
-      typedCheck: { q: 'What\'s the most common mistake kids make on word problems, and which CUBES step fixes it?', minChars: 80 },
+      typedCheck: { q: 'What\'s the most common mistake kids make on word problems, and which CUBES step fixes it? Be thorough -- write until you have actually said what you mean.' },
       cta: 'Got it' },
 
     { id: 'wed-e-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 07 of 10',
@@ -345,7 +345,7 @@ window.CURRICULUM.wednesday = {
         'Snacks. A small game upgrade. A treat. A movie with friends. Whatever you want.',
         'The whole point: smart money rules shouldn\'t make life NO fun. Spending is part of the system — you just don\'t spend ALL of it.'
       ],
-      typedCheck: { q: 'Why is the Spend bucket important? What would happen if you only saved and gave?', minChars: 80 },
+      typedCheck: { q: 'Why is the Spend bucket important? What would happen if you only saved and gave? Push past your first answer. The real answer comes after that.' },
       cta: 'Got it' },
 
     { id: 'wed-r-08', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 08 of 10',
@@ -355,18 +355,18 @@ window.CURRICULUM.wednesday = {
         'People who are GOOD at reading inferences in books tend to also be good at reading PEOPLE. Same brain skill.',
         'Practice on the page makes you sharper off the page.'
       ],
-      typedCheck: { q: 'How is inferring something from a book similar to inferring something from how a real person is acting?', minChars: 80 },
+      typedCheck: { q: 'How is inferring something from a book similar to inferring something from how a real person is acting? Write until you feel like you really explained it -- do not stop at your first thought.' },
       cta: 'Got it' },
 
     { id: 'wed-w-08', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Writing', tag: 'Writing · 08 of 10',
       title: 'Write a mini persuasive piece',
       prompt: 'Topic: "Kids should be allowed to choose what they eat for lunch." Write a SHORT persuasive piece: opening opinion sentence, two reasons (each with a piece of evidence or example), one sentence anticipating what the other side might say, and a closing line. 4-6 sentences total.',
-      minChars: 240, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-m-08', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Math', tag: 'Math · 08 of 10',
       title: 'Practice — solve this with CUBES',
       prompt: 'Problem: "Ethan saves $4 per week from his allowance. He wants to buy a video game that costs $48. How many weeks does he need to save?" Type out: Circle (what numbers), Underline (what\'s asked), Box (action words), Evaluate (which operation), Solve (the answer). Walk through each CUBES step.',
-      minChars: 240, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-e-08', kind: 'topic', type: 'concept', minutes: 4, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 08 of 10',
       title: 'The Give bucket — why it matters',
@@ -376,13 +376,13 @@ window.CURRICULUM.wednesday = {
         'Second: giving trains you to think beyond yourself. Adults who never give become stuck in their own heads. Adults who give regularly are connected to their community, harder to break, and happier overall.',
         'Pick a real cause you care about. Save up Give-bucket money. Then give it to that cause.'
       ],
-      typedCheck: { q: 'What\'s one real cause or person you\'d want to give some of your Give bucket to? Why that one?', minChars: 80 },
+      typedCheck: { q: 'What\'s one real cause or person you\'d want to give some of your Give bucket to? Why that one? Keep going until you have said everything that matters -- your first answer is probably not enough.' },
       cta: 'Got it' },
 
     { id: 'wed-r-09', kind: 'topic', type: 'teach-back', minutes: 7, subject: 'Reading', tag: 'Reading · 09 of 10',
       title: 'Teach it back — an inference YOU made about a real person',
       prompt: 'Think of a time you inferred something about how someone real was feeling — without them telling you. Could be a parent, friend, sibling, teacher. What were the clues? What did you infer? Were you right?',
-      minChars: 200, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-w-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 09 of 10',
       title: 'Words that persuade',
@@ -393,7 +393,7 @@ window.CURRICULUM.wednesday = {
         '<strong>Inclusion words:</strong> "we," "us," "together" — they invite the reader onto your team.',
         'Avoid: "maybe," "kind of," "I guess." Those bleed conviction.'
       ],
-      typedCheck: { q: 'Name one word from EACH category (linking, confidence, inclusion) you\'d use in persuasive writing.', minChars: 80 },
+      typedCheck: { q: 'Name one word from EACH category (linking, confidence, inclusion) you\'d use in persuasive writing. Say everything you know about this -- don't stop when you think you're done.' },
       cta: 'Got it' },
 
     { id: 'wed-m-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 09 of 10',
@@ -404,13 +404,13 @@ window.CURRICULUM.wednesday = {
         'If it asks "how long until..." and your answer is "before the start time," something\'s wrong.',
         'This 5-second check catches half of all word-problem mistakes. Use it every time.'
       ],
-      typedCheck: { q: 'What kind of answer should make you stop and re-check? Give one example.', minChars: 80 },
+      typedCheck: { q: 'What kind of answer should make you stop and re-check? Give one example. Write until it is complete. Your first sentence is not the answer.' },
       cta: 'Got it' },
 
     { id: 'wed-e-09', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 09 of 10',
       title: 'Plan YOUR money this week',
       prompt: 'Pretend you got $20 today. Split it into the three buckets using your own percentages. Type out: how much in Save (and what you\'re saving for), how much in Spend (and what kinds of things), how much in Give (and to who or what cause). Make it real — use actual things you\'d save for, spend on, or give to.',
-      minChars: 240, spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
+      spellCheck: true, savedAs: 'writingPiece', cta: 'Submit' },
 
     { id: 'wed-r-10', kind: 'topic', type: 'concept', minutes: 3, subject: 'Reading', tag: 'Reading · 10 of 10',
       title: 'Lock it in — Reading done',
@@ -418,7 +418,7 @@ window.CURRICULUM.wednesday = {
         'You now know inference is just "clue + what I know = smart guess." That formula works on books, movies, conversations, and life.',
         'Pay attention this week to ONE inference a day. Note when you do it. The more you notice, the better you get.'
       ],
-      typedCheck: { q: 'What\'s your plan to notice yourself making inferences this week?', minChars: 70 },
+      typedCheck: { q: 'What\'s your plan to notice yourself making inferences this week? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
       cta: 'Done' },
 
     // ===== SUBJECT 2 — WRITING (Persuasive) =====
@@ -428,7 +428,7 @@ window.CURRICULUM.wednesday = {
         'You learned the three-part structure (position → reasons → conclusion), evidence types (facts, examples, expert quotes), how to handle the other side, and the word choices that tilt the reader.',
         'This skill works on everything from "let me get a new game" to a college admissions essay. Build it now and it pays you forever.'
       ],
-      typedCheck: { q: 'Pick ONE thing you\'d want to persuade a parent or teacher about this week. What\'s your opening opinion sentence?', minChars: 80 },
+      typedCheck: { q: 'Pick ONE thing you\'d want to persuade a parent or teacher about this week. What\'s your opening opinion sentence? Be thorough -- write until you have actually said what you mean.' },
       cta: 'Done' },
 
     // ===== SUBJECT 3 — MATH (Word Problems — CUBES) =====
@@ -438,7 +438,7 @@ window.CURRICULUM.wednesday = {
         'You have the CUBES strategy, the action-word list, the worked example, and the sanity check. That\'s the whole word-problem playbook.',
         'Practice this week: every word problem you see in homework, force yourself through ALL five CUBES steps even if you think you know the answer. Build the habit now; it pays for years.'
       ],
-      typedCheck: { q: 'What\'s your plan for using CUBES on every word problem this week, even easy ones?', minChars: 70 },
+      typedCheck: { q: 'What\'s your plan for using CUBES on every word problem this week, even easy ones? Push past your first answer. The real answer comes after that.' },
       cta: 'Done' },
 
     // ===== SUBJECT 4 — ENTREPRENEURSHIP (3-Bucket Money Rule) =====
@@ -448,7 +448,39 @@ window.CURRICULUM.wednesday = {
         'You learned the 3-Bucket Rule: Save, Spend, Give. You picked your own percentages. You wrote a real plan for $20.',
         'This week: any money you get — allowance, gift, whatever — split it. Use real jars or envelopes if you want. Use a notes app if you don\'t. The HABIT of splitting is what matters; the system is just there to make it easy.'
       ],
-      typedCheck: { q: 'What\'s the one habit you want to lock in this week with your money?', minChars: 70 },
+      typedCheck: { q: 'What\'s the one habit you want to lock in this week with your money? Write until you feel like you really explained it -- do not stop at your first thought.' },
+      cta: 'Done' },
+
+    // ===== SUBJECT 5 — SPECIALS check-in (Only Child / Pick-Me — started Monday) =====
+    { id: 'wed-sp-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Specials', tag: 'Specials · check-in 1 of 3',
+      title: 'Check-in: Did you catch yourself?',
+      body: [
+        'Monday we talked about pick-me behavior — performing to get attention instead of just being yourself.',
+        'Two days later, it\'s a good time to check in. Did you catch yourself doing it? Did you notice it in anyone else? You don\'t have to have fixed it — noticing counts.',
+        'The catching-yourself moment is the whole game. Most people never get there because they never name the thing. You named it. Now you can see it.'
+      ],
+      typedCheck: { q: 'Between Monday and today, did you catch yourself performing or changing how you act to get someone\'s attention? Write what happened. If nothing comes to mind, write about a time you\'ve seen someone else do it and what you noticed.' },
+      cta: 'Done' },
+
+    { id: 'wed-sp-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Specials', tag: 'Specials · check-in 2 of 3',
+      title: 'The attention-to-effort gap',
+      body: [
+        'Here\'s a pattern worth watching: how much effort are you putting in compared to how much attention you\'re getting back?',
+        'If you\'re doing a lot — texting first every time, always showing up, always being the one trying — and they\'re doing almost nothing — that\'s a signal. Not a signal that you\'re doing it wrong. A signal that this isn\'t an equal situation.',
+        'Equal isn\'t always 50/50. But when it\'s consistently 90/10, and you\'re the 90 — that\'s when the pick-me trap closes. You work harder to close the gap, they work less because you keep showing up anyway, and nothing changes except you get more tired.'
+      ],
+      typedCheck: { q: 'Think of a friendship or situation where you feel like you put in more than you get back. Write about it honestly. What would change if you put in the same amount they do?' },
+      cta: 'Done' },
+
+    { id: 'wed-sp-03', kind: 'topic', type: 'concept', minutes: 4, subject: 'Specials', tag: 'Specials · check-in 3 of 3',
+      title: 'The quiet move',
+      body: [
+        'The quiet move is simple: put your energy where it\'s returned.',
+        'Not in a cold, calculating way. Just — pay attention to who shows up for you without you having to beg. Who reaches out first sometimes. Who makes you feel like yourself, not like you\'re performing.',
+        'Those people are worth your energy. The others — you don\'t owe them a performance. You can be nice, you can be kind, you just don\'t have to work overtime for people who treat your effort like it\'s guaranteed.',
+        'This week\'s practice: before you do something to get someone\'s attention, ask yourself — do they do this for me? If yes, great. If you\'re not sure, that\'s your answer.'
+      ],
+      typedCheck: { q: 'Who in your life shows up for you without you having to chase them? Write about what that looks like. Then write about what you want to do differently with your energy going forward.' },
       cta: 'Done' },
 
     { id: 'report-card-wed', kind: 'drill', type: 'report-card', title: 'Wednesday — show Mom & Dad', minutes: 2 }
