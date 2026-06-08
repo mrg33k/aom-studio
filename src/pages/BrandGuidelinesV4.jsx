@@ -46,6 +46,23 @@ const C = {
 /*  UTILITIES                                                          */
 /* ================================================================== */
 
+/* The brand device: a perfect orange dot. The period in "AOM." Sized in em
+   so it scales with the wordmark it sits beside. Round everywhere — never the
+   font's squarish period glyph. */
+function Dot({ size = '0.14em', color = '#E85D26', ml = '0.02em' }) {
+  return (
+    <span style={{
+      display: 'inline-block',
+      width: size,
+      height: size,
+      borderRadius: '50%',
+      background: color,
+      verticalAlign: 'baseline',
+      marginLeft: ml,
+    }} />
+  )
+}
+
 function CopyHex({ hex }) {
   const [copied, setCopied] = useState(false)
   return (
@@ -881,12 +898,12 @@ function LockupGrid() {
         justifyContent: 'center',
         minHeight: 160,
       }}>
-        <div ref={hzDarkRef}>
-          <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440, display: 'block' }} aria-label="AOM Horizontal lockup">
-            <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-            <line x1="280" y1="20" x2="280" y2="60" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-            <text x="296" y="46" fontFamily="Hanken Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
-          </svg>
+        <div ref={hzDarkRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 18, padding: '4px 0' }}>
+          <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 52, fontWeight: 800, color: '#F0ECE6', letterSpacing: '-0.04em', lineHeight: 1 }}>
+            AOM<Dot size="0.14em" color="#E85D26" />
+          </span>
+          <span style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.18)' }} />
+          <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 12.5, fontWeight: 600, color: '#8A847C', letterSpacing: '0.24em' }}>AHEAD OF MARKET</span>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
         <div style={{ marginTop: 6 }}>
@@ -906,11 +923,11 @@ function LockupGrid() {
         justifyContent: 'center',
         minHeight: 160,
       }}>
-        <div ref={stackDarkRef}>
-          <svg viewBox="0 0 320 110" width={220} style={{ display: 'block' }} aria-label="AOM Stacked lockup">
-            <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-            <text x="2" y="96" fontFamily="Hanken Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
-          </svg>
+        <div ref={stackDarkRef} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, padding: '4px 0' }}>
+          <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 68, fontWeight: 800, color: '#F0ECE6', letterSpacing: '-0.04em', lineHeight: 1 }}>
+            AOM<Dot size="0.14em" color="#E85D26" />
+          </span>
+          <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 12, fontWeight: 600, color: '#8A847C', letterSpacing: '0.33em', paddingLeft: 2 }}>AHEAD OF MARKET</span>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked Lockup</div>
         <div style={{ marginTop: 6 }}>
@@ -930,12 +947,12 @@ function LockupGrid() {
         justifyContent: 'center',
         minHeight: 160,
       }}>
-        <div ref={hzLightRef}>
-          <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440, display: 'block' }} aria-label="AOM Horizontal lockup light">
-            <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-            <line x1="280" y1="20" x2="280" y2="60" stroke="#D9D3CB" strokeWidth="1" />
-            <text x="296" y="46" fontFamily="Hanken Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
-          </svg>
+        <div ref={hzLightRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 18, padding: '4px 0' }}>
+          <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 52, fontWeight: 800, color: '#0A0A0A', letterSpacing: '-0.04em', lineHeight: 1 }}>
+            AOM<Dot size="0.14em" color="#E85D26" />
+          </span>
+          <span style={{ width: 1, height: 32, background: '#D9D3CB' }} />
+          <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 12.5, fontWeight: 600, color: '#0A0A0A', letterSpacing: '0.24em' }}>AHEAD OF MARKET</span>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
         <div style={{ marginTop: 6 }}>
@@ -955,11 +972,11 @@ function LockupGrid() {
         justifyContent: 'center',
         minHeight: 160,
       }}>
-        <div ref={stackLightRef}>
-          <svg viewBox="0 0 320 110" width={220} style={{ display: 'block' }} aria-label="AOM Stacked lockup light">
-            <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-            <text x="2" y="96" fontFamily="Hanken Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#7A7267" letterSpacing="3">AHEAD OF MARKET</text>
-          </svg>
+        <div ref={stackLightRef} style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, padding: '4px 0' }}>
+          <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 68, fontWeight: 800, color: '#0A0A0A', letterSpacing: '-0.04em', lineHeight: 1 }}>
+            AOM<Dot size="0.14em" color="#E85D26" />
+          </span>
+          <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 12, fontWeight: 600, color: '#7A7267', letterSpacing: '0.33em', paddingLeft: 2 }}>AHEAD OF MARKET</span>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked / Light</div>
         <div style={{ marginTop: 6 }}>
@@ -1073,7 +1090,15 @@ export default function BrandGuidelinesV4() {
               position: 'relative',
             }}>
               AOM
-              <span style={{ color: C.orange }}>.</span>
+              <span style={{
+                display: 'inline-block',
+                width: '0.15em',
+                height: '0.15em',
+                borderRadius: '50%',
+                background: C.orange,
+                verticalAlign: 'baseline',
+                marginLeft: '0.03em',
+              }} />
             </h1>
 
             {/* Editorial voice line — Syne mark meets Fraunces voice */}
