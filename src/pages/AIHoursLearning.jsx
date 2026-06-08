@@ -1574,19 +1574,14 @@ function ClientView({ client, onLogout }) {
     } catch { return {} }
   })
   // Collapse state for completed sessions — persisted to localStorage
-  // { sessionNum: true } means collapsed. Default: completed sessions start collapsed.
+  // { sessionNum: true } means collapsed. Default: sessions start expanded so completed sessions are accessible.
   const [collapsedSessions, setCollapsedSessions] = useState(() => {
     try {
       const key = `ai_hours_collapsed_${client.access_code}`
       const stored = localStorage.getItem(key)
       if (stored) return JSON.parse(stored)
-      // First visit: collapse all AOM-completed sessions by default
-      const defaults = {}
-      const currentSession = parseInt(client.current_session, 10) || 1
-      for (let n = 1; n < currentSession; n++) {
-        defaults[n] = true
-      }
-      return defaults
+      // First visit: start all sessions expanded so completed sessions are accessible/reviewable
+      return {}
     } catch { return {} }
   })
   const currentSession = parseInt(client.current_session, 10) || 1
