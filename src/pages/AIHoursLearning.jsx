@@ -1582,14 +1582,14 @@ function ClientView({ client, onLogout }) {
       if (stored) return JSON.parse(stored)
       // First visit: collapse all AOM-completed sessions by default
       const defaults = {}
-      const currentSession = client.current_session || 1
+      const currentSession = parseInt(client.current_session, 10) || 1
       for (let n = 1; n < currentSession; n++) {
         defaults[n] = true
       }
       return defaults
     } catch { return {} }
   })
-  const currentSession = client.current_session || 1
+  const currentSession = parseInt(client.current_session, 10) || 1
   const isComplete = currentSession > 5
   // Whole course finished — same signal the step indicator uses for its all-green state.
   const programComplete = isComplete || (currentSession >= 5 && !!clientMarkedDone[5])
