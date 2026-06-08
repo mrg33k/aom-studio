@@ -898,12 +898,12 @@ function LockupGrid() {
         justifyContent: 'center',
         minHeight: 160,
       }}>
-        <div ref={hzDarkRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 18, padding: '4px 0' }}>
-          <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 52, fontWeight: 800, color: '#F0ECE6', letterSpacing: '-0.04em', lineHeight: 1 }}>
+        <div ref={hzDarkRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 14, padding: '4px 0', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 38, fontWeight: 800, color: '#F0ECE6', letterSpacing: '-0.04em', lineHeight: 1, whiteSpace: 'nowrap' }}>
             AOM<Dot size="0.14em" color="#E85D26" />
           </span>
-          <span style={{ width: 1, height: 32, background: 'rgba(255,255,255,0.18)' }} />
-          <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 12.5, fontWeight: 600, color: '#8A847C', letterSpacing: '0.24em' }}>AHEAD OF MARKET</span>
+          <span style={{ width: 1, height: 26, background: 'rgba(255,255,255,0.18)', flexShrink: 0 }} />
+          <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 10.5, fontWeight: 600, color: '#8A847C', letterSpacing: '0.16em', whiteSpace: 'nowrap' }}>AHEAD OF MARKET</span>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
         <div style={{ marginTop: 6 }}>
@@ -947,12 +947,12 @@ function LockupGrid() {
         justifyContent: 'center',
         minHeight: 160,
       }}>
-        <div ref={hzLightRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 18, padding: '4px 0' }}>
-          <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 52, fontWeight: 800, color: '#0A0A0A', letterSpacing: '-0.04em', lineHeight: 1 }}>
+        <div ref={hzLightRef} style={{ display: 'inline-flex', alignItems: 'center', gap: 14, padding: '4px 0', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: '"Syne", sans-serif', fontSize: 38, fontWeight: 800, color: '#0A0A0A', letterSpacing: '-0.04em', lineHeight: 1, whiteSpace: 'nowrap' }}>
             AOM<Dot size="0.14em" color="#E85D26" />
           </span>
-          <span style={{ width: 1, height: 32, background: '#D9D3CB' }} />
-          <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 12.5, fontWeight: 600, color: '#0A0A0A', letterSpacing: '0.24em' }}>AHEAD OF MARKET</span>
+          <span style={{ width: 1, height: 26, background: '#D9D3CB', flexShrink: 0 }} />
+          <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 10.5, fontWeight: 600, color: '#0A0A0A', letterSpacing: '0.16em', whiteSpace: 'nowrap' }}>AHEAD OF MARKET</span>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
         <div style={{ marginTop: 6 }}>
@@ -1682,8 +1682,8 @@ export default function BrandGuidelinesV4() {
                     }}>
                       <svg viewBox="0 0 120 120" width={64}>
                         <rect width="120" height="120" fill={variant.bg} />
-                        <text x="16" y="90" fontFamily="Syne, sans-serif" fontSize="96" fontWeight="800" fill={variant.fill} letterSpacing="-2">A</text>
-                        <circle cx="92" cy="78" r="9" fill={variant.dotFill} />
+                        <text x="16" y="88" fontFamily="Syne, sans-serif" fontSize="86" fontWeight="800" fill={variant.fill} letterSpacing="-1">A</text>
+                        <circle cx="90" cy="80" r="10" fill={variant.dotFill} />
                       </svg>
                     </div>
                     <div style={{ padding: '12px 16px' }}>
@@ -2891,7 +2891,7 @@ export default function BrandGuidelinesV4() {
             <TemplateCard
               name="Instagram Post"
               dimensions="1080 x 1080 (1:1)"
-              usage="Full-bleed image top, text zone below with orange accent bar. For announcements, case studies, and proof content."
+              usage="Type-forward poster. Bold Syne headline on night, an oversized brand dot bled off the corner, Fraunces voice line. For announcements, case studies, proof."
               exportWidth={1080}
               exportHeight={1080}
               exportFilename="aom-ig-post"
@@ -2903,7 +2903,7 @@ export default function BrandGuidelinesV4() {
                   { hex: '#FDF6EC', label: 'headline' },
                   { hex: '#8A847C', label: 'body' },
                 ],
-                layout: '60% image / 40% text, 3px orange left accent bar',
+                layout: 'Headline-led, edge-bled brand dot, Hanken footer rule',
               }}
             >
               <TemplateSocialIGPost />
@@ -2912,7 +2912,7 @@ export default function BrandGuidelinesV4() {
             <TemplateCard
               name="Instagram Story / Reel Cover"
               dimensions="1080 x 1920 (9:16)"
-              usage="Vertical format. Full-bleed image with gradient overlay. Category label above headline. Logo bottom-right."
+              usage="Vertical type poster. Headline anchored low under an orange rule, brand dot bled top-right."
               exportWidth={1080}
               exportHeight={1920}
               exportFilename="aom-ig-story"
@@ -2923,7 +2923,7 @@ export default function BrandGuidelinesV4() {
                   { hex: '#E85D26', label: 'label' },
                   { hex: '#FDF6EC', label: 'headline' },
                 ],
-                layout: 'Full-bleed image, gradient overlay bottom 60%, logo bottom-right',
+                layout: 'Headline low-anchored, orange rule, bled brand dot',
               }}
             >
               <TemplateSocialIGStory />
@@ -2932,7 +2932,7 @@ export default function BrandGuidelinesV4() {
             <TemplateCard
               name="LinkedIn Post"
               dimensions="1200 x 628 (~1.91:1)"
-              usage="Split layout. Image left, content right. CTA strip at bottom in brand orange. For professional content and thought leadership."
+              usage="Orange brand panel left, statement right with Fraunces support line and arrow CTA. For thought leadership."
               exportWidth={1200}
               exportHeight={628}
               exportFilename="aom-linkedin-post"
@@ -2943,7 +2943,7 @@ export default function BrandGuidelinesV4() {
                   { hex: '#E85D26', label: 'CTA strip' },
                   { hex: '#FDF6EC', label: 'headline' },
                 ],
-                layout: '50/50 split, image left, content right, CTA strip bottom',
+                layout: '38% orange brand panel / statement right',
               }}
             >
               <TemplateSocialLinkedIn />
@@ -2952,7 +2952,7 @@ export default function BrandGuidelinesV4() {
             <TemplateCard
               name="Before / After Split"
               dimensions="1080 x 1080 (1:1)"
-              usage="Two images side by side with orange divider. Labels over images. Works for construction site work and brand redesigns."
+              usage="Split frame with an orange seam, B / A markers, project strip below. For site work and brand redesigns."
               exportWidth={1080}
               exportHeight={1080}
               exportFilename="aom-before-after"
@@ -2963,7 +2963,7 @@ export default function BrandGuidelinesV4() {
                   { hex: '#E85D26', label: 'divider' },
                   { hex: '#F0ECE6', label: 'text' },
                 ],
-                layout: 'Two images 50/50, 3px red divider, 80px bottom bar',
+                layout: '50/50 split, orange seam, project strip',
               }}
             >
               <TemplateSocialBeforeAfter />
@@ -2972,7 +2972,7 @@ export default function BrandGuidelinesV4() {
             <TemplateCard
               name="Testimonial Card"
               dimensions="1080 x 1080 (1:1)"
-              usage="Centered quote with attribution. Large open-quote mark, orange accent line. For client proof and social proof."
+              usage="Fraunces quote led with an oversized quote mark, orange rule, attribution and mark. For client proof."
               exportWidth={1080}
               exportHeight={1080}
               exportFilename="aom-testimonial"
@@ -2983,7 +2983,7 @@ export default function BrandGuidelinesV4() {
                   { hex: '#E85D26', label: 'accent line + quote mark' },
                   { hex: '#F0ECE6', label: 'text' },
                 ],
-                layout: 'Centered, 2px orange accent line, 48px quote mark overlay',
+                layout: 'Quote-led Fraunces, oversized quote mark, attribution row',
               }}
             >
               <TemplateSocialTestimonial />
