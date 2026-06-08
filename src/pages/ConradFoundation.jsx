@@ -334,6 +334,84 @@ export default function ConradFoundation() {
         </div>
       </section>
 
+      {/* ──── EXPERT VIDEO · YOUR TEAM OR OURS ──────────────────────────── */}
+      <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
+        <div className="max-w-[1280px] mx-auto">
+          <motion.div className="max-w-[760px] mb-16 md:mb-20" {...fadeUp()}>
+            <Kicker>Expert video</Kicker>
+            <h2 className="font-display-serif text-[42px] md:text-[72px] leading-[0.93] tracking-[-0.025em] text-[#F0ECE6] mt-6">
+              Your team or{' '}
+              <em className="font-display-italic italic font-medium text-[#E85D26]">ours.</em>
+            </h2>
+            <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
+              The expert library lives inside the lessons. You already have a video team — so this is an option, not a requirement. Use them, or use us. Either way, it slots into the platform.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+            {/* Option A — your team */}
+            <motion.div
+              className="border border-[#E85D26]/35 rounded-xl bg-[#E85D26]/[0.04] p-8 md:p-10 flex flex-col gap-6"
+              {...fadeUp(0.05)}
+            >
+              <span className="font-mono text-[10px] tracking-[0.22em] text-[#E85D26]">Option A</span>
+              <div>
+                <h3 className="font-display-serif text-[28px] md:text-[40px] leading-[1.05] tracking-[-0.02em] text-[#F0ECE6] mb-4">
+                  Your team{' '}
+                  <em className="font-display-italic italic text-[#E85D26]">films it.</em>
+                </h3>
+                <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/70 leading-[1.7]">
+                  Already have footage or a crew? Hand it over. We structure it into the course format and host it on the platform — you own the content.
+                </p>
+              </div>
+              <ul className="space-y-3 mt-auto pt-6 border-t border-[#F0ECE6]/[0.10]">
+                {[
+                  'Use your existing video team',
+                  'We cut and structure it into lessons',
+                  'Platform handles delivery and access',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-baseline gap-3">
+                    <span className="font-mono text-[10px] text-[#E85D26] flex-shrink-0">→</span>
+                    <span className="font-body text-[13px] md:text-[14px] text-[#F0ECE6]/65 leading-[1.5]">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Option B — we produce */}
+            <motion.div
+              className="border border-[#F0ECE6]/[0.12] rounded-xl bg-[#F0ECE6]/[0.02] p-8 md:p-10 flex flex-col gap-6"
+              {...fadeUp(0.10)}
+            >
+              <span className="font-mono text-[10px] tracking-[0.22em] text-[#E85D26]">Option B</span>
+              <div>
+                <h3 className="font-display-serif text-[28px] md:text-[40px] leading-[1.05] tracking-[-0.02em] text-[#F0ECE6] mb-4">
+                  We produce{' '}
+                  <em className="font-display-italic italic text-[#E85D26]">it.</em>
+                </h3>
+                <p className="font-body text-[15px] md:text-[16px] text-[#F0ECE6]/70 leading-[1.7]">
+                  Want a hand? We film Nancy and the experts — lit, framed, MasterClass-tier. Each session builds the library, reusable across Water, Space, and Plants.
+                </p>
+              </div>
+              <ul className="space-y-3 mt-auto pt-6 border-t border-[#F0ECE6]/[0.10]">
+                {[
+                  'Professional filming — location or studio',
+                  'Edited and archived in the platform library',
+                  'Reusable across the whole curriculum',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-baseline gap-3">
+                    <span className="font-mono text-[10px] text-[#E85D26] flex-shrink-0">→</span>
+                    <span className="font-body text-[13px] md:text-[14px] text-[#F0ECE6]/65 leading-[1.5]">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
+
       {/* ──── THE GAME ──────────────────────────────────────────────────── */}
       <section className="px-6 md:px-12 py-24 md:py-32 border-t border-[#F0ECE6]/[0.08]">
         <div className="max-w-[1280px] mx-auto">
@@ -344,8 +422,35 @@ export default function ConradFoundation() {
               <em className="font-display-italic italic font-medium text-[#E85D26]">feel it.</em>
             </h2>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/70 mt-8 leading-[1.65]">
-              A decision game that takes a student from Earth to the Moon, making real calls about water along the way. Every choice has a consequence. Every fact is true.
+              A decision game that takes a student from Earth to the Moon, making real calls about water along the way. Every choice has a consequence. Every fact is true. Play it right here.
             </p>
+          </motion.div>
+
+          {/* Live demo embed */}
+          <motion.div
+            className="border border-[#E85D26]/30 rounded-2xl bg-[#0C0C0C] overflow-hidden mb-5"
+            {...fadeUp(0.08)}
+          >
+            <div className="flex items-center justify-between px-6 md:px-8 py-4 border-b border-[#F0ECE6]/[0.08] bg-[#F0ECE6]/[0.03]">
+              <div className="flex items-center gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#E85D26] animate-pulse" />
+                <p className="font-mono text-[9.5px] uppercase tracking-[0.28em] text-[#F0ECE6]/60">Live demo · play it here</p>
+              </div>
+              <a
+                href="https://aheadofmarket.com/missionwater"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-[#F0ECE6]/45 hover:text-[#E85D26] transition-colors no-underline"
+              >
+                Open full screen ↗
+              </a>
+            </div>
+            <iframe
+              src="https://aheadofmarket.com/missionwater"
+              title="Mission Water — interactive demo"
+              className="w-full h-[560px] md:h-[680px] border-0 block bg-[#0C0C0C]"
+              loading="lazy"
+            />
           </motion.div>
 
           {/* Feature card */}
