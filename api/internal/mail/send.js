@@ -194,7 +194,7 @@ export default async function handler(req, res) {
   const fromHeader = sig.sendAsEmail
     ? fmtAddress({ name: sig.displayName || '', email: sig.sendAsEmail })
     : (creds.profile?.email ? fmtAddress({ email: creds.profile.email }) : '')
-  if (!fromHeader) return res.status(502).json({ error: 'no-send-as-address' })
+  if (!fromHeader) return res.status(424).json({ error: 'no-send-as-address' })
 
   let finalBodyHtml = String(bodyHtml)
   if (includeSignature !== false && sig.signatureHtml) {
@@ -231,7 +231,7 @@ export default async function handler(req, res) {
     })
     if (!draftResp.ok) {
       const text = await draftResp.text().catch(() => '')
-      return res.status(502).json({ error: 'gmail-draft', status: draftResp.status, detail: text.slice(0, 300) })
+      return res.status(424).json({ error: 'gmail-draft', status: draftResp.status, detail: text.slice(0, 300) })
     }
     const draftRow = await draftResp.json()
     return res.status(200).json({
@@ -254,7 +254,7 @@ export default async function handler(req, res) {
 
   if (!sendResp.ok) {
     const text = await sendResp.text().catch(() => '')
-    return res.status(502).json({ error: 'gmail-send', status: sendResp.status, detail: text.slice(0, 300) })
+    return res.status(424).json({ error: 'gmail-send', status: sendResp.status, detail: text.slice(0, 300) })
   }
 
   const sent = await sendResp.json()

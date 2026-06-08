@@ -106,7 +106,7 @@ export default async function handler(req, res) {
   try {
     creds = await getGmailTokenByConnection(connection_id)
   } catch (e) {
-    return res.status(502).json({ error: 'gmail-auth', detail: e.message })
+    return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }
   if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
 
@@ -147,7 +147,7 @@ export default async function handler(req, res) {
   )
   if (!listResp.ok) {
     const text = await listResp.text().catch(() => '')
-    return res.status(502).json({ error: 'gmail-list', status: listResp.status, detail: text.slice(0, 200) })
+    return res.status(424).json({ error: 'gmail-list', status: listResp.status, detail: text.slice(0, 200) })
   }
   const list = await listResp.json()
   const ids = (list.messages || []).map(m => m.id)

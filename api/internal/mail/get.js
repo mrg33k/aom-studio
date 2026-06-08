@@ -110,14 +110,14 @@ export default async function handler(req, res) {
   try {
     creds = await getGmailTokenByConnection(connection_id)
   } catch (e) {
-    return res.status(502).json({ error: 'gmail-auth', detail: e.message })
+    return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }
   if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
 
   const r = await gmailFetch(creds.accessToken, `/messages/${encodeURIComponent(message_id)}?format=full`)
   if (!r.ok) {
     const text = await r.text().catch(() => '')
-    return res.status(502).json({ error: 'gmail-get', status: r.status, detail: text.slice(0, 200) })
+    return res.status(424).json({ error: 'gmail-get', status: r.status, detail: text.slice(0, 200) })
   }
   const msg = await r.json()
   const headers = msg.payload?.headers || []

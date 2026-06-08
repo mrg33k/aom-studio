@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   try {
     creds = await getGmailTokenByConnection(connection_id)
   } catch (e) {
-    return res.status(502).json({ error: 'gmail-auth', detail: e.message })
+    return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }
   if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
 
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
   )
   if (!r.ok) {
     const text = await r.text().catch(() => '')
-    return res.status(502).json({ error: 'gmail-attachment', status: r.status, detail: text.slice(0, 200) })
+    return res.status(424).json({ error: 'gmail-attachment', status: r.status, detail: text.slice(0, 200) })
   }
   const data = await r.json()
   // Gmail returns urlsafe base64 (-_). Pass it through; the client can convert

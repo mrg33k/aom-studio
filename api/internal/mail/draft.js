@@ -70,7 +70,7 @@ export default async function handler(req, res) {
   try {
     creds = await getGmailTokenByConnection(connection_id)
   } catch (e) {
-    return res.status(502).json({ error: 'gmail-auth', detail: e.message })
+    return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }
   if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
 
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
     const listResp = await gmailFetch(creds.accessToken, `/drafts?maxResults=${max}`)
     if (!listResp.ok) {
       const text = await listResp.text().catch(() => '')
-      return res.status(502).json({ error: 'gmail-drafts-list', status: listResp.status, detail: text.slice(0, 300) })
+      return res.status(424).json({ error: 'gmail-drafts-list', status: listResp.status, detail: text.slice(0, 300) })
     }
     const body = await listResp.json()
     const rawDrafts = Array.isArray(body.drafts) ? body.drafts : []
