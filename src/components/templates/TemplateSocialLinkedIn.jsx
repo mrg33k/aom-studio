@@ -9,9 +9,14 @@ const C = {
   white: '#FFFFFF',
 }
 
+function Dot({ s = '0.5em', c = C.orange }) {
+  return <span style={{ display: 'inline-block', width: s, height: s, borderRadius: '50%', background: c, marginLeft: '0.06em', verticalAlign: 'baseline' }} />
+}
+
+/* LinkedIn — 1.91:1. Orange brand panel left, statement right. */
 export default function TemplateSocialLinkedIn({
   headline = 'SMALL TEAM. BIG OUTPUT.',
-  body = 'We deliver what agencies take months to produce. No layers, no delays, no excuses.',
+  body = 'We deliver what agencies take months to produce. No layers, no delays.',
   cta = 'GET STARTED',
 }) {
   return (
@@ -21,77 +26,23 @@ export default function TemplateSocialLinkedIn({
       background: C.night,
       display: 'flex',
       overflow: 'hidden',
-      fontFamily: '"Space Grotesk", sans-serif',
+      position: 'relative',
+      containerType: 'inline-size',
+      fontFamily: '"Hanken Grotesk", sans-serif',
     }}>
-      {/* Left: image zone (50%) */}
-      <div style={{
-        flex: '0 0 50%',
-        background: 'linear-gradient(135deg, #1a1208 0%, #0C0C0C 50%, rgba(232,93,38,0.06) 100%)',
-        position: 'relative',
-      }}>
-        <div style={{
-          position: 'absolute',
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: 40,
-          background: 'linear-gradient(to right, transparent, #0C0C0C)',
-        }} />
+      {/* left: orange brand panel */}
+      <div style={{ flex: '0 0 38%', background: C.orange, display: 'flex', alignItems: 'flex-end', padding: '4.5%', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', left: '-18%', top: '-18%', width: '60%', aspectRatio: '1', borderRadius: '50%', background: 'rgba(0,0,0,0.06)' }} />
+        <span style={{ fontFamily: '"Syne", sans-serif', fontSize: '11cqw', fontWeight: 800, color: C.night, letterSpacing: '-0.04em', lineHeight: 1, position: 'relative' }}>AOM<Dot c={C.night} /></span>
       </div>
 
-      {/* Right: content zone (50%) */}
-      <div style={{
-        flex: '0 0 50%',
-        background: C.night,
-        padding: 20,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-      }}>
-        {/* AOM logo top-right */}
-        <div style={{ textAlign: 'right' }}>
-          <span style={{
-            fontFamily: '"Syne", sans-serif',
-            fontSize: 14,
-            fontWeight: 800,
-            color: C.textLight,
-          }}>AOM<span style={{ color: C.orange }}>.</span></span>
-        </div>
-
-        {/* Content */}
-        <div>
-          <div style={{
-            fontFamily: '"Syne", sans-serif',
-            fontSize: 18,
-            fontWeight: 800,
-            color: C.cream,
-            textTransform: 'uppercase',
-            lineHeight: 1.15,
-            marginBottom: 10,
-          }}>{headline}</div>
-          <div style={{
-            fontSize: 10,
-            color: C.textMuted,
-            lineHeight: 1.5,
-          }}>{body}</div>
-        </div>
-
-        {/* CTA strip */}
-        <div style={{
-          background: C.orange,
-          padding: '6px 12px',
-          textAlign: 'center',
-          marginTop: 12,
-        }}>
-          <span style={{
-            fontFamily: '"Space Grotesk", sans-serif',
-            fontSize: 9,
-            fontWeight: 600,
-            color: C.white,
-            textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-          }}>{cta}</span>
-        </div>
+      {/* right: statement */}
+      <div style={{ flex: 1, padding: '4.5% 5%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4%' }}>
+        <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: '7.2cqw', fontWeight: 800, color: C.cream, textTransform: 'uppercase', lineHeight: 1.02, letterSpacing: '-0.02em', margin: 0 }}>{headline}</h3>
+        <p style={{ fontFamily: '"Fraunces", serif', fontStyle: 'italic', fontSize: '4cqw', color: C.textMuted, lineHeight: 1.35, margin: 0 }}>{body}</p>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3%', alignSelf: 'flex-start', fontSize: '3.1cqw', fontWeight: 700, color: C.orange, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+          {cta}<span style={{ fontSize: '4cqw' }}>&rarr;</span>
+        </span>
       </div>
     </div>
   )

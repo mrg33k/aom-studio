@@ -2848,7 +2848,7 @@ export default function BrandGuidelinesV4() {
                 'Short sentences. Scannable.',
                 'No em dashes. Period.',
                 'Headlines: Syne, all caps or title case. Never sentence case.',
-                'Body: Space Grotesk. 16px min on web.',
+                'Body: Hanken Grotesk. 16px min on web.',
                 'CTAs: Action verbs. "Get started" not "Submit".',
                 'Numbers are display elements. Make them big.',
                 'If it sounds like a LinkedIn post from 2019, rewrite it.',
@@ -2896,7 +2896,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={1080}
               exportFilename="aom-ig-post"
               specs={{
-                fonts: ['Syne 800 (headline)', 'Space Grotesk 400 (body)', 'JetBrains Mono 700 (labels)'],
+                fonts: ['Syne 800 (headline)', 'Hanken Grotesk 400 (body)', 'Hanken Grotesk 700 caps (labels)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'accent' },
@@ -2917,7 +2917,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={1920}
               exportFilename="aom-ig-story"
               specs={{
-                fonts: ['Syne 800 (headline)', 'JetBrains Mono 700 (category)'],
+                fonts: ['Syne 800 (headline)', 'Hanken Grotesk 700 caps (category)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'label' },
@@ -2937,7 +2937,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={628}
               exportFilename="aom-linkedin-post"
               specs={{
-                fonts: ['Syne 800 (headline)', 'Space Grotesk 400 (body)', 'Space Grotesk 600 (CTA)'],
+                fonts: ['Syne 800 (headline)', 'Hanken Grotesk 400 (body)', 'Hanken Grotesk 600 (CTA)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'CTA strip' },
@@ -2957,7 +2957,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={1080}
               exportFilename="aom-before-after"
               specs={{
-                fonts: ['JetBrains Mono 700 (labels)', 'Space Grotesk 600 (project name)'],
+                fonts: ['Hanken Grotesk 700 caps (labels)', 'Hanken Grotesk 600 (project name)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'divider' },
@@ -2977,7 +2977,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={1080}
               exportFilename="aom-testimonial"
               specs={{
-                fonts: ['Syne 800 (quote mark)', 'Space Grotesk 400 italic (quote)', 'Space Grotesk 600 (name)'],
+                fonts: ['Syne 800 (quote mark)', 'Fraunces 400 italic (quote)', 'Hanken Grotesk 600 (name)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'accent line + quote mark' },
@@ -2997,7 +2997,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={1080}
               exportFilename="aom-quick-tip"
               specs={{
-                fonts: ['Syne 900 (watermark number)', 'Syne 800 (headline)', 'Space Grotesk 400 (body)', 'JetBrains Mono 700 (category)'],
+                fonts: ['Syne 900 (watermark number)', 'Syne 800 (headline)', 'Hanken Grotesk 400 (body)', 'Hanken Grotesk 700 caps (category)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'category + number watermark' },
@@ -3026,7 +3026,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={1080}
               exportFilename="aom-presentation-title"
               specs={{
-                fonts: ['Syne 800 (title)', 'Space Grotesk 400 (subtitle)', 'JetBrains Mono 500 (date)'],
+                fonts: ['Syne 800 (title)', 'Hanken Grotesk 400 (subtitle)', 'Hanken Grotesk 500 caps (date)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'pattern strip' },
@@ -3047,7 +3047,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={1080}
               exportFilename="aom-presentation-content"
               specs={{
-                fonts: ['Syne 800 (headline)', 'Space Grotesk 400 (body)', 'JetBrains Mono 700 (section label)', 'JetBrains Mono 400 (page number)'],
+                fonts: ['Syne 800 (headline)', 'Hanken Grotesk 400 (body)', 'Hanken Grotesk 700 caps (section label)', 'Hanken Grotesk 400 caps (page number)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'section label' },
@@ -3068,7 +3068,7 @@ export default function BrandGuidelinesV4() {
               exportHeight={1080}
               exportFilename="aom-presentation-stats"
               specs={{
-                fonts: ['Syne 900 (stat numbers)', 'Space Grotesk 600 (labels)', 'JetBrains Mono 700 (section label)'],
+                fonts: ['Syne 900 (stat numbers)', 'Hanken Grotesk 600 (labels)', 'Hanken Grotesk 700 caps (section label)'],
                 colors: [
                   { hex: '#0C0C0C', label: 'bg' },
                   { hex: '#E85D26', label: 'numbers + section label' },

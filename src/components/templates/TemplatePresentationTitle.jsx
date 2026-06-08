@@ -24,7 +24,7 @@ export default function TemplatePresentationTitle({
       justifyContent: 'space-between',
       padding: 28,
       overflow: 'hidden',
-      fontFamily: '"Space Grotesk", sans-serif',
+      fontFamily: '"Hanken Grotesk", sans-serif',
       position: 'relative',
     }}>
       {/* AOM logo top-left */}
@@ -70,7 +70,7 @@ export default function TemplatePresentationTitle({
       {/* Date/presenter bottom-left + pattern strip */}
       <div>
         <div style={{
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: '"Hanken Grotesk", sans-serif',
           fontSize: 9,
           fontWeight: 500,
           color: C.textMuted,

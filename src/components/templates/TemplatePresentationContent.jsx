@@ -24,12 +24,12 @@ export default function TemplatePresentationContent({
       justifyContent: 'space-between',
       padding: 28,
       overflow: 'hidden',
-      fontFamily: '"Space Grotesk", sans-serif',
+      fontFamily: '"Hanken Grotesk", sans-serif',
       position: 'relative',
     }}>
       {/* Section label top-left */}
       <div style={{
-        fontFamily: '"JetBrains Mono", monospace',
+        fontFamily: '"Hanken Grotesk", sans-serif',
         fontSize: 9,
         fontWeight: 700,
         letterSpacing: '0.15em',
@@ -66,7 +66,7 @@ export default function TemplatePresentationContent({
         textAlign: 'right',
       }}>
         <span style={{
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: '"Hanken Grotesk", sans-serif',
           fontSize: 9,
           fontWeight: 400,
           color: '#5A5550',

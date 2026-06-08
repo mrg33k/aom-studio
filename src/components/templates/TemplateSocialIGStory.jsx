@@ -8,6 +8,11 @@ const C = {
   textMuted: '#8A847C',
 }
 
+function Dot({ s = '0.5em', c = C.orange }) {
+  return <span style={{ display: 'inline-block', width: s, height: s, borderRadius: '50%', background: c, marginLeft: '0.06em', verticalAlign: 'baseline' }} />
+}
+
+/* IG Story — 9:16. Vertical type poster, headline anchored low. */
 export default function TemplateSocialIGStory({
   headline = 'BUILT DIFFERENT',
   category = 'BEHIND THE SCENES',
@@ -19,69 +24,27 @@ export default function TemplateSocialIGStory({
       background: C.night,
       display: 'flex',
       flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '8% 7%',
       overflow: 'hidden',
       position: 'relative',
-      fontFamily: '"Space Grotesk", sans-serif',
+      containerType: 'inline-size',
+      fontFamily: '"Hanken Grotesk", sans-serif',
     }}>
-      {/* Full-bleed image zone (top 65%) */}
-      <div style={{
-        flex: '0 0 65%',
-        background: 'linear-gradient(160deg, #1a1208 0%, #0C0C0C 40%, rgba(232,93,38,0.06) 100%)',
-        position: 'relative',
-      }}>
-        {/* Gradient overlay into text zone */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(to bottom, transparent 40%, #0C0C0C 75%)',
-        }} />
+      {/* brand dot bled top-right */}
+      <div style={{ position: 'absolute', right: '-14%', top: '-7%', width: '46%', aspectRatio: '1', borderRadius: '50%', background: C.orange, opacity: 0.12 }} />
+
+      {/* top: category + mark */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 1 }}>
+        <span style={{ fontSize: '3.4cqw', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: C.orange }}>{category}</span>
+        <span style={{ fontFamily: '"Syne", sans-serif', fontSize: '5cqw', fontWeight: 800, color: C.textLight, letterSpacing: '-0.03em' }}>AOM<Dot /></span>
       </div>
 
-      {/* Text zone */}
-      <div style={{
-        flex: 1,
-        padding: '0 20px 24px',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-end',
-        position: 'relative',
-        zIndex: 1,
-        marginTop: -60,
-      }}>
-        {/* Category label */}
-        <div style={{
-          fontFamily: '"JetBrains Mono", monospace',
-          fontSize: 9,
-          fontWeight: 700,
-          letterSpacing: '0.15em',
-          textTransform: 'uppercase',
-          color: C.orange,
-          marginBottom: 10,
-        }}>{category}</div>
-
-        {/* Headline */}
-        <div style={{
-          fontFamily: '"Syne", sans-serif',
-          fontSize: 26,
-          fontWeight: 800,
-          color: C.cream,
-          textTransform: 'uppercase',
-          lineHeight: 1.1,
-        }}>{headline}</div>
-      </div>
-
-      {/* Logo bottom-right */}
-      <div style={{
-        position: 'absolute',
-        bottom: 16,
-        right: 16,
-      }}>
-        <span style={{
-          fontFamily: '"Syne", sans-serif',
-          fontSize: 14,
-          fontWeight: 800,
-          color: C.textLight,
-        }}>AOM<span style={{ color: C.orange }}>.</span></span>
+      {/* headline anchored low */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <span style={{ display: 'block', width: '14%', height: 3, background: C.orange, marginBottom: '6%' }} />
+        <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: '15cqw', fontWeight: 800, color: C.cream, textTransform: 'uppercase', lineHeight: 0.98, letterSpacing: '-0.02em', margin: 0 }}>{headline}</h3>
+        <p style={{ fontFamily: '"Fraunces", serif', fontStyle: 'italic', fontSize: '5cqw', color: C.textMuted, margin: '6% 0 0' }}>aheadofmarket.com</p>
       </div>
     </div>
   )

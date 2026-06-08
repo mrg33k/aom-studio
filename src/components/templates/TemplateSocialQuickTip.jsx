@@ -8,10 +8,15 @@ const C = {
   textMuted: '#8A847C',
 }
 
+function Dot({ s = '0.5em', c = C.orange }) {
+  return <span style={{ display: 'inline-block', width: s, height: s, borderRadius: '50%', background: c, marginLeft: '0.06em', verticalAlign: 'baseline' }} />
+}
+
+/* Quick Tip — 1:1. Numbered tip card, watermark index. */
 export default function TemplateSocialQuickTip({
   headline = 'STOP POSTING WITHOUT A PLAN',
   body = 'Random content is worse than no content. Every post should move a prospect one step closer to booking.',
-  category = 'CONSTRUCTION TIP',
+  category = 'GROWTH TIP',
   tipNumber = '01',
 }) {
   return (
@@ -21,81 +26,29 @@ export default function TemplateSocialQuickTip({
       background: C.night,
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'center',
-      padding: 28,
+      justifyContent: 'space-between',
+      padding: '7%',
       overflow: 'hidden',
-      fontFamily: '"Space Grotesk", sans-serif',
       position: 'relative',
+      containerType: 'inline-size',
+      fontFamily: '"Hanken Grotesk", sans-serif',
     }}>
-      {/* Watermark number */}
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        right: 16,
-        transform: 'translateY(-50%)',
-        fontFamily: '"Syne", sans-serif',
-        fontSize: 64,
-        fontWeight: 900,
-        color: 'rgba(232,93,38,0.15)',
-        lineHeight: 1,
-        userSelect: 'none',
-        pointerEvents: 'none',
-      }}>{tipNumber}</div>
+      {/* watermark number */}
+      <div style={{ position: 'absolute', right: '-2%', top: '4%', fontFamily: '"Syne", sans-serif', fontSize: '52cqw', fontWeight: 800, color: 'rgba(232,93,38,0.12)', lineHeight: 0.8, userSelect: 'none', pointerEvents: 'none' }}>{tipNumber}</div>
 
-      {/* Category label */}
-      <div style={{
-        fontFamily: '"JetBrains Mono", monospace',
-        fontSize: 9,
-        fontWeight: 700,
-        letterSpacing: '0.15em',
-        textTransform: 'uppercase',
-        color: C.orange,
-        marginBottom: 14,
-      }}>{category}</div>
+      {/* category */}
+      <span style={{ fontSize: '3.2cqw', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: C.orange, position: 'relative', zIndex: 1 }}>{category}</span>
 
-      {/* Headline */}
-      <div style={{
-        fontFamily: '"Syne", sans-serif',
-        fontSize: 20,
-        fontWeight: 800,
-        color: C.cream,
-        textTransform: 'uppercase',
-        lineHeight: 1.15,
-        marginBottom: 12,
-        maxWidth: '85%',
-      }}>{headline}</div>
+      {/* headline + body */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: '10.5cqw', fontWeight: 800, color: C.cream, textTransform: 'uppercase', lineHeight: 1.04, letterSpacing: '-0.02em', margin: 0, maxWidth: '82%' }}>{headline}</h3>
+        <p style={{ fontFamily: '"Fraunces", serif', fontStyle: 'italic', fontSize: '4.6cqw', color: C.textMuted, lineHeight: 1.4, margin: '5% 0 0', maxWidth: '80%' }}>{body}</p>
+      </div>
 
-      {/* Body */}
-      <div style={{
-        fontSize: 11,
-        color: C.textMuted,
-        lineHeight: 1.6,
-        maxWidth: '80%',
-      }}>{body}</div>
-
-      {/* Bottom: logo + URL */}
-      <div style={{
-        position: 'absolute',
-        bottom: 16,
-        left: 28,
-        right: 28,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}>
-        <span style={{
-          fontFamily: '"Syne", sans-serif',
-          fontSize: 12,
-          fontWeight: 800,
-          color: C.textLight,
-        }}>AOM<span style={{ color: C.orange }}>.</span></span>
-        <span style={{
-          fontFamily: '"JetBrains Mono", monospace',
-          fontSize: 7,
-          fontWeight: 500,
-          color: C.textMuted,
-          letterSpacing: '0.15em',
-        }}>AHEADOFMARKET.COM</span>
+      {/* footer */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+        <span style={{ fontFamily: '"Syne", sans-serif', fontSize: '4.6cqw', fontWeight: 800, color: C.textLight, letterSpacing: '-0.03em' }}>AOM<Dot /></span>
+        <span style={{ fontSize: '2.7cqw', fontWeight: 600, color: C.textMuted, letterSpacing: '0.2em', textTransform: 'uppercase' }}>aheadofmarket.com</span>
       </div>
     </div>
   )

@@ -24,7 +24,7 @@ export default function TemplatePresentationStats({
       justifyContent: 'center',
       padding: 28,
       overflow: 'hidden',
-      fontFamily: '"Space Grotesk", sans-serif',
+      fontFamily: '"Hanken Grotesk", sans-serif',
     }}>
       <div style={{
         display: 'flex',
@@ -47,7 +47,7 @@ export default function TemplatePresentationStats({
               marginBottom: 6,
             }}>{s.value}</div>
             <div style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 9,
               fontWeight: 600,
               color: C.textMuted,
