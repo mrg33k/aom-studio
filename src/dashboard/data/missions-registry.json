@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-04T18:14:56.892Z",
+  "generated_at": "2026-06-08T20:09:48.754Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -336,6 +336,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/mail-room"
+    },
+    {
+      "slug": "corner:marketing",
+      "raw_slug": "marketing",
+      "folder_name": "marketing",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Marketing",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/marketing"
     },
     {
       "slug": "corner:mission-marker",
@@ -2522,18 +2536,32 @@
       "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-pitch-deck"
     },
     {
-      "slug": "conrad-foundation:masterclass-proposal",
-      "raw_slug": "masterclass-proposal",
-      "folder_name": "masterclass-proposal",
+      "slug": "conrad-foundation:mission-water",
+      "raw_slug": "mission-water",
+      "folder_name": "mission-water",
       "parent_raw_slug": null,
       "depth": 0,
       "project_slug": "conrad-foundation",
       "workstream": null,
-      "name": "Masterclass Proposal",
+      "name": "Mission Water",
       "status": "in-progress",
       "is_done": false,
       "last_updated": null,
-      "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-proposal"
+      "path": "corner/users/aom/projects/conrad-foundation/missions/mission-water"
+    },
+    {
+      "slug": "conrad-foundation:mission-water-game",
+      "raw_slug": "mission-water-game",
+      "folder_name": "mission-water-game",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "conrad-foundation",
+      "workstream": null,
+      "name": "Mission Water Game",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/conrad-foundation/missions/mission-water-game"
     },
     {
       "slug": "higher-orbits:documentary-scope",
@@ -2588,7 +2616,7 @@
       "name": "Course Mapping",
       "status": "in-progress",
       "is_done": false,
-      "last_updated": "2026-05-25T11:10:00Z",
+      "last_updated": "2026-06-08T00:00:00Z",
       "path": "corner/users/aom/projects/holistic-balance/missions/course-mapping"
     },
     {
@@ -2800,6 +2828,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/space-rising/missions/add-4-reports"
+    },
+    {
+      "slug": "space-rising:admin-panel",
+      "raw_slug": "admin-panel",
+      "folder_name": "admin-panel",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Admin Panel",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/admin-panel"
     },
     {
       "slug": "space-rising:april-29-capture",
@@ -3183,8 +3225,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 54,
-      "in_flight": 54,
+      "total": 55,
+      "in_flight": 55,
       "done": 0
     },
     {
@@ -3225,8 +3267,8 @@
     },
     {
       "slug": "conrad-foundation",
-      "total": 3,
-      "in_flight": 3,
+      "total": 4,
+      "in_flight": 4,
       "done": 0
     },
     {
@@ -3285,8 +3327,8 @@
     },
     {
       "slug": "space-rising",
-      "total": 25,
-      "in_flight": 25,
+      "total": 26,
+      "in_flight": 26,
       "done": 0
     },
     {
