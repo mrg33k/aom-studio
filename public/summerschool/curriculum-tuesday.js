@@ -68,7 +68,7 @@ window.CURRICULUM.tuesday = {
       title: 'Kickoff video — How to Write a Narrative Hook',
       video: { title: 'How to Write a Narrative Hook for Middle School (grades 4 & 5)', ytId: '7y4WzgfrrNo', creditLine: 'Write with Robin' },
       typedQuestions: [
-        { q: 'What is a "hook" in writing, in your own words? Why does the first line matter so much? Say everything you know about this -- don't stop when you think you're done.' },
+        { q: `What is a "hook" in writing, in your own words? Why does the first line matter so much? Say everything you know about this -- don't stop when you think you're done.` },
         { q: 'Name two of the hook TYPES she showed. (Like: starting with action, asking a question, surprising fact, etc.) Pick the two you\'d most want to use. Write until it is complete. Your first sentence is not the answer.' }
       ],
       cta: 'Done' },
@@ -77,7 +77,7 @@ window.CURRICULUM.tuesday = {
       title: 'Kickoff video — Rewriting a Fraction as a Decimal',
       video: { title: 'Basic example of rewriting a fraction as a decimal — Decimals — Pre-Algebra', ytId: 'XHLgY7Z3cb8', creditLine: 'Khan Academy' },
       typedQuestions: [
-        { q: 'What\'s the basic move for converting a fraction to a decimal, the way the video showed? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+        { q: `What\'s the basic move for converting a fraction to a decimal, the way the video showed? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
         { q: 'Try it: convert 3/5 to a decimal. Show the steps the way the video would. Be thorough -- write until you have actually said what you mean.' }
       ],
       cta: 'Done' },
@@ -109,7 +109,7 @@ window.CURRICULUM.tuesday = {
         'You\'ve got about 8 seconds. If the opening doesn\'t catch them, they\'re gone — closed the book, scrolled past, clicked away.',
         'A great hook respects the reader. It doesn\'t waste their time with throat-clearing. It throws them into something interesting from word one.'
       ],
-      typedCheck: { q: 'What is a hook? What\'s its only job? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `What is a hook? What\'s its only job? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'tue-m-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 01 of 10',
@@ -130,7 +130,7 @@ window.CURRICULUM.tuesday = {
         'Strings are how your code talks to players: chat messages, leaderboard labels, tooltip text, anything readable.',
         'Today\'s new trick is joining strings together. Two strings → one bigger string. That\'s called <strong>concatenation</strong>. Big word, easy concept.'
       ],
-      typedCheck: { q: 'What is a string in Lua? What goes around it? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `What is a string in Lua? What goes around it? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'tue-r-02', kind: 'topic', type: 'concept', minutes: 5, subject: 'Reading', tag: 'Reading · 02 of 10',
@@ -201,7 +201,7 @@ window.CURRICULUM.tuesday = {
         'Fix: use your finger (or a pen, or your cursor on a screen) as a <strong>pointer</strong>. Drag it under the line you\'re reading, just slightly faster than feels comfortable. Your eyes will follow.',
         'Sounds ridiculous. Looks weird. Works in about 60 seconds. Try it on the next page you read.'
       ],
-      typedCheck: { q: 'Why does using a pointer help? What does it stop your eyes from doing? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `Why does using a pointer help? What does it stop your eyes from doing? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'tue-w-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 04 of 10',
@@ -222,7 +222,7 @@ window.CURRICULUM.tuesday = {
         '<strong>1/2 = 0.5</strong><br><strong>1/4 = 0.25</strong> (a quarter — like 25¢)<br><strong>1/5 = 0.2</strong> (one fifth)<br><strong>1/10 = 0.1</strong> (one tenth)',
         'Once you know these, you can build others. 3/4 = 0.75 (three quarters). 2/5 = 0.4 (two fifths). 7/10 = 0.7 (seven tenths). Same recipe.'
       ],
-      typedCheck: { q: 'What\'s 3/4 as a decimal? How did you figure it out from the fast facts? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `What\'s 3/4 as a decimal? How did you figure it out from the fast facts? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'tue-c-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Roblox Coding', tag: 'Coding · 04 of 10',
@@ -277,7 +277,7 @@ window.CURRICULUM.tuesday = {
         '<code>"Score is " .. 10</code> → <em>Score is 10</em> (one extra space inside the quotes — fixed).',
         'Rule of thumb: when joining, look at the END of the left string and the START of the right one. If there\'s no space, your output will have no space.'
       ],
-      typedCheck: { q: 'Where does the space have to go to make the joined string look right? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `Where does the space have to go to make the joined string look right? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'tue-r-06', kind: 'topic', type: 'typing-precise', minutes: 4, subject: 'Reading', tag: 'Reading · 06 of 10',
@@ -316,7 +316,7 @@ window.CURRICULUM.tuesday = {
         'Speed reading is BAD for: poetry (sound matters), novels you\'re reading for fun (the prose IS the point), math problems (one missed word and you solve the wrong thing), and code (every character matters).',
         'Smart readers shift speed based on what they\'re reading. Fast for skimming a 30-page reading assignment. Slow for the part the teacher said would be on the test.'
       ],
-      typedCheck: { q: 'Name one type of reading speed-reading is NOT good for. Why? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `Name one type of reading speed-reading is NOT good for. Why? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'tue-w-07', kind: 'topic', type: 'typing-precise', minutes: 5, subject: 'Writing', tag: 'Writing · 07 of 10',
@@ -394,7 +394,7 @@ window.CURRICULUM.tuesday = {
         '<em>"Call me Ishmael."</em> — Moby Dick. Action + directness. Five words. Goes hard.',
         'Read the first line of any book you love. Then ask: what TYPE of hook is it doing? You\'ll start spotting the pattern.'
       ],
-      typedCheck: { q: 'Pick one of these famous hooks. What type is it (action, question, or surprising fact)? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `Pick one of these famous hooks. What type is it (action, question, or surprising fact)? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'tue-m-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 09 of 10',
@@ -420,7 +420,7 @@ window.CURRICULUM.tuesday = {
         'Three tricks today: word chunking, the pointer, and killing the inner voice. Together they\'re the whole game.',
         'Don\'t use speed reading on everything. Save it for the stuff you have to get through fast — homework readings, articles, blog posts. Slow down for the good stuff.'
       ],
-      typedCheck: { q: 'Which of the three speed-reading tricks are you going to try first? Why that one? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `Which of the three speed-reading tricks are you going to try first? Why that one? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Done' },
 
     // ===== SUBJECT 2 — WRITING (The Hook) =====

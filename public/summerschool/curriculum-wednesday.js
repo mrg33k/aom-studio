@@ -61,7 +61,7 @@ window.CURRICULUM.wednesday = {
       video: { title: 'Making Inferences for Kids — What is an inference?', ytId: 'M3ZKbnBw7NY', creditLine: 'Learn Bright' },
       typedQuestions: [
         { q: 'What is an inference, in your own words? Use the word "clues" somewhere in your answer. Keep going until you have said everything that matters -- your first answer is probably not enough.' },
-        { q: 'What two things does the video say you combine to make an inference? Say everything you know about this -- don't stop when you think you're done.' }
+        { q: `What two things does the video say you combine to make an inference? Say everything you know about this -- don't stop when you think you're done.` }
       ],
       cta: 'Done' },
 
@@ -70,7 +70,7 @@ window.CURRICULUM.wednesday = {
       video: { title: 'Persuasive Writing for Kids — Episode 1: What is It?', ytId: 'hD9arWXIddM', creditLine: 'Teaching Without Frills' },
       typedQuestions: [
         { q: 'What is persuasive writing, in your own words? What\'s the writer trying to do to the reader? Write until it is complete. Your first sentence is not the answer.' },
-        { q: 'Name one place in real life where persuasive writing actually matters. Why does it matter there? Don't stop at one sentence. Keep explaining until there is nothing left to say.' }
+        { q: `Name one place in real life where persuasive writing actually matters. Why does it matter there? Don't stop at one sentence. Keep explaining until there is nothing left to say.` }
       ],
       cta: 'Done' },
 
@@ -100,7 +100,7 @@ window.CURRICULUM.wednesday = {
         'Example: "Sarah grabbed her umbrella and ran for the bus." The story doesn\'t say "it was raining." But you INFER it was raining — because (a) clue: she grabbed an umbrella, and (b) you know: people grab umbrellas when it rains.',
         'Good readers do this without thinking. Great readers know they\'re doing it and can do it on purpose.'
       ],
-      typedCheck: { q: 'What two things do you combine to make an inference? Use the word "clues" somewhere. Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `What two things do you combine to make an inference? Use the word "clues" somewhere. Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'wed-w-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 01 of 10',
@@ -120,7 +120,7 @@ window.CURRICULUM.wednesday = {
         'The good news: there\'s a step-by-step strategy that works on almost any word problem ever written. It\'s called <strong>CUBES</strong>.',
         'Five letters, five steps. By the end of today\'s subject, you\'ll trust the process more than you\'ll trust your panic.'
       ],
-      typedCheck: { q: 'Why do most kids find word problems harder than plain number problems? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `Why do most kids find word problems harder than plain number problems? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'wed-e-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Entrepreneurship', tag: 'Entrepreneurship · 01 of 10',
@@ -176,7 +176,7 @@ window.CURRICULUM.wednesday = {
         'Kids who only spend grow into adults who can\'t buy a car, can\'t buy a house, and never have money to help anyone else. Not because they didn\'t earn enough — because they never trained themselves to split.',
         'Starting young, with small amounts, builds the muscle. Every $10 split now teaches your brain how to split $10,000 later.'
       ],
-      typedCheck: { q: 'What happens to adults who never train themselves to save and give as kids? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `What happens to adults who never train themselves to save and give as kids? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'wed-r-03', kind: 'topic', type: 'teach-back', minutes: 6, subject: 'Reading', tag: 'Reading · 03 of 10',
@@ -217,7 +217,7 @@ window.CURRICULUM.wednesday = {
         '<strong>Strong:</strong> "Every family should have a dog." (Clear. Confident. Reader knows where you stand.)',
         'Even if you\'re not totally sure, write like you are. Save the doubts for your private journal.'
       ],
-      typedCheck: { q: 'What\'s wrong with the sentence "I kind of think dogs are nice" as an opinion statement? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `What\'s wrong with the sentence "I kind of think dogs are nice" as an opinion statement? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'wed-m-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 04 of 10',
@@ -282,7 +282,7 @@ window.CURRICULUM.wednesday = {
         'You SET A GOAL: "I want X. It costs $Y. So I need to save $Z per week to get there." Then your Save bucket actually has a job.',
         'Saving without a goal is boring — money just sits there. Saving WITH a goal is exciting — every dollar you drop in gets you closer to a thing you want.'
       ],
-      typedCheck: { q: 'What\'s the trick to make saving feel exciting instead of boring? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `What\'s the trick to make saving feel exciting instead of boring? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'wed-r-06', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 06 of 10',
@@ -325,7 +325,7 @@ window.CURRICULUM.wednesday = {
         '"Some people say dogs are too expensive. But the average vet bill is less than a single family vacation, and a dog provides 10+ years of company. The cost is real, but it\'s spread out, and the value is huge."',
         'This trick (called a <strong>counter-argument</strong>) makes you sound smarter and fairer. The reader thinks: "Oh, this person actually thought about it."'
       ],
-      typedCheck: { q: 'Why does naming the other side\'s argument make your own writing stronger, not weaker? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `Why does naming the other side\'s argument make your own writing stronger, not weaker? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'wed-m-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 07 of 10',
@@ -393,7 +393,7 @@ window.CURRICULUM.wednesday = {
         '<strong>Inclusion words:</strong> "we," "us," "together" — they invite the reader onto your team.',
         'Avoid: "maybe," "kind of," "I guess." Those bleed conviction.'
       ],
-      typedCheck: { q: 'Name one word from EACH category (linking, confidence, inclusion) you\'d use in persuasive writing. Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `Name one word from EACH category (linking, confidence, inclusion) you\'d use in persuasive writing. Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'wed-m-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 09 of 10',
@@ -418,7 +418,7 @@ window.CURRICULUM.wednesday = {
         'You now know inference is just "clue + what I know = smart guess." That formula works on books, movies, conversations, and life.',
         'Pay attention this week to ONE inference a day. Note when you do it. The more you notice, the better you get.'
       ],
-      typedCheck: { q: 'What\'s your plan to notice yourself making inferences this week? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `What\'s your plan to notice yourself making inferences this week? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Done' },
 
     // ===== SUBJECT 2 — WRITING (Persuasive) =====
