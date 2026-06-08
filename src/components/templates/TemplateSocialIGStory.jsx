@@ -43,7 +43,7 @@ export default function TemplateSocialIGStory({
       {/* headline anchored low */}
       <div style={{ position: 'relative', zIndex: 1 }}>
         <span style={{ display: 'block', width: '14%', height: 3, background: C.orange, marginBottom: '6%' }} />
-        <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: '15cqw', fontWeight: 800, color: C.cream, textTransform: 'uppercase', lineHeight: 0.98, letterSpacing: '-0.02em', margin: 0 }}>{headline}</h3>
+        <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: '11.5cqw', fontWeight: 800, color: C.cream, textTransform: 'uppercase', lineHeight: 0.98, letterSpacing: '-0.03em', margin: 0, overflowWrap: 'anywhere' }}>{headline}</h3>
         <p style={{ fontFamily: '"Fraunces", serif', fontStyle: 'italic', fontSize: '5cqw', color: C.textMuted, margin: '6% 0 0' }}>aheadofmarket.com</p>
       </div>
     </div>

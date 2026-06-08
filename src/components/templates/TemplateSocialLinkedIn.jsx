@@ -31,17 +31,17 @@ export default function TemplateSocialLinkedIn({
       fontFamily: '"Hanken Grotesk", sans-serif',
     }}>
       {/* left: orange brand panel */}
-      <div style={{ flex: '0 0 38%', background: C.orange, display: 'flex', alignItems: 'flex-end', padding: '4.5%', position: 'relative', overflow: 'hidden' }}>
+      <div style={{ flex: '0 0 36%', background: C.orange, display: 'flex', alignItems: 'flex-end', padding: '4.5%', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', left: '-18%', top: '-18%', width: '60%', aspectRatio: '1', borderRadius: '50%', background: 'rgba(0,0,0,0.06)' }} />
-        <span style={{ fontFamily: '"Syne", sans-serif', fontSize: '11cqw', fontWeight: 800, color: C.night, letterSpacing: '-0.04em', lineHeight: 1, position: 'relative' }}>AOM<Dot c={C.night} /></span>
+        <span style={{ fontFamily: '"Syne", sans-serif', fontSize: '8.5cqw', fontWeight: 800, color: C.night, letterSpacing: '-0.04em', lineHeight: 1, position: 'relative', whiteSpace: 'nowrap' }}>AOM<Dot c={C.night} /></span>
       </div>
 
       {/* right: statement */}
-      <div style={{ flex: 1, padding: '4.5% 5%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '4%' }}>
-        <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: '7.2cqw', fontWeight: 800, color: C.cream, textTransform: 'uppercase', lineHeight: 1.02, letterSpacing: '-0.02em', margin: 0 }}>{headline}</h3>
-        <p style={{ fontFamily: '"Fraunces", serif', fontStyle: 'italic', fontSize: '4cqw', color: C.textMuted, lineHeight: 1.35, margin: 0 }}>{body}</p>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3%', alignSelf: 'flex-start', fontSize: '3.1cqw', fontWeight: 700, color: C.orange, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
-          {cta}<span style={{ fontSize: '4cqw' }}>&rarr;</span>
+      <div style={{ flex: 1, padding: '4% 4.5%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '2.4cqw', minWidth: 0 }}>
+        <h3 style={{ fontFamily: '"Syne", sans-serif', fontSize: '6cqw', fontWeight: 800, color: C.cream, textTransform: 'uppercase', lineHeight: 1.0, letterSpacing: '-0.02em', margin: 0 }}>{headline}</h3>
+        <p style={{ fontFamily: '"Fraunces", serif', fontStyle: 'italic', fontSize: '3.4cqw', color: C.textMuted, lineHeight: 1.3, margin: 0 }}>{body}</p>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2.5%', alignSelf: 'flex-start', fontSize: '2.8cqw', fontWeight: 700, color: C.orange, letterSpacing: '0.16em', textTransform: 'uppercase' }}>
+          {cta}<span style={{ fontSize: '3.6cqw' }}>&rarr;</span>
         </span>
       </div>
     </div>
