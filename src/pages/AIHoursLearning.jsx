@@ -1591,6 +1591,9 @@ function ClientView({ client, onLogout }) {
   })
   const currentSession = client.current_session || 1
   const isComplete = currentSession > 5
+  // Whole course finished — same signal the step indicator uses for its all-green state.
+  const programComplete = isComplete || (currentSession >= 5 && !!clientMarkedDone[5])
+  const firstName = (client.client_name || '').trim().split(/\s+/)[0] || ''
 
   function getStatus(sessionNum) {
     if (sessionNum < currentSession) return 'done'
@@ -1691,6 +1694,85 @@ function ClientView({ client, onLogout }) {
 
       {/* Session step indicator */}
       <SessionStepIndicator currentSession={currentSession} checklistCompleted={checklistCompleted} clientMarkedDone={clientMarkedDone} />
+
+      {/* ── Program Completion Congratulations ── */}
+      {programComplete && (
+        <div style={{
+          maxWidth: 1100,
+          margin: '0 auto',
+          padding: '40px 40px 0',
+          animation: 'aihours-fadein 0.7s ease',
+        }}>
+          <div style={{
+            background: INK,
+            borderRadius: 4,
+            padding: '44px 52px',
+            border: '1px solid rgba(45,122,79,0.28)',
+            boxShadow: '0 2px 48px rgba(45,122,79,0.08)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}>
+            {/* Subtle green accent line at top */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 3,
+              background: `linear-gradient(90deg, ${PROGRESS_GREEN} 0%, rgba(45,122,79,0.3) 100%)`,
+            }} />
+
+            <div style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: PROGRESS_GREEN,
+              marginBottom: 22,
+            }}>
+              Five sessions complete
+            </div>
+
+            <h2 style={{
+              fontFamily: '"Instrument Serif", Georgia, serif',
+              fontSize: 'clamp(26px, 3.2vw, 38px)',
+              fontWeight: 400,
+              color: AOM_ORANGE_LIGHT,
+              margin: '0 0 22px',
+              lineHeight: 1.18,
+              letterSpacing: '-0.015em',
+            }}>
+              Congratulations&nbsp;&mdash;&nbsp;you&rsquo;ve completed AI Hours.
+            </h2>
+
+            <p style={{
+              fontSize: 17,
+              lineHeight: 1.72,
+              color: 'rgba(245,240,235,0.88)',
+              margin: '0 0 32px',
+              maxWidth: 580,
+            }}>
+              You&rsquo;ve done the work. Five sessions, real tools, real results.
+              Your business is already moving faster with AI, and this is just the beginning.
+              Go build something great.
+            </p>
+
+            <p style={{
+              fontSize: 14,
+              lineHeight: 1.65,
+              color: 'rgba(245,240,235,0.42)',
+              margin: 0,
+              fontStyle: 'italic',
+            }}>
+              Best of luck with your AI-enhanced business&nbsp;&mdash;&nbsp;we&rsquo;re rooting for you.
+              <br />
+              <span style={{ fontStyle: 'normal', color: 'rgba(245,240,235,0.5)', letterSpacing: '0.03em' }}>
+                &mdash;&nbsp;AOM
+              </span>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Sessions */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 40px' }}>
@@ -1825,6 +1907,68 @@ function ClientView({ client, onLogout }) {
             )
           })}
         </div>
+
+        {/* ── Course graduation: shown once the whole 5-session course is complete ── */}
+        {programComplete && (
+          <div style={{
+            background: 'linear-gradient(135deg, #2D7A4F 0%, #1E5638 100%)',
+            borderRadius: 16,
+            padding: '52px 48px',
+            marginBottom: 28,
+            color: '#fff',
+            textAlign: 'center',
+            boxShadow: '0 16px 48px rgba(30,86,56,0.28)',
+            animation: 'aihours-fadein 0.6s ease',
+          }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 66,
+              height: 66,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.14)',
+              marginBottom: 22,
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2.2l2.7 5.8 6.3.8-4.65 4.35 1.2 6.25L12 16.4l-5.55 3.0 1.2-6.25L3 8.8l6.3-.8L12 2.2z" fill={AOM_ORANGE} stroke="rgba(255,255,255,0.85)" strokeWidth="0.6" strokeLinejoin="round" />
+              </svg>
+            </div>
+            <div style={{ ...styles.heroEyebrow, color: 'rgba(255,255,255,0.72)', marginBottom: 14 }}>
+              Course Complete
+            </div>
+            <h2 style={{
+              fontFamily: '"Instrument Serif", Georgia, serif',
+              fontSize: 42,
+              fontWeight: 400,
+              letterSpacing: '-0.02em',
+              lineHeight: 1.08,
+              margin: '0 0 18px',
+            }}>
+              Congratulations{firstName ? `, ${firstName}` : ''}.
+            </h2>
+            <p style={{
+              fontSize: 17,
+              lineHeight: 1.65,
+              color: 'rgba(255,255,255,0.93)',
+              maxWidth: 600,
+              margin: '0 auto',
+            }}>
+              You've completed all five AI Hours sessions and built a real operating
+              system for your business. That's no small thing — you didn't just learn
+              about AI, you put it to work. We're proud of what you've built, and we wish
+              you the very best of luck as you keep growing your AI-enhanced business.
+            </p>
+            <p style={{
+              fontSize: 15,
+              fontStyle: 'italic',
+              color: 'rgba(255,255,255,0.72)',
+              margin: '20px 0 0',
+            }}>
+              This is just the beginning. — The AOM Team
+            </p>
+          </div>
+        )}
 
         <div style={{
           background: '#fff',
