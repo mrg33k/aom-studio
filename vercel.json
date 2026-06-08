@@ -93,6 +93,8 @@
     { "source": "/missionwater", "destination": "/index.html" },
     { "source": "/MissionWaterGame", "destination": "/index.html" },
     { "source": "/mission-water-game", "destination": "/index.html" },
+    { "source": "/MissionWaterPlatform", "destination": "/index.html" },
+    { "source": "/missionwaterplatform", "destination": "/index.html" },
     { "source": "/higherorbits", "destination": "/index.html" },
     { "source": "/stats", "destination": "/index.html" },
     { "source": "/ai-hours", "destination": "/index.html" },
