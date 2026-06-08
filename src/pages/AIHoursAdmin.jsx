@@ -831,6 +831,11 @@ function TeamView({ user, onLogout }) {
   const [markStates, setMarkStates] = useState({}) // { [clientId]: 'loading' | 'done' }
   const [markConfirm, setMarkConfirm] = useState(null) // { client_name, new_session, direction }
   const [previewClient, setPreviewClient] = useState(null) // client row to preview
+  const [previewOpenSessions, setPreviewOpenSessions] = useState({}) // { [sessionNum]: true } — completed sessions expanded in preview
+
+  function togglePreviewSession(sessionNum) {
+    setPreviewOpenSessions(prev => ({ ...prev, [sessionNum]: !prev[sessionNum] }))
+  }
 
   const WORDLIST = ['APEX', 'NOVA', 'EDGE', 'PEAK', 'CORE', 'GRID', 'LINK', 'MARK', 'NEXT', 'PLUS', 'RISE', 'STAR', 'BOLD', 'CALM', 'FLUX', 'GLOW', 'IRON', 'JADE', 'KEEN', 'LOFT', 'MINT', 'NODE', 'OPEN', 'PORT', 'REEF', 'SAGE', 'TIDE', 'VAST', 'WAVE', 'ZINC', 'ECHO', 'FAST', 'HERO', 'JUMP', 'LEAD', 'ONYX', 'PINE', 'RUBY', 'SAFE', 'WARD']
 
@@ -1323,7 +1328,7 @@ function TeamView({ user, onLogout }) {
                             )}
                           </div>
                           <button
-                            onClick={() => setPreviewClient(client)}
+                            onClick={() => { setPreviewOpenSessions({}); setPreviewClient(client) }}
                             style={{
                               display: 'block',
                               marginTop: 7,
@@ -1496,6 +1501,11 @@ function TeamView({ user, onLogout }) {
                       const isCurrent = status === 'current'
                       const isDone = status === 'done'
                       const isLocked = status === 'locked'
+                      // Completed sessions stay accessible: the client can re-open any session
+                      // they've been advanced through. Done sessions collapse but expand on click;
+                      // the current session is always open; only not-yet-reached sessions are locked.
+                      const isOpen = isCurrent || (isDone && !!previewOpenSessions[sessionNum])
+                      const headerClickable = isDone
                       return (
                         <div
                           key={session.number}
@@ -1508,11 +1518,17 @@ function TeamView({ user, onLogout }) {
                           }}
                         >
                           {/* Session header */}
-                          <div style={{
-                            display: 'flex', alignItems: 'center', gap: 14,
-                            padding: '16px 20px',
-                            background: isCurrent ? '#FFF8F5' : '#fff',
-                          }}>
+                          <div
+                            onClick={headerClickable ? () => togglePreviewSession(sessionNum) : undefined}
+                            role={headerClickable ? 'button' : undefined}
+                            aria-expanded={headerClickable ? isOpen : undefined}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 14,
+                              padding: '16px 20px',
+                              background: isCurrent ? '#FFF8F5' : '#fff',
+                              cursor: headerClickable ? 'pointer' : 'default',
+                            }}
+                          >
                             <SessionStatusIcon status={status} />
                             <div style={{ flex: 1 }}>
                               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
@@ -1546,10 +1562,19 @@ function TeamView({ user, onLogout }) {
                                 {session.title}
                               </div>
                             </div>
+                            {/* Chevron — completed sessions can be expanded to review */}
+                            {isDone && (
+                              <svg
+                                width="16" height="16" viewBox="0 0 16 16" fill="none"
+                                style={{ flexShrink: 0, opacity: 0.5, transition: 'transform 0.22s ease', transform: isOpen ? 'rotate(180deg)' : 'none' }}
+                              >
+                                <path d="M4 6l4 4 4-4" stroke={GREEN_CHECK} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
                           </div>
 
-                          {/* Session body — only for current (like client sees it) */}
-                          {isCurrent && (
+                          {/* Session body — current is always open; completed sessions open on click */}
+                          {isOpen && (
                             <div style={{
                               padding: '0 20px 20px',
                               borderTop: `1px solid ${BORDER_SOFT}`,
@@ -1557,13 +1582,22 @@ function TeamView({ user, onLogout }) {
                               <p style={{ fontSize: 14, lineHeight: 1.75, color: INK_SOFT, margin: '16px 0 0' }}>
                                 {session.clientNotes}
                               </p>
-                              {/* Advance button is intentionally hidden in admin preview */}
                               <div style={{
-                                marginTop: 16, fontSize: 11, color: LOCK_GRAY,
-                                fontStyle: 'italic',
+                                marginTop: 14, fontSize: 13, color: INK_MUTED,
+                                display: 'flex', gap: 8, alignItems: 'baseline',
                               }}>
-                                [Session advance button hidden in admin preview]
+                                <span style={{ fontWeight: 700, color: INK_SOFT, whiteSpace: 'nowrap' }}>You'll leave with:</span>
+                                <span>{session.leaveWith}</span>
                               </div>
+                              {isCurrent && (
+                                /* Advance button is intentionally hidden in admin preview */
+                                <div style={{
+                                  marginTop: 16, fontSize: 11, color: LOCK_GRAY,
+                                  fontStyle: 'italic',
+                                }}>
+                                  [Session advance button hidden in admin preview]
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
