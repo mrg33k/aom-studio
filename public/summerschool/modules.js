@@ -224,14 +224,16 @@ window.SSMod = (function () {
     // block.check.choices is present (Tuesday/Wednesday — unchanged).
     const hasTypedCheck = block.typedCheck && block.typedCheck.q;
     const hasCheck = !hasTypedCheck && block.check && Array.isArray(block.check.choices) && block.check.choices.length >= 2;
-    const typedCheckMin = (block.typedCheck && block.typedCheck.minChars) || 60;
+    // Char-count gate removed (Patrik 2026-06-07): no number shown. He adds until it's
+    // enough; Patrik gates on review. Tiny floor only prevents a blank/one-word submit.
+    const typedCheckMin = 12;
     const typedCheckHtml = hasTypedCheck ? `
       <div class="concept-check" id="concept-check" style="background: #FFF; border: 1px solid rgba(26,24,20,0.12); border-radius: var(--r-md); padding: var(--space-5); margin-bottom: var(--space-4);">
         <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--amber); margin-bottom: var(--space-3);">Type the answer</div>
         <div style="font-family: var(--font-serif); font-size: 17px; line-height: 1.45; margin-bottom: var(--space-3);">${block.typedCheck.q}</div>
         <textarea id="concept-typed" rows="3" placeholder="Type a sentence or two in your own words..." style="width:100%; box-sizing:border-box; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-sm); padding:var(--space-3); font-family:'Geist',system-ui,sans-serif; font-size:15px; line-height:1.5; color:var(--ink); background:#FBFAF6; outline:none; resize:vertical; min-height:90px;"></textarea>
         <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-top:var(--space-2); font-size:13px; font-family:'Geist',system-ui,sans-serif;">
-          <div id="concept-typed-counter" style="color:var(--ink-quiet);">0 / ${typedCheckMin} characters</div>
+          <div id="concept-typed-counter" style="color:var(--ink-quiet);">Keep adding until you've really explained it.</div>
           <div id="concept-typed-spell" style="color:var(--ink-quiet);">Spelling: will check at the word count</div>
         </div>
         <div id="concept-typed-words" style="display:none; background:#FFF6E5; border:1px solid #E5B947; border-radius:var(--r-sm); padding:var(--space-3); margin-top:var(--space-2);">
@@ -254,7 +256,7 @@ window.SSMod = (function () {
 
     const gateLocked = hasCheck || hasTypedCheck;
     const initialBtnText = hasTypedCheck
-      ? `Type ${typedCheckMin} characters to continue`
+      ? 'Type your answer to continue'
       : (hasCheck ? 'Answer the check first' : (block.cta || 'Continue'));
 
     host.innerHTML = `
@@ -315,13 +317,13 @@ window.SSMod = (function () {
         const mySeq = ++refreshSeq;
         const text = ta.value;
         const chars = text.trim().length;
-        counter.textContent = `${chars} / ${typedCheckMin} characters`;
-        counter.style.color = chars >= typedCheckMin ? '#2D6B3C' : 'var(--ink-quiet)';
+        counter.textContent = "Keep adding until you've really explained it.";
+        counter.style.color = 'var(--ink-quiet)';
 
         if (chars < typedCheckMin) {
           goBtn.disabled = true;
           goBtn.style.opacity = '0.5';
-          goBtn.textContent = `${typedCheckMin - chars} more characters`;
+          goBtn.textContent = 'Keep going — add a bit more';
           spellBox.style.display = 'none';
           spellStatus.textContent = 'Spelling: will check at the word count';
           spellStatus.style.color = 'var(--ink-quiet)';
@@ -2890,14 +2892,14 @@ window.SSMod = (function () {
         </div>
         <div style="font-size:13px; color:var(--ink-quiet); margin-bottom:var(--space-5); font-family:'Geist',system-ui,sans-serif;">Watch the whole video. Then answer below in your own words — no clicking past.</div>
         ${qs.map((q, qi) => {
-          const minC = q.minChars || 120;
+          const minC = 12; // char-count gate removed (Patrik 2026-06-07) — floor only
           return `
             <div class="vt-q" data-qi="${qi}" style="background:#FFF; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-md); padding:var(--space-5); margin-bottom:var(--space-4);">
               <div style="font-size:11px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--amber); margin-bottom:var(--space-2);">Question ${qi + 1}</div>
               <div style="font-family:var(--font-serif); font-size:17px; line-height:1.45; margin-bottom:var(--space-3);">${q.q}</div>
               <textarea data-qi="${qi}" rows="4" placeholder="Type your answer..." style="width:100%; box-sizing:border-box; border:1px solid rgba(26,24,20,0.12); border-radius:var(--r-sm); padding:var(--space-3); font-family:'Geist',system-ui,sans-serif; font-size:15px; line-height:1.5; color:var(--ink); background:#FBFAF6; outline:none; resize:vertical; min-height:110px;"></textarea>
               <div style="display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-top:var(--space-2); font-size:13px;">
-                <div class="vt-counter" data-qi="${qi}" style="color:var(--ink-quiet);">0 / ${minC} characters</div>
+                <div class="vt-counter" data-qi="${qi}" style="color:var(--ink-quiet);">Answer in your own words — add more until it's enough.</div>
                 <div class="vt-spell" data-qi="${qi}" style="color:var(--ink-quiet);">Spelling: will check at the word count</div>
               </div>
               <div class="vt-words" data-qi="${qi}" style="display:none; background:#FFF6E5; border:1px solid #E5B947; border-radius:var(--r-sm); padding:var(--space-3); margin-top:var(--space-2);">
@@ -2918,7 +2920,7 @@ window.SSMod = (function () {
     const submit = host.querySelector('#vt-submit');
     const perQuestion = qs.map((q, qi) => ({
       qi,
-      minChars: q.minChars || 120,
+      minChars: 12,
       userMarkedOK: new Set(),
       seq: 0,
       passed: false
@@ -2978,8 +2980,8 @@ window.SSMod = (function () {
       const wordsBox = host.querySelector(`.vt-words[data-qi="${qi}"]`);
       const text = ta.value;
       const chars = text.trim().length;
-      counter.textContent = `${chars} / ${p.minChars} characters`;
-      counter.style.color = chars >= p.minChars ? '#2D6B3C' : 'var(--ink-quiet)';
+      counter.textContent = "Add more until it's enough.";
+      counter.style.color = 'var(--ink-quiet)';
 
       if (chars < p.minChars) {
         p.passed = false;
@@ -3291,7 +3293,9 @@ window.SSMod = (function () {
     const tag = block.tag || (block.subject || '');
     const title = block.title || 'Teach it back';
     const prompt = block.prompt || 'Type what you learned in your own words.';
-    const minChars = block.minChars || 150;
+    // Char-count gate removed (Patrik 2026-06-07): no number, he writes until it's enough.
+    // Tiny floor only stops a blank/one-word submit; the real gate is the review modal + Patrik.
+    const minChars = 15;
 
     host.innerHTML = `
       ${topRail(0, tag)}
@@ -3307,7 +3311,7 @@ window.SSMod = (function () {
         </div>
 
         <div id="tb-status" style="display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); font-size: 14px; font-family: 'Geist', system-ui, sans-serif;">
-          <div id="tb-counter" style="color: var(--ink-quiet);">0 / ${minChars} characters</div>
+          <div id="tb-counter" style="color: var(--ink-quiet);">Add more until you've fully explained it.</div>
           <div id="tb-spell-status" style="color: var(--ink-quiet);">Spelling: not checked yet</div>
         </div>
 
@@ -3318,7 +3322,7 @@ window.SSMod = (function () {
         </div>
 
         <div class="center-actions">
-          <button class="btn-primary" id="tb-submit" disabled style="opacity:0.5;">Keep typing — ${minChars} chars needed</button>
+          <button class="btn-primary" id="tb-submit" disabled style="opacity:0.5;">Start typing your answer</button>
         </div>
       </div>
     `;
@@ -3365,13 +3369,13 @@ window.SSMod = (function () {
       const mySeq = ++refreshSeq;
       const text = ta.value;
       const chars = text.trim().length;
-      counter.textContent = `${chars} / ${minChars} characters`;
-      counter.style.color = chars >= minChars ? '#2D6B3C' : 'var(--ink-quiet)';
+      counter.textContent = "Add more until you've fully explained it.";
+      counter.style.color = 'var(--ink-quiet)';
 
       if (chars < minChars) {
         submit.disabled = true;
         submit.style.opacity = '0.5';
-        submit.textContent = `Keep typing — ${minChars - chars} more`;
+        submit.textContent = 'Keep going — add a bit more';
         spellBox.style.display = 'none';
         spellStatus.textContent = 'Spelling: will check when you hit the word count';
         spellStatus.style.color = 'var(--ink-quiet)';
