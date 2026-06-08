@@ -2602,14 +2602,12 @@ export default function AIHoursLearning() {
         try {
           const parsed = JSON.parse(stored)
           if (parsed?.access_code) {
-            // Refresh from DB to get latest session status
-            if (supabase) {
-              const { data } = await supabase
-                .from('ai_hours_clients')
-                .select('*')
-                .eq('access_code', parsed.access_code)
-                .single()
-              if (data) {
+            // Refresh from DB via API endpoint (service-role, bypasses RLS) to get latest session status
+            const res = await fetch(`/api/ai-hours/clients?access_code=${encodeURIComponent(parsed.access_code)}`)
+            if (res.ok) {
+              const result = await res.json()
+              if (result.ok && result.client) {
+                const data = result.client
                 const storedSession = parsed.current_session || 1
                 const dbSession = data.current_session || 1
                 // Detect if AOM advanced the client since their last visit
@@ -2626,6 +2624,8 @@ export default function AIHoursLearning() {
                 return
               }
             }
+            // If API returns 404 or access code is invalid, clear the stale session
+            localStorage.removeItem('ai_hours_client')
           }
         } catch {
           localStorage.removeItem('ai_hours_client')
