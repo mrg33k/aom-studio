@@ -54,7 +54,7 @@ function CopyHex({ hex }) {
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
       title="Copy hex"
     >
-      <span style={{ fontFamily: '"Space Grotesk", monospace', fontSize: 13, color: 'inherit' }}>{hex}</span>
+      <span style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 13, color: 'inherit' }}>{hex}</span>
       {copied ? <Check size={12} /> : <Copy size={12} style={{ opacity: 0.4 }} />}
     </button>
   )
@@ -64,7 +64,7 @@ function Badge({ children, color = C.black, bg = 'transparent', style = {} }) {
   return (
     <span style={{
       display: 'inline-block',
-      fontFamily: '"Space Grotesk", sans-serif',
+      fontFamily: '"Hanken Grotesk", sans-serif',
       fontSize: 12,
       fontWeight: 700,
       letterSpacing: '0.15em',
@@ -111,7 +111,7 @@ function SectionHeader({ num, title, subtitle, dark = false }) {
       }}>{title}</h2>
       {subtitle && (
         <p style={{
-          fontFamily: '"Space Grotesk", sans-serif',
+          fontFamily: '"Hanken Grotesk", sans-serif',
           fontSize: 16,
           color: mutedColor,
           marginTop: 8,
@@ -323,8 +323,8 @@ function DownloadPngButton({ svgConfig, size, label }) {
       const innerSize = size - padding * 2
       svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
         <rect width="${size}" height="${size}" fill="${svgConfig.bg}" rx="${Math.round(size * 0.08)}"/>
-        <text x="${padding + innerSize * 0.05}" y="${padding + innerSize * 0.82}" font-family="Syne, Arial, sans-serif" font-size="${innerSize * 0.8}" font-weight="800" fill="${svgConfig.fill}" letter-spacing="-${Math.round(innerSize * 0.02)}">A</text>
-        <circle cx="${padding + innerSize * 0.77}" cy="${padding + innerSize * 0.68}" r="${innerSize * 0.075}" fill="${svgConfig.dotFill}"/>
+        <text x="${padding + innerSize * 0.10}" y="${padding + innerSize * 0.78}" font-family="Syne, Arial, sans-serif" font-size="${innerSize * 0.74}" font-weight="800" fill="${svgConfig.fill}" letter-spacing="-${Math.round(innerSize * 0.006)}">A</text>
+        <circle cx="${padding + innerSize * 0.76}" cy="${padding + innerSize * 0.66}" r="${innerSize * 0.087}" fill="${svgConfig.dotFill}"/>
       </svg>`
     } else if (svgConfig.type === 'wordmark') {
       canvas.width = size
@@ -375,7 +375,7 @@ function DownloadPngButton({ svgConfig, size, label }) {
         border: `1px solid rgba(232,93,38,0.2)`,
         cursor: downloading ? 'wait' : 'pointer',
         opacity: downloading ? 0.6 : 1,
-        fontFamily: '"Space Grotesk", sans-serif',
+        fontFamily: '"Hanken Grotesk", sans-serif',
       }}
     >
       <Download size={10} />
@@ -426,7 +426,7 @@ function DownloadElementPngButton({ targetRef, filename, width, height, label = 
         border: '1px solid rgba(232,93,38,0.2)',
         cursor: downloading ? 'wait' : 'pointer',
         opacity: downloading ? 0.6 : 1,
-        fontFamily: '"Space Grotesk", sans-serif',
+        fontFamily: '"Hanken Grotesk", sans-serif',
       }}
     >
       <Download size={small ? 9 : 10} />
@@ -456,7 +456,7 @@ function TemplateSpecs({ specs }) {
           background: 'rgba(255,255,255,0.04)',
           border: `1px solid ${C.nightBorder}`,
           cursor: 'pointer',
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: '"Hanken Grotesk", sans-serif',
           letterSpacing: '0.05em',
           textTransform: 'uppercase',
         }}
@@ -472,7 +472,7 @@ function TemplateSpecs({ specs }) {
           borderRadius: 6,
           border: `1px solid ${C.nightBorder}`,
           fontSize: 11,
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: '"Hanken Grotesk", sans-serif',
           color: C.textLightMuted,
           lineHeight: 1.7,
         }}>
@@ -617,7 +617,7 @@ function TemplateCard({ children, name, dimensions, usage, specs, exportWidth, e
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
           <div style={{
-            fontFamily: '"Space Grotesk", sans-serif',
+            fontFamily: '"Hanken Grotesk", sans-serif',
             fontSize: 16,
             fontWeight: 600,
             color: C.textLight,
@@ -632,14 +632,14 @@ function TemplateCard({ children, name, dimensions, usage, specs, exportWidth, e
           />
         </div>
         <div style={{
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: '"Hanken Grotesk", sans-serif',
           fontSize: 11,
           fontWeight: 500,
           color: C.textLightMuted,
           marginBottom: 4,
         }}>{dimensions}</div>
         <div style={{
-          fontFamily: '"Space Grotesk", sans-serif',
+          fontFamily: '"Hanken Grotesk", sans-serif',
           fontSize: 14,
           color: C.textLightMuted,
           lineHeight: 1.5,
@@ -678,7 +678,7 @@ function TableOfContents({ activeSection }) {
               document.getElementById(section.id)?.scrollIntoView({ behavior: 'smooth' })
             }}
             style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 13,
               fontWeight: isActive ? 600 : 500,
               color: isActive ? C.orange : C.textLightMuted,
@@ -708,7 +708,7 @@ function TableOfContents({ activeSection }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontFamily: '"JetBrains Mono", monospace',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 8,
               fontWeight: 700,
               flexShrink: 0,
@@ -773,14 +773,14 @@ function PrintPreviewCard({ type = 'business-card' }) {
               marginBottom: 2,
             }}>Patrik Matheson</div>
             <div style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 8,
               fontWeight: 400,
               color: C.warmGray,
               marginBottom: 6,
             }}>Creative Director</div>
             <div style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 7,
               color: C.warmGray,
               lineHeight: 1.6,
@@ -815,7 +815,7 @@ function PrintPreviewCard({ type = 'business-card' }) {
               color: '#0A0A0A',
             }}>AOM<span style={{ color: C.orange }}>.</span></span>
             <div style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 6,
               color: C.warmGray,
               letterSpacing: '0.1em',
@@ -841,7 +841,7 @@ function PrintPreviewCard({ type = 'business-card' }) {
             borderTop: '1px solid rgba(0,0,0,0.06)',
           }}>
             <div style={{
-              fontFamily: '"JetBrains Mono", monospace',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 5,
               color: C.textLightMuted,
             }}>hello@aom-inhouse.com | aheadofmarket.com | Phoenix, AZ</div>
@@ -885,7 +885,7 @@ function LockupGrid() {
           <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440, display: 'block' }} aria-label="AOM Horizontal lockup">
             <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
             <line x1="280" y1="20" x2="280" y2="60" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
-            <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
+            <text x="296" y="46" fontFamily="Hanken Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
           </svg>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal Lockup</div>
@@ -909,7 +909,7 @@ function LockupGrid() {
         <div ref={stackDarkRef}>
           <svg viewBox="0 0 320 110" width={220} style={{ display: 'block' }} aria-label="AOM Stacked lockup">
             <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-            <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
+            <text x="2" y="96" fontFamily="Hanken Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#8A847C" letterSpacing="3">AHEAD OF MARKET</text>
           </svg>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked Lockup</div>
@@ -934,7 +934,7 @@ function LockupGrid() {
           <svg viewBox="0 0 520 80" width="100%" style={{ maxWidth: 440, display: 'block' }} aria-label="AOM Horizontal lockup light">
             <text x="0" y="60" fontFamily="Syne, sans-serif" fontSize="64" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
             <line x1="280" y1="20" x2="280" y2="60" stroke="#D9D3CB" strokeWidth="1" />
-            <text x="296" y="46" fontFamily="Space Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
+            <text x="296" y="46" fontFamily="Hanken Grotesk, sans-serif" fontSize="16" fontWeight="500" fill="#0A0A0A" letterSpacing="3">AHEAD OF MARKET</text>
           </svg>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Horizontal / Light</div>
@@ -958,7 +958,7 @@ function LockupGrid() {
         <div ref={stackLightRef}>
           <svg viewBox="0 0 320 110" width={220} style={{ display: 'block' }} aria-label="AOM Stacked lockup light">
             <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#0A0A0A" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
-            <text x="2" y="96" fontFamily="Space Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#7A7267" letterSpacing="3">AHEAD OF MARKET</text>
+            <text x="2" y="96" fontFamily="Hanken Grotesk, sans-serif" fontSize="14" fontWeight="500" fill="#7A7267" letterSpacing="3">AHEAD OF MARKET</text>
           </svg>
         </div>
         <div style={{ marginTop: 16, fontSize: 12, color: C.warmGray, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Stacked / Light</div>
@@ -1001,7 +1001,7 @@ export default function BrandGuidelinesV4() {
   }, [])
 
   return (
-    <div style={{ background: C.night, minHeight: '100vh', fontFamily: '"Space Grotesk", sans-serif' }}>
+    <div style={{ background: C.night, minHeight: '100vh', fontFamily: '"Hanken Grotesk", sans-serif' }}>
 
       {/* Sticky TOC sidebar (hidden below 1280px) */}
       <style>{`
@@ -1237,8 +1237,9 @@ export default function BrandGuidelinesV4() {
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
-                <svg viewBox="0 0 120 80" width={56} aria-label={`Icon mark ${v.label}`}>
-                  <text x="4" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill={v.fill} letterSpacing="-2">A<tspan fill={v.mono ? v.fill : '#E85D26'}>.</tspan></text>
+                <svg viewBox="0 0 80 80" width={56} aria-label={`Icon mark ${v.label}`}>
+                  <text x="9" y="60" fontFamily="Syne, sans-serif" fontSize="60" fontWeight="800" fill={v.fill} letterSpacing="-0.5">A</text>
+                  <circle cx="60" cy="54" r="7" fill={v.mono ? v.fill : '#E85D26'} />
                 </svg>
                 <div style={{ marginTop: 10, fontSize: 12, color: v.bg === C.cream ? C.warmGray : C.textLightMuted, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{v.label}</div>
                 <div style={{ marginTop: 6 }}>
@@ -1283,10 +1284,10 @@ export default function BrandGuidelinesV4() {
                 <svg viewBox="0 0 320 80" width={140}>
                   <text x="0" y="66" fontFamily="Syne, sans-serif" fontSize="76" fontWeight="800" fill="#F0ECE6" letterSpacing="-3">AOM<tspan fill="#E85D26">.</tspan></text>
                 </svg>
-                <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
-                <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
-                <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
-                <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Space Grotesk", sans-serif' }}>x</div>
+                <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Hanken Grotesk", sans-serif' }}>x</div>
+                <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Hanken Grotesk", sans-serif' }}>x</div>
+                <div style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Hanken Grotesk", sans-serif' }}>x</div>
+                <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 9, color: '#E85D26', letterSpacing: '0.15em', fontFamily: '"Hanken Grotesk", sans-serif' }}>x</div>
               </div>
             </div>
 
@@ -1574,7 +1575,7 @@ export default function BrandGuidelinesV4() {
                     <td style={{ padding: '12px 12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ width: 24, height: 24, borderRadius: 4, background: row.hex, border: `1px solid ${C.nightBorder}` }} />
-                        <span style={{ fontSize: 12, color: C.textLightMuted, fontFamily: 'monospace' }}>{row.hex}</span>
+                        <span style={{ fontSize: 12, color: C.textLightMuted, fontFamily: '"Hanken Grotesk", sans-serif' }}>{row.hex}</span>
                       </div>
                     </td>
                     <td style={{ padding: '12px 12px', color: C.textLightMuted }}>{row.variation}</td>
@@ -1932,7 +1933,7 @@ export default function BrandGuidelinesV4() {
       <DarkSection style={{ position: 'relative' }}>
         <div id="typography" style={{ position: 'absolute', top: -80 }} />
         <MaxWidth>
-          <SectionHeader num={3} title="Typography" subtitle="Syne for display. Space Grotesk for everything else. Two fonts, one system." dark />
+          <SectionHeader num={3} title="Typography" subtitle="Three faces, one system. Syne sets the mark and the headlines. Fraunces carries the editorial voice. Hanken Grotesk does the work — body, labels, and spec. No mono." dark />
 
           <div style={{
             display: 'grid',
@@ -1947,20 +1948,20 @@ export default function BrandGuidelinesV4() {
               padding: 40,
               border: `1px solid ${C.nightBorder}`,
             }}>
-              <Badge color={C.orange} style={{ borderColor: C.orange, marginBottom: 24 }}>Display</Badge>
+              <Badge color={C.orange} style={{ borderColor: C.orange, marginBottom: 24 }}>Display / The Mark</Badge>
               <div style={{
                 fontFamily: '"Syne", sans-serif',
-                fontSize: 72,
+                fontSize: 80,
                 fontWeight: 800,
                 color: C.textLight,
-                lineHeight: 0.95,
+                lineHeight: 0.92,
                 letterSpacing: '-0.03em',
-                marginBottom: 24,
+                marginBottom: 20,
               }}>
-                Syne
+                Syne<span style={{ color: C.orange }}>.</span>
               </div>
-              <div style={{ fontSize: 13, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 20 }}>
-                Used for headlines, section titles, large display numbers, and the wordmark. ExtraBold (800) is the primary weight. Bold (700) on dark backgrounds to prevent visual bloating.
+              <div style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 14, color: C.textLightMuted, lineHeight: 1.65, marginBottom: 24 }}>
+                The face of the logo itself. Headlines, section titles, big display numbers, and the wordmark. ExtraBold (800) is primary; Bold (700) on dark grounds to stop the weight from blooming. The orange period belongs to the mark — never decoration.
               </div>
               <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 20 }}>
                 {[
@@ -1996,61 +1997,54 @@ export default function BrandGuidelinesV4() {
               </div>
             </div>
 
-            {/* Space Grotesk specimen */}
+            {/* Fraunces — Editorial Voice specimen */}
             <div style={{
               background: C.nightCard,
               borderRadius: 16,
               padding: 40,
               border: `1px solid ${C.nightBorder}`,
             }}>
-              <Badge color={C.sage} style={{ borderColor: C.sage, marginBottom: 24 }}>Body</Badge>
+              <Badge color={C.gold} style={{ borderColor: C.gold, marginBottom: 24 }}>Editorial Voice</Badge>
               <div style={{
-                fontFamily: '"Space Grotesk", sans-serif',
-                fontSize: 56,
+                fontFamily: '"Fraunces", serif',
+                fontSize: 80,
                 fontWeight: 500,
+                fontStyle: 'italic',
                 color: C.textLight,
-                lineHeight: 1,
-                marginBottom: 24,
+                lineHeight: 0.95,
+                letterSpacing: '-0.01em',
+                marginBottom: 20,
               }}>
-                Space<br/>Grotesk
+                Fraunces
               </div>
-              <div style={{ fontSize: 13, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 20 }}>
-                Used for body text, labels, badges, navigation, captions, and data. Regular (400) for body, Medium (500) for labels, Bold (700) for micro-labels and badges.
+              <div style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 14, color: C.textLightMuted, lineHeight: 1.65, marginBottom: 24 }}>
+                The voice in the room. Used sparingly — pull quotes, statements, the line a section opens on. Its optical contrast against Syne's geometry is what keeps the system feeling crafted instead of generated.
               </div>
-              <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 20 }}>
-                {[
-                  { label: 'Body', size: 16, weight: 400, sample: 'We make things that impact. Video, web, brand, social, and AI-powered workflows.' },
-                  { label: 'Small', size: 14, weight: 400, sample: 'Every piece looks like it came from the same team. Because it did.' },
-                  { label: 'Label', size: 12, weight: 500, sample: 'CREATIVE PRODUCTION + AI SYSTEMS' },
-                  { label: 'Micro', size: 10, weight: 700, sample: 'VIDEO / WEB / BRAND / SOCIAL / AI' },
-                ].map(t => (
-                  <div key={t.label} style={{
-                    marginBottom: 16,
-                    paddingBottom: 16,
-                    borderBottom: `1px solid ${C.nightBorder}`,
-                  }}>
-                    <span style={{
-                      fontSize: 12, color: C.sage, fontWeight: 700, letterSpacing: '0.15em',
-                      display: 'block', marginBottom: 6,
-                    }}>{t.label} / {t.size}px / {t.weight}</span>
-                    <span style={{
-                      fontFamily: '"Space Grotesk", sans-serif',
-                      fontSize: t.size,
-                      fontWeight: t.weight,
-                      color: C.textLight,
-                      lineHeight: 1.5,
-                      letterSpacing: t.weight >= 700 ? '0.12em' : '0',
-                      textTransform: t.weight >= 700 ? 'uppercase' : 'none',
-                    }}>
-                      {t.sample}
-                    </span>
-                  </div>
-                ))}
+              <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 24 }}>
+                <p style={{
+                  fontFamily: '"Fraunces", serif',
+                  fontSize: 30,
+                  fontWeight: 400,
+                  fontStyle: 'italic',
+                  color: C.textLight,
+                  lineHeight: 1.3,
+                  letterSpacing: '-0.01em',
+                  margin: 0,
+                }}>
+                  “We get it. We make things that impact — and every piece looks like it came from the same team.”
+                </p>
+                <span style={{
+                  fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 12, fontWeight: 600,
+                  color: C.gold, letterSpacing: '0.15em', textTransform: 'uppercase',
+                  display: 'block', marginTop: 18,
+                }}>
+                  Fraunces 400 Italic · Pull quote
+                </span>
               </div>
             </div>
           </div>
 
-          {/* JetBrains Mono specimen */}
+          {/* Hanken Grotesk — Body & System specimen */}
           <div style={{
             background: C.nightCard,
             borderRadius: 16,
@@ -2058,45 +2052,46 @@ export default function BrandGuidelinesV4() {
             border: `1px solid ${C.nightBorder}`,
             marginTop: 24,
           }}>
-            <Badge color={C.orange} style={{ borderColor: C.orange, marginBottom: 24 }}>Mono</Badge>
+            <Badge color={C.sage} style={{ borderColor: C.sage, marginBottom: 24 }}>Body &amp; System</Badge>
             <div style={{
-              fontFamily: '"JetBrains Mono", monospace',
-              fontSize: 48,
-              fontWeight: 700,
+              fontFamily: '"Hanken Grotesk", sans-serif',
+              fontSize: 56,
+              fontWeight: 600,
               color: C.textLight,
               lineHeight: 1,
-              marginBottom: 24,
+              marginBottom: 20,
               letterSpacing: '-0.02em',
             }}>
-              JetBrains<br/>Mono
+              Hanken Grotesk
             </div>
-            <div style={{ fontSize: 13, color: C.textLightMuted, lineHeight: 1.6, marginBottom: 20 }}>
-              Used for labels, badges, metadata, code snippets, system identifiers, status text, and navigation micro-labels. Always uppercase for labels and badges. Normal case for code and data.
+            <div style={{ fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 14, color: C.textLightMuted, lineHeight: 1.65, marginBottom: 24, maxWidth: 620 }}>
+              The workhorse — body copy, labels, navigation, data, and spec. Regular (400) for body, Medium (500) for labels, SemiBold (600) for emphasis. It also retires the old code font: where the brand used to reach for a mono, it now uses Hanken in tracked uppercase. One fewer voice, more discipline.
             </div>
             <div style={{
               background: C.night,
               borderRadius: 8,
-              padding: 24,
-              marginBottom: 20,
+              padding: '20px 24px',
+              marginBottom: 24,
               border: `1px solid ${C.nightBorder}`,
             }}>
               <p style={{
-                fontFamily: '"JetBrains Mono", monospace',
-                fontSize: 14,
-                fontWeight: 400,
-                color: C.textLight,
+                fontFamily: '"Hanken Grotesk", sans-serif',
+                fontSize: 12,
+                fontWeight: 600,
+                color: C.orange,
                 lineHeight: 1.6,
+                letterSpacing: '0.22em',
+                textTransform: 'uppercase',
                 margin: 0,
               }}>
-                SYSTEM READY. ALL AGENTS ACTIVE. STATUS: NOMINAL.
+                Phoenix, AZ · Video · Web · Brand · Social · AI
               </p>
             </div>
-            <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 20 }}>
+            <div style={{ borderTop: `1px solid ${C.nightBorder}`, paddingTop: 24 }}>
               {[
-                { label: 'Label', size: 12, weight: 700, tracking: '0.2em', sample: 'CREATIVE PRODUCTION + AI SYSTEMS', transform: 'uppercase', color: C.orange },
-                { label: 'Badge', size: 12, weight: 500, tracking: '0.15em', sample: 'SECTION 01 / STATUS: ACTIVE', transform: 'uppercase', color: C.textLightMuted },
-                { label: 'Micro', size: 12, weight: 500, tracking: '0.15em', sample: 'PHOENIX, AZ / VIDEO / WEB / SOCIAL', transform: 'uppercase', color: C.textLightMuted, note: 'Minimum badge size. Never use below 10px.' },
-                { label: 'Code', size: 14, weight: 400, tracking: '0', sample: 'const ORANGE = "#E85D26"', transform: 'none', color: C.textLight },
+                { label: 'Body / 16px / 400', size: 16, weight: 400, tracking: '0', sample: 'We make things that impact. Video, web, brand, social, and AI-powered workflows — every piece looks like it came from the same team, because it did.', transform: 'none', color: C.textLight },
+                { label: 'Label / 12px / 600', size: 12, weight: 600, tracking: '0.18em', sample: 'CREATIVE PRODUCTION + AI SYSTEMS', transform: 'uppercase', color: C.sage },
+                { label: 'Spec / 12px / 500 (replaces mono)', size: 12, weight: 500, tracking: '0.14em', sample: 'SECTION 01 · STATUS: ACTIVE · #E85D26', transform: 'uppercase', color: C.textLightMuted, note: 'Tracked uppercase carries the spec role. No monospace anywhere in the system.' },
               ].map(t => (
                 <div key={t.label} style={{
                   marginBottom: 16,
@@ -2104,11 +2099,13 @@ export default function BrandGuidelinesV4() {
                   borderBottom: `1px solid ${C.nightBorder}`,
                 }}>
                   <span style={{
-                    fontSize: 12, color: C.orange, fontWeight: 700, letterSpacing: '0.15em',
-                    display: 'block', marginBottom: 6,
-                  }}>{t.label} / {t.size}px / {t.weight}</span>
+                    fontFamily: '"Hanken Grotesk", sans-serif',
+                    fontSize: 11, color: t.color, fontWeight: 700, letterSpacing: '0.16em',
+                    textTransform: 'uppercase', opacity: 0.85,
+                    display: 'block', marginBottom: 8,
+                  }}>{t.label}</span>
                   <span style={{
-                    fontFamily: '"JetBrains Mono", monospace',
+                    fontFamily: '"Hanken Grotesk", sans-serif',
                     fontSize: t.size,
                     fontWeight: t.weight,
                     color: t.color,
@@ -2157,10 +2154,12 @@ export default function BrandGuidelinesV4() {
                   ['H2', 'Syne', '32-40px', '800', '1.05', '-0.02em'],
                   ['H3', 'Syne', '24-28px', '700', '1.1', '-0.01em'],
                   ['H4', 'Syne', '20-22px', '700', '1.2', '0'],
-                  ['Body', 'Space Grotesk', '16px', '400', '1.6', '0'],
-                  ['Body Sm', 'Space Grotesk', '14px', '400', '1.5', '0'],
-                  ['Label', 'Space Grotesk', '11-12px', '500-600', '1.4', '0.12em'],
-                  ['Badge', 'Space Grotesk', '10px', '700', '1.4', '0.15em'],
+                  ['Pull quote', 'Fraunces Italic', '24-40px', '400', '1.3', '-0.01em'],
+                  ['Lead / intro', 'Fraunces', '18-22px', '400-500', '1.5', '0'],
+                  ['Body', 'Hanken Grotesk', '16px', '400', '1.6', '0'],
+                  ['Body Sm', 'Hanken Grotesk', '14px', '400', '1.5', '0'],
+                  ['Label', 'Hanken Grotesk', '11-12px', '600', '1.4', '0.16em'],
+                  ['Spec / Badge', 'Hanken Grotesk', '10-12px', '500-700', '1.4', '0.14-0.2em'],
                 ].map((row, i) => (
                   <tr key={i} style={{ borderBottom: `1px solid ${C.nightBorder}` }}>
                     {row.map((cell, j) => (
@@ -2477,7 +2476,7 @@ export default function BrandGuidelinesV4() {
           }}>
             {/* Primary */}
             <button style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 14,
               fontWeight: 600,
               color: C.white,
@@ -2491,7 +2490,7 @@ export default function BrandGuidelinesV4() {
 
             {/* Secondary */}
             <button style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 14,
               fontWeight: 600,
               color: C.textLight,
@@ -2504,7 +2503,7 @@ export default function BrandGuidelinesV4() {
 
             {/* Ghost */}
             <button style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 14,
               fontWeight: 600,
               color: C.orange,
@@ -2519,7 +2518,7 @@ export default function BrandGuidelinesV4() {
 
             {/* Small */}
             <button style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 12,
               fontWeight: 600,
               color: C.white,
@@ -2532,7 +2531,7 @@ export default function BrandGuidelinesV4() {
 
             {/* Sage variant */}
             <button style={{
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 14,
               fontWeight: 600,
               color: C.white,
@@ -2564,7 +2563,7 @@ export default function BrandGuidelinesV4() {
             <Badge color={C.orange} bg={C.orangeGlow} style={{ borderColor: 'transparent' }}>Glow</Badge>
             <span style={{
               display: 'inline-block',
-              fontFamily: '"Space Grotesk", sans-serif',
+              fontFamily: '"Hanken Grotesk", sans-serif',
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: '0.15em',
@@ -3072,7 +3071,7 @@ export default function BrandGuidelinesV4() {
                   alignItems: 'flex-start',
                   gap: 12,
                 }}>
-                  <span style={{ color: C.orange, fontWeight: 700, flexShrink: 0, fontFamily: '"JetBrains Mono", monospace', fontSize: 12 }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span style={{ color: C.orange, fontWeight: 700, flexShrink: 0, fontFamily: '"Hanken Grotesk", sans-serif', fontSize: 12 }}>{String(i + 1).padStart(2, '0')}</span>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: C.textLight, marginBottom: 4 }}>{item.label}</div>
                     <div style={{ fontSize: 14, color: C.textLightMuted, lineHeight: 1.5 }}>{item.desc}</div>
