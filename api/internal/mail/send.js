@@ -187,7 +187,15 @@ export default async function handler(req, res) {
   if (!to || !subject || !bodyHtml) return res.status(400).json({ error: 'to, subject, bodyHtml required' })
 
   // Load Gmail tokens directly via connection_id (no user JWT needed).
-  const creds = await getGmailTokenByConnection(connection_id)
+  // Wrap in try/catch so a token failure (e.g. invalid_grant — reconnect needed)
+  // returns a clean 424 with the real reason instead of crashing the function
+  // (FUNCTION_INVOCATION_FAILED). Mirrors list.js / draft.js.
+  let creds
+  try {
+    creds = await getGmailTokenByConnection(connection_id)
+  } catch (e) {
+    return res.status(424).json({ error: 'gmail-auth', detail: e.message })
+  }
   if (!creds) return res.status(401).json({ error: 'integration:not-connected' })
 
   const sig = await fetchSignature(creds.accessToken)
