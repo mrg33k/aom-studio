@@ -69,7 +69,7 @@ window.CURRICULUM.monday = {
       title: 'Kickoff video — SMART Goals for Kids and Teens',
       video: { title: 'SMART Goals for Kids and Teens — Goal Setting for Students', ytId: 'Q5hR34g3kLc', creditLine: 'Mental Health Center Kids' },
       typedQuestions: [
-        { q: 'What do the 5 letters in SMART stand for? Write each one out. Say everything you know about this -- don't stop when you think you're done.' },
+        { q: `What do the 5 letters in SMART stand for? Write each one out. Say everything you know about this -- don't stop when you think you're done.` },
         { q: 'What\'s the difference between a goal and a wish, the way the video explained it? Write until it is complete. Your first sentence is not the answer.' }
       ],
       cta: 'Done' },
@@ -78,7 +78,7 @@ window.CURRICULUM.monday = {
       title: 'Kickoff video — Finding a Percentage',
       video: { title: 'Finding a percentage — Decimals — Pre-Algebra', ytId: 'FaDtge_vkbg', creditLine: 'Khan Academy' },
       typedQuestions: [
-        { q: 'What does "percent" mean? Use the word "hundred" somewhere in your answer. Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+        { q: `What does "percent" mean? Use the word "hundred" somewhere in your answer. Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
         { q: 'What\'s one method the video showed for finding a percentage of a number? Walk through it. Be thorough -- write until you have actually said what you mean.' }
       ],
       cta: 'Done' },
@@ -110,7 +110,7 @@ window.CURRICULUM.monday = {
         'A wish is something you say out loud and then nothing happens. A goal is a wish you\'ve done some work on: you know exactly what success looks like, you know how you\'ll measure it, and you\'ve given yourself a deadline.',
         'Today we\'re going to turn one of your wishes into a real goal using the SMART formula. After this, you\'ll never confuse the two again.'
       ],
-      typedCheck: { q: 'What\'s the difference between a wish and a goal, in your own words? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `What\'s the difference between a wish and a goal, in your own words? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'mon-m-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 01 of 10',
@@ -130,7 +130,7 @@ window.CURRICULUM.monday = {
         'So on one beat, instead of "1-and" (2 notes) you play "1-trip-let" (3 notes). Same amount of time. More notes packed in.',
         'That little change makes the rhythm feel completely different. Triplets are what make blues swing, what makes shuffles bounce, what makes a lot of hip-hop hi-hats feel rolling instead of stiff.'
       ],
-      typedCheck: { q: 'A triplet plays how many notes in the same time as how many regular notes? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `A triplet plays how many notes in the same time as how many regular notes? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'mon-r-02', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 02 of 10',
@@ -205,7 +205,7 @@ window.CURRICULUM.monday = {
         '<strong>Who:</strong> Who was the story (or article) about?<br><strong>What:</strong> What did they do, or what happened to them?<br><strong>Why:</strong> Why did it matter — what was the point?',
         'Answer those three in one sentence and you have a summary. "Robert Nay, a 14-year-old who taught himself to code, beat Angry Birds — because he decided to start before he was ready."'
       ],
-      typedCheck: { q: 'What are the three parts of the Who-What-Why formula? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `What are the three parts of the Who-What-Why formula? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'mon-w-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 04 of 10',
@@ -226,7 +226,7 @@ window.CURRICULUM.monday = {
         '10% of $40 is $4. So 5% of $40 is $2.',
         'This matters because tips, taxes, and small discounts often live in the 5%-10% range. You can do them in your head.'
       ],
-      typedCheck: { q: 'If 10% of a number is 12, what is 5% of that same number? How did you figure it out? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `If 10% of a number is 12, what is 5% of that same number? How did you figure it out? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'mon-mp-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'MPC ONE', tag: 'MPC · 04 of 10',
@@ -285,7 +285,7 @@ window.CURRICULUM.monday = {
         'When you\'re trying to Re-Tell, look there first. Topic sentence + 1-2 supporting details = your summary, done.',
         'Watch for signal words too: "the main reason," "in conclusion," "the key point" — those almost always announce the big idea coming next.'
       ],
-      typedCheck: { q: 'Where in a paragraph is the topic sentence usually found? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `Where in a paragraph is the topic sentence usually found? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'mon-w-06', kind: 'topic', type: 'typing-precise', minutes: 5, subject: 'Writing', tag: 'Writing · 06 of 10',
@@ -330,7 +330,7 @@ window.CURRICULUM.monday = {
         '<strong>Discount</strong> signs at stores ("25% off!") mean a quarter off the price. $80 shoes at 25% off = $80 - $20 = $60.',
         'Once you can do these in your head, you\'re ahead of probably 80% of adults.'
       ],
-      typedCheck: { q: 'A $40 item is 25% off. How much do you pay? Show how you figured it out. Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `A $40 item is 25% off. How much do you pay? Show how you figured it out. Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'mon-mp-07', kind: 'topic', type: 'concept', minutes: 6, subject: 'MPC ONE', tag: 'MPC · 07 of 10',
@@ -406,7 +406,7 @@ window.CURRICULUM.monday = {
         '<strong>3/4 time:</strong> "My Favorite Things" (Sound of Music). Most waltzes. "Piano Man" by Billy Joel. "Manic Depression" by Jimi Hendrix.',
         'Pull one up on your phone after this. Try clapping along on beat 1 only — you\'ll hear how 3/4 wraps around different from 4/4.'
       ],
-      typedCheck: { q: 'Pick one song or kind of music you\'ll go listen to today to hear triplets or 3/4 time. Name it. Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `Pick one song or kind of music you\'ll go listen to today to hear triplets or 3/4 time. Name it. Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'mon-r-10', kind: 'topic', type: 'concept', minutes: 3, subject: 'Reading', tag: 'Reading · 10 of 10',
@@ -425,7 +425,7 @@ window.CURRICULUM.monday = {
         'You just wrote a real goal — specific, measurable, with a number and a deadline. Now the work is doing it. Friday we\'ll come back and see if you hit it.',
         'The SMART formula isn\'t magic. It just forces you to be honest about what you\'re actually committing to. Most people skip this step and wonder why their goals don\'t stick. You don\'t have to be one of them.'
       ],
-      typedCheck: { q: 'What\'s the rest of the work after writing a SMART goal? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `What\'s the rest of the work after writing a SMART goal? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Done' },
 
     // ===== SUBJECT 3 — MATH (Percentages) =====

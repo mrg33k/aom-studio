@@ -58,7 +58,7 @@ window.CURRICULUM.thursday = {
       video: { title: 'Finding the Authors Purpose with P.I.E.', ytId: 'pGmR1HiW9H0', creditLine: 'Whimsical Teacher Tube' },
       typedQuestions: [
         { q: 'What do the three letters in PIE stand for? Write each one out. Keep going until you have said everything that matters -- your first answer is probably not enough.' },
-        { q: 'Pick one — Persuade, Inform, or Entertain. Give one real example of something you\'ve read that was written for that purpose. Say everything you know about this -- don't stop when you think you're done.' }
+        { q: `Pick one — Persuade, Inform, or Entertain. Give one real example of something you\'ve read that was written for that purpose. Say everything you know about this -- don't stop when you think you're done.` }
       ],
       cta: 'Done' },
 
@@ -67,7 +67,7 @@ window.CURRICULUM.thursday = {
       video: { title: 'How to Write: How-To (Procedural) Writing', ytId: 'bvUh3FrhFY8', creditLine: 'Small Act Big Impact' },
       typedQuestions: [
         { q: 'What makes a how-to different from a story? Use the word "steps" or "order" somewhere. Write until it is complete. Your first sentence is not the answer.' },
-        { q: 'Name one thing you know how to do well enough that you could write a how-to about it. Why that one? Don't stop at one sentence. Keep explaining until there is nothing left to say.' }
+        { q: `Name one thing you know how to do well enough that you could write a how-to about it. Why that one? Don't stop at one sentence. Keep explaining until there is nothing left to say.` }
       ],
       cta: 'Done' },
 
@@ -99,7 +99,7 @@ window.CURRICULUM.thursday = {
         '<strong>E — Entertain.</strong> Make you feel something. (Novels. Comic books. Most movies.)',
         'Once you can name the purpose, you read smarter — you know what the author is doing to you.'
       ],
-      typedCheck: { q: 'What do the three letters in PIE stand for? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `What do the three letters in PIE stand for? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'thu-w-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 01 of 10',
@@ -121,7 +121,7 @@ window.CURRICULUM.thursday = {
         '"5 wins for every 1 loss." That\'s a ratio.',
         'Whenever you say "for every... there are..." — you\'re using a ratio.'
       ],
-      typedCheck: { q: 'What does a ratio compare? Give one example. Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `What does a ratio compare? Give one example. Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'thu-k-01', kind: 'topic', type: 'concept', minutes: 4, subject: 'Maker', tag: 'Maker · 01 of 10',
@@ -179,7 +179,7 @@ window.CURRICULUM.thursday = {
         '<strong>5. Stand the iron in its holder when not soldering.</strong> Never put it on the table.',
         '<strong>6. Tie back long hair</strong> and roll up sleeves.'
       ],
-      typedCheck: { q: 'Name three safety rules for soldering and why each one matters. Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `Name three safety rules for soldering and why each one matters. Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'thu-r-03', kind: 'topic', type: 'concept', minutes: 4, subject: 'Reading', tag: 'Reading · 03 of 10',
@@ -220,7 +220,7 @@ window.CURRICULUM.thursday = {
         'Why? Because if the reader skips ahead or loses their place, mashed-together steps are confusing. One step = one action.',
         'When in doubt, BREAK steps into smaller ones. Never combine.'
       ],
-      typedCheck: { q: 'Why should each step in a how-to be just one action, not multiple? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `Why should each step in a how-to be just one action, not multiple? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'thu-m-04', kind: 'topic', type: 'concept', minutes: 4, subject: 'Math', tag: 'Math · 04 of 10',
@@ -279,7 +279,7 @@ window.CURRICULUM.thursday = {
         'How? You multiplied (or divided) BOTH sides by the same number. 2×2=4 and 3×2=6 → 4:6. Same ratio, doubled.',
         'This trick is huge. If you have "3 cookies for every 4 kids" and 12 kids show up, you need 9 cookies (3×3 : 4×3). Same ratio, scaled up.'
       ],
-      typedCheck: { q: 'If the ratio is 2:5 and you multiply both sides by 4, what\'s the equivalent ratio? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `If the ratio is 2:5 and you multiply both sides by 4, what\'s the equivalent ratio? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'thu-k-05', kind: 'topic', type: 'concept', minutes: 5, subject: 'Maker', tag: 'Maker · 05 of 10',
@@ -328,7 +328,7 @@ window.CURRICULUM.thursday = {
         'A novel entertains you (story) BUT also persuades you to think about something the author cares about.',
         'When you read smart, ask: "what\'s the MAIN purpose, and is there a SECOND purpose hiding in there?"'
       ],
-      typedCheck: { q: 'Give one example of a piece of media (movie, show, article) that has TWO purposes mixed. Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `Give one example of a piece of media (movie, show, article) that has TWO purposes mixed. Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'thu-w-07', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 07 of 10',
@@ -404,7 +404,7 @@ window.CURRICULUM.thursday = {
         'Entertaining? Enjoy it — but don\'t take its made-up world as the real one.',
         'Without naming the purpose, you can\'t do any of that. PIE gives you a thinking tool for everything you\'ll ever read.'
       ],
-      typedCheck: { q: 'Why is it useful to know an author\'s PURPOSE before you take their writing seriously? Say everything you know about this -- don't stop when you think you're done.' },
+      typedCheck: { q: `Why is it useful to know an author\'s PURPOSE before you take their writing seriously? Say everything you know about this -- don't stop when you think you're done.` },
       cta: 'Got it' },
 
     { id: 'thu-w-09', kind: 'topic', type: 'concept', minutes: 4, subject: 'Writing', tag: 'Writing · 09 of 10',
@@ -424,7 +424,7 @@ window.CURRICULUM.thursday = {
         'A <strong>unit rate</strong> is a rate where the second number is 1. "60 miles per 1 hour" → 60 mph.',
         'Unit rates are super useful because they make comparison easy. Two cars: one goes "150 miles in 3 hours" (50 mph). The other goes "180 miles in 4 hours" (45 mph). The first car\'s faster — easy to see in unit rate, harder to see in raw ratio.'
       ],
-      typedCheck: { q: 'What\'s the difference between a rate and a unit rate? Why is a unit rate useful? Don't stop at one sentence. Keep explaining until there is nothing left to say.' },
+      typedCheck: { q: `What\'s the difference between a rate and a unit rate? Why is a unit rate useful? Don't stop at one sentence. Keep explaining until there is nothing left to say.` },
       cta: 'Got it' },
 
     { id: 'thu-k-09', kind: 'topic', type: 'teach-back', minutes: 8, subject: 'Maker', tag: 'Maker · 09 of 10',
