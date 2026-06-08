@@ -102,7 +102,11 @@
     { "source": "/internal/scope/higher-orbits-biz7tkhq9h", "destination": "/scope-higher-orbits-biz7tkhq9h.html" },
     { "source": "/agreements/included-health", "destination": "/agreements/included-health.html" },
     { "source": "/praevideo", "destination": "/praevideo/index.html" },
-    { "source": "/praevideo/:path*", "destination": "/praevideo/:path*" }
+    { "source": "/praevideo/:path*", "destination": "/praevideo/:path*" },
+    { "source": "/preston", "destination": "/preston/index.html" },
+    { "source": "/preston/:path*", "destination": "/preston/:path*" },
+    { "source": "/superstition", "destination": "/superstition/index.html" },
+    { "source": "/superstition/:path*", "destination": "/superstition/:path*" }
   ],
   "redirects": [
     { "source": "/higher-orbits", "destination": "/higherorbits", "permanent": true }
