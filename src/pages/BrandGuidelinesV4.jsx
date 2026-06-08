@@ -15,10 +15,10 @@ import {
 } from '../components/templates'
 
 /* ------------------------------------------------------------------ */
-/*  AOM Brand Guidelines v4: "Bold Graphic System"                     */
-/*  Deep visual brand guide inspired by Patrik's Pinterest boards      */
-/*  Patterns, type specimens, color system, component library          */
-/*  Fonts: Syne (display) + Space Grotesk (body)                      */
+/*  AOM Brand Guidelines v5: "Editorial Bold"                          */
+/*  Deep visual brand guide. Marks, type, color, patterns, templates.  */
+/*  Type: Syne (display/mark) + Fraunces (editorial voice)             */
+/*        + Hanken Grotesk (body & system). No mono.                   */
 /* ------------------------------------------------------------------ */
 
 const C = {
@@ -1052,13 +1052,13 @@ export default function BrandGuidelinesV4() {
             >
               AOM<span style={{ color: C.orange }}>.</span>
             </a>
-            <Badge color={C.orange} style={{ borderColor: C.orange }}>v4.0</Badge>
+            <Badge color={C.orange} style={{ borderColor: C.orange }}>v5.0</Badge>
           </div>
 
           {/* Title block */}
           <div style={{ position: 'relative' }}>
             <div style={{ marginBottom: 24 }}>
-              <Badge color={C.textLightMuted}>Brand Identity System</Badge>
+              <Badge color={C.textLightMuted}>Brand System</Badge>
             </div>
 
             {/* AOM wordmark large */}
@@ -1076,6 +1076,21 @@ export default function BrandGuidelinesV4() {
               <span style={{ color: C.orange }}>.</span>
             </h1>
 
+            {/* Editorial voice line — Syne mark meets Fraunces voice */}
+            <p style={{
+              fontFamily: '"Fraunces", serif',
+              fontSize: 'clamp(24px, 3.6vw, 44px)',
+              fontWeight: 400,
+              fontStyle: 'italic',
+              color: C.textLight,
+              lineHeight: 1.22,
+              letterSpacing: '-0.01em',
+              margin: '32px 0 0',
+              maxWidth: 760,
+            }}>
+              Everything we make, made to look like it came from one team<span style={{ color: C.orange, fontStyle: 'normal' }}>.</span>
+            </p>
+
             <div style={{
               display: 'flex', gap: 32, marginTop: 40, flexWrap: 'wrap',
               borderTop: `1px solid ${C.nightBorder}`, paddingTop: 32,
@@ -1090,11 +1105,11 @@ export default function BrandGuidelinesV4() {
               </div>
               <div>
                 <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Direction</div>
-                <div style={{ fontSize: 18, fontWeight: 600, color: C.textLight }}>Bold Graphic</div>
+                <div style={{ fontSize: 18, fontWeight: 600, color: C.textLight }}>Editorial Bold</div>
               </div>
               <div>
                 <div style={{ fontSize: 12, color: C.textLightMuted, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Version</div>
-                <div style={{ fontSize: 18, fontWeight: 600, color: C.orange }}>4.0</div>
+                <div style={{ fontSize: 18, fontWeight: 600, color: C.orange }}>5.0</div>
               </div>
             </div>
           </div>
