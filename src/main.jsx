@@ -299,6 +299,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/mission-water-game" element={<MissionWaterGame />} />
           <Route path="/MissionWaterPlatform" element={<MissionWaterPlatform />} />
           <Route path="/missionwaterplatform" element={<MissionWaterPlatform />} />
+          <Route path="/platform" element={<MissionWaterPlatform />} />
           <Route path="/stats" element={<AOMStats />} />
           <Route path="/hb" element={<HolisticBalance />} />
           <Route path="/holistic-balance" element={<HolisticBalance />} />
