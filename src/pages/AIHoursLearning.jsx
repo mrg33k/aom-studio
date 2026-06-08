@@ -729,20 +729,53 @@ function SessionStatusIcon({ status }) {
 
 // ─── Session Step Indicator ───────────────────────────────────────────────────
 
-function SessionStepIndicator({ currentSession, checklistCompleted = {} }) {
+function SessionStepIndicator({ currentSession, checklistCompleted = {}, clientMarkedDone = {} }) {
   const isComplete = currentSession > 5
+  // Program complete = AOM advanced past session 5, OR client has marked session 5 as done
+  // (sessions 1–4 are already AOM-done when currentSession >= 5)
+  const allDone = isComplete || (currentSession >= 5 && !!clientMarkedDone[5])
 
   function getStepStatus(sessionNum) {
+    if (allDone) return 'done'
     if (sessionNum < currentSession) return 'done'
     if (sessionNum === currentSession && !isComplete) return 'current'
     return 'locked'
   }
 
   return (
-    <div style={{ padding: '28px 40px 24px', background: '#fff', borderBottom: `1px solid ${BORDER}` }}>
+    <div style={{
+      padding: '28px 40px 24px',
+      background: allDone ? 'rgba(45,122,79,0.05)' : '#fff',
+      borderBottom: `1px solid ${allDone ? GREEN_CHECK_BORDER : BORDER}`,
+      transition: 'background 0.6s ease, border-color 0.6s ease',
+    }}>
       <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ ...styles.heroEyebrow, color: AOM_ORANGE, marginBottom: 20 }}>
-          Your AI Hours Journey
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ ...styles.heroEyebrow, color: allDone ? PROGRESS_GREEN : AOM_ORANGE, marginBottom: 0 }}>
+            Your AI Hours Journey
+          </div>
+          {allDone && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '6px 16px',
+              background: PROGRESS_GREEN,
+              color: '#fff',
+              borderRadius: 24,
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.07em',
+              textTransform: 'uppercase',
+              animation: 'aihours-fadein 0.5s ease',
+              boxShadow: '0 2px 12px rgba(45,122,79,0.32)',
+            }}>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2.5 6.5l3 3L10.5 3" stroke="#fff" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Program Completed
+            </div>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-start' }}>
           {SESSIONS.map((session, i) => {
@@ -767,6 +800,7 @@ function SessionStepIndicator({ currentSession, checklistCompleted = {} }) {
                       border: status === 'locked' ? `2px solid ${BORDER}` : 'none',
                       flexShrink: 0,
                       transition: 'background 0.4s ease',
+                      boxShadow: allDone ? '0 0 0 4px rgba(45,122,79,0.12)' : 'none',
                     }}>
                       {status === 'done' ? (
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -783,7 +817,7 @@ function SessionStepIndicator({ currentSession, checklistCompleted = {} }) {
                       )}
                     </div>
                     {/* Milestone badge: small green check that appears when all checklist items are done */}
-                    {checklistDone && status !== 'locked' && (
+                    {checklistDone && status !== 'locked' && !allDone && (
                       <div style={{
                         position: 'absolute',
                         bottom: -2,
@@ -826,6 +860,7 @@ function SessionStepIndicator({ currentSession, checklistCompleted = {} }) {
                     background: status === 'done' ? GREEN_CHECK : BORDER,
                     marginTop: 20,
                     maxWidth: 64,
+                    transition: 'background 0.5s ease',
                   }} />
                 )}
               </React.Fragment>
@@ -1655,7 +1690,7 @@ function ClientView({ client, onLogout }) {
       </header>
 
       {/* Session step indicator */}
-      <SessionStepIndicator currentSession={currentSession} checklistCompleted={checklistCompleted} />
+      <SessionStepIndicator currentSession={currentSession} checklistCompleted={checklistCompleted} clientMarkedDone={clientMarkedDone} />
 
       {/* Sessions */}
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '48px 40px' }}>
