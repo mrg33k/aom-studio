@@ -12,6 +12,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import SupportInbox from './SupportInbox.jsx'
 import { C } from '../lib/cv3Colors.js'
+import { authFetch } from '../lib/authFetch.js'
 
 // Theme-aware: follows Corner's current theme (same tokens SupportInbox uses) so
 // both streams render consistently, light or dark.
@@ -244,7 +245,11 @@ function InboxThreadCard({ it, loud }) {
   )
 }
 
-function InboxPanel() {
+function InboxPanel({ worldId }) {
+  // Patrik's own logged-in dashboard session (the aom world) auto-unlocks: the
+  // Supabase JWT rides via authFetch and the server verifies it (verifyTenant),
+  // so no password screen. Everyone else still gets the team-password unlock.
+  const isAom = worldId === 'aom'
   const [pw, setPw] = useState(() => { try { return sessionStorage.getItem('support-admin-pw') || '' } catch { return '' } })
   const [input, setInput] = useState('')
   const [data, setData] = useState(null)
@@ -253,25 +258,32 @@ function InboxPanel() {
   const [filter, setFilter] = useState('all') // all | needs | replied
 
   const load = useCallback(async (password) => {
-    if (!password) return
+    if (!isAom && !password) return
     setLoading(true); setError('')
     try {
-      const r = await fetch('/api/support/inbox', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'patrikmatheson@gmail.com', password, days: 3 }),
+      const reqBody = { email: 'patrikmatheson@gmail.com', days: 3 }
+      if (password) reqBody.password = password
+      const r = await authFetch('/api/support/inbox', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify(reqBody),
       })
       const d = await r.json()
-      if (r.status === 401) { try { sessionStorage.removeItem('support-admin-pw') } catch {} ; setPw(''); setError('Wrong team password.'); setLoading(false); return }
+      if (r.status === 401) {
+        if (password) { try { sessionStorage.removeItem('support-admin-pw') } catch {} ; setPw(''); setError('Wrong team password.') }
+        else if (isAom) { setError('Could not verify your session — refresh and try again.') }
+        setLoading(false); return
+      }
       if (!r.ok || !d.ok) { setError(d.error || 'Could not load the inbox.'); setLoading(false); return }
-      try { sessionStorage.setItem('support-admin-pw', password) } catch {}
-      setPw(password); setData(d)
+      if (password) { try { sessionStorage.setItem('support-admin-pw', password) } catch {} ; setPw(password) }
+      setData(d)
     } catch { setError('Could not reach the mailboxes.') }
     finally { setLoading(false) }
-  }, [])
+  }, [isAom])
 
-  useEffect(() => { if (pw) load(pw) }, [pw, load])
+  // Auto-unlock for Patrik's session; otherwise use any cached team password.
+  useEffect(() => { if (isAom) load(); else if (pw) load(pw) }, [isAom, pw, load])
 
-  if (!pw && !data) {
+  if (!isAom && !pw && !data) {
     return (
       <div style={{ padding: '32px 24px', maxWidth: 360 }}>
         <p style={{ fontFamily: SERIF, fontSize: 22, margin: '0 0 6px', color: BONE }}>Unlock the inbox</p>
@@ -376,7 +388,7 @@ function SummaryStrip() {
 }
 
 // ── Full dashboard ───────────────────────────────────────────────────────────
-export default function SupportDashboard({ isDesktop = true, onClose }) {
+export default function SupportDashboard({ isDesktop = true, onClose, worldId }) {
   const [tab, setTab] = useState('requests') // mobile single-pane
   const [view, setView] = useState('streams') // desktop: streams | inbox
 
@@ -402,7 +414,7 @@ export default function SupportDashboard({ isDesktop = true, onClose }) {
           <TabBtn active={tab === 'inbox'} onClick={() => setTab('inbox')} label="Inbox" />
         </div>
         <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          {tab === 'requests' ? <RequestsStream /> : tab === 'chat' ? <SupportInbox isDesktop={false} /> : <InboxPanel />}
+          {tab === 'requests' ? <RequestsStream /> : tab === 'chat' ? <SupportInbox isDesktop={false} /> : <InboxPanel worldId={worldId} />}
         </div>
       </div>
     )
@@ -427,7 +439,7 @@ export default function SupportDashboard({ isDesktop = true, onClose }) {
         </div>
       ) : (
         <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <InboxPanel />
+          <InboxPanel worldId={worldId} />
         </div>
       )}
     </div>

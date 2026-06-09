@@ -19,6 +19,7 @@
 // visible — the board now shows their message AND our reply, not just a flag.
 
 import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
+import { verifyTenant } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -164,7 +165,7 @@ async function trackAccount(connId, email, days) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
   if (req.method === 'OPTIONS') return res.status(200).end()
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' })
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(503).json({ ok: false, error: 'Service unavailable' })
@@ -177,9 +178,28 @@ export default async function handler(req, res) {
   }
 
   const { email, password, days, all } = body || {}
-  const n = (email || '').trim().toLowerCase()
-  if (!isAOMTeamMember(n) || password !== ADMIN_PASSWORD) {
-    return res.status(401).json({ ok: false, error: 'Invalid email or password.' })
+
+  // Auth path 1 — a verified Supabase session in the aom world (or super-admin
+  // Patrik). This is STRONGER than the shared password: it requires a real JWT
+  // proving who you are. When the dashboard opens the Inbox tab in Patrik's own
+  // logged-in session, the token rides via Authorization and we skip the
+  // password entirely (no friction). verifyTenant throws on any non-aom/invalid
+  // session, so we fall through to the password path for everyone else.
+  let authed = false
+  try {
+    await verifyTenant('aom', req)
+    authed = true
+  } catch {
+    authed = false
+  }
+
+  // Auth path 2 — AOM team email + the shared admin password (for callers
+  // without a dashboard session: scripts, the standalone /support/admin door).
+  if (!authed) {
+    const n = (email || '').trim().toLowerCase()
+    if (!isAOMTeamMember(n) || password !== ADMIN_PASSWORD) {
+      return res.status(401).json({ ok: false, error: 'Invalid email or password.' })
+    }
   }
 
   const window = Math.max(1, Math.min(Number(days) > 0 ? Number(days) : 3, 14))

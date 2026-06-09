@@ -2583,7 +2583,7 @@ export default function CornerV4() {
           >
             {/* corner:support N1 — Support Inbox (Patrik only) */}
             {showSupportInbox && worldId === 'aom' ? (
-              <SupportDashboard isDesktop={isDesktop} onClose={() => setShowSupportInbox(false)} />
+              <SupportDashboard isDesktop={isDesktop} worldId={worldId} onClose={() => setShowSupportInbox(false)} />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */
