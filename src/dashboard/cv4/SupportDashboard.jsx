@@ -82,6 +82,7 @@ function RequestsStream() {
 
 function WishRow({ w, dim }) {
   const loud = w.status === 'needs_team'
+  const overSla = w.status !== 'resolved' && (Date.now() - new Date(w.created_at).getTime()) > 10 * 60 * 1000
   const [open, setOpen] = useState(false)
   const [updates, setUpdates] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -108,8 +109,14 @@ function WishRow({ w, dim }) {
         textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: BONE }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
           <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: BONE }}>{w.name || w.email}</span>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT, textTransform: 'uppercase' }}>
-            {STATUS_LABEL[w.status] || w.status}
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {overSla && (
+              <span title="Open past the 10-minute target" style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700,
+                color: '#1A1206', background: AMBER, padding: '1px 5px', borderRadius: 8 }}>OVER 10M</span>
+            )}
+            <span style={{ fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT, textTransform: 'uppercase' }}>
+              {STATUS_LABEL[w.status] || w.status}
+            </span>
           </span>
         </div>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.4,
