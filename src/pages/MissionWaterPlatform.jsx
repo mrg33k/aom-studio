@@ -324,8 +324,8 @@ function ArchivePanel() {
 // ─── Stage (tabbed: game / live / archive) ──────────────────────────────────────
 function Stage({ tab, setTab }) {
   const tabs = [
-    { id: 'game', label: 'Play the Game', url: 'aheadofmarket.com/missionwater' },
     { id: 'live', label: 'Watch Live', url: 'aheadofmarket.com/missionwaterlive' },
+    { id: 'game', label: 'Play the Game', url: 'aheadofmarket.com/missionwater' },
     { id: 'archive', label: 'Archive', url: 'aheadofmarket.com/missionwater/archive' },
   ];
   const active = tabs.find((t) => t.id === tab);
@@ -435,7 +435,7 @@ function Stage({ tab, setTab }) {
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function MissionWaterPlatform() {
   useSEO();
-  const [tab, setTab] = useState('game');
+  const [tab, setTab] = useState('live');
 
   const goToStage = (id) => {
     setTab(id);
