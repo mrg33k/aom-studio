@@ -129,6 +129,7 @@ export default function SupportWish() {
               <button onClick={send} style={sendBtn}>Send</button>
               <p style={{ fontSize: 13, color: INK_FAINT, marginTop: 18 }}>
                 You'll get an email back, plus a private link to watch where it stands.
+                We typically reply within one business day.
               </p>
             </>
           )}
