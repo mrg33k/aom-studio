@@ -23,6 +23,7 @@ const SpaceRisingBrand = lazy(() => import('./pages/SpaceRisingBrand.jsx'))
 const ArtlinkBrand = lazy(() => import('./pages/ArtlinkBrand.jsx'))
 const ArtlinkSitePitch = lazy(() => import('./pages/ArtlinkSitePitch.jsx'))
 const SpaceRisingDealBankCompleted = lazy(() => import('./pages/SpaceRisingDealBankCompleted.jsx'))
+const SpaceRisingDealBankAdmin = lazy(() => import('./pages/SpaceRisingDealBankAdmin.jsx'))
 const AmbitionBrandGuidelines = lazy(() => import('./pages/AmbitionBrandGuidelines.jsx'))
 const AmbitionBrandGuidelinesV2 = lazy(() => import('./pages/AmbitionBrandGuidelinesV2.jsx'))
 const Social = lazy(() => import('./pages/Social.jsx'))
@@ -94,6 +95,7 @@ const HigherOrbitsPitch = lazy(() => import('./pages/HigherOrbitsPitch.jsx'))
 const HigherOrbitsPitchAZCT = lazy(() => import('./pages/HigherOrbitsPitchAZCT.jsx'))
 const AIHoursLearning = lazy(() => import('./pages/AIHoursLearning.jsx'))
 const AIHoursAdmin = lazy(() => import('./pages/AIHoursAdmin.jsx'))
+const SupportWish = lazy(() => import('./pages/SupportWish.jsx'))
 const Marketplace = lazy(() => import('./pages/Marketplace.jsx'))
 const AIGuide = lazy(() => import('./pages/AIGuide.jsx'))
 // corner:files-in-app R79-f2 — local demo of the ProjectFileReader primitive.
@@ -247,6 +249,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/brands/artlink/pitch" element={<ArtlinkSitePitch />} />
           <Route path="/brands/space-rising" element={<SpaceRisingBrand />} />
           <Route path="/space-rising/deal-bank/completed" element={<SpaceRisingDealBankCompleted />} />
+          <Route path="/space-rising/deal-bank/admin" element={<SpaceRisingDealBankAdmin />} />
           <Route path="/social" element={<Social />} />
           <Route path="/research/hvac-ads-arizona" element={<ResearchHVAC />} />
           <Route path="/briefs" element={<BriefsHub />} />
@@ -312,6 +315,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/blacknight" element={<Blacknight />} />
           <Route path="/ai-hours" element={<AIHoursLearning />} />
           <Route path="/ai-hours/admin" element={<AIHoursAdmin />} />
+          <Route path="/support" element={<SupportWish />} />
           <Route path="/:tenantSlug/signup" element={<TenantSignupPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/change-password" element={<ChangePassword />} />
