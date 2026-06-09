@@ -182,8 +182,8 @@ function MissionCard({ active, locked, title, icon, subtitle, missionNum, visibl
       style={{
         display: 'flex',
         alignItems: 'flex-start',
-        gap: 14,
-        padding: '14px 16px',
+        gap: 13,
+        padding: '11px 14px',
         // Left accent border is the hero design element
         borderLeft: locked
           ? '2px solid rgba(200,216,240,0.15)'
@@ -212,8 +212,8 @@ function MissionCard({ active, locked, title, icon, subtitle, missionNum, visibl
     >
       {/* Mission icon — square frame, no circle */}
       <div style={{
-        width: 48,
-        height: 48,
+        width: 42,
+        height: 42,
         flexShrink: 0,
         border: locked
           ? '1px solid rgba(200,216,240,0.1)'
@@ -285,15 +285,17 @@ function MissionCard({ active, locked, title, icon, subtitle, missionNum, visibl
           {title}
         </div>
 
-        {/* Description */}
-        <div style={{
-          fontFamily: 'Rajdhani, sans-serif',
-          fontSize: 14,
-          lineHeight: 1.5,
-          color: locked ? 'rgba(200,216,240,0.22)' : TEXT_SOFT,
-        }}>
-          {subtitle}
-        </div>
+        {/* Description — active card only; locked cards stay compact "coming soon" bars */}
+        {!locked && (
+          <div style={{
+            fontFamily: 'Rajdhani, sans-serif',
+            fontSize: 13,
+            lineHeight: 1.4,
+            color: TEXT_SOFT,
+          }}>
+            {subtitle}
+          </div>
+        )}
 
         {/* BEGIN MISSION — right-aligned, transparent CTA per DESIGN.md */}
         {active && !locked && (
@@ -370,13 +372,13 @@ export default function WelcomeScreen({ onStart }) {
           display: flex;
           justify-content: center;
           width: 100%;
-          max-width: 600px;
+          max-width: 660px;
           padding: 0 16px;
           box-sizing: border-box;
         }
         .wg-panel-outer {
           width: 100%;
-          max-width: 600px;
+          max-width: 660px;
           min-width: 0;
           z-index: 1;
         }
@@ -594,7 +596,7 @@ export default function WelcomeScreen({ onStart }) {
                 <div style={{
                   fontFamily: 'Orbitron, sans-serif',
                   fontWeight: 900,
-                  fontSize: 'clamp(42px, 7vw, 72px)',
+                  fontSize: 'clamp(40px, 6vw, 60px)',
                   letterSpacing: '0.06em',
                   color: '#FFFFFF',
                   textTransform: 'uppercase',
@@ -617,41 +619,19 @@ export default function WelcomeScreen({ onStart }) {
               </div>
 
               {/* SELECT YOUR MISSION headline */}
-              <div>
-                <div style={{
-                  fontFamily: 'Orbitron, sans-serif',
-                  fontWeight: 700,
-                  fontSize: 'clamp(12px, 1.9vw, 16px)',
-                  letterSpacing: '0.3em',
-                  color: CYAN,
-                  textTransform: 'uppercase',
-                  marginBottom: 6,
-                }}>
-                  SELECT YOUR MISSION
-                </div>
-                <div style={{
-                  fontFamily: 'Rajdhani, sans-serif',
-                  fontSize: 13,
-                  color: 'rgba(200,216,240,0.5)',
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  marginBottom: 4,
-                }}>
-                  Choose your investigation to begin
-                </div>
-                <div style={{
-                  color: CYAN,
-                  fontSize: 18,
-                  textShadow: '0 0 12px rgba(0,229,204,0.7)',
-                  animation: card0Ready ? 'wg-chevron-bob 1.6s ease-in-out infinite' : 'none',
-                  display: 'inline-block',
-                }}>
-                  ⌄
-                </div>
+              <div style={{
+                fontFamily: 'Orbitron, sans-serif',
+                fontWeight: 700,
+                fontSize: 'clamp(12px, 1.9vw, 15px)',
+                letterSpacing: '0.3em',
+                color: CYAN,
+                textTransform: 'uppercase',
+              }}>
+                SELECT YOUR MISSION
               </div>
 
               {/* Mission cards — stacked single column */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <MissionCard
                   active
                   locked={false}
