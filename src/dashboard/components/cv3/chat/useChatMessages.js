@@ -34,6 +34,24 @@ function makeMissionMatcher(missionSlug) {
   }
 }
 
+// Drop crosspost twins whose source original is already present in the set.
+// Shared rooms mirror owner-world messages into the `shared:<slug>` channel
+// (api/_lib/crosspost.js + scripts/reconcile-shared-rooms.py). The room OWNER
+// reads BOTH their world channel and shared:<slug>, so without this they'd see
+// each mirrored message twice (id-only dedup can't catch it — original and
+// twin have different ids). Collaborators only ever see the twin (RLS hides
+// the owner channel from them), so for them the twin is kept. Net: everyone
+// sees each message exactly once.
+function dropRedundantCrossposts(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return rows
+  const presentIds = new Set(rows.map(r => r && r.id))
+  return rows.filter(r => {
+    const srcId = r && r.metadata && r.metadata.source_message_id
+    if (r && r.source === 'crosspost' && srcId && presentIds.has(srcId)) return false
+    return true
+  })
+}
+
 // Merge new rows into existing messages, dedup by id, preserve any optimistic
 // temp-/bridge-stream-/voice- entries that don't yet have a real server row.
 function mergeServerRows(prev, serverRows) {
@@ -88,7 +106,7 @@ function mergeServerRows(prev, serverRows) {
     seen.add(m.id)
     dedup.push(m)
   }
-  return dedup
+  return dropRedundantCrossposts(dedup)
 }
 
 // Schedule a reconnect with exponential backoff.
@@ -352,7 +370,7 @@ export default function useChatMessages({
         setLoadingMsgs(false)
         // Mission-scope isolation: keep only rows for THIS mission room (or
         // only un-missioned project-level rows when no mission is selected).
-        if (!error && data) setMessages(data.filter(matchesMission).reverse())
+        if (!error && data) setMessages(dropRedundantCrossposts(data.filter(matchesMission)).reverse())
       })
   }, [worldId, selectedProject?.slug, selectedProject?.missionSlug, selectedProject?.isShared, selectedAgent?.slug])
 
