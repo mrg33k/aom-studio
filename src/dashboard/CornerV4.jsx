@@ -62,6 +62,7 @@ import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 import MailRoom from './cv4/MailRoom.jsx'
 // corner:support N1 — Support Inbox (Patrik workspace only, worldId==='aom')
 import SupportInbox from './cv4/SupportInbox.jsx'
+import SupportDashboard from './cv4/SupportDashboard.jsx'
 // corner:notifications-catchup R2 — Slack-style catch-up modal
 import CatchupModal from './cv4/CatchupModal.jsx'
 
@@ -636,6 +637,7 @@ export default function CornerV4() {
     // Navigation reset: clear overlay state so user lands in the new surface clean.
     setSelectedMail(null)
     setActiveTool(null)
+    setShowSupportInbox(false)
     setSelectedAgent(agent)
     setConversationTarget({ name: agent.name, type: 'agent' })
     setTab('chat')
@@ -683,6 +685,7 @@ export default function CornerV4() {
     // Navigation reset: clear overlay state so user lands in the new surface clean.
     setSelectedMail(null)
     setActiveTool(null)
+    setShowSupportInbox(false)
     setSelectedAgent(null)
     setConversationTarget({ name: canonicalName, slug: canonicalSlug, type: 'project' })
     setTab('chat')
@@ -750,6 +753,7 @@ export default function CornerV4() {
     const canonicalProjectSlug = canonical?.slug || project?.slug
     // Navigation reset: clear overlay state so user lands in the mission room clean.
     setSelectedMail(null)
+    setShowSupportInbox(false)
     setActiveTool(null)
     setSelectedAgent(null)
     setConversationTarget({
@@ -2492,7 +2496,7 @@ export default function CornerV4() {
           so the eye doesn't have to dart left/right when both drawers are
           collapsed. Mobile/tablet still uses the tab toggle in ContextNav. */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
-        {isDesktop && drawerOpen && (
+        {isDesktop && drawerOpen && !showSupportInbox && (
           <CV4Drawer
             docked
             open={drawerOpen}
@@ -2554,7 +2558,7 @@ export default function CornerV4() {
           >
             {/* corner:support N1 — Support Inbox (Patrik only) */}
             {showSupportInbox && worldId === 'aom' ? (
-              <SupportInbox isDesktop={isDesktop} onClose={() => setShowSupportInbox(false)} />
+              <SupportDashboard isDesktop={isDesktop} onClose={() => setShowSupportInbox(false)} />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */
@@ -2587,7 +2591,7 @@ export default function CornerV4() {
             )}
           </div>
         </div>
-        {isDesktop && tasksDrawerOpen && (
+        {isDesktop && tasksDrawerOpen && !showSupportInbox && (
           <aside
             data-cv4-tasks-drawer
             style={{
