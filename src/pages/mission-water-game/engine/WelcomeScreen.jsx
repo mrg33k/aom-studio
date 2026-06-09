@@ -379,6 +379,19 @@ export default function WelcomeScreen({ onStart }) {
           50%  { transform: translateY(6px); }
           100% { transform: translateY(0); }
         }
+        /* Ken-Burns: slow cinematic float — scale up + drift diagonally, reverse */
+        @keyframes wg-ken-burns {
+          0%   { transform: scale(1.0)   translate(0%,    0%);   }
+          30%  { transform: scale(1.06)  translate(-1.5%, -1%);  }
+          60%  { transform: scale(1.1)   translate(-3%,   -2%);  }
+          80%  { transform: scale(1.07)  translate(-1%,   -1.5%);}
+          100% { transform: scale(1.0)   translate(0%,    0%);   }
+        }
+        .wg-bg-kenburns {
+          animation: wg-ken-burns 28s ease-in-out infinite;
+          transform-origin: center center;
+          will-change: transform;
+        }
         .wg-active-card {
           animation: wg-card-pulse 2s ease-in-out infinite;
         }
@@ -460,20 +473,30 @@ export default function WelcomeScreen({ onStart }) {
       {/* ─ Procedural star canvas ──────────────────────────────────────── */}
       <StarCanvas />
 
-      {/* ─ Background photo ───────────────────────────────────────────── */}
-      <div
-        style={{
-          position: 'absolute', inset: 0,
-          backgroundImage: bgLoaded
-            ? 'url(/mission-water/welcome/welcome_bg_grand_opening.jpg)'
-            : 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center 30%',
-          opacity: bgLoaded ? 0.55 : 0,
-          transition: 'opacity 600ms ease',
-          pointerEvents: 'none',
-        }}
-      />
+      {/* ─ Background photo with Ken-Burns ───────────────────────────── */}
+      {/* Outer clip: prevents the scaled image from bleeding past the viewport */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        overflow: 'hidden',
+        pointerEvents: 'none',
+        opacity: bgLoaded ? 1 : 0,
+        transition: 'opacity 800ms ease',
+      }}>
+        <div
+          className={bgLoaded && !REDUCED ? 'wg-bg-kenburns' : ''}
+          style={{
+            position: 'absolute',
+            /* Start 8% larger on all sides so Ken-Burns pan never shows edges */
+            inset: '-8%',
+            backgroundImage: bgLoaded
+              ? 'url(/mission-water/welcome/welcome_bg_grand_opening.jpg)'
+              : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center 30%',
+            opacity: 0.72,
+          }}
+        />
+      </div>
       <img
         src="/mission-water/welcome/welcome_bg_grand_opening.jpg"
         alt=""

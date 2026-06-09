@@ -1,31 +1,65 @@
-// R10 — Conrad Foundation · Mission Water platform
-// Title page ("The future of water in space") + one big interactive stage
-// (Play the Game / Watch Live / Archive) that fills the viewport so the game
-// needs no scrolling. All surfaces are config-driven for easy updates.
+// R11 — Conrad Foundation · Mission Water platform
+// Watch Live enhanced: upcoming calendar, Q&A widget, archive preview, sign-up bell.
 // /MissionWaterPlatform · /missionwaterplatform · /platform
 // Mission: conrad-foundation:mission-water
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 // ─── Config (update these as the game + videos evolve) ──────────────────────────
 const GAME_URL = 'https://aheadofmarket.com/missionwater';
 
-// Live stream — drop the YouTube Live (unlisted) embed URL in when a class airs.
+// Live stream — flip status to 'live' + drop embed URL when a class airs.
 const LIVE = {
-  status: 'standby',          // 'live' | 'scheduled' | 'standby'
-  embedUrl: '',               // e.g. 'https://www.youtube.com/embed/VIDEO_ID'
+  status: 'scheduled',         // 'live' | 'scheduled' | 'standby'
+  embedUrl: '',                // e.g. 'https://www.youtube.com/embed/VIDEO_ID'
   title: 'Mission Water — Live Class 01',
-  nextSession: 'Schedule to be announced',
+  nextSession: 'August 14, 2026 · 4:00 PM ET',
 };
 
-// Archive — recorded sessions land here after each live class is filmed.
+// Upcoming sessions — dates, titles, descriptions for the calendar rail.
+const SESSIONS = [
+  {
+    id: 1,
+    date: 'Aug 14, 2026',
+    time: '4:00 PM ET',
+    title: 'Class 01 — What happens when water is no more?',
+    desc: 'Nancy Conrad opens Mission Water. Where does water come from, where is it going, and what happens when it runs out?',
+    registered: false,
+  },
+  {
+    id: 2,
+    date: 'Aug 21, 2026',
+    time: '4:00 PM ET',
+    title: 'Class 02 — Water on other worlds',
+    desc: 'Ice on the Moon, oceans under Europa. We explore how water shapes the possibility of life beyond Earth.',
+    registered: false,
+  },
+  {
+    id: 3,
+    date: 'Aug 28, 2026',
+    time: '4:00 PM ET',
+    title: 'Class 03 — Engineering solutions',
+    desc: 'From desalination to closed-loop water systems for deep space. Students design a water plan for a Mars colony.',
+    registered: false,
+  },
+  {
+    id: 4,
+    date: 'Sep 4, 2026',
+    time: '4:00 PM ET',
+    title: 'Class 04 — Student presentations',
+    desc: 'Cadets present their water-crisis solutions. The best ideas go to the Conrad Foundation board.',
+    registered: false,
+  },
+];
+
+// Archive — recorded sessions land here after each live class.
 const ARCHIVE = [
   // { title: 'Class 01 — What happens when water is no more?', date: 'Apr 2026', duration: '52 min', url: '', thumb: '' },
 ];
 
-// Big interactive stage height — sized to fill the viewport (no page scroll to play).
-const STAGE_H = 'clamp(460px, 76vh, 820px)';
+// Stage height — fills viewport so the game needs no scrolling.
+const STAGE_H = 'clamp(480px, 80vh, 860px)';
 
 // ─── SEO ──────────────────────────────────────────────────────────────────────
 function useSEO() {
@@ -63,7 +97,7 @@ const fadeUp = (delay = 0) => ({
 // --cf-white:  #FFFFFF  (section bg)
 // --cf-cream:  #F4F2EF  (card bg)
 
-// Scattered starfield for the navy title page — restrained, evokes Conrad's space heritage.
+// Scattered starfield for the navy title page
 const STARFIELD = `
   radial-gradient(1.5px 1.5px at 12% 22%, rgba(255,255,255,0.55), transparent),
   radial-gradient(1px 1px at 28% 64%, rgba(255,255,255,0.38), transparent),
@@ -94,6 +128,9 @@ function ConradNav() {
           <a href="#stage" className="hidden sm:inline font-mono text-[9.5px] uppercase tracking-[0.2em] text-[#071530]/50 hover:text-[#E85D26] transition-colors">
             Play
           </a>
+          <a href="/missionwater/lets-talk" className="hidden sm:inline font-mono text-[9.5px] uppercase tracking-[0.2em] text-[#071530]/50 hover:text-[#E85D26] transition-colors">
+            Partnership
+          </a>
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#071530]/40">
             Mission Water · Private
           </span>
@@ -112,15 +149,166 @@ function Kicker({ children, className = '' }) {
   );
 }
 
-// ─── Live broadcast console (inside the stage) ──────────────────────────────────
-// Sample broadcast — Nancy's footage stands in as the live feed so the live-class
-// experience is visible before a real class airs. Swap LIVE.embedUrl + status='live'
-// when a class goes on air and the production iframe takes over.
-const SAMPLE_FEED = '/ConradFoundation/nancy-sample-tile-v1.mp4';
-const SAMPLE_POSTER = '/ConradFoundation/nancy-still-placeholder.jpg';
+// ─── Sign-up Modal ─────────────────────────────────────────────────────────────
+function SignUpModal({ session, onClose }) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(false);
 
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!name.trim() || !email.trim()) return;
+    // In production, wire to an API endpoint
+    setDone(true);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ background: 'rgba(7,21,48,0.82)', backdropFilter: 'blur(6px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-[440px] rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background: '#0D2045', border: '1px solid rgba(255,255,255,0.12)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-6 pt-6 pb-4 border-b border-white/10">
+          <Kicker className="mb-2">Register · {session.date}</Kicker>
+          <h3 className="font-display-serif text-[20px] leading-[1.2] tracking-[-0.015em] text-white">
+            {session.title}
+          </h3>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-white/40 mt-2">
+            {session.time}
+          </p>
+        </div>
+
+        {done ? (
+          <div className="px-6 py-8 text-center">
+            <div className="w-12 h-12 rounded-full bg-[#E85D26]/20 flex items-center justify-center mx-auto mb-4">
+              <span className="text-[#E85D26] text-xl">✓</span>
+            </div>
+            <p className="font-display-serif text-[18px] text-white mb-2">You're registered.</p>
+            <p className="font-body text-[13px] text-white/50 mb-5">
+              A reminder will be sent to {email} before the class goes live.
+            </p>
+            <button
+              onClick={onClose}
+              className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-white/60 hover:text-white transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5">
+                Your name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="First name"
+                required
+                className="w-full px-4 py-2.5 rounded-lg font-body text-[13px] text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[#E85D26]"
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
+              />
+            </div>
+            <div>
+              <label className="block font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 mb-1.5">
+                Email address
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                className="w-full px-4 py-2.5 rounded-lg font-body text-[13px] text-white placeholder-white/30 outline-none focus:ring-1 focus:ring-[#E85D26]"
+                style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}
+              />
+            </div>
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="submit"
+                className="flex-1 bg-[#E85D26] hover:bg-[#E85D26]/90 text-white font-mono text-[10px] uppercase tracking-[0.2em] py-3 rounded-full transition-colors"
+              >
+                Register + set reminder
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35 hover:text-white/70 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Upcoming Sessions Calendar ────────────────────────────────────────────────
+function SessionCalendar({ onRegister }) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-4">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/60">
+          Upcoming sessions
+        </span>
+        <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/30">
+          {SESSIONS.length} classes
+        </span>
+      </div>
+      {SESSIONS.map((s) => (
+        <div
+          key={s.id}
+          className="flex items-start gap-3 p-3.5 rounded-xl group"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          {/* Date block */}
+          <div
+            className="shrink-0 text-center rounded-lg px-2.5 py-2 min-w-[48px]"
+            style={{ background: 'rgba(232,93,38,0.15)', border: '1px solid rgba(232,93,38,0.3)' }}
+          >
+            <p className="font-mono text-[8px] uppercase tracking-[0.1em] text-[#E85D26] leading-none mb-0.5">
+              {s.date.split(',')[0].split(' ')[0]}
+            </p>
+            <p className="font-mono text-[18px] font-bold text-[#E85D26] leading-none">
+              {s.date.split(',')[0].split(' ')[1]}
+            </p>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <p className="font-body text-[13px] text-white leading-[1.3] mb-0.5 truncate">{s.title}</p>
+            <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/35">{s.time}</p>
+          </div>
+
+          {/* Bell / register */}
+          <button
+            onClick={() => onRegister(s)}
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center border border-white/15 hover:border-[#E85D26] hover:bg-[#E85D26]/10 transition-colors group-hover:opacity-100 opacity-70"
+            title="Register for reminder"
+          >
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/70 group-hover:text-[#E85D26]">
+              <path d="M7 1a4.5 4.5 0 0 1 4.5 4.5c0 2.5.9 3.5 1.5 4H1c.6-.5 1.5-1.5 1.5-4A4.5 4.5 0 0 1 7 1Z" strokeLinecap="round" />
+              <path d="M5.5 12.5a1.5 1.5 0 0 0 3 0" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Live Q&A Widget ───────────────────────────────────────────────────────────
 const LIVE_QUESTIONS = [
-  { who: 'Maya R.', txt: 'How much of Earth’s water can we actually drink?', t: '00:42' },
+  { who: 'Maya R.', txt: "How much of Earth's water can we actually drink?", t: '00:42' },
   { who: 'Devon K.', txt: 'Could we recycle water the same way on Mars?', t: '01:15' },
   { who: 'Priya S.', txt: 'Which city is closest to running out right now?', t: '02:03' },
   { who: 'Liam T.', txt: 'Is desalination too expensive to scale up?', t: '02:48' },
@@ -132,11 +320,151 @@ function initials(name) {
   return name.split(' ').map((w) => w[0]).join('');
 }
 
-function LivePanel() {
-  const [muted, setMuted] = useState(true);
+function QAWidget({ collapsed }) {
+  if (collapsed) {
+    return (
+      <div
+        className="rounded-xl px-4 py-3 flex items-center gap-3"
+        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        <div className="w-2 h-2 rounded-full bg-white/20" />
+        <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-white/35">
+          Q&amp;A opens when class goes live
+        </span>
+      </div>
+    );
+  }
 
-  // Real class airing — production path takes over the whole stage.
-  if (LIVE.status === 'live' && LIVE.embedUrl) {
+  return (
+    <div
+      className="rounded-xl overflow-hidden"
+      style={{ border: '1px solid rgba(255,255,255,0.12)' }}
+    >
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between" style={{ background: 'rgba(255,255,255,0.06)' }}>
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-[#E85D26]/60 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#E85D26]" />
+          </span>
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-white/70">Live class · Q&amp;A</span>
+        </div>
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/35">In the room</span>
+      </div>
+
+      {/* Watching avatars */}
+      <div className="px-4 py-2.5 border-b border-white/10 flex items-center gap-2.5" style={{ background: 'rgba(0,0,0,0.15)' }}>
+        <div className="flex -space-x-1.5">
+          {ROSTER.slice(0, 5).map((i, ix) => (
+            <span key={ix} className="w-5 h-5 rounded-full bg-[#143B6E] border border-[#071530] flex items-center justify-center font-mono text-[6.5px] text-white/75 uppercase">
+              {i}
+            </span>
+          ))}
+        </div>
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/40">+306 watching</span>
+      </div>
+
+      {/* Questions */}
+      <div className="px-4 py-3 space-y-3 max-h-[180px] overflow-y-auto" style={{ background: 'rgba(0,0,0,0.10)' }}>
+        {LIVE_QUESTIONS.slice(0, 3).map((q, i) => (
+          <div key={i} className="flex gap-2">
+            <span className="w-5 h-5 shrink-0 rounded-full bg-[#143B6E] flex items-center justify-center font-mono text-[6.5px] text-white/75 uppercase mt-0.5">
+              {initials(q.who)}
+            </span>
+            <div>
+              <p className="font-body text-[12px] text-white/75 leading-[1.4]">{q.txt}</p>
+              <p className="font-mono text-[7.5px] uppercase tracking-[0.14em] text-white/28 mt-0.5">{q.who} · {q.t}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Composer */}
+      <div className="px-3 py-2.5 border-t border-white/10" style={{ background: 'rgba(255,255,255,0.04)' }}>
+        <div className="flex items-center gap-2 bg-white/[0.06] border border-white/10 rounded-full pl-3 pr-2 py-1.5">
+          <input
+            disabled
+            placeholder="Ask Nancy a question…"
+            className="flex-1 min-w-0 bg-transparent font-body text-[11px] text-white/60 placeholder-white/25 outline-none cursor-default"
+          />
+          <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-[#E85D26] px-2">Send</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Archive Preview ───────────────────────────────────────────────────────────
+function ArchivePreview() {
+  if (ARCHIVE.length === 0) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/60">
+            Session recordings
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="aspect-video rounded-lg flex items-center justify-center"
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              <span className="text-white/15 text-sm">▷</span>
+            </div>
+          ))}
+        </div>
+        <p className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/28 mt-2 text-center">
+          Recordings appear after each live class
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/60">
+          Session recordings
+        </span>
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-[#E85D26]">
+          {ARCHIVE.length} recorded
+        </span>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {ARCHIVE.slice(0, 3).map((v, i) => (
+          <a
+            key={i}
+            href={v.url || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group aspect-video rounded-lg overflow-hidden relative"
+            style={{ background: '#0D2045', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            {v.thumb
+              ? <img src={v.thumb} alt={v.title} className="w-full h-full object-cover" />
+              : <div className="absolute inset-0 flex items-center justify-center text-white/20 text-lg">▷</div>}
+            <span className="absolute top-1 right-1 font-mono text-[7px] uppercase tracking-[0.1em] text-white/60 bg-black/40 px-1.5 py-0.5 rounded">
+              {v.duration}
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Enhanced Live Panel (Watch Live tab) ──────────────────────────────────────
+const SAMPLE_FEED = '/ConradFoundation/nancy-sample-tile-v1.mp4';
+const SAMPLE_POSTER = '/ConradFoundation/nancy-still-placeholder.jpg';
+
+function LivePanel({ onRegister }) {
+  const [muted, setMuted] = useState(true);
+  const isLive = LIVE.status === 'live';
+
+  // Real class airing — full-screen stream
+  if (isLive && LIVE.embedUrl) {
     return (
       <iframe
         src={LIVE.embedUrl}
@@ -148,11 +476,11 @@ function LivePanel() {
     );
   }
 
-  // Sample broadcast console — feed + interactive class rail.
   return (
-    <div className="w-full h-full flex flex-col lg:flex-row bg-[#071530]">
-      {/* ── Feed ──────────────────────────────────────────────────────────── */}
-      <div className="relative flex-[2] lg:flex-1 min-h-0 bg-black overflow-hidden">
+    <div className="w-full h-full flex overflow-hidden" style={{ background: '#071530' }}>
+
+      {/* ── Left column: video feed ────────────────────────────────────────── */}
+      <div className="relative flex-1 min-w-0 bg-black overflow-hidden">
         <video
           src={SAMPLE_FEED}
           poster={SAMPLE_POSTER}
@@ -163,36 +491,47 @@ function LivePanel() {
           className="absolute inset-0 w-full h-full object-cover"
         />
 
-        {/* Top scrim + telemetry */}
+        {/* Top overlay */}
         <div
-          className="absolute inset-x-0 top-0 px-4 md:px-5 pt-4 pb-8 flex items-start justify-between"
-          style={{ background: 'linear-gradient(180deg, rgba(7,21,48,0.85) 0%, transparent 100%)' }}
+          className="absolute inset-x-0 top-0 px-4 pt-4 pb-8 flex items-start justify-between"
+          style={{ background: 'linear-gradient(180deg, rgba(7,21,48,0.88) 0%, transparent 100%)' }}
         >
           <div className="flex items-center gap-2.5">
-            <span className="flex items-center gap-1.5 bg-[#E85D26] text-white font-mono text-[9px] uppercase tracking-[0.2em] px-2.5 py-1 rounded-[3px]">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-white/70 animate-ping" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+            {isLive ? (
+              <span className="flex items-center gap-1.5 bg-[#E85D26] text-white font-mono text-[9px] uppercase tracking-[0.2em] px-2.5 py-1 rounded-[3px]">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-white/70 animate-ping" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+                </span>
+                Live
               </span>
-              Live
-            </span>
-            <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-white/45">Sample broadcast</span>
+            ) : (
+              <span className="flex items-center gap-1.5 bg-white/10 text-white/60 font-mono text-[9px] uppercase tracking-[0.2em] px-2.5 py-1 rounded-[3px] border border-white/15">
+                Sample broadcast
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-4 font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/50">
-            <span><span className="text-white/85">312</span> watching</span>
-            <span className="hidden sm:inline">Elapsed <span className="text-white/85">03:11</span></span>
+            {isLive && <span><span className="text-white/85">312</span> watching</span>}
+            {!isLive && LIVE.status === 'scheduled' && (
+              <span className="text-white/50">
+                Live {SESSIONS[0]?.date || LIVE.nextSession}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Bottom scrim + now-teaching + mute control */}
+        {/* Bottom overlay */}
         <div
-          className="absolute inset-x-0 bottom-0 px-4 md:px-5 pt-10 pb-4 flex items-end justify-between gap-4"
-          style={{ background: 'linear-gradient(0deg, rgba(7,21,48,0.92) 0%, transparent 100%)' }}
+          className="absolute inset-x-0 bottom-0 px-4 pt-10 pb-4 flex items-end justify-between gap-4"
+          style={{ background: 'linear-gradient(0deg, rgba(7,21,48,0.95) 0%, transparent 100%)' }}
         >
           <div className="min-w-0">
-            <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#E85D26] mb-1.5">Now teaching · Nancy Conrad</p>
-            <p className="font-display-serif text-[18px] md:text-[22px] leading-[1.12] text-white truncate">
-              Class 01 — <span className="italic font-display-italic text-white/90">What happens when water is no more?</span>
+            <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#E85D26] mb-1.5">
+              {isLive ? 'Now teaching · Nancy Conrad' : 'Upcoming · Nancy Conrad'}
+            </p>
+            <p className="font-display-serif text-[16px] md:text-[20px] leading-[1.12] text-white truncate">
+              {SESSIONS[0]?.title || LIVE.title}
             </p>
           </div>
           <button
@@ -204,71 +543,36 @@ function LivePanel() {
         </div>
       </div>
 
-      {/* ── Interactive class rail ─────────────────────────────────────────── */}
-      <aside className="flex-1 lg:flex-none lg:w-[316px] min-h-0 flex flex-col bg-[#0A1C3D] border-t lg:border-t-0 lg:border-l border-white/10">
-        {/* Header */}
-        <div className="px-4 py-3.5 border-b border-white/10 flex items-center justify-between">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-white/70">Live class · Q&amp;A</span>
-          <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/35">In the room</span>
-        </div>
+      {/* ── Right rail: calendar + Q&A + archive ──────────────────────────── */}
+      <aside
+        className="w-[300px] xl:w-[340px] shrink-0 flex flex-col overflow-y-auto"
+        style={{ background: '#0A1C3D', borderLeft: '1px solid rgba(255,255,255,0.08)' }}
+      >
+        <div className="flex-1 p-4 space-y-5">
 
-        {/* Watching */}
-        <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2.5">
-          <div className="flex -space-x-2">
-            {ROSTER.slice(0, 6).map((i, ix) => (
-              <span
-                key={ix}
-                className="w-6 h-6 rounded-full bg-[#143B6E] border border-[#0A1C3D] flex items-center justify-center font-mono text-[7.5px] text-white/75 uppercase"
-              >
-                {i}
-              </span>
-            ))}
-          </div>
-          <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/40">+306 watching</span>
-        </div>
+          {/* Upcoming sessions */}
+          <SessionCalendar onRegister={onRegister} />
 
-        {/* Questions feed */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3.5 space-y-4">
-          {LIVE_QUESTIONS.map((q, i) => (
-            <div key={i} className="flex gap-2.5">
-              <span className="w-6 h-6 shrink-0 rounded-full bg-[#143B6E] flex items-center justify-center font-mono text-[7.5px] text-white/75 uppercase mt-0.5">
-                {initials(q.who)}
-              </span>
-              <div className="min-w-0">
-                <p className="font-body text-[12.5px] text-white/80 leading-[1.45]">{q.txt}</p>
-                <p className="font-mono text-[8px] uppercase tracking-[0.16em] text-white/30 mt-1">{q.who} · {q.t}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+          {/* Divider */}
+          <div className="border-t border-white/8" />
 
-        {/* Composer + reactions */}
-        <div className="px-3 py-3 border-t border-white/10">
-          <div className="flex items-center gap-2 bg-white/[0.06] border border-white/10 rounded-full pl-3.5 pr-2 py-1.5">
-            <input
-              disabled
-              placeholder="Ask Nancy a question…"
-              className="flex-1 min-w-0 bg-transparent font-body text-[12px] text-white/70 placeholder-white/30 outline-none cursor-default"
-            />
-            <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-[#E85D26] px-2">Send</span>
-          </div>
-          <div className="flex items-center gap-1.5 mt-2.5">
-            {['Raise hand', 'Helpful', 'Mind blown'].map((r) => (
-              <span
-                key={r}
-                className="font-mono text-[8px] uppercase tracking-[0.13em] text-white/45 border border-white/12 rounded-full px-2.5 py-1"
-              >
-                {r}
-              </span>
-            ))}
-          </div>
+          {/* Q&A widget */}
+          <QAWidget collapsed={!isLive} />
+
+          {/* Divider */}
+          <div className="border-t border-white/8" />
+
+          {/* Archive preview */}
+          <ArchivePreview />
+
         </div>
       </aside>
+
     </div>
   );
 }
 
-// ─── Archive panel (inside the stage) ───────────────────────────────────────────
+// ─── Archive Panel (full archive tab) ────────────────────────────────────────
 function ArchivePanel() {
   if (ARCHIVE.length > 0) {
     return (
@@ -300,7 +604,7 @@ function ArchivePanel() {
       </div>
     );
   }
-  // Empty state — designed "coming soon" so the archive reads intentional, not blank.
+
   return (
     <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
       <div className="grid grid-cols-3 gap-3 mb-8 w-full max-w-[440px] opacity-40">
@@ -321,8 +625,10 @@ function ArchivePanel() {
   );
 }
 
-// ─── Stage (tabbed: game / live / archive) ──────────────────────────────────────
+// ─── Stage (tabbed: watch live / game / archive) ──────────────────────────────
 function Stage({ tab, setTab }) {
+  const [signUpSession, setSignUpSession] = useState(null);
+
   const tabs = [
     { id: 'live', label: 'Watch Live', url: 'aheadofmarket.com/missionwaterlive' },
     { id: 'game', label: 'Play the Game', url: 'aheadofmarket.com/missionwater' },
@@ -331,104 +637,120 @@ function Stage({ tab, setTab }) {
   const active = tabs.find((t) => t.id === tab);
 
   return (
-    <section id="stage" className="bg-[#F4F2EF] px-4 sm:px-6 md:px-12 py-12 md:py-20 scroll-mt-20">
-      <div className="max-w-[1320px] mx-auto">
-        <motion.div className="mb-7 flex flex-col md:flex-row md:items-end md:justify-between gap-5" {...fadeUp()}>
-          <div>
-            <Kicker className="mb-3">The platform · live now</Kicker>
-            <h2 className="font-display-serif text-[30px] md:text-[46px] leading-[1.0] tracking-[-0.025em] text-[#071530]">
-              One window. <span className="text-[#E85D26]">Everything inside.</span>
-            </h2>
-          </div>
+    <>
+      {signUpSession && (
+        <SignUpModal session={signUpSession} onClose={() => setSignUpSession(null)} />
+      )}
 
-          {/* Tab switcher */}
-          <div className="flex flex-wrap items-center gap-2">
-            {tabs.map((t) => {
-              const isActive = t.id === tab;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setTab(t.id)}
-                  className={`font-mono text-[10px] uppercase tracking-[0.18em] px-4 py-2.5 rounded-full border transition-colors ${
-                    isActive
-                      ? 'bg-[#071530] text-white border-[#071530]'
-                      : 'bg-transparent text-[#071530]/55 border-[#071530]/15 hover:border-[#071530]/40 hover:text-[#071530]'
-                  }`}
-                >
-                  {t.id === 'live' && (
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#E85D26] mr-1.5 align-middle" />
-                  )}
-                  {t.label}
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Framed stage */}
-        <motion.div
-          className="rounded-2xl overflow-hidden shadow-xl"
-          style={{ border: '1px solid rgba(7,21,48,0.12)' }}
-          {...fadeUp(0.1)}
-        >
-          {/* Chrome bar */}
-          <div className="bg-[#071530] px-5 py-3 flex items-center gap-3">
-            <div className="flex gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
-              <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
-              <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
+      <section id="stage" className="bg-[#F4F2EF] px-4 sm:px-6 md:px-12 py-12 md:py-20 scroll-mt-20">
+        <div className="max-w-[1320px] mx-auto">
+          <motion.div className="mb-7 flex flex-col md:flex-row md:items-end md:justify-between gap-5" {...fadeUp()}>
+            <div>
+              <Kicker className="mb-3">The platform · live now</Kicker>
+              <h2 className="font-display-serif text-[30px] md:text-[46px] leading-[1.0] tracking-[-0.025em] text-[#071530]">
+                One window. <span className="text-[#E85D26]">Everything inside.</span>
+              </h2>
             </div>
-            <span className="font-mono text-[9.5px] text-white/35 uppercase tracking-[0.15em] truncate">
-              {active.url}
-            </span>
-            {tab === 'game' && (
-              <a
-                href={GAME_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-auto font-mono text-[9px] text-[#E85D26]/80 hover:text-[#E85D26] uppercase tracking-[0.15em] transition-colors whitespace-nowrap"
-              >
-                Full screen ↗
-              </a>
-            )}
-          </div>
 
-          {/* Panels — game iframe stays mounted; live/archive toggle on top */}
-          <div className="relative bg-[#071530]" style={{ height: STAGE_H }}>
-            {/* Game (always mounted to preserve progress) */}
-            <div className={tab === 'game' ? 'block h-full' : 'hidden'}>
-              <div className="relative w-full h-full">
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none z-0">
-                  <div className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center">
-                    <div className="w-4 h-4 rounded-full bg-[#E85D26]/40" />
-                  </div>
-                  <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/20">Loading game…</span>
+            {/* Tab switcher */}
+            <div className="flex flex-wrap items-center gap-2">
+              {tabs.map((t) => {
+                const isActive = t.id === tab;
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setTab(t.id)}
+                    className={`font-mono text-[10px] uppercase tracking-[0.18em] px-4 py-2.5 rounded-full border transition-colors ${
+                      isActive
+                        ? 'bg-[#071530] text-white border-[#071530]'
+                        : 'bg-transparent text-[#071530]/55 border-[#071530]/15 hover:border-[#071530]/40 hover:text-[#071530]'
+                    }`}
+                  >
+                    {t.id === 'live' && (
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle ${LIVE.status === 'live' ? 'bg-[#E85D26] animate-pulse' : 'bg-[#E85D26]'}`} />
+                    )}
+                    {t.label}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* Framed stage */}
+          <motion.div
+            className="rounded-2xl overflow-hidden shadow-xl"
+            style={{ border: '1px solid rgba(7,21,48,0.12)' }}
+            {...fadeUp(0.1)}
+          >
+            {/* Chrome bar */}
+            <div className="bg-[#071530] px-5 py-3 flex items-center gap-3">
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
+                <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
+                <div className="w-2.5 h-2.5 rounded-full bg-white/15" />
+              </div>
+              <span className="font-mono text-[9.5px] text-white/35 uppercase tracking-[0.15em] truncate">
+                {active.url}
+              </span>
+              {tab === 'game' && (
+                <a
+                  href={GAME_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto font-mono text-[9px] text-[#E85D26]/80 hover:text-[#E85D26] uppercase tracking-[0.15em] transition-colors whitespace-nowrap"
+                >
+                  Full screen ↗
+                </a>
+              )}
+              {tab === 'live' && LIVE.status === 'scheduled' && (
+                <div className="ml-auto flex items-center gap-2">
+                  <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/35">
+                    Next class:
+                  </span>
+                  <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/60">
+                    {SESSIONS[0]?.date || LIVE.nextSession}
+                  </span>
                 </div>
-                <iframe
-                  src={GAME_URL}
-                  title="Mission Water Interactive Game"
-                  className="w-full h-full border-0 relative z-10"
-                />
+              )}
+            </div>
+
+            {/* Panels */}
+            <div className="relative bg-[#071530]" style={{ height: STAGE_H }}>
+              {/* Game — always mounted to preserve progress */}
+              <div className={tab === 'game' ? 'block h-full' : 'hidden'}>
+                <div className="relative w-full h-full">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none z-0">
+                    <div className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center">
+                      <div className="w-4 h-4 rounded-full bg-[#E85D26]/40" />
+                    </div>
+                    <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/20">Loading game…</span>
+                  </div>
+                  <iframe
+                    src={GAME_URL}
+                    title="Mission Water Interactive Game"
+                    className="w-full h-full border-0 relative z-10"
+                  />
+                </div>
+              </div>
+
+              {/* Watch Live */}
+              <div className={tab === 'live' ? 'block h-full' : 'hidden'}>
+                <LivePanel onRegister={setSignUpSession} />
+              </div>
+
+              {/* Archive */}
+              <div className={tab === 'archive' ? 'block h-full' : 'hidden'}>
+                <ArchivePanel />
               </div>
             </div>
+          </motion.div>
 
-            {/* Live */}
-            <div className={tab === 'live' ? 'block h-full' : 'hidden'}>
-              <LivePanel />
-            </div>
-
-            {/* Archive */}
-            <div className={tab === 'archive' ? 'block h-full' : 'hidden'}>
-              <ArchivePanel />
-            </div>
-          </div>
-        </motion.div>
-
-        <p className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-[#071530]/35 mt-4 text-center">
-          The game grows — this window grows with it. Live classes + recordings stream in the same place.
-        </p>
-      </div>
-    </section>
+          <p className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-[#071530]/35 mt-4 text-center">
+            The game grows — this window grows with it. Live classes + recordings stream in the same place.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -488,7 +810,8 @@ export default function MissionWaterPlatform() {
                 Play the game ↓
               </a>
               <a
-                href="/missionwaterlive"
+                href="#stage"
+                onClick={(e) => { e.preventDefault(); goToStage('live'); }}
                 className="inline-flex items-center gap-2 border border-white/25 hover:border-white/60 text-white/85 font-mono text-[10.5px] uppercase tracking-[0.2em] px-7 py-3.5 rounded-full transition-colors"
               >
                 Watch live →
@@ -516,10 +839,10 @@ export default function MissionWaterPlatform() {
         </div>
       </section>
 
-      {/* ─── Interactive stage (game / live / archive) ───────────────────────── */}
+      {/* ─── Interactive stage ───────────────────────────────────────────────── */}
       <Stage tab={tab} setTab={setTab} />
 
-      {/* ─── Platform Pillars — white section ────────────────────────────────── */}
+      {/* ─── Platform Pillars ─────────────────────────────────────────────────── */}
       <section className="bg-white px-6 md:px-12 py-16 md:py-24">
         <div className="max-w-[1280px] mx-auto">
           <motion.div className="mb-12" {...fadeUp()}>
@@ -620,7 +943,7 @@ export default function MissionWaterPlatform() {
         </div>
       </section>
 
-      {/* ─── CTA — white ──────────────────────────────────────────────────────── */}
+      {/* ─── CTA ──────────────────────────────────────────────────────────────── */}
       <section className="bg-white px-6 md:px-12 py-16 md:py-24">
         <div className="max-w-[1280px] mx-auto">
           <motion.div className="max-w-[640px]" {...fadeUp()}>
@@ -634,7 +957,7 @@ export default function MissionWaterPlatform() {
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <a
-                href="/missionwateroffering"
+                href="/missionwater/lets-talk"
                 className="inline-flex items-center gap-2 bg-[#071530] hover:bg-[#0D2045] text-white font-mono text-[10.5px] uppercase tracking-[0.2em] px-8 py-4 rounded-full transition-colors"
               >
                 Let&apos;s talk →

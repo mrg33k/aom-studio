@@ -11,120 +11,462 @@
     }
   },
   "rewrites": [
-    { "source": "/embed", "destination": "/embed.html" },
-    { "source": "/dashboard", "destination": "/index.html" },
-    { "source": "/outreach-plan", "destination": "/outreach-plan.html" },
-    { "source": "/growth-plan", "destination": "/growth-plan.html" },
-    { "source": "/system", "destination": "/system.html" },
-    { "source": "/v2", "destination": "/v2.html" },
-    { "source": "/r4", "destination": "/index.html" },
-    { "source": "/cv2", "destination": "/cv2.html" },
-    { "source": "/cv3", "destination": "/cv3.html" },
-    { "source": "/cv4", "destination": "/index.html" },
-    { "source": "/cv4/project/:path*", "destination": "/index.html" },
-    { "source": "/cv4/projects/:path*", "destination": "/index.html" },
-    { "source": "/cv4-static", "destination": "/cv4-static/views/home.html" },
-    { "source": "/cv4-static/views/:path*", "destination": "/cv4-static/views/:path*" },
-    { "source": "/summerschool", "destination": "/summerschool/index.html" },
-    { "source": "/summerschool/:path*", "destination": "/summerschool/:path*" },
-    { "source": "/brand", "destination": "/index.html" },
-    { "source": "/brand/:path*", "destination": "/index.html" },
-    { "source": "/brands", "destination": "/index.html" },
-    { "source": "/brands/:path*", "destination": "/index.html" },
-    { "source": "/social", "destination": "/index.html" },
-    { "source": "/construction", "destination": "/index.html" },
-    { "source": "/research/:path*", "destination": "/index.html" },
-    { "source": "/briefs", "destination": "/index.html" },
-    { "source": "/briefs/:path*", "destination": "/index.html" },
-    { "source": "/audit/:path*", "destination": "/index.html" },
-    { "source": "/proposals/isa-energy", "destination": "/proposals-isa.html" },
-    { "source": "/proposals/q", "destination": "/proposals-quentin.html" },
-    { "source": "/ideas", "destination": "/index.html" },
-    { "source": "/guides", "destination": "/index.html" },
-    { "source": "/guides/:path*", "destination": "/index.html" },
-    { "source": "/roi-calculator", "destination": "/index.html" },
-    { "source": "/book", "destination": "/index.html" },
-    { "source": "/marketplace", "destination": "/index.html" },
-    { "source": "/ai-guide", "destination": "/index.html" },
-    { "source": "/ai/:path*", "destination": "/index.html" },
-    { "source": "/case-study", "destination": "/index.html" },
-    { "source": "/corner", "destination": "/index.html" },
-    { "source": "/dashboard/agent/:slug", "destination": "/index.html" },
-    { "source": "/dashboard/mission/:missionSlug", "destination": "/index.html" },
-    { "source": "/dashboard/missions", "destination": "/index.html" },
-    { "source": "/dashboard/checklist", "destination": "/index.html" },
-    { "source": "/dashboard/checklist/:slug", "destination": "/index.html" },
-    { "source": "/dashboard/megaboard", "destination": "/index.html" },
-    { "source": "/dashboard/megaboard/agent/:slug", "destination": "/index.html" },
-    { "source": "/dashboard/chat", "destination": "/index.html" },
-    { "source": "/dashboard/chat/agent/:slug", "destination": "/index.html" },
-    { "source": "/dashboard/v1", "destination": "/index.html" },
-    { "source": "/dashboard/v2", "destination": "/index.html" },
-    { "source": "/dashboard/project/:path*", "destination": "/index.html" },
-    { "source": "/dashboard/projects/:path*", "destination": "/index.html" },
-    { "source": "/dashboard/welcome", "destination": "/index.html" },
-    { "source": "/dashboard/settings/invites", "destination": "/index.html" },
-    { "source": "/dashboard/settings/:path*", "destination": "/index.html" },
-    { "source": "/dashboard/cleo/workspaces", "destination": "/index.html" },
-    { "source": "/dashboard/cleo/workspaces/:slug", "destination": "/index.html" },
-    { "source": "/skills", "destination": "/index.html" },
-    { "source": "/demo", "destination": "/index.html" },
-    { "source": "/login", "destination": "/index.html" },
-    { "source": "/settings", "destination": "/index.html" },
-    { "source": "/onboarding", "destination": "/index.html" },
-    { "source": "/onboarding/:path*", "destination": "/index.html" },
-    { "source": "/accept-invite", "destination": "/index.html" },
-    { "source": "/finance", "destination": "/index.html" },
-    { "source": "/directory", "destination": "/index.html" },
-    { "source": "/artlink", "destination": "/index.html" },
-    { "source": "/blacknight", "destination": "/index.html" },
-    { "source": "/space-rising", "destination": "/space-rising/index.html" },
-    { "source": "/space-rising/deal-bank", "destination": "/index.html" },
-    { "source": "/space-rising/deal-bank/admin", "destination": "/index.html" },
-    { "source": "/space-rising/deal-bank/completed", "destination": "/index.html" },
-    { "source": "/space-rising/:path*", "destination": "/space-rising/:path*" },
-    { "source": "/change-password", "destination": "/index.html" },
-    { "source": "/elon-room", "destination": "/index.html" },
-    { "source": "/design/:path*", "destination": "/index.html" },
-    { "source": "/ConradFoundation", "destination": "/index.html" },
-    { "source": "/conradfoundation", "destination": "/index.html" },
-    { "source": "/Conradfoundation", "destination": "/index.html" },
-    { "source": "/conrad-foundation", "destination": "/index.html" },
-    { "source": "/conrad", "destination": "/index.html" },
-    { "source": "/nancy", "destination": "/index.html" },
-    { "source": "/conradfoundation2", "destination": "/index.html" },
-    { "source": "/missionwater", "destination": "/index.html" },
-    { "source": "/MissionWaterGame", "destination": "/index.html" },
-    { "source": "/mission-water-game", "destination": "/index.html" },
-    { "source": "/MissionWaterPlatform", "destination": "/index.html" },
-    { "source": "/missionwaterplatform", "destination": "/index.html" },
-    { "source": "/platform", "destination": "/index.html" },
-    { "source": "/MissionWaterLive", "destination": "/index.html" },
-    { "source": "/missionwaterlive", "destination": "/index.html" },
-    { "source": "/missionwater/live", "destination": "/index.html" },
-    { "source": "/MissionWaterOffering", "destination": "/index.html" },
-    { "source": "/missionwateroffering", "destination": "/index.html" },
-    { "source": "/mission-water-offering", "destination": "/index.html" },
-    { "source": "/missionwater/offering", "destination": "/index.html" },
-    { "source": "/higherorbits", "destination": "/index.html" },
-    { "source": "/stats", "destination": "/index.html" },
-    { "source": "/ai-hours", "destination": "/index.html" },
-    { "source": "/ai-hours/admin", "destination": "/index.html" },
-    { "source": "/support", "destination": "/index.html" },
-    { "source": "/support/admin", "destination": "/index.html" },
-    { "source": "/internal/scope/higher-orbits-biz7tkhq9h", "destination": "/scope-higher-orbits-biz7tkhq9h.html" },
-    { "source": "/agreements/included-health", "destination": "/agreements/included-health.html" },
-    { "source": "/praevideo", "destination": "/praevideo/index.html" },
-    { "source": "/praevideo/:path*", "destination": "/praevideo/:path*" },
-    { "source": "/preston", "destination": "/preston/index.html" },
-    { "source": "/preston/:path*", "destination": "/preston/:path*" },
-    { "source": "/superstition", "destination": "/superstition/index.html" },
-    { "source": "/superstition/:path*", "destination": "/superstition/:path*" }
+    {
+      "source": "/embed",
+      "destination": "/embed.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/outreach-plan",
+      "destination": "/outreach-plan.html"
+    },
+    {
+      "source": "/growth-plan",
+      "destination": "/growth-plan.html"
+    },
+    {
+      "source": "/system",
+      "destination": "/system.html"
+    },
+    {
+      "source": "/v2",
+      "destination": "/v2.html"
+    },
+    {
+      "source": "/r4",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cv2",
+      "destination": "/cv2.html"
+    },
+    {
+      "source": "/cv3",
+      "destination": "/cv3.html"
+    },
+    {
+      "source": "/cv4",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cv4/project/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cv4/projects/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cv4-static",
+      "destination": "/cv4-static/views/home.html"
+    },
+    {
+      "source": "/cv4-static/views/:path*",
+      "destination": "/cv4-static/views/:path*"
+    },
+    {
+      "source": "/summerschool",
+      "destination": "/summerschool/index.html"
+    },
+    {
+      "source": "/summerschool/:path*",
+      "destination": "/summerschool/:path*"
+    },
+    {
+      "source": "/brand",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/brand/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/brands",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/brands/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/social",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/construction",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/research/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/briefs",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/briefs/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/audit/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/proposals/isa-energy",
+      "destination": "/proposals-isa.html"
+    },
+    {
+      "source": "/proposals/q",
+      "destination": "/proposals-quentin.html"
+    },
+    {
+      "source": "/ideas",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/guides",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/guides/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/roi-calculator",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/book",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/marketplace",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ai-guide",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ai/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/case-study",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/corner",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/agent/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/mission/:missionSlug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/missions",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/checklist",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/checklist/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/megaboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/megaboard/agent/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/chat",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/chat/agent/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/v1",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/v2",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/project/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/projects/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/welcome",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/settings/invites",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/settings/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/cleo/workspaces",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard/cleo/workspaces/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/skills",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/demo",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/onboarding",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/onboarding/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/accept-invite",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/finance",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/directory",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/artlink",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/blacknight",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/space-rising",
+      "destination": "/space-rising/index.html"
+    },
+    {
+      "source": "/space-rising/deal-bank",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/space-rising/deal-bank/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/space-rising/deal-bank/completed",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/space-rising/:path*",
+      "destination": "/space-rising/:path*"
+    },
+    {
+      "source": "/change-password",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/elon-room",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/design/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ConradFoundation",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conradfoundation",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/Conradfoundation",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conrad-foundation",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conrad",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/nancy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conradfoundation2",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/missionwater",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/MissionWaterGame",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mission-water-game",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/MissionWaterPlatform",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/missionwaterplatform",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/platform",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/MissionWaterLive",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/missionwaterlive",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/missionwater/live",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/MissionWaterOffering",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/missionwateroffering",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/mission-water-offering",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/missionwater/offering",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/higherorbits",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/stats",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ai-hours",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/ai-hours/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/support",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/support/admin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/internal/scope/higher-orbits-biz7tkhq9h",
+      "destination": "/scope-higher-orbits-biz7tkhq9h.html"
+    },
+    {
+      "source": "/agreements/included-health",
+      "destination": "/agreements/included-health.html"
+    },
+    {
+      "source": "/praevideo",
+      "destination": "/praevideo/index.html"
+    },
+    {
+      "source": "/praevideo/:path*",
+      "destination": "/praevideo/:path*"
+    },
+    {
+      "source": "/preston",
+      "destination": "/preston/index.html"
+    },
+    {
+      "source": "/preston/:path*",
+      "destination": "/preston/:path*"
+    },
+    {
+      "source": "/sunland",
+      "destination": "/sunland/index.html"
+    },
+    {
+      "source": "/sunland/:path*",
+      "destination": "/sunland/:path*"
+    },
+    {
+      "source": "/superstition",
+      "destination": "/superstition/index.html"
+    },
+    {
+      "source": "/superstition/:path*",
+      "destination": "/superstition/:path*"
+    }
   ],
   "redirects": [
-    { "source": "/higher-orbits", "destination": "/higherorbits", "permanent": true }
+    {
+      "source": "/higher-orbits",
+      "destination": "/higherorbits",
+      "permanent": true
+    }
   ],
   "crons": [
-    { "path": "/api/blacknight/refresh", "schedule": "0 13 * * *" }
+    {
+      "path": "/api/blacknight/refresh",
+      "schedule": "0 13 * * *"
+    }
   ]
 }

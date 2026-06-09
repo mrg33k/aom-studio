@@ -81,17 +81,9 @@ function countRegionsCompleted(history) {
 }
 
 /**
- * MissionWaterGame — R1 Pixel Engine Scaffold.
+ * MissionWaterGame — R16 Polish: single centered layout, smooth fades,
+ * no sidebar (course selection moves into HubScreen MISSION MANIFEST overlay).
  *
- * Two-panel container:
- *   • Left 70% — pixel canvas game + HUD overlay (Chapter 1 skeleton)
- *   • Right 30% — course sidebar placeholder (chapter/game selection comes later)
- *
- * The engine is data-driven. Swapping data/phases.json updates the game.
- * Cleo's Nano Banana imagery slots in via phase.visuals.background; until
- * that lands, the Canvas renders a procedural pixel landscape per palette.
- *
- * Mission: conrad-foundation:interactive-game
  * Route:   /MissionWaterGame, /missionwater, /mission-water-game
  */
 
@@ -159,24 +151,20 @@ export default function MissionWaterGame() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // R10 — Phase wipe transition
-  const wipeRef        = useRef(null);
+  // R16 — Smooth fade transition (replaces the translateX wipe)
+  const fadeRef = useRef(null);
   const prevPhaseIdRef = useRef(null);
 
-  const triggerWipe = () => {
-    const el = wipeRef.current;
+  const triggerFade = () => {
+    const el = fadeRef.current;
     if (!el) return;
-    // Reset bar to left edge with no transition
+    // Flash black overlay: fade in → hold → fade out
     el.style.transition = 'none';
-    el.style.transform  = 'translateX(-100%)';
-    // Double-rAF forces a repaint before re-adding the transition
+    el.style.opacity = '1';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        el.style.transition = 'transform 150ms linear';
-        el.style.transform  = 'translateX(0%)';     // sweep in (left → centre)
-        setTimeout(() => {
-          el.style.transform = 'translateX(100%)';  // sweep out (centre → right)
-        }, 150);
+        el.style.transition = 'opacity 300ms ease';
+        el.style.opacity = '0';
       });
     });
   };
@@ -192,7 +180,7 @@ export default function MissionWaterGame() {
     }
     if (runState.phase_id !== prevPhaseIdRef.current) {
       prevPhaseIdRef.current = runState.phase_id;
-      triggerWipe();
+      triggerFade();
     }
   }, [runState.phase_id, budgetConfirmed, showHub]);
 
@@ -268,15 +256,10 @@ export default function MissionWaterGame() {
       discoveries: [],
       history: [phaseId],
     });
+    setShowHub(false); // Close hub if open when jumping
   };
 
   const activeChapter = phase ? (phase.chapter || 1) : 1;
-
-  // The course sidebar belongs to the in-game experience only. On the gate
-  // screens (welcome → name → role → budget) it must NOT render — those screens
-  // are full-bleed centered boxes, and a 30% sidebar shoves their centered panel
-  // off-axis. Sidebar shows once gameplay begins (budget confirmed → hub + game).
-  const inGame = budgetConfirmed;
 
   // Mount-time: set <title> for browser tab.
   useEffect(() => {
@@ -285,202 +268,109 @@ export default function MissionWaterGame() {
     return () => { document.title = prev; };
   }, []);
 
-  // R11 — Unified bounded container for all screens: selection gates + game phase
-  // All screens render within the same "one main column" for visual consistency
+  // R16 — Full-bleed single-column layout. No sidebar at any stage.
+  // Course selection lives in HubScreen's MISSION MANIFEST overlay.
   return (
     <div style={styles.root}>
-      <div style={styles.container}>
-        <main style={styles.gamePanel}>
-        {/* ─── Selection gates: welcome → name → role → budget ─────── */}
+      {/* ─── Selection gates: welcome → name → role → budget ─────── */}
 
-        {/* R7b gate: welcome screen */}
-        {!hasStarted && (
-          <WelcomeScreen onStart={() => setHasStarted(true)} />
-        )}
-
-        {/* R9 gate: name entry */}
-        {hasStarted && !nameEntered && (
-          <NameEntryScreen
-            onConfirm={(name) => {
-              setPlayerName(name);
-              setNameEntered(true);
-            }}
-          />
-        )}
-
-        {/* R6 gate: role select */}
-        {hasStarted && nameEntered && !selectedRole && (
-          <RoleSelect
-            rolesData={rolesData}
-            onConfirm={(role) => setSelectedRole(role)}
-          />
-        )}
-
-        {/* R6 gate: budget planning */}
-        {hasStarted && nameEntered && selectedRole && !budgetConfirmed && (
-          <BudgetPlanning
-            selectedRole={selectedRole}
-            rolesData={rolesData}
-            onConfirm={(resources) => {
-              setInvestigationResources(resources);
-              setRunState(initRunState(phaseGraph, resources));
-              setBudgetConfirmed(true);
-            }}
-            onBack={() => setSelectedRole(null)}
-          />
-        )}
-
-        {/* ─── Game phase gates ──────────────────────────────────────── */}
-
-        {/* R8 — Hub gate: show between-phase action hub */}
-        {budgetConfirmed && showHub && (
-          (() => {
-            const regionsCompleted = countRegionsCompleted(runState.history || []);
-            const hubContext = buildHubContext(runState.phase_id, hubNextPhaseId, runState.history || []);
-            return (
-              <HubScreen
-                phaseContext={hubContext}
-                currentResources={investigationResources}
-                regionsCompleted={regionsCompleted}
-                regionsTotal={3}
-                completedPhaseIds={runState.history || []}
-                onContinue={onHubContinue}
-                onOpenKit={onHubOpenKit}
-              />
-            );
-          })()
-        )}
-
-        {/* Game phase: canvas + HUD */}
-        {budgetConfirmed && !showHub && (
-          <div style={styles.canvasFrame}>
-            <Canvas phase={phase} />
-            <HUD
-              phase={phase}
-              hud={hud}
-              onChoose={onChoose}
-              resources={investigationResources}
-              playerName={playerName}
-              openKitRef={openKitRef}
-            />
-            {/* R10 — Phase wipe transition overlay */}
-            <div
-              ref={wipeRef}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: '#000',
-                pointerEvents: 'none',
-                zIndex: 50,
-                transform: 'translateX(-100%)',
-              }}
-            />
-          </div>
-        )}
-      </main>
-      {inGame && (
-        <aside style={styles.sidebar}>
-          <SidebarPlaceholder
-            phase={phase}
-            activeChapter={activeChapter}
-            onJumpToPhase={onJumpToPhase}
-          />
-        </aside>
+      {/* R7b gate: welcome screen */}
+      {!hasStarted && (
+        <WelcomeScreen onStart={() => setHasStarted(true)} />
       )}
-      </div>
-    </div>
-  );
-}
 
-// ─── sidebar (course placeholder) ────────────────────────────────────────────
-
-function SidebarPlaceholder({ phase, activeChapter, onJumpToPhase }) {
-  return (
-    <div style={styles.sidebarInner}>
-      <div style={styles.sidebarKicker}>Mission Water</div>
-      <div style={styles.sidebarTitle}>Course Selection</div>
-      <p style={styles.sidebarLead}>
-        Select a chapter to begin. Complete each to unlock the next.
-      </p>
-
-      <div style={styles.chapterList}>
-        <ChapterRow
-          n={1}
-          title="Earth is running out"
-          state={activeChapter === 1 ? 'active' : 'done'}
-          onJump={() => onJumpToPhase('ch1_intro')}
+      {/* R9 gate: name entry */}
+      {hasStarted && !nameEntered && (
+        <NameEntryScreen
+          onConfirm={(name) => {
+            setPlayerName(name);
+            setNameEntered(true);
+          }}
         />
-        <ChapterRow
-          n={2}
-          title="The journey to the Moon"
-          state={activeChapter === 2 ? 'active' : 'available'}
-          onJump={() => onJumpToPhase('ch2_intro')}
+      )}
+
+      {/* R6 gate: role select */}
+      {hasStarted && nameEntered && !selectedRole && (
+        <RoleSelect
+          rolesData={rolesData}
+          onConfirm={(role) => setSelectedRole(role)}
         />
-        <ChapterRow n={3} title="The Moon holds the answer" state="locked" />
-      </div>
+      )}
 
-      <div style={styles.sidebarFooter}>
-        <div style={styles.footLine}>Built for Nancy Conrad.</div>
-        <div style={styles.footLine}>Conrad Foundation × Ahead of Market.</div>
-      </div>
-    </div>
-  );
-}
+      {/* R6 gate: budget planning */}
+      {hasStarted && nameEntered && selectedRole && !budgetConfirmed && (
+        <BudgetPlanning
+          selectedRole={selectedRole}
+          rolesData={rolesData}
+          onConfirm={(resources) => {
+            setInvestigationResources(resources);
+            setRunState(initRunState(phaseGraph, resources));
+            setBudgetConfirmed(true);
+          }}
+          onBack={() => setSelectedRole(null)}
+        />
+      )}
 
-function ChapterRow({ n, title, state, onJump }) {
-  const isClickable = state !== 'locked' && typeof onJump === 'function';
-  const tone =
-    state === 'active' ? styles.chRowActive
-    : state === 'done' ? styles.chRowDone
-    : state === 'available' ? styles.chRowAvailable
-    : styles.chRowLocked;
+      {/* ─── Game phase gates ──────────────────────────────────────── */}
 
-  const handleKeyDown = (e) => {
-    if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
-      e.preventDefault();
-      onJump();
-    }
-  };
+      {/* R8 — Hub gate: show between-phase action hub */}
+      {budgetConfirmed && showHub && (
+        (() => {
+          const regionsCompleted = countRegionsCompleted(runState.history || []);
+          const hubContext = buildHubContext(runState.phase_id, hubNextPhaseId, runState.history || []);
+          return (
+            <HubScreen
+              phaseContext={hubContext}
+              currentResources={investigationResources}
+              regionsCompleted={regionsCompleted}
+              regionsTotal={3}
+              completedPhaseIds={runState.history || []}
+              activeChapter={activeChapter}
+              onContinue={onHubContinue}
+              onOpenKit={onHubOpenKit}
+              onJumpToPhase={onJumpToPhase}
+            />
+          );
+        })()
+      )}
 
-  return (
-    <div
-      style={{
-        ...styles.chRow,
-        ...tone,
-        cursor: isClickable ? 'pointer' : 'default',
-      }}
-      onClick={isClickable ? onJump : undefined}
-      role={isClickable ? 'button' : undefined}
-      tabIndex={isClickable ? 0 : undefined}
-      onKeyDown={isClickable ? handleKeyDown : undefined}
-      aria-label={isClickable ? `Go to Chapter ${n}: ${title}` : undefined}
-    >
-      <div style={styles.chNum}>0{n}</div>
-      <div style={styles.chTitle}>{title}</div>
-      <div style={styles.chState}>
-        {state === 'active' && '— ACTIVE'}
-        {state === 'done' && '— REPLAY'}
-        {state === 'available' && '— START'}
-        {state === 'locked' && '— SOON'}
-      </div>
+      {/* Game phase: canvas + HUD */}
+      {budgetConfirmed && !showHub && (
+        <div style={styles.canvasFrame}>
+          <Canvas phase={phase} />
+          <HUD
+            phase={phase}
+            hud={hud}
+            onChoose={onChoose}
+            resources={investigationResources}
+            playerName={playerName}
+            openKitRef={openKitRef}
+          />
+          {/* R16 — Smooth fade transition overlay (replaces wipe) */}
+          <div
+            ref={fadeRef}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: '#000',
+              pointerEvents: 'none',
+              zIndex: 50,
+              opacity: 0,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── styles ──────────────────────────────────────────────────────────────────
 
-// ─── NASA space palette ───────────────────────────────────────────────────────
-const CYAN  = '#00E5CC';
-const AMBER = '#FFB703';
-const SPACE_DARK  = '#070B14';
-const PANEL_BG    = '#0A1628';
-const TEXT_SOFT   = '#C8D8F0';
+const SPACE_DARK = '#070B14';
 
 const styles = {
   root: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: 'relative',
     width: '100vw',
     height: '100vh',
     background: SPACE_DARK,
@@ -488,124 +378,8 @@ const styles = {
     fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
     color: '#FFFFFF',
   },
-  container: {
-    display: 'flex',
-    width: '100%',
-    height: '100%',
-    overflow: 'hidden',
-  },
-  gamePanel: {
-    position: 'relative',
-    overflow: 'hidden',
-    flex: '7 0 0',
-  },
   canvasFrame: {
     position: 'absolute',
     inset: 0,
-  },
-  sidebar: {
-    background: '#050810',
-    borderLeft: `1px solid rgba(0,229,204,0.12)`,
-    overflow: 'hidden',
-    display: 'flex',
-    flex: '3 0 0',
-    flexDirection: 'column',
-  },
-  sidebarInner: {
-    padding: '28px 24px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 18,
-    height: '100%',
-  },
-  sidebarKicker: {
-    fontFamily: '"Orbitron", monospace',
-    fontSize: 9,
-    letterSpacing: '0.28em',
-    color: CYAN,
-    textTransform: 'uppercase',
-  },
-  sidebarTitle: {
-    fontFamily: '"Orbitron", monospace',
-    fontSize: 20,
-    fontWeight: 700,
-    lineHeight: 1.15,
-    margin: 0,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    color: '#FFFFFF',
-  },
-  sidebarLead: {
-    margin: 0,
-    fontSize: 14,
-    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
-    lineHeight: 1.5,
-    color: TEXT_SOFT,
-  },
-  chapterList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 8,
-    marginTop: 12,
-  },
-  chRow: {
-    display: 'grid',
-    gridTemplateColumns: 'auto 1fr auto',
-    alignItems: 'baseline',
-    gap: 10,
-    padding: '12px 14px',
-    border: `1px solid rgba(0,229,204,0.12)`,
-    borderRadius: 4,
-    transition: 'background 120ms ease, border-color 120ms ease',
-  },
-  chRowActive: {
-    background: 'rgba(0,229,204,0.10)',
-    borderColor: 'rgba(0,229,204,0.55)',
-  },
-  chRowDone: {
-    background: 'rgba(0,229,204,0.04)',
-    borderColor: 'rgba(0,229,204,0.20)',
-  },
-  chRowAvailable: {
-    background: 'rgba(255,183,3,0.08)',
-    borderColor: 'rgba(255,183,3,0.45)',
-  },
-  chRowLocked: {
-    background: 'transparent',
-    opacity: 0.40,
-  },
-  chNum: {
-    fontFamily: '"Orbitron", monospace',
-    fontSize: 11,
-    letterSpacing: '0.18em',
-    color: AMBER,
-  },
-  chTitle: {
-    fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
-    fontSize: 15,
-    fontWeight: 600,
-    lineHeight: 1.2,
-    color: '#FFFFFF',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-  },
-  chState: {
-    fontFamily: '"Orbitron", monospace',
-    fontSize: 8,
-    letterSpacing: '0.2em',
-    color: TEXT_SOFT,
-  },
-  sidebarFooter: {
-    marginTop: 'auto',
-    paddingTop: 18,
-    borderTop: `1px solid rgba(0,229,204,0.08)`,
-  },
-  footLine: {
-    fontFamily: '"Orbitron", monospace',
-    fontSize: 8,
-    letterSpacing: '0.15em',
-    color: 'rgba(200,216,240,0.4)',
-    lineHeight: 1.7,
-    textTransform: 'uppercase',
   },
 };
