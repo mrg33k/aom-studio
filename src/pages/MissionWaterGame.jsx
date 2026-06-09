@@ -117,6 +117,39 @@ export default function MissionWaterGame() {
   // Ref callback so HubScreen can open the MissionKit inside HUD
   const openKitRef = useRef(null);
 
+  // DEV-ONLY: /screens jump hook. Reads ?screen= / ?phase= to bypass the gate
+  // sequence so the Screen Board can deep-link any screen. No-op in production.
+  // screen=welcome|name|role|budget|hub|game ; phase=<phaseId from phases.json>
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const q = new URLSearchParams(window.location.search);
+    const screen = q.get('screen');
+    const phase = q.get('phase');
+    if (!screen && !phase) return;
+
+    const devRole = rolesData?.roles?.[0] ?? { id: 'dev', name: 'Dev' };
+
+    if (screen === 'name') {
+      setHasStarted(true);
+    } else if (screen === 'role') {
+      setHasStarted(true); setNameEntered(true); setPlayerName('Dev');
+    } else if (screen === 'budget') {
+      setHasStarted(true); setNameEntered(true); setPlayerName('Dev');
+      setSelectedRole(devRole);
+    } else if (screen === 'hub' || screen === 'game' || phase) {
+      setHasStarted(true); setNameEntered(true); setPlayerName('Dev');
+      setSelectedRole(devRole);
+      setBudgetConfirmed(true);
+      if (screen === 'hub') setShowHub(true);
+      // Mirror the game's own onJumpToPhase shape so HUD/Canvas read valid state.
+      if (phase && phaseGraph.phases[phase]) {
+        setRunState({ phase_id: phase, discoveries: [], history: [phase] });
+      }
+    }
+    // screen === 'welcome' (or unrecognized) → leave gates false → Welcome shows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // R10 — Phase wipe transition
   const wipeRef        = useRef(null);
   const prevPhaseIdRef = useRef(null);
