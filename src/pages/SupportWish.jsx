@@ -11,8 +11,8 @@ import ShaderLinesBackground from '../components/ShaderLinesBackground.jsx'
 // ─────────────────────────────────────────────────────────────────────────────
 
 const INK_TEXT = '#EDE9DE'        // warm bone
-const INK_DIM = 'rgba(237,233,222,0.55)'
-const INK_FAINT = 'rgba(237,233,222,0.30)'
+const INK_DIM = 'rgba(237,233,222,0.68)'
+const INK_FAINT = 'rgba(237,233,222,0.40)'
 const AMBER = '#F59E0B'
 const SERIF = '"Instrument Serif", Georgia, serif'
 const BODY = '"Hanken Grotesk", system-ui, -apple-system, sans-serif'
@@ -113,6 +113,7 @@ export default function SupportWish() {
                   border: 'none', borderBottom: '1px solid rgba(237,233,222,0.18)',
                   color: INK_TEXT, fontFamily: SERIF, fontSize: 'clamp(22px, 3.4vw, 30px)',
                   lineHeight: 1.4, padding: '6px 0 16px', resize: 'none', outline: 'none',
+                  minHeight: '34vh',
                 }}
               />
 
