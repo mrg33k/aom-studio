@@ -82,22 +82,58 @@ function RequestsStream() {
 
 function WishRow({ w, dim }) {
   const loud = w.status === 'needs_team'
+  const [open, setOpen] = useState(false)
+  const [updates, setUpdates] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  async function toggle() {
+    const next = !open
+    setOpen(next)
+    if (next && updates === null) {
+      setLoading(true)
+      try {
+        const r = await fetch(`/api/support/wishes?access_code=${encodeURIComponent(w.access_code)}`)
+        const d = await r.json()
+        setUpdates(d?.updates || [])
+      } catch { setUpdates([]) }
+      finally { setLoading(false) }
+    }
+  }
+
   return (
     <div style={{ background: loud ? AMBER_SOFT : INK_CARD,
       border: `1px solid ${loud ? 'rgba(245,158,11,0.35)' : LINE}`, borderRadius: 6,
       padding: 12, marginBottom: 8, opacity: dim ? 0.6 : 1 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
-        <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: BONE }}>{w.name || w.email}</span>
-        <span style={{ fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT, textTransform: 'uppercase' }}>
-          {STATUS_LABEL[w.status] || w.status}
-        </span>
-      </div>
-      <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.4,
-        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{w.message}</p>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
-        <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{w.source || 'web'}</span>
-        <span style={{ fontSize: 11, color: BONE_FAINT }}>{timeAgo(w.created_at)}</span>
-      </div>
+      <button onClick={toggle} aria-expanded={open} style={{ display: 'block', width: '100%',
+        textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: BONE }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+          <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: BONE }}>{w.name || w.email}</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT, textTransform: 'uppercase' }}>
+            {STATUS_LABEL[w.status] || w.status}
+          </span>
+        </div>
+        <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.4,
+          display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{w.message}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{w.source || 'web'}</span>
+          <span style={{ fontSize: 11, color: BONE_FAINT }}>{open ? 'hide activity' : 'activity'} · {timeAgo(w.created_at)}</span>
+        </div>
+      </button>
+      {open && (
+        <div style={{ marginTop: 10, borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
+          {loading && <span style={{ fontSize: 12, color: BONE_FAINT }}>Loading activity…</span>}
+          {updates && updates.length === 0 && <span style={{ fontSize: 12, color: BONE_FAINT }}>No activity yet — heard, awaiting triage.</span>}
+          {updates && updates.map((u) => (
+            <div key={u.id} style={{ display: 'flex', gap: 10, padding: '4px 0', alignItems: 'baseline' }}>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: AMBER, minWidth: 70, textTransform: 'uppercase' }}>
+                {u.kind === 'status_change' ? (STATUS_LABEL[u.status] || u.status) : u.kind}
+              </span>
+              <span style={{ flex: 1, fontSize: 12, color: BONE_DIM, lineHeight: 1.4 }}>{u.body || ''}</span>
+              <span style={{ fontSize: 10, color: BONE_FAINT }}>{timeAgo(u.created_at)}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
