@@ -469,9 +469,12 @@ const styles = {
   gamePanel: {
     position: 'relative',
     overflow: 'hidden',
-    width: '100%',
-    height: '100%',
-    maxWidth: '100%',
+    width: '90vw',
+    height: '90vh',
+    maxWidth: 1000,
+    maxHeight: 900,
+    aspectRatio: '16 / 10',
+    borderRadius: 8,
   },
   canvasFrame: {
     position: 'absolute',

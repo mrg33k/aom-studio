@@ -370,13 +370,13 @@ export default function WelcomeScreen({ onStart }) {
           display: flex;
           justify-content: center;
           width: 100%;
-          max-width: 560px;
+          max-width: 600px;
           padding: 0 16px;
           box-sizing: border-box;
         }
         .wg-panel-outer {
           width: 100%;
-          max-width: 560px;
+          max-width: 600px;
           min-width: 0;
           z-index: 1;
         }
@@ -385,12 +385,12 @@ export default function WelcomeScreen({ onStart }) {
           border: 1px solid rgba(0,229,204,0.25);
           border-radius: 4px;
           box-shadow: 0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08);
-          padding: 28px 30px;
+          padding: 26px 32px;
           width: 100%;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
-          gap: 20px;
+          gap: 16px;
         }
 
         /* Blippy — absolute companion, lower-left of viewport (matches Role Select).
