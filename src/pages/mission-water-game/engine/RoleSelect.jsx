@@ -374,7 +374,7 @@ export default function RoleSelect({ rolesData, onConfirm }) {
 // ─── styles ──────────────────────────────────────────────────────────────────
 const styles = {
   root: {
-    position: 'fixed',
+    position: 'absolute',
     inset: 0,
     background: SPACE_DARK,
     display: 'flex',
