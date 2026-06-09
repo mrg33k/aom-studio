@@ -61,7 +61,26 @@ export default async function handler(req, res) {
     const statusFilter = status ? `&status=eq.${encodeURIComponent(status)}` : '';
     const r = await supa(`support_wishes?select=*&order=created_at.desc${statusFilter}`);
     const data = await r.json();
-    return res.status(200).json({ ok: true, wishes: data });
+    // Attach each wish's latest response inline so the board can show "what we
+    // said back" without a per-row fetch. One batched query over the response
+    // updates, newest-per-wish wins.
+    const wishes = Array.isArray(data) ? data : [];
+    if (wishes.length) {
+      try {
+        const ids = wishes.map((w) => w.id).filter(Boolean);
+        if (ids.length) {
+          const inList = `(${ids.map((x) => `"${x}"`).join(',')})`;
+          const rr = await supa(`support_wish_updates?select=wish_id,body,created_at&kind=eq.response&wish_id=in.${encodeURIComponent(inList)}&order=created_at.desc`);
+          const ups = await rr.json();
+          const latest = {};
+          for (const u of Array.isArray(ups) ? ups : []) {
+            if (u.wish_id && !latest[u.wish_id]) latest[u.wish_id] = { body: u.body || '', created_at: u.created_at };
+          }
+          for (const w of wishes) w.latest_response = latest[w.id] || null;
+        }
+      } catch { /* response enrichment is best-effort; board still renders without it */ }
+    }
+    return res.status(200).json({ ok: true, wishes });
   }
 
   if (req.method === 'PATCH') {

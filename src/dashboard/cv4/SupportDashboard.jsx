@@ -39,6 +39,8 @@ function timeAgo(iso) {
   return `${Math.floor(d / 86400)}d ago`
 }
 
+function timeAgoMs(ms) { return ms ? timeAgo(new Date(ms).toISOString()) : '' }
+
 // ── Support requests (wishes) stream ─────────────────────────────────────────
 function RequestsStream() {
   const [wishes, setWishes] = useState(null)
@@ -121,6 +123,13 @@ function WishRow({ w, dim }) {
         </div>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.4,
           display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{w.message}</p>
+        {w.latest_response && (
+          <div style={{ marginTop: 7, padding: '6px 9px', background: AMBER_SOFT, borderLeft: `2px solid ${AMBER}`, borderRadius: 3 }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: AMBER }}>We replied</span>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: BONE_DIM, lineHeight: 1.4,
+              display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{w.latest_response.body}</p>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
           <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{w.source || 'web'}</span>
           <span style={{ fontSize: 11, color: BONE_FAINT }}>{open ? 'hide activity' : 'activity'} · {timeAgo(w.created_at)}</span>
@@ -166,20 +175,70 @@ function StreamHeader({ title, sub, count, total, onRefresh }) {
 }
 
 // ── Cross-mailbox inbox (the "support emails" stream beyond wishes) ───────────
-function InboxItem({ it, loud }) {
+// Each correspondent renders as an expandable thread card: collapsed shows who +
+// subject + a preview of the latest message; expanded shows what THEY wrote and
+// what WE replied, with Open-in-Gmail + reply-by-mail links. This is the heart of
+// "show me the support emails we responded to" — our actual reply text, inline.
+function InboxThreadCard({ it, loud }) {
+  const [open, setOpen] = useState(false)
+  const gmailUrl = it.threadId ? `https://mail.google.com/mail/u/0/#all/${it.threadId}` : null
+  const previewWho = it.lastReply?.snippet ? 'You' : it.from
+  const preview = it.lastReply?.snippet || it.lastInbound?.snippet || ''
+  const when = it.lastReply?.date || it.lastInbound?.date || it.date
   return (
-    <a href={`mailto:${it.email}?subject=${encodeURIComponent('Re: ' + (it.subject || ''))}`}
-      style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
-        padding: '8px 0', borderBottom: `1px solid ${LINE}`, color: BONE }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: loud ? AMBER : BONE_FAINT }} />
-      <span style={{ flex: '0 0 auto', maxWidth: '32%', fontWeight: 600, fontSize: 13, overflow: 'hidden',
-        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.from}</span>
-      <span style={{ flex: 1, minWidth: 0, color: BONE_DIM, fontSize: 12, overflow: 'hidden',
-        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</span>
-      <span style={{ flex: '0 0 auto', fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT }}>
-        {loud ? 'Reply →' : 'replied'}
-      </span>
-    </a>
+    <div style={{ background: loud ? AMBER_SOFT : INK_CARD,
+      border: `1px solid ${loud ? 'rgba(245,158,11,0.35)' : LINE}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} style={{ display: 'block', width: '100%',
+        textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: BONE }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: loud ? AMBER : BONE_FAINT }} />
+            <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: BONE,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.from}</span>
+          </span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT, textTransform: 'uppercase', flexShrink: 0 }}>
+            {loud ? 'Needs reply' : 'Responded'}
+          </span>
+        </div>
+        <p style={{ margin: '5px 0 0', fontSize: 13, color: BONE_DIM, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</p>
+        {preview && (
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: BONE_FAINT, lineHeight: 1.4, display: '-webkit-box',
+            WebkitLineClamp: open ? 99 : 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <span style={{ color: it.lastReply?.snippet ? AMBER : BONE_FAINT }}>{previewWho}:</span> {preview}
+          </p>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
+          <span style={{ fontSize: 11, color: BONE_FAINT }}>{open ? 'hide thread' : 'view thread'}</span>
+          <span style={{ fontSize: 11, color: BONE_FAINT }}>{timeAgoMs(when)}</span>
+        </div>
+      </button>
+      {open && (
+        <div style={{ marginTop: 10, borderTop: `1px solid ${LINE}`, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, marginBottom: 4 }}>
+              They wrote {it.lastInbound?.date ? `· ${timeAgoMs(it.lastInbound.date)}` : ''}
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: BONE_DIM, lineHeight: 1.5 }}>{it.lastInbound?.snippet || '—'}</p>
+          </div>
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase',
+              color: it.lastReply ? AMBER : BONE_FAINT, marginBottom: 4 }}>
+              We replied {it.lastReply?.date ? `· ${timeAgoMs(it.lastReply.date)}` : ''}
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: it.lastReply ? BONE : BONE_FAINT, lineHeight: 1.5 }}>
+              {it.lastReply?.snippet || 'No reply sent yet.'}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 16 }}>
+            {gmailUrl && (
+              <a href={gmailUrl} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: AMBER, textDecoration: 'none' }}>Open in Gmail →</a>
+            )}
+            <a href={`mailto:${it.email}?subject=${encodeURIComponent('Re: ' + (it.subject || ''))}`}
+              style={{ fontFamily: MONO, fontSize: 11, color: BONE_FAINT, textDecoration: 'none' }}>Reply by mail</a>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -189,6 +248,7 @@ function InboxPanel() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [filter, setFilter] = useState('all') // all | needs | replied
 
   const load = useCallback(async (password) => {
     if (!password) return
@@ -229,27 +289,51 @@ function InboxPanel() {
   if (error && !data) return <div style={{ padding: 24 }}><p style={{ color: '#F0A07A', marginBottom: 10 }}>{error}</p><button onClick={() => load(pw)} style={ghostBtn}>Retry</button></div>
   if (!data) return null
   const boxes = data.mailboxes || []
+  const totalNeeds = boxes.reduce((n, b) => n + (b.needs?.length || 0), 0)
+  const totalReplied = boxes.reduce((n, b) => n + (b.replied?.length || 0), 0)
   return (
     <div style={{ padding: '20px 24px', overflowY: 'auto', height: '100%' }}>
-      <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, margin: '0 0 16px' }}>
-        Last {data.days} days · real correspondents
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, margin: '0 0 16px' }}>
+        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, margin: 0 }}>
+          Last {data.days} days · the emails we{"'"}ve responded to
+        </p>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <FilterPill active={filter === 'all'} onClick={() => setFilter('all')} label={`All ${totalNeeds + totalReplied}`} />
+          <FilterPill active={filter === 'needs'} onClick={() => setFilter('needs')} label={`Needs reply ${totalNeeds}`} loud />
+          <FilterPill active={filter === 'replied'} onClick={() => setFilter('replied')} label={`Responded ${totalReplied}`} />
+        </div>
+      </div>
       {boxes.length === 0 && <p style={{ color: BONE_DIM }}>No connected mailboxes.</p>}
-      {boxes.map((box) => (
-        <section key={box.email} style={{ background: INK_PANEL, border: `1px solid ${LINE}`, borderRadius: 8, padding: '14px 16px', marginBottom: 18 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-            <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 18, margin: 0, color: BONE }}>{box.email}</h3>
-            {box.error
-              ? <span style={{ fontFamily: MONO, fontSize: 10, color: '#F0A07A' }}>{box.error}</span>
-              : <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{(box.needs?.length || 0)} need reply · {(box.replied?.length || 0)} replied</span>}
-          </div>
-          {!box.error && (box.needs || []).map((it) => <InboxItem key={'n' + it.email + it.threadId} it={it} loud />)}
-          {!box.error && (box.replied || []).map((it) => <InboxItem key={'r' + it.email + it.threadId} it={it} />)}
-          {!box.error && (box.needs?.length || 0) === 0 && (box.replied?.length || 0) === 0 &&
-            <span style={{ fontSize: 12, color: BONE_FAINT }}>Nothing personal in the window.</span>}
-        </section>
-      ))}
+      {boxes.map((box) => {
+        const needs = filter === 'replied' ? [] : (box.needs || [])
+        const replied = filter === 'needs' ? [] : (box.replied || [])
+        return (
+          <section key={box.email} style={{ background: INK_PANEL, border: `1px solid ${LINE}`, borderRadius: 8, padding: '14px 16px', marginBottom: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+              <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 18, margin: 0, color: BONE }}>{box.email}</h3>
+              {box.error
+                ? <span style={{ fontFamily: MONO, fontSize: 10, color: '#F0A07A' }}>{box.error}</span>
+                : <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{(box.needs?.length || 0)} need reply · {(box.replied?.length || 0)} replied</span>}
+            </div>
+            {!box.error && needs.map((it) => <InboxThreadCard key={'n' + it.email + it.threadId} it={it} loud />)}
+            {!box.error && replied.map((it) => <InboxThreadCard key={'r' + it.email + it.threadId} it={it} />)}
+            {!box.error && needs.length === 0 && replied.length === 0 &&
+              <span style={{ fontSize: 12, color: BONE_FAINT }}>
+                {filter === 'all' ? 'Nothing personal in the window.' : `Nothing ${filter === 'needs' ? 'needs a reply' : 'responded to'} here.`}
+              </span>}
+          </section>
+        )
+      })}
     </div>
+  )
+}
+
+function FilterPill({ active, onClick, label, loud }) {
+  return (
+    <button onClick={onClick} style={{ background: active ? (loud ? AMBER : INK_CARD) : 'transparent',
+      color: active ? (loud ? '#1A1206' : BONE) : BONE_FAINT, border: `1px solid ${active ? (loud ? AMBER : LINE) : LINE}`,
+      borderRadius: 12, fontFamily: MONO, fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
+      padding: '3px 10px', cursor: 'pointer', fontWeight: active ? 700 : 500 }}>{label}</button>
   )
 }
 

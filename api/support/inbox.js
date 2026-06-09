@@ -11,7 +11,12 @@
 //
 // Body: { email, password, days?=3, all?=false }
 //   → { ok, days, mailboxes: [ { email, error?, needs:[...], replied:[...] } ] }
-// Each item: { from, email, subject, threadId, date }
+// Each item: { from, email, subject, threadId, date,
+//              lastInbound: { snippet, date },        // what they wrote
+//              lastReply:   { snippet, date } | null, // what we wrote back
+//              replied }
+// The snippets are what make "the support emails we responded to" actually
+// visible — the board now shows their message AND our reply, not just a flag.
 
 import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
 
@@ -77,10 +82,18 @@ async function gmailSearchIds(accessToken, q, max = 25) {
   return (list.messages || []).map((m) => m.id)
 }
 
-// True if there's at least one sent message to `to` in the window.
-async function hasSentTo(accessToken, to, days) {
+// Our latest sent reply to `to` in the window — { snippet, date } — or null if
+// we never wrote them back. This is the "what we said back" the board was missing.
+async function latestSentTo(accessToken, to, days) {
   const ids = await gmailSearchIds(accessToken, `in:sent to:${to} newer_than:${days}d`, 1)
-  return Array.isArray(ids) && ids.length > 0
+  if (!Array.isArray(ids) || !ids.length) return null
+  const r = await gmailFetch(accessToken, `/messages/${ids[0]}?format=metadata&metadataHeaders=Date`)
+  if (!r.ok) return null
+  const m = await r.json()
+  return {
+    snippet: (m.snippet || '').trim().slice(0, 240),
+    date: m.internalDate ? Number(m.internalDate) : null,
+  }
 }
 
 async function trackAccount(connId, email, days) {
@@ -120,16 +133,27 @@ async function trackAccount(connId, email, days) {
         subject: (headerVal(headers, 'Subject') || '(no subject)').trim().slice(0, 80),
         threadId: m.threadId,
         date: m.internalDate ? Number(m.internalDate) : Date.parse(headerVal(headers, 'Date') || ''),
+        inboundSnippet: (m.snippet || '').trim().slice(0, 240),
       })
     }
   }
 
+  // For each correspondent: their inbound snippet + our latest reply snippet.
   // "replied" = we wrote them inside the window (+2d grace, same as inbox-tracker).
   const items = await Promise.all(
-    [...senders.values()].map(async (info) => ({
-      ...info,
-      replied: await hasSentTo(creds.accessToken, info.email, days + 2),
-    })),
+    [...senders.values()].map(async (info) => {
+      const reply = await latestSentTo(creds.accessToken, info.email, days + 2)
+      return {
+        from: info.from,
+        email: info.email,
+        subject: info.subject,
+        threadId: info.threadId,
+        date: info.date,
+        lastInbound: { snippet: info.inboundSnippet || '', date: info.date || null },
+        lastReply: reply, // { snippet, date } | null
+        replied: !!reply,
+      }
+    }),
   )
 
   const needs = items.filter((i) => !i.replied).sort((a, b) => (b.date || 0) - (a.date || 0))
