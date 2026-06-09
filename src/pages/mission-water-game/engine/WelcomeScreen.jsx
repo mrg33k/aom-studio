@@ -365,38 +365,18 @@ export default function WelcomeScreen({ onStart }) {
           animation: wg-card-pulse 2s ease-in-out infinite;
         }
 
-        /* Desktop: Blippy floats left beside the panel */
+        /* Single centered main column — the panel is the only column */
         .wg-outer-wrapper {
           display: flex;
-          flex-direction: row;
-          align-items: flex-end;
           justify-content: center;
           width: 100%;
-          max-width: 720px;
+          max-width: 560px;
           padding: 0 16px;
           box-sizing: border-box;
-          gap: 0;
-        }
-        .wg-blippy-float {
-          flex-shrink: 0;
-          width: 180px;
-          margin-right: -12px; /* Slight overlap at the panel edge */
-          z-index: 2;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-          padding-bottom: 20px;
-        }
-        .wg-blippy-img {
-          height: 220px;
-          width: auto;
-          display: block;
-          filter: drop-shadow(0 0 16px rgba(0,229,204,0.35));
         }
         .wg-panel-outer {
-          flex: 1;
-          max-width: 520px;
+          width: 100%;
+          max-width: 560px;
           min-width: 0;
           z-index: 1;
         }
@@ -405,61 +385,47 @@ export default function WelcomeScreen({ onStart }) {
           border: 1px solid rgba(0,229,204,0.25);
           border-radius: 4px;
           box-shadow: 0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08);
-          padding: 36px 32px;
+          padding: 28px 30px;
           width: 100%;
           box-sizing: border-box;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 20px;
         }
 
-        /* Mobile (≤ 599px): stack — panel above, Blippy below in a row */
-        @media (max-width: 599px) {
-          .wg-outer-wrapper {
-            flex-direction: column;
-            align-items: center;
-            max-width: 100%;
-            padding: 0 12px;
-            gap: 16px;
-          }
-          .wg-blippy-float {
-            width: auto;
-            margin-right: 0;
-            flex-direction: row;
-            align-items: center;
-            gap: 10px;
-            padding-bottom: 0;
-            order: 2;
-          }
-          .wg-blippy-img {
-            height: 80px !important;
-          }
-          .wg-speech-bubble {
-            max-width: 160px !important;
-            border-radius: 8px !important;
-          }
-          .wg-panel-outer {
-            max-width: 100%;
-            width: 100%;
-            order: 1;
-          }
-          .wg-panel-inner {
-            padding: 24px 18px !important;
-            gap: 18px !important;
-          }
+        /* Blippy — absolute companion, lower-left of viewport (matches Role Select).
+           Pulled OUT of the layout flow so the panel stays dead-centered. */
+        .wg-blippy-anchor {
+          position: absolute;
+          left: 28px;
+          bottom: 24px;
+          z-index: 6;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          pointer-events: none;
+        }
+        .wg-blippy-img {
+          height: 200px;
+          width: auto;
+          display: block;
+          filter: drop-shadow(0 0 16px rgba(0,229,204,0.35));
         }
 
-        /* Narrow desktop without room for blippy beside panel */
-        @media (max-width: 720px) and (min-width: 600px) {
-          .wg-outer-wrapper {
-            max-width: 560px;
-          }
-          .wg-blippy-float {
-            width: 150px;
-          }
-          .wg-blippy-img {
-            height: 165px !important;
-          }
+        /* Mid widths: shrink Blippy so it never crowds the centered panel */
+        @media (max-width: 980px) {
+          .wg-blippy-img { height: 150px; }
+          .wg-speech-bubble { max-width: 140px !important; }
+        }
+
+        /* Mobile: tuck Blippy small in the corner, drop the bubble, tighten panel */
+        @media (max-width: 600px) {
+          .wg-blippy-anchor { left: 14px; bottom: 14px; }
+          .wg-blippy-img { height: 104px; }
+          .wg-speech-bubble { display: none; }
+          .wg-outer-wrapper { max-width: 100%; padding: 0 12px; }
+          .wg-panel-inner { padding: 22px 18px; gap: 16px; }
         }
       `}</style>
 
@@ -521,6 +487,64 @@ export default function WelcomeScreen({ onStart }) {
         pointerEvents: 'none',
       }} />
 
+      {/* ─ Blippy companion — absolute, lower-left; does NOT offset the centered panel ─ */}
+      <div
+        className="wg-blippy-anchor"
+        style={{
+          opacity: blippyReady ? 1 : 0,
+          transform: blippyReady ? 'translateY(0)' : 'translateY(16px)',
+          transition: 'opacity 350ms ease-out, transform 350ms ease-out',
+        }}
+      >
+        {/* Speech bubble — sits above Blippy */}
+        <div
+          className="wg-speech-bubble"
+          style={{
+            background: 'rgba(10,22,40,0.90)',
+            border: '1px solid rgba(0,229,204,0.35)',
+            borderRadius: '8px 8px 8px 2px',
+            padding: '9px 13px',
+            maxWidth: 160,
+            position: 'relative',
+            opacity: bubbleReady ? 1 : 0,
+            transform: bubbleReady ? 'translateY(0)' : 'translateY(6px)',
+            transition: 'opacity 250ms ease, transform 250ms ease',
+          }}
+        >
+          <div style={{
+            fontFamily: 'Rajdhani, sans-serif',
+            fontSize: 13,
+            fontWeight: 600,
+            color: TEXT_SOFT,
+            lineHeight: 1.4,
+            textAlign: 'center',
+          }}>
+            Ready for your mission, Cadet?
+          </div>
+          {/* Tail pointing down toward Blippy */}
+          <div style={{
+            position: 'absolute',
+            bottom: -7,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 0, height: 0,
+            borderLeft: '6px solid transparent',
+            borderRight: '6px solid transparent',
+            borderTop: '7px solid rgba(0,229,204,0.35)',
+          }} />
+        </div>
+
+        {/* Blippy image — full character, NO circle clip */}
+        <img
+          className="wg-blippy-img"
+          src="/mission-water/welcome/blippy_v2_welcome_pose.png"
+          alt="Blippy, your mission companion"
+          onError={(e) => {
+            e.target.src = '/mission-water/welcome/blippy_welcome_pose.png';
+          }}
+        />
+      </div>
+
       {/* ─ Scrollable content ─────────────────────────────────────────── */}
       <div style={{
         position: 'absolute', inset: 0,
@@ -534,66 +558,8 @@ export default function WelcomeScreen({ onStart }) {
         {/* Top flex spacer — centers content on desktop, collapses on scroll */}
         <div style={{ flex: '1 0 0' }} />
 
-        {/* ── Outer layout: [Blippy][Panel] ────────────────────────────── */}
+        {/* ── Centered single column: the instrument panel ────────────── */}
         <div className="wg-outer-wrapper">
-
-          {/* Blippy floats to the LEFT of the panel */}
-          <div
-            className="wg-blippy-float"
-            style={{
-              opacity: blippyReady ? 1 : 0,
-              transform: blippyReady ? 'translateX(0) translateY(0)' : 'translateX(-12px) translateY(16px)',
-              transition: 'opacity 350ms ease-out, transform 350ms ease-out',
-            }}
-          >
-            {/* Speech bubble — above Blippy on desktop, beside on mobile */}
-            <div
-              className="wg-speech-bubble"
-              style={{
-                background: 'rgba(10,22,40,0.90)',
-                border: '1px solid rgba(0,229,204,0.35)',
-                borderRadius: '8px 8px 8px 2px',
-                padding: '9px 13px',
-                maxWidth: 148,
-                position: 'relative',
-                opacity: bubbleReady ? 1 : 0,
-                transform: bubbleReady ? 'translateY(0)' : 'translateY(6px)',
-                transition: 'opacity 250ms ease, transform 250ms ease',
-              }}
-            >
-              <div style={{
-                fontFamily: 'Rajdhani, sans-serif',
-                fontSize: 13,
-                fontWeight: 600,
-                color: TEXT_SOFT,
-                lineHeight: 1.4,
-                textAlign: 'center',
-              }}>
-                Ready for your mission, Cadet?
-              </div>
-              {/* Tail pointing down toward Blippy */}
-              <div style={{
-                position: 'absolute',
-                bottom: -7,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                width: 0, height: 0,
-                borderLeft: '6px solid transparent',
-                borderRight: '6px solid transparent',
-                borderTop: '7px solid rgba(0,229,204,0.35)',
-              }} />
-            </div>
-
-            {/* Blippy image — full character, NO circle clip */}
-            <img
-              className="wg-blippy-img"
-              src="/mission-water/welcome/blippy_v2_welcome_pose.png"
-              alt="Blippy, your mission companion"
-              onError={(e) => {
-                e.target.src = '/mission-water/welcome/blippy_welcome_pose.png';
-              }}
-            />
-          </div>
 
           {/* ── Instrument panel: single column ─────────────────────────── */}
           <div
@@ -628,7 +594,7 @@ export default function WelcomeScreen({ onStart }) {
                 <div style={{
                   fontFamily: 'Orbitron, sans-serif',
                   fontWeight: 900,
-                  fontSize: 'clamp(48px, 8.5vw, 92px)',
+                  fontSize: 'clamp(42px, 7vw, 72px)',
                   letterSpacing: '0.06em',
                   color: '#FFFFFF',
                   textTransform: 'uppercase',
