@@ -26,7 +26,13 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const ADMIN_PASSWORD = process.env.SUPPORT_ADMIN_PASSWORD || 'aom-support-admin'
 
 const ADMIN_ALLOWLIST = ['patrikmatheson@gmail.com']
-const DEFAULT_MAILBOXES = ['patrikmatheson@gmail.com', 'hello@aom-inhouse.com']
+// Support flows to the workspace mailbox (hello@aom-inhouse.com, which also
+// receives hello+support@ via plus-addressing). Patrik's personal Gmail is NOT
+// a support channel — scanning it surfaced Nextdoor/Flipboard news digests as
+// "needs reply", which is noise on a support dashboard. Scope to the support
+// mailbox the handoff marked "for sure". Pass all:true to scan every connected
+// account when you genuinely want the cross-mailbox view.
+const DEFAULT_MAILBOXES = ['hello@aom-inhouse.com']
 
 // Mirrors inbox-tracker's AUTOMATED regex: senders Gmail still files in the inbox
 // that aren't real people (receipts, notifications, calendar, docusign, etc.).
