@@ -23,6 +23,8 @@ function supa(path, opts = {}) {
 
 const CLIENT_LABEL = { heard: 'Heard', working: 'Working', needs_team: 'With the AOM team', resolved: 'Resolved' };
 
+const SIGN_OFF = `<br><br>&mdash; AOM Front Desk Team`;
+
 async function sendClientEmail(to, name, subject, bodyHtml) {
   const r = await fetch(`${SITE}/api/internal/mail/send`, {
     method: 'POST',
@@ -30,7 +32,9 @@ async function sendClientEmail(to, name, subject, bodyHtml) {
     body: JSON.stringify({
       connection_id: MAIL_CONNECTION,
       to: [{ name: name || undefined, email: to }],
-      subject, bodyHtml,
+      subject,
+      bodyHtml: `${bodyHtml}${SIGN_OFF}`,
+      includeSignature: false, // sign explicitly as the Front Desk Team, no account-default sig
     }),
   });
   return r.ok;
