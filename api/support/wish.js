@@ -59,11 +59,14 @@ export default async function handler(req, res) {
     visible_to_client: true }) });
 
   // Drop a scoped message into the sanctioned agent pipeline (listener dispatches a worker).
-  await supa('messages', { method: 'POST', body: JSON.stringify({
+  // The messages table has no default id — generate one (mirrors api/dashboard/supabase-messages.js).
+  const drop = await supa('messages', { method: 'POST', body: JSON.stringify({
+    id: crypto.randomUUID(),
     agent: SUPPORT_AGENT, role: 'user', source: 'support-desk', client_id: 'aom',
     text: `[SUPPORT WISH ${access_code}] from ${name || email} <${email}> (${source || 'web'}):\n\n${message}`,
     metadata: { mission_slug: 'corner:support-desk', support_wish_id: wish.id, support_access_code: access_code,
       support_email: email, support_source: source || 'web' } }) });
+  const pipeline_ok = drop.ok;
 
-  return res.status(200).json({ ok: true, access_code });
+  return res.status(200).json({ ok: true, access_code, pipeline_ok });
 }
