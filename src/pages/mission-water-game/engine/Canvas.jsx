@@ -29,6 +29,11 @@ function loadImage(src) {
  * No layout dependency; fills its parent <div> via ResizeObserver.
  */
 
+function prefersReducedMotion() {
+  return typeof window !== 'undefined' && window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export default function Canvas({ phase }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
@@ -60,6 +65,7 @@ export default function Canvas({ phase }) {
       };
     };
 
+    const reduceMotion = prefersReducedMotion();
     let imgFadeStartedAt = bgImg && bgImg.complete ? startedAt : null;
     const tick = (now) => {
       const elapsed = now - startedAt;
@@ -70,13 +76,18 @@ export default function Canvas({ phase }) {
       const imgAlpha = imgFadeStartedAt
         ? Math.min(1, (now - imgFadeStartedAt) / 400)
         : 0;
-      paint(ctx, W, H, phase, prevPhase, easeOutCubic(t), imgAlpha);
-      // Keep animating until both the parallax swap AND the image fade are done.
+      // Ambient = continuously increasing clock that drives the Ken-Burns
+      // drift on the raster scene (RL1). Frozen at 0 for reduced-motion so the
+      // background stays still for users who ask for it.
+      const ambient = reduceMotion ? 0 : now;
+      paint(ctx, W, H, phase, prevPhase, easeOutCubic(t), imgAlpha, ambient);
       const stillFading = imgFadeStartedAt != null && imgAlpha < 1;
-      if (t < 1 || stillFading) {
+      const transitionDone = t >= 1 && !stillFading;
+      if (transitionDone) animRef.current.prevPhase = phase;
+      // Keep the loop alive forever so the scene keeps breathing — unless
+      // reduced-motion, where we stop once the swap + fade settle (static).
+      if (!transitionDone || !reduceMotion) {
         animRef.current.raf = requestAnimationFrame(tick);
-      } else {
-        animRef.current.prevPhase = phase;
       }
     };
 
@@ -124,7 +135,8 @@ export default function Canvas({ phase }) {
       const bgSrc = phase && phase.visuals && phase.visuals.background;
       const bgImg = bgSrc ? loadImage(bgSrc) : null;
       const resizeImgAlpha = (bgImg && bgImg.complete && bgImg.naturalWidth > 0) ? 1 : 0;
-      paint(ctx, W, H, phase, animRef.current.prevPhase, 1, resizeImgAlpha);
+      const ambient = prefersReducedMotion() ? 0 : performance.now();
+      paint(ctx, W, H, phase, animRef.current.prevPhase, 1, resizeImgAlpha, ambient);
     };
 
     resize();
@@ -157,7 +169,7 @@ export default function Canvas({ phase }) {
 
 // ─── painter ─────────────────────────────────────────────────────────────────
 
-function paint(ctx, W, H, phase, prevPhase, t, imgAlpha = 0) {
+function paint(ctx, W, H, phase, prevPhase, t, imgAlpha = 0, ambient = 0) {
   // Fill with deep space base color — prevents transparent canvas edges from
   // showing the CSS container black (#000) during phase transition animations.
   // clearRect would leave alpha=0 gaps; fillRect gives a solid #070B14 floor.
@@ -167,17 +179,17 @@ function paint(ctx, W, H, phase, prevPhase, t, imgAlpha = 0) {
   if (prevPhase && t < 1) {
     ctx.save();
     ctx.translate(-W * t * 0.4, 0);
-    drawPhase(ctx, W, H, prevPhase, t, true, imgAlpha);
+    drawPhase(ctx, W, H, prevPhase, t, true, imgAlpha, ambient);
     ctx.restore();
   }
   // Render the new composite sliding in from the right.
   ctx.save();
   ctx.translate(W * (1 - t) * 0.4, 0);
-  drawPhase(ctx, W, H, phase, t, false, imgAlpha);
+  drawPhase(ctx, W, H, phase, t, false, imgAlpha, ambient);
   ctx.restore();
 }
 
-function drawPhase(ctx, W, H, phase, t, isOutgoing, imgAlpha = 0) {
+function drawPhase(ctx, W, H, phase, t, isOutgoing, imgAlpha = 0, ambient = 0) {
   if (!phase) return;
   const v = phase.visuals || {};
 
@@ -192,7 +204,7 @@ function drawPhase(ctx, W, H, phase, t, isOutgoing, imgAlpha = 0) {
   if (bgImg && bgImg.complete && bgImg.naturalWidth > 0 && imgAlpha > 0) {
     ctx.save();
     ctx.globalAlpha = Math.max(0, Math.min(1, imgAlpha));
-    drawCoverImage(ctx, W, H, bgImg, v.parallax_offset || 0);
+    drawCoverImage(ctx, W, H, bgImg, v.parallax_offset || 0, ambient);
     ctx.restore();
   }
 
@@ -212,16 +224,28 @@ function drawPhase(ctx, W, H, phase, t, isOutgoing, imgAlpha = 0) {
   }
 }
 
-function drawCoverImage(ctx, W, H, img, parallaxOffset) {
+function drawCoverImage(ctx, W, H, img, parallaxOffset, ambient = 0) {
   const iw = img.naturalWidth;
   const ih = img.naturalHeight;
-  // Cover fit (preserve aspect, fill viewport, crop overflow).
-  const scale = Math.max(W / iw, H / ih);
+  // Base cover fit (preserve aspect, fill viewport, crop overflow).
+  const coverScale = Math.max(W / iw, H / ih);
+
+  // ── RL1 Ken-Burns ambient drift ───────────────────────────────────────────
+  // Slow, seamless sine motion makes the scene feel alive (video-game feel)
+  // instead of a frozen still. OVERSCAN renders the image larger than cover so
+  // the zoom-breathe + pan can never expose a hard edge.
+  const tSec = ambient / 1000;
+  const OVERSCAN = 1.10;                                  // 10% headroom each axis
+  const zoom = 0.05 * (0.5 + 0.5 * Math.sin(tSec * 0.16)); // 0→+5% zoom, ~39s breathe
+  const panX = 0.025 * Math.sin(tSec * 0.11);            // ±2.5% horizontal drift
+  const panY = 0.020 * Math.cos(tSec * 0.085);           // ±2% vertical drift
+  const scale = coverScale * OVERSCAN * (1 + zoom);
+
   const dw = iw * scale;
   const dh = ih * scale;
-  // Slight downward bias keyed off parallax_offset so later phases sit lower.
-  const dy = (H - dh) / 2 + parallaxOffset * 6;
-  const dx = (W - dw) / 2;
+  // Center, then apply drift + the slight downward bias keyed off parallax_offset.
+  const dx = (W - dw) / 2 + panX * W;
+  const dy = (H - dh) / 2 + panY * H + parallaxOffset * 6;
   ctx.drawImage(img, dx, dy, dw, dh);
 }
 
