@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-09T17:26:47.606Z",
+  "generated_at": "2026-06-09T21:28:29.548Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -112,6 +112,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/chat-messages"
+    },
+    {
+      "slug": "corner:chat-quality-loop",
+      "raw_slug": "chat-quality-loop",
+      "folder_name": "chat-quality-loop",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Chat Quality Loop",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/chat-quality-loop"
     },
     {
       "slug": "corner:composer",
@@ -2550,20 +2564,6 @@
       "path": "corner/users/aom/projects/conrad-foundation/missions/interactive-game"
     },
     {
-      "slug": "conrad-foundation:masterclass-pitch-deck",
-      "raw_slug": "masterclass-pitch-deck",
-      "folder_name": "masterclass-pitch-deck",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "conrad-foundation",
-      "workstream": null,
-      "name": "Masterclass Pitch Deck",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": "2026-05-30T21:35:00.000000+00:00",
-      "path": "corner/users/aom/projects/conrad-foundation/missions/masterclass-pitch-deck"
-    },
-    {
       "slug": "conrad-foundation:mission-water",
       "raw_slug": "mission-water",
       "folder_name": "mission-water",
@@ -2576,20 +2576,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/conrad-foundation/missions/mission-water"
-    },
-    {
-      "slug": "conrad-foundation:mission-water-game",
-      "raw_slug": "mission-water-game",
-      "folder_name": "mission-water-game",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "conrad-foundation",
-      "workstream": null,
-      "name": "Mission Water Game",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/users/aom/projects/conrad-foundation/missions/mission-water-game"
     },
     {
       "slug": "higher-orbits:documentary-scope",
@@ -3267,8 +3253,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 57,
-      "in_flight": 57,
+      "total": 58,
+      "in_flight": 58,
       "done": 0
     },
     {
@@ -3309,8 +3295,8 @@
     },
     {
       "slug": "conrad-foundation",
-      "total": 4,
-      "in_flight": 4,
+      "total": 2,
+      "in_flight": 2,
       "done": 0
     },
     {
