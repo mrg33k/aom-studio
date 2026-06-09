@@ -165,6 +165,9 @@ function Board({ session, onLogout }) {
   const needsYou = (wishes || []).filter((w) => w.status === 'needs_team').length
   const newCount = (wishes || []).filter((w) => w.status === 'heard' || w.status === 'working').length
   const inboxNeeds = (inbox?.mailboxes || []).reduce((n, m) => n + (m.needs?.length || 0), 0)
+  const inboxHint = inbox
+    ? `across ${inbox.mailboxes?.length || 0} mailbox${(inbox.mailboxes?.length || 0) === 1 ? '' : 'es'}`
+    : needPw ? 'unlock in Inbox tab' : inboxLoading ? 'reading…' : inboxErr ? 'mailboxes unreachable' : 'loading…'
 
   return (
     <div style={{ minHeight: '100vh', background: INK, color: BONE, fontFamily: BODY }}>
@@ -187,8 +190,7 @@ function Board({ session, onLogout }) {
         padding: '20px 32px 4px' }}>
         <Stat label="Needs you" value={needsYou} loud={needsYou > 0} hint="escalated requests" />
         <Stat label="New requests" value={newCount} hint="just in / triaging" />
-        <Stat label="Inbox needs reply" value={inboxNeeds} loud={inboxNeeds > 0}
-          hint={inbox ? `across ${inbox.mailboxes?.length || 0} mailbox${(inbox.mailboxes?.length || 0) === 1 ? '' : 'es'}` : 'loading…'} />
+        <Stat label="Inbox needs reply" value={inboxNeeds} loud={inboxNeeds > 0} hint={inboxHint} />
       </div>
 
       {/* Tabs */}
