@@ -33,8 +33,7 @@ async function sendClientEmail(to, name, subject, bodyHtml) {
       connection_id: MAIL_CONNECTION,
       to: [{ name: name || undefined, email: to }],
       subject,
-      bodyHtml: `${bodyHtml}${SIGN_OFF}`,
-      includeSignature: false, // sign explicitly as the Front Desk Team, no account-default sig
+      bodyHtml: `${bodyHtml}${SIGN_OFF}`, // Front Desk Team sign-off in the body; default Gmail sig also kept
     }),
   });
   return r.ok;
