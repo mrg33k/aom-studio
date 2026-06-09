@@ -6,6 +6,7 @@
 // Mission: conrad-foundation:mission-water
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 // ─── Config (update these as the game + videos evolve) ──────────────────────────
 const GAME_URL = 'https://aheadofmarket.com/missionwater';
@@ -111,8 +112,30 @@ function Kicker({ children, className = '' }) {
   );
 }
 
-// ─── Live panel (inside the stage) ──────────────────────────────────────────────
+// ─── Live broadcast console (inside the stage) ──────────────────────────────────
+// Sample broadcast — Nancy's footage stands in as the live feed so the live-class
+// experience is visible before a real class airs. Swap LIVE.embedUrl + status='live'
+// when a class goes on air and the production iframe takes over.
+const SAMPLE_FEED = '/ConradFoundation/nancy-sample-tile-v1.mp4';
+const SAMPLE_POSTER = '/ConradFoundation/nancy-still-placeholder.jpg';
+
+const LIVE_QUESTIONS = [
+  { who: 'Maya R.', txt: 'How much of Earth’s water can we actually drink?', t: '00:42' },
+  { who: 'Devon K.', txt: 'Could we recycle water the same way on Mars?', t: '01:15' },
+  { who: 'Priya S.', txt: 'Which city is closest to running out right now?', t: '02:03' },
+  { who: 'Liam T.', txt: 'Is desalination too expensive to scale up?', t: '02:48' },
+  { who: 'Aisha J.', txt: 'What can students actually do about it locally?', t: '03:05' },
+];
+const ROSTER = ['MR', 'DK', 'PS', 'LT', 'AJ', 'CN', 'EO', 'TW'];
+
+function initials(name) {
+  return name.split(' ').map((w) => w[0]).join('');
+}
+
 function LivePanel() {
+  const [muted, setMuted] = useState(true);
+
+  // Real class airing — production path takes over the whole stage.
   if (LIVE.status === 'live' && LIVE.embedUrl) {
     return (
       <iframe
@@ -124,31 +147,123 @@ function LivePanel() {
       />
     );
   }
-  // Standby / scheduled — designed "off air" state, mission-control flavor.
+
+  // Sample broadcast console — feed + interactive class rail.
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
-      <div className="flex items-center gap-2.5 mb-7">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="absolute inline-flex h-full w-full rounded-full bg-[#E85D26]/50 animate-ping" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#E85D26]" />
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/45">Off air · Standby</span>
+    <div className="w-full h-full flex flex-col lg:flex-row bg-[#071530]">
+      {/* ── Feed ──────────────────────────────────────────────────────────── */}
+      <div className="relative flex-[2] lg:flex-1 min-h-0 bg-black overflow-hidden">
+        <video
+          src={SAMPLE_FEED}
+          poster={SAMPLE_POSTER}
+          autoPlay
+          muted={muted}
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+
+        {/* Top scrim + telemetry */}
+        <div
+          className="absolute inset-x-0 top-0 px-4 md:px-5 pt-4 pb-8 flex items-start justify-between"
+          style={{ background: 'linear-gradient(180deg, rgba(7,21,48,0.85) 0%, transparent 100%)' }}
+        >
+          <div className="flex items-center gap-2.5">
+            <span className="flex items-center gap-1.5 bg-[#E85D26] text-white font-mono text-[9px] uppercase tracking-[0.2em] px-2.5 py-1 rounded-[3px]">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-white/70 animate-ping" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+              </span>
+              Live
+            </span>
+            <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-white/45">Sample broadcast</span>
+          </div>
+          <div className="flex items-center gap-4 font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/50">
+            <span><span className="text-white/85">312</span> watching</span>
+            <span className="hidden sm:inline">Elapsed <span className="text-white/85">03:11</span></span>
+          </div>
+        </div>
+
+        {/* Bottom scrim + now-teaching + mute control */}
+        <div
+          className="absolute inset-x-0 bottom-0 px-4 md:px-5 pt-10 pb-4 flex items-end justify-between gap-4"
+          style={{ background: 'linear-gradient(0deg, rgba(7,21,48,0.92) 0%, transparent 100%)' }}
+        >
+          <div className="min-w-0">
+            <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#E85D26] mb-1.5">Now teaching · Nancy Conrad</p>
+            <p className="font-display-serif text-[18px] md:text-[22px] leading-[1.12] text-white truncate">
+              Class 01 — <span className="italic font-display-italic text-white/90">What happens when water is no more?</span>
+            </p>
+          </div>
+          <button
+            onClick={() => setMuted((m) => !m)}
+            className="shrink-0 flex items-center gap-2 border border-white/25 hover:border-[#E85D26] text-white/85 hover:text-[#E85D26] font-mono text-[9px] uppercase tracking-[0.18em] px-3.5 py-2 rounded-full transition-colors"
+          >
+            {muted ? 'Unmute' : 'Mute'}
+          </button>
+        </div>
       </div>
-      <h3 className="font-display-serif text-[26px] md:text-[34px] leading-[1.05] tracking-[-0.02em] text-white max-w-[520px] mb-3">
-        Live classes stream <span className="text-[#E85D26] italic font-display-italic">right here.</span>
-      </h3>
-      <p className="font-body text-[14px] text-white/50 leading-[1.6] max-w-[420px] mb-2">
-        When Mission Water goes live, students watch the class in this window — no new tab, no login wall.
-      </p>
-      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/35 mb-8">
-        Next session · {LIVE.nextSession}
-      </p>
-      <a
-        href="mailto:hello@aheadofmarket.com?subject=Mission%20Water%20Live%20Class%20Reminder"
-        className="inline-flex items-center gap-2 border border-white/20 hover:border-[#E85D26] text-white/80 hover:text-[#E85D26] font-mono text-[9.5px] uppercase tracking-[0.2em] px-6 py-3 rounded-full transition-colors"
-      >
-        Set a reminder →
-      </a>
+
+      {/* ── Interactive class rail ─────────────────────────────────────────── */}
+      <aside className="flex-1 lg:flex-none lg:w-[316px] min-h-0 flex flex-col bg-[#0A1C3D] border-t lg:border-t-0 lg:border-l border-white/10">
+        {/* Header */}
+        <div className="px-4 py-3.5 border-b border-white/10 flex items-center justify-between">
+          <span className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-white/70">Live class · Q&amp;A</span>
+          <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/35">In the room</span>
+        </div>
+
+        {/* Watching */}
+        <div className="px-4 py-3 border-b border-white/10 flex items-center gap-2.5">
+          <div className="flex -space-x-2">
+            {ROSTER.slice(0, 6).map((i, ix) => (
+              <span
+                key={ix}
+                className="w-6 h-6 rounded-full bg-[#143B6E] border border-[#0A1C3D] flex items-center justify-center font-mono text-[7.5px] text-white/75 uppercase"
+              >
+                {i}
+              </span>
+            ))}
+          </div>
+          <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-white/40">+306 watching</span>
+        </div>
+
+        {/* Questions feed */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3.5 space-y-4">
+          {LIVE_QUESTIONS.map((q, i) => (
+            <div key={i} className="flex gap-2.5">
+              <span className="w-6 h-6 shrink-0 rounded-full bg-[#143B6E] flex items-center justify-center font-mono text-[7.5px] text-white/75 uppercase mt-0.5">
+                {initials(q.who)}
+              </span>
+              <div className="min-w-0">
+                <p className="font-body text-[12.5px] text-white/80 leading-[1.45]">{q.txt}</p>
+                <p className="font-mono text-[8px] uppercase tracking-[0.16em] text-white/30 mt-1">{q.who} · {q.t}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Composer + reactions */}
+        <div className="px-3 py-3 border-t border-white/10">
+          <div className="flex items-center gap-2 bg-white/[0.06] border border-white/10 rounded-full pl-3.5 pr-2 py-1.5">
+            <input
+              disabled
+              placeholder="Ask Nancy a question…"
+              className="flex-1 min-w-0 bg-transparent font-body text-[12px] text-white/70 placeholder-white/30 outline-none cursor-default"
+            />
+            <span className="font-mono text-[8.5px] uppercase tracking-[0.16em] text-[#E85D26] px-2">Send</span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-2.5">
+            {['Raise hand', 'Helpful', 'Mind blown'].map((r) => (
+              <span
+                key={r}
+                className="font-mono text-[8px] uppercase tracking-[0.13em] text-white/45 border border-white/12 rounded-full px-2.5 py-1"
+              >
+                {r}
+              </span>
+            ))}
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
@@ -207,12 +322,10 @@ function ArchivePanel() {
 }
 
 // ─── Stage (tabbed: game / live / archive) ──────────────────────────────────────
-function Stage() {
-  const [tab, setTab] = useState('game');
-
+function Stage({ tab, setTab }) {
   const tabs = [
     { id: 'game', label: 'Play the Game', url: 'aheadofmarket.com/missionwater' },
-    { id: 'live', label: 'Watch Live', url: 'aheadofmarket.com/missionwater/live' },
+    { id: 'live', label: 'Watch Live', url: 'aheadofmarket.com/missionwaterlive' },
     { id: 'archive', label: 'Archive', url: 'aheadofmarket.com/missionwater/archive' },
   ];
   const active = tabs.find((t) => t.id === tab);
@@ -322,6 +435,14 @@ function Stage() {
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function MissionWaterPlatform() {
   useSEO();
+  const [tab, setTab] = useState('game');
+
+  const goToStage = (id) => {
+    setTab(id);
+    requestAnimationFrame(() =>
+      document.getElementById('stage')?.scrollIntoView({ behavior: 'smooth' })
+    );
+  };
 
   return (
     <div className="bg-white text-[#071530] min-h-screen scroll-smooth" style={{ fontFeatureSettings: '"liga" 1, "kern" 1' }}>
@@ -361,12 +482,13 @@ export default function MissionWaterPlatform() {
             <div className="flex flex-wrap items-center gap-4">
               <a
                 href="#stage"
+                onClick={(e) => { e.preventDefault(); goToStage('game'); }}
                 className="inline-flex items-center gap-2 bg-[#E85D26] hover:bg-[#E85D26]/90 text-white font-mono text-[10.5px] uppercase tracking-[0.2em] px-7 py-3.5 rounded-full transition-colors"
               >
                 Play the game ↓
               </a>
               <a
-                href="#stage"
+                href="/missionwaterlive"
                 className="inline-flex items-center gap-2 border border-white/25 hover:border-white/60 text-white/85 font-mono text-[10.5px] uppercase tracking-[0.2em] px-7 py-3.5 rounded-full transition-colors"
               >
                 Watch live →
@@ -395,7 +517,7 @@ export default function MissionWaterPlatform() {
       </section>
 
       {/* ─── Interactive stage (game / live / archive) ───────────────────────── */}
-      <Stage />
+      <Stage tab={tab} setTab={setTab} />
 
       {/* ─── Platform Pillars — white section ────────────────────────────────── */}
       <section className="bg-white px-6 md:px-12 py-16 md:py-24">

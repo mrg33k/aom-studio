@@ -88,6 +88,7 @@ const ConradFoundation = lazy(() => import('./pages/ConradFoundation.jsx'))
 const ConradFoundation2 = lazy(() => import('./pages/ConradFoundation2.jsx'))
 const MissionWaterGame = lazy(() => import('./pages/MissionWaterGame.jsx'))
 const MissionWaterPlatform = lazy(() => import('./pages/MissionWaterPlatform.jsx'))
+const MissionWaterLive = lazy(() => import('./pages/MissionWaterLive.jsx'))
 const HolisticBalance = lazy(() => import('./pages/HolisticBalance.jsx'))
 const AOMStats = lazy(() => import('./pages/AOMStats.jsx'))
 const V2Home = lazy(() => import('./pages/V2Home.jsx'))
@@ -304,6 +305,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/MissionWaterPlatform" element={<MissionWaterPlatform />} />
           <Route path="/missionwaterplatform" element={<MissionWaterPlatform />} />
           <Route path="/platform" element={<MissionWaterPlatform />} />
+          <Route path="/MissionWaterLive" element={<MissionWaterLive />} />
+          <Route path="/missionwaterlive" element={<MissionWaterLive />} />
+          <Route path="/missionwater/live" element={<MissionWaterLive />} />
           <Route path="/stats" element={<AOMStats />} />
           <Route path="/hb" element={<HolisticBalance />} />
           <Route path="/holistic-balance" element={<HolisticBalance />} />
