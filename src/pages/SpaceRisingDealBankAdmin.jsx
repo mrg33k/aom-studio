@@ -1,4 +1,13 @@
 import React, { useState, useEffect } from 'react'
+import { supabase } from '../dashboard/lib/supabase.js'
+
+// Corner accounts that get in with their own login (no admin key needed).
+const DEAL_BANK_ALLOWLIST = ['ben@arsenalgpa.com', 'patrikmatheson@gmail.com']
+function isAllowedCornerEmail(email) {
+  if (!email) return false
+  const n = String(email).trim().toLowerCase()
+  return n.endsWith('@aom-inhouse.com') || DEAL_BANK_ALLOWLIST.includes(n)
+}
 
 // Space Rising — Deal Bank Admin Tool
 // Route: /space-rising/deal-bank/admin
@@ -52,6 +61,8 @@ export default function SpaceRisingDealBankAdmin() {
   const [adminKey, setAdminKey] = useState(() => localStorage.getItem('sr-deal-bank-admin-key') || '')
   const [keyInput, setKeyInput] = useState('')
   const [authenticated, setAuthenticated] = useState(false)
+  const [sessionToken, setSessionToken] = useState('')   // Corner login token (same login Ben already uses)
+  const [cornerEmail, setCornerEmail] = useState('')
   const [form, setForm] = useState(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null) // { ok, message, row }
@@ -62,6 +73,22 @@ export default function SpaceRisingDealBankAdmin() {
   useEffect(() => {
     if (adminKey) setAuthenticated(true)
   }, [adminKey])
+
+  // Auto-authenticate via the user's existing Corner login (no separate key).
+  // If Ben (or Patrik / AOM team) is already signed into the dashboard, they're in.
+  useEffect(() => {
+    let active = true
+    supabase.auth.getSession().then(({ data }) => {
+      const sess = data && data.session
+      const email = sess && sess.user && sess.user.email
+      if (active && sess && isAllowedCornerEmail(email)) {
+        setSessionToken(sess.access_token || '')
+        setCornerEmail(email)
+        setAuthenticated(true)
+      }
+    }).catch(() => {})
+    return () => { active = false }
+  }, [])
 
   // Load recent deals when authenticated
   useEffect(() => {
@@ -121,7 +148,8 @@ export default function SpaceRisingDealBankAdmin() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': adminKey,
+          ...(adminKey ? { 'x-admin-key': adminKey } : {}),
+          ...(sessionToken ? { 'Authorization': `Bearer ${sessionToken}` } : {}),
         },
         body: JSON.stringify(payload),
       })
