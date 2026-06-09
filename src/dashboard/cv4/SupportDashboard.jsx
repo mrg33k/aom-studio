@@ -255,9 +255,11 @@ function InboxPanel({ worldId }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  // Default to "Responded" — Patrik's literal ask is "the support emails we
-  // responded to," so the panel opens to that, not to a wall of needs-reply mail.
-  const [filter, setFilter] = useState('replied') // all | needs | replied
+  // Open to "All" so the panel shows real content (with bulk mail filtered out)
+  // rather than a barren empty view — Responded is genuinely sparse, so it's one
+  // tap away rather than the default. The Responded view is where our inline
+  // reply text shows once we've answered support threads.
+  const [filter, setFilter] = useState('all') // all | needs | replied
 
   const load = useCallback(async (password) => {
     if (!isAom && !password) return
@@ -312,7 +314,7 @@ function InboxPanel({ worldId }) {
     <div style={{ padding: '20px 24px', overflowY: 'auto', height: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, margin: '0 0 16px' }}>
         <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, margin: 0 }}>
-          Last {data.days} days · the emails we{"'"}ve responded to
+          Last {data.days} days · support mailboxes · their message + our reply
         </p>
         <div style={{ display: 'flex', gap: 6 }}>
           <FilterPill active={filter === 'all'} onClick={() => setFilter('all')} label={`All ${totalNeeds + totalReplied}`} />
