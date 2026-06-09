@@ -117,7 +117,7 @@ function WishRow({ w, dim }) {
                 color: '#1A1206', background: AMBER, padding: '1px 5px', borderRadius: 8 }}>OVER 10M</span>
             )}
             <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: loud ? '#1A1206' : BONE_DIM, background: loud ? AMBER : 'transparent',
+              color: loud ? AMBER : BONE_DIM, background: 'transparent',
               border: `1px solid ${loud ? AMBER : LINE}`, padding: '1px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
               {STATUS_LABEL[w.status] || w.status}
             </span>

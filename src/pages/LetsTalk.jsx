@@ -2,7 +2,7 @@
 // Route: /missionwater/lets-talk
 // Palette: Conrad Foundation — #071530 navy · #E85D26 orange · #F4F2EF cream
 // Mission: conrad-foundation:mission-water
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +14,168 @@ const ORANGE = '#E85D26';
 const CREAM  = '#F4F2EF';
 const WHITE  = '#FFFFFF';
 const STONE  = '#C8C4BE';
+
+// ─── Animations ───────────────────────────────────────────────────────────────
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: (i = 0) => ({
+    opacity: 1, y: 0,
+    transition: { duration: 0.55, ease: 'easeOut', delay: i * 0.08 },
+  }),
+};
+
+// ─── Scope packages data ──────────────────────────────────────────────────────
+const PACKAGES = [
+  {
+    id: 'game',
+    num: '01',
+    eyebrow: 'Package One',
+    title: 'The Game',
+    subtitle: 'An NASA-grade interactive educational experience students play through chapter by chapter.',
+    price: '$15,000',
+    adBudget: '+$5,000–$10,000 managed ad spend',
+    accentLight: 'rgba(232,93,38,0.08)',
+    accentBorder: 'rgba(232,93,38,0.2)',
+    deliverables: [
+      {
+        category: 'Core Game Engine',
+        items: [
+          'Three-chapter interactive narrative (Earth water crisis → Lunar journey → Moon surface operations)',
+          'Role selection system: students choose a mission specialty (Engineer, Scientist, Commander, Communicator)',
+          'Resource allocation mechanic — students manage water, power, and oxygen budgets in real-time decisions',
+          'Discovery badge system with 12+ earned achievements tied to curriculum milestones',
+          'Between-chapter Mission Hub with session recap, badge case, and next-chapter briefing',
+          'Blippy — custom animated mascot character with contextual guidance and encouragement',
+        ],
+      },
+      {
+        category: 'Production & Design',
+        items: [
+          'Full game UI design system: NASA instrument panel aesthetic, Conrad Foundation brand integration',
+          'Custom background illustrations for all three chapters (Earth / transit / lunar surface)',
+          'Animated entry sequences and chapter transitions',
+          'Mobile-responsive layout — plays on tablets and phones, not just desktop',
+          'Accessibility: high contrast mode, reduced-motion support, screen reader labels',
+        ],
+      },
+      {
+        category: 'Technical Delivery',
+        items: [
+          'Hosted and deployed on Conrad Foundation domain or subdomain of choice',
+          'Session persistence — students resume where they left off',
+          'Real-time progress tracking per student (view from instructor dashboard)',
+          'Source code delivered in full — Conrad Foundation owns the IP',
+        ],
+      },
+    ],
+    addons: [
+      { label: 'Chapter 4 expansion', desc: 'Additional mission chapter — Mars water discovery or deep-ocean research analog', price: '+$4,500' },
+      { label: 'Educator dashboard', desc: 'Instructor-facing view: class progress, individual student completion, export to CSV', price: '+$3,200' },
+      { label: 'Cohort tracking', desc: 'Multi-class enrollment, separate leaderboards, cohort-vs-cohort reporting', price: '+$2,800' },
+      { label: 'Blippy expression library', desc: '40 additional Blippy poses and reactions for custom prompts and celebrations', price: '+$1,500' },
+      { label: 'Spanish localization', desc: 'Full game text translated and validated for Spanish-speaking student cohorts', price: '+$2,200' },
+    ],
+  },
+  {
+    id: 'platform',
+    num: '02',
+    eyebrow: 'Package Two',
+    title: 'The Platform',
+    subtitle: 'A live broadcast and archive platform built around the program — not borrowed from YouTube.',
+    price: '$15,000',
+    adBudget: '+$5,000–$10,000 managed ad spend',
+    accentLight: 'rgba(232,93,38,0.06)',
+    accentBorder: 'rgba(232,93,38,0.15)',
+    deliverables: [
+      {
+        category: 'Live Broadcast Infrastructure',
+        items: [
+          'Watch Live tab with embedded stream viewer — students watch in-platform, not redirected to YouTube',
+          'Live Q&A widget: students submit questions during broadcast, instructor queue displayed on screen',
+          'Session calendar: 4-session class schedule displayed with dates, times, and session topic',
+          'Countdown timer on session cards — students see time until next live event',
+          '"Notify Me" bell system: students subscribe to reminders, receive browser notification at session start',
+        ],
+      },
+      {
+        category: 'Archive & Content Library',
+        items: [
+          'Session archive: recorded past sessions indexed and searchable by topic',
+          'Transcript summaries auto-generated for each session (key takeaways, vocabulary, discussion questions)',
+          'Thumbnail generation system for each archived session card',
+          'Student re-watch tracking — completion indicators per session',
+        ],
+      },
+      {
+        category: 'Platform Design & Brand',
+        items: [
+          'Fully branded platform page at /missionwaterplatform — Conrad Foundation color system and typography',
+          'Program overview: mission statement, partner logos, sponsor recognition section',
+          'Student sign-up flow: registration with email confirmation and welcome sequence',
+          'Mobile-optimized — full Watch Live experience on phone and tablet',
+          'Admin panel: session management, stream URL configuration, student list view',
+        ],
+      },
+    ],
+    addons: [
+      { label: 'Custom streaming embed', desc: 'Proprietary HLS embed replacing third-party player — no YouTube branding visible anywhere', price: '+$3,500' },
+      { label: 'Email reminder automation', desc: '24hr and 1hr automated reminder emails to all registered students before each session', price: '+$1,800' },
+      { label: 'Multi-cohort support', desc: 'Separate enrollment groups — school A sees different session schedule than school B, same platform', price: '+$2,400' },
+      { label: 'Sponsor recognition section', desc: 'Branded sponsor wall with logo display, tier levels, and clickthrough to partner pages', price: '+$1,200' },
+      { label: 'Live captioning integration', desc: 'Real-time closed captions pulled from stream and displayed in-platform for accessibility', price: '+$2,000' },
+    ],
+  },
+  {
+    id: 'marketing',
+    num: '03',
+    eyebrow: 'Package Three',
+    title: 'The Marketing',
+    subtitle: 'A full-scale awareness and enrollment campaign to get students, schools, and sponsors into the program.',
+    price: '$15,000',
+    adBudget: '+$5,000–$10,000 managed ad spend',
+    accentLight: 'rgba(200,196,190,0.06)',
+    accentBorder: 'rgba(200,196,190,0.15)',
+    deliverables: [
+      {
+        category: 'Program Marketing Site',
+        items: [
+          'Standalone Conrad Foundation / Mission Water marketing landing page',
+          'Hero video integration: 60-second program overview film (storyboard, script, and edit managed by AOM)',
+          'Program details: session dates, what students learn, how to enroll, partner + sponsor block',
+          'Educator and school administrator outreach page — separate from student-facing content',
+          'SEO-optimized copy, structured data, and social preview cards (OG + Twitter meta)',
+        ],
+      },
+      {
+        category: 'Social Media Campaign',
+        items: [
+          '30-day launch campaign: 90 pieces of original social content across Instagram, LinkedIn, and TikTok',
+          'Blippy social character: mascot-led content series introducing the mission to new audiences',
+          'Student spotlight series: template for featuring enrolled students (photos + bio + quote)',
+          'Behind-the-scenes content plan: Conrad Foundation team, astronaut guests, lab footage',
+          'Hashtag strategy, posting schedule, and platform-specific formatting for each asset',
+        ],
+      },
+      {
+        category: 'Outreach & Sponsor Materials',
+        items: [
+          'Sponsor deck: professional pitch document for corporate sponsors and government partners (10–14 slides)',
+          'Program one-pager: single-page leave-behind for school principals and district administrators',
+          'Email sequence: 5-email enrollment drip for prospective students and parents (written, designed, deployed)',
+          'Press kit: program announcement release, founder quotes, program fact sheet, downloadable photos',
+          'Paid media management: Google Display, Meta (Facebook/Instagram), and LinkedIn — managed spend with bi-weekly reporting',
+        ],
+      },
+    ],
+    addons: [
+      { label: 'Video production package', desc: 'Full production (shoot + edit) for 3–5 short-form program videos including astronaut interview and student testimonials', price: '+$6,000' },
+      { label: 'Influencer / astronaut content', desc: 'Coordinate one ambassador post or short collab with a STEM influencer or retired astronaut — scripted, filmed, delivered', price: '+$3,500' },
+      { label: 'School district outreach campaign', desc: 'Targeted email and LinkedIn campaign to 50 Phoenix-area K–12 administrators to drive enrollment referrals', price: '+$2,400' },
+      { label: 'Podcast placement', desc: 'Identify and pitch 3 STEM / education podcasts for Conrad Foundation guest appearances', price: '+$1,800' },
+      { label: 'Extended social retainer', desc: 'Month 2–4 social media management and content production following launch month', price: '+$2,800/mo' },
+    ],
+  },
+];
 
 // ─── Capabilities AOM brings ──────────────────────────────────────────────────
 const CAPABILITIES = [
@@ -76,15 +238,6 @@ const PHASES = [
     desc: 'Post-program: engagement reports, student outcomes, sponsor-ready summaries. We document what happened so the next cohort gets a better program.',
   },
 ];
-
-// ─── Animations ───────────────────────────────────────────────────────────────
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i = 0) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.55, ease: 'easeOut', delay: i * 0.08 },
-  }),
-};
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 function Nav() {
@@ -149,13 +302,13 @@ function Hero() {
   return (
     <section style={{
       paddingTop: 'clamp(120px, 18vh, 180px)',
-      paddingBottom: 'clamp(64px, 10vh, 120px)',
+      paddingBottom: 'clamp(64px, 10vh, 100px)',
       paddingLeft: 'clamp(24px, 7vw, 120px)',
       paddingRight: 'clamp(24px, 7vw, 120px)',
       background: NAVY,
       borderBottom: `1px solid rgba(255,255,255,0.06)`,
     }}>
-      <div style={{ maxWidth: 800 }}>
+      <div style={{ maxWidth: 840 }}>
         {/* Eyebrow */}
         <motion.p
           variants={fadeUp}
@@ -187,8 +340,8 @@ function Hero() {
             letterSpacing: '-0.02em',
           }}
         >
-          A program that teaches students to think about water like scientists.{' '}
-          <em style={{ color: ORANGE }}>And act like engineers.</em>
+          Three packages. One complete program.{' '}
+          <em style={{ color: ORANGE }}>Built to impress.</em>
         </motion.h1>
 
         {/* Subhead */}
@@ -199,14 +352,473 @@ function Hero() {
           custom={2}
           style={{
             color: STONE, fontSize: 'clamp(16px, 2vw, 20px)',
-            lineHeight: 1.7, maxWidth: 620,
+            lineHeight: 1.7, maxWidth: 660,
             fontFamily: 'sans-serif', fontWeight: 400,
+            marginBottom: 40,
           }}
         >
-          AOM builds the interactive platform. Conrad Foundation owns the curriculum and the mission.
-          Together: a program students remember for years and sponsors want to fund.
+          Each package is $15,000 with an optional $5,000–$10,000 managed advertising budget.
+          You can commission one, two, or all three. Each stands alone. Together they build
+          something students will remember — and sponsors will want to fund.
         </motion.p>
+
+        {/* Package anchor links */}
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          animate="visible"
+          custom={3}
+          style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}
+        >
+          {[
+            { label: '01 — The Game', href: '#scope-game' },
+            { label: '02 — The Platform', href: '#scope-platform' },
+            { label: '03 — The Marketing', href: '#scope-marketing' },
+          ].map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              style={{
+                display: 'inline-block',
+                fontFamily: 'monospace',
+                fontSize: 11,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                color: STONE,
+                border: `1px solid rgba(255,255,255,0.15)`,
+                borderRadius: 4,
+                padding: '8px 16px',
+                textDecoration: 'none',
+                transition: 'border-color 0.2s, color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = ORANGE;
+                e.currentTarget.style.color = CREAM;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)';
+                e.currentTarget.style.color = STONE;
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
+        </motion.div>
       </div>
+    </section>
+  );
+}
+
+// ─── Package Card ─────────────────────────────────────────────────────────────
+function PackageCard({ pkg, index }) {
+  const [expandedAddons, setExpandedAddons] = useState(false);
+  const isEven = index % 2 === 0;
+
+  return (
+    <div
+      id={`scope-${pkg.id}`}
+      style={{
+        background: isEven ? NAVY2 : NAVY3,
+        borderBottom: `1px solid rgba(255,255,255,0.06)`,
+        padding: 'clamp(64px, 10vh, 120px) clamp(24px, 7vw, 120px)',
+        scrollMarginTop: 72,
+      }}
+    >
+      {/* Package header */}
+      <div style={{ maxWidth: 1080 }}>
+        <motion.p
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          style={{
+            color: ORANGE, fontFamily: 'monospace', fontSize: 11,
+            letterSpacing: '0.35em', textTransform: 'uppercase',
+            marginBottom: 12, fontWeight: 700,
+          }}
+        >
+          {pkg.eyebrow}
+        </motion.p>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 24,
+          marginBottom: 20,
+        }}>
+          <motion.h2
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={1}
+            style={{
+              fontFamily: 'Georgia, "Times New Roman", serif',
+              fontSize: 'clamp(32px, 5vw, 56px)',
+              fontWeight: 400,
+              color: CREAM,
+              lineHeight: 1.1,
+              margin: 0,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {pkg.title}
+          </motion.h2>
+
+          {/* Price tag */}
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            custom={2}
+            style={{
+              background: pkg.accentLight,
+              border: `1px solid ${pkg.accentBorder}`,
+              borderRadius: 8,
+              padding: '20px 28px',
+              textAlign: 'right',
+              flexShrink: 0,
+            }}
+          >
+            <div style={{
+              fontFamily: 'Georgia, serif',
+              fontSize: 'clamp(28px, 4vw, 42px)',
+              fontWeight: 400,
+              color: ORANGE,
+              lineHeight: 1,
+              marginBottom: 6,
+            }}>
+              {pkg.price}
+            </div>
+            <div style={{
+              fontFamily: 'monospace',
+              fontSize: 10,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: STONE,
+              lineHeight: 1.5,
+            }}>
+              {pkg.adBudget}
+            </div>
+          </motion.div>
+        </div>
+
+        <motion.p
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          custom={2}
+          style={{
+            color: STONE,
+            fontFamily: 'sans-serif',
+            fontSize: 'clamp(15px, 2vw, 18px)',
+            lineHeight: 1.65,
+            maxWidth: 680,
+            margin: '0 0 48px 0',
+          }}
+        >
+          {pkg.subtitle}
+        </motion.p>
+
+        {/* Deliverables */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+          gap: 24,
+          marginBottom: 48,
+        }}>
+          {pkg.deliverables.map((group, gi) => (
+            <motion.div
+              key={group.category}
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              custom={gi * 0.4}
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                borderRadius: 8,
+                padding: '24px 22px',
+              }}
+            >
+              <div style={{
+                fontFamily: 'monospace',
+                fontSize: 10,
+                letterSpacing: '0.3em',
+                textTransform: 'uppercase',
+                color: ORANGE,
+                marginBottom: 16,
+                fontWeight: 700,
+              }}>
+                {group.category}
+              </div>
+              <ul style={{
+                listStyle: 'none',
+                margin: 0,
+                padding: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 10,
+              }}>
+                {group.items.map((item, ii) => (
+                  <li key={ii} style={{
+                    display: 'flex',
+                    gap: 10,
+                    alignItems: 'flex-start',
+                  }}>
+                    <span style={{
+                      color: ORANGE,
+                      fontSize: 14,
+                      lineHeight: '20px',
+                      flexShrink: 0,
+                      marginTop: 1,
+                    }}>
+                      —
+                    </span>
+                    <span style={{
+                      color: STONE,
+                      fontFamily: 'sans-serif',
+                      fontSize: 13,
+                      lineHeight: 1.65,
+                    }}>
+                      {item}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Add-ons */}
+        <motion.div
+          variants={fadeUp}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          <button
+            onClick={() => setExpandedAddons(!expandedAddons)}
+            style={{
+              background: 'none',
+              border: `1px solid rgba(255,255,255,0.12)`,
+              borderRadius: 6,
+              color: STONE,
+              fontFamily: 'monospace',
+              fontSize: 11,
+              letterSpacing: '0.25em',
+              textTransform: 'uppercase',
+              padding: '10px 20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: expandedAddons ? 24 : 0,
+              transition: 'border-color 0.2s, color 0.2s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+              e.currentTarget.style.color = CREAM;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.color = STONE;
+            }}
+          >
+            <span style={{
+              display: 'inline-block',
+              transform: expandedAddons ? 'rotate(45deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s',
+              fontSize: 16,
+              lineHeight: 1,
+            }}>+</span>
+            {expandedAddons ? 'Hide add-ons' : `Add-ons & changes (${pkg.addons.length} options)`}
+          </button>
+
+          {expandedAddons && (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}>
+              <div style={{
+                fontFamily: 'monospace',
+                fontSize: 10,
+                letterSpacing: '0.3em',
+                textTransform: 'uppercase',
+                color: 'rgba(255,255,255,0.3)',
+                marginBottom: 4,
+              }}>
+                Optional add-ons — mix and match
+              </div>
+              {pkg.addons.map((addon, ai) => (
+                <div
+                  key={ai}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: 24,
+                    alignItems: 'center',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 6,
+                    padding: '16px 20px',
+                  }}
+                >
+                  <div>
+                    <div style={{
+                      color: WHITE,
+                      fontFamily: 'sans-serif',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      marginBottom: 4,
+                    }}>
+                      {addon.label}
+                    </div>
+                    <div style={{
+                      color: STONE,
+                      fontFamily: 'sans-serif',
+                      fontSize: 13,
+                      lineHeight: 1.55,
+                    }}>
+                      {addon.desc}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontFamily: 'Georgia, serif',
+                    fontSize: 16,
+                    color: ORANGE,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}>
+                    {addon.price}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Scope Packages (all three) ───────────────────────────────────────────────
+function ScopePackages() {
+  return (
+    <div>
+      {PACKAGES.map((pkg, i) => (
+        <PackageCard key={pkg.id} pkg={pkg} index={i} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Bundle call-out ─────────────────────────────────────────────────────────
+function BundleNote() {
+  return (
+    <section style={{
+      background: NAVY,
+      padding: 'clamp(48px, 8vh, 96px) clamp(24px, 7vw, 120px)',
+      borderBottom: `1px solid rgba(255,255,255,0.06)`,
+    }}>
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        style={{
+          maxWidth: 840,
+          margin: '0 auto',
+          background: 'rgba(232,93,38,0.07)',
+          border: '1px solid rgba(232,93,38,0.22)',
+          borderRadius: 10,
+          padding: 'clamp(32px, 5vw, 56px)',
+        }}
+      >
+        <p style={{
+          color: ORANGE, fontFamily: 'monospace', fontSize: 11,
+          letterSpacing: '0.35em', textTransform: 'uppercase',
+          marginBottom: 16, fontWeight: 700,
+        }}>
+          Full program bundle
+        </p>
+        <h2 style={{
+          fontFamily: 'Georgia, "Times New Roman", serif',
+          fontSize: 'clamp(26px, 4vw, 40px)',
+          fontWeight: 400,
+          color: CREAM,
+          lineHeight: 1.2,
+          margin: '0 0 20px 0',
+        }}>
+          All three together. One cohesive program.
+        </h2>
+        <p style={{
+          color: STONE,
+          fontFamily: 'sans-serif',
+          fontSize: 16,
+          lineHeight: 1.75,
+          margin: '0 0 28px 0',
+          maxWidth: 620,
+        }}>
+          When you commission all three packages, the game, the platform, and the marketing
+          campaign are designed as a single integrated experience — not three separate vendors
+          trying to look consistent. Students move between the game and the live platform
+          seamlessly. The marketing drives enrollment that feeds both.
+        </p>
+        <div style={{
+          display: 'flex',
+          gap: 32,
+          flexWrap: 'wrap',
+          alignItems: 'baseline',
+        }}>
+          <div>
+            <div style={{
+              fontFamily: 'Georgia, serif',
+              fontSize: 'clamp(36px, 5vw, 52px)',
+              color: ORANGE,
+              lineHeight: 1,
+              marginBottom: 4,
+            }}>
+              $45,000
+            </div>
+            <div style={{
+              color: STONE,
+              fontFamily: 'monospace',
+              fontSize: 11,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+            }}>
+              base investment (all three packages)
+            </div>
+          </div>
+          <div>
+            <div style={{
+              fontFamily: 'Georgia, serif',
+              fontSize: 'clamp(24px, 3vw, 36px)',
+              color: 'rgba(232,93,38,0.7)',
+              lineHeight: 1,
+              marginBottom: 4,
+            }}>
+              +$5–10k
+            </div>
+            <div style={{
+              color: 'rgba(200,196,190,0.6)',
+              fontFamily: 'monospace',
+              fontSize: 11,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+            }}>
+              per package, ad spend managed by AOM
+            </div>
+          </div>
+        </div>
+      </motion.div>
     </section>
   );
 }
@@ -744,7 +1356,7 @@ export default function LetsTalk() {
 
   useEffect(() => {
     const prev = document.title;
-    document.title = 'Partnership — Mission Water × AOM';
+    document.title = 'Scope & Pricing — Mission Water × AOM';
     return () => { document.title = prev; };
   }, []);
 
@@ -757,6 +1369,8 @@ export default function LetsTalk() {
     }}>
       <Nav />
       <Hero />
+      <ScopePackages />
+      <BundleNote />
       <WhatWeBring />
       <WhyItWorks />
       <HowItWorks />
