@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-08T20:09:48.754Z",
+  "generated_at": "2026-06-09T17:26:47.606Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -154,6 +154,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/dashboard-speed"
+    },
+    {
+      "slug": "corner:design-feedback-loop",
+      "raw_slug": "design-feedback-loop",
+      "folder_name": "design-feedback-loop",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Design Feedback Loop",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/design-feedback-loop"
     },
     {
       "slug": "corner:embeddable-agents",
@@ -686,6 +700,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/suggested-responses"
+    },
+    {
+      "slug": "corner:support-desk",
+      "raw_slug": "support-desk",
+      "folder_name": "support-desk",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Support Desk",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/support-desk"
     },
     {
       "slug": "corner:tenant-isolation",
@@ -2900,6 +2928,20 @@
       "path": "corner/users/aom/projects/space-rising/missions/company-profile"
     },
     {
+      "slug": "space-rising:congress-intelligence",
+      "raw_slug": "congress-intelligence",
+      "folder_name": "congress-intelligence",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Congress Intelligence",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/congress-intelligence"
+    },
+    {
       "slug": "space-rising:deal-bank",
       "raw_slug": "deal-bank",
       "folder_name": "deal-bank",
@@ -3225,8 +3267,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 55,
-      "in_flight": 55,
+      "total": 57,
+      "in_flight": 57,
       "done": 0
     },
     {
@@ -3327,8 +3369,8 @@
     },
     {
       "slug": "space-rising",
-      "total": 26,
-      "in_flight": 26,
+      "total": 27,
+      "in_flight": 27,
       "done": 0
     },
     {

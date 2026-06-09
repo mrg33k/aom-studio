@@ -366,9 +366,6 @@ export default function MissionWaterGame() {
           />
         </div>
       </main>
-      <aside style={styles.sidebar}>
-        <SidebarPlaceholder phase={phase} activeChapter={activeChapter} onJumpToPhase={onJumpToPhase} />
-      </aside>
     </div>
   );
 }
@@ -459,8 +456,9 @@ const TEXT_SOFT   = '#C8D8F0';
 
 const styles = {
   root: {
-    display: 'grid',
-    gridTemplateColumns: 'minmax(0, 7fr) minmax(280px, 3fr)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
     width: '100vw',
     height: '100vh',
     background: SPACE_DARK,
@@ -471,6 +469,9 @@ const styles = {
   gamePanel: {
     position: 'relative',
     overflow: 'hidden',
+    width: '100%',
+    height: '100%',
+    maxWidth: '100%',
   },
   canvasFrame: {
     position: 'absolute',
@@ -480,7 +481,7 @@ const styles = {
     background: '#050810',
     borderLeft: `1px solid rgba(0,229,204,0.12)`,
     overflow: 'hidden',
-    display: 'flex',
+    display: 'none',
     flexDirection: 'column',
   },
   sidebarInner: {

@@ -291,7 +291,7 @@
     },
     {
       "geoid": "0281920",
-      "name": "UtqiagÌvik city",
+      "name": "Utqiag\u00cc\u0087vik city",
       "state_abbr": "AK",
       "state_name": "Alaska",
       "county": null,
@@ -19780,7 +19780,12 @@
       "water_area_sqmi": 31.046,
       "latitude": 34.019394,
       "longitude": -118.410825,
-      "ansicode": "02410877"
+      "ansicode": "02410877",
+      "contact_name": "Asaad Alnajjar",
+      "contact_title": "Senior Engineering Manager - LA Mayor Candidate 2026",
+      "contact_email": "asaad.alnajjar@lacity.org",
+      "contact_source": "apollo",
+      "contact_enriched_at": "2026-06-05T20:59:16Z"
     },
     {
       "geoid": "0666000",
@@ -19796,7 +19801,12 @@
       "water_area_sqmi": 46.334,
       "latitude": 32.814977,
       "longitude": -117.135562,
-      "ansicode": "02411782"
+      "ansicode": "02411782",
+      "contact_name": "Todd Gloria",
+      "contact_title": "Chief Executive Officer",
+      "contact_email": "mayortoddgloria@sandiego.gov",
+      "contact_source": "apollo",
+      "contact_enriched_at": "2026-06-06T20:29:41Z"
     },
     {
       "geoid": "0668000",
@@ -19814,8 +19824,11 @@
       "longitude": -121.814552,
       "ansicode": "02411790",
       "contacts": [],
-      "contact_enriched_at": "2026-04-17T05:03:33.553Z",
-      "contact_source": "apollo_attempted"
+      "contact_enriched_at": "2026-06-05T21:00:59Z",
+      "contact_source": "apollo",
+      "contact_name": "Maral Amini",
+      "contact_title": "Division Manager",
+      "contact_email": "maral.amini@sanjoseca.gov"
     },
     {
       "geoid": "0667000",
@@ -25062,7 +25075,7 @@
     },
     {
       "geoid": "0639003",
-      "name": "La CaÃ±ada Flintridge city",
+      "name": "La Ca\u00c3\u00b1ada Flintridge city",
       "state_abbr": "CA",
       "state_name": "California",
       "county": null,
@@ -28676,7 +28689,7 @@
     },
     {
       "geoid": "0811810",
-      "name": "CaÃ±on City city",
+      "name": "Ca\u00c3\u00b1on City city",
       "state_abbr": "CO",
       "state_name": "Colorado",
       "county": null,
@@ -140385,7 +140398,7 @@
         },
         {
           "name": "Zoe Johnson",
-          "title": "City Manager’s Fellow",
+          "title": "City Manager\u2019s Fellow",
           "email": "zoe.johnson@cityofmoorhead.com",
           "phone": "",
           "linkedin_url": "http://www.linkedin.com/in/zoe-johnson-6054a7269",
@@ -206805,7 +206818,7 @@
     },
     {
       "geoid": "3525170",
-      "name": "EspaÃ±ola city",
+      "name": "Espa\u00c3\u00b1ola city",
       "state_abbr": "NM",
       "state_name": "New Mexico",
       "county": null,
