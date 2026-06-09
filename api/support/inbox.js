@@ -26,13 +26,16 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 const ADMIN_PASSWORD = process.env.SUPPORT_ADMIN_PASSWORD || 'aom-support-admin'
 
 const ADMIN_ALLOWLIST = ['patrikmatheson@gmail.com']
-// Support flows to the workspace mailbox (hello@aom-inhouse.com, which also
-// receives hello+support@ via plus-addressing). Patrik's personal Gmail is NOT
-// a support channel — scanning it surfaced Nextdoor/Flipboard news digests as
-// "needs reply", which is noise on a support dashboard. Scope to the support
-// mailbox the handoff marked "for sure". Pass all:true to scan every connected
-// account when you genuinely want the cross-mailbox view.
-const DEFAULT_MAILBOXES = ['hello@aom-inhouse.com']
+// Two different scopes, because "Needs reply" and "Responded" have different noise:
+//  - NEEDS-REPLY (inbound) scans only the support workspace mailbox. Personal Gmail's
+//    inbox is full of Nextdoor/Flipboard newsletters — noise on a support board.
+//  - RESPONDED (sent) ALSO scans personal Gmail, because the agent's actual support
+//    replies go out from patrikmatheson@gmail.com. Sent mail is noise-free (we never
+//    reply to newsletters), so including it here is safe and is what finally makes
+//    "the support emails we responded to" show up.
+// Pass all:true to scan every connected account's inbox + sent.
+const INBOUND_MAILBOXES = ['hello@aom-inhouse.com']
+const RESPONDED_MAILBOXES = ['hello@aom-inhouse.com', 'patrikmatheson@gmail.com']
 
 // Mirrors inbox-tracker's AUTOMATED regex: senders Gmail still files in the inbox
 // that aren't real people (receipts, notifications, calendar, docusign, etc.).
@@ -89,21 +92,51 @@ async function gmailSearchIds(accessToken, q, max = 25) {
   return (list.messages || []).map((m) => m.id)
 }
 
-// Our latest sent reply to `to` in the window — { snippet, date } — or null if
-// we never wrote them back. This is the "what we said back" the board was missing.
-async function latestSentTo(accessToken, to, days) {
-  const ids = await gmailSearchIds(accessToken, `in:sent to:${to} newer_than:${days}d`, 1)
-  if (!Array.isArray(ids) || !ids.length) return null
-  const r = await gmailFetch(accessToken, `/messages/${ids[0]}?format=metadata&metadataHeaders=Date`)
-  if (!r.ok) return null
-  const m = await r.json()
-  return {
-    snippet: (m.snippet || '').trim().slice(0, 240),
-    date: m.internalDate ? Number(m.internalDate) : null,
+// The "Responded" list IS our sent replies. Scan `in:sent` directly (one item per
+// thread, newest reply kept) so the board shows every support email we actually
+// answered — with our reply text. This is noise-free by nature: we don't reply to
+// newsletters/sales, so scanning sent never surfaces Nextdoor/Apollo junk. This is
+// why personal Gmail's SENT is safe to include even though its inbox is noisy.
+async function scanSentReplies(accessToken, days) {
+  const ids = await gmailSearchIds(accessToken, `in:sent newer_than:${days}d`, 25)
+  if (!Array.isArray(ids) || !ids.length) return []
+  const wanted = ['To', 'Subject', 'Date']
+  const metaQS = `format=metadata&${wanted.map((h) => `metadataHeaders=${encodeURIComponent(h)}`).join('&')}`
+  const msgs = await Promise.all(
+    ids.map(async (id) => {
+      const r = await gmailFetch(accessToken, `/messages/${id}?${metaQS}`)
+      if (!r.ok) return null
+      return r.json()
+    }),
+  )
+  // One per thread; ids come newest-first so the first seen per thread is the latest reply.
+  const byThread = new Map()
+  for (const m of msgs) {
+    if (!m) continue
+    const headers = m.payload?.headers || []
+    const { name, email: te } = parseFrom(headerVal(headers, 'To'))
+    if (!te || AUTOMATED.test(te)) continue
+    if (byThread.has(m.threadId)) continue
+    const date = m.internalDate ? Number(m.internalDate) : Date.parse(headerVal(headers, 'Date') || '')
+    byThread.set(m.threadId, {
+      from: name || te, // who we replied TO (the card shows this name)
+      email: te,
+      subject: (headerVal(headers, 'Subject') || '(no subject)').trim().slice(0, 80),
+      threadId: m.threadId,
+      date,
+      lastInbound: { snippet: '', date: null },
+      lastReply: { snippet: (m.snippet || '').trim().slice(0, 240), date },
+      replied: true,
+    })
   }
+  return [...byThread.values()].sort((a, b) => (b.date || 0) - (a.date || 0))
 }
 
-async function trackAccount(connId, email, days) {
+// scanInbound=false → only collect what we've Responded to (sent scan), skip the
+// inbox entirely. Used for personal Gmail: its SENT carries real support replies,
+// but its inbox is full of newsletters we don't want in "Needs reply".
+async function trackAccount(connId, email, days, opts = {}) {
+  const scanInbound = opts.scanInbound !== false
   let creds
   try {
     creds = await getGmailTokenByConnection(connId)
@@ -112,64 +145,53 @@ async function trackAccount(connId, email, days) {
   }
   if (!creds) return { email, error: 'not connected', needs: [], replied: [] }
 
-  const ids = await gmailSearchIds(creds.accessToken, `in:inbox newer_than:${days}d`, 25)
-  if (ids === null) return { email, error: 'unhealthy — reconnect this account', needs: [], replied: [] }
-  if (!ids.length) return { email, needs: [], replied: [] }
+  // Responded = the replies we actually sent (+2d grace window, same as before).
+  const replied = await scanSentReplies(creds.accessToken, days + 2)
+  const repliedThreads = new Set(replied.map((r) => r.threadId))
+  const repliedEmails = new Set(replied.map((r) => r.email))
 
-  const wanted = ['From', 'Subject', 'Date', 'List-Unsubscribe']
-  const metaQS = `format=metadata&${wanted.map((h) => `metadataHeaders=${encodeURIComponent(h)}`).join('&')}`
-  const messages = await Promise.all(
-    ids.map(async (id) => {
-      const r = await gmailFetch(creds.accessToken, `/messages/${id}?${metaQS}`)
-      if (!r.ok) return null
-      return r.json()
-    }),
-  )
-
-  // Unique real senders, newest message kept per sender.
-  const senders = new Map()
-  for (const m of messages) {
-    if (!m) continue
-    const headers = m.payload?.headers || []
-    const { name, email: fe } = parseFrom(headerVal(headers, 'From'))
-    if (!fe || AUTOMATED.test(fe) || fe === email.toLowerCase()) continue
-    // Drop bulk/marketing mail: RFC 2369 List-Unsubscribe is the standard marker
-    // for newsletters, sales blasts, and automated notifications. Genuine
-    // person-to-person support email doesn't carry it. This is what keeps the
-    // "support emails" view from filling with Apollo / sales / Cloudflare noise.
-    if (headerVal(headers, 'List-Unsubscribe')) continue
-    if (!senders.has(fe)) {
-      senders.set(fe, {
-        from: name || fe,
-        email: fe,
-        subject: (headerVal(headers, 'Subject') || '(no subject)').trim().slice(0, 80),
-        threadId: m.threadId,
-        date: m.internalDate ? Number(m.internalDate) : Date.parse(headerVal(headers, 'Date') || ''),
-        inboundSnippet: (m.snippet || '').trim().slice(0, 240),
-      })
+  let needs = []
+  if (scanInbound) {
+    const ids = await gmailSearchIds(creds.accessToken, `in:inbox newer_than:${days}d`, 25)
+    if (ids === null) return { email, error: 'unhealthy — reconnect this account', needs: [], replied }
+    if (ids.length) {
+      const wanted = ['From', 'Subject', 'Date', 'List-Unsubscribe']
+      const metaQS = `format=metadata&${wanted.map((h) => `metadataHeaders=${encodeURIComponent(h)}`).join('&')}`
+      const messages = await Promise.all(
+        ids.map(async (id) => {
+          const r = await gmailFetch(creds.accessToken, `/messages/${id}?${metaQS}`)
+          if (!r.ok) return null
+          return r.json()
+        }),
+      )
+      // Unique real senders we have NOT replied to yet, newest kept per sender.
+      const senders = new Map()
+      for (const m of messages) {
+        if (!m) continue
+        const headers = m.payload?.headers || []
+        const { name, email: fe } = parseFrom(headerVal(headers, 'From'))
+        if (!fe || AUTOMATED.test(fe) || fe === email.toLowerCase()) continue
+        // Drop bulk/marketing mail (RFC 2369 List-Unsubscribe = newsletters/sales).
+        if (headerVal(headers, 'List-Unsubscribe')) continue
+        // Already answered (this thread or this person is in our sent scan)? Not "needs".
+        if (repliedThreads.has(m.threadId) || repliedEmails.has(fe)) continue
+        if (!senders.has(fe)) {
+          senders.set(fe, {
+            from: name || fe,
+            email: fe,
+            subject: (headerVal(headers, 'Subject') || '(no subject)').trim().slice(0, 80),
+            threadId: m.threadId,
+            date: m.internalDate ? Number(m.internalDate) : Date.parse(headerVal(headers, 'Date') || ''),
+            lastInbound: { snippet: (m.snippet || '').trim().slice(0, 240), date: m.internalDate ? Number(m.internalDate) : null },
+            lastReply: null,
+            replied: false,
+          })
+        }
+      }
+      needs = [...senders.values()].sort((a, b) => (b.date || 0) - (a.date || 0))
     }
   }
 
-  // For each correspondent: their inbound snippet + our latest reply snippet.
-  // "replied" = we wrote them inside the window (+2d grace, same as inbox-tracker).
-  const items = await Promise.all(
-    [...senders.values()].map(async (info) => {
-      const reply = await latestSentTo(creds.accessToken, info.email, days + 2)
-      return {
-        from: info.from,
-        email: info.email,
-        subject: info.subject,
-        threadId: info.threadId,
-        date: info.date,
-        lastInbound: { snippet: info.inboundSnippet || '', date: info.date || null },
-        lastReply: reply, // { snippet, date } | null
-        replied: !!reply,
-      }
-    }),
-  )
-
-  const needs = items.filter((i) => !i.replied).sort((a, b) => (b.date || 0) - (a.date || 0))
-  const replied = items.filter((i) => i.replied).sort((a, b) => (b.date || 0) - (a.date || 0))
   return { email, needs, replied }
 }
 
@@ -215,12 +237,26 @@ export default async function handler(req, res) {
 
   const window = Math.max(1, Math.min(Number(days) > 0 ? Number(days) : 3, 14))
 
-  let conns = await connectedGmail()
-  if (!all) {
-    const defaults = DEFAULT_MAILBOXES.map((m) => m.toLowerCase())
-    conns = conns.filter((c) => defaults.includes(c.email.toLowerCase()))
+  const conns = await connectedGmail()
+  const byEmail = {}
+  for (const c of conns) byEmail[c.email.toLowerCase()] = c
+
+  let targets
+  if (all) {
+    // Every connected account, full inbox + sent.
+    targets = conns.map((c) => ({ id: c.id, email: c.email, scanInbound: true }))
+  } else {
+    // Union of the inbound + responded scopes; inbound scan only where it's wanted.
+    const inboundSet = new Set(INBOUND_MAILBOXES.map((m) => m.toLowerCase()))
+    const union = new Set([...INBOUND_MAILBOXES, ...RESPONDED_MAILBOXES].map((m) => m.toLowerCase()))
+    targets = []
+    for (const mb of union) {
+      const c = byEmail[mb]
+      if (!c) continue
+      targets.push({ id: c.id, email: c.email, scanInbound: inboundSet.has(mb) })
+    }
   }
 
-  const mailboxes = await Promise.all(conns.map((c) => trackAccount(c.id, c.email, window)))
+  const mailboxes = await Promise.all(targets.map((t) => trackAccount(t.id, t.email, window, { scanInbound: t.scanInbound })))
   return res.status(200).json({ ok: true, days: window, mailboxes })
 }
