@@ -634,7 +634,7 @@ export default function MissionWaterPlatform() {
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <a
-                href="mailto:hello@aheadofmarket.com?subject=Mission%20Water%20Platform%20Partnership"
+                href="/missionwateroffering"
                 className="inline-flex items-center gap-2 bg-[#071530] hover:bg-[#0D2045] text-white font-mono text-[10.5px] uppercase tracking-[0.2em] px-8 py-4 rounded-full transition-colors"
               >
                 Let&apos;s talk →
