@@ -110,7 +110,7 @@ async function trackAccount(connId, email, days) {
   if (ids === null) return { email, error: 'unhealthy — reconnect this account', needs: [], replied: [] }
   if (!ids.length) return { email, needs: [], replied: [] }
 
-  const wanted = ['From', 'Subject', 'Date']
+  const wanted = ['From', 'Subject', 'Date', 'List-Unsubscribe']
   const metaQS = `format=metadata&${wanted.map((h) => `metadataHeaders=${encodeURIComponent(h)}`).join('&')}`
   const messages = await Promise.all(
     ids.map(async (id) => {
@@ -127,6 +127,11 @@ async function trackAccount(connId, email, days) {
     const headers = m.payload?.headers || []
     const { name, email: fe } = parseFrom(headerVal(headers, 'From'))
     if (!fe || AUTOMATED.test(fe) || fe === email.toLowerCase()) continue
+    // Drop bulk/marketing mail: RFC 2369 List-Unsubscribe is the standard marker
+    // for newsletters, sales blasts, and automated notifications. Genuine
+    // person-to-person support email doesn't carry it. This is what keeps the
+    // "support emails" view from filling with Apollo / sales / Cloudflare noise.
+    if (headerVal(headers, 'List-Unsubscribe')) continue
     if (!senders.has(fe)) {
       senders.set(fe, {
         from: name || fe,
