@@ -392,6 +392,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/missionwater/lets-talk",
+      "destination": "/index.html"
+    },
+    {
       "source": "/higherorbits",
       "destination": "/index.html"
     },

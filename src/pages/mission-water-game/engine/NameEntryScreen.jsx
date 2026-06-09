@@ -301,6 +301,7 @@ const S = {
   panelOuter: {
     width: '100%',
     maxWidth: 'min(640px, 90vw)',
+    margin: '0 auto',
   },
 
   // DESIGN.md: .instrument-panel
