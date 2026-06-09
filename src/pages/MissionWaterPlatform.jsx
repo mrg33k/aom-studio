@@ -144,11 +144,18 @@ export default function MissionWaterPlatform() {
                 Full screen ↗
               </a>
             </div>
-            <div className="aspect-video bg-[#071530]">
+            <div className="aspect-video bg-[#071530] relative">
+              {/* Loading backdrop — visible until iframe paints */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 pointer-events-none z-0">
+                <div className="w-10 h-10 rounded-full border-2 border-white/10 flex items-center justify-center">
+                  <div className="w-4 h-4 rounded-full bg-[#E85D26]/40" />
+                </div>
+                <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-white/20">Loading game…</span>
+              </div>
               <iframe
                 src="https://aheadofmarket.com/missionwater"
                 title="Mission Water Interactive Game"
-                className="w-full h-full border-0"
+                className="w-full h-full border-0 relative z-10"
               />
             </div>
           </motion.div>
