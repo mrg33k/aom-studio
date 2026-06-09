@@ -109,20 +109,36 @@ function StarCanvas() {
 // ─── Parallax PNG layers (space layer 1/2/3 from Cleo) ───────────────────────
 function ParallaxLayer({ src, speed, style }) {
   const ref = useRef(null);
+  const containerRef = useRef(null);
   const animRef = useRef({ raf: 0 });
 
   useEffect(() => {
+    const container = ref.current?.parentElement;
+    if (!container) return;
+
     let x = 0;
+    let width = container.offsetWidth;
+
+    const updateWidth = () => {
+      width = container.offsetWidth;
+    };
+
+    const resizeObs = new ResizeObserver(updateWidth);
+    resizeObs.observe(container);
+
     const tick = () => {
       x += speed;
-      if (x > 0) x = -window.innerWidth;
-      if (ref.current) {
-        ref.current.style.transform = `translateX(${x % window.innerWidth}px)`;
+      if (x > 0) x = -width;
+      if (ref.current && width > 0) {
+        ref.current.style.transform = `translateX(${x % width}px)`;
       }
       animRef.current.raf = requestAnimationFrame(tick);
     };
     animRef.current.raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(animRef.current.raf);
+    return () => {
+      cancelAnimationFrame(animRef.current.raf);
+      resizeObs.disconnect();
+    };
   }, [speed]);
 
   return (
@@ -342,7 +358,7 @@ export default function WelcomeScreen({ onStart }) {
     <div
       className="wg-root"
       style={{
-        position: 'fixed',
+        position: 'absolute',
         inset: 0,
         background: SPACE_DARK,
         overflow: 'hidden',
@@ -433,7 +449,7 @@ export default function WelcomeScreen({ onStart }) {
 
       {/* ─ Fade-from-black entrance ────────────────────────────────────── */}
       <div style={{
-        position: 'fixed', inset: 0,
+        position: 'absolute', inset: 0,
         background: '#000',
         opacity: overlayFaded ? 0 : 1,
         transition: 'opacity 600ms ease',
@@ -660,36 +676,6 @@ export default function WelcomeScreen({ onStart }) {
                   missionNum="03"
                   visible={card2Ready}
                 />
-              </div>
-
-              {/* Footer attribution */}
-              <div style={{
-                opacity: card0Ready ? 0.75 : 0,
-                transition: 'opacity 400ms ease 600ms',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderTop: '1px solid rgba(0,229,204,0.1)',
-                paddingTop: 12,
-              }}>
-                <div style={{
-                  fontFamily: 'Orbitron, monospace',
-                  fontSize: 8,
-                  letterSpacing: '0.18em',
-                  color: 'rgba(200,216,240,0.4)',
-                  textTransform: 'uppercase',
-                }}>
-                  Conrad Foundation × Ahead of Market
-                </div>
-                <div style={{
-                  fontFamily: 'Orbitron, monospace',
-                  fontSize: 8,
-                  letterSpacing: '0.12em',
-                  color: 'rgba(200,216,240,0.25)',
-                  textTransform: 'uppercase',
-                }}>
-                  EDUCATIONAL MISSION PLATFORM
-                </div>
               </div>
 
             </div>{/* /wg-panel-inner */}
