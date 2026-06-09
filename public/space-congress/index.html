@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Space Congress, Made Live — Space Rising</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --muted: #9a9a9a;
+    --dim: #5f5f5f;
+    --orange: #f0531e;
+    --card: #111;
+    --card-line: #242424;
+    --line: #1c1c1c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: 'Barlow', system-ui, sans-serif; font-weight: 300; line-height: 1.55;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 56px; width: 100%; }
+  .display { font-family: 'Oswald', sans-serif; text-transform: uppercase; font-weight: 600; line-height: 0.95; letter-spacing: -0.01em; }
+  .kicker { font-family: 'Oswald'; text-transform: uppercase; letter-spacing: 0.34em; font-weight: 500; font-size: 0.7rem; color: var(--orange); }
+  .orange { color: var(--orange); }
+
+  /* Each section behaves like a slide */
+  .slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 80px 0; border-bottom: 1px solid var(--line); position: relative; }
+
+  /* HERO — full-bleed launch image, text on the right (deck slide-1 layout) */
+  .hero {
+    background: #000 url('img/hero-launch.jpg') center/cover no-repeat;
+  }
+  .hero::before {
+    content:""; position:absolute; inset:0;
+    background: linear-gradient(90deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.15) 32%, rgba(0,0,0,0.0) 52%, rgba(0,0,0,0.45) 100%);
+    pointer-events:none;
+  }
+  .hero .wrap { position: relative; z-index: 2; display: flex; flex-direction: column; }
+  .brandmark { font-family: 'Oswald'; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em; font-size: 1.05rem; }
+  .brandmark .thin { font-weight: 300; }
+  .brandmark sup { font-size: 0.5em; top: -0.9em; }
+  .hero .brandtop { position: absolute; top: -16vh; left: 0; }
+  .hero .heromain { margin-left: auto; text-align: right; max-width: 60%; }
+  .hero h1 { font-size: clamp(3rem, 8.4vw, 6.4rem); margin-top: 18px; }
+  .hero .sub { margin-top: 32px; font-size: clamp(1.05rem, 2vw, 1.4rem); color: #d7d7d7; max-width: 42ch; margin-left: auto; }
+  .hero .sub b { color: var(--fg); font-weight: 500; }
+  @media (max-width: 760px) {
+    .hero .heromain { max-width: 100%; text-align: left; }
+    .hero .sub { margin-left: 0; }
+    .hero .brandtop { top: -22vh; }
+  }
+
+  /* section label */
+  .sec-label { display: flex; align-items: baseline; gap: 18px; margin-bottom: 48px; }
+  .sec-num { font-family: 'Oswald'; font-weight: 600; color: var(--orange); font-size: 1.05rem; }
+  .sec-title { font-size: clamp(2rem, 5vw, 3.4rem); }
+
+  /* QUESTION — orbit image with dark scrim */
+  .question { background: #000 url('img/orbit.jpg') center/cover no-repeat; }
+  .question::before { content:""; position:absolute; inset:0; background: linear-gradient(180deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.5) 45%, rgba(0,0,0,0.82) 100%); pointer-events:none; }
+  .question .wrap { position: relative; z-index: 2; }
+  .q { font-family: 'Oswald'; font-weight: 300; font-size: clamp(1.5rem, 3.6vw, 2.5rem); line-height: 1.15; max-width: 24ch; border-left: 3px solid var(--orange); padding-left: 34px; }
+  .yes { margin-top: 46px; font-size: clamp(1.2rem, 2.4vw, 1.6rem); color: var(--fg); font-weight: 400; max-width: 30ch; }
+  .yes .orange { font-weight: 600; }
+
+  /* PATHWAY */
+  .pathway { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+  .stage { background: var(--card); border: 1px solid var(--card-line); padding: 30px 22px 34px; min-height: 210px; display: flex; flex-direction: column; }
+  .stage.hot { background: var(--orange); border-color: var(--orange); }
+  .stage.hot * { color: #0a0a0a !important; }
+  .stage .chip { font-family: 'Oswald'; font-weight: 600; font-size: 0.8rem; background: #333; color: var(--muted); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-bottom: 22px; }
+  .stage.hot .chip { background: rgba(0,0,0,0.2); color: #0a0a0a; }
+  .stage h3 { font-family: 'Oswald'; text-transform: uppercase; font-weight: 600; font-size: 1.25rem; margin-bottom: 12px; }
+  .stage p { font-size: 0.9rem; color: var(--muted); line-height: 1.45; font-weight: 400; }
+  /* highlighted card: heavier, higher-contrast body so it reads on the orange */
+  .stage.hot p { font-weight: 600; font-size: 0.95rem; line-height: 1.5; color: #0a0a0a; }
+  .flowcap { margin-top: 30px; color: var(--dim); font-family: 'Oswald'; text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.74rem; }
+  .flowcap b { color: var(--orange); font-weight: 600; }
+
+  /* WHY REAL — 2-col */
+  .real { display: flex; flex-direction: column; gap: 2px; }
+  .rrow { display: grid; grid-template-columns: 230px 1fr; gap: 28px; background: var(--card); border: 1px solid var(--card-line); padding: 24px 28px; align-items: center; }
+  .rrow .l { font-family: 'Oswald'; text-transform: uppercase; font-weight: 600; font-size: 1.1rem; color: var(--orange); }
+  .rrow .r { color: var(--muted); font-size: 0.98rem; }
+  .real-note { margin-top: 28px; color: var(--dim); font-size: 0.92rem; max-width: 60ch; }
+
+  /* BUILD strip */
+  .build { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+  .bcell { background: var(--card); border: 1px solid var(--card-line); padding: 26px 22px; }
+  .bcell .bn { font-family: 'Oswald'; font-weight: 700; color: var(--orange); font-size: 1rem; margin-bottom: 14px; }
+  .bcell h5 { font-family: 'Oswald'; text-transform: uppercase; font-weight: 600; font-size: 1rem; line-height: 1.1; margin-bottom: 10px; }
+  .bcell span { color: var(--dim); font-family: 'Oswald'; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.62rem; color: var(--orange); }
+
+  /* TEST rows reuse .real; right col = what it proves */
+  .rrow .proves { color: var(--muted); font-size: 0.98rem; }
+
+  /* ANSWER lead line */
+  .answer-line { font-family: 'Oswald'; font-weight: 300; text-transform: uppercase; letter-spacing: 0.01em; font-size: clamp(1.15rem, 2.4vw, 1.7rem); color: var(--fg); margin-bottom: 40px; }
+  .answer-line .orange { font-weight: 600; }
+
+  /* NEXT STEPS — orange closer with numbered list */
+  .next { background: var(--orange); border: none; }
+  .next .kicker { color: rgba(10,10,10,0.6); }
+  .next h2 { font-family: 'Oswald'; text-transform: uppercase; font-weight: 600; font-size: clamp(2.2rem, 5.4vw, 3.6rem); line-height: 0.98; margin: 22px 0 40px; color: #0a0a0a; }
+  .nlist { display: flex; flex-direction: column; gap: 0; max-width: 60ch; }
+  .nlist .ns { display: grid; grid-template-columns: 54px 1fr; gap: 20px; align-items: baseline; padding: 20px 0; border-top: 1px solid rgba(10,10,10,0.22); }
+  .nlist .ns:last-child { border-bottom: 1px solid rgba(10,10,10,0.22); }
+  .nlist .ns .num { font-family: 'Oswald'; font-weight: 700; font-size: 1.5rem; color: #0a0a0a; }
+  .nlist .ns .txt { font-size: clamp(1.05rem, 2vw, 1.32rem); color: #0a0a0a; font-weight: 400; }
+  .nlist .ns .txt b { font-weight: 600; }
+  .next .stamp { margin-top: 40px; font-family: 'Oswald'; text-transform: uppercase; letter-spacing: 0.16em; font-size: 0.8rem; color: rgba(10,10,10,0.72); }
+
+  footer { padding: 52px 0; }
+  footer .wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  footer .meta { color: var(--dim); font-size: 0.82rem; }
+  footer .url { color: var(--orange); font-family: 'Oswald'; letter-spacing: 0.08em; font-size: 0.9rem; }
+
+  @media (max-width: 880px) {
+    .wrap { padding: 0 28px; }
+    .pathway { grid-template-columns: 1fr 1fr; }
+    .build { grid-template-columns: 1fr 1fr; }
+    .rrow { grid-template-columns: 1fr; gap: 8px; }
+    .slide { min-height: auto; padding: 84px 0; }
+  }
+  @media (max-width: 520px) { .pathway, .build { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <header class="slide hero">
+    <div class="wrap">
+      <span class="brandmark brandtop">SPACE<span class="thin"> RISING</span><sup>&trade;</sup></span>
+      <div class="heromain">
+        <p class="kicker">AI across the Space Congress experience</p>
+        <h1 class="display">Space Congress,<br />made <span class="orange">live</span>.</h1>
+        <p class="sub">Capture every room. Synthesize as it&rsquo;s spoken. Vote from every phone. Write it to every <b>SpaceOS</b> profile.</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- 01 THE QUESTION -->
+  <section class="slide question">
+    <div class="wrap">
+      <div class="sec-label"><span class="sec-num">01</span><h2 class="sec-title display">The question</h2></div>
+      <p class="q">&ldquo;Integrate AI to capture, synthesize, and vote by phone in near real time &mdash; results moving to SpaceOS profiles.&rdquo;</p>
+    </div>
+  </section>
+
+  <!-- 02 THE ANSWER -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="sec-label"><span class="sec-num">02</span><h2 class="sec-title display">The answer</h2></div>
+      <p class="answer-line">Yes. <span class="orange">One AI loop runs the whole convening</span> &mdash; five stages, live.</p>
+      <div class="pathway">
+        <div class="stage"><span class="chip">1</span><h3>Capture</h3><p>Every room records itself. Live transcripts.</p></div>
+        <div class="stage"><span class="chip">2</span><h3>Synthesize</h3><p>AI distills the talk into priorities &mdash; live on screen.</p></div>
+        <div class="stage"><span class="chip">3</span><h3>Vote</h3><p>Every phone a ballot. The 5-criteria scale.</p></div>
+        <div class="stage hot"><span class="chip">4</span><h3>Profile</h3><p>Every vote writes back to that member&rsquo;s SpaceOS profile &mdash; for good.</p></div>
+        <div class="stage"><span class="chip">5</span><h3>Blueprint</h3><p>The weighted vote. Routed to the Councils.</p></div>
+      </div>
+      <p class="flowcap"><b>Convene &rarr; Inform &rarr; Mobilize</b> &mdash; every handoff near-instant.</p>
+    </div>
+  </section>
+
+  <!-- 03 WE ALREADY HAVE MOST OF THIS -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="sec-label"><span class="sec-num">03</span><h2 class="sec-title display">We already have most of this</h2></div>
+      <div class="real">
+        <div class="rrow"><div class="l">Capture</div><div class="r">Live transcription pipelines we run today</div></div>
+        <div class="rrow"><div class="l">Synthesize</div><div class="r">The capture &rarr; synthesize loop we run on Corner</div></div>
+        <div class="rrow"><div class="l">Vote</div><div class="r">Email-keyed web ballot + Supabase realtime</div></div>
+        <div class="rrow"><div class="l">Profile</div><div class="r">SpaceOS profiles exist &mdash; a new field, not a new system</div></div>
+        <div class="rrow"><div class="l">Screen</div><div class="r">A realtime page on the existing site</div></div>
+      </div>
+      <p class="real-note">An integration job on a platform Space Rising already owns. Not a moonshot.</p>
+    </div>
+  </section>
+
+  <!-- 04 HOW WE WILL DO IT -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="sec-label"><span class="sec-num">04</span><h2 class="sec-title display">Here&rsquo;s how we&rsquo;ll do it</h2></div>
+      <div class="build">
+        <div class="bcell"><div class="bn">01</div><h5>Ballot + tally + screen</h5><span>First build</span></div>
+        <div class="bcell"><div class="bn">02</div><h5>Live capture, one room</h5><span>Then transcription</span></div>
+        <div class="bcell"><div class="bn">03</div><h5>Auto-synthesis</h5><span>Self-running screen</span></div>
+        <div class="bcell"><div class="bn">04</div><h5>Full Congress loop</h5><span>2027</span></div>
+      </div>
+      <p class="real-note">Built in order &mdash; each step works on its own and de-risks the next.</p>
+    </div>
+  </section>
+
+  <!-- 05 HOW WE WILL TEST IT -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="sec-label"><span class="sec-num">05</span><h2 class="sec-title display">How we&rsquo;ll test it</h2></div>
+      <div class="real">
+        <div class="rrow"><div class="l">Ballot dry-run</div><div class="proves">Real people in a room &mdash; votes land, tally moves live, write to the right profile.</div></div>
+        <div class="rrow"><div class="l">Capture pilot</div><div class="proves">One room transcribed &mdash; the AI&rsquo;s priorities match what a notetaker would catch.</div></div>
+        <div class="rrow"><div class="l">Rehearsal</div><div class="proves">The full loop runs at a smaller convening before the 2027 Congress &mdash; low stakes.</div></div>
+        <div class="rrow"><div class="l">Measure</div><div class="proves">Participation, synthesis accuracy, write-back integrity, time-to-blueprint (minutes).</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 NEXT STEPS -->
+  <section class="slide next">
+    <div class="wrap">
+      <p class="kicker">Next steps</p>
+      <h2>Where we go from here.</h2>
+      <div class="nlist">
+        <div class="ns"><span class="num">1</span><span class="txt"><b>Greenlight</b> the direction.</span></div>
+        <div class="ns"><span class="num">2</span><span class="txt"><b>Build the prototype</b> &mdash; phone ballot, live tally, jumbo screen.</span></div>
+        <div class="ns"><span class="num">3</span><span class="txt"><b>Pick a small convening</b> to dry-run it with real people.</span></div>
+        <div class="ns"><span class="num">4</span><span class="txt"><b>Wire the SpaceOS profile</b> so every vote has a permanent home.</span></div>
+      </div>
+      <p class="stamp">Then scale the loop to every regional Congress.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span class="brandmark">SPACE<span class="thin"> RISING</span><sup>&trade;</sup></span>
+      <span class="meta">Prepared by AOM &mdash; June 2026</span>
+      <span class="url">spacerising.org</span>
+    </div>
+  </footer>
+
+</body>
+</html>
