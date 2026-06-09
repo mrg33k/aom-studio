@@ -255,13 +255,15 @@ function InboxPanel({ worldId }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [filter, setFilter] = useState('all') // all | needs | replied
+  // Default to "Responded" — Patrik's literal ask is "the support emails we
+  // responded to," so the panel opens to that, not to a wall of needs-reply mail.
+  const [filter, setFilter] = useState('replied') // all | needs | replied
 
   const load = useCallback(async (password) => {
     if (!isAom && !password) return
     setLoading(true); setError('')
     try {
-      const reqBody = { email: 'patrikmatheson@gmail.com', days: 3 }
+      const reqBody = { email: 'patrikmatheson@gmail.com', days: 7 }
       if (password) reqBody.password = password
       const r = await authFetch('/api/support/inbox', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
@@ -305,6 +307,7 @@ function InboxPanel({ worldId }) {
   const boxes = data.mailboxes || []
   const totalNeeds = boxes.reduce((n, b) => n + (b.needs?.length || 0), 0)
   const totalReplied = boxes.reduce((n, b) => n + (b.replied?.length || 0), 0)
+  const shownCount = filter === 'needs' ? totalNeeds : filter === 'replied' ? totalReplied : totalNeeds + totalReplied
   return (
     <div style={{ padding: '20px 24px', overflowY: 'auto', height: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, margin: '0 0 16px' }}>
@@ -318,7 +321,16 @@ function InboxPanel({ worldId }) {
         </div>
       </div>
       {boxes.length === 0 && <p style={{ color: BONE_DIM }}>No connected mailboxes.</p>}
-      {boxes.map((box) => {
+      {boxes.length > 0 && shownCount === 0 && (
+        <div style={{ padding: '28px 4px', color: BONE_FAINT, fontSize: 13, lineHeight: 1.5 }}>
+          {filter === 'replied'
+            ? `No support emails responded to in the last ${data.days} days. Replies you send to support threads will show up here, with our reply text.`
+            : filter === 'needs'
+              ? 'Nothing needs a reply right now.'
+              : 'Nothing in the window.'}
+        </div>
+      )}
+      {boxes.length > 0 && shownCount > 0 && boxes.map((box) => {
         const needs = filter === 'replied' ? [] : (box.needs || [])
         const replied = filter === 'needs' ? [] : (box.replied || [])
         return (
