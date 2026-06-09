@@ -217,7 +217,6 @@ export default function MissionWaterOffering() {
                 <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr]">
                   {/* Left — identity */}
                   <div className="p-8 md:p-10 flex flex-col" style={{ background: 'linear-gradient(160deg, #071530 0%, #0D2045 100%)' }}>
-                    <span className="font-mono text-[12px] tracking-[0.22em] text-[#E85D26] mb-5">PIECE {p.n}</span>
                     <h3 className="font-display-serif text-[30px] md:text-[36px] leading-[1.0] tracking-[-0.02em] text-white mb-1">{p.name}</h3>
                     <p className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-white/45 mb-6">{p.tagline}</p>
                     <p className="font-body text-[14px] text-white/60 leading-[1.6]">{p.summary}</p>
@@ -242,11 +241,19 @@ export default function MissionWaterOffering() {
                         </span>
                       ))}
                     </div>
-                    <div className="mt-auto pt-6 border-t border-[#071530]/10 text-right">
-                      <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#071530]/45 mb-1.5">Investment</p>
-                      <p className="font-display-serif text-[44px] md:text-[50px] text-[#071530] tracking-[-0.02em] leading-none">
-                        {p.price}<span className="font-mono text-[11px] tracking-[0.15em] text-[#071530]/40 ml-2">fixed</span>
-                      </p>
+                    <div className="mt-auto pt-6 border-t border-[#071530]/10">
+                      <div className="flex items-end justify-between">
+                        <div></div>
+                        <div className="text-right flex flex-col items-end">
+                          <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#071530]/35 mb-3">Piece {p.n}</span>
+                          <div>
+                            <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#071530]/45 mb-1.5">Investment</p>
+                            <p className="font-display-serif text-[44px] md:text-[50px] text-[#071530] tracking-[-0.02em] leading-none">
+                              {p.price}<span className="font-mono text-[11px] tracking-[0.15em] text-[#071530]/40 ml-2">fixed</span>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
