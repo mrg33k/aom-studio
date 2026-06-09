@@ -11,16 +11,19 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import SupportInbox from './SupportInbox.jsx'
+import { C } from '../lib/cv3Colors.js'
 
-const AMBER = '#F59E0B'
-const AMBER_SOFT = 'rgba(245,158,11,0.10)'
-const INK = '#0A0E1C'
-const INK_PANEL = '#10162A'
-const INK_CARD = '#0C1122'
-const LINE = 'rgba(237,233,222,0.10)'
-const BONE = '#EDE9DE'
-const BONE_DIM = 'rgba(237,233,222,0.58)'
-const BONE_FAINT = 'rgba(237,233,222,0.32)'
+// Theme-aware: follows Corner's current theme (same tokens SupportInbox uses) so
+// both streams render consistently, light or dark.
+const AMBER = C.accent
+const AMBER_SOFT = C.accentBg
+const INK = C.bg
+const INK_PANEL = C.bg2
+const INK_CARD = C.s1
+const LINE = C.border2
+const BONE = C.text
+const BONE_DIM = C.text2
+const BONE_FAINT = C.muted
 const SERIF = '"Instrument Serif", Georgia, serif'
 const BODY = '"Hanken Grotesk", system-ui, -apple-system, sans-serif'
 const MONO = '"JetBrains Mono", ui-monospace, monospace'

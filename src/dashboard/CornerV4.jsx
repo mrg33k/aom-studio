@@ -2552,7 +2552,7 @@ export default function CornerV4() {
             style={{
               flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
               width: '100%',
-              maxWidth: isDesktop ? 840 : '100%',
+              maxWidth: showSupportInbox ? '100%' : (isDesktop ? 840 : '100%'),
               margin: '0 auto',
             }}
           >
