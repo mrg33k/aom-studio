@@ -128,7 +128,7 @@ function ConradNav() {
           <a href="#stage" className="hidden sm:inline font-mono text-[9.5px] uppercase tracking-[0.2em] text-[#071530]/50 hover:text-[#E85D26] transition-colors">
             Play
           </a>
-          <a href="/missionwater/lets-talk" className="hidden sm:inline font-mono text-[9.5px] uppercase tracking-[0.2em] text-[#071530]/50 hover:text-[#E85D26] transition-colors">
+          <a href="/missionwateroffering" className="hidden sm:inline font-mono text-[9.5px] uppercase tracking-[0.2em] text-[#071530]/50 hover:text-[#E85D26] transition-colors">
             Partnership
           </a>
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#071530]/40">
@@ -957,7 +957,7 @@ export default function MissionWaterPlatform() {
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <a
-                href="/missionwater/lets-talk"
+                href="/missionwateroffering"
                 className="inline-flex items-center gap-2 bg-[#071530] hover:bg-[#0D2045] text-white font-mono text-[10.5px] uppercase tracking-[0.2em] px-8 py-4 rounded-full transition-colors"
               >
                 Let&apos;s talk →
