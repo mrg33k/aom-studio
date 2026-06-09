@@ -431,15 +431,36 @@ function FramedAwards({ ids }) {
   const awarded = ids.filter((id) => BADGE_ART[id]);
   if (awarded.length === 0) return null;
   return (
-    <div style={styles.awardRow}>
-      {awarded.map((id) => (
-        <div key={id} style={styles.awardSlot}>
-          <div style={styles.awardGlow} />
-          <img src={BADGE_FRAME} alt="" style={styles.awardFrame} />
-          <img src={BADGE_ART[id]} alt="" style={styles.awardBadge} />
-          <div style={styles.awardLabel}>{DISCOVERY_LABELS[id] || id}</div>
+    <div style={styles.awardCeremony}>
+      <div style={styles.awardCeremonyPanel}>
+        {/* Scanline overlay on the ceremony panel */}
+        <div style={styles.scanlineOverlay} />
+
+        {/* Header */}
+        <div style={styles.awardCeremonyHeader}>
+          <div style={styles.awardCeremonyAccentLine} />
+          <div style={styles.awardCeremonyTitle}>MISSION COMPLETE</div>
+          <div style={styles.awardCeremonySub}>DISCOVERIES AWARDED · CHAPTER DEBRIEF</div>
         </div>
-      ))}
+
+        {/* Badge row */}
+        <div style={styles.awardRow}>
+          {awarded.map((id) => (
+            <div key={id} style={styles.awardSlot}>
+              <div style={styles.awardGlow} />
+              <img src={BADGE_FRAME} alt="" style={styles.awardFrame} />
+              <img src={BADGE_ART[id]} alt="" style={styles.awardBadge} />
+              <div style={styles.awardLabel}>{DISCOVERY_LABELS[id] || id}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={styles.awardCeremonyFooter}>
+          <div style={styles.awardFooterLine} />
+          <div>YOUR FIELD DISCOVERIES HAVE BEEN LOGGED TO THE MISSION RECORD</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -980,18 +1001,19 @@ const styles = {
   // ── bottom debrief card ────
   bottom: {
     pointerEvents: 'auto',
-    padding: '0 24px 24px',
+    padding: '0 32px 28px',
   },
   debriefCard: {
-    background: 'rgba(7,11,20,0.88)',
-    border: `1px solid rgba(0,229,204,0.22)`,
+    background: 'rgba(7,11,20,0.93)',
+    border: `1px solid rgba(0,229,204,0.30)`,
+    borderTop: `2px solid rgba(0,229,204,0.55)`,
     borderRadius: 0,
-    padding: '18px 22px 18px',
-    maxWidth: 780,
+    padding: '22px 28px 22px',
+    maxWidth: 860,
     margin: '0 auto',
-    backdropFilter: 'blur(8px)',
-    WebkitBackdropFilter: 'blur(8px)',
-    boxShadow: '0 0 28px rgba(0,229,204,0.06), inset 0 0 24px rgba(0,229,204,0.03)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    boxShadow: '0 0 40px rgba(0,229,204,0.10), 0 -4px 24px rgba(0,229,204,0.05), inset 0 0 30px rgba(0,229,204,0.04)',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -1020,9 +1042,9 @@ const styles = {
   // Narrative text — Rajdhani, debrief style
   narrative: {
     fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
-    fontSize: 19,
+    fontSize: 21,
     fontWeight: 500,
-    lineHeight: 1.45,
+    lineHeight: 1.7,
     letterSpacing: '0.01em',
     margin: 0,
     color: TEXT_SOFT,
@@ -1041,9 +1063,10 @@ const styles = {
     alignItems: 'center',
     gap: 12,
     width: '100%',
-    padding: '10px 16px',
+    padding: '14px 16px',
     borderRadius: 4,
     border: `1.5px solid #1A2A4A`,
+    borderLeft: `3px solid transparent`,
     background: `linear-gradient(180deg, rgba(26,42,74,0.85) 0%, rgba(10,18,40,0.85) 100%)`,
     color: TEXT_SOFT,
     fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
@@ -1058,16 +1081,18 @@ const styles = {
     transition: 'all 120ms ease',
     position: 'relative',
   },
-  // HOVER — mission cyan border + subtle glow
+  // HOVER — cyan left border + subtle glow
   choiceBtnHover: {
     border: `1.5px solid #1A90FF`,
+    borderLeft: `3px solid ${CYAN}`,
     background: `linear-gradient(180deg, rgba(26,144,255,0.15) 0%, rgba(10,60,140,0.15) 100%)`,
     boxShadow: `0 0 14px rgba(26,144,255,0.3), inset 0 0 10px rgba(26,144,255,0.08)`,
     color: WHITE,
   },
-  // SELECTED — mission cyan border + strong glow
+  // SELECTED — cyan left border + strong glow
   choiceBtnSelected: {
     border: `1.5px solid ${CYAN}`,
+    borderLeft: `3px solid ${CYAN}`,
     background: `linear-gradient(180deg, rgba(0,229,204,0.12) 0%, rgba(0,100,90,0.12) 100%)`,
     boxShadow: `0 0 20px rgba(0,229,204,0.35), inset 0 0 14px rgba(0,229,204,0.08)`,
     color: WHITE,
@@ -1372,5 +1397,76 @@ const styles = {
     width: '100%',
     height: '100%',
     objectFit: 'cover',
+  },
+
+  // ── Award ceremony overlay (Fix D) ────
+  awardCeremony: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 50,
+    background: 'rgba(7,11,20,0.75)',
+  },
+  awardCeremonyPanel: {
+    position: 'relative',
+    background: 'rgba(7,11,20,0.92)',
+    border: `2px solid ${CYAN}`,
+    boxShadow: `0 0 40px rgba(0,229,204,0.20), inset 0 0 60px rgba(0,229,204,0.04)`,
+    borderRadius: 4,
+    padding: '32px 40px',
+    maxWidth: 680,
+    width: '90%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 24,
+    alignItems: 'center',
+  },
+  awardCeremonyHeader: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+  },
+  awardCeremonyAccentLine: {
+    width: 60,
+    height: 2,
+    background: CYAN,
+    boxShadow: `0 0 8px ${CYAN}`,
+  },
+  awardCeremonyTitle: {
+    fontFamily: '"Orbitron", monospace',
+    fontWeight: 700,
+    fontSize: 28,
+    letterSpacing: '0.12em',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
+    textShadow: `0 0 20px rgba(0,229,204,0.4)`,
+  },
+  awardCeremonySub: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 9,
+    letterSpacing: '0.3em',
+    color: CYAN,
+    textTransform: 'uppercase',
+    opacity: 0.8,
+  },
+  awardCeremonyFooter: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 8,
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 8,
+    letterSpacing: '0.25em',
+    color: 'rgba(0,229,204,0.5)',
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  awardFooterLine: {
+    width: 120,
+    height: 1,
+    background: 'rgba(0,229,204,0.3)',
   },
 };

@@ -279,93 +279,107 @@ export default function MissionWaterGame() {
     return () => { document.title = prev; };
   }, []);
 
-  // ── R7b gate: welcome screen ─────────────────────────────────────
-  if (!hasStarted) {
-    return <WelcomeScreen onStart={() => setHasStarted(true)} />;
-  }
-
-  // ── R9 gate: name entry ──────────────────────────────────────────
-  if (!nameEntered) {
-    return (
-      <NameEntryScreen
-        onConfirm={(name) => {
-          setPlayerName(name);
-          setNameEntered(true);
-        }}
-      />
-    );
-  }
-
-  // ── R6 gate: role select ─────────────────────────────────────────
-  if (!selectedRole) {
-    return (
-      <RoleSelect
-        rolesData={rolesData}
-        onConfirm={(role) => setSelectedRole(role)}
-      />
-    );
-  }
-
-  // ── R6 gate: budget planning ─────────────────────────────────────
-  if (!budgetConfirmed) {
-    return (
-      <BudgetPlanning
-        selectedRole={selectedRole}
-        rolesData={rolesData}
-        onConfirm={(resources) => {
-          setInvestigationResources(resources);
-          setRunState(initRunState(phaseGraph, resources));
-          setBudgetConfirmed(true);
-        }}
-        onBack={() => setSelectedRole(null)}
-      />
-    );
-  }
-
-  // R8 — Hub gate: show between-phase action hub
-  if (showHub) {
-    const regionsCompleted = countRegionsCompleted(runState.history || []);
-    const hubContext = buildHubContext(runState.phase_id, hubNextPhaseId, runState.history || []);
-    return (
-      <HubScreen
-        phaseContext={hubContext}
-        currentResources={investigationResources}
-        regionsCompleted={regionsCompleted}
-        regionsTotal={3}
-        completedPhaseIds={runState.history || []}
-        onContinue={onHubContinue}
-        onOpenKit={onHubOpenKit}
-      />
-    );
-  }
-
+  // R11 — Unified bounded container for all screens: selection gates + game phase
+  // All screens render within the same "one main column" for visual consistency
   return (
     <div style={styles.root}>
-      <main style={styles.gamePanel}>
-        <div style={styles.canvasFrame}>
-          <Canvas phase={phase} />
-          <HUD
-            phase={phase}
-            hud={hud}
-            onChoose={onChoose}
-            resources={investigationResources}
-            playerName={playerName}
-            openKitRef={openKitRef}
-          />
-          {/* R10 — Phase wipe transition overlay */}
-          <div
-            ref={wipeRef}
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: '#000',
-              pointerEvents: 'none',
-              zIndex: 50,
-              transform: 'translateX(-100%)',
+      <div style={styles.container}>
+        <main style={styles.gamePanel}>
+        {/* ─── Selection gates: welcome → name → role → budget ─────── */}
+
+        {/* R7b gate: welcome screen */}
+        {!hasStarted && (
+          <WelcomeScreen onStart={() => setHasStarted(true)} />
+        )}
+
+        {/* R9 gate: name entry */}
+        {hasStarted && !nameEntered && (
+          <NameEntryScreen
+            onConfirm={(name) => {
+              setPlayerName(name);
+              setNameEntered(true);
             }}
           />
-        </div>
+        )}
+
+        {/* R6 gate: role select */}
+        {hasStarted && nameEntered && !selectedRole && (
+          <RoleSelect
+            rolesData={rolesData}
+            onConfirm={(role) => setSelectedRole(role)}
+          />
+        )}
+
+        {/* R6 gate: budget planning */}
+        {hasStarted && nameEntered && selectedRole && !budgetConfirmed && (
+          <BudgetPlanning
+            selectedRole={selectedRole}
+            rolesData={rolesData}
+            onConfirm={(resources) => {
+              setInvestigationResources(resources);
+              setRunState(initRunState(phaseGraph, resources));
+              setBudgetConfirmed(true);
+            }}
+            onBack={() => setSelectedRole(null)}
+          />
+        )}
+
+        {/* ─── Game phase gates ──────────────────────────────────────── */}
+
+        {/* R8 — Hub gate: show between-phase action hub */}
+        {budgetConfirmed && showHub && (
+          (() => {
+            const regionsCompleted = countRegionsCompleted(runState.history || []);
+            const hubContext = buildHubContext(runState.phase_id, hubNextPhaseId, runState.history || []);
+            return (
+              <HubScreen
+                phaseContext={hubContext}
+                currentResources={investigationResources}
+                regionsCompleted={regionsCompleted}
+                regionsTotal={3}
+                completedPhaseIds={runState.history || []}
+                onContinue={onHubContinue}
+                onOpenKit={onHubOpenKit}
+              />
+            );
+          })()
+        )}
+
+        {/* Game phase: canvas + HUD */}
+        {budgetConfirmed && !showHub && (
+          <div style={styles.canvasFrame}>
+            <Canvas phase={phase} />
+            <HUD
+              phase={phase}
+              hud={hud}
+              onChoose={onChoose}
+              resources={investigationResources}
+              playerName={playerName}
+              openKitRef={openKitRef}
+            />
+            {/* R10 — Phase wipe transition overlay */}
+            <div
+              ref={wipeRef}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: '#000',
+                pointerEvents: 'none',
+                zIndex: 50,
+                transform: 'translateX(-100%)',
+              }}
+            />
+          </div>
+        )}
       </main>
+      <aside style={styles.sidebar}>
+        <SidebarPlaceholder
+          phase={phase}
+          activeChapter={activeChapter}
+          onJumpToPhase={onJumpToPhase}
+        />
+      </aside>
+      </div>
     </div>
   );
 }
@@ -466,15 +480,16 @@ const styles = {
     fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
     color: '#FFFFFF',
   },
+  container: {
+    display: 'flex',
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+  },
   gamePanel: {
     position: 'relative',
     overflow: 'hidden',
-    width: '90vw',
-    height: '90vh',
-    maxWidth: 1000,
-    maxHeight: 900,
-    aspectRatio: '16 / 10',
-    borderRadius: 8,
+    flex: '7 0 0',
   },
   canvasFrame: {
     position: 'absolute',
@@ -484,7 +499,8 @@ const styles = {
     background: '#050810',
     borderLeft: `1px solid rgba(0,229,204,0.12)`,
     overflow: 'hidden',
-    display: 'none',
+    display: 'flex',
+    flex: '3 0 0',
     flexDirection: 'column',
   },
   sidebarInner: {

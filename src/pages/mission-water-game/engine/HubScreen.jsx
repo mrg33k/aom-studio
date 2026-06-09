@@ -102,6 +102,16 @@ export default function HubScreen({
     { id: 'ch1_sao_paulo_arrive', label: 'SÃO PAULO' },
   ];
 
+  // Per-card gradient backgrounds — unique to each option
+  const cardGradients = {
+    continue:        'linear-gradient(135deg, rgba(0,229,204,0.12) 0%, rgba(0,90,80,0.18) 60%, rgba(7,11,20,0.85) 100%)',
+    kit:             'linear-gradient(135deg, rgba(255,183,3,0.10) 0%, rgba(120,70,0,0.15) 60%, rgba(7,11,20,0.85) 100%)',
+    map:             'linear-gradient(135deg, rgba(26,144,255,0.10) 0%, rgba(10,40,100,0.18) 60%, rgba(7,11,20,0.85) 100%)',
+    pace:            'linear-gradient(135deg, rgba(160,80,255,0.10) 0%, rgba(60,10,100,0.15) 60%, rgba(7,11,20,0.85) 100%)',
+    field_interview: 'linear-gradient(135deg, rgba(255,80,80,0.09) 0%, rgba(100,20,20,0.14) 60%, rgba(7,11,20,0.85) 100%)',
+    lab_analysis:    'linear-gradient(135deg, rgba(0,180,255,0.10) 0%, rgba(0,60,120,0.15) 60%, rgba(7,11,20,0.85) 100%)',
+  };
+
   const hubOptions = [
     {
       id: 'continue',
@@ -114,7 +124,7 @@ export default function HubScreen({
     },
     {
       id: 'kit',
-      icon: '🧰',
+      icon: '◈',
       title: 'REVIEW MISSION KIT',
       description: 'Check your remaining resources and earned discoveries.',
       free: true,
@@ -124,7 +134,7 @@ export default function HubScreen({
     },
     {
       id: 'map',
-      icon: '🗺',
+      icon: '⌖',
       title: 'CHECK MISSION MAP',
       description: 'Review your investigation progress across all regions.',
       free: true,
@@ -132,7 +142,7 @@ export default function HubScreen({
     },
     {
       id: 'pace',
-      icon: pace === 'thorough' ? '🔬' : '⚡',
+      icon: pace === 'thorough' ? '⏸' : '◉',
       title: 'CHANGE INVESTIGATION PACE',
       description:
         pace === 'thorough'
@@ -143,7 +153,7 @@ export default function HubScreen({
     },
     {
       id: 'field_interview',
-      icon: '🎙',
+      icon: '◉',
       title: 'FIELD INTERVIEW',
       description: communityTokens > 0
         ? `Spend 1 community partnership token to speak with a local contact. (${communityTokens} remaining)`
@@ -157,7 +167,7 @@ export default function HubScreen({
     },
     {
       id: 'lab_analysis',
-      icon: '⚗',
+      icon: '⬡',
       title: 'LAB ANALYSIS',
       description: samplingTokens > 0
         ? `Spend 1 sampling kit to run a water quality analysis. (${samplingTokens} remaining)`
@@ -204,8 +214,26 @@ export default function HubScreen({
             transform:  headerReady ? 'translateY(0)' : 'translateY(-8px)',
             transition: 'opacity 350ms ease, transform 350ms ease',
           }}>
+            <div style={styles.headerAccentLine} />
             <div style={styles.headerKicker}>MISSION HUB</div>
             <div style={styles.headerContext}>{phaseContext}</div>
+            <div style={styles.headerAccentLineFull} />
+            {/* Progress dots */}
+            {regionsTotal > 0 && (
+              <div style={styles.progressRow}>
+                {Array.from({ length: regionsTotal }).map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      ...styles.progressDot,
+                      ...(i < regionsCompleted ? styles.progressDotDone : styles.progressDotPending),
+                    }}
+                  >
+                    {i < regionsCompleted ? '●' : '○'}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Card grid: 2 columns on desktop, 1 column on mobile */}
@@ -231,6 +259,7 @@ export default function HubScreen({
                   onMouseLeave={() => setHoveredCard(null)}
                   style={{
                     ...styles.card,
+                    background: isLocked ? 'rgba(10,22,40,0.7)' : (cardGradients[opt.id] || styles.card.background),
                     ...(opt.primary ? styles.cardPrimary : {}),
                     ...(isLocked ? styles.cardLocked : {}),
                     ...(isHovered && !isLocked ? styles.cardHover : {}),
@@ -420,7 +449,7 @@ const styles = {
   bgOverlay: {
     position: 'absolute',
     inset: 0,
-    background: 'rgba(7, 11, 20, 0.82)',
+    background: 'rgba(7, 11, 20, 0.55)',
   },
 
   scrollLayer: {
@@ -445,25 +474,68 @@ const styles = {
   header: {
     textAlign: 'center',
     paddingTop: 16,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 10,
+  },
+
+  headerAccentLine: {
+    width: 48,
+    height: 2,
+    background: CYAN,
+    boxShadow: `0 0 10px ${CYAN}`,
+    marginBottom: 2,
+  },
+
+  headerAccentLineFull: {
+    width: '100%',
+    maxWidth: 480,
+    height: 1,
+    background: `linear-gradient(90deg, transparent, rgba(0,229,204,0.4), transparent)`,
+    marginTop: 4,
   },
 
   headerKicker: {
     fontFamily: 'Orbitron, sans-serif',
-    fontWeight: 700,
-    fontSize: 12,
+    fontWeight: 900,
+    fontSize: 22,
     letterSpacing: '0.35em',
     color: CYAN,
     textTransform: 'uppercase',
-    marginBottom: 10,
-    opacity: 0.9,
+    textShadow: `0 0 20px rgba(0,229,204,0.6), 0 0 40px rgba(0,229,204,0.2)`,
   },
 
   headerContext: {
     fontFamily: 'Rajdhani, sans-serif',
     fontWeight: 600,
-    fontSize: 18,
-    color: TEXT_PRIMARY,
-    letterSpacing: '0.05em',
+    fontSize: 16,
+    color: 'rgba(232,240,248,0.75)',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
+  },
+
+  // ── Progress dots ────────────────────────────────────────────────
+  progressRow: {
+    display: 'flex',
+    gap: 12,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+
+  progressDot: {
+    fontFamily: 'monospace',
+    fontSize: 16,
+    lineHeight: 1,
+  },
+
+  progressDotDone: {
+    color: CYAN,
+    textShadow: `0 0 8px ${CYAN}`,
+  },
+
+  progressDotPending: {
+    color: 'rgba(232,240,248,0.3)',
   },
 
   // ── Card grid ────────────────────────────────────────────────────
@@ -480,6 +552,7 @@ const styles = {
     borderRadius: 4,
     padding: '18px 20px',
     cursor: 'pointer',
+    minHeight: 120,
     transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
     display: 'flex',
     flexDirection: 'column',
@@ -509,9 +582,14 @@ const styles = {
   },
 
   cardIcon: {
-    fontSize: 18,
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 20,
     lineHeight: 1,
     flexShrink: 0,
+    color: CYAN,
+    textShadow: `0 0 8px rgba(0,229,204,0.5)`,
+    width: 28,
+    textAlign: 'center',
   },
 
   cardTitle: {

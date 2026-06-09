@@ -225,6 +225,21 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
 
   const ringColor = selectedRole.ring_color ?? CYAN;
 
+  // Role flavor text — briefing bullets for left column
+  const roleFlavorBullets = selectedRole.description
+    ? [
+        selectedRole.description,
+        `Specialty: ${selectedRole.specialty || 'Field Investigation'}`,
+        `Strength: ${selectedRole.strength || 'Adaptive resource allocation'}`,
+        `Objective: Deploy, gather critical data, report findings to the Council.`,
+      ]
+    : [
+        'You have been selected for field deployment in the water investigation.',
+        'Your role carries unique access and specialized equipment.',
+        'Resource allocation determines your investigative reach and depth.',
+        'The Council awaits your findings. Deploy with purpose.',
+      ];
+
   return (
     <div style={styles.root}>
       {/* Layer 1: space background */}
@@ -245,125 +260,144 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
       `}</style>
       <div style={styles.scanlines} />
 
-      {/* Blippy companion — lower-left, per DESIGN.md */}
-      <div style={styles.blippyRow}>
-        <div style={styles.blippyCircle}>
-          <img
-            src="/mission-water/welcome/blippy_welcome_pose.png"
-            alt="Blippy"
-            style={styles.blippyImg}
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-          />
-        </div>
-        <div style={styles.blippyBubble}>
-          Allocate your resources, Cadet. Every point matters when you're on the ground.
-        </div>
-      </div>
+      {/* ── Main two-column layout ── */}
+      <div style={styles.twoCol}>
 
-      {/* header */}
-      <div style={styles.header}>
-        <div style={styles.headerKicker}>MISSION WATER — PRE-DEPLOYMENT LOADOUT</div>
-        <h1 style={styles.headerTitle}>PLAN YOUR MISSION RESOURCES</h1>
-        <div style={{ ...styles.roleTag, color: ringColor }}>
-          <span style={{ fontFamily: '"Orbitron", monospace', fontSize: 10, letterSpacing: '0.2em' }}>
-            ROLE: {selectedRole.name.toUpperCase()}
-          </span>
-        </div>
-        <div style={styles.headerSub}>
-          Redistribute {TOTAL} points across resource categories. Maximum {MAXPER} per type.
-        </div>
-      </div>
+        {/* ── LEFT COLUMN — mission briefing ── */}
+        <div style={styles.leftCol}>
+          <div style={styles.briefingKicker}>MISSION LOADOUT</div>
+          <div style={styles.briefingAccentLine} />
+          <div style={styles.briefingHeader}>PRE-DEPLOYMENT BRIEF</div>
 
-      {/* instrument panel */}
-      <div style={styles.panel}>
-        <div style={styles.panelHeader}>
-          <div style={styles.panelLabel}>RESOURCE ALLOCATION PANEL</div>
-          <div style={styles.budgetIndicator}>
-            <span style={{ color: TEXT_SOFT, fontSize: 10 }}>POINTS REMAINING</span>
-            <span
-              style={{
-                ...styles.budgetValue,
-                color: remaining === 0 ? CYAN : remaining <= 2 ? AMBER : '#FFFFFF',
-              }}
-            >
-              {String(remaining).padStart(2, '0')} / {String(TOTAL).padStart(2, '0')}
-            </span>
+          <div style={{ ...styles.briefingRoleName, color: ringColor }}>
+            {selectedRole.name?.toUpperCase() || 'FIELD AGENT'}
           </div>
-        </div>
+          <div style={styles.briefingRoleDesc}>
+            {selectedRole.description || 'Specialist field operative assigned to the water crisis investigation.'}
+          </div>
 
-        {/* allocation rows — staggered flicker entrance */}
-        <div style={styles.rowsWrap}>
-          {Object.keys(selectedRole.starting_resources).map((type, idx) => (
-            <div
-              key={type}
-              className="bp-alloc-row"
-              style={{
-                opacity: 0,
-                animation: 'bp-row-flicker 200ms ease forwards',
-                animationDelay: `${300 + idx * 120}ms`,
-              }}
-            >
-              <AllocRow
-                type={type}
-                value={resources[type] ?? 0}
-                ringColor={ringColor}
-                spent={spent}
-                total={TOTAL}
-                maxVal={MAXPER}
-                onInc={() => adjust(type, 1)}
-                onDec={() => adjust(type, -1)}
+          <div style={styles.briefingBullets}>
+            {roleFlavorBullets.map((b, i) => (
+              <div key={i} style={styles.briefingBullet}>
+                <span style={{ ...styles.briefingBulletDot, color: ringColor }}>▸</span>
+                <span style={styles.briefingBulletText}>{b}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Blippy lower-left of left column */}
+          <div style={styles.blippyRow}>
+            <div style={styles.blippyCircle}>
+              <img
+                src="/mission-water/welcome/blippy_welcome_pose.png"
+                alt="Blippy"
+                style={styles.blippyImg}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
             </div>
-          ))}
+            <div style={styles.blippyBubble}>
+              Allocate your resources, Cadet. Every point matters when you're on the ground.
+            </div>
+          </div>
         </div>
 
-        {/* budget bar */}
-        <div style={styles.budgetBarWrap}>
-          <div style={styles.budgetBarLabel}>BUDGET UTILIZATION</div>
-          <div style={styles.budgetBarTrack}>
-            <div
+        {/* ── RIGHT COLUMN — resource allocation panel ── */}
+        <div style={styles.rightCol}>
+          <div style={styles.panel}>
+            <div style={styles.panelHeader}>
+              <div style={styles.panelLabel}>RESOURCE ALLOCATION PANEL</div>
+              <div style={styles.budgetIndicator}>
+                <span style={{ color: TEXT_SOFT, fontSize: 10, fontFamily: '"Orbitron", monospace', letterSpacing: '0.12em' }}>REMAINING</span>
+                <span
+                  style={{
+                    ...styles.budgetValue,
+                    color: remaining === 0 ? CYAN : remaining <= 2 ? AMBER : '#FFFFFF',
+                  }}
+                >
+                  {String(remaining).padStart(2, '0')} / {String(TOTAL).padStart(2, '0')}
+                </span>
+              </div>
+            </div>
+
+            <div style={styles.headerSub}>
+              Redistribute {TOTAL} points · Max {MAXPER} per category
+            </div>
+
+            {/* allocation rows — staggered flicker entrance */}
+            <div style={styles.rowsWrap}>
+              {Object.keys(selectedRole.starting_resources).map((type, idx) => (
+                <div
+                  key={type}
+                  className="bp-alloc-row"
+                  style={{
+                    opacity: 0,
+                    animation: 'bp-row-flicker 200ms ease forwards',
+                    animationDelay: `${300 + idx * 120}ms`,
+                  }}
+                >
+                  <AllocRow
+                    type={type}
+                    value={resources[type] ?? 0}
+                    ringColor={ringColor}
+                    spent={spent}
+                    total={TOTAL}
+                    maxVal={MAXPER}
+                    onInc={() => adjust(type, 1)}
+                    onDec={() => adjust(type, -1)}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* budget bar */}
+            <div style={styles.budgetBarWrap}>
+              <div style={styles.budgetBarLabel}>BUDGET UTILIZATION</div>
+              <div style={styles.budgetBarTrack}>
+                <div
+                  style={{
+                    ...styles.budgetBarFill,
+                    width: `${(spent / TOTAL) * 100}%`,
+                    background: spent === TOTAL ? CYAN : AMBER,
+                    boxShadow: spent === TOTAL ? `0 0 10px ${CYAN}80` : 'none',
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  ...styles.budgetBarPct,
+                  color: spent === TOTAL ? CYAN : TEXT_SOFT,
+                }}
+              >
+                {Math.round((spent / TOTAL) * 100)}%
+              </div>
+            </div>
+
+            {remaining > 0 && (
+              <div style={styles.warningMsg}>
+                ⚠ &nbsp; {remaining} POINT{remaining !== 1 ? 'S' : ''} UNALLOCATED — ASSIGN ALL RESOURCES BEFORE LAUNCH
+              </div>
+            )}
+          </div>
+
+          {/* ── DEPLOY CTA ── */}
+          <div style={styles.ctaRow}>
+            <button style={styles.backBtn} onClick={onBack}>
+              ← CHANGE ROLE
+            </button>
+            <button
               style={{
-                ...styles.budgetBarFill,
-                width: `${(spent / TOTAL) * 100}%`,
-                background: spent === TOTAL ? CYAN : AMBER,
-                boxShadow: spent === TOTAL ? `0 0 10px ${CYAN}80` : 'none',
+                ...styles.deployBtn,
+                opacity: remaining === 0 ? 1 : 0.35,
+                cursor: remaining === 0 ? 'pointer' : 'not-allowed',
+                boxShadow: remaining === 0 ? `0 0 28px ${CYAN}70, 0 0 60px ${CYAN}30` : 'none',
               }}
-            />
-          </div>
-          <div
-            style={{
-              ...styles.budgetBarPct,
-              color: spent === TOTAL ? CYAN : TEXT_SOFT,
-            }}
-          >
-            {Math.round((spent / TOTAL) * 100)}%
+              disabled={remaining !== 0}
+              onClick={handleConfirm}
+            >
+              ◉ &nbsp; DEPLOY MISSION
+            </button>
           </div>
         </div>
-
-        {remaining > 0 && (
-          <div style={styles.warningMsg}>
-            ⚠ &nbsp; {remaining} POINT{remaining !== 1 ? 'S' : ''} UNALLOCATED — ASSIGN ALL RESOURCES BEFORE LAUNCH
-          </div>
-        )}
-      </div>
-
-      {/* footer */}
-      <div style={styles.footer}>
-        <button style={styles.backBtn} onClick={onBack}>
-          ← CHANGE ROLE
-        </button>
-        <button
-          style={{
-            ...styles.confirmBtn,
-            opacity: remaining === 0 ? 1 : 0.35,
-            cursor: remaining === 0 ? 'pointer' : 'not-allowed',
-            boxShadow: remaining === 0 ? `0 0 20px ${CYAN}60` : 'none',
-          }}
-          disabled={remaining !== 0}
-          onClick={handleConfirm}
-        >
-          CONFIRM MISSION LOADOUT
-        </button>
       </div>
     </div>
   );
@@ -377,9 +411,6 @@ const styles = {
     background: SPACE_DARK,
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '28px 24px 20px',
     fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
     color: '#FFFFFF',
     overflow: 'hidden',
@@ -393,51 +424,128 @@ const styles = {
     zIndex: 1,
   },
 
-  header: {
-    textAlign: 'center',
+  // ── Two-column layout ────────────────────────────────────────────
+  twoCol: {
+    position: 'relative',
     zIndex: 2,
-    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'row',
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
   },
-  headerKicker: {
+
+  leftCol: {
+    flex: '0 0 38%',
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '48px 40px 32px',
+    background: 'linear-gradient(160deg, rgba(0,229,204,0.06) 0%, rgba(7,11,20,0.0) 60%)',
+    borderRight: `1px solid rgba(0,229,204,0.14)`,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+
+  rightCol: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '36px 40px 28px',
+    overflow: 'hidden',
+    gap: 16,
+  },
+
+  // ── Left column — briefing ───────────────────────────────────────
+  briefingKicker: {
     fontFamily: '"Orbitron", monospace',
     fontSize: 9,
-    letterSpacing: '0.3em',
+    letterSpacing: '0.35em',
     color: CYAN,
     textTransform: 'uppercase',
-    marginBottom: 6,
+    marginBottom: 10,
+    opacity: 0.9,
   },
-  headerTitle: {
+  briefingAccentLine: {
+    width: 48,
+    height: 2,
+    background: CYAN,
+    marginBottom: 14,
+    boxShadow: `0 0 8px ${CYAN}80`,
+  },
+  briefingHeader: {
     fontFamily: '"Orbitron", monospace',
-    fontSize: 22,
     fontWeight: 700,
-    letterSpacing: '0.08em',
+    fontSize: 22,
+    letterSpacing: '0.06em',
     textTransform: 'uppercase',
-    margin: '0 0 6px',
     color: '#FFFFFF',
+    lineHeight: 1.2,
+    marginBottom: 24,
   },
-  roleTag: {
-    marginBottom: 6,
+  briefingRoleName: {
+    fontFamily: '"Orbitron", monospace',
+    fontWeight: 700,
+    fontSize: 15,
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
+  briefingRoleDesc: {
+    fontFamily: '"Rajdhani", sans-serif',
+    fontWeight: 500,
+    fontSize: 15,
+    lineHeight: 1.55,
+    color: TEXT_SOFT,
+    marginBottom: 24,
+  },
+  briefingBullets: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    flex: 1,
+  },
+  briefingBullet: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  briefingBulletDot: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 11,
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  briefingBulletText: {
+    fontFamily: '"Rajdhani", sans-serif',
+    fontWeight: 400,
+    fontSize: 14,
+    lineHeight: 1.55,
+    color: TEXT_SOFT,
+    opacity: 0.85,
+  },
+
+  // ── Right column — panel ─────────────────────────────────────────
   headerSub: {
     fontFamily: '"Rajdhani", system-ui, sans-serif',
-    fontSize: 14,
+    fontSize: 13,
     color: TEXT_SOFT,
-    opacity: 0.7,
+    opacity: 0.6,
+    letterSpacing: '0.04em',
+    marginBottom: 4,
   },
 
   panel: {
     zIndex: 2,
     background: PANEL_BG,
     border: `1px solid rgba(0,229,204,0.18)`,
-    borderRadius: 6,
+    borderRadius: 4,
     padding: '20px 24px',
-    width: '100%',
-    maxWidth: 700,
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    gap: 16,
+    gap: 14,
     boxShadow: `inset 0 0 40px rgba(0,229,204,0.04)`,
+    overflow: 'hidden',
   },
 
   panelHeader: {
@@ -606,15 +714,13 @@ const styles = {
     padding: '6px 0',
   },
 
-  footer: {
-    zIndex: 2,
+  // ── CTA row (deploy) ─────────────────────────────────────────────
+  ctaRow: {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
+    gap: 16,
     flexShrink: 0,
-    paddingTop: 4,
   },
   backBtn: {
     fontFamily: '"Orbitron", monospace',
@@ -624,25 +730,28 @@ const styles = {
     background: 'transparent',
     border: `1px solid rgba(200,216,240,0.25)`,
     borderRadius: 4,
-    padding: '10px 20px',
+    padding: '12px 20px',
     cursor: 'pointer',
     transition: 'border-color 150ms ease',
+    flexShrink: 0,
   },
-  confirmBtn: {
+  deployBtn: {
+    flex: 1,
     fontFamily: '"Orbitron", monospace',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 700,
-    letterSpacing: '0.15em',
+    letterSpacing: '0.18em',
     textTransform: 'uppercase',
-    color: CYAN,
-    background: 'transparent',
-    border: `2px solid ${CYAN}`,
+    color: SPACE_DARK,
+    background: CYAN,
+    border: 'none',
     borderRadius: 4,
-    padding: '12px 32px',
+    padding: '16px 32px',
+    cursor: 'pointer',
     transition: 'opacity 150ms ease, box-shadow 150ms ease',
   },
 
-  // Blippy companion
+  // ── Blippy companion ─────────────────────────────────────────────
   blippyRow: {
     position: 'absolute',
     bottom: 20,

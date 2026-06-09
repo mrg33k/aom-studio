@@ -235,10 +235,10 @@ function drawCoverImage(ctx, W, H, img, parallaxOffset, ambient = 0) {
   // instead of a frozen still. OVERSCAN renders the image larger than cover so
   // the zoom-breathe + pan can never expose a hard edge.
   const tSec = ambient / 1000;
-  const OVERSCAN = 1.10;                                  // 10% headroom each axis
-  const zoom = 0.05 * (0.5 + 0.5 * Math.sin(tSec * 0.16)); // 0→+5% zoom, ~39s breathe
-  const panX = 0.025 * Math.sin(tSec * 0.11);            // ±2.5% horizontal drift
-  const panY = 0.020 * Math.cos(tSec * 0.085);           // ±2% vertical drift
+  const OVERSCAN = 1.15;                                   // 15% headroom each axis
+  const zoom = 0.08 * (0.5 + 0.5 * Math.sin(tSec * 0.16)); // 0→+8% zoom, ~39s breathe
+  const panX = 0.05 * Math.sin(tSec * 0.11);             // ±5% horizontal drift
+  const panY = 0.04 * Math.cos(tSec * 0.085);            // ±4% vertical drift
   const scale = coverScale * OVERSCAN * (1 + zoom);
 
   const dw = iw * scale;
