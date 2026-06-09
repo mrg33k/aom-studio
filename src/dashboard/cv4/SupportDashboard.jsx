@@ -116,7 +116,9 @@ function WishRow({ w, dim }) {
               <span title="Open past the 10-minute target" style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700,
                 color: '#1A1206', background: AMBER, padding: '1px 5px', borderRadius: 8 }}>OVER 10M</span>
             )}
-            <span style={{ fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT, textTransform: 'uppercase' }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
+              color: loud ? '#1A1206' : BONE_DIM, background: loud ? AMBER : 'transparent',
+              border: `1px solid ${loud ? AMBER : LINE}`, padding: '1px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
               {STATUS_LABEL[w.status] || w.status}
             </span>
           </span>
@@ -337,6 +339,42 @@ function FilterPill({ active, onClick, label, loud }) {
   )
 }
 
+// ── Summary strip — real counts across the top (counts that reflect reality) ──
+function SummaryStrip() {
+  const [wishes, setWishes] = useState(null)
+  const load = useCallback(async () => {
+    try { const r = await fetch('/api/support/wishes'); const d = await r.json(); if (d.ok) setWishes(d.wishes || []) } catch { /* keep last */ }
+  }, [])
+  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t) }, [load])
+
+  const ws = wishes || []
+  const open = ws.filter((w) => w.status !== 'resolved')
+  const resolved = ws.filter((w) => w.status === 'resolved')
+  const overSla = open.filter((w) => (Date.now() - new Date(w.created_at).getTime()) > 10 * 60 * 1000)
+  const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
+  const respondedToday = resolved.filter((w) => w.updated_at && new Date(w.updated_at) >= startOfDay)
+  const rate = ws.length ? Math.round((resolved.length / ws.length) * 100) : null
+
+  const tiles = [
+    { label: 'Open', value: open.length },
+    { label: 'Responded today', value: respondedToday.length },
+    { label: 'Over 10 min', value: overSla.length, loud: overSla.length > 0 },
+    { label: 'Response rate', value: rate == null ? '—' : rate + '%' },
+  ]
+  return (
+    <div style={{ display: 'flex', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
+      {tiles.map((t, i) => (
+        <div key={t.label} style={{ flex: 1, padding: '12px 20px', borderRight: i < tiles.length - 1 ? `1px solid ${LINE}` : 'none' }}>
+          <div style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 26, lineHeight: 1, color: t.loud ? AMBER : BONE }}>
+            {wishes === null ? '·' : t.value}
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, marginTop: 5 }}>{t.label}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Full dashboard ───────────────────────────────────────────────────────────
 export default function SupportDashboard({ isDesktop = true, onClose }) {
   const [tab, setTab] = useState('requests') // mobile single-pane
@@ -357,6 +395,7 @@ export default function SupportDashboard({ isDesktop = true, onClose }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
         {header}
+        <SummaryStrip />
         <div style={{ display: 'flex', gap: 4, padding: '12px 24px 0' }}>
           <TabBtn active={tab === 'requests'} onClick={() => setTab('requests')} label="Requests" />
           <TabBtn active={tab === 'chat'} onClick={() => setTab('chat')} label="Chat" />
@@ -372,6 +411,7 @@ export default function SupportDashboard({ isDesktop = true, onClose }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
       {header}
+      <SummaryStrip />
       <div style={{ display: 'flex', gap: 4, padding: '10px 24px 0', borderBottom: `1px solid ${LINE}` }}>
         <TabBtn active={view === 'streams'} onClick={() => setView('streams')} label="Requests & chat" />
         <TabBtn active={view === 'inbox'} onClick={() => setView('inbox')} label="Inbox" />
