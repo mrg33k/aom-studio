@@ -90,11 +90,11 @@ const PILLARS = [
     summary:
       ‘The story-driven, branching water-science game students play start to finish. Live today and built to grow. This is the proof — the thing you put in front of a student, a school, or a sponsor and watch them get it.’,
     deliverables: [
-      ‘Three-chapter branching narrative with embedded science’,
-      ‘NASA mission-console design with cinematic visuals’,
+      ‘Three-chapter branching narrative + embedded science’,
+      ‘NASA mission-console design, cinematic visuals’,
       ‘Character roles, resource system, progression badges’,
-      ‘Blippy mascot that reacts throughout the story’,
-      ‘Responsive game, live hosting, ongoing updates’,
+      ‘Blippy mascot that reacts throughout’,
+      ‘Live hosted, responsive, ongoing updates’,
     ],
     addons: [
       ‘Additional story chapters’,
@@ -112,11 +112,11 @@ const PILLARS = [
     summary:
       ‘Everything around the game that turns it into a real program — live classes, a permanent archive, self-paced coursework, and dashboards for educators and parents. One window, everything inside.’,
     deliverables: [
-      ‘Live broadcasts with real-time Q&A and scheduling’,
-      ‘Full session archive, forever searchable and accessible’,
-      ‘Self-paced course modules with progress tracking and submissions’,
-      ‘Student work uploads with educator feedback in-platform’,
-      ‘Educator and parent dashboards with weekly reports’,
+      ‘Live broadcasts with real-time Q&A + scheduling’,
+      ‘Full session archive, forever searchable’,
+      ‘Self-paced modules with progress tracking + submissions’,
+      ‘Student work uploads + educator feedback’,
+      ‘Educator and parent dashboards with reports’,
     ],
     addons: [
       ‘Payments / paid enrollment’,
@@ -134,11 +134,11 @@ const PILLARS = [
     summary:
       ‘The brand, the story, and the campaign that gets Mission Water in front of students, schools, and funders. Build it beautifully, then make sure the right people see it.’,
     deliverables: [
-      ‘Complete brand system with guidelines and usage rules’,
-      ‘Landing pages optimized for enrollment and search’,
-      ‘Campaign assets: social kit, email sequences, ad creative’,
-      ‘Launch video: sizzle reel under one minute’,
-      ‘Funder one-pager and performance dashboard’,
+      ‘Brand system with guidelines + usage rules’,
+      ‘Landing pages optimized for enrollment + search’,
+      ‘Campaign assets (social kit, email, ad creative)’,
+      ‘Launch video (one-minute sizzle reel)’,
+      ‘Funder one-pager + performance dashboard’,
     ],
     addons: [
       ‘Ongoing monthly social management’,
