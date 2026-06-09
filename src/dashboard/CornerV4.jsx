@@ -140,6 +140,24 @@ export default function CornerV4() {
   const [selectedMail, setSelectedMail] = useState(null)
   // corner:support N1 — Support Inbox view (Patrik workspace only)
   const [showSupportInbox, setShowSupportInbox] = useState(false)
+  // corner:support-desk M10 — pending support count for the headphones-icon badge.
+  const [supportPending, setSupportPending] = useState(0)
+  useEffect(() => {
+    if (worldId !== 'aom') return
+    let alive = true
+    const load = async () => {
+      try {
+        const r = await fetch('/api/support/wishes')
+        const d = await r.json()
+        if (alive && d?.ok) {
+          setSupportPending((d.wishes || []).filter(w => ['heard', 'working', 'needs_team'].includes(w.status)).length)
+        }
+      } catch { /* ignore */ }
+    }
+    load()
+    const t = setInterval(load, 60000)
+    return () => { alive = false; clearInterval(t) }
+  }, [worldId])
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
@@ -2279,6 +2297,7 @@ export default function CornerV4() {
               data-active={showSupportInbox ? 'true' : 'false'}
               aria-label="Support Inbox"
               title="Support Inbox"
+              style={{ position: 'relative' }}
               onClick={() => {
                 setShowSupportInbox(s => !s)
                 if (!showSupportInbox) {
@@ -2291,6 +2310,12 @@ export default function CornerV4() {
                 <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
                 <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
               </svg>
+              {supportPending > 0 && (
+                <span style={{ position: 'absolute', top: -2, right: -2, minWidth: 15, height: 15,
+                  padding: '0 4px', borderRadius: 8, background: '#F59E0B', color: '#1A1206',
+                  fontSize: 9, fontWeight: 800, lineHeight: '15px', textAlign: 'center',
+                  fontFamily: '"JetBrains Mono", ui-monospace, monospace' }}>{supportPending}</span>
+              )}
             </button>
           )}
 
