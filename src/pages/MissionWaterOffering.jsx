@@ -83,75 +83,69 @@ function Kicker({ children, className = '' }) {
 // ─── The three pillars ──────────────────────────────────────────────────────────
 const PILLARS = [
   {
-    n: '01',
-    name: 'The Game',
-    price: '$15,000',
-    tagline: 'The interactive experience',
+    n: ‘01’,
+    name: ‘The Game’,
+    price: ‘$15,000’,
+    tagline: ‘The interactive experience’,
     summary:
-      'The story-driven, branching water-science game students play start to finish. Live today and built to grow. This is the proof — the thing you put in front of a student, a school, or a sponsor and watch them get it.',
+      ‘The story-driven, branching water-science game students play start to finish. Live today and built to grow. This is the proof — the thing you put in front of a student, a school, or a sponsor and watch them get it.’,
     deliverables: [
-      'Three-chapter branching narrative — Earth water crisis, lunar transit, the search for lunar water — with real science embedded in every choice',
-      'Custom NASA mission-console visual system: cinematic moving backgrounds, instrument-panel HUD, mission-grade typography',
-      'Character selection (3 investigator roles) + a budget/resource system that makes every decision matter',
-      'Discovery badge system + living mission log that tracks what each student learns',
-      'Between-phase Mission Hub + inventory/manifest — the player’s in-game menu',
-      'Blippy, the mascot companion — reacts to the player across the whole journey',
-      'Full mobile + desktop responsive, hosted on a live URL, with ongoing iteration',
+      ‘Three-chapter branching narrative with embedded science’,
+      ‘NASA mission-console design with cinematic visuals’,
+      ‘Character roles, resource system, progression badges’,
+      ‘Blippy mascot that reacts throughout the story’,
+      ‘Responsive game, live hosting, ongoing updates’,
     ],
     addons: [
-      'Additional story chapters',
-      'Classroom / multiplayer mode',
-      'Cinematic AI video backgrounds (Veo3)',
-      'Teacher authoring tools',
-      'Localization / translation',
+      ‘Additional story chapters’,
+      ‘Classroom / multiplayer mode’,
+      ‘Cinematic AI video backgrounds (Veo3)’,
+      ‘Teacher authoring tools’,
+      ‘Localization / translation’,
     ],
   },
   {
-    n: '02',
-    name: 'The Platform',
-    price: '$15,000',
-    tagline: 'The masterclass, online',
+    n: ‘02’,
+    name: ‘The Platform’,
+    price: ‘$12,000’,
+    tagline: ‘The masterclass, online’,
     summary:
-      'Everything around the game that turns it into a real program — live classes, a permanent archive, self-paced coursework, and dashboards for educators and parents. One window, everything inside.',
+      ‘Everything around the game that turns it into a real program — live classes, a permanent archive, self-paced coursework, and dashboards for educators and parents. One window, everything inside.’,
     deliverables: [
-      'Live class broadcast — Nancy teaches live with a real-time Q&A rail, roster, reactions, and scheduling',
-      'Session archive — every class recorded and kept forever, searchable, returnable anytime',
-      'Self-paced course modules with timers, progress tracking, and student teach-back submissions',
-      'Student deliverables — upload reflections and project work; educators grade and give feedback in-platform',
-      'Educator + parent dashboards — separate logins, weekly report cards, full roster vs. single-student views',
-      'Registration, reminders, and set-a-reminder for upcoming sessions',
-      'The wrapper site that ties game + live + archive into one experience, hosted with ongoing support',
+      ‘Live broadcasts with real-time Q&A and scheduling’,
+      ‘Full session archive, forever searchable and accessible’,
+      ‘Self-paced course modules with progress tracking and submissions’,
+      ‘Student work uploads with educator feedback in-platform’,
+      ‘Educator and parent dashboards with weekly reports’,
     ],
     addons: [
-      'Payments / paid enrollment',
-      'LMS integration (Google Classroom, Canvas)',
-      'Completion certificates',
-      'Multi-school / cohort management',
-      'White-label for the next masterclass',
+      ‘Payments / paid enrollment’,
+      ‘LMS integration (Google Classroom, Canvas)’,
+      ‘Completion certificates’,
+      ‘Multi-school / cohort management’,
+      ‘White-label for the next masterclass’,
     ],
   },
   {
-    n: '03',
-    name: 'The Marketing',
-    price: '$15,000',
-    tagline: 'Go-to-market for all of it',
+    n: ‘03’,
+    name: ‘The Marketing’,
+    price: ‘$10,000’,
+    tagline: ‘Go-to-market for all of it’,
     summary:
-      'The brand, the story, and the campaign that gets Mission Water in front of students, schools, and funders. Build it beautifully, then make sure the right people see it.',
+      ‘The brand, the story, and the campaign that gets Mission Water in front of students, schools, and funders. Build it beautifully, then make sure the right people see it.’,
     deliverables: [
-      'Mission Water brand system — logo, palette, typography, and usage guidelines',
-      'Marketing landing page(s) tuned for enrollment, with SEO foundations',
-      'Launch campaign creative — a social kit, post templates, and ad creative ready to run',
-      'A promo / sizzle video that sells the experience in under a minute',
-      'Email sequences for educator, parent, and sponsor outreach',
-      'A 60-day social content calendar with copy and visuals',
-      'A funder + district one-pager, plus an analytics dashboard to see what’s working',
+      ‘Complete brand system with guidelines and usage rules’,
+      ‘Landing pages optimized for enrollment and search’,
+      ‘Campaign assets: social kit, email sequences, ad creative’,
+      ‘Launch video: sizzle reel under one minute’,
+      ‘Funder one-pager and performance dashboard’,
     ],
     addons: [
-      'Ongoing monthly social management',
-      'Additional video production',
-      'PR / press outreach',
-      'Sponsor / grant deck',
-      'Managed paid ads (see ad budget)',
+      ‘Ongoing monthly social management’,
+      ‘Additional video production’,
+      ‘PR / press outreach’,
+      ‘Sponsor / grant deck’,
+      ‘Managed paid ads (see ad budget)’,
     ],
   },
 ];
@@ -180,11 +174,10 @@ export default function MissionWaterOffering() {
               <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/25">Confidential</span>
             </div>
             <h1 className="font-display-serif text-[44px] md:text-[78px] lg:text-[92px] leading-[0.94] tracking-[-0.035em] max-w-[1000px] mb-7 text-white">
-              Three pillars.<br />
-              <em className="font-display-italic italic font-medium text-[#E85D26]">Build one, or all of it.</em>
+              <em className="font-display-italic italic font-medium text-[#E85D26]">Build what you need.</em>
             </h1>
             <p className="font-body text-[17px] md:text-[20px] leading-[1.55] max-w-[640px] text-white/65 mb-10">
-              Mission Water comes in three pieces — the Game, the Platform, and the Marketing. Each is a complete, standalone build at <span className="text-white font-semibold">$15,000</span>. Take one to start, or run all three together. A managed ad budget gets it in front of the right people.
+              Mission Water is delivered in independent, complete pieces that work together or stand alone. Pick one, two, or the full program — and tailor the deliverables as you go.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <a href="#pillars" className="inline-flex items-center gap-2 bg-[#E85D26] hover:bg-[#E85D26]/90 text-white font-mono text-[10.5px] uppercase tracking-[0.2em] px-7 py-3.5 rounded-full transition-colors">
@@ -194,21 +187,6 @@ export default function MissionWaterOffering() {
                 ← Back to the platform
               </a>
             </div>
-          </motion.div>
-
-          {/* Pricing readout strip */}
-          <motion.div className="mt-16 md:mt-20 grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-5 border-t border-white/10 pt-7" {...fadeUp(0.15)}>
-            {[
-              ['The Game', '$15,000'],
-              ['The Platform', '$15,000'],
-              ['The Marketing', '$15,000'],
-              ['Ad budget', '$5K – $10K'],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-white/35 mb-2">{k}</p>
-                <p className="font-display-serif text-[22px] md:text-[26px] text-white tracking-[-0.02em]">{v}</p>
-              </div>
-            ))}
           </motion.div>
         </div>
       </section>
@@ -222,7 +200,7 @@ export default function MissionWaterOffering() {
               Every pillar, in detail.
             </h2>
             <p className="font-body text-[16px] text-[#071530]/55 leading-[1.6] max-w-[600px] mt-4">
-              No vague line items. Here is exactly what each $15,000 builds — and what you can add or swap as you go.
+              No vague line items. Here is exactly what each pillar delivers — and what you can add or swap as you go.
             </p>
           </motion.div>
 
@@ -235,22 +213,15 @@ export default function MissionWaterOffering() {
                 {...fadeUp(0.05 + i * 0.05)}
               >
                 <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr]">
-                  {/* Left — identity + price */}
+                  {/* Left — identity */}
                   <div className="p-8 md:p-10 flex flex-col" style={{ background: 'linear-gradient(160deg, #071530 0%, #0D2045 100%)' }}>
-                    <span className="font-mono text-[12px] tracking-[0.22em] text-[#E85D26] mb-5">PILLAR {p.n}</span>
                     <h3 className="font-display-serif text-[30px] md:text-[36px] leading-[1.0] tracking-[-0.02em] text-white mb-1">{p.name}</h3>
                     <p className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-white/45 mb-6">{p.tagline}</p>
-                    <p className="font-body text-[14px] text-white/60 leading-[1.6] mb-8">{p.summary}</p>
-                    <div className="mt-auto">
-                      <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-white/35 mb-1.5">Investment</p>
-                      <p className="font-display-serif text-[40px] md:text-[44px] text-white tracking-[-0.02em] leading-none">
-                        {p.price}<span className="font-mono text-[11px] tracking-[0.15em] text-white/40 ml-2">fixed</span>
-                      </p>
-                    </div>
+                    <p className="font-body text-[14px] text-white/60 leading-[1.6]">{p.summary}</p>
                   </div>
 
-                  {/* Right — deliverables + add-ons */}
-                  <div className="p-8 md:p-10 bg-[#F4F2EF]">
+                  {/* Right — deliverables + add-ons + price */}
+                  <div className="p-8 md:p-10 bg-[#F4F2EF] flex flex-col relative">
                     <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-5">Deliverables</p>
                     <ul className="space-y-3.5 mb-8">
                       {p.deliverables.map((d, di) => (
@@ -261,12 +232,25 @@ export default function MissionWaterOffering() {
                       ))}
                     </ul>
                     <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-3">Add-ons &amp; options</p>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-8">
                       {p.addons.map((a) => (
                         <span key={a} className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#071530]/60 border border-[#071530]/15 rounded-full px-3 py-1.5">
                           + {a}
                         </span>
                       ))}
+                    </div>
+                    <div className="mt-auto pt-6 border-t border-[#071530]/10">
+                      <div className="flex items-end justify-between mb-4">
+                        <div>
+                          <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#071530]/45 mb-1.5">Investment</p>
+                          <p className="font-display-serif text-[40px] md:text-[44px] text-[#071530] tracking-[-0.02em] leading-none">
+                            {p.price}<span className="font-mono text-[11px] tracking-[0.15em] text-[#071530]/40 ml-2">fixed</span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-display-serif text-[48px] md:text-[56px] text-[#071530]/15 tracking-[-0.03em] leading-none font-light">{p.n}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -330,24 +314,24 @@ export default function MissionWaterOffering() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
             {[
-              { k: 'Start small', t: 'One pillar', d: 'Begin with the Game (it’s already live), the Platform, or the Marketing. Each stands on its own at $15,000.', price: '$15,000' },
-              { k: 'Most popular', t: 'Two pillars', d: 'Game + Platform makes the full learning experience. Or Game + Marketing to launch loud. Mix to fit your moment.', price: '$30,000' },
-              { k: 'The whole program', t: 'All three', d: 'Game, Platform, and Marketing together — the complete Mission Water build, end to end.', price: '$45,000', feature: true },
+              { k: ‘Start small’, t: ‘One pillar’, d: ‘Begin with the Game (it’s already live), the Platform, or the Marketing. Each stands on its own.’, price: ‘$10K–$15K’ },
+              { k: ‘Most popular’, t: ‘Two pillars’, d: ‘Game + Platform makes the full learning experience. Or Game + Marketing to launch loud. Mix to fit your moment.’, price: ‘$22K–$27K’ },
+              { k: ‘The whole program’, t: ‘All three’, d: ‘Game, Platform, and Marketing together — the complete Mission Water build, end to end.’, price: ‘$37,000’, feature: true },
             ].map((b, i) => (
               <motion.div
                 key={b.t}
                 className="p-8 rounded-xl flex flex-col"
                 style={{
-                  background: b.feature ? 'linear-gradient(160deg, #071530 0%, #0D2045 100%)' : '#F4F2EF',
-                  border: b.feature ? '1px solid rgba(232,93,38,0.4)' : '1px solid rgba(7,21,48,0.08)',
+                  background: b.feature ? ‘linear-gradient(160deg, #071530 0%, #0D2045 100%)’ : ‘#F4F2EF’,
+                  border: b.feature ? ‘1px solid rgba(232,93,38,0.4)’ : ‘1px solid rgba(7,21,48,0.08)’,
                 }}
                 {...fadeUp(0.06 + i * 0.06)}
               >
                 <Kicker className="mb-3">{b.k}</Kicker>
-                <p className={`font-display-serif text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.015em] mb-3 ${b.feature ? 'text-white' : 'text-[#071530]'}`}>{b.t}</p>
-                <p className={`font-body text-[14px] leading-[1.6] mb-6 ${b.feature ? 'text-white/60' : 'text-[#071530]/55'}`}>{b.d}</p>
-                <p className={`mt-auto font-display-serif text-[32px] tracking-[-0.02em] ${b.feature ? 'text-white' : 'text-[#071530]'}`}>
-                  {b.price}<span className={`font-mono text-[10px] tracking-[0.15em] ml-2 ${b.feature ? 'text-[#E85D26]' : 'text-[#071530]/40'}`}>+ ad budget</span>
+                <p className={`font-display-serif text-[24px] md:text-[28px] leading-[1.1] tracking-[-0.015em] mb-3 ${b.feature ? ‘text-white’ : ‘text-[#071530]’}`}>{b.t}</p>
+                <p className={`font-body text-[14px] leading-[1.6] mb-6 ${b.feature ? ‘text-white/60’ : ‘text-[#071530]/55’}`}>{b.d}</p>
+                <p className={`mt-auto font-display-serif text-[32px] tracking-[-0.02em] ${b.feature ? ‘text-white’ : ‘text-[#071530]’}`}>
+                  {b.price}
                 </p>
               </motion.div>
             ))}
