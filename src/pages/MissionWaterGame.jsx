@@ -272,6 +272,12 @@ export default function MissionWaterGame() {
 
   const activeChapter = phase ? (phase.chapter || 1) : 1;
 
+  // The course sidebar belongs to the in-game experience only. On the gate
+  // screens (welcome → name → role → budget) it must NOT render — those screens
+  // are full-bleed centered boxes, and a 30% sidebar shoves their centered panel
+  // off-axis. Sidebar shows once gameplay begins (budget confirmed → hub + game).
+  const inGame = budgetConfirmed;
+
   // Mount-time: set <title> for browser tab.
   useEffect(() => {
     const prev = document.title;
@@ -372,13 +378,15 @@ export default function MissionWaterGame() {
           </div>
         )}
       </main>
-      <aside style={styles.sidebar}>
-        <SidebarPlaceholder
-          phase={phase}
-          activeChapter={activeChapter}
-          onJumpToPhase={onJumpToPhase}
-        />
-      </aside>
+      {inGame && (
+        <aside style={styles.sidebar}>
+          <SidebarPlaceholder
+            phase={phase}
+            activeChapter={activeChapter}
+            onJumpToPhase={onJumpToPhase}
+          />
+        </aside>
+      )}
       </div>
     </div>
   );
