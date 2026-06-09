@@ -112,8 +112,13 @@ async function deleteConnectionMatching({ userId, slug, workspaceId, accountEmai
       )
       return { ok: r.ok, status: r.status }
     }
+    // Email-scoped when known, so a partial consent on one account doesn't
+    // delete the user's other connected accounts (multi-account, 2026-06-09).
+    const emailFilter = accountEmail
+      ? `&config->>account_email=eq.${encodeURIComponent(accountEmail)}`
+      : ''
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${slug}`,
+      `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${slug}${emailFilter}`,
       { method: 'DELETE', headers: { ...svcHeaders, Prefer: 'return=minimal' } },
     )
     return { ok: r.ok, status: r.status }
@@ -186,10 +191,18 @@ async function upsertConnection({ userId, slug, tokenBlob, providerProfile, work
   // integration_slug) — Supabase events showed every user-owned upsert
   // failing with Postgres 42P10 ("no unique or exclusion constraint
   // matching the ON CONFLICT specification"). This mirrors the workspace
-  // branch above: look up the existing row by (user_id, slug), PATCH if
-  // present, POST if not. No schema dependency.
+  // branch above: look up the existing row, PATCH if present, POST if not.
+  //
+  // MULTI-ACCOUNT (2026-06-09): key on (user_id, slug, account_email) when an
+  // account email is known, so connecting a SECOND Google account creates its
+  // own row instead of overwriting the first (the bug that flipped hello@ ->
+  // personal). Re-authing the SAME account still updates its own row. For
+  // providers with no account email (null), fall back to (user_id, slug).
+  const emailFilter = accountEmail
+    ? `&config->>account_email=eq.${encodeURIComponent(accountEmail)}`
+    : ''
   const existing = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${slug}&select=id&limit=1`,
+    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.${slug}${emailFilter}&select=id&limit=1`,
     { headers: svcHeaders },
   )
   const existingRow = existing.ok ? (await existing.json())[0] : null

@@ -33,7 +33,11 @@ export const OAUTH_PROVIDERS = {
     ],
     extraAuthParams: {
       access_type: 'offline',
-      prompt: 'consent',
+      // select_account forces Google's account chooser so connecting a SECOND
+      // mailbox (e.g. hello@ alongside personal) always lets you pick which
+      // account — never silently reuses the active one. consent guarantees a
+      // fresh refresh_token on every (re)auth. (multi-account, 2026-06-09)
+      prompt: 'select_account consent',
       // include_granted_scopes lets a re-auth keep previously granted scopes
       // while adding any missing ones — minimises consent friction on retry.
       include_granted_scopes: 'true',
