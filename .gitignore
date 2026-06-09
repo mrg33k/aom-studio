@@ -22,3 +22,4 @@ scripts/.enrich-progress.json
 # Local fixture dumps (npm run snapshot) -- never commit; refresh on demand.
 src/dashboard/__fixtures__/
 /corner/missions/
+public/__screens-board.html

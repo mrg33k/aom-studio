@@ -140,7 +140,16 @@ export default function MissionWaterGame() {
       setHasStarted(true); setNameEntered(true); setPlayerName('Dev');
       setSelectedRole(devRole);
       setBudgetConfirmed(true);
-      if (screen === 'hub') setShowHub(true);
+      // Give downstream screens real resources to render (HUD tokens, Hub cards).
+      setInvestigationResources(devRole.starting_resources ?? null);
+      if (screen === 'hub') {
+        setShowHub(true);
+        // Hub is a between-phase interstitial; give it a valid next-phase target
+        // so it renders real content instead of an empty shell.
+        setHubNextPhaseId(
+          phaseGraph.phases.ch1_region_select ? 'ch1_region_select' : phaseGraph.start_phase,
+        );
+      }
       // Mirror the game's own onJumpToPhase shape so HUD/Canvas read valid state.
       if (phase && phaseGraph.phases[phase]) {
         setRunState({ phase_id: phase, discoveries: [], history: [phase] });
