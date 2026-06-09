@@ -225,3 +225,36 @@ export function decodeBase64Url(b64url) {
   const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/')
   return Buffer.from(b64, 'base64').toString('utf-8')
 }
+
+// Resolve a Gmail connection id by account email.
+// Prefers workspace-owned rows (canonical for terminal agents), falls back to
+// the most-recently-updated user-owned row. Returns null if none found.
+// Used by internal mail endpoints so agents can pass account_email instead of
+// a fragile hardcoded connection UUID.
+export async function resolveConnectionIdByEmail(accountEmail) {
+  if (!SUPABASE_URL || !SUPABASE_KEY || !accountEmail) return null
+  const emailEnc = encodeURIComponent(accountEmail)
+  const svcHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+
+  // Prefer workspace-owned rows — canonical for shared/terminal use
+  const wsR = await fetch(
+    `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=not.is.null&integration_slug=eq.gmail&config->>account_email=eq.${emailEnc}&select=id&order=updated_at.desc&limit=1`,
+    { headers: svcHeaders },
+  )
+  if (wsR.ok) {
+    const rows = await wsR.json()
+    if (Array.isArray(rows) && rows.length) return rows[0].id
+  }
+
+  // Fall back to user-owned — most recently updated wins
+  const userR = await fetch(
+    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=not.is.null&integration_slug=eq.gmail&config->>account_email=eq.${emailEnc}&select=id&order=updated_at.desc&limit=1`,
+    { headers: svcHeaders },
+  )
+  if (userR.ok) {
+    const rows = await userR.json()
+    if (Array.isArray(rows) && rows.length) return rows[0].id
+  }
+
+  return null
+}

@@ -4,14 +4,15 @@
 // a single Gmail message. Mirrors /api/dashboard/mail/get without user-JWT.
 //
 // Body: {
-//   connection_id,  // required — account_integrations.id
-//   message_id,     // required — Gmail message id
+//   connection_id?,  // account_integrations.id (or account_email as alternative)
+//   account_email?,  // alternative to connection_id — resolves the row by email
+//   message_id,      // required — Gmail message id
 // }
 //
 // Response: same shape as the dashboard get — id, threadId, from, to, cc,
 // subject, date, snippet, bodyText, bodyHtml, inReplyTo, references, messageId.
 
-import { getGmailTokenByConnection, gmailFetch, decodeBase64Url } from '../../_lib/gmailClient.js'
+import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch, decodeBase64Url } from '../../_lib/gmailClient.js'
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -102,13 +103,18 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid-json' })
   }
 
-  const { connection_id, message_id } = payload
-  if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
+  const { connection_id, account_email, message_id } = payload
+  let resolvedId = connection_id
+  if (!resolvedId && account_email) {
+    resolvedId = await resolveConnectionIdByEmail(account_email)
+    if (!resolvedId) return res.status(400).json({ error: 'no gmail connection found for account_email' })
+  }
+  if (!resolvedId) return res.status(400).json({ error: 'connection_id or account_email required' })
   if (!message_id) return res.status(400).json({ error: 'message_id required' })
 
   let creds
   try {
-    creds = await getGmailTokenByConnection(connection_id)
+    creds = await getGmailTokenByConnection(resolvedId)
   } catch (e) {
     return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }

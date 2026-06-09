@@ -6,16 +6,17 @@
 // auth instead of a user JWT.
 //
 // Body: {
-//   connection_id, // required -- account_integrations.id
-//   message_id,    // required -- Gmail message id (parent of the attachment)
-//   attachment_id, // required -- Gmail attachmentId from message.payload tree
+//   connection_id?,  // account_integrations.id (or account_email as alternative)
+//   account_email?,  // alternative to connection_id — resolves the row by email
+//   message_id,      // required -- Gmail message id (parent of the attachment)
+//   attachment_id,   // required -- Gmail attachmentId from message.payload tree
 // }
 //
 // Response: { ok, size, data_base64, mime_type? }
 //   mime_type is best-effort: Gmail's attachments.get doesn't return MIME so
 //   the caller already knows it (it came from get.js's attachments[]).
 
-import { getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -38,14 +39,19 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid-json' })
   }
 
-  const { connection_id, message_id, attachment_id } = payload
-  if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
+  const { connection_id, account_email, message_id, attachment_id } = payload
+  let resolvedId = connection_id
+  if (!resolvedId && account_email) {
+    resolvedId = await resolveConnectionIdByEmail(account_email)
+    if (!resolvedId) return res.status(400).json({ error: 'no gmail connection found for account_email' })
+  }
+  if (!resolvedId) return res.status(400).json({ error: 'connection_id or account_email required' })
   if (!message_id) return res.status(400).json({ error: 'message_id required' })
   if (!attachment_id) return res.status(400).json({ error: 'attachment_id required' })
 
   let creds
   try {
-    creds = await getGmailTokenByConnection(connection_id)
+    creds = await getGmailTokenByConnection(resolvedId)
   } catch (e) {
     return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }

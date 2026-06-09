@@ -14,7 +14,8 @@
 // Auth: X-Internal-Key header must equal SUPABASE_SERVICE_ROLE_KEY.
 //
 // Body: {
-//   connection_id,      // account_integrations.id of the workspace Gmail connection
+//   connection_id?,     // account_integrations.id (or account_email as alternative)
+//   account_email?,     // alternative to connection_id — resolves the row by email
 //   to,                 // [{name?, email}, ...] or "Name <email@example.com>" strings
 //   cc?, bcc?,
 //   subject,
@@ -28,7 +29,7 @@
 //
 // Response: { ok: true, id, threadId } on success.
 
-import { getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -169,6 +170,7 @@ export default async function handler(req, res) {
 
   const {
     connection_id,
+    account_email,
     to,
     cc,
     bcc,
@@ -183,16 +185,21 @@ export default async function handler(req, res) {
     draft,            // optional: true -> save to Gmail Drafts instead of sending
   } = payload
 
-  if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
+  let resolvedId = connection_id
+  if (!resolvedId && account_email) {
+    resolvedId = await resolveConnectionIdByEmail(account_email)
+    if (!resolvedId) return res.status(400).json({ error: 'no gmail connection found for account_email' })
+  }
+  if (!resolvedId) return res.status(400).json({ error: 'connection_id or account_email required' })
   if (!to || !subject || !bodyHtml) return res.status(400).json({ error: 'to, subject, bodyHtml required' })
 
-  // Load Gmail tokens directly via connection_id (no user JWT needed).
+  // Load Gmail tokens directly via connection id (no user JWT needed).
   // Wrap in try/catch so a token failure (e.g. invalid_grant — reconnect needed)
   // returns a clean 424 with the real reason instead of crashing the function
   // (FUNCTION_INVOCATION_FAILED). Mirrors list.js / draft.js.
   let creds
   try {
-    creds = await getGmailTokenByConnection(connection_id)
+    creds = await getGmailTokenByConnection(resolvedId)
   } catch (e) {
     return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }

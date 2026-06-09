@@ -6,15 +6,16 @@
 // query is the only filter.
 //
 // Body: {
-//   connection_id,  // required
-//   q,              // required — Gmail query string
-//   max?,           // default 25, capped at 100
+//   connection_id?,  // account_integrations.id (or account_email as alternative)
+//   account_email?,  // alternative to connection_id — resolves the row by email
+//   q,               // required — Gmail query string
+//   max?,            // default 25, capped at 100
 // }
 //
 // Response: { emails: [...], q, total, mode } — same per-email shape as
 // /api/internal/mail/list (id, threadId, from, subject, snippet, date, unread).
 
-import { getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -50,15 +51,20 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid-json' })
   }
 
-  const { connection_id, q, max } = payload
-  if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
+  const { connection_id, account_email, q, max } = payload
+  let resolvedId = connection_id
+  if (!resolvedId && account_email) {
+    resolvedId = await resolveConnectionIdByEmail(account_email)
+    if (!resolvedId) return res.status(400).json({ error: 'no gmail connection found for account_email' })
+  }
+  if (!resolvedId) return res.status(400).json({ error: 'connection_id or account_email required' })
   if (!q || typeof q !== 'string') return res.status(400).json({ error: 'q (query string) required' })
 
   const maxResults = Math.max(1, Math.min(Number(max) > 0 ? Number(max) : 25, 100))
 
   let creds
   try {
-    creds = await getGmailTokenByConnection(connection_id)
+    creds = await getGmailTokenByConnection(resolvedId)
   } catch (e) {
     return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }

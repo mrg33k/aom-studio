@@ -9,7 +9,9 @@
 // service-role key); no per-user filtering is layered on top of Gmail's q=.
 //
 // Body: {
-//   connection_id,   // required — account_integrations.id of the workspace Gmail
+//   connection_id?,  // account_integrations.id of the workspace Gmail
+//   account_email?,  // alternative to connection_id — resolves the row by email
+//                    // (at least one of connection_id / account_email required)
 //   bucket?,         // one of: awaiting-reply, today, clients, threads,
 //                    //         prospects, sent, all  (default: 'today')
 //   days?,           // override day window when bucket isn't given (default: 7)
@@ -17,7 +19,7 @@
 //
 // Response: same shape as the dashboard list — { emails, bucket, historyId, mode }.
 
-import { getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 import { buildBucketQuery } from '../../_lib/mailBuckets.js'
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -99,12 +101,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid-json' })
   }
 
-  const { connection_id, bucket, days } = payload
-  if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
+  const { connection_id, account_email, bucket, days } = payload
+  let resolvedId = connection_id
+  if (!resolvedId && account_email) {
+    resolvedId = await resolveConnectionIdByEmail(account_email)
+    if (!resolvedId) return res.status(400).json({ error: 'no gmail connection found for account_email' })
+  }
+  if (!resolvedId) return res.status(400).json({ error: 'connection_id or account_email required' })
 
   let creds
   try {
-    creds = await getGmailTokenByConnection(connection_id)
+    creds = await getGmailTokenByConnection(resolvedId)
   } catch (e) {
     return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }

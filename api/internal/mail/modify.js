@@ -9,11 +9,12 @@
 // This endpoint refuses any operation that would move messages to TRASH or
 // permanently delete them.
 //
-// Body: { connection_id, message_id, action, addLabels?, removeLabels? }
+// Body: { connection_id?, account_email?, message_id, action, addLabels?, removeLabels? }
+//   (connection_id or account_email required — account_email resolves the row at runtime)
 // action: archive | mark-read | mark-unread | star | unstar
 // Response: { ok, id, labelIds, applied }
 
-import { getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -50,8 +51,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid-json' })
   }
 
-  const { connection_id, message_id, action } = payload
-  if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
+  const { connection_id, account_email, message_id, action } = payload
+  let resolvedId = connection_id
+  if (!resolvedId && account_email) {
+    resolvedId = await resolveConnectionIdByEmail(account_email)
+    if (!resolvedId) return res.status(400).json({ error: 'no gmail connection found for account_email' })
+  }
+  if (!resolvedId) return res.status(400).json({ error: 'connection_id or account_email required' })
   if (!message_id) return res.status(400).json({ error: 'message_id required' })
 
   const addLabels = Array.isArray(payload.addLabels) ? payload.addLabels : []
@@ -98,7 +104,7 @@ export default async function handler(req, res) {
 
   let creds
   try {
-    creds = await getGmailTokenByConnection(connection_id)
+    creds = await getGmailTokenByConnection(resolvedId)
   } catch (e) {
     return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }

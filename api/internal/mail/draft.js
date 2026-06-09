@@ -13,7 +13,8 @@
 // Creating a draft still happens via /api/internal/mail/send with draft:true.
 // This endpoint covers the rest of a draft's lifecycle.
 //
-// Body: { connection_id, action, draft_id?, max? }
+// Body: { connection_id?, account_email?, action, draft_id?, max? }
+//   (connection_id or account_email required — account_email resolves the row at runtime)
 //   action = list   -> { ok, drafts: [{id, messageId, threadId, subject, to, snippet}], count }
 //   action = get    -> { ok, draft: {...full draft...} }      (requires draft_id)
 //   action = delete -> { ok, deleted: true, draft_id }        (requires draft_id)
@@ -21,7 +22,7 @@
 //
 // Scope: works under gmail.modify (the scope the connection already holds).
 
-import { getGmailTokenByConnection, gmailFetch } from '../../_lib/gmailClient.js'
+import { getGmailTokenByConnection, resolveConnectionIdByEmail, gmailFetch } from '../../_lib/gmailClient.js'
 
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -52,10 +53,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid-json' })
   }
 
-  const { connection_id, draft_id } = payload
+  const { connection_id, account_email, draft_id } = payload
   const action = String(payload.action || '').toLowerCase().trim()
 
-  if (!connection_id) return res.status(400).json({ error: 'connection_id required' })
+  let resolvedId = connection_id
+  if (!resolvedId && account_email) {
+    resolvedId = await resolveConnectionIdByEmail(account_email)
+    if (!resolvedId) return res.status(400).json({ error: 'no gmail connection found for account_email' })
+  }
+  if (!resolvedId) return res.status(400).json({ error: 'connection_id or account_email required' })
   if (!ALLOWED_ACTIONS.has(action)) {
     return res.status(400).json({
       error: 'unknown-action',
@@ -68,7 +74,7 @@ export default async function handler(req, res) {
 
   let creds
   try {
-    creds = await getGmailTokenByConnection(connection_id)
+    creds = await getGmailTokenByConnection(resolvedId)
   } catch (e) {
     return res.status(424).json({ error: 'gmail-auth', detail: e.message })
   }
