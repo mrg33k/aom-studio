@@ -158,9 +158,98 @@ function StreamHeader({ title, sub, count, total, onRefresh }) {
   )
 }
 
+// ── Cross-mailbox inbox (the "support emails" stream beyond wishes) ───────────
+function InboxItem({ it, loud }) {
+  return (
+    <a href={`mailto:${it.email}?subject=${encodeURIComponent('Re: ' + (it.subject || ''))}`}
+      style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
+        padding: '8px 0', borderBottom: `1px solid ${LINE}`, color: BONE }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: loud ? AMBER : BONE_FAINT }} />
+      <span style={{ flex: '0 0 auto', maxWidth: '32%', fontWeight: 600, fontSize: 13, overflow: 'hidden',
+        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.from}</span>
+      <span style={{ flex: 1, minWidth: 0, color: BONE_DIM, fontSize: 12, overflow: 'hidden',
+        textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</span>
+      <span style={{ flex: '0 0 auto', fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT }}>
+        {loud ? 'Reply →' : 'replied'}
+      </span>
+    </a>
+  )
+}
+
+function InboxPanel() {
+  const [pw, setPw] = useState(() => { try { return sessionStorage.getItem('support-admin-pw') || '' } catch { return '' } })
+  const [input, setInput] = useState('')
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const load = useCallback(async (password) => {
+    if (!password) return
+    setLoading(true); setError('')
+    try {
+      const r = await fetch('/api/support/inbox', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'patrikmatheson@gmail.com', password, days: 3 }),
+      })
+      const d = await r.json()
+      if (r.status === 401) { try { sessionStorage.removeItem('support-admin-pw') } catch {} ; setPw(''); setError('Wrong team password.'); setLoading(false); return }
+      if (!r.ok || !d.ok) { setError(d.error || 'Could not load the inbox.'); setLoading(false); return }
+      try { sessionStorage.setItem('support-admin-pw', password) } catch {}
+      setPw(password); setData(d)
+    } catch { setError('Could not reach the mailboxes.') }
+    finally { setLoading(false) }
+  }, [])
+
+  useEffect(() => { if (pw) load(pw) }, [pw, load])
+
+  if (!pw && !data) {
+    return (
+      <div style={{ padding: '32px 24px', maxWidth: 360 }}>
+        <p style={{ fontFamily: SERIF, fontSize: 22, margin: '0 0 6px', color: BONE }}>Unlock the inbox</p>
+        <p style={{ color: BONE_DIM, fontSize: 13, margin: '0 0 14px' }}>Cross-mailbox tracking needs the team password.</p>
+        <form onSubmit={(e) => { e.preventDefault(); load(input) }}>
+          <input type="password" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Team password"
+            style={{ width: '100%', boxSizing: 'border-box', background: 'transparent', border: `1px solid ${LINE}`,
+              borderRadius: 4, color: BONE, fontFamily: BODY, fontSize: 14, padding: '10px 12px', marginBottom: 10, outline: 'none' }} />
+          {error && <p style={{ color: '#F0A07A', fontSize: 12 }}>{error}</p>}
+          <button type="submit" style={{ background: AMBER, color: '#1A1206', border: 'none', fontFamily: BODY,
+            fontSize: 14, fontWeight: 700, padding: '10px 22px', borderRadius: 3, cursor: 'pointer' }}>Load inbox</button>
+        </form>
+      </div>
+    )
+  }
+  if (loading && !data) return <p style={{ padding: 24, color: BONE_DIM }}>Reading the mailboxes…</p>
+  if (error && !data) return <div style={{ padding: 24 }}><p style={{ color: '#F0A07A', marginBottom: 10 }}>{error}</p><button onClick={() => load(pw)} style={ghostBtn}>Retry</button></div>
+  if (!data) return null
+  const boxes = data.mailboxes || []
+  return (
+    <div style={{ padding: '20px 24px', overflowY: 'auto', height: '100%' }}>
+      <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, margin: '0 0 16px' }}>
+        Last {data.days} days · real correspondents
+      </p>
+      {boxes.length === 0 && <p style={{ color: BONE_DIM }}>No connected mailboxes.</p>}
+      {boxes.map((box) => (
+        <section key={box.email} style={{ background: INK_PANEL, border: `1px solid ${LINE}`, borderRadius: 8, padding: '14px 16px', marginBottom: 18 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+            <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 18, margin: 0, color: BONE }}>{box.email}</h3>
+            {box.error
+              ? <span style={{ fontFamily: MONO, fontSize: 10, color: '#F0A07A' }}>{box.error}</span>
+              : <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{(box.needs?.length || 0)} need reply · {(box.replied?.length || 0)} replied</span>}
+          </div>
+          {!box.error && (box.needs || []).map((it) => <InboxItem key={'n' + it.email + it.threadId} it={it} loud />)}
+          {!box.error && (box.replied || []).map((it) => <InboxItem key={'r' + it.email + it.threadId} it={it} />)}
+          {!box.error && (box.needs?.length || 0) === 0 && (box.replied?.length || 0) === 0 &&
+            <span style={{ fontSize: 12, color: BONE_FAINT }}>Nothing personal in the window.</span>}
+        </section>
+      ))}
+    </div>
+  )
+}
+
 // ── Full dashboard ───────────────────────────────────────────────────────────
 export default function SupportDashboard({ isDesktop = true, onClose }) {
   const [tab, setTab] = useState('requests') // mobile single-pane
+  const [view, setView] = useState('streams') // desktop: streams | inbox
 
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -179,10 +268,11 @@ export default function SupportDashboard({ isDesktop = true, onClose }) {
         {header}
         <div style={{ display: 'flex', gap: 4, padding: '12px 24px 0' }}>
           <TabBtn active={tab === 'requests'} onClick={() => setTab('requests')} label="Requests" />
-          <TabBtn active={tab === 'chat'} onClick={() => setTab('chat')} label="Chat support" />
+          <TabBtn active={tab === 'chat'} onClick={() => setTab('chat')} label="Chat" />
+          <TabBtn active={tab === 'inbox'} onClick={() => setTab('inbox')} label="Inbox" />
         </div>
         <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          {tab === 'requests' ? <RequestsStream /> : <SupportInbox isDesktop={false} />}
+          {tab === 'requests' ? <RequestsStream /> : tab === 'chat' ? <SupportInbox isDesktop={false} /> : <InboxPanel />}
         </div>
       </div>
     )
@@ -191,14 +281,24 @@ export default function SupportDashboard({ isDesktop = true, onClose }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
       {header}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
-        <div style={{ flex: '1 1 50%', minWidth: 0, borderRight: `1px solid ${LINE}`, overflow: 'hidden' }}>
-          <RequestsStream />
-        </div>
-        <div style={{ flex: '1 1 50%', minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <SupportInbox isDesktop />
-        </div>
+      <div style={{ display: 'flex', gap: 4, padding: '10px 24px 0', borderBottom: `1px solid ${LINE}` }}>
+        <TabBtn active={view === 'streams'} onClick={() => setView('streams')} label="Requests & chat" />
+        <TabBtn active={view === 'inbox'} onClick={() => setView('inbox')} label="Inbox" />
       </div>
+      {view === 'streams' ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
+          <div style={{ flex: '1 1 50%', minWidth: 0, borderRight: `1px solid ${LINE}`, overflow: 'hidden' }}>
+            <RequestsStream />
+          </div>
+          <div style={{ flex: '1 1 50%', minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <SupportInbox isDesktop />
+          </div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          <InboxPanel />
+        </div>
+      )}
     </div>
   )
 }
