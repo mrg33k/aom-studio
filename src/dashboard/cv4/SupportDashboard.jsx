@@ -401,10 +401,128 @@ function SummaryStrip() {
   )
 }
 
+// ── Unified "Support items" — wishes + email threads in one status-chipped list ─
+// One item per contact regardless of channel. Common status vocabulary so a
+// request and an email read the same: Needs you / Working / Responded / Resolved.
+const UNI_STATUS = {
+  needs_you: { label: 'Needs you', loud: true },
+  working: { label: 'Working', loud: false },
+  responded: { label: 'Responded', loud: false },
+  resolved: { label: 'Resolved', loud: false },
+}
+
+function wishToItem(w) {
+  const status = w.status === 'resolved' ? 'resolved' : w.status === 'needs_team' ? 'needs_you' : 'working'
+  return {
+    key: 'w' + w.id, kind: 'Request', who: w.name || w.email || 'Someone',
+    text: w.message || '', reply: w.latest_response?.body || null, status,
+    date: w.created_at ? new Date(w.created_at).getTime() : 0, link: null,
+  }
+}
+function emailToItem(it, replied) {
+  return {
+    key: (replied ? 'r' : 'n') + it.email + it.threadId, kind: 'Email', who: it.from || it.email,
+    subject: it.subject, text: it.lastInbound?.snippet || it.subject || '',
+    reply: replied ? (it.lastReply?.snippet || null) : null, status: replied ? 'responded' : 'needs_you',
+    date: it.lastReply?.date || it.lastInbound?.date || it.date || 0,
+    link: it.threadId ? `https://mail.google.com/mail/u/0/#all/${it.threadId}` : null,
+  }
+}
+
+function SupportItemCard({ it }) {
+  const st = UNI_STATUS[it.status] || { label: it.status, loud: false }
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ background: st.loud ? AMBER_SOFT : INK_CARD, border: `1px solid ${st.loud ? 'rgba(245,158,11,0.35)' : LINE}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: BONE }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: BONE_FAINT, border: `1px solid ${LINE}`, borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>{it.kind}</span>
+            <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: BONE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.who}</span>
+          </span>
+          <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: st.loud ? AMBER : BONE_DIM, border: `1px solid ${st.loud ? AMBER : LINE}`, padding: '1px 7px', borderRadius: 10, whiteSpace: 'nowrap', flexShrink: 0 }}>{st.label}</span>
+        </div>
+        {it.subject && <p style={{ margin: '5px 0 0', fontSize: 13, color: BONE_DIM, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</p>}
+        {it.text && <p style={{ margin: '4px 0 0', fontSize: 12, color: BONE_FAINT, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.text}</p>}
+        {it.reply && (
+          <div style={{ marginTop: 7, padding: '6px 9px', background: AMBER_SOFT, borderLeft: `2px solid ${AMBER}`, borderRadius: 3 }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: AMBER }}>We replied</span>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: BONE_DIM, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.reply}</p>
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
+          <span style={{ fontSize: 11, color: BONE_FAINT }}>{it.link ? (open ? 'hide' : 'view thread') : (open ? 'hide' : 'details')}</span>
+          <span style={{ fontSize: 11, color: BONE_FAINT }}>{timeAgoMs(it.date)}</span>
+        </div>
+      </button>
+      {open && it.link && (
+        <div style={{ marginTop: 8, borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
+          <a href={it.link} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: AMBER, textDecoration: 'none' }}>Open in Gmail →</a>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function AllSupportItems({ worldId }) {
+  const isAom = worldId === 'aom'
+  const [wishes, setWishes] = useState(null)
+  const [mailboxes, setMailboxes] = useState(null)
+  const [filter, setFilter] = useState('all') // all | needs_you | responded | resolved
+
+  const load = useCallback(async () => {
+    try { const r = await fetch('/api/support/wishes'); const d = await r.json(); if (d.ok) setWishes(d.wishes || []) } catch { /* keep */ }
+    if (isAom) {
+      try {
+        const r2 = await authFetch('/api/support/inbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email: 'patrikmatheson@gmail.com', days: 7 }) })
+        const d2 = await r2.json(); if (d2.ok) setMailboxes(d2.mailboxes || [])
+      } catch { /* keep */ }
+    } else { setMailboxes([]) }
+  }, [isAom])
+  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t) }, [load])
+
+  const items = []
+  for (const w of wishes || []) items.push(wishToItem(w))
+  for (const box of mailboxes || []) {
+    for (const it of box.needs || []) items.push(emailToItem(it, false))
+    for (const it of box.replied || []) items.push(emailToItem(it, true))
+  }
+  items.sort((a, b) => (b.date || 0) - (a.date || 0))
+  const counts = {
+    all: items.length,
+    needs_you: items.filter((i) => i.status === 'needs_you').length,
+    responded: items.filter((i) => i.status === 'responded').length,
+    resolved: items.filter((i) => i.status === 'resolved').length,
+  }
+  const shown = filter === 'all' ? items : items.filter((i) => i.status === filter)
+  const loaded = wishes !== null || mailboxes !== null
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, padding: '16px 20px 12px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
+        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT }}>Every support contact · requests + emails</span>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <FilterPill active={filter === 'all'} onClick={() => setFilter('all')} label={`All ${counts.all}`} />
+          <FilterPill active={filter === 'needs_you'} onClick={() => setFilter('needs_you')} label={`Needs you ${counts.needs_you}`} loud />
+          <FilterPill active={filter === 'responded'} onClick={() => setFilter('responded')} label={`Responded ${counts.responded}`} />
+          {counts.resolved > 0 && <FilterPill active={filter === 'resolved'} onClick={() => setFilter('resolved')} label={`Resolved ${counts.resolved}`} />}
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
+        {!loaded && <p style={{ color: BONE_DIM, fontSize: 13 }}>Loading…</p>}
+        {loaded && shown.length === 0 && <p style={{ color: BONE_FAINT, fontSize: 13, padding: '16px 0' }}>
+          {filter === 'all' ? 'No support items right now.' : `Nothing in "${UNI_STATUS[filter]?.label || filter}" right now.`}
+        </p>}
+        {shown.map((it) => <SupportItemCard key={it.key} it={it} />)}
+      </div>
+    </div>
+  )
+}
+
 // ── Full dashboard ───────────────────────────────────────────────────────────
 export default function SupportDashboard({ isDesktop = true, onClose, worldId }) {
-  const [tab, setTab] = useState('requests') // mobile single-pane
-  const [view, setView] = useState('streams') // desktop: streams | inbox
+  const [tab, setTab] = useState('all') // mobile single-pane
+  const [view, setView] = useState('all') // desktop: all | streams | inbox
 
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -422,13 +540,17 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId })
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
         {header}
         <SummaryStrip />
-        <div style={{ display: 'flex', gap: 4, padding: '12px 24px 0' }}>
+        <div style={{ display: 'flex', gap: 4, padding: '12px 24px 0', flexWrap: 'wrap' }}>
+          <TabBtn active={tab === 'all'} onClick={() => setTab('all')} label="All" />
           <TabBtn active={tab === 'requests'} onClick={() => setTab('requests')} label="Requests" />
           <TabBtn active={tab === 'chat'} onClick={() => setTab('chat')} label="Chat" />
           <TabBtn active={tab === 'inbox'} onClick={() => setTab('inbox')} label="Inbox" />
         </div>
         <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          {tab === 'requests' ? <RequestsStream /> : tab === 'chat' ? <SupportInbox isDesktop={false} /> : <InboxPanel worldId={worldId} />}
+          {tab === 'all' ? <AllSupportItems worldId={worldId} />
+            : tab === 'requests' ? <RequestsStream />
+              : tab === 'chat' ? <SupportInbox isDesktop={false} />
+                : <InboxPanel worldId={worldId} />}
         </div>
       </div>
     )
@@ -439,10 +561,15 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId })
       {header}
       <SummaryStrip />
       <div style={{ display: 'flex', gap: 4, padding: '10px 24px 0', borderBottom: `1px solid ${LINE}` }}>
+        <TabBtn active={view === 'all'} onClick={() => setView('all')} label="All support" />
         <TabBtn active={view === 'streams'} onClick={() => setView('streams')} label="Requests & chat" />
         <TabBtn active={view === 'inbox'} onClick={() => setView('inbox')} label="Inbox" />
       </div>
-      {view === 'streams' ? (
+      {view === 'all' ? (
+        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+          <AllSupportItems worldId={worldId} />
+        </div>
+      ) : view === 'streams' ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
           <div style={{ flex: '1 1 50%', minWidth: 0, borderRight: `1px solid ${LINE}`, overflow: 'hidden' }}>
             <RequestsStream />
