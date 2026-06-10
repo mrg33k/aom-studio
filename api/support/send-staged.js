@@ -110,6 +110,16 @@ export default async function handler(req, res) {
 
   if (!wish_id) return res.status(400).json({ ok: false, error: 'wish_id required' })
 
+  // ── resolve: the human finished this outside the system — close the card ────
+  if (action === 'resolve') {
+    await logUpdate(wish_id, 'status_change', 'Marked resolved from the dashboard.', 'resolved')
+    await supa(`support_wishes?id=eq.${wish_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'resolved', updated_at: new Date().toISOString() }),
+    })
+    return res.status(200).json({ ok: true, resolved: true })
+  }
+
   if (action === 'change') {
     if (!note || !note.trim()) return res.status(400).json({ ok: false, error: 'note required' })
     await logUpdate(wish_id, 'change_request', note.trim())

@@ -118,6 +118,32 @@ function RequestsStream() {
   )
 }
 
+// ── M14: quiet resolve for any open wish card ("I finished this myself") ──────
+function ResolveBtn({ wishId, onDone, style }) {
+  const [state, setState] = useState('idle') // idle | busy | done
+  async function go(e) {
+    e.stopPropagation()
+    setState('busy')
+    try {
+      const r = await authFetch('/api/support/send-staged', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resolve', wish_id: wishId }),
+      })
+      const d = await r.json()
+      if (r.ok && d.ok) { setState('done'); onDone && onDone() } else setState('idle')
+    } catch { setState('idle') }
+  }
+  if (state === 'done') return <span style={{ fontFamily: MONO, fontSize: 10, color: AMBER, ...style }}>Resolved ✓</span>
+  return (
+    <button onClick={go} disabled={state === 'busy'} title="Close this card — handled outside the system"
+      style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: BONE_FAINT,
+        background: 'transparent', border: `1px solid ${LINE}`, borderRadius: 999,
+        padding: '2px 10px', cursor: 'pointer', ...style }}>
+      {state === 'busy' ? '…' : 'Mark resolved ✓'}
+    </button>
+  )
+}
+
 // ── M13: the press-send card — work is DONE, the human only fires ─────────────
 function PressSendCard({ w, staged }) {
   ensurePressSendCss()
@@ -236,6 +262,7 @@ function PressSendCard({ w, staged }) {
             border: `1px solid ${LINE}`, borderRadius: 8, padding: '9px 16px', cursor: 'pointer' }}>
             Ask for a change
           </button>
+          <ResolveBtn wishId={w.id} style={{ marginLeft: 'auto' }} />
           {phase === 'error' && <span style={{ fontSize: 12, color: '#F0A07A' }}>{err}</span>}
         </div>
       )}
@@ -324,6 +351,11 @@ function WishRow({ w, dim }) {
           <span style={{ fontSize: 11, color: BONE_FAINT }}>{open ? 'hide activity' : 'activity'} · {timeAgo(w.created_at)}</span>
         </div>
       </button>
+      {w.status !== 'resolved' && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+          <ResolveBtn wishId={w.id} />
+        </div>
+      )}
       {open && (
         <div style={{ marginTop: 10, borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
           {loading && <span style={{ fontSize: 12, color: BONE_FAINT }}>Loading activity…</span>}
@@ -650,6 +682,11 @@ function SupportItemCard({ it }) {
       {open && it.link && (
         <div style={{ marginTop: 8, borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
           <a href={it.link} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: AMBER, textDecoration: 'none' }}>Open in Gmail →</a>
+        </div>
+      )}
+      {it.wish && it.status !== 'resolved' && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
+          <ResolveBtn wishId={it.wish.id} />
         </div>
       )}
     </div>
