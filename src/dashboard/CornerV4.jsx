@@ -27,6 +27,7 @@ import {
   getUserWorld,
 } from './lib/clientConfig.js'
 import { authFetch } from './lib/authFetch.js'
+import { OVERLAY } from './cv4/lib/uiKit.jsx'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import { useCurrentUserSlug } from './hooks/useCurrentUserSlug'
@@ -2697,7 +2698,7 @@ export default function CornerV4() {
           onClick={() => setShowCommandsModal(false)}
           style={{
             position: 'fixed', inset: 0, zIndex: 300,
-            background: 'rgba(0,0,0,0.65)',
+            background: OVERLAY.backdrop,
             display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
             paddingBottom: 80,
           }}
@@ -2708,8 +2709,8 @@ export default function CornerV4() {
               width: '100%', maxWidth: 560,
               background: C.s1,
               border: '1px solid ' + C.border2,
-              borderRadius: 18,
-              boxShadow: '0 16px 64px rgba(0,0,0,0.6)',
+              borderRadius: OVERLAY.panelRadius,
+              boxShadow: OVERLAY.panelShadow,
               overflow: 'hidden',
               maxHeight: '60vh',
               display: 'flex', flexDirection: 'column',

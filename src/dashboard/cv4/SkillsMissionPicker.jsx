@@ -6,6 +6,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
+import { OVERLAY } from './lib/uiKit.jsx'
 import { authFetch } from '../lib/authFetch.js'
 import { setAttachedSkill } from './skillsStore.js'
 
@@ -105,8 +106,8 @@ export default function SkillsMissionPicker({ skill, worldId, missions: missions
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.55)',
-          backdropFilter: 'blur(2px)',
+          background: OVERLAY.backdrop,
+          backdropFilter: OVERLAY.backdropBlur,
           zIndex: 199,
         }}
       />
@@ -124,8 +125,8 @@ export default function SkillsMissionPicker({ skill, worldId, missions: missions
           maxHeight: 'min(640px, calc(100vh - 64px))',
           background: C.s1,
           border: `1px solid ${C.border2}`,
-          borderRadius: 14,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.55), 0 0 0 1px rgba(167,139,250,0.10)',
+          borderRadius: OVERLAY.panelRadius,
+          boxShadow: OVERLAY.panelShadow + ', 0 0 0 1px rgba(167,139,250,0.10)',
           padding: 0,
           zIndex: 200,
           display: 'flex',

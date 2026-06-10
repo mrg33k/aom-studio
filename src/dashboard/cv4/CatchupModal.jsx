@@ -33,6 +33,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { C } from '../lib/cv3Colors.js'
+import { OVERLAY } from './lib/uiKit.jsx'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -732,9 +733,9 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
         onTouchEnd={onTouchEnd}
         style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(0, 0, 0, 0.65)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
+          background: OVERLAY.backdrop,
+          backdropFilter: OVERLAY.backdropBlur,
+          WebkitBackdropFilter: OVERLAY.backdropBlur,
           zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
@@ -752,13 +753,13 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
           style={{
             background: C.bg2,
             border: `1px solid ${C.border}`,
-            borderRadius: 12,
+            borderRadius: OVERLAY.panelRadius,
             width: 'min(560px, 92vw)',
             maxHeight: '90dvh',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            boxShadow: '0 20px 48px rgba(0,0,0,0.35)',
+            boxShadow: OVERLAY.panelShadow,
             position: 'relative',
             animation: 'cnModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           }}

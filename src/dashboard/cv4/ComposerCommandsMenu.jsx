@@ -19,6 +19,7 @@
 // R5.1 Phase H.
 
 import { useState, useRef, useEffect } from 'react'
+import { OVERLAY } from './lib/uiKit.jsx'
 import { C } from '../lib/cv3Colors.js'
 import { IMAGE_TOOLS } from '../components/cv3/shared/ImageGenPicker.jsx'
 import { authFetch } from '../lib/authFetch.js'
@@ -154,8 +155,8 @@ export default function ComposerCommandsMenu({
             minWidth: 260,
             background: C.s1,
             border: '1px solid ' + C.border2,
-            borderRadius: 14,
-            boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
+            borderRadius: OVERLAY.panelRadius,
+            boxShadow: OVERLAY.panelShadow,
             padding: 6,
             zIndex: 50,
             fontFamily: "'Hanken Grotesk', sans-serif",
