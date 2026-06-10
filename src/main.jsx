@@ -131,6 +131,14 @@ function BrandRedirect() {
   return null
 }
 
+function DealBankRedirect() {
+  useEffect(() => {
+    // 301 redirect to the new sourcing.directory location
+    window.location.href = 'https://sourcing.directory/space-rising-v2/deal-bank'
+  }, [])
+  return null
+}
+
 // AuthGuard: checks Supabase session before rendering dashboard routes.
 // Falls through immediately if Supabase is not configured (localhost without env vars).
 // First-time users are redirected to /onboarding. Checks metadata + DB for robustness.
@@ -253,6 +261,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/brands/artlink" element={<ArtlinkBrand />} />
           <Route path="/brands/artlink/pitch" element={<ArtlinkSitePitch />} />
           <Route path="/brands/space-rising" element={<SpaceRisingBrand />} />
+          <Route path="/space-rising/deal-bank" element={<DealBankRedirect />} />
           <Route path="/space-rising/deal-bank/completed" element={<SpaceRisingDealBankCompleted />} />
           <Route path="/space-rising/deal-bank/admin" element={<SpaceRisingDealBankAdmin />} />
           <Route path="/social" element={<Social />} />
