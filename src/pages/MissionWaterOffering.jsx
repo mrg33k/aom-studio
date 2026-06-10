@@ -128,11 +128,11 @@ const PILLARS = [
     summary:
       'The story-driven, branching water-science game students play start to finish. Live today and built to grow.',
     deliverables: [
-      'Three-chapter branching water-science game',
-      'NASA mission-console visuals and HUD',
-      'Character roles, resources, and discovery badges',
-      'Blippy mascot companion',
-      'Mobile + desktop, hosted, ongoing updates',
+      'Preproduction — Story outline, character design, science consultant alignment',
+      'Development — Branching narrative engine, NASA visual system, interactive mechanics',
+      'Editing & Polish — Animation refinement, difficulty balancing, audio/visual quality assurance',
+      'Testing & Launch — Full QA cycle, teacher onboarding materials, live hosting setup',
+      'Ongoing Support — Mobile/desktop optimization, performance monitoring, feature updates',
     ],
     costs: [6500, 3000, 1800, 2200, 1500],
     addons: [
@@ -150,11 +150,11 @@ const PILLARS = [
     summary:
       'Everything around the game that turns it into a real program — live classes, an archive, coursework, and dashboards. One window, everything inside.',
     deliverables: [
-      'Live class broadcast with Q&A and roster',
-      'Permanent, searchable session archive',
-      'Self-paced modules with progress tracking',
-      'Student submissions with educator grading',
-      'Educator + parent dashboards (separate logins)',
+      'Preproduction — Architecture design, database schema, user flow mapping',
+      'Development — Student portal, live broadcast system, educator dashboard',
+      'Content & Archive — Self-paced modules, searchable session archive, progress tracking',
+      'Testing & Deployment — Security audit, full QA cycle, production deployment',
+      'Ongoing Support — Parent/educator dashboards, grading tools, submission tracking',
     ],
     costs: [3500, 1800, 3000, 2200, 1500],
     addons: [
@@ -172,11 +172,11 @@ const PILLARS = [
     summary:
       'The brand, the story, and the campaign that gets Mission Water in front of students, schools, and funders.',
     deliverables: [
-      'Mission Water brand system',
-      'Enrollment landing pages with SEO',
-      'Launch campaign creative + ad-ready assets',
-      'Promo / sizzle video',
-      'Email sequences + 60-day content calendar',
+      'Preproduction — Brand audit, audience research, messaging framework',
+      'Strategy & Planning — Campaign planning, content calendar, SEO strategy',
+      'Creative Development — Video production, landing pages, ad-ready assets',
+      'Testing & Launch — Campaign optimization, A/B testing, launch coordination',
+      'Ongoing Promotion — Email sequences, social content, funder one-pager, grant deck',
     ],
     costs: [2000, 2200, 1800, 2500, 1500],
     addons: [
@@ -376,7 +376,7 @@ export default function MissionWaterOffering() {
                             <span className="font-mono text-[8px] text-[#071530]/20">—</span>
                             <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#071530]/30">adds up to</span>
                           </div>
-                          <span className="font-mono text-[13px] tracking-[0.06em] font-medium" style={{ color: '#071530' }}>
+                          <span className="font-mono text-[10px] tracking-[0.06em]" style={{ color: 'rgba(7,21,48,0.50)' }}>
                             {p.price}
                           </span>
                         </motion.div>
@@ -417,9 +417,9 @@ export default function MissionWaterOffering() {
                         <div className="text-right flex flex-col items-end">
                           <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#071530]/35 mb-3">Piece {p.n}</span>
                           <div>
-                            <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#071530]/45 mb-1.5">Investment</p>
-                            <p className="font-display-serif text-[44px] md:text-[50px] text-[#071530] tracking-[-0.02em] leading-none">
-                              {p.price}<span className="font-mono text-[11px] tracking-[0.15em] text-[#071530]/40 ml-2">fixed</span>
+                            <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#071530]/35 mb-1.5">Investment</p>
+                            <p className="font-display-serif text-[16px] md:text-[18px] text-[#071530]/35 tracking-[-0.02em] leading-none">
+                              {p.price}<span className="font-mono text-[8px] tracking-[0.15em] text-[#071530]/20 ml-2">fixed</span>
                             </p>
                           </div>
                         </div>
