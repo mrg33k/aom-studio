@@ -118,9 +118,9 @@ const PILLARS = [
       'Educator + parent dashboards (separate logins)',
     ],
     addons: [
+      { label: 'Completion certificates', price: '$800' },
       { label: 'Payments / paid enrollment', price: '$2,500' },
       { label: 'LMS integration (Google Classroom, Canvas)', price: '$1,800' },
-      { label: 'Completion certificates', price: '$800' },
     ],
   },
   {
