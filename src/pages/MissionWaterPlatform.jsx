@@ -517,7 +517,7 @@ function LivePanel({ onRegister }) {
           loop
           playsInline
           onLoadedData={() => {
-            if (videoRef.current) videoRef.current.currentTime = 1;
+            if (videoRef.current) videoRef.current.currentTime = 2;
           }}
           className="absolute inset-0 w-full h-full object-cover"
           style={{ objectPosition: 'center center' }}

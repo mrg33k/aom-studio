@@ -5,7 +5,7 @@
 // the end. Conrad editorial system (navy/orange).
 // /missionwateroffering · /mission-water-offering · /missionwater/offering
 // Mission: conrad-foundation:mission-water
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 // ─── SEO ──────────────────────────────────────────────────────────────────────
@@ -98,9 +98,9 @@ const PILLARS = [
       'Mobile + desktop, hosted, ongoing updates',
     ],
     addons: [
-      'Additional story chapters',
-      'Classroom / multiplayer mode',
-      'Localization / translation',
+      { label: 'Additional story chapters', price: '$4,500' },
+      { label: 'Classroom / multiplayer mode', price: '$3,200' },
+      { label: 'Localization / translation', price: '$2,200' },
     ],
   },
   {
@@ -118,9 +118,9 @@ const PILLARS = [
       'Educator + parent dashboards (separate logins)',
     ],
     addons: [
-      'Payments / paid enrollment',
-      'LMS integration (Google Classroom, Canvas)',
-      'Completion certificates',
+      { label: 'Payments / paid enrollment', price: '$2,500' },
+      { label: 'LMS integration (Google Classroom, Canvas)', price: '$1,800' },
+      { label: 'Completion certificates', price: '$800' },
     ],
   },
   {
@@ -138,15 +138,16 @@ const PILLARS = [
       'Email sequences + 60-day content calendar',
     ],
     addons: [
-      'Ongoing monthly social management',
-      'Funder + district one-pager',
-      'Sponsor / grant deck',
+      { label: 'Ongoing monthly social management', price: '$2,000/mo' },
+      { label: 'Funder + district one-pager', price: '$1,200' },
+      { label: 'Sponsor / grant deck', price: '$2,500' },
     ],
   },
 ];
 
 export default function MissionWaterOffering() {
   useSEO();
+  const [activeAddon, setActiveAddon] = useState(null); // 'pi-ai' format
 
   return (
     <div className="bg-white text-[#071530] min-h-screen scroll-smooth" style={{ fontFeatureSettings: '"liga" 1, "kern" 1' }}>
@@ -227,13 +228,34 @@ export default function MissionWaterOffering() {
                         </li>
                       ))}
                     </ul>
-                    <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-3">Add-ons &amp; options</p>
+                    <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-3">Add-ons &amp; options <span className="text-[#071530]/30 normal-case tracking-normal font-body" style={{ fontSize: '9px' }}>— tap to see pricing</span></p>
                     <div className="flex flex-wrap gap-2 mb-8">
-                      {p.addons.map((a) => (
-                        <span key={a} className="font-mono text-[10px] uppercase tracking-[0.1em] text-[#071530]/60 border border-[#071530]/15 rounded-full px-3 py-1.5">
-                          + {a}
-                        </span>
-                      ))}
+                      {p.addons.map((a, ai) => {
+                        const key = `${i}-${ai}`;
+                        const open = activeAddon === key;
+                        return (
+                          <button
+                            key={ai}
+                            onClick={() => setActiveAddon(open ? null : key)}
+                            className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.1em] rounded-full px-3 py-1.5 transition-all duration-200 cursor-pointer"
+                            style={{
+                              border: open ? '1px solid rgba(232,93,38,0.55)' : '1px solid rgba(7,21,48,0.15)',
+                              color: open ? '#E85D26' : 'rgba(7,21,48,0.60)',
+                              background: open ? 'rgba(232,93,38,0.06)' : 'transparent',
+                            }}
+                          >
+                            <span>+ {a.label}</span>
+                            {open && (
+                              <span
+                                className="font-mono tracking-[0.05em] whitespace-nowrap"
+                                style={{ fontSize: '10px', color: '#E85D26', fontStyle: 'normal' }}
+                              >
+                                · {a.price}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                     <div className="mt-auto pt-6 border-t border-[#071530]/10">
                       <div className="flex items-end justify-between">
