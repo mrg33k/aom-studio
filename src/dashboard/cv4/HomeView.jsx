@@ -466,42 +466,6 @@ export default function HomeView({
           <span className="hm-search-hint">⌘K</span>
         </div>
 
-        {/* Agents */}
-        <div className="hm-section">
-          <div
-            className="hm-section-header"
-            onClick={() => toggleSection('agents')}
-            role="button"
-            aria-expanded={!collapsedSections.agents}
-            aria-label="Toggle agents section"
-          >
-            <span className="hm-section-label">Agents</span>
-            <span className="hm-section-chevron">
-              <Chevron collapsed={collapsedSections.agents} />
-            </span>
-          </div>
-          <div className={'hm-section-body' + (collapsedSections.agents ? ' collapsed' : '')}>
-            {visibleAgents.length === 0 && (
-              <div style={{ padding: '14px 0', color: '#5A6F8C', fontSize: 14, fontStyle: 'italic' }}>No agents pinned yet.</div>
-            )}
-            {visibleAgents.map(a => (
-              <button key={a.slug} className="hm-row" onClick={() => onSelectAgent && onSelectAgent(a)}>
-                <span className="hm-agent-dot"></span>
-                <span className="hm-agent-name">{a.name || a.slug}</span>
-                <span className="hm-agent-meta">{relativeTime(a.last_message_at)}</span>
-                <button
-                  className={'hm-pin' + (pinnedAgents.includes(a.slug) || (pinnedAgents.length === 0 && a.is_ea) ? ' pinned' : '')}
-                  onClick={(e) => { e.stopPropagation(); toggleAgentPin(a.slug) }}
-                  title={pinnedAgents.includes(a.slug) ? 'Unpin' : 'Pin'}
-                  aria-label={(pinnedAgents.includes(a.slug) ? 'Unpin ' : 'Pin ') + (a.name || a.slug)}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
-                </button>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Recent Projects */}
         <div className="hm-section">
           <div
@@ -511,7 +475,7 @@ export default function HomeView({
             aria-expanded={!collapsedSections.recents}
             aria-label="Toggle recents section"
           >
-            <span className="hm-section-label">Recent</span>
+            <span className="hm-section-label">Where you left off</span>
             <span className="hm-section-chevron">
               <Chevron collapsed={collapsedSections.recents} />
             </span>
@@ -537,6 +501,15 @@ export default function HomeView({
                       className="hm-proj-name"
                       onClick={() => handleProjectSelect(p, null)}
                     >{p.name || p.slug}</button>
+                    {missions.some(m => m.status === 'running') && <StatusDot state="running" size={6} title="An agent is working in here" />}
+                    <span className="hm-agent-meta">{(() => {
+                      const ts = Math.max(
+                        recentVisits[p.slug] || 0,
+                        p.last_message_at ? new Date(p.last_message_at).getTime() : 0,
+                        ...missions.map(m => m.last_message_at ? new Date(m.last_message_at).getTime() : 0),
+                      )
+                      return ts > 0 ? relativeTime(new Date(ts).toISOString()) : ''
+                    })()}</span>
                     <button
                       className="hm-icon-btn chat"
                       onClick={() => handleProjectSelect(p, null)}
@@ -597,101 +570,42 @@ export default function HomeView({
           </div>
         </div>
 
-        {/* ALL PROJECTS — every project the user has access to, alphabetical.
-            Sits below the recent-5 so users can find anything that's not
-            currently pinned/recent without leaving home. */}
-        {allProjects.length > 0 && (
-          <div className="hm-section">
-            <div
-              className="hm-section-header"
-              onClick={() => toggleSection('allProjects')}
-              role="button"
-              aria-expanded={!collapsedSections.allProjects}
-              aria-label="Toggle all projects section"
-            >
-              <span className="hm-section-label">All Projects</span>
-              <span className="hm-section-chevron">
-                <Chevron collapsed={collapsedSections.allProjects} />
-              </span>
-            </div>
-            <div className={'hm-section-body' + (collapsedSections.allProjects ? ' collapsed' : '')}>
-              {allProjects.map(p => {
-                const isPinned = pinnedProjects.includes(p.slug)
-                const isExpanded = !!expandedProjects[p.slug]
-                // Re-sort missions at render time so recently-visited missions float to top.
-                const missions = [...(missionsByProject[p.slug] || [])].sort((a, b) =>
-                  missionEffectiveTs(p.slug, b) - missionEffectiveTs(p.slug, a)
-                )
-                return (
-                  <div key={p.slug} className={'hm-proj' + (isExpanded ? ' expanded' : '')}>
-                    <div className="hm-proj-head">
-                      <span style={{ color: '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}>
-                        <FolderIcon open={isExpanded} />
-                      </span>
-                      <button
-                        className="hm-proj-name"
-                        onClick={() => handleProjectSelect(p, null)}
-                      >{p.name || p.slug}</button>
-                      <button
-                        className="hm-icon-btn chat"
-                        onClick={() => handleProjectSelect(p, null)}
-                        title={'Open ' + (p.name || p.slug) + ' chat'}
-                        aria-label={'Open ' + (p.name || p.slug) + ' chat'}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                          <path d="M4 3 H20 A2 2 0 0 1 22 5 V15 A2 2 0 0 1 20 17 H8 L3 22 V5 A2 2 0 0 1 4 3 Z"/>
-                        </svg>
-                      </button>
-                      <button
-                        className="hm-icon-btn"
-                        onClick={() => toggleExpand(p.slug)}
-                        title="Toggle missions"
-                        aria-label={'Toggle ' + (p.name || p.slug) + ' missions'}
-                      >
-                        <svg className="hm-caret-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="6 9 12 15 18 9"/>
-                        </svg>
-                      </button>
-                      <button
-                        className={'hm-pin' + (isPinned ? ' pinned' : '')}
-                        onClick={() => toggleProjectPin(p.slug)}
-                        title={isPinned ? 'Unpin' : 'Pin'}
-                        aria-label={(isPinned ? 'Unpin ' : 'Pin ') + (p.name || p.slug)}
-                      >
-                        {isPinned ? (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
-                        ) : (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
-                        )}
-                      </button>
-                    </div>
-                    {isExpanded && missions.length > 0 && (
-                      <div className="hm-missions">
-                        {missions.map(m => (
-                          <button
-                            key={m.slug}
-                            className="hm-mission"
-                            onClick={() => handleProjectSelect(p, m)}
-                          >
-                            <span style={{ color: '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
-                          <StatusDot state={m.status === 'running' || m.status === 'active' ? 'running' : 'idle'} size={6} />
-                            <span className="hm-mname">{m.name || m.slug}</span>
-                            <span className="hm-mage">{relativeTime(m.last_message_at)}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {isExpanded && missions.length === 0 && (
-                      <div className="hm-missions">
-                        <div style={{ padding: '9px 16px', color: '#5A6F8C', fontSize: 13, fontStyle: 'italic' }}>No missions yet.</div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+        {/* Agents */}
+        <div className="hm-section">
+          <div
+            className="hm-section-header"
+            onClick={() => toggleSection('agents')}
+            role="button"
+            aria-expanded={!collapsedSections.agents}
+            aria-label="Toggle agents section"
+          >
+            <span className="hm-section-label">Agents</span>
+            <span className="hm-section-chevron">
+              <Chevron collapsed={collapsedSections.agents} />
+            </span>
           </div>
-        )}
+          <div className={'hm-section-body' + (collapsedSections.agents ? ' collapsed' : '')}>
+            {visibleAgents.length === 0 && (
+              <div style={{ padding: '14px 0', color: '#5A6F8C', fontSize: 14, fontStyle: 'italic' }}>No agents pinned yet.</div>
+            )}
+            {visibleAgents.map(a => (
+              <button key={a.slug} className="hm-row" onClick={() => onSelectAgent && onSelectAgent(a)}>
+                <span className="hm-agent-dot"></span>
+                <span className="hm-agent-name">{a.name || a.slug}</span>
+                <span className="hm-agent-meta">{relativeTime(a.last_message_at)}</span>
+                <button
+                  className={'hm-pin' + (pinnedAgents.includes(a.slug) || (pinnedAgents.length === 0 && a.is_ea) ? ' pinned' : '')}
+                  onClick={(e) => { e.stopPropagation(); toggleAgentPin(a.slug) }}
+                  title={pinnedAgents.includes(a.slug) ? 'Unpin' : 'Pin'}
+                  aria-label={(pinnedAgents.includes(a.slug) ? 'Unpin ' : 'Pin ') + (a.name || a.slug)}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4v6l3 4v2h-6v6l-1 1-1-1v-6H5v-2l3-4V4h-1V2h10v2h-1z"/></svg>
+                </button>
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   )

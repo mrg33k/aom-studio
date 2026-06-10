@@ -1087,6 +1087,20 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
 
   const visibleCount = filterFn ? countFiles(tree, filterFn) : files.length
 
+  // Latest — the five newest files across the whole tree, regardless of which
+  // folder they live in. The tree below is the catalog; this strip is the
+  // story ("what's new since I last looked"). Without it the rail is just the
+  // project list a third time.
+  const latestFiles = useMemo(() => {
+    const dated = files.filter(f => (f._ts || 0) > 0 && (!filterFn || filterFn(f)))
+    dated.sort((a, b) => (b._ts || 0) - (a._ts || 0))
+    return dated.slice(0, 5).map(f => {
+      const proj = (f.relativePath || '').split('/').filter(Boolean)[0] || ''
+      const short = (f.name || '').split('/').pop()
+      return { ...f, name: short, age: proj && proj !== short ? proj + ' · ' + (f.age || '') : f.age }
+    })
+  }, [files, filterFn])
+
   // R13 — search. When the query is non-empty, we bypass the folder tree and
   // render a flat list of every file whose name OR path contains the query
   // (case-insensitive), still respecting the active category filter. Flat is
@@ -1253,6 +1267,24 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
                 indent={0}
               />
             ))
+      )}
+
+      {/* Latest — newest files across everything, before the catalog */}
+      {!loading && !searchActive && latestFiles.length > 0 && (
+        <>
+          <div style={{ padding: '8px 12px 2px', fontSize: 10, fontWeight: 700, letterSpacing: '0.12em',
+            textTransform: 'uppercase', color: C.muted, fontFamily: "'JetBrains Mono', monospace" }}>Latest</div>
+          {latestFiles.map(f => (
+            <FileRow
+              key={'latest-' + f.url}
+              file={f}
+              isActive={activeFile?.url === f.url}
+              onClick={() => handleFileClick(f)}
+              indent={0}
+            />
+          ))}
+          <div style={{ height: 1, background: C.border, margin: '6px 0 4px' }} />
+        </>
       )}
 
       {/* Top-level files (no folder) */}
