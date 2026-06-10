@@ -72,9 +72,11 @@ export default function Canvas({ phase }) {
       const t = DURATION === 0 ? 1 : Math.min(1, elapsed / DURATION);
       animRef.current.t = t;
       const { W, H } = cssDims();
-      // Image fade-in (0→1 over 400ms after the image becomes available).
+      // Image fade-in (0→1 over 900ms after the image becomes available).
+      // R18a: slower, cinematic — "the image should fade in slowly to give a
+      // feeling" — and the content panel (HUD debrief card) lands after it.
       const imgAlpha = imgFadeStartedAt
-        ? Math.min(1, (now - imgFadeStartedAt) / 400)
+        ? Math.min(1, (now - imgFadeStartedAt) / 900)
         : 0;
       // Ambient = continuously increasing clock that drives the Ken-Burns
       // drift on the raster scene (RL1). Frozen at 0 for reduced-motion so the
@@ -152,7 +154,7 @@ export default function Canvas({ phase }) {
         position: 'absolute',
         inset: 0,
         overflow: 'hidden',
-        background: '#000',
+        background: '#070B14',
       }}
     >
       <canvas
@@ -193,14 +195,20 @@ function drawPhase(ctx, W, H, phase, t, isOutgoing, imgAlpha = 0, ambient = 0) {
   if (!phase) return;
   const v = phase.visuals || {};
 
-  // Always paint procedural first as the floor — guarantees something is
-  // visible the moment the canvas mounts, no waiting on a 3MB PNG.
-  drawProceduralLayers(ctx, W, H, v.procedural || defaultPalette(), v.parallax_offset || 0);
-  drawAccents(ctx, W, H, v.procedural || defaultPalette(), phase, t);
+  // R18a: when the phase has a real Nano Banana background, hold the solid
+  // space-dark floor (painted by paint()) until the image is ready — the
+  // procedural pixel landscape NEVER flashes behind real art ("I still see
+  // css animations behind our videos before they load"). Procedural remains
+  // the renderer for asset-less phases only.
+  const hasRaster = !!v.background;
+  if (!hasRaster) {
+    drawProceduralLayers(ctx, W, H, v.procedural || defaultPalette(), v.parallax_offset || 0);
+    drawAccents(ctx, W, H, v.procedural || defaultPalette(), phase, t);
+  }
 
-  // RASTER MODE — fade Cleo's Nano Banana background in OVER the procedural
-  // once it's available. imgAlpha drives the 400ms fade from 0→1.
-  const bgImg = v.background ? loadImage(v.background) : null;
+  // RASTER MODE — fade Cleo's Nano Banana background in over the space-dark
+  // floor once it's available. imgAlpha drives the slow 900ms fade from 0→1.
+  const bgImg = hasRaster ? loadImage(v.background) : null;
   if (bgImg && bgImg.complete && bgImg.naturalWidth > 0 && imgAlpha > 0) {
     ctx.save();
     ctx.globalAlpha = Math.max(0, Math.min(1, imgAlpha));

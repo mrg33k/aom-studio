@@ -1,78 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import StarCanvas from './StarCanvas.jsx';
+import Blippy from './Blippy.jsx';
 
 // ─── prefers-reduced-motion ───────────────────────────────────────────────────
 const REDUCED = typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-// ─── StarCanvas (space background — matches DESIGN.md Layer 1) ───────────────
-function mulberry32(seed) {
-  return function () {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function StarCanvas() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rand = mulberry32(0xdeadbeef);
-    const LAYERS = [
-      { count: 180, minR: 0.4, maxR: 1.1, minA: 0.25, maxA: 0.65, spd: 0.012 },
-      { count: 70,  minR: 0.9, maxR: 2.0, minA: 0.50, maxA: 1.00, spd: 0.022 },
-    ];
-    let W = 0, H = 0, raf;
-    let stars = [];
-    function buildStars(w, h) {
-      stars = [];
-      for (const L of LAYERS) {
-        for (let i = 0; i < L.count; i++) {
-          stars.push({
-            x: rand() * w, y: rand() * h,
-            r: L.minR + rand() * (L.maxR - L.minR),
-            a: L.minA + rand() * (L.maxA - L.minA),
-            spd: L.spd * (0.7 + rand() * 0.6),
-            dx: (rand() - 0.5) * 0.006,
-          });
-        }
-      }
-    }
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      for (const s of stars) {
-        s.y -= s.spd; s.x += s.dx;
-        if (s.y < -2) s.y = H + 2;
-        if (s.x < -2) s.x = W + 2;
-        if (s.x > W + 2) s.x = -2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200,220,255,${s.a})`;
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(draw);
-    }
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      canvas.width = width; canvas.height = height;
-      W = width; H = height;
-      buildStars(W, H);
-    });
-    ro.observe(canvas);
-    draw();
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
-  return (
-    <canvas
-      ref={ref}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-    />
-  );
-}
 
 // ─── palette ────────────────────────────────────────────────────────────────
 const SPACE_DARK = '#070B14';
@@ -227,11 +159,16 @@ function RoleCard({ role, isSelected, isFocused, onClick, onFocus }) {
 /**
  * RoleSelect — renders before the phase engine starts.
  *
+ * R18a: header + cards + confirm now live inside ONE instrument panel
+ * (fixed internal spacing — no more full-viewport vertical spread), and the
+ * cadet is greeted by name.
+ *
  * Props:
  *   rolesData  {Object}   parsed roles.json
+ *   playerName {string}   the cadet's name from NameEntryScreen
  *   onConfirm  {Function} called with the chosen role object
  */
-export default function RoleSelect({ rolesData, onConfirm }) {
+export default function RoleSelect({ rolesData, playerName = '', onConfirm }) {
   const roles = rolesData?.roles ?? [];
   const [focusedIdx, setFocusedIdx] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
@@ -285,87 +222,92 @@ export default function RoleSelect({ rolesData, onConfirm }) {
     if (role) onConfirm(role);
   };
 
+  const cadet = (playerName || 'Cadet').trim();
+
   return (
     <div style={styles.root}>
       {/* Layer 1: space background */}
       <div style={{ position: 'absolute', inset: 0, background: SPACE_DARK }}>
-        <StarCanvas />
+        <StarCanvas seed={0xdeadbeef} />
       </div>
 
       {/* scanline overlay */}
       <div style={styles.scanlines} />
 
-      {/* Blippy companion — lower-left, per DESIGN.md */}
-      <div style={styles.blippyRow}>
-        <div style={styles.blippyCircle}>
-          <img
-            src="/mission-water/welcome/blippy_welcome_pose.png"
-            alt="Blippy"
-            style={styles.blippyImg}
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-          />
-        </div>
-        <div style={styles.blippyBubble}>
-          Choose your role wisely, Cadet. Each investigator sees the problem differently.
-        </div>
-      </div>
+      {/* Scrollable overlay — centers ONE instrument panel (R18a); gutter clears Blippy */}
+      <div className="mw-guide-gutter" style={styles.overlay}>
+        <div style={styles.flex1} />
 
-      {/* header — fades in at 100ms */}
-      <div style={{
-        ...styles.header,
-        opacity:    headerReady ? 1 : 0,
-        transform:  headerReady ? 'translateY(0)' : 'translateY(-12px)',
-        transition: 'opacity 350ms ease, transform 350ms ease',
-      }}>
-        <div style={styles.headerKicker}>MISSION WATER — INVESTIGATOR SELECTION</div>
-        <h1 style={styles.headerTitle}>SELECT YOUR INVESTIGATOR ROLE</h1>
-        <div style={styles.headerSub}>
-          Each role starts with different resource allocations.&nbsp;
-          You will refine your loadout before deployment.
-        </div>
-      </div>
-
-      {/* cards — fan in from center, staggered 150ms */}
-      <div style={styles.cardsRow}>
-        {roles.map((role, idx) => (
-          <div
-            key={role.id}
-            style={{
-              flex: '1 1 0',
-              maxWidth: 340,
-              opacity:    cardVisible[idx] ? 1 : 0,
-              transform:  cardVisible[idx] ? 'translateY(0)' : 'translateY(24px)',
-              transition: 'opacity 300ms ease, transform 300ms ease',
-              display: 'flex',
-            }}
-          >
-            <RoleCard
-              role={role}
-              isSelected={selectedId === role.id}
-              isFocused={focusedIdx === idx && selectedId !== role.id}
-              onClick={() => handleCardClick(role)}
-              onFocus={() => setFocusedIdx(idx)}
-            />
+        <div style={{
+          ...styles.panel,
+          opacity:    headerReady ? 1 : 0,
+          transform:  headerReady ? 'translateY(0)' : 'translateY(18px)',
+          transition: 'opacity 400ms ease, transform 400ms ease',
+        }}>
+          {/* header */}
+          <div style={styles.header}>
+            <div style={styles.headerKicker}>MISSION WATER — INVESTIGATOR SELECTION</div>
+            <h1 style={styles.headerTitle}>
+              SELECT YOUR ROLE, {cadet.toUpperCase()}
+            </h1>
+            <div style={styles.headerSub}>
+              Each role starts with different resource allocations.&nbsp;
+              You will refine your loadout before deployment.
+            </div>
           </div>
-        ))}
+
+          {/* cards — fan in, staggered 150ms */}
+          <div style={styles.cardsRow}>
+            {roles.map((role, idx) => (
+              <div
+                key={role.id}
+                style={{
+                  flex: '1 1 260px',
+                  maxWidth: 340,
+                  opacity:    cardVisible[idx] ? 1 : 0,
+                  transform:  cardVisible[idx] ? 'translateY(0)' : 'translateY(24px)',
+                  transition: 'opacity 300ms ease, transform 300ms ease',
+                  display: 'flex',
+                }}
+              >
+                <RoleCard
+                  role={role}
+                  isSelected={selectedId === role.id}
+                  isFocused={focusedIdx === idx && selectedId !== role.id}
+                  onClick={() => handleCardClick(role)}
+                  onFocus={() => setFocusedIdx(idx)}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* confirm */}
+          <div style={styles.footer}>
+            <div style={styles.keyHint}>
+              ← → NAVIGATE &nbsp;·&nbsp; ENTER SELECT &nbsp;·&nbsp; CLICK TO CHOOSE
+            </div>
+            <button
+              style={{
+                ...styles.confirmBtn,
+                opacity: selectedId ? 1 : 0.35,
+                cursor: selectedId ? 'pointer' : 'not-allowed',
+              }}
+              disabled={!selectedId}
+              onClick={handleConfirm}
+            >
+              CONFIRM ROLE → PLAN LOADOUT
+            </button>
+          </div>
+        </div>
+
+        <div style={styles.flex1} />
       </div>
 
-      {/* confirm */}
-      <div style={styles.footer}>
-        <div style={styles.keyHint}>
-          ← → NAVIGATE &nbsp;·&nbsp; ENTER SELECT &nbsp;·&nbsp; CLICK TO CHOOSE
-        </div>
-        <button
-          style={{
-            ...styles.confirmBtn,
-            opacity: selectedId ? 1 : 0.35,
-            cursor: selectedId ? 'pointer' : 'not-allowed',
-          }}
-          disabled={!selectedId}
-          onClick={handleConfirm}
-        >
-          CONFIRM ROLE → PLAN LOADOUT
-        </button>
+      {/* Blippy companion — shared full-body component, lower-left */}
+      <div style={styles.blippyAnchor}>
+        <Blippy
+          text={`Choose your role, ${cadet} — each investigator sees the problem differently.`}
+        />
       </div>
     </div>
   );
@@ -377,11 +319,6 @@ const styles = {
     position: 'absolute',
     inset: 0,
     background: SPACE_DARK,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '32px 24px 24px',
     fontFamily: '"Rajdhani", "Chakra Petch", system-ui, sans-serif',
     color: '#FFFFFF',
     overflow: 'hidden',
@@ -394,9 +331,38 @@ const styles = {
     backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px)',
     zIndex: 1,
   },
+
+  // R18a — scrollable overlay centering the single instrument panel
+  overlay: {
+    position: 'absolute',
+    inset: 0,
+    overflowY: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '24px 16px',
+    zIndex: 2,
+  },
+  flex1: { flex: 1, minHeight: 20 },
+
+  // DESIGN.md .instrument-panel — header + cards + confirm all live in here,
+  // so the internal spacing is FIXED regardless of window height.
+  panel: {
+    width: '100%',
+    maxWidth: 1140,
+    boxSizing: 'border-box',
+    background: 'rgba(7,11,20,0.88)',
+    border: '1px solid rgba(0,229,204,0.25)',
+    borderRadius: 4,
+    boxShadow: '0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08)',
+    padding: 'clamp(22px, 3vw, 34px) clamp(18px, 3vw, 36px)',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 22,
+  },
+
   header: {
     textAlign: 'center',
-    zIndex: 2,
     flexShrink: 0,
   },
   headerKicker: {
@@ -427,15 +393,11 @@ const styles = {
   cardsRow: {
     display: 'flex',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 20,
     justifyContent: 'center',
     alignItems: 'stretch',
-    flex: '0 0 auto',
     width: '100%',
-    maxWidth: 1100,
-    zIndex: 2,
-    padding: '12px 0',
-    overflow: 'hidden',
   },
 
   card: {
@@ -561,7 +523,6 @@ const styles = {
   },
 
   footer: {
-    zIndex: 2,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -589,44 +550,12 @@ const styles = {
     transition: 'opacity 150ms ease, box-shadow 150ms ease',
   },
 
-  // Blippy companion
-  blippyRow: {
+  // Blippy companion — shared full-body component, lower-left
+  blippyAnchor: {
     position: 'absolute',
     bottom: 20,
-    left: 20,
-    display: 'flex',
-    alignItems: 'flex-end',
-    gap: 10,
+    left: 24,
     zIndex: 3,
-  },
-  blippyCircle: {
-    flexShrink: 0,
-    width: 80,
-    height: 80,
-    borderRadius: '50%',
-    border: `2px solid ${CYAN}`,
-    overflow: 'hidden',
-    background: 'rgba(0,229,204,0.06)',
-    boxShadow: `0 0 12px rgba(0,229,204,0.20)`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  blippyImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  blippyBubble: {
-    background: 'rgba(7,11,20,0.92)',
-    border: `1px solid ${CYAN}`,
-    borderRadius: '8px 8px 8px 0',
-    padding: '8px 12px',
-    fontFamily: '"Rajdhani", sans-serif',
-    fontWeight: 600,
-    fontSize: 12,
-    color: '#E8F0F8',
-    lineHeight: 1.4,
-    maxWidth: 200,
+    pointerEvents: 'none',
   },
 };

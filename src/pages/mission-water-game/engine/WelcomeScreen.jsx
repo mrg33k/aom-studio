@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import StarCanvas from './StarCanvas.jsx';
+import Blippy from './Blippy.jsx';
 
 /**
  * WelcomeScreen — Grand Opening title screen for Space Mission: Water.
@@ -27,66 +29,6 @@ const REDUCED = typeof window !== 'undefined' &&
 const SPACE_DARK  = '#070B14';
 const CYAN        = '#00E5CC';
 const TEXT_SOFT   = '#C8D8F0';
-
-// ─── Star canvas background (canonical twinkle starfield — same as RoleSelect) ─
-function StarCanvas() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rand = mulberry32(0xA1B2C3);
-    const LAYERS = [
-      { count: 180, minR: 0.4, maxR: 1.1, minA: 0.25, maxA: 0.65, spd: 0.012 },
-      { count: 70,  minR: 0.9, maxR: 2.0, minA: 0.50, maxA: 1.00, spd: 0.022 },
-    ];
-    let W = 0, H = 0, raf;
-    let stars = [];
-    function buildStars(w, h) {
-      stars = [];
-      for (const L of LAYERS) {
-        for (let i = 0; i < L.count; i++) {
-          stars.push({
-            x: rand() * w, y: rand() * h,
-            r: L.minR + rand() * (L.maxR - L.minR),
-            a: L.minA + rand() * (L.maxA - L.minA),
-            spd: L.spd * (0.7 + rand() * 0.6),
-            dx: (rand() - 0.5) * 0.006,
-          });
-        }
-      }
-    }
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      for (const s of stars) {
-        s.y -= s.spd; s.x += s.dx;
-        if (s.y < -2) s.y = H + 2;
-        if (s.x < -2) s.x = W + 2;
-        if (s.x > W + 2) s.x = -2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200,220,255,${s.a})`;
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(draw);
-    }
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      canvas.width = width; canvas.height = height;
-      W = width; H = height;
-      buildStars(W, H);
-    });
-    ro.observe(canvas);
-    draw();
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
-  return (
-    <canvas
-      ref={ref}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-    />
-  );
-}
 
 // ─── Parallax PNG layers (space layer 1/2/3 from Cleo) ───────────────────────
 function ParallaxLayer({ src, speed, style }) {
@@ -173,14 +115,17 @@ function useEntryAnim() {
 
   useEffect(() => {
     if (REDUCED) return;
+    // R18a staged entrance: world first (stars + bg breathe in slowly),
+    // THEN the instrument panel, then Blippy + cards. "The image should fade
+    // in slowly to give a feeling, then the box fades in."
     const t0 = setTimeout(() => setOverlayFaded(true), 0);
     const t1 = setTimeout(() => setStarsReady(true),   200);
-    const t2 = setTimeout(() => setPanelReady(true),   400);
-    const t3 = setTimeout(() => setBlippyReady(true),  500);
-    const t4 = setTimeout(() => setCard0Ready(true),   600);
-    const t5 = setTimeout(() => setCard1Ready(true),   750);
-    const t6 = setTimeout(() => setBubbleReady(true),  800);
-    const t7 = setTimeout(() => setCard2Ready(true),   900);
+    const t2 = setTimeout(() => setPanelReady(true),   1050);
+    const t3 = setTimeout(() => setBlippyReady(true),  1200);
+    const t4 = setTimeout(() => setCard0Ready(true),   1250);
+    const t5 = setTimeout(() => setCard1Ready(true),   1400);
+    const t6 = setTimeout(() => setBubbleReady(true),  1500);
+    const t7 = setTimeout(() => setCard2Ready(true),   1550);
     return () => {
       clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
       clearTimeout(t4); clearTimeout(t5); clearTimeout(t6); clearTimeout(t7);
@@ -426,37 +371,20 @@ export default function WelcomeScreen({ onStart }) {
           gap: 16px;
         }
 
-        /* Blippy — absolute companion, lower-left of viewport (matches Role Select).
-           Pulled OUT of the layout flow so the panel stays dead-centered. */
+        /* Blippy — absolute companion, lower-left of viewport.
+           Pulled OUT of the layout flow so the panel stays dead-centered.
+           Sizing/responsive rules live in the shared Blippy component. */
         .wg-blippy-anchor {
           position: absolute;
           left: 28px;
           bottom: 24px;
           z-index: 6;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
           pointer-events: none;
         }
-        .wg-blippy-img {
-          height: 200px;
-          width: auto;
-          display: block;
-          filter: drop-shadow(0 0 16px rgba(0,229,204,0.35));
-        }
 
-        /* Mid widths: shrink Blippy so it never crowds the centered panel */
-        @media (max-width: 980px) {
-          .wg-blippy-img { height: 150px; }
-          .wg-speech-bubble { max-width: 140px !important; }
-        }
-
-        /* Mobile: tuck Blippy small in the corner, drop the bubble, tighten panel */
+        /* Mobile: tuck Blippy into the corner, tighten panel */
         @media (max-width: 600px) {
           .wg-blippy-anchor { left: 14px; bottom: 14px; }
-          .wg-blippy-img { height: 104px; }
-          .wg-speech-bubble { display: none; }
           .wg-outer-wrapper { max-width: 100%; padding: 0 12px; }
           .wg-panel-inner { padding: 22px 18px; gap: 16px; }
         }
@@ -482,7 +410,7 @@ export default function WelcomeScreen({ onStart }) {
         overflow: 'hidden',
         pointerEvents: 'none',
         opacity: bgLoaded ? 1 : 0,
-        transition: 'opacity 800ms ease',
+        transition: 'opacity 1200ms ease',
       }}>
         <div
           className={bgLoaded && !REDUCED ? 'wg-bg-kenburns' : ''}
@@ -538,66 +466,16 @@ export default function WelcomeScreen({ onStart }) {
         zIndex: 1,
       }} />
 
-      {/* ─ Blippy companion — absolute, lower-left; does NOT offset the centered panel ─ */}
-      <div
-        className="wg-blippy-anchor"
-        style={{
-          opacity: blippyReady ? 1 : 0,
-          transform: blippyReady ? 'translateY(0)' : 'translateY(16px)',
-          transition: 'opacity 350ms ease-out, transform 350ms ease-out',
-        }}
-      >
-        {/* Speech bubble — sits above Blippy */}
-        <div
-          className="wg-speech-bubble"
-          style={{
-            background: 'rgba(10,22,40,0.90)',
-            border: '1px solid rgba(0,229,204,0.35)',
-            borderRadius: '8px 8px 8px 2px',
-            padding: '9px 13px',
-            maxWidth: 160,
-            position: 'relative',
-            opacity: bubbleReady ? 1 : 0,
-            transform: bubbleReady ? 'translateY(0)' : 'translateY(6px)',
-            transition: 'opacity 250ms ease, transform 250ms ease',
-          }}
-        >
-          <div style={{
-            fontFamily: 'Rajdhani, sans-serif',
-            fontSize: 13,
-            fontWeight: 600,
-            color: TEXT_SOFT,
-            lineHeight: 1.4,
-            textAlign: 'center',
-          }}>
-            Ready for your mission, Cadet?
-          </div>
-          {/* Tail pointing down toward Blippy */}
-          <div style={{
-            position: 'absolute',
-            bottom: -7,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 0, height: 0,
-            borderLeft: '6px solid transparent',
-            borderRight: '6px solid transparent',
-            borderTop: '7px solid rgba(0,229,204,0.35)',
-          }} />
-        </div>
-
-        {/* Blippy image — full character, NO circle clip */}
-        <img
-          className="wg-blippy-img"
-          src="/mission-water/welcome/blippy_v2_welcome_pose.png"
-          alt="Blippy, your mission companion"
-          onError={(e) => {
-            e.target.src = '/mission-water/welcome/blippy_welcome_pose.png';
-          }}
+      {/* ─ Blippy companion — shared component, lower-left near the cards ─ */}
+      <div className="wg-blippy-anchor">
+        <Blippy
+          visible={blippyReady}
+          text={bubbleReady ? 'Ready, Cadet? Pick your mission and press BEGIN.' : null}
         />
       </div>
 
-      {/* ─ Scrollable content ─────────────────────────────────────────── */}
-      <div style={{
+      {/* ─ Scrollable content — gutter keeps the panel clear of Blippy ── */}
+      <div className="mw-guide-gutter" style={{
         position: 'absolute', inset: 0,
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
@@ -723,12 +601,3 @@ export default function WelcomeScreen({ onStart }) {
   );
 }
 
-// ─── Tiny RNG (deterministic star seeding) ───────────────────────────────────
-function mulberry32(a) {
-  return function () {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}

@@ -293,6 +293,7 @@ export default function MissionWaterGame() {
       {hasStarted && nameEntered && !selectedRole && (
         <RoleSelect
           rolesData={rolesData}
+          playerName={playerName}
           onConfirm={(role) => setSelectedRole(role)}
         />
       )}

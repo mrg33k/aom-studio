@@ -1,78 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import StarCanvas from './StarCanvas.jsx';
+import Blippy from './Blippy.jsx';
 
 // ─── prefers-reduced-motion ───────────────────────────────────────────────────
 const REDUCED = typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-// ─── StarCanvas (space background — DESIGN.md Layer 1, same as RoleSelect) ───
-function mulberry32(seed) {
-  return function () {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function StarCanvas() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rand = mulberry32(0xbeac0742);
-    const LAYERS = [
-      { count: 180, minR: 0.4, maxR: 1.1, minA: 0.25, maxA: 0.65, spd: 0.012 },
-      { count: 70,  minR: 0.9, maxR: 2.0, minA: 0.50, maxA: 1.00, spd: 0.022 },
-    ];
-    let W = 0, H = 0, raf;
-    let stars = [];
-    function buildStars(w, h) {
-      stars = [];
-      for (const L of LAYERS) {
-        for (let i = 0; i < L.count; i++) {
-          stars.push({
-            x: rand() * w, y: rand() * h,
-            r: L.minR + rand() * (L.maxR - L.minR),
-            a: L.minA + rand() * (L.maxA - L.minA),
-            spd: L.spd * (0.7 + rand() * 0.6),
-            dx: (rand() - 0.5) * 0.006,
-          });
-        }
-      }
-    }
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      for (const s of stars) {
-        s.y -= s.spd; s.x += s.dx;
-        if (s.y < -2) s.y = H + 2;
-        if (s.x < -2) s.x = W + 2;
-        if (s.x > W + 2) s.x = -2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200,220,255,${s.a})`;
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(draw);
-    }
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      canvas.width = width; canvas.height = height;
-      W = width; H = height;
-      buildStars(W, H);
-    });
-    ro.observe(canvas);
-    draw();
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
-  return (
-    <canvas
-      ref={ref}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-    />
-  );
-}
 
 /**
  * HubScreen — Between-phase action hub.
@@ -119,48 +51,35 @@ export default function HubScreen({
   const [hoveredCard, setHoveredCard] = useState(null);
 
   // ─── Entrance animation state ─────────────────────────────────────────────
+  // R18a staged entrance: world first (fade from black reveals the starfield),
+  // THEN the header, then the cards. Bg breathes in before any box appears.
+  const [worldReady,  setWorldReady]  = useState(REDUCED);
   const [headerReady, setHeaderReady] = useState(REDUCED);
   const [blippyReady, setBlippyReady] = useState(REDUCED);
 
   useEffect(() => {
     if (REDUCED) return;
-    const t0 = setTimeout(() => setHeaderReady(true), 0);
-    const t1 = setTimeout(() => setBlippyReady(true), 400);
-    return () => { clearTimeout(t0); clearTimeout(t1); };
+    const t0 = setTimeout(() => setWorldReady(true),  30);
+    const t1 = setTimeout(() => setHeaderReady(true), 750);
+    const t2 = setTimeout(() => setBlippyReady(true), 1250);
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   // Resource token counts
   const communityTokens = currentResources?.community_partnerships ?? 0;
   const samplingTokens = currentResources?.sampling_kits ?? 0;
 
-  // Blippy contextual lines based on progress
-  const blippyLines = (() => {
+  // Blippy guiding line — tells the cadet what to DO here, staged by progress
+  const blippyText = (() => {
     const ratio = regionsTotal > 0 ? regionsCompleted / regionsTotal : 0;
     if (ratio >= 0.66) {
-      // Late stage: final region ahead
-      return [
-        "Final region ahead — council reveal incoming.",
-        "Strong data so far, Cadet. The Council will want answers.",
-        "Almost there. Make this last region count.",
-      ];
-    } else if (ratio >= 0.33) {
-      // Mid stage: resources looking tight
-      return [
-        "Resources looking tight. Spend wisely.",
-        "Halfway through the investigation, Cadet. Momentum counts.",
-        "The data's building. Keep the pressure on.",
-      ];
+      return 'Final region ahead — use the tokens you have left, then CONTINUE to face the Council.';
     }
-    // Early stage
-    return [
-      "Keep pushing, Cadet.",
-      "Strong start. Let's see what the next region reveals.",
-      "The Council is watching. Don't let them down.",
-    ];
+    if (ratio >= 0.33) {
+      return 'Tokens run out fast. Spend them where they count, then hit CONTINUE INVESTIGATION.';
+    }
+    return 'This is your checkpoint. Pick an action card — or hit CONTINUE INVESTIGATION when you are ready.';
   })();
-
-  // Rotate through lines based on regions completed
-  const blippyText = blippyLines[regionsCompleted % blippyLines.length];
 
   const spendFieldInterview = () => {
     if (communityTokens <= 0) return;
@@ -269,7 +188,7 @@ export default function HubScreen({
 
   return (
     <div style={styles.root}>
-      {/* ── Keyframes for card entrance flicker + map pulse ── */}
+      {/* ── Keyframes for card entrance flicker + map pulse + grid ── */}
       <style>{`
         @keyframes hub-card-flicker {
           0%   { opacity: 0;   }
@@ -285,6 +204,17 @@ export default function HubScreen({
           0%   { transform: scale(0.6); opacity: 0.9; }
           100% { transform: scale(2.2); opacity: 0;   }
         }
+        /* R18a — fixed 2-column grid, equal card heights, 1 column on mobile */
+        .hub-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+        }
+        .hub-grid .hub-card { display: flex; }
+        .hub-grid .hub-card > div { width: 100%; }
+        @media (max-width: 680px) {
+          .hub-grid { grid-template-columns: 1fr; }
+        }
         @media (prefers-reduced-motion: reduce) {
           .hub-card { animation: none !important; opacity: 1 !important; }
           .hub-map-current { animation: none !important; }
@@ -294,12 +224,23 @@ export default function HubScreen({
 
       {/* ── Space background — starfield + scanlines, same world as RoleSelect ── */}
       <div style={styles.bgSpace}>
-        <StarCanvas />
+        <StarCanvas seed={0xbeac0742} />
       </div>
       <div style={styles.scanlines} />
 
-      {/* ── Main scrollable content ── */}
-      <div style={styles.scrollLayer}>
+      {/* ── R18a staged entrance: fade from black reveals the world FIRST ── */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        background: '#000',
+        opacity: worldReady ? 0 : 1,
+        transition: 'opacity 700ms ease',
+        pointerEvents: 'none',
+        zIndex: 60,
+      }} />
+
+      {/* ── Main scrollable content — gutter keeps cards clear of Blippy ── */}
+      <div className="mw-guide-gutter" style={styles.scrollLayer}>
         <div style={styles.centerFrame}>
 
           {/* Header — canon pattern: cyan kicker / white Orbitron title / dim sub */}
@@ -331,8 +272,8 @@ export default function HubScreen({
             )}
           </div>
 
-          {/* Card grid: 2 columns on desktop, 1 column on mobile */}
-          <div style={styles.cardGrid}>
+          {/* Card grid: fixed 2 columns on desktop, 1 column on mobile (R18a) */}
+          <div className="hub-grid">
             {hubOptions.map((opt, idx) => {
               const isLocked = !opt.free && (opt.tokenAvail ?? 0) <= 0;
               const isHovered = hoveredCard === opt.id;
@@ -345,8 +286,9 @@ export default function HubScreen({
                   className="hub-card"
                   style={{
                     opacity: 0,
-                    animation: 'hub-card-flicker 200ms ease forwards',
-                    animationDelay: `${200 + idx * 80}ms`,
+                    // Cards land AFTER the world + header (R18a staged entrance)
+                    animation: 'hub-card-flicker 220ms ease forwards',
+                    animationDelay: `${1000 + idx * 90}ms`,
                     ...(opt.fullWidth ? { gridColumn: '1 / -1' } : {}),
                   }}
                 >
@@ -468,25 +410,10 @@ export default function HubScreen({
         />
       )}
 
-      {/* ── Blippy lower-left — real Blippy art, same treatment as RoleSelect ── */}
+      {/* ── Blippy lower-left — shared full-body component, guiding the hub ── */}
       {!showManifest && !showMap && (
-        <div style={{
-          ...styles.blippy,
-          opacity:    blippyReady ? 1 : 0,
-          transform:  blippyReady ? 'translateX(0) scale(1)' : 'translateX(40px) scale(0.8)',
-          transition: 'opacity 300ms ease-out, transform 300ms ease-out',
-        }}>
-          <div style={styles.blippyCircle}>
-            <img
-              src="/mission-water/welcome/blippy_welcome_pose.png"
-              alt="Blippy"
-              style={styles.blippyImg}
-              onError={(e) => { e.currentTarget.style.display = 'none'; }}
-            />
-          </div>
-          <div style={styles.blippyBubble}>
-            <span style={styles.blippyText}>{blippyText}</span>
-          </div>
+        <div style={styles.blippyAnchor}>
+          <Blippy visible={blippyReady} text={blippyText} />
         </div>
       )}
     </div>
@@ -1068,13 +995,6 @@ const styles = {
     color: 'rgba(232,240,248,0.3)',
   },
 
-  // ── Card grid ────────────────────────────────────────────────────
-  cardGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: 14,
-  },
-
   card: {
     background: PANEL_BG,
     border: `1px solid ${BORDER_CYAN}`,
@@ -1103,11 +1023,11 @@ const styles = {
     cursor: 'not-allowed',
   },
 
-  // Cleo art banner on each card
+  // Cleo art banner on each card — R18a: taller so the art actually reads
   cardArtWrap: {
     position: 'relative',
     width: '100%',
-    height: 92,
+    height: 150,
     flexShrink: 0,
     overflow: 'hidden',
   },
@@ -1427,51 +1347,12 @@ const styles = {
     fontSize: 13,
   },
 
-  // ── Blippy — real art in cyan porthole (matches RoleSelect) ───────
-  blippy: {
+  // ── Blippy — shared full-body component, lower-left ───────────────
+  blippyAnchor: {
     position: 'fixed',
     bottom: 24,
     left: 24,
-    display: 'flex',
-    alignItems: 'flex-end',
-    gap: 10,
     zIndex: 250,
-    maxWidth: 320,
-  },
-
-  blippyCircle: {
-    flexShrink: 0,
-    width: 80,
-    height: 80,
-    borderRadius: '50%',
-    border: `2px solid ${CYAN}`,
-    overflow: 'hidden',
-    background: 'rgba(0,229,204,0.06)',
-    boxShadow: `0 0 12px rgba(0,229,204,0.20)`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  blippyImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-
-  blippyBubble: {
-    background: 'rgba(7, 11, 20, 0.92)',
-    border: `1px solid ${CYAN}`,
-    borderRadius: '8px 8px 8px 0',
-    padding: '10px 14px',
-    maxWidth: 220,
-  },
-
-  blippyText: {
-    fontFamily: 'Rajdhani, sans-serif',
-    fontWeight: 600,
-    fontSize: 13,
-    color: TEXT_PRIMARY,
-    lineHeight: 1.5,
+    pointerEvents: 'none',
   },
 };

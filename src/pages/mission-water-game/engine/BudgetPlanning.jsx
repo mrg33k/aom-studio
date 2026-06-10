@@ -1,74 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-
-// ─── StarCanvas (space background — DESIGN.md Layer 1) ───────────────────────
-function mulberry32(seed) {
-  return function () {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function StarCanvas() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rand = mulberry32(0xbeefdead);
-    const LAYERS = [
-      { count: 180, minR: 0.4, maxR: 1.1, minA: 0.25, maxA: 0.65, spd: 0.012 },
-      { count: 70,  minR: 0.9, maxR: 2.0, minA: 0.50, maxA: 1.00, spd: 0.022 },
-    ];
-    let W = 0, H = 0, raf;
-    let stars = [];
-    function buildStars(w, h) {
-      stars = [];
-      for (const L of LAYERS) {
-        for (let i = 0; i < L.count; i++) {
-          stars.push({
-            x: rand() * w, y: rand() * h,
-            r: L.minR + rand() * (L.maxR - L.minR),
-            a: L.minA + rand() * (L.maxA - L.minA),
-            spd: L.spd * (0.7 + rand() * 0.6),
-            dx: (rand() - 0.5) * 0.006,
-          });
-        }
-      }
-    }
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      for (const s of stars) {
-        s.y -= s.spd; s.x += s.dx;
-        if (s.y < -2) s.y = H + 2;
-        if (s.x < -2) s.x = W + 2;
-        if (s.x > W + 2) s.x = -2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200,220,255,${s.a})`;
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(draw);
-    }
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      canvas.width = width; canvas.height = height;
-      W = width; H = height;
-      buildStars(W, H);
-    });
-    ro.observe(canvas);
-    draw();
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
-  return (
-    <canvas
-      ref={ref}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-    />
-  );
-}
+import React, { useState } from 'react';
+import StarCanvas from './StarCanvas.jsx';
+import Blippy from './Blippy.jsx';
 
 // ─── palette ─────────────────────────────────────────────────────────────────
 const SPACE_DARK = '#070B14';
@@ -244,7 +176,7 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
     <div style={styles.root}>
       {/* Layer 1: space background */}
       <div style={{ position: 'absolute', inset: 0, background: SPACE_DARK }}>
-        <StarCanvas />
+        <StarCanvas seed={0xbeefdead} />
       </div>
 
       {/* Flicker keyframe for row entrance animations */}
@@ -285,19 +217,13 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
             ))}
           </div>
 
-          {/* Blippy lower-left of left column */}
-          <div style={styles.blippyRow}>
-            <div style={styles.blippyCircle}>
-              <img
-                src="/mission-water/welcome/blippy_welcome_pose.png"
-                alt="Blippy"
-                style={styles.blippyImg}
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-            </div>
-            <div style={styles.blippyBubble}>
-              Allocate your resources, Cadet. Every point matters when you're on the ground.
-            </div>
+          {/* Blippy — shared full-body component, lower-left of the briefing
+              column, FLIPPED so he faces the allocation panel (the action). */}
+          {/* Default pose gestures right — toward the allocation panel. */}
+          <div style={styles.blippyAnchor}>
+            <Blippy
+              text="Spend every point with + and −, then hit DEPLOY MISSION. Your loadout is your lifeline down there."
+            />
           </div>
         </div>
 
@@ -439,7 +365,9 @@ const styles = {
     flex: '0 0 38%',
     display: 'flex',
     flexDirection: 'column',
-    padding: '48px 40px 32px',
+    // Bottom padding reserves the lower-left zone for full-body Blippy so the
+    // briefing text never runs underneath him (R18a).
+    padding: '48px 40px 310px',
     background: 'linear-gradient(160deg, rgba(0,229,204,0.06) 0%, rgba(7,11,20,0.0) 60%)',
     borderRight: `1px solid rgba(0,229,204,0.14)`,
     position: 'relative',
@@ -751,44 +679,12 @@ const styles = {
     transition: 'opacity 150ms ease, box-shadow 150ms ease',
   },
 
-  // ── Blippy companion ─────────────────────────────────────────────
-  blippyRow: {
+  // ── Blippy companion — shared full-body component ────────────────
+  blippyAnchor: {
     position: 'absolute',
     bottom: 20,
-    left: 20,
-    display: 'flex',
-    alignItems: 'flex-end',
-    gap: 10,
+    left: 24,
     zIndex: 3,
-  },
-  blippyCircle: {
-    flexShrink: 0,
-    width: 80,
-    height: 80,
-    borderRadius: '50%',
-    border: `2px solid ${CYAN}`,
-    overflow: 'hidden',
-    background: 'rgba(0,229,204,0.06)',
-    boxShadow: `0 0 12px rgba(0,229,204,0.20)`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  blippyImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  blippyBubble: {
-    background: 'rgba(7,11,20,0.92)',
-    border: `1px solid ${CYAN}`,
-    borderRadius: '8px 8px 8px 0',
-    padding: '8px 12px',
-    fontFamily: '"Rajdhani", sans-serif',
-    fontWeight: 600,
-    fontSize: 12,
-    color: '#E8F0F8',
-    lineHeight: 1.4,
-    maxWidth: 200,
+    pointerEvents: 'none',
   },
 };

@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import StarCanvas from './StarCanvas.jsx';
+import Blippy from './Blippy.jsx';
 
 /**
  * NameEntryScreen — R9 Conrad Foundation Mission Water Game
@@ -38,85 +40,6 @@ function useEntryAnim() {
   }, []);
 
   return { panelReady, headlineReady, blippyReady, bubbleReady };
-}
-
-// ─── RNG (same mulberry32 pattern as WelcomeScreen) ──────────────────────────
-function mulberry32(seed) {
-  return function () {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// ─── StarCanvas ──────────────────────────────────────────────────────────────
-function StarCanvas() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rand = mulberry32(0xc0ffee42);
-
-    const LAYERS = [
-      { count: 180, minR: 0.4, maxR: 1.1, minA: 0.25, maxA: 0.65, spd: 0.012 },
-      { count: 70,  minR: 0.9, maxR: 2.0, minA: 0.50, maxA: 1.00, spd: 0.022 },
-    ];
-    let W = 0, H = 0, raf;
-    let stars = [];
-
-    function buildStars(w, h) {
-      stars = [];
-      for (const L of LAYERS) {
-        for (let i = 0; i < L.count; i++) {
-          stars.push({
-            x:   rand() * w,
-            y:   rand() * h,
-            r:   L.minR + rand() * (L.maxR - L.minR),
-            a:   L.minA + rand() * (L.maxA - L.minA),
-            spd: L.spd * (0.7 + rand() * 0.6),
-            dx:  (rand() - 0.5) * 0.006,
-          });
-        }
-      }
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      for (const s of stars) {
-        s.y -= s.spd;
-        s.x += s.dx;
-        if (s.y < -2) s.y = H + 2;
-        if (s.x < -2) s.x = W + 2;
-        if (s.x > W + 2) s.x = -2;
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(200,220,255,${s.a})`;
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(draw);
-    }
-
-    const ro = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      canvas.width = width;
-      canvas.height = height;
-      W = width; H = height;
-      buildStars(W, H);
-    });
-    ro.observe(canvas);
-    draw();
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
-
-  return (
-    <canvas
-      ref={ref}
-      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
-    />
-  );
 }
 
 // ─── Palette (from DESIGN.md color tokens) ────────────────────────────────────
@@ -161,14 +84,14 @@ export default function NameEntryScreen({ onConfirm }) {
 
       {/* Space background */}
       <div style={S.bg}>
-        <StarCanvas />
+        <StarCanvas seed={0xc0ffee42} />
       </div>
 
       {/* Scanline overlay — same instrument texture as the rest of the game */}
       <div style={S.scanlines} />
 
-      {/* Scrollable overlay — centers panel vertically */}
-      <div style={S.overlay}>
+      {/* Scrollable overlay — centers panel vertically; gutter clears Blippy */}
+      <div className="mw-guide-gutter" style={S.overlay}>
         <div style={S.flex1} />
 
         <div style={S.panelOuter}>
@@ -242,32 +165,17 @@ export default function NameEntryScreen({ onConfirm }) {
           </div>
           {/* ── end instrument panel ─────────────────────────────────────── */}
 
-          {/* Blippy companion */}
-          <div style={{
-            ...S.blippyRow,
-            opacity:    blippyReady ? 1 : 0,
-            transform:  blippyReady ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(20px)',
-            transition: 'opacity 300ms ease-out, transform 300ms ease-out',
-          }}>
-            <div style={S.blippyCircle}>
-              <img
-                src="/mission-water/welcome/blippy_welcome_pose.png"
-                alt="Blippy"
-                style={S.blippyImg}
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-            </div>
-            <div style={{
-              ...S.bubble,
-              opacity:    bubbleReady ? 1 : 0,
-              transform:  bubbleReady ? 'translateY(0)' : 'translateY(6px)',
-              transition: 'opacity 250ms ease, transform 250ms ease',
-            }}>Ready to meet you, Cadet!</div>
-          </div>
-
         </div>
 
         <div style={S.flex1} />
+      </div>
+
+      {/* Blippy companion — shared component, lower-left near the registration panel */}
+      <div style={S.blippyAnchor}>
+        <Blippy
+          visible={blippyReady}
+          text={bubbleReady ? 'Type your name and hit CONFIRM — the Council logs every cadet who flies.' : null}
+        />
       </div>
     </div>
   );
@@ -407,43 +315,12 @@ const S = {
     cursor: 'not-allowed',
   },
 
-  // Blippy row (below panel)
-  blippyRow: {
-    display: 'flex',
-    alignItems: 'flex-end',
-    gap: 12,
-    marginTop: 14,
-    paddingLeft: 8,
-  },
-  blippyCircle: {
-    flexShrink: 0,
-    width: 100,
-    height: 100,
-    borderRadius: '50%',
-    border: `2px solid ${CYAN}`,
-    overflow: 'hidden',
-    background: 'rgba(0,229,204,0.06)',
-    boxShadow: '0 0 12px rgba(0,229,204,0.20)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  blippyImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  // DESIGN.md: Blippy speech bubble
-  bubble: {
-    background: 'rgba(7,11,20,0.92)',
-    border: `1px solid ${CYAN}`,
-    borderRadius: '8px 8px 8px 0',
-    padding: '10px 14px',
-    fontFamily: '"Rajdhani", sans-serif',
-    fontWeight: 600,
-    fontSize: 14,
-    color: '#E8F0F8',
-    lineHeight: 1.4,
-    maxWidth: 220,
+  // Blippy anchor — lower-left of viewport, consistent with WelcomeScreen
+  blippyAnchor: {
+    position: 'absolute',
+    left: 28,
+    bottom: 24,
+    zIndex: 6,
+    pointerEvents: 'none',
   },
 };

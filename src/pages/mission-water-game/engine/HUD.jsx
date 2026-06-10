@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import Blippy from './Blippy.jsx';
 
 /**
  * HUD — Mission Water Game instrument panel overlay.
@@ -142,6 +143,23 @@ export default function HUD({ phase, hud, onChoose, resources, playerName, openK
 
   return (
     <div style={styles.root}>
+      {/* ── R18a sequencing + Blippy placement ──────────────────── */}
+      <style>{`
+        /* Debrief card lands AFTER the background image has breathed in */
+        @keyframes hud-card-in {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .hud-debrief { animation: hud-card-in 500ms ease 750ms both; }
+        /* Blippy — full-body companion left of the debrief card; hidden when
+           the viewport is too narrow to fit him beside the card */
+        .hud-blippy { position: absolute; bottom: 26px; left: 18px; z-index: 20; pointer-events: none; }
+        @media (max-width: 1400px) { .hud-blippy { display: none; } }
+        @media (prefers-reduced-motion: reduce) {
+          .hud-debrief { animation: none; }
+        }
+      `}</style>
+
       {/* ── TOP INSTRUMENT BAR ──────────────────────────────────── */}
       <div style={styles.topBar}>
         <MissionIdent chapter={phase.chapter} playerName={playerName} />
@@ -168,21 +186,17 @@ export default function HUD({ phase, hud, onChoose, resources, playerName, openK
         <FramedAwards ids={hud.discovery_ids} />
       )}
 
-      {/* ── BLIPPY COMPANION — lower-left, per DESIGN.md ───────── */}
-      <div style={styles.blippyRow}>
-        <div style={styles.blippyCircle}>
-          <img
-            src="/mission-water/welcome/blippy_welcome_pose.png"
-            alt="Blippy"
-            style={styles.blippyImg}
-            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-          />
-        </div>
+      {/* ── BLIPPY COMPANION — shared full-body component, beside the card ── */}
+      <div className="hud-blippy">
+        <Blippy
+          size="sm"
+          text="Read the briefing, then pick your move below."
+        />
       </div>
 
       {/* ── MISSION DEBRIEF + CHOICES ───────────────────────────── */}
       <div style={styles.bottom}>
-        <div style={styles.debriefCard}>
+        <div className="hud-debrief" key={phase.id} style={styles.debriefCard}>
           {phase.title && (
             <div style={styles.objectiveHeader}>
               <div style={styles.objectiveAccentLine} />
@@ -1371,32 +1385,6 @@ const styles = {
     lineHeight: 1.3,
     maxWidth: 72,
     wordBreak: 'break-word',
-  },
-
-  // Blippy companion — lower-left, above the debrief card
-  blippyRow: {
-    position: 'absolute',
-    bottom: 420, // viewport 1024px; card top ~604px from bottom — Blippy bottom at 604 clears card
-    left: 16,
-    pointerEvents: 'none',
-    zIndex: 20,  // above debriefCard's backdrop-filter stacking context
-  },
-  blippyCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: '50%',
-    border: `2px solid ${CYAN}`,
-    overflow: 'hidden',
-    background: 'rgba(0,229,204,0.06)',
-    boxShadow: `0 0 10px rgba(0,229,204,0.18)`,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  blippyImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
   },
 
   // ── Award ceremony overlay (Fix D) ────
