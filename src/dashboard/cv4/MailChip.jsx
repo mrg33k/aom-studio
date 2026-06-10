@@ -22,7 +22,7 @@ export default function MailChip({ email, onClear }) {
         borderRadius: 10,
         background: 'rgba(234,179,8,0.10)',
         border: '1px solid rgba(234,179,8,0.30)',
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', sans-serif",
       }}
     >
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.yellow} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>

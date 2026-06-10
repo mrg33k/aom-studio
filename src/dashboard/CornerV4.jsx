@@ -110,7 +110,7 @@ function TaskCompletionToast({ message, visible, onDismiss }) {
           fontSize: 12,
           fontWeight: 600,
           color: C.text2,
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Hanken Grotesk', sans-serif",
         }}>{message}</span>
       </div>
     </>
@@ -144,7 +144,12 @@ export default function CornerV4() {
   const [showSupportInbox, setShowSupportInbox] = useState(() =>
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('support'))
   // corner:support-desk M10 — pending support count for the headphones-icon badge.
-  const [supportPending, setSupportPending] = useState(0)
+  // M16-R4: ONE truth — the badge and the home Needs-you strip count the same
+  // universe the Support headline counts (open wishes + emails needing a reply),
+  // so home can never say "1 waiting" while Support says "6 waiting on you".
+  const [supportWishesPending, setSupportWishesPending] = useState(0)
+  const [supportEmailNeeds, setSupportEmailNeeds] = useState(0)
+  const supportPending = supportWishesPending + supportEmailNeeds
   useEffect(() => {
     if (worldId !== 'aom') return
     let alive = true
@@ -153,12 +158,31 @@ export default function CornerV4() {
         const r = await fetch('/api/support/wishes')
         const d = await r.json()
         if (alive && d?.ok) {
-          setSupportPending((d.wishes || []).filter(w => ['heard', 'working', 'needs_team'].includes(w.status)).length)
+          setSupportWishesPending((d.wishes || []).filter(w => ['heard', 'working', 'needs_team'].includes(w.status)).length)
         }
       } catch { /* ignore */ }
     }
     load()
     const t = setInterval(load, 60000)
+    return () => { alive = false; clearInterval(t) }
+  }, [worldId])
+  useEffect(() => {
+    // Email needs poll at a gentler cadence — it walks Gmail server-side.
+    if (worldId !== 'aom') return
+    let alive = true
+    const load = async () => {
+      try {
+        const r = await authFetch('/api/support/inbox', { method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ email: 'patrikmatheson@gmail.com', days: 7 }) })
+        const d = await r.json()
+        if (alive && d?.ok) {
+          setSupportEmailNeeds((d.mailboxes || []).reduce((n, b) => n + (b.needs?.length || 0), 0))
+        }
+      } catch { /* ignore */ }
+    }
+    load()
+    const t = setInterval(load, 300000)
     return () => { alive = false; clearInterval(t) }
   }, [worldId])
   // corner:support-desk M16-R2 — home tells the real story. Rows only ship when
@@ -1257,7 +1281,7 @@ export default function CornerV4() {
   // ISOLATION FIX 2026-05-24: Also check worldId to prevent cross-tenant leak during load
   if (!authReady || !worldId || (!!supabase && !currentUser && typeof window !== 'undefined')) {
     return (
-      <div style={{ width: '100%', height: '100dvh', background: '#060A14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ width: '100%', height: '100dvh', background: '#060A14', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: "'Hanken Grotesk', sans-serif" }}>
         <style>{`@keyframes cvLoaderBar { 0% { width: 0%; } 100% { width: 100%; } } @keyframes cvSpin { to { transform: rotate(360deg); } }`}</style>
         <div style={{ fontFamily: "'Syne', system-ui, sans-serif", fontSize: 32, fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.03em', marginBottom: 32 }}>
           Corner<span style={{ color: '#10B981' }}>.</span>
@@ -1285,7 +1309,7 @@ export default function CornerV4() {
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      fontFamily: "'Inter', sans-serif",
+      fontFamily: "'Hanken Grotesk', sans-serif",
     }}>
       {/* R5.1 CV4 scoped styles. Everything keyed to [data-shell="cv4"] so the
           shared cv3/ components stay unchanged on /dashboard. */}
@@ -1464,7 +1488,7 @@ export default function CornerV4() {
            palette instead of a rounded floating SMS pill. */
         [data-shell="cv4"] [data-testid="thread-chat-input"],
         [data-shell="cv4"] [data-testid="project-chat-input"] {
-          font-family: 'Inter', sans-serif !important;
+          font-family: 'Hanken Grotesk', sans-serif !important;
         }
         /* The pill = parent of the input + composer-actions row.
            Match by structure: any element that directly contains
@@ -1645,7 +1669,7 @@ export default function CornerV4() {
           border: 1px solid rgba(255,255,255,0.08) !important;
           border-radius: 2px !important;
           color: rgba(226,232,240,0.65) !important;
-          font-family: 'Inter', sans-serif !important;
+          font-family: 'Hanken Grotesk', sans-serif !important;
         }
         :root[data-shell="cv4"][data-theme="light"] [data-cv4-mobile-sheet] > div:nth-child(2) {
           background: rgba(0,0,0,0.04) !important;
@@ -1720,7 +1744,7 @@ export default function CornerV4() {
         [data-shell="cv4"] [data-cv4-profile-popover] input {
           background: rgba(255,255,255,0.04) !important;
           border: 1px solid rgba(255,255,255,0.10) !important;
-          font-family: 'Inter', sans-serif !important;
+          font-family: 'Hanken Grotesk', sans-serif !important;
           color: ${C.text} !important;
         }
         [data-shell="cv4"][data-theme="light"] [data-cv4-profile-popover] input {
@@ -1738,7 +1762,7 @@ export default function CornerV4() {
         /* Save button — sharp, theme-aware, no rounded blue blob */
         [data-shell="cv4"] [data-cv4-profile-popover] > button {
           border-radius: 2px !important;
-          font-family: 'Inter', sans-serif !important;
+          font-family: 'Hanken Grotesk', sans-serif !important;
           background: rgba(255,255,255,0.08) !important;
           border: 1px solid rgba(255,255,255,0.12) !important;
           color: ${C.text} !important;
@@ -1805,7 +1829,7 @@ export default function CornerV4() {
            card. Black backdrop in dark theme, warm paper backdrop in light. */
         [data-shell="cv4"] [data-testid="project-settings-overlay"],
         [data-shell="cv4"] [data-testid="thread-settings-overlay"] {
-          font-family: 'Inter', sans-serif !important;
+          font-family: 'Hanken Grotesk', sans-serif !important;
           flex-direction: column !important;
           align-items: center !important;
           justify-content: center !important;
@@ -2026,7 +2050,7 @@ export default function CornerV4() {
         [data-shell="cv4"] [data-testid="thread-settings-overlay"] input,
         [data-shell="cv4"] [data-testid="thread-settings-overlay"] textarea {
           border-radius: 2px !important;
-          font-family: 'Inter', sans-serif !important;
+          font-family: 'Hanken Grotesk', sans-serif !important;
         }
 
         /* R7.14b — remove the blue project-room dot in the context nav.
@@ -2498,7 +2522,7 @@ export default function CornerV4() {
                 </button>
                 {defaultView && defaultView.kind && defaultView.kind !== 'home' && (
                   <div style={{
-                    fontSize: 10, fontFamily: "'Inter', sans-serif",
+                    fontSize: 10, fontFamily: "'Hanken Grotesk', sans-serif",
                     color: C.muted, marginTop: 6, lineHeight: 1.4,
                   }}>
                     Currently opens to <strong style={{ color: C.text2, fontWeight: 600 }}>{defaultView.slug}</strong> on first load.

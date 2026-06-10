@@ -200,7 +200,7 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
         boxSizing: 'border-box',
         background: C.bg,
         color: C.text,
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', sans-serif",
       }}
     >
       {/* Header */}
@@ -263,7 +263,7 @@ export default function SkillsShelf({ onPickSkill, onClose }) {
               border: `1px solid ${C.border}`,
               background: C.bg2 || 'rgba(255,255,255,0.04)',
               color: C.text,
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Hanken Grotesk', sans-serif",
               fontSize: 13,
               outline: 'none',
               transition: 'border-color 0.15s',

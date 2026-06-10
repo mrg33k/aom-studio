@@ -167,7 +167,7 @@ function ThreadView({ group, onBack }) {
               }}>
                 <div style={{
                   fontSize: 13, color: C.text, lineHeight: 1.5,
-                  fontFamily: "'Inter', sans-serif",
+                  fontFamily: "'Hanken Grotesk', sans-serif",
                   whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                 }}>
                   {getDisplayText(msg)}
@@ -223,7 +223,7 @@ function InboxList({ groups, selectedVisitorId, onSelectVisitor }) {
         }}>No support conversations yet</div>
         <div style={{
           fontSize: 12, color: C.muted, textAlign: 'center', maxWidth: 260,
-          fontFamily: "'Inter', sans-serif", lineHeight: 1.5,
+          fontFamily: "'Hanken Grotesk', sans-serif", lineHeight: 1.5,
         }}>
           When visitors send messages through the Corner Support widget, their conversations will appear here.
         </div>
@@ -311,7 +311,7 @@ function InboxList({ groups, selectedVisitorId, onSelectVisitor }) {
             {/* Row 2: Last message preview */}
             <div style={{
               fontSize: 12, color: group.unread > 0 ? C.text2 : C.muted,
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Hanken Grotesk', sans-serif",
               lineHeight: 1.4,
               fontWeight: group.unread > 0 ? 500 : 400,
               paddingLeft: 28, // align under visitor id text

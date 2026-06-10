@@ -192,7 +192,7 @@ function EmptyState({ text }) {
       color: C.muted,
       padding: '8px 12px',
       fontStyle: 'italic',
-      fontFamily: "'Inter', sans-serif",
+      fontFamily: "'Hanken Grotesk', sans-serif",
       lineHeight: 1.5,
     }}>{text}</div>
   )
@@ -289,7 +289,7 @@ function FileViewer({ file, onClose }) {
               fontSize: 11,
               fontWeight: 600,
               textDecoration: 'none',
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Hanken Grotesk', sans-serif",
             }}>Open {file.name}</a>
           </div>
         )}
@@ -320,7 +320,7 @@ function FileViewer({ file, onClose }) {
           flexShrink: 0,
         }}>
           <span style={{
-            fontSize: 13, color: C.text, fontFamily: "'Inter', sans-serif",
+            fontSize: 13, color: C.text, fontFamily: "'Hanken Grotesk', sans-serif",
             fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {file.name}
@@ -333,7 +333,7 @@ function FileViewer({ file, onClose }) {
               style={{
                 fontSize: 12, color: C.text2, textDecoration: 'none',
                 padding: '6px 12px', border: `1px solid ${C.border2 || C.border}`, borderRadius: 6,
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: "'Hanken Grotesk', sans-serif",
               }}
             >Download</a>
             <button
@@ -372,7 +372,7 @@ function FileViewer({ file, onClose }) {
         padding: '5px 10px',
         borderBottom: '1px solid ' + C.border,
       }}>
-        <span style={{ fontSize: 11, color: C.text2, fontFamily: "'Inter', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 11, color: C.text2, fontFamily: "'Hanken Grotesk', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {file.name}
         </span>
         <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginLeft: 8, alignItems: 'center' }}>
@@ -383,7 +383,7 @@ function FileViewer({ file, onClose }) {
             style={{
               fontSize: 10, color: C.text2, textDecoration: 'none',
               padding: '3px 8px', border: `1px solid ${C.border2 || C.border}`, borderRadius: 4,
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Hanken Grotesk', sans-serif",
             }}
           >Download</a>
           <button
@@ -496,7 +496,7 @@ function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent =
           fontWeight: 500,
           color: C.text,
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Hanken Grotesk', sans-serif",
         }}>{displayName}</span>
 
         {file.age && (
@@ -555,7 +555,7 @@ function FolderRow({ label, fileCount, isOpen, onClick }) {
         fontWeight: 500,
         color: C.accent,
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', sans-serif",
       }}>{label}</span>
       <span style={{ fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono', monospace" }}>
         {isOpen ? '▾' : '▸'} {fileCount}
@@ -1136,15 +1136,21 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
       <CategoryFilters active={activeCat} onChange={handleCatChange} />
 
       {/* R13 — search box */}
+      {/* Theme-correct: the old rgba(15,23,42,…) navy block read as a broken
+          gray bar on the light theme. Transparent + border matches the
+          Explorer's search row; same SVG icon as the rest of the system. */}
       <div style={{
         padding: '8px 12px',
         borderBottom: '1px solid ' + C.border,
         display: 'flex',
         alignItems: 'center',
         gap: 7,
-        background: 'rgba(15,23,42,0.35)',
+        background: 'transparent',
       }}>
-        <span style={{ fontSize: 11, color: C.muted, flexShrink: 0, lineHeight: 1 }}>⌕</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: C.muted, flexShrink: 0 }}>
+          <circle cx="11" cy="11" r="7"/>
+          <line x1="21" y1="21" x2="16.5" y2="16.5"/>
+        </svg>
         <input
           value={query}
           onChange={e => { setQuery(e.target.value); setActiveFile(null) }}
@@ -1158,7 +1164,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
             padding: 0,
             fontSize: 12,
             color: C.text,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Hanken Grotesk', sans-serif",
           }}
         />
         {query && (
@@ -1195,7 +1201,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
                   flex: 1, background: 'rgba(30,41,59,0.6)',
                   border: '1px solid ' + C.border, borderRadius: 3,
                   padding: '3px 7px', fontSize: 11, color: C.text,
-                  fontFamily: "'Inter', sans-serif", outline: 'none',
+                  fontFamily: "'Hanken Grotesk', sans-serif", outline: 'none',
                 }}
               />
               <button
@@ -1214,7 +1220,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
                 fontSize: 10, color: C.muted, background: 'none', border: 'none',
                 cursor: 'pointer', padding: 0,
                 display: 'flex', alignItems: 'center', gap: 4,
-                fontFamily: "'Inter', sans-serif",
+                fontFamily: "'Hanken Grotesk', sans-serif",
                 letterSpacing: '0.02em',
               }}
               onMouseEnter={e => e.currentTarget.style.color = C.text}
@@ -1332,7 +1338,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
               maxHeight: 180,
               overflowY: 'auto',
               fontSize: 11,
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Hanken Grotesk', sans-serif",
             }}>
               {[{ label: '/ (project root)', value: '' }, ...folders.map(f => ({ label: f, value: f }))].map(({ label, value }) => (
                 <button
@@ -1359,7 +1365,7 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
             alignItems: 'center',
             gap: 10,
             fontSize: 11,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Hanken Grotesk', sans-serif",
           }}>
             <span style={{ color: C.text, fontWeight: 500 }}>
               {selectedFiles.size} selected

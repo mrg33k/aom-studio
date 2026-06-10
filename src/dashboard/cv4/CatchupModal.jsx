@@ -176,7 +176,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
           width: 40, height: 40, borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 14, fontWeight: 700, flexShrink: 0,
-          fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+          fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
           ...(notif.senderType === 'human'
             ? { background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: '#60A5FA' }
             : { background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.28)', color: '#10B981' }
@@ -185,7 +185,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
           {notif.senderInitials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: "'Hanken Grotesk', 'Inter', sans-serif" }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif" }}>
             {notif.senderName}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
@@ -257,7 +257,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
                   fontSize: 12,
                   lineHeight: 1.5,
                   color: C.muted,
-                  fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+                  fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
                 }}>
@@ -306,7 +306,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
             color: C.text2,
             background: 'none', border: 'none',
             cursor: 'pointer', padding: 0,
-            fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+            fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
             display: 'flex', alignItems: 'center', gap: 4,
             marginTop: -4,
           }}
@@ -350,7 +350,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
                       : isLast
                         ? C.text2
                         : '#10B981',
-                    fontSize: 13, fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+                    fontSize: 13, fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
                     cursor: submitting ? 'not-allowed' : 'pointer',
                     opacity: submitting && !isSelected ? 0.5 : 1,
                     whiteSpace: 'nowrap', minHeight: 36,
@@ -385,7 +385,7 @@ function NotifCard({ notif, direction, onChipReply, onTextReply, onLoadContext, 
             border: `1px solid ${C.border}`,
             borderRadius: 8, padding: '10px 12px',
             color: C.text, fontSize: 14,
-            fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+            fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
             resize: 'none', minHeight: 40, maxHeight: 120,
             lineHeight: 1.5,
             outline: 'none',
@@ -508,7 +508,7 @@ function CompletionScreen({ replied, skipped, senderNames, onClose }) {
       <div style={{
         fontSize: 22, fontWeight: 800, color: C.text,
         letterSpacing: '-0.025em',
-        fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
       }}>
         All caught up
       </div>
@@ -536,7 +536,7 @@ function CompletionScreen({ replied, skipped, senderNames, onClose }) {
       <div style={{
         fontSize: 13, color: C.text2, lineHeight: 1.55,
         maxWidth: 300,
-        fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
       }}>
         {replied > 0
           ? `Replies sent to ${senderNames}.`
@@ -551,7 +551,7 @@ function CompletionScreen({ replied, skipped, senderNames, onClose }) {
           fontSize: 13, fontWeight: 600,
           border: 'none', borderRadius: 6,
           cursor: 'pointer',
-          fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+          fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
           minHeight: 44,
         }}
       >
@@ -776,7 +776,7 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
               display: 'flex', alignItems: 'center', gap: 8,
               fontSize: 13, fontWeight: 600, color: C.text,
               whiteSpace: 'nowrap',
-              fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+              fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
             }}>
               <div style={{
                 width: 22, height: 22,
@@ -887,7 +887,7 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
                   borderRadius: 6, color: C.text2, fontSize: 13,
                   cursor: currentIndex === 0 ? 'not-allowed' : 'pointer',
                   opacity: currentIndex === 0 ? 0.3 : 1,
-                  fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+                  fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
                   minHeight: 36, transition: 'all 0.15s ease',
                 }}
               >
@@ -903,7 +903,7 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
                   fontSize: 12, color: C.muted,
                   background: 'none', border: 'none',
                   cursor: 'pointer',
-                  fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+                  fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
                   padding: '6px 10px', borderRadius: 4,
                   minHeight: 36,
                 }}
@@ -922,7 +922,7 @@ export default function CatchupModal({ isOpen, notifications, onClose, onReply, 
                   borderRadius: 6, color: C.text2, fontSize: 13,
                   cursor: currentIndex >= total - 1 ? 'not-allowed' : 'pointer',
                   opacity: currentIndex >= total - 1 ? 0.3 : 1,
-                  fontFamily: "'Hanken Grotesk', 'Inter', sans-serif",
+                  fontFamily: "'Hanken Grotesk', 'Hanken Grotesk', sans-serif",
                   minHeight: 36, transition: 'all 0.15s ease',
                 }}
               >

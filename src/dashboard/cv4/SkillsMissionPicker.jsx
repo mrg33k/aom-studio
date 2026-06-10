@@ -130,7 +130,7 @@ export default function SkillsMissionPicker({ skill, worldId, missions: missions
           zIndex: 200,
           display: 'flex',
           flexDirection: 'column',
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Hanken Grotesk', sans-serif",
           overflow: 'hidden',
         }}
       >
@@ -218,7 +218,7 @@ export default function SkillsMissionPicker({ skill, worldId, missions: missions
               border: `1px solid ${C.border}`,
               background: C.bg2 || 'rgba(255,255,255,0.04)',
               color: C.text,
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Hanken Grotesk', sans-serif",
               fontSize: 13,
               outline: 'none',
               transition: 'border-color 0.15s',
@@ -301,7 +301,7 @@ function MissionRow({ mission, onClick }) {
         border: '1px solid transparent',
         color: C.text,
         textAlign: 'left',
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', sans-serif",
         cursor: 'pointer',
         transition: 'all 0.12s',
       }}

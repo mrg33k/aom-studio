@@ -158,7 +158,7 @@ export default function ComposerCommandsMenu({
             boxShadow: '0 12px 32px rgba(0,0,0,0.45)',
             padding: 6,
             zIndex: 50,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Hanken Grotesk', sans-serif",
           }}
         >
           {view === 'root' && (

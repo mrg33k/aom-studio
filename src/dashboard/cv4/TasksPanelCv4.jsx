@@ -188,7 +188,7 @@ function TasksPanelCv4Body() {
       : 'All projects'
 
   return (
-    <div data-cv4-tasks-body style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Inter', sans-serif", position: 'relative' }}>
+    <div data-cv4-tasks-body style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Hanken Grotesk', sans-serif", position: 'relative' }}>
       {selectedBrief && (
         <Cv4BriefViewer
           brief={selectedBrief}
@@ -246,7 +246,7 @@ function TasksPanelCv4Body() {
                 font-weight: 400 !important;
                 line-height: 1.55 !important;
                 letter-spacing: 0 !important;
-                font-family: 'Inter', sans-serif !important;
+                font-family: 'Hanken Grotesk', sans-serif !important;
                 color: ${C.text2} !important;
               }
               [data-cv4-tasks-narrative] [data-testid="living-paragraph"] > div > div:first-child {
@@ -319,7 +319,7 @@ function TasksPanelCv4Body() {
           zIndex: 9998, background: 'rgba(16,185,129,0.12)',
           border: '1px solid rgba(16,185,129,0.32)', color: '#A7F3D0',
           padding: '8px 14px', fontSize: 12, fontWeight: 600,
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Hanken Grotesk', sans-serif",
         }}>{ctxToast.text}</div>
       )}
     </div>
@@ -385,7 +385,7 @@ function Filters({
           style={{
             flex: 1, background: 'none', border: 'none', outline: 'none',
             color: C.text, fontSize: 12, fontWeight: 500,
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Hanken Grotesk', sans-serif",
           }}
         />
         {searchQuery && (
@@ -458,7 +458,7 @@ function SectionHeader({ title, count, summary }) {
       </div>
       <div style={{
         fontSize: 11, color: C.muted,
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', sans-serif",
         marginBottom: 6,
       }}>{summary}</div>
       <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', marginBottom: 8 }} />
@@ -1113,7 +1113,7 @@ function Cv4BriefViewer({ brief, html, loading, onClose, onAskAboutFile }) {
         position: 'absolute', inset: 0, zIndex: 60,
         background: C.bg,
         display: 'flex', flexDirection: 'column',
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', sans-serif",
       }}
     >
       {/* Header — back arrow + filename + project breadcrumb. */}
@@ -1205,7 +1205,7 @@ function Cv4BriefViewer({ brief, html, loading, onClose, onAskAboutFile }) {
               flex: 1,
               background: 'transparent', border: 'none', outline: 'none',
               color: C.text,
-              fontFamily: "'Inter', sans-serif",
+              fontFamily: "'Hanken Grotesk', sans-serif",
               fontSize: 13, lineHeight: 1.4,
               resize: 'none',
               minHeight: 22, maxHeight: 120,

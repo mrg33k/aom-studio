@@ -21,7 +21,7 @@ export default function MissionChip({ mission, onClear }) {
         borderRadius: 10,
         background: 'rgba(167,139,250,0.10)',
         border: '1px solid rgba(167,139,250,0.30)',
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Hanken Grotesk', sans-serif",
       }}
     >
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#C4B5FD" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>

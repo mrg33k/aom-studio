@@ -80,7 +80,7 @@ export default function MailAccountSwitcher({
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '8px 10px', borderRadius: 8,
           background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.10)',
-          cursor: multi ? 'pointer' : 'default', color: 'inherit', fontFamily: "'Inter', sans-serif",
+          cursor: multi ? 'pointer' : 'default', color: 'inherit', fontFamily: "'Hanken Grotesk', sans-serif",
         }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
           <span style={{

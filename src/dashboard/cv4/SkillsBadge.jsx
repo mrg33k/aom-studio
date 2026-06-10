@@ -79,7 +79,7 @@ export default function SkillsBadge({ open, onToggle }) {
             fontSize: 11,
             fontWeight: 500,
             color: 'rgba(255,255,255,0.82)',
-            fontFamily: "'Inter', sans-serif",
+            fontFamily: "'Hanken Grotesk', sans-serif",
             letterSpacing: '0.005em',
             marginTop: 3,
             whiteSpace: 'nowrap',

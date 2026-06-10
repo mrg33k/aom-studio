@@ -153,7 +153,7 @@ export default function MailListPanel({ selectedMailId, onSelectMail }) {
   return (
     <div data-cv4-mail-panel style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', fontFamily: "'Inter', sans-serif",
+      overflow: 'hidden', fontFamily: "'Hanken Grotesk', sans-serif",
     }}>
       <Header
         count={headerCount}
@@ -320,7 +320,7 @@ function MailRow({ email, active, onClick }) {
           borderBottom: '1px solid rgba(255,255,255,0.04)',
           borderLeft: active ? `2px solid ${C.accent}` : '2px solid transparent',
           cursor: 'pointer', color: 'inherit',
-          fontFamily: "'Inter', sans-serif",
+          fontFamily: "'Hanken Grotesk', sans-serif",
         }}
         onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.03)' }}
         onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}
