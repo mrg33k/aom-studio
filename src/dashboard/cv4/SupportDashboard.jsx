@@ -126,6 +126,22 @@ function PressSendCard({ w, staged }) {
   const [changeOpen, setChangeOpen] = useState(false)
   const [note, setNote] = useState('')
   const [noteState, setNoteState] = useState('idle') // idle | sending | done
+  // The actual outgoing email — fetched so the human reads what really goes out.
+  const [preview, setPreview] = useState(null) // {to, subject, text, attachments} | {error}
+  useEffect(() => {
+    let dead = false
+    ;(async () => {
+      try {
+        const r = await authFetch('/api/support/send-staged', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'preview', draft_id: staged.draftId, connection_id: staged.connectionId }),
+        })
+        const d = await r.json()
+        if (!dead) setPreview(r.ok && d.ok ? d : { error: d.error || 'preview failed' })
+      } catch { if (!dead) setPreview({ error: 'preview unreachable' }) }
+    })()
+    return () => { dead = true }
+  }, [staged.draftId, staged.connectionId])
 
   async function fire() {
     setPhase('sending'); setErr('')
@@ -172,6 +188,42 @@ function PressSendCard({ w, staged }) {
       <p style={{ margin: 0, fontSize: 13, color: BONE_DIM, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
         {staged.cleanMessage}
       </p>
+
+      {/* The reply that actually goes out, verbatim — plus its attachments. */}
+      <div style={{ marginTop: 12, padding: '10px 14px', background: INK_PANEL,
+        borderLeft: `2.5px solid ${AMBER}`, borderRadius: '4px 8px 8px 4px' }}>
+        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: AMBER }}>
+          The reply{preview && !preview.error && preview.to ? ` · to ${preview.to}` : ''}
+        </div>
+        {preview === null && (
+          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: BONE_FAINT, fontStyle: 'italic' }}>Opening the staged reply…</p>
+        )}
+        {preview?.error && (
+          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: BONE_FAINT }}>
+            Couldn't open the reply preview ({preview.error}) — Send still fires the staged draft as-is.
+          </p>
+        )}
+        {preview && !preview.error && (
+          <>
+            {preview.subject && (
+              <div style={{ margin: '6px 0 0', fontSize: 12, color: BONE_DIM, fontWeight: 600 }}>{preview.subject}</div>
+            )}
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+              {preview.text || '(no text body)'}
+            </p>
+            {preview.attachments?.length > 0 && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+                {preview.attachments.map((a, i) => (
+                  <span key={i} style={{ fontFamily: MONO, fontSize: 10.5, color: BONE_DIM,
+                    border: `1px solid ${LINE}`, borderRadius: 999, padding: '3px 10px' }}>
+                    ⎙ {a.name}{a.size ? ` · ${a.size > 1048576 ? (a.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(a.size / 1024)) + ' KB'}` : ''}
+                  </span>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
       {phase !== 'sent' && (
         <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
           <button className="ps-send-btn" disabled={phase === 'sending'} onClick={fire} style={{

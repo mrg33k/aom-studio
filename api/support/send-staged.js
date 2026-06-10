@@ -65,6 +65,49 @@ export default async function handler(req, res) {
     return res.status(400).json({ ok: false, error: 'invalid JSON' })
   }
   const { action, wish_id, draft_id, connection_id, note } = body
+
+  // ── preview: what EXACTLY goes out — full reply text + attachments ──────────
+  // The card renders this so the human reads the actual outgoing email, not a
+  // summary of it, before pressing Send.
+  if (action === 'preview') {
+    if (!draft_id || !connection_id) {
+      return res.status(400).json({ ok: false, error: 'draft_id and connection_id required' })
+    }
+    let creds
+    try {
+      creds = await getGmailTokenByConnection(connection_id)
+    } catch (e) {
+      return res.status(502).json({ ok: false, error: 'gmail-auth', detail: String(e).slice(0, 200) })
+    }
+    const getResp = await gmailFetch(creds.accessToken, `/drafts/${encodeURIComponent(draft_id)}?format=full`)
+    if (!getResp.ok) {
+      const text = await getResp.text().catch(() => '')
+      return res.status(getResp.status === 404 ? 404 : 502).json({
+        ok: false, error: 'gmail-drafts-get', status: getResp.status, detail: text.slice(0, 300),
+      })
+    }
+    const draft = await getResp.json()
+    const payload = draft?.message?.payload || {}
+    const header = (name) => {
+      const h = (payload.headers || []).find((x) => String(x.name || '').toLowerCase() === name)
+      return h ? h.value : ''
+    }
+    const out = { text: '', html: '', attachments: [] }
+    const b64 = (s) => Buffer.from(String(s || '').replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')
+    const walk = (p) => {
+      if (!p) return
+      if (p.filename) out.attachments.push({ name: p.filename, size: p.body?.size || 0 })
+      if (p.mimeType === 'text/plain' && p.body?.data && !out.text) out.text = b64(p.body.data)
+      if (p.mimeType === 'text/html' && p.body?.data && !out.html) out.html = b64(p.body.data)
+      for (const c of p.parts || []) walk(c)
+    }
+    walk(payload)
+    const text = out.text || out.html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+\n/g, '\n').replace(/[ \t]+/g, ' ').trim()
+    return res.status(200).json({
+      ok: true, to: header('to'), subject: header('subject'), text, attachments: out.attachments,
+    })
+  }
+
   if (!wish_id) return res.status(400).json({ ok: false, error: 'wish_id required' })
 
   if (action === 'change') {
