@@ -77,6 +77,46 @@ function timeAgo(iso) {
 
 function timeAgoMs(ms) { return ms ? timeAgo(new Date(ms).toISOString()) : '' }
 
+// ── One data source for the whole dashboard ──────────────────────────────────
+// The strip and the list used to fetch independently; the Gmail fetch lags the
+// wishes fetch, so the counts repainted mid-read (ALL 2 → ALL 32) and the two
+// surfaces could disagree at any moment. One fetch, one truth, shared down.
+function useSupportData(worldId) {
+  const isAom = worldId === 'aom'
+  const [wishes, setWishes] = useState(null)
+  const [mailboxes, setMailboxes] = useState(null)
+  const load = useCallback(async () => {
+    try { const r = await fetch('/api/support/wishes'); const d = await r.json(); if (d.ok) setWishes(d.wishes || []) } catch { /* keep last */ }
+    if (isAom) {
+      try {
+        const r2 = await authFetch('/api/support/inbox', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', body: JSON.stringify({ email: 'patrikmatheson@gmail.com', days: 7 }) })
+        const d2 = await r2.json(); if (d2.ok) setMailboxes(d2.mailboxes || [])
+      } catch { /* keep last */ }
+    } else { setMailboxes([]) }
+  }, [isAom])
+  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t) }, [load])
+  return { wishes, mailboxes }
+}
+
+// Queue order, not feed order: what waits on you leads, oldest wait first
+// (the person waiting longest deserves the top slot). Finished work sinks.
+function buildItems(wishes, mailboxes) {
+  const items = []
+  for (const w of wishes || []) items.push(wishToItem(w))
+  for (const box of mailboxes || []) {
+    for (const it of box.needs || []) items.push(emailToItem(it, false))
+    for (const it of box.replied || []) items.push(emailToItem(it, true))
+  }
+  const rank = (it) => (it.ready ? 0 : it.status === 'needs_you' ? 1 : it.status === 'working' ? 2 : 3)
+  items.sort((a, b) => {
+    const ra = rank(a), rb = rank(b)
+    if (ra !== rb) return ra - rb
+    return ra <= 1 ? (a.date || 0) - (b.date || 0) : (b.date || 0) - (a.date || 0)
+  })
+  return items
+}
+
 // ── Support requests (wishes) stream ─────────────────────────────────────────
 function RequestsStream() {
   const [wishes, setWishes] = useState(null)
@@ -152,6 +192,9 @@ function PressSendCard({ w, staged }) {
   const [changeOpen, setChangeOpen] = useState(false)
   const [note, setNote] = useState('')
   const [noteState, setNoteState] = useState('idle') // idle | sending | done
+  // Long drafts clamp so the Send button never falls below the fold — the card's
+  // whole reason to exist is that button. Full text is one tap away.
+  const [fullReply, setFullReply] = useState(false)
   // The actual outgoing email — fetched so the human reads what really goes out.
   const [preview, setPreview] = useState(null) // {to, subject, text, attachments} | {error}
   useEffect(() => {
@@ -244,9 +287,17 @@ function PressSendCard({ w, staged }) {
             {preview.subject && (
               <div style={{ margin: '6px 0 0', fontSize: 12, color: BONE_DIM, fontWeight: 600 }}>{preview.subject}</div>
             )}
-            <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+              display: '-webkit-box', WebkitLineClamp: fullReply ? 999 : 8, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
               {preview.text || '(no text body)'}
             </p>
+            {(preview.text || '').split('\n').length > 8 && (
+              <button onClick={() => setFullReply((v) => !v)} style={{ background: 'transparent', border: 'none',
+                padding: 0, marginTop: 6, fontFamily: MONO, fontSize: 10, letterSpacing: '0.08em',
+                textTransform: 'uppercase', color: AMBER, cursor: 'pointer' }}>
+                {fullReply ? 'Collapse reply' : 'Show full reply'}
+              </button>
+            )}
             {preview.attachments?.length > 0 && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
                 {preview.attachments.map((a, i) => (
@@ -593,54 +644,33 @@ function FilterPill({ active, onClick, label, loud }) {
   )
 }
 
-// ── Summary strip — real counts across the top (counts that reflect reality) ──
-function SummaryStrip({ worldId }) {
-  // Gap #5: ONE truth — the strip counts the same unified universe the list shows
-  // (wishes + emails), not a wish-only slice that contradicts the filters below it.
-  const [wishes, setWishes] = useState(null)
-  const [mailboxes, setMailboxes] = useState(null)
-  const isAom = worldId === 'aom'
-  const load = useCallback(async () => {
-    try { const r = await fetch('/api/support/wishes'); const d = await r.json(); if (d.ok) setWishes(d.wishes || []) } catch { /* keep last */ }
-    if (isAom) {
-      try {
-        const r2 = await authFetch('/api/support/inbox', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-          credentials: 'include', body: JSON.stringify({ email: 'patrikmatheson@gmail.com', days: 7 }) })
-        const d2 = await r2.json(); if (d2.ok) setMailboxes(d2.mailboxes || [])
-      } catch { /* keep last */ }
-    } else { setMailboxes([]) }
-  }, [isAom])
-  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t) }, [load])
-
-  const ws = wishes || []
-  const boxes = mailboxes || []
-  const openWishes = ws.filter((w) => w.status !== 'resolved')
-  const staged = openWishes.filter((w) => parseStaged(w.message))
-  const emailNeeds = boxes.reduce((n, b) => n + (b.needs?.length || 0), 0)
-  const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
-  const wishResolvedToday = ws.filter((w) => w.status === 'resolved' && w.updated_at && new Date(w.updated_at) >= startOfDay).length
-  const emailRepliedToday = boxes.reduce((n, b) =>
-    n + (b.replied || []).filter((it) => (it.lastReply?.date || 0) >= startOfDay.getTime()).length, 0)
-  const open = openWishes.length + emailNeeds
-  const respondedToday = wishResolvedToday + emailRepliedToday
-  const rate = (open + respondedToday) > 0 ? Math.round((respondedToday / (open + respondedToday)) * 100) : null
-
-  const tiles = [
-    { label: 'Open', value: open },
-    { label: 'Ready to send', value: staged.length, loud: staged.length > 0 },
-    { label: 'Responded today', value: respondedToday },
-    { label: 'Response rate today', value: rate == null ? '—' : rate + '%' },
-  ]
+// ── The focal point — one statement, not four equal tiles ────────────────────
+// The only number that changes what you do next is how many things wait on you,
+// so it is the headline (and a button: tap it, see them). Everything else reads
+// as periphery. Counts render only after the full universe (wishes + mail) has
+// loaded, so a number never shifts while you're reading it.
+function FocusStrip({ loaded, needsCount, respondedToday, rate, onNeedsYou }) {
   return (
-    <div style={{ display: 'flex', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
-      {tiles.map((t, i) => (
-        <div key={t.label} style={{ flex: 1, padding: '12px 20px', borderRight: i < tiles.length - 1 ? `1px solid ${LINE}` : 'none' }}>
-          <div style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 26, lineHeight: 1, color: t.loud ? AMBER : BONE }}>
-            {wishes === null ? '·' : t.value}
-          </div>
-          <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, marginTop: 5 }}>{t.label}</div>
-        </div>
-      ))}
+    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16,
+      padding: '20px 24px 16px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
+      {!loaded ? (
+        <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: BONE_FAINT }}>·</span>
+      ) : needsCount > 0 ? (
+        <button onClick={onNeedsYou} title="Show what's waiting"
+          style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
+          <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: BONE }}>
+            <span style={{ color: AMBER }}>{needsCount}</span> waiting on you
+          </span>
+        </button>
+      ) : (
+        <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: BONE }}>All quiet.</span>
+      )}
+      {loaded && (
+        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase',
+          color: BONE_FAINT, paddingBottom: 7, whiteSpace: 'nowrap' }}>
+          {respondedToday} responded today{rate == null ? '' : ` · ${rate}%`}
+        </span>
+      )}
     </div>
   )
 }
@@ -656,9 +686,12 @@ const UNI_STATUS = {
 }
 
 function wishToItem(w) {
-  const status = w.status === 'resolved' ? 'resolved' : w.status === 'needs_team' ? 'needs_you' : 'working'
+  // A staged (ready-to-send) wish IS waiting on you — it used to map to
+  // 'working', which silently excluded it from the Needs-you filter.
+  const ready = w.status !== 'resolved' && !!parseStaged(w.message)
+  const status = w.status === 'resolved' ? 'resolved' : (w.status === 'needs_team' || ready) ? 'needs_you' : 'working'
   return {
-    key: 'w' + w.id, kind: 'Request', who: w.name || w.email || 'Someone',
+    key: 'w' + w.id, kind: 'Request', who: w.name || w.email || 'Someone', ready,
     // strip the machine tag — resolved/fallback cards must never show raw [staged_draft:…]
     text: (w.message || '').replace(STAGED_RE, '').trim(),
     reply: w.latest_response?.body || null, status,
@@ -721,74 +754,77 @@ function SupportItemCard({ it }) {
   )
 }
 
-function AllSupportItems({ worldId }) {
-  const isAom = worldId === 'aom'
-  const [wishes, setWishes] = useState(null)
-  const [mailboxes, setMailboxes] = useState(null)
-  const [filter, setFilter] = useState('all') // all | needs_you | responded | resolved
-
-  const load = useCallback(async () => {
-    try { const r = await fetch('/api/support/wishes'); const d = await r.json(); if (d.ok) setWishes(d.wishes || []) } catch { /* keep */ }
-    if (isAom) {
-      try {
-        const r2 = await authFetch('/api/support/inbox', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email: 'patrikmatheson@gmail.com', days: 7 }) })
-        const d2 = await r2.json(); if (d2.ok) setMailboxes(d2.mailboxes || [])
-      } catch { /* keep */ }
-    } else { setMailboxes([]) }
-  }, [isAom])
-  useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t) }, [load])
-
-  const items = []
-  for (const w of wishes || []) items.push(wishToItem(w))
-  for (const box of mailboxes || []) {
-    for (const it of box.needs || []) items.push(emailToItem(it, false))
-    for (const it of box.replied || []) items.push(emailToItem(it, true))
-  }
-  items.sort((a, b) => (b.date || 0) - (a.date || 0))
-  const counts = {
-    all: items.length,
-    needs_you: items.filter((i) => i.status === 'needs_you').length,
-    responded: items.filter((i) => i.status === 'responded').length,
-    resolved: items.filter((i) => i.status === 'resolved').length,
-  }
+// The unified list, purely presentational — data + filter live in the parent so
+// the headline, the chips, and the list can never tell three different stories.
+function ItemsList({ items, loaded, filter }) {
   const shown = filter === 'all' ? items : items.filter((i) => i.status === filter)
-  const loaded = wishes !== null || mailboxes !== null
-
+  const firstDoneIdx = filter === 'all' ? shown.findIndex((i) => i.status === 'responded' || i.status === 'resolved') : -1
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, padding: '16px 20px 12px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT }}>Every support contact · requests + emails</span>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          <FilterPill active={filter === 'all'} onClick={() => setFilter('all')} label={`All ${counts.all}`} />
-          <FilterPill active={filter === 'needs_you'} onClick={() => setFilter('needs_you')} label={`Needs you ${counts.needs_you}`} loud />
-          <FilterPill active={filter === 'responded'} onClick={() => setFilter('responded')} label={`Responded ${counts.responded}`} />
-          {counts.resolved > 0 && <FilterPill active={filter === 'resolved'} onClick={() => setFilter('resolved')} label={`Resolved ${counts.resolved}`} />}
+    <div style={{ flex: 1, overflowY: 'auto', padding: '14px 24px 28px' }}>
+      {!loaded && items.length === 0 && <p style={{ color: BONE_DIM, fontSize: 13 }}>Loading…</p>}
+      {loaded && shown.length === 0 && (
+        <div style={{ padding: '72px 0', textAlign: 'center' }}>
+          <p style={{ fontFamily: SERIF, fontSize: 24, color: BONE, margin: 0 }}>
+            {filter === 'all' ? 'All quiet.' : 'Nothing here.'}
+          </p>
+          <p style={{ fontSize: 13, color: BONE_FAINT, margin: '8px 0 0' }}>
+            {filter === 'all' ? 'New requests land here the moment they arrive.' : 'Items move here as their status changes.'}
+          </p>
         </div>
-      </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px' }}>
-        {!loaded && <p style={{ color: BONE_DIM, fontSize: 13 }}>Loading…</p>}
-        {loaded && shown.length === 0 && <p style={{ color: BONE_FAINT, fontSize: 13, padding: '16px 0' }}>
-          {filter === 'all' ? 'No support items right now.' : `Nothing in "${UNI_STATUS[filter]?.label || filter}" right now.`}
-        </p>}
-        {shown.map((it) => <SupportItemCard key={it.key} it={it} />)}
-      </div>
+      )}
+      {shown.map((it, i) => (
+        <div key={it.key}>
+          {i === firstDoneIdx && firstDoneIdx > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 10px' }}>
+              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: BONE_FAINT }}>Done</span>
+              <span style={{ flex: 1, height: 1, background: LINE }} />
+            </div>
+          )}
+          <SupportItemCard it={it} />
+        </div>
+      ))}
     </div>
   )
 }
 
 // ── Full dashboard ───────────────────────────────────────────────────────────
 export default function SupportDashboard({ isDesktop = true, onClose, worldId }) {
-  const [tab, setTab] = useState('all') // mobile single-pane
-  const [view, setView] = useState('all') // desktop: all | streams | inbox
+  const [view, setView] = useState('all') // all | streams | chat | inbox (chat = mobile-only pane)
+  const [filter, setFilter] = useState('all') // all | needs_you | responded | resolved
+
+  // One data spine. The headline, the chips, and the list all read from here.
+  const { wishes, mailboxes } = useSupportData(worldId)
+  const loaded = wishes !== null && mailboxes !== null
+  const items = buildItems(wishes, mailboxes)
+  const counts = {
+    all: items.length,
+    needs_you: items.filter((i) => i.status === 'needs_you').length,
+    responded: items.filter((i) => i.status === 'responded').length,
+    resolved: items.filter((i) => i.status === 'resolved').length,
+  }
+  const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
+  const wishResolvedToday = (wishes || []).filter((w) => w.status === 'resolved' && w.updated_at && new Date(w.updated_at) >= startOfDay).length
+  const emailRepliedToday = (mailboxes || []).reduce((n, b) =>
+    n + (b.replied || []).filter((it) => (it.lastReply?.date || 0) >= startOfDay.getTime()).length, 0)
+  const respondedToday = wishResolvedToday + emailRepliedToday
+  const openCount = counts.needs_you + items.filter((i) => i.status === 'working').length
+  const rate = (openCount + respondedToday) > 0 ? Math.round((respondedToday / (openCount + respondedToday)) * 100) : null
+  const goToNeedsYou = () => { setView('all'); setFilter('needs_you') }
 
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '18px 24px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-        <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 26, margin: 0, color: BONE, letterSpacing: '-0.01em' }}>Support</h1>
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: BONE_FAINT }}>Command center</span>
-      </div>
+      <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 26, margin: 0, color: BONE, letterSpacing: '-0.01em' }}>Support</h1>
       <button onClick={onClose} style={{ ...ghostBtn, fontSize: 13 }} aria-label="Close support">Close ✕</button>
+    </div>
+  )
+
+  const chips = view === 'all' && (
+    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', paddingBottom: 6 }}>
+      <FilterPill active={filter === 'all'} onClick={() => setFilter('all')} label={loaded ? `All ${counts.all}` : 'All'} />
+      <FilterPill active={filter === 'needs_you'} onClick={() => setFilter('needs_you')} label={loaded ? `Needs you ${counts.needs_you}` : 'Needs you'} loud />
+      <FilterPill active={filter === 'responded'} onClick={() => setFilter('responded')} label={loaded ? `Responded ${counts.responded}` : 'Responded'} />
+      {counts.resolved > 0 && <FilterPill active={filter === 'resolved'} onClick={() => setFilter('resolved')} label={`Resolved ${counts.resolved}`} />}
     </div>
   )
 
@@ -796,17 +832,18 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId })
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
         {header}
-        <SummaryStrip worldId={worldId} />
-        <div style={{ display: 'flex', gap: 4, padding: '12px 24px 0', flexWrap: 'wrap' }}>
-          <TabBtn active={tab === 'all'} onClick={() => setTab('all')} label="All" />
-          <TabBtn active={tab === 'requests'} onClick={() => setTab('requests')} label="Requests" />
-          <TabBtn active={tab === 'chat'} onClick={() => setTab('chat')} label="Chat" />
-          <TabBtn active={tab === 'inbox'} onClick={() => setTab('inbox')} label="Inbox" />
+        <FocusStrip loaded={loaded} needsCount={counts.needs_you} respondedToday={respondedToday} rate={rate} onNeedsYou={goToNeedsYou} />
+        <div style={{ display: 'flex', gap: 4, padding: '8px 24px 0', flexWrap: 'wrap', alignItems: 'center' }}>
+          <TabBtn active={view === 'all'} onClick={() => setView('all')} label="All" />
+          <TabBtn active={view === 'streams'} onClick={() => setView('streams')} label="Requests" />
+          <TabBtn active={view === 'chat'} onClick={() => setView('chat')} label="Chat" />
+          <TabBtn active={view === 'inbox'} onClick={() => setView('inbox')} label="Inbox" />
+          {chips}
         </div>
-        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          {tab === 'all' ? <AllSupportItems worldId={worldId} />
-            : tab === 'requests' ? <RequestsStream />
-              : tab === 'chat' ? <SupportInbox isDesktop={false} />
+        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {view === 'all' ? <ItemsList items={items} loaded={loaded} filter={filter} />
+            : view === 'streams' ? <RequestsStream />
+              : view === 'chat' ? <SupportInbox isDesktop={false} />
                 : <InboxPanel worldId={worldId} />}
         </div>
       </div>
@@ -816,15 +853,16 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
       {header}
-      <SummaryStrip worldId={worldId} />
-      <div style={{ display: 'flex', gap: 4, padding: '10px 24px 0', borderBottom: `1px solid ${LINE}` }}>
+      <FocusStrip loaded={loaded} needsCount={counts.needs_you} respondedToday={respondedToday} rate={rate} onNeedsYou={goToNeedsYou} />
+      <div style={{ display: 'flex', gap: 4, padding: '6px 24px 0', borderBottom: `1px solid ${LINE}`, alignItems: 'center', flexWrap: 'wrap' }}>
         <TabBtn active={view === 'all'} onClick={() => setView('all')} label="All support" />
         <TabBtn active={view === 'streams'} onClick={() => setView('streams')} label="Requests & chat" />
         <TabBtn active={view === 'inbox'} onClick={() => setView('inbox')} label="Inbox" />
+        {chips}
       </div>
       {view === 'all' ? (
-        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <AllSupportItems worldId={worldId} />
+        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <ItemsList items={items} loaded={loaded} filter={filter} />
         </div>
       ) : view === 'streams' ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
