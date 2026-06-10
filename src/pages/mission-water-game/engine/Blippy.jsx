@@ -66,21 +66,18 @@ const BLIPPY_CSS = `
     .mw-blippy-img { height: 110px; }
     .mw-blippy-bubble { max-width: 160px; font-size: 12px; padding: 8px 11px; }
   }
-  /* Content containers add .mw-guide-gutter so centered panels never slide
-     under Blippy's lower-left zone. Centering means this only bites when the
-     viewport is tight — on wide screens the natural margin already clears him. */
-  @media (min-width: 681px) {
-    .mw-guide-gutter { padding-left: 235px !important; }
-  }
-  @media (min-width: 1161px) {
-    .mw-guide-gutter { padding-left: 300px !important; }
-  }
 `;
 
-export default function Blippy({ text, flip = false, size = 'md', visible = true, style }) {
+export default function Blippy({ text, flip = false, size = 'md', visible = true, dock = null, style }) {
+  // dock={px}: render IN the page flow (under the centered panel) by default,
+  // and float fixed lower-left only when the viewport is at least `px` wide —
+  // i.e. only when the centered panel has real free margin. The main box stays
+  // dead-centered at every width; Blippy never forces it sideways and never
+  // covers its content.
+  const dockClass = dock ? ` mw-blippy-docked-${dock}` : '';
   return (
     <div
-      className={`mw-blippy${size === 'sm' ? ' mw-blippy-sm' : ''}`}
+      className={`mw-blippy${size === 'sm' ? ' mw-blippy-sm' : ''}${dockClass}`}
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? 'translateY(0)' : 'translateY(14px)',
@@ -89,6 +86,14 @@ export default function Blippy({ text, flip = false, size = 'md', visible = true
       }}
     >
       <style>{BLIPPY_CSS}</style>
+      {dock ? (
+        <style>{`
+          .mw-blippy-docked-${dock} { margin: 16px 0 6px; }
+          @media (min-width: ${dock}px) {
+            .mw-blippy-docked-${dock} { position: fixed; left: 28px; bottom: 24px; margin: 0; z-index: 6; }
+          }
+        `}</style>
+      ) : null}
       {text ? (
         <div className="mw-blippy-bubble">
           {text}

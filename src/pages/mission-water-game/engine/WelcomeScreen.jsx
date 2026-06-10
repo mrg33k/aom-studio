@@ -371,20 +371,8 @@ export default function WelcomeScreen({ onStart }) {
           gap: 16px;
         }
 
-        /* Blippy — absolute companion, lower-left of viewport.
-           Pulled OUT of the layout flow so the panel stays dead-centered.
-           Sizing/responsive rules live in the shared Blippy component. */
-        .wg-blippy-anchor {
-          position: absolute;
-          left: 28px;
-          bottom: 24px;
-          z-index: 6;
-          pointer-events: none;
-        }
-
-        /* Mobile: tuck Blippy into the corner, tighten panel */
+        /* Mobile: tighten panel */
         @media (max-width: 600px) {
-          .wg-blippy-anchor { left: 14px; bottom: 14px; }
           .wg-outer-wrapper { max-width: 100%; padding: 0 12px; }
           .wg-panel-inner { padding: 22px 18px; gap: 16px; }
         }
@@ -466,16 +454,8 @@ export default function WelcomeScreen({ onStart }) {
         zIndex: 1,
       }} />
 
-      {/* ─ Blippy companion — shared component, lower-left near the cards ─ */}
-      <div className="wg-blippy-anchor">
-        <Blippy
-          visible={blippyReady}
-          text={bubbleReady ? 'Ready, Cadet? Pick your mission and press BEGIN.' : null}
-        />
-      </div>
-
-      {/* ─ Scrollable content — gutter keeps the panel clear of Blippy ── */}
-      <div className="mw-guide-gutter" style={{
+      {/* ─ Scrollable content — panel stays dead-centered ── */}
+      <div style={{
         position: 'absolute', inset: 0,
         overflowY: 'auto',
         WebkitOverflowScrolling: 'touch',
@@ -593,6 +573,14 @@ export default function WelcomeScreen({ onStart }) {
           </div>{/* /wg-panel-outer */}
 
         </div>{/* /wg-outer-wrapper */}
+
+        {/* Blippy — in flow under the panel; floats lower-left only when the
+            centered panel has free margin (≥1200px) */}
+        <Blippy
+          dock={1200}
+          visible={blippyReady}
+          text={bubbleReady ? 'Ready, Cadet? Pick your mission and press BEGIN.' : null}
+        />
 
         {/* Bottom flex spacer — mirrors top spacer for centering */}
         <div style={{ flex: '1 0 0' }} />

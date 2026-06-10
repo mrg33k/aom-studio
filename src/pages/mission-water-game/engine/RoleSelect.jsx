@@ -234,8 +234,8 @@ export default function RoleSelect({ rolesData, playerName = '', onConfirm }) {
       {/* scanline overlay */}
       <div style={styles.scanlines} />
 
-      {/* Scrollable overlay — centers ONE instrument panel (R18a); gutter clears Blippy */}
-      <div className="mw-guide-gutter" style={styles.overlay}>
+      {/* Scrollable overlay — centers ONE instrument panel (R18a) */}
+      <div style={styles.overlay}>
         <div style={styles.flex1} />
 
         <div style={{
@@ -300,14 +300,14 @@ export default function RoleSelect({ rolesData, playerName = '', onConfirm }) {
           </div>
         </div>
 
-        <div style={styles.flex1} />
-      </div>
-
-      {/* Blippy companion — shared full-body component, lower-left */}
-      <div style={styles.blippyAnchor}>
+        {/* Blippy — in flow under the panel; floats lower-left only when the
+            wide role panel has free margin (≥1680px) */}
         <Blippy
+          dock={1680}
           text={`Choose your role, ${cadet} — each investigator sees the problem differently.`}
         />
+
+        <div style={styles.flex1} />
       </div>
     </div>
   );
@@ -550,12 +550,4 @@ const styles = {
     transition: 'opacity 150ms ease, box-shadow 150ms ease',
   },
 
-  // Blippy companion — shared full-body component, lower-left
-  blippyAnchor: {
-    position: 'absolute',
-    bottom: 20,
-    left: 24,
-    zIndex: 3,
-    pointerEvents: 'none',
-  },
 };

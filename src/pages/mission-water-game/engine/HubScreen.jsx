@@ -239,8 +239,8 @@ export default function HubScreen({
         zIndex: 60,
       }} />
 
-      {/* ── Main scrollable content — gutter keeps cards clear of Blippy ── */}
-      <div className="mw-guide-gutter" style={styles.scrollLayer}>
+      {/* ── Main scrollable content — frame stays dead-centered ── */}
+      <div style={styles.scrollLayer}>
         <div style={styles.centerFrame}>
 
           {/* Header — canon pattern: cyan kicker / white Orbitron title / dim sub */}
@@ -386,6 +386,12 @@ export default function HubScreen({
             })}
           </div>
         </div>
+
+        {/* Blippy — in flow under the card grid; floats lower-left only when
+            the centered frame has free margin (≥1420px) */}
+        {!showManifest && !showMap && (
+          <Blippy visible={blippyReady} dock={1420} text={blippyText} />
+        )}
       </div>
 
       {/* ── MISSION MAP overlay (R17 — holographic globe + region states) ── */}
@@ -410,12 +416,6 @@ export default function HubScreen({
         />
       )}
 
-      {/* ── Blippy lower-left — shared full-body component, guiding the hub ── */}
-      {!showManifest && !showMap && (
-        <div style={styles.blippyAnchor}>
-          <Blippy visible={blippyReady} text={blippyText} />
-        </div>
-      )}
     </div>
   );
 }
@@ -1347,12 +1347,4 @@ const styles = {
     fontSize: 13,
   },
 
-  // ── Blippy — shared full-body component, lower-left ───────────────
-  blippyAnchor: {
-    position: 'fixed',
-    bottom: 24,
-    left: 24,
-    zIndex: 250,
-    pointerEvents: 'none',
-  },
 };

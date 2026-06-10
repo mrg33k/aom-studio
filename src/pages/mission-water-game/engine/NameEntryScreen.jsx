@@ -90,8 +90,8 @@ export default function NameEntryScreen({ onConfirm }) {
       {/* Scanline overlay — same instrument texture as the rest of the game */}
       <div style={S.scanlines} />
 
-      {/* Scrollable overlay — centers panel vertically; gutter clears Blippy */}
-      <div className="mw-guide-gutter" style={S.overlay}>
+      {/* Scrollable overlay — centers panel vertically */}
+      <div style={S.overlay}>
         <div style={S.flex1} />
 
         <div style={S.panelOuter}>
@@ -167,15 +167,15 @@ export default function NameEntryScreen({ onConfirm }) {
 
         </div>
 
-        <div style={S.flex1} />
-      </div>
-
-      {/* Blippy companion — shared component, lower-left near the registration panel */}
-      <div style={S.blippyAnchor}>
+        {/* Blippy — in flow under the panel; floats lower-left only when the
+            centered panel has free margin (≥1180px) */}
         <Blippy
+          dock={1180}
           visible={blippyReady}
           text={bubbleReady ? 'Type your name and hit CONFIRM — the Council logs every cadet who flies.' : null}
         />
+
+        <div style={S.flex1} />
       </div>
     </div>
   );
@@ -315,12 +315,4 @@ const S = {
     cursor: 'not-allowed',
   },
 
-  // Blippy anchor — lower-left of viewport, consistent with WelcomeScreen
-  blippyAnchor: {
-    position: 'absolute',
-    left: 28,
-    bottom: 24,
-    zIndex: 6,
-    pointerEvents: 'none',
-  },
 };
