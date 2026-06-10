@@ -418,8 +418,8 @@ export default function MissionWaterOffering() {
                           <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-[#071530]/35 mb-3">Piece {p.n}</span>
                           <div>
                             <p className="font-mono text-[8.5px] uppercase tracking-[0.24em] text-[#071530]/35 mb-1.5">Investment</p>
-                            <p className="font-display-serif text-[16px] md:text-[18px] text-[#071530]/35 tracking-[-0.02em] leading-none">
-                              {p.price}<span className="font-mono text-[8px] tracking-[0.15em] text-[#071530]/20 ml-2">fixed</span>
+                            <p className="font-display-serif text-[13px] md:text-[14px] text-[#071530]/25 tracking-[-0.02em] leading-none">
+                              {p.price}<span className="font-mono text-[7px] tracking-[0.15em] text-[#071530]/15 ml-2">fixed</span>
                             </p>
                           </div>
                         </div>
