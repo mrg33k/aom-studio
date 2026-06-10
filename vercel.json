@@ -466,6 +466,14 @@
     {
       "source": "/lozano/:path*",
       "destination": "/lozano/:path*"
+    },
+    {
+      "source": "/carrillos",
+      "destination": "/carrillos/index.html"
+    },
+    {
+      "source": "/carrillos/:path*",
+      "destination": "/carrillos/:path*"
     }
   ],
   "redirects": [

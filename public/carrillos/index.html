@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carrillo's Tucson Mortuary — concept by AOM</title>
+<meta name="description" content="Faithfully serving Tucson since 1914. Four generations of the Carrillo family, caring for our community with dignity, every faith and every background.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3ecdb;--paper-2:#ece2cc;--paper-deep:#e6dcc2;--card:#fbf6ea;
+    --maroon:#5e2a2a;--maroon-2:#4a2020;--maroon-soft:#7d3a38;
+    --gold:#a9803f;--gold-soft:#c29a57;--gold-deep:#866129;
+    --ink:#352a22;--ink-soft:#6a5d4f;--walnut:#3a2e26;
+    --line:rgba(53,42,34,.16);--line-gold:rgba(169,128,63,.35);--line-d:rgba(243,236,219,.2);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Hanken Grotesk',system-ui,sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.6;overflow-x:hidden}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 clamp(22px,5vw,40px)}
+  .serif{font-family:'Cormorant Garamond',Georgia,serif}
+  img{max-width:100%;display:block}
+
+  /* INTRO */
+  #intro{position:fixed;inset:0;z-index:999;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;animation:introOut 1s cubic-bezier(.7,0,.3,1) 2s forwards}
+  #intro .imark{width:120px;height:120px;border-radius:50%;border:2px solid var(--line-gold);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:66px;font-weight:600;color:var(--maroon);opacity:0;transform:scale(.82);animation:markIn 1s cubic-bezier(.2,.7,.2,1) .15s forwards}
+  #intro .iname{font-family:'Cormorant Garamond',serif;font-size:30px;letter-spacing:2px;color:var(--maroon);font-weight:600;opacity:0;animation:nameIn .9s ease .6s forwards;text-align:center}
+  #intro .iest{font-size:11px;letter-spacing:5px;text-transform:uppercase;color:var(--gold-deep);font-weight:600;opacity:0;animation:nameIn .9s ease .85s forwards}
+  #intro .iline{width:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:lineIn 1.1s ease .55s forwards}
+  @keyframes markIn{to{opacity:1;transform:scale(1)}}@keyframes nameIn{to{opacity:1}}@keyframes lineIn{to{width:240px}}
+  @keyframes introOut{to{opacity:0;visibility:hidden;transform:translateY(-14px)}}
+  .reveal{opacity:0;transform:translateY(18px);animation:rise 1.1s cubic-bezier(.2,.7,.2,1) forwards}
+  .d1{animation-delay:2.2s}.d2{animation-delay:2.35s}.d3{animation-delay:2.5s}.d4{animation-delay:2.65s}.d5{animation-delay:2.8s}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .obs{opacity:0;transform:translateY(30px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
+  .obs.in{opacity:1;transform:none}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:.3px;border-radius:3px;padding:14px 28px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:transform .2s,box-shadow .2s,background .2s,color .2s;white-space:nowrap}
+  .btn-primary{background:var(--maroon);color:var(--paper);box-shadow:0 10px 26px rgba(94,42,42,.28)}
+  .btn-primary:hover{transform:translateY(-2px);background:var(--maroon-2);box-shadow:0 14px 32px rgba(94,42,42,.36)}
+  .btn-gold{background:var(--gold);color:var(--walnut)}
+  .btn-gold:hover{transform:translateY(-2px);background:var(--gold-soft)}
+  .btn-ghost{border:1.5px solid rgba(243,236,219,.55);color:var(--paper);background:transparent}
+  .btn-ghost:hover{background:rgba(243,236,219,.12)}
+  .btn-line{border:1.5px solid var(--maroon);color:var(--maroon);background:transparent}
+  .btn-line:hover{background:var(--maroon);color:var(--paper)}
+
+  /* NAV */
+  .nav-float{position:absolute;top:0;left:0;right:0;z-index:20}
+  nav{display:flex;align-items:center;justify-content:space-between;padding:24px 0;gap:20px}
+  .brand{display:flex;align-items:center;gap:13px}
+  .brand .mark{width:48px;height:48px;border-radius:50%;border:1.5px solid rgba(194,154,87,.7);display:flex;align-items:center;justify-content:center;color:var(--gold-soft);font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600}
+  .brand .name{font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:600;color:var(--paper);line-height:1.02}
+  .brand .name span{display:block;font-family:'Hanken Grotesk',sans-serif;font-size:9px;letter-spacing:2.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-top:4px}
+  .navlinks{display:flex;gap:30px;list-style:none}
+  .navlinks a{text-decoration:none;color:var(--paper);font-size:13.5px;font-weight:500;opacity:.85;transition:color .2s}
+  .navlinks a:hover{color:var(--gold-soft)}
+  .navcta{display:flex;align-items:center;gap:16px}
+  .espanol{font-size:12px;font-weight:600;color:var(--gold-soft);border:1px solid rgba(194,154,87,.5);border-radius:3px;padding:6px 12px}
+  .phone{font-size:14px;font-weight:600;color:var(--paper);text-decoration:none;white-space:nowrap}
+  .phone:hover{color:var(--gold-soft)}
+
+  /* HERO — framed museum plate */
+  .hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;padding:130px 22px 90px}
+  .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+  .hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(40,20,18,.7),rgba(48,24,20,.5) 45%,rgba(40,20,18,.68)),radial-gradient(120% 70% at 50% 50%,transparent 40%,rgba(30,16,14,.5))}
+  .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:140px;z-index:1;background:linear-gradient(180deg,transparent,var(--paper))}
+  .hero-inner{position:relative;z-index:2;max-width:820px;padding:clamp(28px,5vw,56px);border:1px solid rgba(194,154,87,.4)}
+  .hero-inner::before,.hero-inner::after{content:"";position:absolute;width:18px;height:18px;border:2px solid var(--gold-soft)}
+  .hero-inner::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
+  .hero-inner::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
+  .hero .est{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:18px;font-weight:600}
+  .hero h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(44px,7vw,92px);line-height:1.0;color:var(--paper);margin-bottom:18px;letter-spacing:.2px}
+  .hero .tagline{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(20px,2.6vw,28px);color:var(--gold-soft);margin-bottom:26px}
+  .hero .sub{font-size:16px;line-height:1.66;color:rgba(243,236,219,.9);max-width:540px;margin:0 auto 32px}
+  .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+  .scrolltip{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:2;color:rgba(243,236,219,.7);font-size:11px;letter-spacing:2px;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:10px}
+  .scrolltip .ln{width:1px;height:42px;background:linear-gradient(180deg,var(--gold-soft),transparent);animation:sp 2.4s ease-in-out infinite}
+  @keyframes sp{0%,100%{opacity:.4;transform:scaleY(.7)}50%{opacity:1;transform:scaleY(1)}}
+
+  /* SECTION HEAD */
+  .sec-head{max-width:720px;margin:0 auto 60px;text-align:center}
+  .sec-eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-deep);font-weight:700;margin-bottom:14px}
+  .sec-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(34px,4.6vw,58px);line-height:1.04;color:var(--maroon);letter-spacing:.2px}
+  .sec-sub{font-size:16.5px;color:var(--ink-soft);margin-top:16px;line-height:1.66}
+
+  /* TIMELINE — the centerpiece */
+  .timeline{padding:clamp(80px,10vw,120px) 0;background:var(--paper);position:relative}
+  .tl{position:relative;max-width:920px;margin:0 auto;padding:20px 0}
+  .tl::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;transform:translateX(-50%);background:linear-gradient(180deg,transparent,var(--line-gold) 6%,var(--line-gold) 94%,transparent)}
+  .tl-item{position:relative;width:50%;padding:28px 46px;margin-bottom:8px}
+  .tl-item:nth-child(odd){left:0;text-align:right}
+  .tl-item:nth-child(even){left:50%;text-align:left}
+  .tl-node{position:absolute;top:34px;width:16px;height:16px;border-radius:50%;background:var(--gold);border:3px solid var(--paper);box-shadow:0 0 0 2px var(--line-gold);z-index:2}
+  .tl-item:nth-child(odd) .tl-node{right:-8px}
+  .tl-item:nth-child(even) .tl-node{left:-8px}
+  .tl-year{font-family:'Cormorant Garamond',serif;font-size:clamp(34px,4vw,52px);font-weight:600;color:var(--gold-deep);line-height:1}
+  .tl-gen{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--maroon-soft);font-weight:700;margin:10px 0 8px}
+  .tl-item h3{font-family:'Cormorant Garamond',serif;font-size:27px;font-weight:600;color:var(--maroon);margin-bottom:8px;line-height:1.12}
+  .tl-item p{font-size:15px;line-height:1.66;color:var(--ink-soft)}
+  .tl-figure{margin-top:16px;border-radius:4px;overflow:hidden;border:1px solid var(--line-gold);box-shadow:0 16px 40px rgba(94,42,42,.14)}
+  .tl-figure img{width:100%;height:180px;object-fit:cover}
+  .tl-cap{text-align:center;margin-top:46px}
+  .tl-cap .sig{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(22px,3vw,32px);color:var(--maroon);max-width:680px;margin:0 auto}
+
+  /* SERVICES — museum plaques */
+  .svc{padding:clamp(70px,9vw,110px) 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:46px;background:var(--line);border:1px solid var(--line)}
+  .svc-card{background:var(--card);padding:34px 30px;transition:background .25s}
+  .svc-card:hover{background:#fff}
+  .svc-card .sn serif,.svc-card .sn{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--gold-deep);margin-bottom:10px}
+  .svc-card h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:23px;color:var(--maroon);margin-bottom:9px;line-height:1.15}
+  .svc-card p{font-size:14px;line-height:1.6;color:var(--ink-soft)}
+  .svc-note{text-align:center;margin-top:34px;font-size:14.5px;color:var(--ink-soft)}
+  .svc-note b{color:var(--gold-deep)}
+
+  /* GUEST BOOK FORM — the distinct intake (single, registry-style) */
+  .book{padding:clamp(80px,10vw,130px) 0;background:var(--paper);position:relative}
+  .book-card{max-width:720px;margin:0 auto;background:var(--card);border:1px solid var(--line-gold);border-radius:5px;box-shadow:0 30px 80px rgba(94,42,42,.16);overflow:hidden}
+  .book-top{background:var(--maroon);color:var(--paper);padding:34px 40px;text-align:center;position:relative}
+  .book-top::after{content:"";position:absolute;left:40px;right:40px;bottom:14px;height:1px;background:rgba(194,154,87,.4)}
+  .book-top .bt-eye{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-bottom:10px}
+  .book-top h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(28px,3.6vw,42px);line-height:1.05}
+  .book-top p{font-size:14.5px;color:rgba(243,236,219,.8);margin-top:10px}
+  .book-body{padding:36px 40px 40px}
+  .bf-lead{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--maroon);margin-bottom:16px}
+  .bf-modes{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+  .bf-mode{flex:1;min-width:150px;border:1.5px solid var(--line);border-radius:4px;padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s;background:#fff;text-align:center}
+  .bf-mode:hover{border-color:var(--gold)}
+  .bf-mode.sel{border-color:var(--maroon);background:#fbf3ee;box-shadow:inset 0 0 0 1px var(--maroon)}
+  .bf-mode b{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--maroon);display:block}
+  .bf-mode span{font-size:12px;color:var(--ink-soft)}
+  .bf-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .bf-field{margin-bottom:16px}
+  .bf-field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:7px}
+  .bf-field input,.bf-field textarea{width:100%;border:1px solid var(--line);border-radius:4px;padding:13px 14px;font-family:inherit;font-size:15px;color:var(--ink);background:#fff;transition:border-color .2s}
+  .bf-field input:focus,.bf-field textarea:focus{outline:none;border-color:var(--gold)}
+  .bf-field textarea{min-height:88px;resize:vertical}
+  .bf-urgent{display:none;gap:12px;align-items:center;background:#fbf3ee;border:1px solid rgba(94,42,42,.25);border-radius:4px;padding:14px 16px;margin-bottom:18px}
+  .bf-urgent a{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--maroon);text-decoration:none;font-weight:600}
+  .bf-urgent .u{font-size:12.5px;color:var(--ink-soft);line-height:1.45}
+  .bf-submit{width:100%;background:var(--maroon);color:var(--paper);border:none;border-radius:4px;padding:16px;font-family:inherit;font-size:15px;font-weight:600;letter-spacing:.3px;cursor:pointer;transition:background .2s,transform .2s;margin-top:4px}
+  .bf-submit:hover{background:var(--maroon-2);transform:translateY(-2px)}
+  .bf-foot{text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:14px}
+  .bf-phone{text-align:center;margin-top:24px;padding-top:22px;border-top:1px solid var(--line)}
+  .bf-phone .pl{font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);margin-bottom:6px}
+  .bf-phone a{font-family:'Cormorant Garamond',serif;font-size:34px;color:var(--maroon);text-decoration:none;font-weight:600}
+  .bf-success{display:none;text-align:center;padding:40px 20px}
+  .bf-success.show{display:block;animation:rise .5s ease}
+  .bf-check{width:60px;height:60px;border-radius:50%;background:var(--gold);color:var(--walnut);font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+  .bf-success h3{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--maroon);margin-bottom:10px}
+  .bf-success p{font-size:14.5px;color:var(--ink-soft);max-width:380px;margin:0 auto;line-height:1.6}
+
+  /* FOOTER */
+  footer{background:var(--maroon-2);color:rgba(243,236,219,.82);padding:70px 0 30px}
+  .foot-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;margin-bottom:46px}
+  .foot-brand .fmark{font-family:'Cormorant Garamond',serif;font-size:27px;color:var(--gold-soft);margin-bottom:14px;line-height:1.15}
+  .foot-brand p{font-size:14px;line-height:1.6;color:rgba(243,236,219,.74);max-width:300px}
+  .foot-col h4{font-size:11.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:700;margin-bottom:16px}
+  .foot-col a,.foot-col p{display:block;font-size:14px;color:rgba(243,236,219,.78);text-decoration:none;margin-bottom:10px;line-height:1.5}
+  .foot-col a:hover{color:var(--gold-soft)}
+  .foot-bottom{border-top:1px solid var(--line-d);padding-top:24px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12.5px;color:rgba(243,236,219,.55)}
+  .foot-bottom a{color:var(--gold-soft);text-decoration:none}
+
+  /* DRAWER (cream/gold/maroon treatment) */
+  .drawer{position:fixed;left:0;right:0;bottom:0;z-index:600;background:var(--card);border-top:2px solid var(--gold);box-shadow:0 -16px 50px rgba(94,42,42,.18);transform:translateY(calc(100% - 64px));transition:transform .55s cubic-bezier(.5,0,.2,1)}
+  .drawer.open{transform:translateY(0)}
+  .drawer-handle{height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 clamp(18px,4vw,40px);cursor:pointer}
+  .dh-left{display:flex;align-items:center;gap:14px;min-width:0}
+  .dh-grade{width:42px;height:42px;border-radius:50%;background:var(--maroon);color:var(--gold-soft);font-family:'Cormorant Garamond',serif;font-weight:600;font-size:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .dh-txt b{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--maroon);font-weight:600;display:block;line-height:1.1}
+  .dh-txt span{font-size:12.5px;color:var(--ink-soft)}
+  .dh-toggle{display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:var(--gold-deep);white-space:nowrap;flex-shrink:0;letter-spacing:.3px}
+  .dh-toggle .chev{transition:transform .4s;font-size:11px}
+  .drawer.open .dh-toggle .chev{transform:rotate(180deg)}
+  .drawer-body{max-height:min(44vh,480px);overflow-y:auto;padding:6px clamp(18px,4vw,40px) 30px}
+  .dcard-intro{text-align:center;max-width:680px;margin:6px auto 26px}
+  .dcard-intro h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(24px,2.8vw,32px);color:var(--maroon);line-height:1.12;margin-bottom:8px}
+  .dcard-intro p{font-size:14.5px;color:var(--ink-soft)}
+  .dcards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+  .dcard{background:var(--paper);border:1px solid var(--line-gold);border-radius:5px;padding:22px 20px}
+  .dcard .dn{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:16px;color:var(--gold-deep);margin-bottom:8px}
+  .dcard h4{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:600;color:var(--maroon);margin-bottom:7px;line-height:1.18}
+  .dcard p{font-size:13.5px;line-height:1.55;color:var(--ink-soft)}
+  .drawer-cta{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+  .drawer-cta .dctitle{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--maroon)}
+
+  /* REVEAL */
+  .reveal-overlay{position:fixed;inset:0;z-index:800;background:rgba(40,20,18,.86);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:30px;opacity:0;transition:opacity .4s}
+  .reveal-overlay.open{display:flex;opacity:1}
+  .reveal-card{position:relative;width:100%;max-width:1040px;max-height:94vh;overflow-y:auto;background:var(--card);border-radius:8px;box-shadow:0 50px 120px rgba(0,0,0,.5)}
+  .reveal-top{text-align:center;padding:34px 30px 16px}
+  .reveal-top .re-eye{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-deep);font-weight:700;margin-bottom:10px}
+  .reveal-top h2{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(28px,3.4vw,44px);color:var(--maroon);line-height:1.06}
+  .reveal-top p{font-size:15px;color:var(--ink-soft);margin:12px auto 0;max-width:560px}
+  .compare{display:grid;grid-template-columns:1fr 1.18fr;gap:22px;align-items:end;padding:14px clamp(20px,4vw,42px) 8px}
+  .cmp{display:flex;flex-direction:column;gap:10px}
+  .cmp-tag{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+  .cmp-old .cmp-tag{color:var(--ink-soft)}.cmp-new .cmp-tag{color:var(--gold-deep)}
+  .cmp-tag .tdot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .screen{border-radius:6px;overflow:hidden;border:1px solid var(--line);background:#fff;position:relative}
+  .cmp-old .screen{height:230px;box-shadow:0 12px 30px rgba(94,42,42,.16)}
+  .cmp-new .screen{height:300px;box-shadow:0 24px 60px rgba(169,128,63,.32);border-color:var(--line-gold)}
+  .cmp-old .screen img{width:100%}
+  .cmp-new .screen.scrollwrap img{width:100%;animation:scrollNew 16s linear infinite alternate}
+  @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 300px))}}
+  .screen .noimg{height:100%;display:flex;flex-direction:column;gap:6px;align-items:center;justify-content:center;color:var(--maroon-soft);font-size:13px;text-align:center;padding:20px;background:repeating-linear-gradient(135deg,#fff,#fff 12px,#f6ede0 12px,#f6ede0 24px)}
+  .screen .noimg b{font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--maroon)}
+  .reveal-foot{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:24px 30px 34px;text-align:center}
+  .reveal-foot .rf-line{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px;color:var(--maroon)}
+  .reveal-close{position:absolute;top:16px;right:18px;z-index:3;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.85);color:var(--ink);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+  @media(max-width:900px){
+    .navlinks,.espanol{display:none}
+    .tl::before{left:18px}
+    .tl-item{width:100%;left:0!important;text-align:left!important;padding:24px 0 24px 46px}
+    .tl-item:nth-child(odd) .tl-node,.tl-item:nth-child(even) .tl-node{left:10px;right:auto}
+    .svc-grid{grid-template-columns:1fr 1fr}
+    .bf-row{grid-template-columns:1fr}
+    .compare{grid-template-columns:1fr;gap:16px}
+    .cmp-old .screen{height:180px}.cmp-new .screen{height:240px}
+    @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 240px))}}
+    .foot-grid{grid-template-columns:1fr 1fr;gap:28px}
+    .dcards{grid-template-columns:1fr}
+  }
+  @media(max-width:560px){.navcta .phone{display:none}.svc-grid{grid-template-columns:1fr}.foot-grid{grid-template-columns:1fr}.hero h1{font-size:clamp(40px,12vw,58px)}}
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="imark serif">C</div>
+  <div class="iline"></div>
+  <div class="iname">Carrillo's Tucson Mortuary</div>
+  <div class="iest">Faithfully Serving Since 1914</div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <video class="hero-video" autoplay muted loop playsinline poster="/carrillos/carrillos-hero-poster.jpg">
+    <source src="/carrillos/carrillos-hero-bg.mp4" type="video/mp4">
+  </video>
+  <div class="nav-float">
+    <div class="wrap">
+      <nav>
+        <div class="brand reveal d1">
+          <div class="mark serif">C</div>
+          <div class="name">Carrillo's Tucson Mortuary<span>Est. 1914 · Tucson, Arizona</span></div>
+        </div>
+        <ul class="navlinks reveal d2">
+          <li><a href="#timeline">Our History</a></li>
+          <li><a href="#services">Services</a></li>
+          <li><a href="#book">Plan Ahead</a></li>
+        </ul>
+        <div class="navcta reveal d2">
+          <span class="espanol">Hablamos Español</span>
+          <a class="phone" href="tel:5206227487">(520) 622-7487</a>
+        </div>
+      </nav>
+    </div>
+  </div>
+  <div class="hero-inner reveal d3">
+    <div class="est">Tucson, Arizona · Established 1914</div>
+    <h1>Carrillo's Tucson Mortuary</h1>
+    <div class="tagline">Faithfully serving our community for over a century.</div>
+    <p class="sub">Four generations of the Carrillo family, caring for Tucson's families with dignity and respect — every faith, every background, every life worth remembering.</p>
+    <div class="hero-cta">
+      <a class="btn btn-gold" href="#book">Plan ahead with us</a>
+      <a class="btn btn-ghost" href="tel:5206227487">We're here 24/7</a>
+    </div>
+  </div>
+  <div class="scrolltip reveal d5"><span>Our story</span><span class="ln"></span></div>
+</section>
+
+<!-- TIMELINE -->
+<section class="timeline" id="timeline">
+  <div class="wrap">
+    <div class="sec-head obs">
+      <div class="sec-eyebrow">Four generations · one family</div>
+      <h2 class="sec-title">A century of faithful service.</h2>
+      <p class="sec-sub">Since 1914, the Carrillo family has cared for this community through four generations — each one carrying forward the same promise of dignity, made to every family who walks through our doors.</p>
+    </div>
+    <div class="tl">
+      <div class="tl-item obs"><div class="tl-node"></div>
+        <div class="tl-year">1914</div>
+        <div class="tl-gen">The beginning</div>
+        <h3>Arturo Carrillo</h3>
+        <p>The first generation opens the doors in Tucson, founding a family mortuary built on faith and the dignity of every person in its care.</p>
+        <div class="tl-figure"><img src="/carrillos/arches.jpg" alt="Historic Tucson adobe arches"></div>
+      </div>
+      <div class="tl-item obs"><div class="tl-node"></div>
+        <div class="tl-year"></div>
+        <div class="tl-gen">Second generation</div>
+        <h3>Leopoldo Carrillo</h3>
+        <p>The promise is carried forward — the same care, the same community, a name Tucson families come to trust through changing decades.</p>
+      </div>
+      <div class="tl-item obs"><div class="tl-node"></div>
+        <div class="tl-year"></div>
+        <div class="tl-gen">Third generation</div>
+        <h3>Leo A. Carrillo Sr.</h3>
+        <p>Veterans honored, every faith welcomed, every tradition respected. The family deepens its roots in the heart of Tucson.</p>
+        <div class="tl-figure"><img src="/carrillos/chapel.jpg" alt="Warm light in a historic chapel"></div>
+      </div>
+      <div class="tl-item obs"><div class="tl-node"></div>
+        <div class="tl-year"></div>
+        <div class="tl-gen">Fourth generation · today</div>
+        <h3>Leo C. Carrillo Jr.</h3>
+        <p>Today the fourth generation continues the work — burial and cremation, pre-planning and veterans services, a full year of grief support, and the same faithful care that began in 1914.</p>
+      </div>
+      <div class="tl-item obs"><div class="tl-node"></div>
+        <div class="tl-year">Now</div>
+        <div class="tl-gen">Still here for you</div>
+        <h3>Your family is next.</h3>
+        <p>Whatever you're facing, you'll be cared for by a family that has done this faithfully for more than a hundred years.</p>
+      </div>
+    </div>
+    <div class="tl-cap obs"><p class="sig serif">"Faithfully serving the community since 1914."</p></div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="svc" id="services">
+  <div class="wrap">
+    <div class="sec-head obs">
+      <div class="sec-eyebrow">Everything a family may need</div>
+      <h2 class="sec-title">How we care for you.</h2>
+    </div>
+    <div class="svc-grid obs">
+      <div class="svc-card"><div class="sn serif">i.</div><h3>Traditional Funerals</h3><p>A full, time-honored service — visitation, ceremony, and committal, arranged with care and reverence.</p></div>
+      <div class="svc-card"><div class="sn serif">ii.</div><h3>Cremation</h3><p>Full-service, memorial, or private cremation — every option offered with the same dignity and choice.</p></div>
+      <div class="svc-card"><div class="sn serif">iii.</div><h3>Veterans Services</h3><p>Military honors for those who served, with a dedicated veteran obituary search to help families find their own.</p></div>
+      <div class="svc-card"><div class="sn serif">iv.</div><h3>Pre-Planning</h3><p>Plan ahead with our checklist and the "Talk of a Lifetime" guide — your wishes known, your family unburdened.</p></div>
+      <div class="svc-card"><div class="sn serif">v.</div><h3>Personalization</h3><p>Video tributes, keepsakes, and virtual attendance, so loved ones near and far can be part of the goodbye.</p></div>
+      <div class="svc-card"><div class="sn serif">vi.</div><h3>Grief Support</h3><p>Resources for every step, including a full year of weekly messages of comfort — care that lasts beyond the service.</p></div>
+    </div>
+    <p class="svc-note">Obituaries &amp; veteran search · send flowers · merchandise · grief resources · <b>immediate need, answered 24/7</b>.</p>
+  </div>
+</section>
+
+<!-- GUEST BOOK FORM (the distinct intake) -->
+<section class="book" id="book">
+  <div class="wrap">
+    <div class="book-card obs">
+      <div class="book-top">
+        <div class="bt-eye">Begin with us</div>
+        <h2>Leave your wishes with our family.</h2>
+        <p>One gentle note. A member of the Carrillo family will reach you personally — never a call center.</p>
+      </div>
+      <div class="book-body">
+        <form id="bookForm" novalidate>
+          <div class="bf-lead serif">What brings you to us today?</div>
+          <div class="bf-modes">
+            <div class="bf-mode sel" data-mode="plan"><b>Planning ahead</b><span>For peace of mind</span></div>
+            <div class="bf-mode" data-mode="loss"><b>We've lost someone</b><span>We're here now</span></div>
+            <div class="bf-mode" data-mode="ask"><b>I have a question</b><span>However we can help</span></div>
+          </div>
+          <div class="bf-urgent" id="bfUrgent">
+            <div><a href="tel:5206227487">(520) 622-7487</a><div class="u">If you need us this moment, please call — we answer 24/7. Or leave your details and we'll call you right back.</div></div>
+          </div>
+          <div class="bf-row">
+            <div class="bf-field"><label>First name</label><input type="text" id="bf-first"></div>
+            <div class="bf-field"><label>Last name</label><input type="text" id="bf-last"></div>
+          </div>
+          <div class="bf-row">
+            <div class="bf-field"><label>Phone</label><input type="tel" id="bf-phone" placeholder="(520) 000-0000"></div>
+            <div class="bf-field"><label>Email <span style="text-transform:none;color:var(--ink-soft);font-weight:400">(optional)</span></label><input type="email" id="bf-email"></div>
+          </div>
+          <div class="bf-field"><label id="bf-notelabel">Anything you'd like us to know (optional)</label><textarea id="bf-note" placeholder="A name, a wish, a question — whatever is on your heart."></textarea></div>
+          <button type="submit" class="bf-submit" id="bfSubmit">Send to the Carrillo family</button>
+          <div class="bf-foot">Your information is private and never shared. Nothing is final, and there is no cost to begin.</div>
+          <div class="bf-phone">
+            <div class="pl">Or call us, any hour</div>
+            <a href="tel:5206227487">(520) 622-7487</a>
+          </div>
+        </form>
+        <div class="bf-success" id="bfSuccess">
+          <div class="bf-check">&#10003;</div>
+          <h3 id="bfSuccessHead">Thank you — we have it.</h3>
+          <p id="bfSuccessText">A member of the Carrillo family will reach out personally, with care and without pressure. You're not alone in this.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="fmark serif">Carrillo's Tucson<br>Mortuary</div>
+        <p>Faithfully serving Tucson since 1914. Four generations of the Carrillo family, caring for our community with dignity — every faith, every background.</p>
+      </div>
+      <div class="foot-col"><h4>Services</h4><a href="#services">Funerals</a><a href="#services">Cremation</a><a href="#services">Veterans Services</a><a href="#book">Pre-Planning</a><a href="#services">Personalization</a></div>
+      <div class="foot-col"><h4>Families</h4><a href="#book">Immediate Need</a><a href="#timeline">Obituaries</a><a href="#services">Grief Resources</a><a href="#book">Send Flowers</a><a href="#timeline">Our History</a></div>
+      <div class="foot-col"><h4>Reach Us</h4><p>204 S. Stone Avenue<br>Tucson, AZ 85701</p><a href="tel:5206227487">(520) 622-7487</a><p>Available 24 / 7 · Hablamos Español</p></div>
+    </div>
+    <div class="foot-bottom">
+      <span>© Carrillo's Tucson Mortuary, Inc. · Faithfully serving the community since 1914</span>
+      <span>Concept rebuild by <a href="https://aheadofmarket.com">Ahead of Market</a></span>
+    </div>
+  </div>
+</footer>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-handle" id="drawerHandle">
+    <div class="dh-left"><div class="dh-grade serif">A</div><div class="dh-txt"><b>Why this site would serve your families better</b><span>Six honest reasons — tap to see the report card</span></div></div>
+    <div class="dh-toggle">See the report card <span class="chev">▲</span></div>
+  </div>
+  <div class="drawer-body">
+    <div class="dcard-intro"><h3>A quiet report card</h3><p>We kept everything a hundred years built — and fixed what's quietly costing you the families who never reach you.</p></div>
+    <div class="dcards">
+      <div class="dcard"><div class="dn">i.</div><h4>A site that's actually up</h4><p>Your website is unreachable right now. A family searching for you at 2am finds nothing. This one is fast, reliable, and always there.</p></div>
+      <div class="dcard"><div class="dn">ii.</div><h4>Your century, finally shown</h4><p>Four generations since 1914 is an extraordinary story — and it's buried in plain text today. We made it the heart of the page.</p></div>
+      <div class="dcard"><div class="dn">iii.</div><h4>No more dead ends</h4><p>Key pages 404 when the site is up. Here every family lands on one clear, dignified next step.</p></div>
+      <div class="dcard"><div class="dn">iv.</div><h4>Spanish, warmly offered</h4><p>Tucson is nearly half Hispanic, and your site has no Spanish option. We put "Hablamos Español" right up front.</p></div>
+      <div class="dcard"><div class="dn">v.</div><h4>Built for the phone</h4><p>Most families search on their phone in a hard moment. This is built mobile-first, so nothing breaks when it matters.</p></div>
+      <div class="dcard"><div class="dn">vi.</div><h4>A look worthy of the name</h4><p>A century of trust deserves better than a dated template. This feels like the institution you've earned the right to be.</p></div>
+    </div>
+    <div class="drawer-cta"><div class="dctitle serif">See the difference for yourself</div><button class="btn btn-primary" id="openReveal">Show me old vs. new</button></div>
+  </div>
+</div>
+
+<!-- REVEAL -->
+<div class="reveal-overlay" id="revealModal" aria-hidden="true">
+  <div class="reveal-card" role="dialog" aria-modal="true" aria-label="Old site versus new site">
+    <button class="reveal-close" id="revealClose" aria-label="Close">&times;</button>
+    <div class="reveal-top">
+      <div class="re-eye">A gentle before &amp; after</div>
+      <h2>A hundred years of trust,<br>shown the way it deserves.</h2>
+      <p>Everything your families rely on is still here — only now it's reliable, reachable, and worthy of the name on the door.</p>
+    </div>
+    <div class="compare">
+      <div class="cmp cmp-old">
+        <div class="cmp-tag"><span class="tdot"></span>Your site today</div>
+        <div class="screen"><img src="/carrillos/old-site.png" alt="Current site" onerror="this.style.display='none';this.parentNode.querySelector('.noimg').style.display='flex'"><div class="noimg" style="display:none"><b>Currently unreachable</b>carrillostucsonmortuary.com<br>was down at the time of capture</div></div>
+      </div>
+      <div class="cmp cmp-new">
+        <div class="cmp-tag"><span class="tdot"></span>What we started for you</div>
+        <div class="screen scrollwrap"><img src="/carrillos/new-site.png" alt="The new concept site" onerror="this.style.display='none';this.parentNode.querySelector('.noimg').style.display='flex'"><div class="noimg" style="display:none"><b>Your new site</b></div></div>
+      </div>
+    </div>
+    <div class="reveal-foot">
+      <span class="rf-line">Four generations of care, finally shown the way it deserves.</span>
+      <a class="btn btn-primary" href="#book" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let's talk about it</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* guest-book form — single form, mode adapts copy (distinct from Lozano's stepped modal) */
+  var modes=document.querySelectorAll('.bf-mode');
+  var urgent=document.getElementById('bfUrgent');
+  var submit=document.getElementById('bfSubmit');
+  var noteLabel=document.getElementById('bf-notelabel');
+  var COPY={
+    plan:{submit:'Send to the Carrillo family',urgent:false,note:'Anything you’d like us to know (optional)',sHead:'Thank you — we have it.',sText:'A member of the Carrillo family will reach out personally, with care and without pressure.'},
+    loss:{submit:'Send — please call me back',urgent:true,note:'Tell us what’s happening, however you can (optional)',sHead:'We’ve got you.',sText:'A member of the Carrillo family is being notified now and will call you right away. If you need us this moment, please call (520) 622-7487.'},
+    ask:{submit:'Send my question',urgent:false,note:'What can we help you with? (optional)',sHead:'Thank you — we have it.',sText:'A member of the Carrillo family will get back to you personally, with care and no pressure.'}
+  };
+  var mode='plan';
+  function apply(m){
+    mode=m;var c=COPY[m];
+    modes.forEach(function(x){x.classList.toggle('sel',x.getAttribute('data-mode')===m);});
+    urgent.style.display=c.urgent?'flex':'none';
+    submit.textContent=c.submit; noteLabel.textContent=c.note;
+    document.getElementById('bfSuccessHead').textContent=c.sHead;
+    document.getElementById('bfSuccessText').textContent=c.sText;
+  }
+  modes.forEach(function(x){x.addEventListener('click',function(){apply(x.getAttribute('data-mode'));});});
+  document.getElementById('bookForm').addEventListener('submit',function(e){e.preventDefault();this.style.display='none';document.getElementById('bfSuccess').classList.add('show');});
+
+  /* drawer */
+  var drawer=document.getElementById('drawer');
+  document.getElementById('drawerHandle').addEventListener('click',function(){drawer.classList.toggle('open');});
+  /* reveal */
+  var reveal=document.getElementById('revealModal');
+  function openR(){reveal.classList.add('open');reveal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+  function closeR(){reveal.classList.remove('open');reveal.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+  document.getElementById('openReveal').addEventListener('click',openR);
+  document.getElementById('revealClose').addEventListener('click',closeR);
+  reveal.addEventListener('click',function(e){if(e.target===reveal)closeR();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&reveal.classList.contains('open'))closeR();});
+
+  /* scroll-in */
+  var obs=document.querySelectorAll('.obs');
+  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.14});obs.forEach(function(el){io.observe(el);});}
+  else{obs.forEach(function(el){el.classList.add('in');});}
+  /* gentle one-time drawer nudge */
+  setTimeout(function(){drawer.style.transition='transform .5s cubic-bezier(.5,0,.2,1)';drawer.style.transform='translateY(calc(100% - 78px))';setTimeout(function(){drawer.style.transform='';},900);},6500);
+})();
+</script>
+</body>
+</html>
