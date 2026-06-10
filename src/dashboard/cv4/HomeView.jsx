@@ -147,6 +147,10 @@ export default function HomeView({
   onSelectAgent,
   onSelectProject,
   onOpenSearch,
+  // "Needs you" rows — home tells the real story before it offers a search box.
+  // Each row: { key, label, detail, onOpen }. Parent only passes rows whose
+  // click target is real, so every row here is one tap from acting.
+  needsYou = [],
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -379,6 +383,12 @@ export default function HomeView({
         [data-cv4-home] .hm-mdot.queued { background:#F59E0B; }
         [data-cv4-home] .hm-mname { flex:1; font-size:14px; font-weight:500; color:#E8EBEF; letter-spacing:-.005em; }
         [data-cv4-home] .hm-mage { font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:500; letter-spacing:.04em; color:#5A6F8C; }
+        [data-cv4-home] .hm-needs { margin:-16px 0 44px; }
+        [data-cv4-home] .hm-needs-row { display:flex; align-items:center; gap:14px; width:100%; padding:14px 16px; margin-bottom:8px; background:rgba(245,158,11,.05); border:1px solid rgba(245,158,11,.28); border-radius:3px; cursor:pointer; font-family:inherit; text-align:left; transition:background-color 120ms ease, border-color 120ms ease; }
+        [data-cv4-home] .hm-needs-row:hover { background:rgba(245,158,11,.10); border-color:rgba(245,158,11,.5); }
+        [data-cv4-home] .hm-needs-dot { width:7px; height:7px; border-radius:50%; background:#F59E0B; flex-shrink:0; animation:hm-breathe 2s ease-in-out infinite; }
+        [data-cv4-home] .hm-needs-label { flex:1; font-size:15px; font-weight:600; letter-spacing:-.005em; color:#E8EBEF; }
+        [data-cv4-home] .hm-needs-detail { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; letter-spacing:.06em; color:#F59E0B; }
 
         /* Light theme overrides (parent provides data-theme) */
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-welcome .hm-l1 { color:#2A2620; }
@@ -411,6 +421,11 @@ export default function HomeView({
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-mdot.queued { background:#B6862C; }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-mname { color:#2A2620; }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-mage { color:rgba(42,38,32,0.5); }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-row { background:rgba(182,134,44,.06); border-color:rgba(182,134,44,.32); }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-row:hover { background:rgba(182,134,44,.11); border-color:rgba(182,134,44,.55); }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-dot { background:#B6862C; }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-label { color:#2A2620; }
+        [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-detail { color:#B6862C; }
       `}</style>
 
       <div className="hm-shell">
@@ -419,6 +434,20 @@ export default function HomeView({
           <span className="hm-l1">{greeting}</span>{' '}
           <span className="hm-l2">{displayName(user)}.</span>
         </h1>
+
+        {/* Needs you — the real story, before the search box. Renders only when
+            something is actually waiting; a quiet day stays quiet. */}
+        {needsYou.length > 0 && (
+          <div className="hm-needs">
+            {needsYou.map(n => (
+              <button key={n.key} className="hm-needs-row" onClick={() => n.onOpen && n.onOpen()}>
+                <span className="hm-needs-dot"></span>
+                <span className="hm-needs-label">{n.label}</span>
+                <span className="hm-needs-detail">{n.detail} →</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Search */}
         <div className="hm-search">

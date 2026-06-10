@@ -161,6 +161,18 @@ export default function CornerV4() {
     const t = setInterval(load, 60000)
     return () => { alive = false; clearInterval(t) }
   }, [worldId])
+  // corner:support-desk M16-R2 — home tells the real story. Rows only ship when
+  // their click target is real; every row is one tap from acting on it.
+  const homeNeedsYou = useMemo(() => {
+    const rows = []
+    if (worldId === 'aom' && supportPending > 0) {
+      rows.push({
+        key: 'support', label: 'Support', detail: supportPending + ' waiting',
+        onOpen: () => setShowSupportInbox(true),
+      })
+    }
+    return rows
+  }, [worldId, supportPending])
   const [inputBarText, setInputBarText] = useState('')
   const [notifOpen, setNotifOpen] = useState(false)
   const [notifReadAt, setNotifReadAt] = useState({})
@@ -1212,6 +1224,7 @@ export default function CornerV4() {
       worldId={worldId}
       agents={agents}
       projectRooms={projectRooms}
+      needsYou={homeNeedsYou}
       onSelectAgent={(agent) => {
         setSelectedAgent(agent)
         setConversationTarget({ name: agent.name, type: 'agent' })
@@ -1224,7 +1237,7 @@ export default function CornerV4() {
         }
       }}
     />
-  ), [currentUser, agents, projectRooms, handleSelectMission, handleSelectProject, worldId])
+  ), [currentUser, agents, projectRooms, handleSelectMission, handleSelectProject, worldId, homeNeedsYou])
 
   const navValue = useMemo(() => ({
     tab, setTab, handleTabChange,
@@ -2602,6 +2615,7 @@ export default function CornerV4() {
                 worldId={worldId}
                 agents={agents}
                 projectRooms={projectRooms}
+                needsYou={homeNeedsYou}
                 onSelectAgent={(agent) => {
                   setSelectedAgent(agent)
                   setConversationTarget({ name: agent.name, type: 'agent' })
