@@ -54,19 +54,62 @@ const RESOURCE_DESCS = {
   media_coverage: 'Press access & public communication',
 };
 
-// ─── single resource allocation row ──────────────────────────────────────────
-function AllocRow({ type, value, ringColor, onInc, onDec, maxVal, spent, total }) {
+// ─── R18b survival supplies (Oregon Trail loadout) ───────────────────────────
+const SUPPLY_ICONS = {
+  food: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 8h16l-1.5 12a2 2 0 01-2 1.8h-9A2 2 0 015.5 20L4 8z" />
+      <path d="M8 8V6a4 4 0 018 0v2" />
+    </svg>
+  ),
+  power: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 11 14 11 22 21 10 13 10 13 2" />
+    </svg>
+  ),
+  spare_parts: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </svg>
+  ),
+  tools: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
+    </svg>
+  ),
+};
+
+const SUPPLY_LABELS = {
+  food: 'FOOD',
+  power: 'POWER',
+  spare_parts: 'SPARE PARTS',
+  tools: 'TOOLS',
+};
+
+const SUPPLY_DESCS = {
+  food: 'Rations — burned every mission day',
+  power: 'Battery cells — drained every phase',
+  spare_parts: 'Vehicle repairs — used on region travel',
+  tools: 'Field equipment — consumed by lab work',
+};
+
+// ─── single resource allocation row (tokens OR supplies via `kind`) ──────────
+function AllocRow({ type, kind = 'token', value, ringColor, onInc, onDec, maxVal, spent, total }) {
   const canDec = value > 0;
   const canInc = value < maxVal && spent < total;
+  const icons = kind === 'supply' ? SUPPLY_ICONS : RESOURCE_ICONS;
+  const labels = kind === 'supply' ? SUPPLY_LABELS : RESOURCE_LABELS;
+  const descs = kind === 'supply' ? SUPPLY_DESCS : RESOURCE_DESCS;
 
   return (
     <div style={styles.allocRow}>
       <div style={{ ...styles.allocIcon, color: ringColor }}>
-        {RESOURCE_ICONS[type]}
+        {icons[type]}
       </div>
       <div style={styles.allocInfo}>
-        <div style={styles.allocLabel}>{RESOURCE_LABELS[type]}</div>
-        <div style={styles.allocDesc}>{RESOURCE_DESCS[type]}</div>
+        <div style={styles.allocLabel}>{labels[type]}</div>
+        <div style={styles.allocDesc}>{descs[type]}</div>
       </div>
 
       {/* meter */}
@@ -93,7 +136,7 @@ function AllocRow({ type, value, ringColor, onInc, onDec, maxVal, spent, total }
           }}
           onClick={canDec ? onDec : undefined}
           disabled={!canDec}
-          aria-label={`Decrease ${RESOURCE_LABELS[type]}`}
+          aria-label={`Decrease ${labels[type]}`}
         >
           −
         </button>
@@ -108,7 +151,7 @@ function AllocRow({ type, value, ringColor, onInc, onDec, maxVal, spent, total }
           }}
           onClick={canInc ? onInc : undefined}
           disabled={!canInc}
-          aria-label={`Increase ${RESOURCE_LABELS[type]}`}
+          aria-label={`Increase ${labels[type]}`}
         >
           +
         </button>
@@ -121,22 +164,35 @@ function AllocRow({ type, value, ringColor, onInc, onDec, maxVal, spent, total }
 /**
  * BudgetPlanning — post-role-selection instrument panel.
  *
+ * R18b: two loadouts on one screen — investigation TOKENS (skill) and
+ * survival SUPPLIES (Oregon Trail teeth: food/power/spare parts/tools that
+ * drain as the mission advances). Both must be fully allocated to deploy.
+ *
  * Props:
  *   selectedRole   {Object}   the chosen role from roles.json
- *   rolesData      {Object}   full roles.json (for budget_total, budget_per_type_max)
- *   onConfirm      {Function} called with the final resources object { sampling_kits, ... }
+ *   rolesData      {Object}   full roles.json (budget + supply budget config)
+ *   onConfirm      {Function} called with (resources, supplies)
  *   onBack         {Function} go back to role select
  */
 export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onBack }) {
   const TOTAL  = rolesData?.budget_total ?? 10;
   const MAXPER = rolesData?.budget_per_type_max ?? 4;
+  const SUPPLY_TOTAL = rolesData?.supply_budget ?? 12;
+  const SUPPLY_MAXPER = rolesData?.supply_per_type_max ?? 5;
 
   const [resources, setResources] = useState(() => ({
     ...selectedRole.starting_resources,
   }));
+  const [supplies, setSupplies] = useState(() => ({
+    food: 4, power: 4, spare_parts: 4, tools: 4,
+    ...(selectedRole.starting_supplies || {}),
+  }));
 
   const spent = Object.values(resources).reduce((a, b) => a + b, 0);
   const remaining = TOTAL - spent;
+  const supplySpent = Object.values(supplies).reduce((a, b) => a + b, 0);
+  const supplyRemaining = SUPPLY_TOTAL - supplySpent;
+  const allAllocated = remaining === 0 && supplyRemaining === 0;
 
   const adjust = (type, delta) => {
     setResources((prev) => {
@@ -148,11 +204,21 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
     });
   };
 
+  const adjustSupply = (type, delta) => {
+    setSupplies((prev) => {
+      const next = (prev[type] ?? 0) + delta;
+      if (next < 0 || next > SUPPLY_MAXPER) return prev;
+      const newSpent = Object.values(prev).reduce((a, b) => a + b, 0) + delta;
+      if (newSpent < 0 || newSpent > SUPPLY_TOTAL) return prev;
+      return { ...prev, [type]: next };
+    });
+  };
+
   // keyboard shortcuts: arrow keys for first focused row — simplified to no-op
   // (full keyboard nav would need focus tracking; layout is simple enough with mouse)
 
   const handleConfirm = () => {
-    if (remaining === 0) onConfirm(resources);
+    if (allAllocated) onConfirm(resources, supplies);
   };
 
   const ringColor = selectedRole.ring_color ?? CYAN;
@@ -222,7 +288,7 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
           {/* Default pose gestures right — toward the allocation panel. */}
           <div style={styles.blippyAnchor}>
             <Blippy
-              text="Spend every point with + and −, then hit DEPLOY MISSION. Your loadout is your lifeline down there."
+              text="Tokens are your skills — supplies keep you alive out there. Spend every point, then hit DEPLOY MISSION."
             />
           </div>
         </div>
@@ -273,6 +339,45 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
                   />
                 </div>
               ))}
+
+              {/* ── R18b SUPPLY LOADOUT — survival supplies ── */}
+              <div style={styles.supplyHeader}>
+                <div style={styles.supplyHeaderLabel}>SUPPLY LOADOUT — SURVIVAL</div>
+                <div style={styles.supplyHeaderRight}>
+                  <span style={{ color: TEXT_SOFT, fontSize: 9, fontFamily: '"Orbitron", monospace', letterSpacing: '0.12em' }}>REMAINING&nbsp;</span>
+                  <span style={{
+                    fontFamily: '"Orbitron", monospace',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: supplyRemaining === 0 ? CYAN : supplyRemaining <= 2 ? AMBER : '#FFFFFF',
+                  }}>
+                    {String(supplyRemaining).padStart(2, '0')} / {String(SUPPLY_TOTAL).padStart(2, '0')}
+                  </span>
+                </div>
+              </div>
+              {Object.keys(supplies).map((type, idx) => (
+                <div
+                  key={type}
+                  className="bp-alloc-row"
+                  style={{
+                    opacity: 0,
+                    animation: 'bp-row-flicker 200ms ease forwards',
+                    animationDelay: `${800 + idx * 120}ms`,
+                  }}
+                >
+                  <AllocRow
+                    type={type}
+                    kind="supply"
+                    value={supplies[type] ?? 0}
+                    ringColor={AMBER}
+                    spent={supplySpent}
+                    total={SUPPLY_TOTAL}
+                    maxVal={SUPPLY_MAXPER}
+                    onInc={() => adjustSupply(type, 1)}
+                    onDec={() => adjustSupply(type, -1)}
+                  />
+                </div>
+              ))}
             </div>
 
             {/* budget bar */}
@@ -298,9 +403,13 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
               </div>
             </div>
 
-            {remaining > 0 && (
+            {(remaining > 0 || supplyRemaining > 0) && (
               <div style={styles.warningMsg}>
-                ⚠ &nbsp; {remaining} POINT{remaining !== 1 ? 'S' : ''} UNALLOCATED — ASSIGN ALL RESOURCES BEFORE LAUNCH
+                ⚠ &nbsp;
+                {remaining > 0 ? `${remaining} TOKEN POINT${remaining !== 1 ? 'S' : ''}` : ''}
+                {remaining > 0 && supplyRemaining > 0 ? ' + ' : ''}
+                {supplyRemaining > 0 ? `${supplyRemaining} SUPPLY POINT${supplyRemaining !== 1 ? 'S' : ''}` : ''}
+                {' '}UNALLOCATED — ASSIGN EVERYTHING BEFORE LAUNCH
               </div>
             )}
           </div>
@@ -313,11 +422,11 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
             <button
               style={{
                 ...styles.deployBtn,
-                opacity: remaining === 0 ? 1 : 0.35,
-                cursor: remaining === 0 ? 'pointer' : 'not-allowed',
-                boxShadow: remaining === 0 ? `0 0 28px ${CYAN}70, 0 0 60px ${CYAN}30` : 'none',
+                opacity: allAllocated ? 1 : 0.35,
+                cursor: allAllocated ? 'pointer' : 'not-allowed',
+                boxShadow: allAllocated ? `0 0 28px ${CYAN}70, 0 0 60px ${CYAN}30` : 'none',
               }}
-              disabled={remaining !== 0}
+              disabled={!allAllocated}
               onClick={handleConfirm}
             >
               ◉ &nbsp; DEPLOY MISSION
@@ -510,6 +619,29 @@ const styles = {
     flexDirection: 'column',
     gap: 10,
     flex: 1,
+    overflowY: 'auto', // two loadouts can exceed short windows — scroll inside the panel
+    paddingRight: 4,
+  },
+
+  // R18b supply loadout divider header
+  supplyHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    borderTop: '1px solid rgba(255,183,3,0.18)',
+    paddingTop: 12,
+    marginTop: 6,
+  },
+  supplyHeaderLabel: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 9,
+    letterSpacing: '0.25em',
+    color: AMBER,
+    opacity: 0.85,
+  },
+  supplyHeaderRight: {
+    display: 'flex',
+    alignItems: 'baseline',
   },
 
   allocRow: {

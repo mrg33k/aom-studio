@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StarCanvas from './StarCanvas.jsx';
 import Blippy from './Blippy.jsx';
+import { SUPPLY_DEFS, SUPPLY_MAX } from './PhaseManager.js';
 
 // ─── prefers-reduced-motion ───────────────────────────────────────────────────
 const REDUCED = typeof window !== 'undefined' &&
@@ -9,43 +10,58 @@ const REDUCED = typeof window !== 'undefined' &&
 /**
  * HubScreen — Between-phase action hub.
  *
- * R17: Same-world visual pass — starfield + scanlines replace the photo bg,
- * Cleo hub card art wired in (public/mission-water/hub/), real Blippy replaces
- * the SVG placeholder, MISSION MAP is now a real overlay built on the
- * holographic globe art with correct region states.
+ * R18b: the Oregon Trail checkpoint. Field Interview / Lab Analysis actually
+ * spend tokens (and tools) now, the pace toggle drives real drain + bonus,
+ * and the new SUPPLY STORE converts Mission Credits into supplies. The old
+ * kit + manifest cards collapsed into the persistent MANIFEST tab.
  *
  * Props:
  *   phaseContext   {string}   Summary of where the cadet is
- *   currentResources {Object|null} investigationResources from game state
+ *   currentResources {Object|null} investigation tokens from run state
+ *   supplies       {Object|null} survival supplies from run state
+ *   credits        {number}   Mission Credits balance
+ *   pace           {string}   'thorough' | 'efficient' (lives in run state)
  *   regionsCompleted {number} how many investigation regions are done
  *   regionsTotal   {number}  total investigation regions (3 for ch1)
  *   completedPhaseIds {string[]} list of completed phase IDs for map display
  *   nextPhaseId    {string|null} the phase the cadet is heading to (drives map "current")
  *   activeChapter  {number}  current chapter number (1, 2, 3)
  *   onContinue     {function} advances to the next phase
- *   onOpenKit      {function} opens the Mission Kit overlay in HUD
+ *   onSpend        {function} spend on a hub action ('field_interview'|'lab_analysis')
+ *   onBuySupply    {function} buy one unit of a supply from the store
+ *   onTogglePace   {function} flip thorough/efficient
+ *   onOpenManifest {function} open the persistent MANIFEST drawer
  *   onJumpToPhase  {function} jumps to a chapter's intro phase
  */
 export default function HubScreen({
   phaseContext,
   currentResources,
+  supplies = null,
+  credits = 0,
+  pace = 'thorough',
   regionsCompleted,
   regionsTotal,
   completedPhaseIds,
   nextPhaseId = null,
   activeChapter = 1,
   onContinue,
-  onOpenKit,
+  onSpend,
+  onBuySupply,
+  onTogglePace,
+  onOpenManifest,
   onJumpToPhase,
 }) {
-  const [pace, setPace] = useState('thorough'); // 'thorough' | 'efficient'
-  // DEV-ONLY deep-link for the /screens board: ?hubview=map opens the map overlay
+  // DEV-ONLY deep-link for the /screens board: ?hubview=map|store opens overlays
   const [showMap, setShowMap] = useState(() =>
     import.meta.env.DEV &&
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('hubview') === 'map'
   );
-  const [showManifest, setShowManifest] = useState(false); // R16: MISSION MANIFEST overlay
+  const [showStore, setShowStore] = useState(() =>
+    import.meta.env.DEV &&
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('hubview') === 'store'
+  );
   const [fieldInterviewResult, setFieldInterviewResult] = useState(null);
   const [labAnalysisResult, setLabAnalysisResult] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
@@ -65,12 +81,26 @@ export default function HubScreen({
     return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
-  // Resource token counts
+  // Resource token + supply counts
   const communityTokens = currentResources?.community_partnerships ?? 0;
   const samplingTokens = currentResources?.sampling_kits ?? 0;
+  const toolsSupply = supplies?.tools ?? 0;
+  const lowSupplies = supplies
+    ? (supplies.food ?? 1) <= 2 || (supplies.power ?? 1) <= 2
+    : false;
+  const emptySupplies = supplies
+    ? (supplies.food ?? 1) <= 0 || (supplies.power ?? 1) <= 0
+    : false;
 
   // Blippy guiding line — tells the cadet what to DO here, staged by progress
+  // and by how the supplies are holding up.
   const blippyText = (() => {
+    if (emptySupplies) {
+      return 'We are running on empty, Cadet — hit the SUPPLY STORE before you push on, or the next leg costs us.';
+    }
+    if (lowSupplies) {
+      return 'Supplies are getting thin. Spend some credits at the SUPPLY STORE, then CONTINUE.';
+    }
     const ratio = regionsTotal > 0 ? regionsCompleted / regionsTotal : 0;
     if (ratio >= 0.66) {
       return 'Final region ahead — use the tokens you have left, then CONTINUE to face the Council.';
@@ -83,15 +113,15 @@ export default function HubScreen({
 
   const spendFieldInterview = () => {
     if (communityTokens <= 0) return;
-    // We don't actually decrement here — MissionWaterGame would need to track this.
-    // For now, just show the inline result. The visual feedback is the key experience.
+    if (typeof onSpend === 'function') onSpend('field_interview');
     setFieldInterviewResult(
       "A local rancher stops you. \"We used to rely on that aquifer for everything. Now we drill twice as deep and get half as much.\""
     );
   };
 
   const spendLabAnalysis = () => {
-    if (samplingTokens <= 0) return;
+    if (samplingTokens <= 0 || toolsSupply <= 0) return;
+    if (typeof onSpend === 'function') onSpend('lab_analysis');
     setLabAnalysisResult(
       "Water sample analysis: PFAS contamination detected at elevated levels. This data strengthens your case for the council."
     );
@@ -100,12 +130,11 @@ export default function HubScreen({
   // Cleo hub card art (public/mission-water/hub/) — committed 63fa3ae7, wired R17
   const cardArt = {
     continue:        '/mission-water/hub/hub_continue.jpg',
-    kit:             '/mission-water/hub/hub_review_kit.jpg',
     map:             '/mission-water/hub/hub_mission_map.jpg',
     pace:            '/mission-water/hub/hub_change_pace.jpg',
     field_interview: '/mission-water/hub/hub_field_interview.jpg',
     lab_analysis:    '/mission-water/hub/hub_lab_analysis.jpg',
-    manifest:        null, // full-width text card, no art
+    store:           '/mission-water/hub/hub_supply_store.jpg',
   };
 
   const hubOptions = [
@@ -113,20 +142,18 @@ export default function HubScreen({
       id: 'continue',
       icon: '▶',
       title: 'CONTINUE INVESTIGATION',
-      description: 'Advance to the next investigation site. No resources spent.',
+      description: 'Advance to the next site. Travel burns food, power — and spare parts on region hops.',
       free: true,
       primary: true,
       action: onContinue,
     },
     {
-      id: 'kit',
-      icon: '◈',
-      title: 'REVIEW MISSION KIT',
-      description: 'Check your remaining resources and earned discoveries.',
+      id: 'store',
+      icon: '⊞',
+      title: 'SUPPLY STORE',
+      description: `${credits} CR available. Restock food, power, spare parts and tools between legs.`,
       free: true,
-      action: () => {
-        if (typeof onOpenKit === 'function') onOpenKit();
-      },
+      action: () => setShowStore(true),
     },
     {
       id: 'map',
@@ -142,10 +169,10 @@ export default function HubScreen({
       title: 'CHANGE INVESTIGATION PACE',
       description:
         pace === 'thorough'
-          ? 'THOROUGH — Deep analysis. Currently active.'
-          : 'EFFICIENT — Fast scan. Currently active.',
+          ? 'THOROUGH — deep analysis: +5 CR per region, but +1 extra food at each site analysis.'
+          : 'EFFICIENT — fast scan: normal rations, no region bonus.',
       free: true,
-      action: () => setPace((p) => (p === 'thorough' ? 'efficient' : 'thorough')),
+      action: () => { if (typeof onTogglePace === 'function') onTogglePace(); },
     },
     {
       id: 'field_interview',
@@ -165,24 +192,17 @@ export default function HubScreen({
       id: 'lab_analysis',
       icon: '⬡',
       title: 'LAB ANALYSIS',
-      description: samplingTokens > 0
-        ? `Spend 1 sampling kit to run a water quality analysis. (${samplingTokens} remaining)`
-        : 'No sampling kits remaining.',
+      description: samplingTokens > 0 && toolsSupply > 0
+        ? `Spend 1 sampling kit + 1 tools to run a water quality analysis. (${samplingTokens} kit${samplingTokens === 1 ? '' : 's'}, ${toolsSupply} tools left)`
+        : samplingTokens <= 0
+          ? 'No sampling kits remaining.'
+          : 'No tools left — restock at the Supply Store.',
       free: false,
       tokenType: 'sampling_kits',
       tokenCost: 1,
-      tokenAvail: samplingTokens,
+      tokenAvail: Math.min(samplingTokens, toolsSupply),
       action: spendLabAnalysis,
       result: labAnalysisResult,
-    },
-    {
-      id: 'manifest',
-      icon: '◫',
-      title: 'MISSION MANIFEST',
-      description: 'Chapter progress, badge inventory, mission stats, and chapter navigation.',
-      free: true,
-      fullWidth: true,
-      action: () => setShowManifest(true),
     },
   ];
 
@@ -389,7 +409,7 @@ export default function HubScreen({
 
         {/* Blippy — in flow under the card grid; floats lower-left only when
             the centered frame has free margin (≥1420px) */}
-        {!showManifest && !showMap && (
+        {!showStore && !showMap && (
           <Blippy visible={blippyReady} dock={1420} text={blippyText} />
         )}
       </div>
@@ -403,16 +423,13 @@ export default function HubScreen({
         />
       )}
 
-      {/* ── MISSION MANIFEST overlay (R16) ── */}
-      {showManifest && (
-        <MissionManifest
-          activeChapter={activeChapter}
-          completedPhaseIds={completedPhaseIds || []}
-          regionsCompleted={regionsCompleted}
-          regionsTotal={regionsTotal}
-          currentResources={currentResources}
-          onJumpToPhase={onJumpToPhase}
-          onClose={() => setShowManifest(false)}
+      {/* ── SUPPLY STORE overlay (R18b — credits → supplies) ── */}
+      {showStore && (
+        <SupplyStore
+          supplies={supplies}
+          credits={credits}
+          onBuySupply={onBuySupply}
+          onClose={() => setShowStore(false)}
         />
       )}
 
@@ -557,308 +574,102 @@ function MissionMap({ completedPhaseIds, nextPhaseId, onClose }) {
   );
 }
 
-// ─── MissionManifest overlay ──────────────────────────────────────────────────
+// ─── SupplyStore overlay (R18b) ───────────────────────────────────────────────
+//
+// Mission Credits → survival supplies. Centered instrument panel, one row per
+// supply with a meter, the unit price, and a BUY control. Tokens are NOT for
+// sale — skill is set at deployment; this store only keeps the cadet alive.
 
-const CHAPTER_DATA = [
-  {
-    n: 1,
-    title: 'Earth Is Running Out',
-    subtitle: 'Water crisis investigation across 3 global sites',
-    startPhase: 'ch1_intro',
-    badgeCount: 3,
-    milestones: ['Phoenix analyzed', 'Mumbai analyzed', 'São Paulo analyzed', 'Council briefed'],
-  },
-  {
-    n: 2,
-    title: 'The Journey to the Moon',
-    subtitle: 'Shuttle mission — charting a path to lunar water',
-    startPhase: 'ch2_intro',
-    badgeCount: 4,
-    milestones: ['Light Side traversal', 'Terminator crossing', 'Far Dark navigation', 'Water Ice discovery'],
-  },
-  {
-    n: 3,
-    title: 'The Moon Holds the Answer',
-    subtitle: 'Lunar base — extraction and settlement',
-    startPhase: null, // locked
-    badgeCount: 0,
-    milestones: ['Lunar landing', 'Ice extraction', 'Base established', 'Mission complete'],
-  },
-];
-
-function MissionManifest({
-  activeChapter,
-  completedPhaseIds,
-  regionsCompleted,
-  regionsTotal,
-  currentResources,
-  onJumpToPhase,
-  onClose,
-}) {
+function SupplyStore({ supplies, credits, onBuySupply, onClose }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 20);
     return () => clearTimeout(t);
   }, []);
 
-  // Determine chapter states
-  const getChapterState = (n) => {
-    if (n < activeChapter) return 'done';
-    if (n === activeChapter) return 'active';
-    if (n === activeChapter + 1) return 'available';
-    return 'locked';
-  };
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  const arriveIds = ['ch1_phoenix_arrive', 'ch1_mumbai_arrive', 'ch1_sao_paulo_arrive'];
-  const completedArrive = arriveIds.filter(id => completedPhaseIds.includes(id)).length;
-
-  // Get badge count earned in chapter 1 based on completed arrive phases
-  const ch1BadgesEarned = completedArrive; // 1 badge per region investigated
-
-  const resources = currentResources || {};
-  const communityTokens = resources.community_partnerships ?? 0;
-  const samplingKits = resources.sampling_kits ?? 0;
-  const dataAccess = resources.data_access ?? 0;
+  const s = supplies || {};
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 300,
-        display: 'flex',
-        alignItems: 'stretch',
-        justifyContent: 'flex-end',
-      }}
+      style={styles.mapOverlayRoot}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      {/* Backdrop */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'rgba(7,11,20,0.7)',
-        backdropFilter: 'blur(4px)',
-      }} onClick={onClose} />
+      <div style={styles.mapBackdrop} onClick={onClose} />
 
-      {/* Panel — slides in from right */}
       <div style={{
-        position: 'relative',
-        zIndex: 1,
-        width: 'min(480px, 95vw)',
-        height: '100%',
-        overflowY: 'auto',
-        background: 'rgba(5,8,18,0.97)',
-        borderLeft: '1px solid rgba(0,229,204,0.25)',
-        boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
-        padding: '32px 28px 80px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 28,
+        ...styles.mapPanel,
+        width: 'min(560px, 96vw)',
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateX(0)' : 'translateX(40px)',
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.97)',
         transition: 'opacity 280ms ease, transform 280ms ease',
       }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div style={styles.mapHeaderRow}>
           <div>
-            <div style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 9, letterSpacing: '0.35em', color: CYAN, textTransform: 'uppercase', marginBottom: 8 }}>
-              MISSION MANIFEST
-            </div>
-            <div style={{ fontFamily: '"Orbitron", sans-serif', fontWeight: 700, fontSize: 20, color: '#FFFFFF', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              CHAPTER COMPASS
-            </div>
+            <div style={styles.mapKicker}>QUARTERMASTER — BETWEEN-LEG RESUPPLY</div>
+            <div style={styles.mapTitle}>SUPPLY STORE</div>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: '1px solid rgba(0,229,204,0.3)',
-              color: CYAN,
-              fontFamily: '"Orbitron", sans-serif',
-              fontSize: 12,
-              letterSpacing: '0.15em',
-              padding: '8px 14px',
-              borderRadius: 2,
-              cursor: 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            CLOSE
-          </button>
+          <button onClick={onClose} style={styles.mapCloseBtn}>CLOSE</button>
         </div>
 
-        {/* Divider */}
-        <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(0,229,204,0.5), transparent)' }} />
+        {/* Credits readout */}
+        <div style={styles.storeCreditsRow}>
+          <span style={styles.storeCreditsLabel}>MISSION CREDITS</span>
+          <span style={styles.storeCreditsValue}>{credits} CR</span>
+        </div>
 
-        {/* Chapter rows */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 9, letterSpacing: '0.3em', color: 'rgba(200,216,240,0.5)', textTransform: 'uppercase', marginBottom: 4 }}>
-            CHAPTERS
-          </div>
-          {CHAPTER_DATA.map((ch) => {
-            const state = getChapterState(ch.n);
-            const isActive = state === 'active';
-            const isDone = state === 'done';
-            const isAvailable = state === 'available';
-            const isLocked = state === 'locked';
-            const badgesEarned = ch.n === 1 ? ch1BadgesEarned : (isDone ? ch.badgeCount : 0);
-            const progressPct = ch.n === 1
-              ? Math.round((regionsCompleted / Math.max(regionsTotal, 1)) * 100)
-              : isDone ? 100 : 0;
-
+        {/* Supply rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {SUPPLY_DEFS.map(({ key, label, price }) => {
+            const val = Math.max(0, Math.min(SUPPLY_MAX, s[key] ?? 0));
+            const full = val >= SUPPLY_MAX;
+            const canBuy = !full && credits >= price;
+            const valColor = val <= 0 ? '#FF4444' : val <= 2 ? AMBER : CYAN;
             return (
-              <div key={ch.n} style={{
-                border: `1px solid ${isActive ? 'rgba(0,229,204,0.5)' : isDone ? 'rgba(0,229,204,0.25)' : isAvailable ? 'rgba(255,183,3,0.35)' : 'rgba(255,255,255,0.08)'}`,
-                borderRadius: 4,
-                padding: '16px 18px',
-                background: isActive ? 'rgba(0,229,204,0.06)' : isDone ? 'rgba(0,229,204,0.03)' : isAvailable ? 'rgba(255,183,3,0.05)' : 'transparent',
-                opacity: isLocked ? 0.45 : 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-              }}>
-                {/* Chapter header */}
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                  <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 10, letterSpacing: '0.18em', color: AMBER, flexShrink: 0 }}>
-                    0{ch.n}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: '"Rajdhani", sans-serif', fontWeight: 700, fontSize: 15, color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.05em', lineHeight: 1.2 }}>
-                      {ch.title}
-                    </div>
-                    <div style={{ fontFamily: '"Rajdhani", sans-serif', fontSize: 12, color: 'rgba(200,216,240,0.55)', marginTop: 3 }}>
-                      {ch.subtitle}
-                    </div>
+              <div key={key} style={styles.storeRow}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                    <span style={styles.storeRowLabel}>{label}</span>
+                    <span style={{ ...styles.storeRowValue, color: valColor }}>
+                      {val}<span style={{ fontSize: 9, opacity: 0.5 }}>/{SUPPLY_MAX}</span>
+                    </span>
                   </div>
-                  <div style={{
-                    fontFamily: '"Orbitron", sans-serif',
-                    fontSize: 8,
-                    letterSpacing: '0.18em',
-                    color: isActive ? CYAN : isDone ? CYAN : isAvailable ? AMBER : 'rgba(255,255,255,0.3)',
-                    flexShrink: 0,
-                  }}>
-                    {isActive ? '— ACTIVE' : isDone ? '— REPLAY' : isAvailable ? '— START' : '— SOON'}
+                  <div style={styles.storeMeterTrack}>
+                    <div style={{
+                      height: '100%',
+                      width: `${(val / SUPPLY_MAX) * 100}%`,
+                      background: valColor,
+                      borderRadius: 2,
+                      boxShadow: val > 0 ? `0 0 6px ${valColor}80` : 'none',
+                      transition: 'width 250ms ease, background 250ms ease',
+                    }} />
                   </div>
                 </div>
-
-                {/* Progress bar (active chapter only) */}
-                {(isActive || isDone) && (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 8, letterSpacing: '0.2em', color: 'rgba(200,216,240,0.5)' }}>
-                        PROGRESS
-                      </span>
-                      <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 8, letterSpacing: '0.15em', color: CYAN }}>
-                        {progressPct}%
-                      </span>
-                    </div>
-                    <div style={{ height: 3, background: 'rgba(0,229,204,0.12)', borderRadius: 2 }}>
-                      <div style={{ height: '100%', width: `${progressPct}%`, background: CYAN, borderRadius: 2, boxShadow: `0 0 6px ${CYAN}`, transition: 'width 600ms ease' }} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Milestone list (active chapter) */}
-                {isActive && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                    {ch.milestones.map((ms, i) => {
-                      const done = ch.n === 1 ? i < regionsCompleted : false;
-                      return (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 10, color: done ? CYAN : 'rgba(200,216,240,0.25)', lineHeight: 1 }}>
-                            {done ? '✓' : '○'}
-                          </span>
-                          <span style={{ fontFamily: '"Rajdhani", sans-serif', fontSize: 13, color: done ? 'rgba(200,216,240,0.85)' : 'rgba(200,216,240,0.35)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            {ms}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Badge count */}
-                {ch.badgeCount > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 8, letterSpacing: '0.2em', color: 'rgba(200,216,240,0.4)' }}>BADGES</span>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      {Array.from({ length: ch.badgeCount }).map((_, i) => (
-                        <span key={i} style={{
-                          width: 18, height: 18, borderRadius: '50%',
-                          border: `1px solid ${i < badgesEarned ? AMBER : 'rgba(255,183,3,0.2)'}`,
-                          background: i < badgesEarned ? 'rgba(255,183,3,0.15)' : 'transparent',
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 8, color: i < badgesEarned ? AMBER : 'rgba(255,183,3,0.2)',
-                        }}>
-                          {i < badgesEarned ? '★' : ''}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Jump button */}
-                {!isLocked && typeof onJumpToPhase === 'function' && ch.startPhase && (
-                  <button
-                    onClick={() => { onJumpToPhase(ch.startPhase); onClose(); }}
-                    style={{
-                      alignSelf: 'flex-start',
-                      background: 'transparent',
-                      border: `1px solid ${isActive ? 'rgba(0,229,204,0.35)' : isAvailable ? 'rgba(255,183,3,0.45)' : 'rgba(0,229,204,0.25)'}`,
-                      color: isActive ? CYAN : AMBER,
-                      fontFamily: '"Orbitron", sans-serif',
-                      fontSize: 9,
-                      letterSpacing: '0.2em',
-                      padding: '7px 14px',
-                      borderRadius: 2,
-                      cursor: 'pointer',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    {isDone ? 'REPLAY CHAPTER' : isActive ? 'RESTART CHAPTER' : 'START CHAPTER'}
-                  </button>
-                )}
+                <div style={styles.storePrice}>{price} CR</div>
+                <button
+                  onClick={canBuy ? () => onBuySupply(key) : undefined}
+                  disabled={!canBuy}
+                  style={{
+                    ...styles.storeBuyBtn,
+                    opacity: canBuy ? 1 : 0.3,
+                    cursor: canBuy ? 'pointer' : 'not-allowed',
+                  }}
+                >
+                  {full ? 'FULL' : 'BUY +1'}
+                </button>
               </div>
             );
           })}
         </div>
 
-        {/* Divider */}
-        <div style={{ height: 1, background: 'linear-gradient(90deg, rgba(0,229,204,0.3), transparent)' }} />
-
-        {/* Resource inventory */}
-        <div>
-          <div style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 9, letterSpacing: '0.3em', color: 'rgba(200,216,240,0.5)', textTransform: 'uppercase', marginBottom: 14 }}>
-            FIELD INVENTORY
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[
-              { label: 'Community Partnerships', value: communityTokens, max: 5, icon: '◉', color: 'rgba(255,120,60,0.8)' },
-              { label: 'Sampling Kits', value: samplingKits, max: 5, icon: '⬡', color: 'rgba(0,180,255,0.8)' },
-              { label: 'Data Access Tokens', value: dataAccess, max: 5, icon: '◈', color: AMBER },
-            ].map((res) => (
-              <div key={res.label}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontFamily: '"Rajdhani", sans-serif', fontSize: 13, fontWeight: 600, color: 'rgba(200,216,240,0.7)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {res.icon} {res.label}
-                  </span>
-                  <span style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 10, color: res.color }}>
-                    {res.value}/{res.max}
-                  </span>
-                </div>
-                <div style={{ height: 4, background: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
-                  <div style={{ height: '100%', width: `${(res.value / res.max) * 100}%`, background: res.color, borderRadius: 2, transition: 'width 400ms ease' }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Conrad Foundation footer */}
-        <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid rgba(0,229,204,0.08)' }}>
-          <div style={{ fontFamily: '"Orbitron", sans-serif', fontSize: 8, letterSpacing: '0.15em', color: 'rgba(200,216,240,0.3)', lineHeight: 1.8, textTransform: 'uppercase' }}>
-            Built for Nancy Conrad.<br/>Conrad Foundation × Ahead of Market.
-          </div>
+        <div style={styles.storeFootnote}>
+          Credits come from completed regions and discoveries. Tokens are not for sale — skill is set at deployment.
         </div>
       </div>
     </div>
@@ -1309,6 +1120,89 @@ const styles = {
     letterSpacing: '0.2em',
     textTransform: 'uppercase',
     flexShrink: 0,
+  },
+
+  // ── Supply Store overlay (R18b) ────────────────────────────────────
+  storeCreditsRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    border: '1px solid rgba(255,183,3,0.3)',
+    borderRadius: 4,
+    padding: '10px 14px',
+    background: 'rgba(255,183,3,0.05)',
+  },
+  storeCreditsLabel: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 9,
+    letterSpacing: '0.25em',
+    color: 'rgba(200,216,240,0.6)',
+    textTransform: 'uppercase',
+  },
+  storeCreditsValue: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 20,
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    color: AMBER,
+    textShadow: '0 0 10px rgba(255,183,3,0.4)',
+  },
+  storeRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 16,
+    border: '1px solid rgba(0,229,204,0.15)',
+    borderRadius: 4,
+    padding: '12px 14px',
+    background: 'rgba(255,255,255,0.02)',
+  },
+  storeRowLabel: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 10,
+    letterSpacing: '0.18em',
+    color: TEXT_PRIMARY,
+    textTransform: 'uppercase',
+  },
+  storeRowValue: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 13,
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+  },
+  storeMeterTrack: {
+    height: 5,
+    background: 'rgba(255,255,255,0.06)',
+    borderRadius: 2,
+  },
+  storePrice: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.1em',
+    color: AMBER,
+    flexShrink: 0,
+    width: 48,
+    textAlign: 'right',
+  },
+  storeBuyBtn: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: '0.15em',
+    textTransform: 'uppercase',
+    color: CYAN,
+    background: 'transparent',
+    border: `1px solid rgba(0,229,204,0.45)`,
+    borderRadius: 3,
+    padding: '8px 12px',
+    flexShrink: 0,
+    transition: 'opacity 120ms ease',
+  },
+  storeFootnote: {
+    fontFamily: 'Rajdhani, sans-serif',
+    fontSize: 12,
+    color: 'rgba(200,216,240,0.45)',
+    lineHeight: 1.5,
   },
 
   // ── Pace toggle ────────────────────────────────────────────────────

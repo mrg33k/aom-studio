@@ -21,74 +21,25 @@ import Blippy from './Blippy.jsx';
  *   Council:    Framed award ceremony moment
  */
 
-// Cache-bust version: bump when the Ch1 badge/frame PNGs are re-processed so
-// browsers + CDN refetch instead of serving stale opaque (checkerboard) bytes.
-const ASSET_V = '?v=2';
-
-const BADGE_ART = {
-  // Chapter 1
-  groundwater_hydrology: '/mission-water/chapter-1/badges/badge_groundwater_hydrology.png' + ASSET_V,
-  environmental_chemistry: '/mission-water/chapter-1/badges/badge_environmental_chemistry.png' + ASSET_V,
-  climate_science: '/mission-water/chapter-1/badges/badge_climate_science.png' + ASSET_V,
-  water_security: '/mission-water/chapter-1/badges/badge_water_security.png' + ASSET_V,
-  mission_imperative: '/mission-water/chapter-1/badges/badge_mission_imperative.png' + ASSET_V,
-  pete_conrad_legacy: '/mission-water/chapter-1/badges/badge_pete_conrad_legacy.png' + ASSET_V,
-  // Chapter 2
-  badge_ch2_space_hydrology: '/mission-water/chapter-2/badges/badge_ch2_space_hydrology.png',
-  badge_ch2_life_support: '/mission-water/chapter-2/badges/badge_ch2_life_support.png',
-  badge_ch2_orbital_mechanics: '/mission-water/chapter-2/badges/badge_ch2_orbital_mechanics.png',
-  badge_ch2_lunar_water_theory: '/mission-water/chapter-2/badges/badge_ch2_lunar_water_theory.png',
-};
-
-const DISCOVERY_LABELS = {
-  // Chapter 1
-  groundwater_hydrology: 'GROUNDWATER HYDROLOGY',
-  environmental_chemistry: 'ENVIRONMENTAL CHEMISTRY',
-  climate_science: 'CLIMATE SCIENCE',
-  water_security: 'WATER SECURITY',
-  mission_imperative: 'MISSION IMPERATIVE',
-  pete_conrad_legacy: 'PETE CONRAD LEGACY',
-  social_impact: 'SOCIAL IMPACT',
-  public_health: 'PUBLIC HEALTH',
-  food_water_nexus: 'FOOD–WATER NEXUS',
-  lunar_water_connection: 'LUNAR WATER CONNECTION',
-  // Chapter 2
-  badge_ch2_space_hydrology: 'SPACE HYDROLOGY',
-  badge_ch2_life_support: 'LIFE SUPPORT SYSTEMS',
-  badge_ch2_orbital_mechanics: 'ORBITAL MECHANICS',
-  badge_ch2_lunar_water_theory: 'LUNAR WATER THEORY',
-};
-
-const BADGE_FRAME = '/mission-water/chapter-1/hud/hud_badge_frame.png' + ASSET_V;
+import { BADGE_ART, DISCOVERY_LABELS, BADGE_FRAME } from './badges.js';
+import { SUPPLY_DEFS } from './PhaseManager.js';
 
 /**
  * HUD also accepts:
  *   resources  {Object|null}  investigationResources from game state
+ *
+ * R18b: the Mission Kit overlay moved into the persistent ManifestDrawer
+ * (every screen). The HUD gained a compact SUPPLIES readout in the top bar —
+ * food/power/parts/tools at a glance, with a LOW SUPPLIES warning state.
  */
-/**
- * openKitRef — optional React ref; if provided, HUD wires openKitRef.current
- *   to a function that opens the Mission Kit overlay. Allows HubScreen to
- *   trigger the kit from outside the HUD component tree (R8).
- */
-export default function HUD({ phase, hud, onChoose, resources, playerName, openKitRef }) {
+export default function HUD({ phase, hud, onChoose, resources, playerName }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const [hoverIdx, setHoverIdx] = useState(-1);
-  const [kitOpen, setKitOpen] = useState(false);
   const btnsRef = useRef([]);
   const choices = (phase && phase.choices) || [];
 
   // Active resources: prefer hud-injected, fall back to prop
   const activeResources = (hud && hud.investigationResources) || resources || null;
-
-  // R8 — expose openKit to parent via ref (for HubScreen "Review Mission Kit" action)
-  useEffect(() => {
-    if (openKitRef) {
-      openKitRef.current = () => setKitOpen(true);
-    }
-    return () => {
-      if (openKitRef) openKitRef.current = null;
-    };
-  }, [openKitRef]);
 
   useEffect(() => {
     setFocusIdx(0);
@@ -101,11 +52,6 @@ export default function HUD({ phase, hud, onChoose, resources, playerName, openK
 
   useEffect(() => {
     const onKey = (e) => {
-      // Escape closes the kit overlay
-      if (e.key === 'Escape') {
-        if (kitOpen) { setKitOpen(false); return; }
-      }
-      if (kitOpen) return; // block choice nav when kit open
       if (choices.length === 0) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
         e.preventDefault();
@@ -131,7 +77,7 @@ export default function HUD({ phase, hud, onChoose, resources, playerName, openK
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [choices, focusIdx, onChoose, kitOpen]);
+  }, [choices, focusIdx, onChoose]);
 
   if (!phase) return null;
 
@@ -165,21 +111,13 @@ export default function HUD({ phase, hud, onChoose, resources, playerName, openK
         <MissionIdent chapter={phase.chapter} playerName={playerName} />
         <InstrumentRow hud={hud} chapter={phase.chapter} />
         <div style={styles.topBarRight}>
-          <BadgeRack ids={hud.discovery_ids || []} />
-          {activeResources && (
-            <KitButton onClick={() => setKitOpen(true)} />
+          {/* R18b — survival supplies at a glance (full detail in MANIFEST) */}
+          {hud.supplies && (
+            <SuppliesMini supplies={hud.supplies} weakened={!!hud.weakened} />
           )}
+          <BadgeRack ids={hud.discovery_ids || []} />
         </div>
       </div>
-
-      {/* ── MISSION KIT OVERLAY ─────────────────────────────────── */}
-      {kitOpen && activeResources && (
-        <MissionKit
-          resources={activeResources}
-          discoveryIds={hud.discovery_ids || []}
-          onClose={() => setKitOpen(false)}
-        />
-      )}
 
       {/* ── COUNCIL AWARD CEREMONY ──────────────────────────────── */}
       {isCouncil && (hud.discovery_ids || []).length > 0 && (
@@ -479,134 +417,41 @@ function FramedAwards({ ids }) {
   );
 }
 
-// ─── Kit button (top-right of HUD) ───────────────────────────────────────────
+// ─── SuppliesMini (R18b) — compact survival readout, top-right ───────────────
 
-function KitButton({ onClick }) {
-  return (
-    <button
-      style={styles.kitBtn}
-      onClick={onClick}
-      title="Mission Kit"
-      aria-label="Open mission kit overlay"
-    >
-      <KitIcon />
-      <span style={styles.kitBtnLabel}>KIT</span>
-    </button>
-  );
+function supplyMiniColor(v) {
+  if (v <= 0) return '#FF4444';
+  if (v <= 2) return AMBER;
+  return CYAN;
 }
 
-function KitIcon() {
+function SuppliesMini({ supplies, weakened }) {
   return (
-    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="7" width="18" height="14" rx="1" />
-      <path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" />
-      <line x1="12" y1="12" x2="12" y2="16" />
-      <line x1="10" y1="14" x2="14" y2="14" />
-    </svg>
-  );
-}
-
-// ─── Mission Kit overlay ──────────────────────────────────────────────────────
-
-const KIT_RESOURCE_DEFS = [
-  { key: 'sampling_kits',          label: 'SAMPLING KITS', color: '#00E5CC' },
-  { key: 'data_access',            label: 'DATA ACCESS',   color: '#1A90FF' },
-  { key: 'community_partnerships', label: 'PARTNERSHIPS',  color: '#FFB703' },
-  { key: 'media_coverage',         label: 'MEDIA REACH',   color: '#C877FF' },
-];
-const KIT_RES_MAX = 4;
-
-function MissionKit({ resources, discoveryIds, onClose }) {
-  const allBadgeIds = Object.keys(BADGE_ART);
-
-  return (
-    <div style={styles.kitOverlay}>
-      {/* Backdrop click closes */}
-      <div style={styles.kitBackdrop} onClick={onClose} />
-
-      <div style={styles.kitPanel}>
-        {/* Scanline texture */}
-        <div style={styles.kitScanlines} />
-
-        {/* Header */}
-        <div style={styles.kitHeader}>
-          <div style={styles.kitAccentLine} />
-          <div style={styles.kitTitle}>INVESTIGATION LOADOUT</div>
-          <div style={styles.kitSub}>MISSION KIT — RESOURCE STATUS</div>
-          <button style={styles.kitCloseBtn} onClick={onClose} aria-label="Close mission kit">
-            ✕
-          </button>
-        </div>
-
-        {/* Resource meters */}
-        <div style={styles.kitSection}>
-          <div style={styles.kitSectionLabel}>FIELD RESOURCES</div>
-          <div style={styles.kitResList}>
-            {KIT_RESOURCE_DEFS.map(({ key, label, color }) => {
-              const val = Math.max(0, Math.min(KIT_RES_MAX, (resources && resources[key]) ?? 0));
-              const isEmpty = val === 0;
-              return (
-                <div key={key} style={styles.kitResRow}>
-                  <div style={styles.kitResLabel}>{label}</div>
-                  <div style={styles.kitResPips}>
-                    {Array.from({ length: KIT_RES_MAX }, (_, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          ...styles.kitResPip,
-                          background: i < val ? color : 'rgba(255,255,255,0.08)',
-                          boxShadow: i < val ? `0 0 6px ${color}80` : 'none',
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div style={{
-                    ...styles.kitResVal,
-                    color: isEmpty ? '#FF4C4C' : color,
-                    textShadow: isEmpty ? '0 0 6px rgba(255,76,76,0.6)' : `0 0 6px ${color}80`,
-                  }}>
-                    {val}<span style={styles.kitResMax}>/{KIT_RES_MAX}</span>
-                  </div>
-                </div>
-              );
-            })}
+    <div style={{
+      ...styles.suppliesMini,
+      borderColor: weakened ? 'rgba(255,68,68,0.6)' : 'rgba(0,229,204,0.35)',
+      boxShadow: weakened
+        ? '0 0 14px rgba(255,68,68,0.25)'
+        : '0 0 10px rgba(0,229,204,0.1)',
+    }}>
+      <div style={styles.scanlineOverlay} />
+      {SUPPLY_DEFS.map(({ key, short }) => {
+        const val = Math.max(0, supplies[key] ?? 0);
+        const color = supplyMiniColor(val);
+        return (
+          <div key={key} style={styles.suppliesMiniCell}>
+            <div style={styles.suppliesMiniLabel}>{short}</div>
+            <div style={{
+              ...styles.suppliesMiniValue,
+              color,
+              textShadow: `0 0 6px ${color}90`,
+            }}>
+              {val}
+            </div>
           </div>
-        </div>
-
-        {/* Badge grid */}
-        <div style={styles.kitSection}>
-          <div style={styles.kitSectionLabel}>FIELD BADGES</div>
-          <div style={styles.kitBadgeGrid}>
-            {allBadgeIds.map((id) => {
-              const earned = discoveryIds.includes(id);
-              const label = DISCOVERY_LABELS[id] || id;
-              return (
-                <div
-                  key={id}
-                  style={{ ...styles.kitBadgeSlot, opacity: earned ? 1 : 0.22 }}
-                  title={label}
-                >
-                  <div style={{
-                    ...styles.kitBadgeRing,
-                    boxShadow: earned
-                      ? '0 0 12px rgba(255,183,3,0.5), inset 0 0 6px rgba(0,0,0,0.6)'
-                      : 'none',
-                  }}>
-                    <img
-                      src={BADGE_ART[id]}
-                      alt={label}
-                      style={styles.kitBadgeImg}
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                    />
-                  </div>
-                  <div style={styles.kitBadgeLabel}>{label}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+        );
+      })}
+      {weakened && <div style={styles.suppliesMiniWarn}>LOW</div>}
     </div>
   );
 }
@@ -1156,13 +1001,64 @@ const styles = {
     textTransform: 'uppercase',
   },
 
-  // ── top-right container (badge rack + kit button) ────
+  // ── top-right container (supplies mini + badge rack) ────
+  // paddingTop clears the global ◫ MANIFEST tab fixed at the viewport top-right.
   topBarRight: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
     gap: 8,
     flexShrink: 0,
+    paddingTop: 36,
+  },
+
+  // ── R18b supplies mini readout ────
+  suppliesMini: {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    padding: '6px 8px',
+    background: 'linear-gradient(135deg, rgba(10,22,40,0.92) 0%, rgba(7,14,28,0.92) 100%)',
+    border: '1px solid',
+    borderRadius: 0,
+    overflow: 'hidden',
+  },
+  suppliesMiniCell: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 2,
+    padding: '0 7px',
+    position: 'relative',
+    zIndex: 2,
+  },
+  suppliesMiniLabel: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 6,
+    fontWeight: 600,
+    letterSpacing: '0.18em',
+    color: 'rgba(200,216,240,0.6)',
+    textTransform: 'uppercase',
+  },
+  suppliesMiniValue: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 13,
+    fontWeight: 700,
+    lineHeight: 1,
+  },
+  suppliesMiniWarn: {
+    fontFamily: '"Orbitron", monospace',
+    fontSize: 7,
+    fontWeight: 700,
+    letterSpacing: '0.15em',
+    color: '#FF4444',
+    border: '1px solid rgba(255,68,68,0.5)',
+    borderRadius: 2,
+    padding: '2px 5px',
+    marginLeft: 4,
+    position: 'relative',
+    zIndex: 2,
   },
 
   // ── resource cost badge on choice buttons ────

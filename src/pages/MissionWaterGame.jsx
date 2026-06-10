@@ -9,11 +9,15 @@ import RoleSelect from './mission-water-game/engine/RoleSelect.jsx';
 import BudgetPlanning from './mission-water-game/engine/BudgetPlanning.jsx';
 import WelcomeScreen from './mission-water-game/engine/WelcomeScreen.jsx';
 import NameEntryScreen from './mission-water-game/engine/NameEntryScreen.jsx';
+import ManifestDrawer, { ManifestTab } from './mission-water-game/engine/ManifestDrawer.jsx';
 import {
   initRunState,
   getCurrentPhase,
   applyChoice,
   resolveHud,
+  applyPurchase,
+  spendHubAction,
+  setPace,
 } from './mission-water-game/engine/PhaseManager.js';
 
 // ─── Hub logic helpers ────────────────────────────────────────────────────────
@@ -106,8 +110,10 @@ export default function MissionWaterGame() {
   const [showHub, setShowHub] = useState(false);
   const [pendingChoiceId, setPendingChoiceId] = useState(null);
   const [hubNextPhaseId, setHubNextPhaseId] = useState(null);
-  // Ref callback so HubScreen can open the MissionKit inside HUD
-  const openKitRef = useRef(null);
+
+  // R18b — persistent MANIFEST drawer (supplies + credits + tokens + badges +
+  // chapters), reachable from the fixed tab on EVERY screen.
+  const [showManifest, setShowManifest] = useState(false);
 
   // DEV-ONLY: /screens jump hook. Reads ?screen= / ?phase= to bypass the gate
   // sequence so the Screen Board can deep-link any screen. No-op in production.
@@ -117,6 +123,8 @@ export default function MissionWaterGame() {
     const q = new URLSearchParams(window.location.search);
     const screen = q.get('screen');
     const phase = q.get('phase');
+    // ?manifest=1 — open the persistent MANIFEST drawer (composable with any screen)
+    if (q.get('manifest') === '1') setShowManifest(true);
     if (!screen && !phase) return;
 
     const devRole = rolesData?.roles?.[0] ?? { id: 'dev', name: 'Dev' };
@@ -132,8 +140,17 @@ export default function MissionWaterGame() {
       setHasStarted(true); setNameEntered(true); setPlayerName('Dev');
       setSelectedRole(devRole);
       setBudgetConfirmed(true);
-      // Give downstream screens real resources to render (HUD tokens, Hub cards).
+      // Give downstream screens real resources to render (HUD tokens, Hub cards,
+      // supplies + store credits for the R18b economy).
       setInvestigationResources(devRole.starting_resources ?? null);
+      const devState = {
+        ...initRunState(
+          phaseGraph,
+          devRole.starting_resources ?? null,
+          devRole.starting_supplies ?? null,
+        ),
+        credits: 60, // dev: enough to exercise the SUPPLY STORE
+      };
       if (screen === 'hub') {
         setShowHub(true);
         // Hub is a between-phase interstitial; give it a valid next-phase target
@@ -144,7 +161,9 @@ export default function MissionWaterGame() {
       }
       // Mirror the game's own onJumpToPhase shape so HUD/Canvas read valid state.
       if (phase && phaseGraph.phases[phase]) {
-        setRunState({ phase_id: phase, discoveries: [], history: [phase] });
+        setRunState({ ...devState, phase_id: phase, history: [phase] });
+      } else {
+        setRunState(devState);
       }
     }
     // screen === 'welcome' (or unrecognized) → leave gates false → Welcome shows.
@@ -242,20 +261,32 @@ export default function MissionWaterGame() {
     });
   };
 
-  // R8 — Called when player opens Mission Kit from hub
-  const onHubOpenKit = () => {
-    if (openKitRef.current) openKitRef.current();
+  // R18b — hub actions actually spend now (tokens + supplies via PhaseManager)
+  const onHubSpend = (action) => {
+    setRunState((prev) => spendHubAction(prev, action));
   };
 
-  // Jump to the intro phase of a chapter. Resets run state so discoveries
-  // restart — this is intentional: each chapter is a fresh run arc.
+  // R18b — SUPPLY STORE purchase (credits → supplies)
+  const onBuySupply = (supplyKey) => {
+    setRunState((prev) => applyPurchase(prev, supplyKey));
+  };
+
+  // R18b — investigation pace lives in runState (drives drain + region bonus)
+  const onTogglePace = () => {
+    setRunState((prev) => setPace(prev, prev.pace === 'thorough' ? 'efficient' : 'thorough'));
+  };
+
+  // Jump to the intro phase of a chapter. Discoveries/history restart (each
+  // chapter is a fresh run arc) but the survival economy carries over —
+  // supplies, credits, tokens and pace are continuous across chapters.
   const onJumpToPhase = (phaseId) => {
     if (!phaseGraph.phases[phaseId]) return; // guard against stale ids
-    setRunState({
+    setRunState((prev) => ({
+      ...prev,
       phase_id: phaseId,
       discoveries: [],
       history: [phaseId],
-    });
+    }));
     setShowHub(false); // Close hub if open when jumping
   };
 
@@ -298,14 +329,14 @@ export default function MissionWaterGame() {
         />
       )}
 
-      {/* R6 gate: budget planning */}
+      {/* R6 gate: budget planning (R18b: tokens + survival supplies) */}
       {hasStarted && nameEntered && selectedRole && !budgetConfirmed && (
         <BudgetPlanning
           selectedRole={selectedRole}
           rolesData={rolesData}
-          onConfirm={(resources) => {
+          onConfirm={(resources, supplies) => {
             setInvestigationResources(resources);
-            setRunState(initRunState(phaseGraph, resources));
+            setRunState(initRunState(phaseGraph, resources, supplies));
             setBudgetConfirmed(true);
           }}
           onBack={() => setSelectedRole(null)}
@@ -322,14 +353,20 @@ export default function MissionWaterGame() {
           return (
             <HubScreen
               phaseContext={hubContext}
-              currentResources={investigationResources}
+              currentResources={runState.investigationResources || investigationResources}
+              supplies={runState.supplies || null}
+              credits={runState.credits ?? 0}
+              pace={runState.pace || 'thorough'}
               regionsCompleted={regionsCompleted}
               regionsTotal={3}
               completedPhaseIds={runState.history || []}
               nextPhaseId={hubNextPhaseId}
               activeChapter={activeChapter}
               onContinue={onHubContinue}
-              onOpenKit={onHubOpenKit}
+              onSpend={onHubSpend}
+              onBuySupply={onBuySupply}
+              onTogglePace={onTogglePace}
+              onOpenManifest={() => setShowManifest(true)}
               onJumpToPhase={onJumpToPhase}
             />
           );
@@ -344,9 +381,8 @@ export default function MissionWaterGame() {
             phase={phase}
             hud={hud}
             onChoose={onChoose}
-            resources={investigationResources}
+            resources={runState.investigationResources || investigationResources}
             playerName={playerName}
-            openKitRef={openKitRef}
           />
           {/* R16 — Smooth fade transition overlay (replaces wipe) */}
           <div
@@ -361,6 +397,21 @@ export default function MissionWaterGame() {
             }}
           />
         </div>
+      )}
+
+      {/* ── R18b — persistent MANIFEST: tab + drawer on EVERY screen ────── */}
+      <ManifestTab runState={runState} onOpen={() => setShowManifest(true)} />
+      {showManifest && (
+        <ManifestDrawer
+          runState={runState}
+          activeChapter={activeChapter}
+          regionsCompleted={countRegionsCompleted(runState.history || [])}
+          regionsTotal={3}
+          canJump={budgetConfirmed}
+          onJumpToPhase={onJumpToPhase}
+          preFlight={!budgetConfirmed}
+          onClose={() => setShowManifest(false)}
+        />
       )}
     </div>
   );

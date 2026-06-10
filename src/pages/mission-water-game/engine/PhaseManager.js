@@ -14,32 +14,81 @@
  *     choices: [{ id, text, next_phase, discovery, tag? }]
  *   }
  *
- * Run state shape:
+ * Run state shape (R18b adds the survival economy):
  *   {
  *     phase_id: string,
  *     discoveries: string[],        // unique, ordered by acquisition
- *     history: string[]             // phase_ids visited, in order
+ *     history: string[],            // phase_ids visited, in order
+ *     investigationResources: {},   // skill tokens (sampling_kits, ...)
+ *     supplies: {},                 // survival supplies (food, power, spare_parts, tools)
+ *     credits: number,              // Mission Credits — earned by progress, spent in the store
+ *     pace: 'thorough'|'efficient'  // investigation pace — drives drain + bonus
  *   }
  */
+
+// ─── R18b supply economy definitions ─────────────────────────────────────────
+//
+// Oregon Trail teeth: supplies drain as the mission advances, credits are
+// earned by doing good investigation work, and the hub SUPPLY STORE converts
+// credits back into supplies. Tokens (investigationResources) stay the SKILL
+// currency — set at deployment, spent on hub actions and choice costs.
+
+export const SUPPLY_DEFS = [
+  { key: 'food',        label: 'FOOD',        price: 5, short: 'FOOD' },
+  { key: 'power',       label: 'POWER',       price: 5, short: 'PWR'  },
+  { key: 'spare_parts', label: 'SPARE PARTS', price: 8, short: 'PARTS' },
+  { key: 'tools',       label: 'TOOLS',       price: 8, short: 'TOOLS' },
+];
+
+export const SUPPLY_MAX = 10;
+
+export const CREDIT_RULES = {
+  region_complete: 20,   // first entry into a region's _findings phase
+  thorough_bonus: 5,     // extra per region when pace is thorough
+  discovery: 10,         // per new discovery badge
+};
+
+const DEFAULT_SUPPLIES = { food: 4, power: 4, spare_parts: 4, tools: 4 };
+
+function clampSupply(v) {
+  return Math.max(0, Math.min(SUPPLY_MAX, v));
+}
+
+/**
+ * True when survival supplies have run dry (food or power at 0).
+ * Soft consequence only — never a game over: region credits are halved and
+ * the HUD/Blippy warn the cadet to restock at the hub SUPPLY STORE.
+ */
+export function isWeakened(runState) {
+  const s = runState && runState.supplies;
+  if (!s) return false;
+  return (s.food ?? 1) <= 0 || (s.power ?? 1) <= 0;
+}
 
 /**
  * Build the starting run state for a phase graph.
  * @param {Object} graph - The parsed phases.json object.
- * @param {Object} [investigationResources] - Optional starting resources from budget planning.
+ * @param {Object} [investigationResources] - Optional starting tokens from budget planning.
+ * @param {Object} [supplies] - Optional starting supplies from the supply loadout.
  * @returns {Object} initial run state
  */
-export function initRunState(graph, investigationResources) {
+export function initRunState(graph, investigationResources, supplies) {
   if (!graph || !graph.start_phase || !graph.phases) {
     throw new Error('PhaseManager: graph missing start_phase or phases map');
   }
   if (!graph.phases[graph.start_phase]) {
     throw new Error(`PhaseManager: start_phase "${graph.start_phase}" not in phases map`);
   }
+  const startSupplies = { ...DEFAULT_SUPPLIES, ...(supplies || {}) };
+  Object.keys(startSupplies).forEach((k) => { startSupplies[k] = clampSupply(startSupplies[k]); });
   return {
     phase_id: graph.start_phase,
     discoveries: [],
     history: [graph.start_phase],
     investigationResources: investigationResources || null,
+    supplies: startSupplies,
+    credits: 0,
+    pace: 'thorough',
   };
 }
 
@@ -97,12 +146,106 @@ export function applyChoice(graph, runState, choiceId) {
     }
   }
 
+  // ── R18b survival economy ──────────────────────────────────────────────────
+  const pace = runState.pace || 'thorough';
+  const wasWeakened = isWeakened(runState);
+
+  // Supply drain: every advance eats food + power; thorough pace eats one
+  // EXTRA food at site-analysis (findings) steps — deep analysis takes longer.
+  // Traveling to a new region wears the vehicle (spare parts). Balance note:
+  // tuned so a fresh loadout reaches the first hub LOW but not empty — the
+  // store visit is a choice the game teaches, not a punishment at step one.
+  let nextSupplies = runState.supplies || { ...DEFAULT_SUPPLIES };
+  const foodDrain = (pace === 'thorough' && nextId.endsWith('_findings')) ? 2 : 1;
+  const travelDrain = nextId.endsWith('_arrive') ? 1 : 0;
+  nextSupplies = {
+    ...nextSupplies,
+    food: clampSupply((nextSupplies.food ?? 0) - foodDrain),
+    power: clampSupply((nextSupplies.power ?? 0) - 1),
+    spare_parts: clampSupply((nextSupplies.spare_parts ?? 0) - travelDrain),
+  };
+
+  // Credits earned: new discoveries + first completion of a region's findings.
+  let nextCredits = runState.credits ?? 0;
+  const newDiscoveryCount = nextDiscoveries.length - runState.discoveries.length;
+  if (newDiscoveryCount > 0) {
+    nextCredits += newDiscoveryCount * CREDIT_RULES.discovery;
+  }
+  if (nextId.endsWith('_findings') && !runState.history.includes(nextId)) {
+    let regionAward = CREDIT_RULES.region_complete;
+    if (pace === 'thorough') regionAward += CREDIT_RULES.thorough_bonus;
+    if (wasWeakened) regionAward = Math.floor(regionAward / 2); // running on empty halves the payout
+    nextCredits += regionAward;
+  }
+
   return {
+    ...runState,
     phase_id: nextId,
     discoveries: nextDiscoveries,
     history: [...runState.history, nextId],
     investigationResources: nextResources,
+    supplies: nextSupplies,
+    credits: nextCredits,
+    pace,
   };
+}
+
+/**
+ * Buy one unit of a supply from the hub SUPPLY STORE.
+ * Returns a new run state, or the SAME state if the purchase can't happen
+ * (not enough credits / supply already full / unknown key).
+ */
+export function applyPurchase(runState, supplyKey) {
+  const def = SUPPLY_DEFS.find((d) => d.key === supplyKey);
+  if (!def || !runState || !runState.supplies) return runState;
+  const current = runState.supplies[supplyKey] ?? 0;
+  const credits = runState.credits ?? 0;
+  if (credits < def.price || current >= SUPPLY_MAX) return runState;
+  return {
+    ...runState,
+    credits: credits - def.price,
+    supplies: { ...runState.supplies, [supplyKey]: clampSupply(current + 1) },
+  };
+}
+
+/**
+ * Spend resources on a hub action. Returns a new run state, or the SAME
+ * state if the cadet can't afford it.
+ *   'field_interview' — 1 community partnership token
+ *   'lab_analysis'    — 1 sampling kit token + 1 TOOLS supply
+ */
+export function spendHubAction(runState, action) {
+  if (!runState) return runState;
+  const tokens = runState.investigationResources || {};
+  const supplies = runState.supplies || {};
+  if (action === 'field_interview') {
+    if ((tokens.community_partnerships ?? 0) <= 0) return runState;
+    return {
+      ...runState,
+      investigationResources: {
+        ...tokens,
+        community_partnerships: tokens.community_partnerships - 1,
+      },
+    };
+  }
+  if (action === 'lab_analysis') {
+    if ((tokens.sampling_kits ?? 0) <= 0 || (supplies.tools ?? 0) <= 0) return runState;
+    return {
+      ...runState,
+      investigationResources: { ...tokens, sampling_kits: tokens.sampling_kits - 1 },
+      supplies: { ...supplies, tools: supplies.tools - 1 },
+    };
+  }
+  return runState;
+}
+
+/**
+ * Switch investigation pace ('thorough' | 'efficient').
+ * Thorough: +1 extra food drain per phase, +5 bonus credits per region.
+ */
+export function setPace(runState, pace) {
+  if (!runState || (pace !== 'thorough' && pace !== 'efficient')) return runState;
+  return { ...runState, pace };
 }
 
 /**
@@ -123,6 +266,9 @@ export function resolveHud(phase, runState) {
     discoveries: runState.discoveries.length,
     discovery_ids: runState.discoveries,
     investigationResources: runState.investigationResources || null,
+    supplies: runState.supplies || null,
+    credits: runState.credits ?? 0,
+    weakened: isWeakened(runState),
   };
 }
 
