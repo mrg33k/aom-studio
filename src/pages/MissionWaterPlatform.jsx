@@ -285,7 +285,7 @@ function SessionCalendar({ onRegister }) {
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <p className="font-body text-[13px] text-white leading-[1.3] mb-0.5 truncate">{s.title}</p>
+            <p title={s.title} className="font-body text-[13px] text-white leading-[1.3] mb-0.5 truncate">{s.title}</p>
             <p className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/35">{s.time}</p>
           </div>
 
@@ -981,7 +981,7 @@ export default function MissionWaterPlatform() {
           <motion.div className="max-w-[640px]" {...fadeUp()}>
             <Kicker className="mb-5">Ready when you are</Kicker>
             <h2 className="font-display-serif text-[36px] md:text-[56px] leading-[0.95] tracking-[-0.025em] text-[#071530] mb-6">
-              Conrad Foundation convenes.<br />
+              Classes begin.<br />
               <span className="text-[#E85D26]">AOM builds.</span>
             </h2>
             <p className="font-body text-[16px] text-[#071530]/55 leading-[1.65] mb-8 max-w-[480px]">
