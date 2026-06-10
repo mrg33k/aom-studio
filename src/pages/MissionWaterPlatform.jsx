@@ -604,54 +604,141 @@ function LivePanel({ onRegister }) {
   );
 }
 
-// ─── Archive Panel (full archive tab) ────────────────────────────────────────
-function ArchivePanel() {
-  if (ARCHIVE.length > 0) {
-    return (
-      <div className="w-full h-full overflow-y-auto p-6 md:p-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {ARCHIVE.map((v, i) => (
-            <a
-              key={i}
-              href={v.url || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group block rounded-xl overflow-hidden bg-white/[0.04] border border-white/10 hover:border-[#E85D26]/50 transition-colors"
-            >
-              <div className="aspect-video bg-[#0D2045] relative overflow-hidden">
-                {v.thumb
-                  ? <img src={v.thumb} alt={v.title} className="w-full h-full object-cover" />
-                  : <div className="absolute inset-0 flex items-center justify-center text-white/20 text-3xl">▷</div>}
-                <span className="absolute top-2 right-2 font-mono text-[8px] uppercase tracking-[0.15em] text-white/60 bg-black/40 px-2 py-1 rounded">
-                  {v.duration}
-                </span>
-              </div>
-              <div className="p-4">
-                <p className="font-display-serif text-[16px] leading-[1.2] text-white mb-1.5 group-hover:text-[#E85D26] transition-colors">{v.title}</p>
-                <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/35">{v.date}</p>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
-    );
-  }
+// ─── Courses Preview Panel ────────────────────────────────────────────────────
+// Shows Nancy (and any visitor) what the interactive course experience looks like.
+// Follows the Holistic Balance / Summer School card aesthetic adapted for
+// Conrad Foundation's Mission Water palette (navy + orange).
+const PREVIEW_COURSES = [
+  {
+    id: 'c01',
+    stage: 'Foundation',
+    number: '01',
+    title: 'Water Science Fundamentals',
+    intro: 'The starting point — how water moves, what it carries, and why every living system on Earth depends on it.',
+    accent: '#2A6E9E',
+    modules: [
+      { title: 'The Water Cycle', body: 'Evaporation, condensation, precipitation — tracking water as it moves across the planet' },
+      { title: 'Properties of Water', body: 'Why water is unique — polarity, surface tension, its unmatched dissolving power' },
+      { title: 'Aquifers & Water Tables', body: 'Underground storage systems and how they connect to your community\'s water supply' },
+      { title: 'Water Quality Basics', body: 'What makes water safe or unsafe — physical, chemical, and biological factors' },
+      { title: 'Measuring Water', body: 'Tools and field techniques scientists use to monitor water in real environments' },
+    ],
+  },
+  {
+    id: 'c02',
+    stage: 'Applied Science',
+    number: '02',
+    title: 'Clean Water Technologies',
+    intro: 'How engineers solve the water problems communities face — from filtration to desalination to real-time monitoring.',
+    accent: '#E85D26',
+    modules: [
+      { title: 'Filtration Systems', body: 'How sand, carbon, and membrane filters remove contaminants from water' },
+      { title: 'Biological Treatment', body: 'Using microorganisms to break down pollutants the natural way' },
+      { title: 'Chemical Treatment', body: 'Chlorination, pH control, and targeted interventions for safe water' },
+      { title: 'Desalination', body: 'Turning seawater into drinking water — the promise, the limits, the future' },
+      { title: 'Field Monitoring', body: 'Real-time sensors and remote systems for continuous water quality data' },
+    ],
+  },
+  {
+    id: 'c03',
+    stage: 'Systems Thinking',
+    number: '03',
+    title: 'Water as a Global Resource',
+    intro: 'Water security, agriculture, policy, and the choices that define the next 50 years — and the role students play in the solution.',
+    accent: '#3A7D4F',
+    modules: [
+      { title: 'Water Scarcity Today', body: 'Where the world is running dry — regional case studies and what\'s driving them' },
+      { title: 'Agriculture & Water', body: 'Farming uses 70% of the world\'s freshwater — how that changes with new approaches' },
+      { title: 'Industry & Pollution', body: 'Industrial water use, contamination pathways, and cleanup strategies' },
+      { title: 'Policy & Governance', body: 'Water rights, international agreements, and who makes the decisions' },
+      { title: 'Your Water Action Project', body: 'Student capstone — identify a local issue, propose a solution, present it' },
+    ],
+  },
+];
+
+function CoursesPreviewPanel() {
+  const [openId, setOpenId] = useState(null);
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
-      <div className="grid grid-cols-3 gap-3 mb-8 w-full max-w-[440px] opacity-40">
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="aspect-video rounded-lg border border-white/10 bg-white/[0.03] flex items-center justify-center">
-            <span className="text-white/20 text-lg">▷</span>
-          </div>
-        ))}
+    <div className="w-full h-full overflow-y-auto" style={{ background: '#F5F3EE' }}>
+      {/* Header */}
+      <div className="px-6 pt-5 pb-4" style={{ borderBottom: '1px solid rgba(7,21,48,0.08)' }}>
+        <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: '#E85D26', fontWeight: 700, marginBottom: 6 }}>
+          Course Preview
+        </p>
+        <h3 style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 'clamp(18px, 2.5vw, 26px)', fontWeight: 700, color: '#071530', lineHeight: 1.15, margin: '0 0 6px' }}>
+          What students experience inside.
+        </h3>
+        <p style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif', fontSize: 13, color: 'rgba(7,21,48,0.5)', lineHeight: 1.55, margin: 0, maxWidth: 520 }}>
+          Three science courses. Each broken into modules students work through at their own pace — with live sessions, the game, and mentors woven throughout.
+        </p>
       </div>
-      <Kicker className="mb-3">Archive</Kicker>
-      <h3 className="font-display-serif text-[24px] md:text-[32px] leading-[1.05] tracking-[-0.02em] text-white max-w-[500px] mb-3">
-        Every class, kept <span className="text-[#E85D26] italic font-display-italic">forever.</span>
-      </h3>
-      <p className="font-body text-[14px] text-white/50 leading-[1.6] max-w-[440px]">
-        Recordings appear here after each live session — a permanent library students, families, sponsors, and future cohorts can return to anytime.
+
+      {/* Course cards */}
+      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {PREVIEW_COURSES.map(course => {
+          const isOpen = openId === course.id;
+          return (
+            <article key={course.id} style={{ background: '#fff', border: '1px solid rgba(7,21,48,0.10)', borderRadius: 3, overflow: 'hidden' }}>
+              <div style={{ borderLeft: `4px solid ${course.accent}`, padding: '20px 24px' }}>
+                <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, letterSpacing: '0.3em', textTransform: 'uppercase', color: course.accent, fontWeight: 700, marginBottom: 8 }}>
+                  Stage {course.number} — {course.stage}
+                </p>
+                <h4 style={{ fontFamily: '"Playfair Display", Georgia, serif', fontSize: 'clamp(17px, 2vw, 21px)', fontWeight: 700, color: '#071530', lineHeight: 1.2, margin: '0 0 8px' }}>
+                  {course.title}
+                </h4>
+                <p style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif', fontSize: 13, color: 'rgba(7,21,48,0.52)', lineHeight: 1.6, margin: '0 0 16px', maxWidth: 480 }}>
+                  {course.intro}
+                </p>
+                <button
+                  onClick={() => setOpenId(isOpen ? null : course.id)}
+                  style={{
+                    fontFamily: '"JetBrains Mono", monospace',
+                    fontSize: 9,
+                    letterSpacing: '0.26em',
+                    textTransform: 'uppercase',
+                    fontWeight: 700,
+                    color: course.accent,
+                    background: 'transparent',
+                    border: `1.5px solid ${course.accent}`,
+                    padding: '8px 16px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {isOpen ? 'Hide modules' : `View ${course.modules.length} modules`}
+                  <span style={{ fontSize: 11 }}>{isOpen ? '↑' : '↓'}</span>
+                </button>
+              </div>
+
+              {isOpen && (
+                <div style={{ padding: '4px 24px 24px', background: '#FAFAF6' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: 10, paddingTop: 14 }}>
+                    {course.modules.map((mod, i) => (
+                      <div key={i} style={{ padding: '14px 16px', background: '#fff', border: '1px solid rgba(7,21,48,0.08)', borderRadius: 2 }}>
+                        <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 8, letterSpacing: '0.28em', textTransform: 'uppercase', color: course.accent, fontWeight: 700, marginBottom: 5 }}>
+                          Module {String(i + 1).padStart(2, '0')}
+                        </p>
+                        <p style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif', fontSize: 13, fontWeight: 600, color: '#071530', lineHeight: 1.3, marginBottom: 5 }}>
+                          {mod.title}
+                        </p>
+                        <p style={{ fontFamily: '"Space Grotesk", system-ui, sans-serif', fontSize: 12, color: 'rgba(7,21,48,0.5)', lineHeight: 1.55, margin: 0 }}>
+                          {mod.body}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+
+      <p style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'rgba(7,21,48,0.28)', textAlign: 'center', padding: '16px 16px 20px' }}>
+        Curriculum developed with Conrad Foundation and NCEE — adapts as the program grows.
       </p>
     </div>
   );
@@ -664,7 +751,7 @@ function Stage({ tab, setTab }) {
   const tabs = [
     { id: 'live', label: 'Watch Live', url: 'aheadofmarket.com/missionwaterlive' },
     { id: 'game', label: 'Play the Game', url: 'aheadofmarket.com/missionwater' },
-    { id: 'archive', label: 'Archive', url: 'aheadofmarket.com/missionwater/archive' },
+    { id: 'courses', label: 'Courses', url: 'aheadofmarket.com/missionwater/courses' },
   ];
   const active = tabs.find((t) => t.id === tab);
 
@@ -770,15 +857,15 @@ function Stage({ tab, setTab }) {
                 <LivePanel onRegister={setSignUpSession} />
               </div>
 
-              {/* Archive */}
-              <div className={tab === 'archive' ? 'block h-full' : 'hidden'}>
-                <ArchivePanel />
+              {/* Courses Preview */}
+              <div className={tab === 'courses' ? 'block h-full' : 'hidden'}>
+                <CoursesPreviewPanel />
               </div>
             </div>
           </motion.div>
 
           <p className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-[#071530]/35 mt-4 text-center">
-            The game grows — this window grows with it. Live classes + recordings stream in the same place.
+            The game grows — this window grows with it. Live classes, recordings, and courses all in one place.
           </p>
         </div>
       </section>
