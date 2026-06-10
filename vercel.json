@@ -424,8 +424,8 @@
       "destination": "/scope-higher-orbits-biz7tkhq9h.html"
     },
     {
-      "source": "/agreements/included-health",
-      "destination": "/agreements/included-health.html"
+      "source": "/agreements/:slug",
+      "destination": "/agreements/:slug.html"
     },
     {
       "source": "/praevideo",

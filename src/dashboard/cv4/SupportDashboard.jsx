@@ -348,7 +348,7 @@ function WishRow({ w, dim }) {
           </span>
         </div>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.4,
-          display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{w.message}</p>
+          display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{(w.message || '').replace(STAGED_RE, '').trim()}</p>
         {w.latest_response && (
           <div style={{ marginTop: 7, padding: '6px 9px', background: AMBER_SOFT, borderLeft: `2px solid ${AMBER}`, borderRadius: 3 }}>
             <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: AMBER }}>We replied</span>
@@ -659,7 +659,9 @@ function wishToItem(w) {
   const status = w.status === 'resolved' ? 'resolved' : w.status === 'needs_team' ? 'needs_you' : 'working'
   return {
     key: 'w' + w.id, kind: 'Request', who: w.name || w.email || 'Someone',
-    text: w.message || '', reply: w.latest_response?.body || null, status,
+    // strip the machine tag — resolved/fallback cards must never show raw [staged_draft:…]
+    text: (w.message || '').replace(STAGED_RE, '').trim(),
+    reply: w.latest_response?.body || null, status,
     date: w.created_at ? new Date(w.created_at).getTime() : 0, link: null,
     wish: w, // M13: lets the unified card render the press-send variant
   }
