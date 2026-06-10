@@ -29,6 +29,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { C } from '../lib/cv3Colors.js'
+import { FolderIcon, MissionIcon } from './lib/uiKit.jsx'
 import { authFetch } from '../lib/authFetch.js'
 import { supabase } from '../lib/supabase.js'
 import { useCornerAuth } from '../CornerContext.jsx'
@@ -422,7 +423,7 @@ function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent =
   // Show checkbox in place of type icon when hovered or selected.
   const showCheckbox = hovered || isSelected
 
-  const bgActive  = isSelected ? 'rgba(16,185,129,0.10)' : isActive ? 'rgba(16,185,129,0.06)' : 'transparent'
+  const bgActive  = isSelected || isActive ? C.accentBg : 'transparent'
   const borderL   = isSelected ? '2px solid ' + C.accent : isActive ? '2px solid ' + C.accent : '2px solid transparent'
 
   return (
@@ -463,13 +464,13 @@ function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent =
               height: 16,
               borderRadius: 2,
               flexShrink: 0,
-              border: '1px solid ' + (isSelected ? C.accent : 'rgba(255,255,255,0.30)'),
-              background: isSelected ? C.accent : 'rgba(51,65,85,0.25)',
+              border: '1px solid ' + (isSelected ? C.accent : C.border2),
+              background: isSelected ? C.accent : C.s1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 9,
-              color: '#000',
+              color: '#fff',
               cursor: 'pointer',
               transition: 'all 80ms ease',
             }}
@@ -478,16 +479,12 @@ function FileRow({ file, isActive, onClick, onContextMenu, onLongPress, indent =
           <div style={{
             width: 16,
             height: 16,
-            borderRadius: 2,
-            background: 'rgba(51,65,85,0.25)',
-            border: '1px solid ' + C.border,
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: 8,
-            color,
-          }}>{icon}</div>
+            color: C.muted,
+          }}><MissionIcon /></div>
         )}
 
         <span style={{
@@ -529,36 +526,28 @@ function FolderRow({ label, fileCount, isOpen, onClick }) {
         gap: 7,
         padding: '5px 12px',
         cursor: 'pointer',
-        borderLeft: isOpen ? '2px solid rgba(16,185,129,0.35)' : '2px solid transparent',
-        background: isOpen ? 'rgba(16,185,129,0.03)' : 'transparent',
+        borderLeft: isOpen ? '2px solid ' + C.accent : '2px solid transparent',
+        background: 'transparent',
         transition: 'background 120ms',
       }}
-      onMouseEnter={e => { e.currentTarget.style.background = isOpen ? 'rgba(16,185,129,0.05)' : 'rgba(30,41,59,0.4)' }}
-      onMouseLeave={e => { e.currentTarget.style.background = isOpen ? 'rgba(16,185,129,0.03)' : 'transparent' }}
+      onMouseEnter={e => { e.currentTarget.style.background = C.s1 }}
+      onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
     >
-      <div style={{
-        width: 16,
-        height: 16,
-        borderRadius: 2,
-        background: 'rgba(16,185,129,0.10)',
-        border: '1px solid rgba(16,185,129,0.25)',
-        flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 8,
-        color: C.accent,
-      }}>📁</div>
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        style={{ color: C.muted, flexShrink: 0, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.12s' }}>
+        <polyline points="9 6 15 12 9 18"/>
+      </svg>
+      <span style={{ color: C.muted, display: 'inline-flex', flexShrink: 0 }}><FolderIcon open={isOpen} /></span>
       <span style={{
         flex: 1, minWidth: 0,
         fontSize: 12,
         fontWeight: 500,
-        color: C.accent,
+        color: isOpen ? C.text : C.text2,
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         fontFamily: "'Hanken Grotesk', sans-serif",
       }}>{label}</span>
       <span style={{ fontSize: 10, color: C.muted, fontFamily: "'JetBrains Mono', monospace" }}>
-        {isOpen ? '▾' : '▸'} {fileCount}
+        {fileCount}
       </span>
     </div>
   )
