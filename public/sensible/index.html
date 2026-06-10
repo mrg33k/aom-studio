@@ -32,7 +32,9 @@
   img{max-width:100%;display:block}
 
   #intro{position:fixed;inset:0;z-index:999;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:introOut 1s cubic-bezier(.7,0,.3,1) 1.7s forwards}
-  #intro .imark{font-family:'Fraunces',serif;font-style:italic;font-size:54px;color:var(--olive-2);opacity:0;animation:nameIn .9s ease .15s forwards}
+  #intro .ilogo{width:min(340px,72vw);opacity:0;animation:nameIn .9s ease .15s forwards}
+  .navlogo{height:46px;width:auto;display:block}
+  .footlogo{height:54px;width:auto;display:block;margin-bottom:12px}
   #intro .iname{font-size:13px;letter-spacing:4px;text-transform:uppercase;color:var(--brown-soft);font-weight:600;opacity:0;animation:nameIn .9s ease .5s forwards}
   @keyframes nameIn{to{opacity:1}}
   @keyframes introOut{to{opacity:0;visibility:hidden}}
@@ -201,17 +203,37 @@
   .dh-toggle{display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:var(--olive-2);white-space:nowrap;flex-shrink:0}
   .dh-toggle .chev{transition:transform .4s;font-size:11px}
   .drawer.open .dh-toggle .chev{transform:rotate(180deg)}
-  .drawer-body{max-height:min(44vh,470px);overflow-y:auto;padding:6px clamp(18px,4vw,40px) 30px}
-  .dcard-intro{text-align:center;max-width:680px;margin:6px auto 24px}
-  .dcard-intro h3{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(22px,2.6vw,30px);color:var(--brown);line-height:1.14;margin-bottom:8px}
-  .dcard-intro p{font-size:14.5px;color:var(--brown-soft)}
-  .dcards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px}
-  .dcard{background:var(--cream);border:1px solid var(--line);padding:22px 20px}
-  .dcard .dn{font-family:'Fraunces',serif;font-style:italic;font-size:16px;color:var(--gold);margin-bottom:8px}
-  .dcard h4{font-family:'Fraunces',serif;font-weight:500;font-size:18px;color:var(--brown);margin-bottom:7px;line-height:1.18}
-  .dcard p{font-size:13.5px;line-height:1.55;color:var(--brown-soft)}
+  .drawer-body{max-height:min(74vh,720px);overflow-y:auto;padding:10px clamp(18px,4vw,40px) 36px}
+  .rc-intro{text-align:center;max-width:720px;margin:8px auto 26px}
+  .rc-intro .rce{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px}
+  .rc-intro h3{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(26px,3.4vw,42px);color:var(--brown);line-height:1.08;letter-spacing:-.3px}
+  .rc-intro h3 em{font-style:italic;color:var(--olive-2)}
+  /* grade chips */
+  .rc-grades{display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,30px);margin:0 auto 30px}
+  .rc-grade{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .rc-grade .g{width:clamp(70px,9vw,92px);height:clamp(70px,9vw,92px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:500;font-size:clamp(34px,4.6vw,46px)}
+  .rc-grade.today .g{background:#d9ceb4;color:var(--brown-soft);border:1px solid var(--line)}
+  .rc-grade.new .g{background:var(--olive-2);color:var(--cream)}
+  .rc-grade span{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--brown-soft);font-weight:700}
+  .rc-grade.new span{color:var(--olive-2)}
+  .rc-arrow{font-family:'Fraunces',serif;font-size:30px;color:var(--gold);margin-top:-18px}
+  /* grade sheet rows */
+  .rc-rows{max-width:900px;margin:0 auto 30px;display:grid;gap:10px}
+  .rc-row{display:grid;grid-template-columns:1.1fr 1.3fr 1.3fr;gap:clamp(14px,2.4vw,26px);align-items:start;background:var(--cream);border:1px solid var(--line);padding:18px 22px}
+  .rc-crit{font-family:'Fraunces',serif;font-weight:500;font-size:17px;color:var(--brown);line-height:1.2}
+  .rc-cell{display:flex;gap:9px;font-size:13.5px;line-height:1.5}
+  .rc-cell .mk{flex-shrink:0;font-weight:700;font-size:14px;line-height:1.4}
+  .rc-cell.today{color:var(--brown-soft)}.rc-cell.today .mk{color:#b06a4a}
+  .rc-cell.new{color:var(--brown)}.rc-cell.new .mk{color:var(--olive-2)}
+  .rc-colhead{display:grid;grid-template-columns:1.1fr 1.3fr 1.3fr;gap:clamp(14px,2.4vw,26px);max-width:900px;margin:0 auto 8px;padding:0 22px}
+  .rc-colhead span{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:700}
+  .rc-colhead .h-today{color:#b06a4a}.rc-colhead .h-new{color:var(--olive-2)}
   .drawer-cta{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
-  .drawer-cta .dctitle{font-family:'Fraunces',serif;font-size:19px;color:var(--brown)}
+  .drawer-cta .dctitle{font-family:'Fraunces',serif;font-style:italic;font-size:20px;color:var(--brown)}
+  @media(max-width:680px){
+    .rc-row{grid-template-columns:1fr;gap:8px}.rc-colhead{display:none}
+    .rc-crit{font-size:16px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:2px}
+  }
 
   /* REVEAL */
   .reveal-overlay{position:fixed;inset:0;z-index:800;background:rgba(40,42,28,.86);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:30px;opacity:0;transition:opacity .4s}
@@ -221,18 +243,26 @@
   .reveal-top .re-eye{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px}
   .reveal-top h2{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(26px,3.2vw,42px);color:var(--brown);line-height:1.08}
   .reveal-top p{font-size:15px;color:var(--brown-soft);margin:12px auto 0;max-width:560px}
-  .compare{display:grid;grid-template-columns:1fr 1.18fr;gap:22px;align-items:end;padding:14px clamp(20px,4vw,42px) 8px}
-  .cmp{display:flex;flex-direction:column;gap:10px}
+  .compare{display:grid;grid-template-columns:1fr 1.22fr;gap:clamp(16px,3vw,30px);align-items:end;padding:14px clamp(20px,4vw,46px) 8px}
+  .cmp{display:flex;flex-direction:column;gap:12px}
   .cmp-tag{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
   .cmp-old .cmp-tag{color:var(--brown-soft)}.cmp-new .cmp-tag{color:var(--olive-2)}
   .cmp-tag .tdot{width:7px;height:7px;border-radius:50%;background:currentColor}
-  .screen{border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#fff;position:relative}
-  .cmp-old .screen{height:230px;box-shadow:0 12px 30px rgba(60,50,37,.16)}
-  .cmp-new .screen{height:300px;box-shadow:0 24px 60px rgba(108,114,78,.4);border-color:var(--olive-soft)}
-  .cmp-old .screen img{width:100%}
-  .cmp-new .screen.scrollwrap img{width:100%;animation:scrollNew 16s linear infinite alternate}
-  @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 300px))}}
-  .screen .noimg{height:100%;display:flex;align-items:center;justify-content:center;color:var(--brown-soft);font-size:13px;text-align:center;padding:20px;background:repeating-linear-gradient(135deg,#fff,#fff 12px,#efe8d6 12px,#efe8d6 24px)}
+  /* browser-window frames */
+  .bframe{border-radius:11px;overflow:hidden;background:#fff;border:1px solid var(--line)}
+  .cmp-old .bframe{box-shadow:0 12px 30px rgba(60,50,37,.16);opacity:.9;filter:saturate(.86)}
+  .cmp-new .bframe{box-shadow:0 30px 68px rgba(108,114,78,.42);border-color:var(--olive-soft)}
+  .bbar{height:36px;display:flex;align-items:center;gap:7px;padding:0 14px;background:#ece5d5;border-bottom:1px solid var(--line)}
+  .bbar .bdot{width:10px;height:10px;border-radius:50%}
+  .bbar .bdot.r{background:#d49a82}.bbar .bdot.y{background:#dcc283}.bbar .bdot.g{background:#a7b384}
+  .burl{flex:1;text-align:center;font-size:11.5px;color:var(--brown-soft);background:#fff;border:1px solid var(--line);border-radius:20px;padding:4px 12px;margin:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bview{overflow:hidden;position:relative;background:#fff}
+  .cmp-old .bview{height:clamp(250px,30vw,330px)}
+  .cmp-new .bview{height:400px}
+  .bview img{width:100%;display:block}
+  .cmp-new .bview.scroll img{animation:scrollNew 36s ease-in-out infinite alternate}
+  @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 400px))}}
+  .bview .noimg{height:100%;display:flex;align-items:center;justify-content:center;color:var(--brown-soft);font-size:13px;text-align:center;padding:20px;background:repeating-linear-gradient(135deg,#fff,#fff 12px,#efe8d6 12px,#efe8d6 24px)}
   .reveal-foot{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:24px 30px 34px;text-align:center}
   .reveal-foot .rf-line{font-family:'Fraunces',serif;font-style:italic;font-size:19px;color:var(--brown)}
   .reveal-close{position:absolute;top:16px;right:18px;z-index:3;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.85);color:var(--brown);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -245,9 +275,9 @@
     .svc-grid{grid-template-columns:1fr}
     .story-grid{grid-template-columns:1fr;gap:28px}
     .rf-row{grid-template-columns:1fr}
-    .compare{grid-template-columns:1fr;gap:16px}
-    .cmp-old .screen{height:180px}.cmp-new .screen{height:240px}
-    @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 240px))}}
+    .compare{grid-template-columns:1fr;gap:18px}
+    .cmp-old .bview{height:200px}.cmp-new .bview{height:300px}
+    @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 300px))}}
     .foot-grid{grid-template-columns:1fr 1fr;gap:26px}
     .dcards{grid-template-columns:1fr}
   }
@@ -257,7 +287,7 @@
 <body>
 
 <div id="intro">
-  <div class="imark serif">Sensible</div>
+  <img class="ilogo" src="/sensible/sensible-logo-brown.png" alt="Sensible Funerals &amp; Cremation">
   <div class="iname">Where memories live on</div>
 </div>
 
@@ -266,10 +296,7 @@
 <header>
   <div class="wrap">
     <nav>
-      <div class="brand">
-        <div class="mark serif">S</div>
-        <div class="name">Sensible Funerals &amp; Cremation<span>Tucson, Arizona</span></div>
-      </div>
+      <a class="brand" href="#"><img class="navlogo" src="/sensible/sensible-logo-brown.png" alt="Sensible Funerals &amp; Cremation"></a>
       <ul class="navlinks">
         <li><a href="#offer">What we offer</a></li>
         <li><a href="#story">Our family</a></li>
@@ -423,7 +450,7 @@
   <div class="wrap">
     <div class="foot-grid">
       <div class="foot-brand">
-        <div class="fmark serif">Sensible Funerals &amp; Cremation</div>
+        <img class="footlogo" src="/sensible/sensible-logo-cream.png" alt="Sensible Funerals &amp; Cremation">
         <div class="ftag">Where memories live on</div>
         <p>The only family and veteran-owned funeral home in Tucson. Transparent, caring, and here for you any hour. Hablamos Español.</p>
       </div>
@@ -445,16 +472,49 @@
     <div class="dh-toggle">See the report card <span class="chev">▲</span></div>
   </div>
   <div class="drawer-body">
-    <div class="dcard-intro"><h3>A quiet report card</h3><p>We kept everything your families rely on — and warmed up the things quietly costing you the people who never call.</p></div>
-    <div class="dcards">
-      <div class="dcard"><div class="dn">i.</div><h4>A feeling, not a brochure</h4><p>Your brand is "where memories live on" — so the site should feel hopeful and alive, the way your name promises.</p></div>
-      <div class="dcard"><div class="dn">ii.</div><h4>Pricing that's actually sensible</h4><p>You're literally "Sensible" — let's show pricing openly instead of hiding it in a PDF. Families trust what they can see.</p></div>
-      <div class="dcard"><div class="dn">iii.</div><h4>Veteran-owned, up front</h4><p>Being the only family + veteran-owned home in Tucson is a powerful story — front and center here.</p></div>
-      <div class="dcard"><div class="dn">iv.</div><h4>Spanish, as a first language</h4><p>You say Hablamos Español — we make it first-class, for the families who need it most.</p></div>
-      <div class="dcard"><div class="dn">v.</div><h4>Built for the phone</h4><p>Most families search on their phone in a hard moment. This is built mobile-first, so it never breaks when it matters.</p></div>
-      <div class="dcard"><div class="dn">vi.</div><h4>Warm, calm, and alive</h4><p>Earthy and gentle instead of cold. It feels like comfort — exactly what a grieving family is looking for.</p></div>
+    <div class="rc-intro">
+      <div class="rce">A quiet report card</div>
+      <h3>Today your site earns a <em>C</em>. Here's how we'd make it an <em>A</em>.</h3>
     </div>
-    <div class="drawer-cta"><div class="dctitle serif">See the difference for yourself</div><button class="btn btn-olive" id="openReveal">Show me old vs. new</button></div>
+    <div class="rc-grades">
+      <div class="rc-grade today"><div class="g serif">C</div><span>Your site today</span></div>
+      <div class="rc-arrow serif">&rarr;</div>
+      <div class="rc-grade new"><div class="g serif">A</div><span>What we'd build</span></div>
+    </div>
+    <div class="rc-colhead"><span></span><span class="h-today">Today</span><span class="h-new">What we'd do</span></div>
+    <div class="rc-rows">
+      <div class="rc-row">
+        <div class="rc-crit">First impression</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>Heavy and dated — it doesn't feel like "where memories live on."</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Warm, hopeful, and alive — the feeling your name promises.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">Pricing</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>Hidden in a downloadable PDF — families have to dig.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Shown openly. You're "Sensible" — let families trust what they can see.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">Your best story</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>"Only family + veteran-owned in Tucson" is buried.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Front and center — it's your most powerful reason to choose you.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">Spanish-speaking families</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>"Hablamos Español" is an afterthought.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>First-class, for the families who need it most.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">On a phone</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>Most families search by phone in a hard moment — it strains.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Built mobile-first, so nothing breaks when it matters most.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">Reaching you</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>No simple, calm way to start the conversation online.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>One gentle form straight to your family — never a call center.</div>
+      </div>
+    </div>
+    <div class="drawer-cta"><div class="dctitle serif">See it for yourself, side by side</div><button class="btn btn-olive" id="openReveal">Show me old vs. new</button></div>
   </div>
 </div>
 
@@ -468,10 +528,20 @@
       <p>Everything your families rely on is still here — only now it's warm, honest, and as alive as your name promises.</p>
     </div>
     <div class="compare">
-      <div class="cmp cmp-old"><div class="cmp-tag"><span class="tdot"></span>Your site today</div>
-        <div class="screen"><img src="/sensible/old-site.png" alt="Current site" onerror="this.style.display='none';this.parentNode.querySelector('.noimg').style.display='flex'"><div class="noimg" style="display:none">sensiblecf.com<br>(current site)</div></div></div>
-      <div class="cmp cmp-new"><div class="cmp-tag"><span class="tdot"></span>What we started for you</div>
-        <div class="screen scrollwrap"><img src="/sensible/new-site.png" alt="The new concept site" onerror="this.style.display='none';this.parentNode.querySelector('.noimg').style.display='flex'"><div class="noimg" style="display:none">your new site</div></div></div>
+      <div class="cmp cmp-old">
+        <div class="cmp-tag"><span class="tdot"></span>Your site today</div>
+        <div class="bframe">
+          <div class="bbar"><span class="bdot r"></span><span class="bdot y"></span><span class="bdot g"></span><span class="burl">sensiblecf.com</span></div>
+          <div class="bview"><img src="/sensible/old-site.png" alt="Current site" onerror="this.style.display='none';this.parentNode.querySelector('.noimg').style.display='flex'"><div class="noimg" style="display:none">sensiblecf.com<br>(current site)</div></div>
+        </div>
+      </div>
+      <div class="cmp cmp-new">
+        <div class="cmp-tag"><span class="tdot"></span>What we started for you</div>
+        <div class="bframe">
+          <div class="bbar"><span class="bdot r"></span><span class="bdot y"></span><span class="bdot g"></span><span class="burl">a concept by Ahead of Market</span></div>
+          <div class="bview scroll"><img src="/sensible/new-site.png" alt="The new concept site" onerror="this.style.display='none';this.parentNode.querySelector('.noimg').style.display='flex'"><div class="noimg" style="display:none">your new site</div></div>
+        </div>
+      </div>
     </div>
     <div class="reveal-foot">
       <span class="rf-line">Where memories live on — finally, a site that feels that way.</span>
