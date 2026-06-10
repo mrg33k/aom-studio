@@ -206,7 +206,17 @@ function PressSendCard({ w, staged }) {
           color: '#1A1206', background: AMBER, padding: '3px 10px', borderRadius: 999 }}>
           {sent ? 'SENT ✓' : '✦ WORK DONE — READY TO SEND'}
         </span>
-        <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{timeAgo(w.created_at)}</span>
+        {(() => {
+          // Gap #7: ready cards age — past an hour the wait turns amber and names itself.
+          const waitedMs = Date.now() - new Date(w.created_at).getTime()
+          const old = !sent && waitedMs > 60 * 60 * 1000
+          return (
+            <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: old ? 700 : 400,
+              color: old ? AMBER : BONE_FAINT }}>
+              {old ? `waiting on you · ${timeAgo(w.created_at)}` : timeAgo(w.created_at)}
+            </span>
+          )
+        })()}
       </div>
       <div style={{ fontFamily: SERIF, fontSize: 19, color: BONE, margin: '12px 0 4px', lineHeight: 1.2 }}>
         {w.name || w.email}
@@ -584,26 +594,42 @@ function FilterPill({ active, onClick, label, loud }) {
 }
 
 // ── Summary strip — real counts across the top (counts that reflect reality) ──
-function SummaryStrip() {
+function SummaryStrip({ worldId }) {
+  // Gap #5: ONE truth — the strip counts the same unified universe the list shows
+  // (wishes + emails), not a wish-only slice that contradicts the filters below it.
   const [wishes, setWishes] = useState(null)
+  const [mailboxes, setMailboxes] = useState(null)
+  const isAom = worldId === 'aom'
   const load = useCallback(async () => {
     try { const r = await fetch('/api/support/wishes'); const d = await r.json(); if (d.ok) setWishes(d.wishes || []) } catch { /* keep last */ }
-  }, [])
+    if (isAom) {
+      try {
+        const r2 = await authFetch('/api/support/inbox', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', body: JSON.stringify({ email: 'patrikmatheson@gmail.com', days: 7 }) })
+        const d2 = await r2.json(); if (d2.ok) setMailboxes(d2.mailboxes || [])
+      } catch { /* keep last */ }
+    } else { setMailboxes([]) }
+  }, [isAom])
   useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t) }, [load])
 
   const ws = wishes || []
-  const open = ws.filter((w) => w.status !== 'resolved')
-  const resolved = ws.filter((w) => w.status === 'resolved')
-  const overSla = open.filter((w) => (Date.now() - new Date(w.created_at).getTime()) > 10 * 60 * 1000)
+  const boxes = mailboxes || []
+  const openWishes = ws.filter((w) => w.status !== 'resolved')
+  const staged = openWishes.filter((w) => parseStaged(w.message))
+  const emailNeeds = boxes.reduce((n, b) => n + (b.needs?.length || 0), 0)
   const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
-  const respondedToday = resolved.filter((w) => w.updated_at && new Date(w.updated_at) >= startOfDay)
-  const rate = ws.length ? Math.round((resolved.length / ws.length) * 100) : null
+  const wishResolvedToday = ws.filter((w) => w.status === 'resolved' && w.updated_at && new Date(w.updated_at) >= startOfDay).length
+  const emailRepliedToday = boxes.reduce((n, b) =>
+    n + (b.replied || []).filter((it) => (it.lastReply?.date || 0) >= startOfDay.getTime()).length, 0)
+  const open = openWishes.length + emailNeeds
+  const respondedToday = wishResolvedToday + emailRepliedToday
+  const rate = (open + respondedToday) > 0 ? Math.round((respondedToday / (open + respondedToday)) * 100) : null
 
   const tiles = [
-    { label: 'Open', value: open.length },
-    { label: 'Responded today', value: respondedToday.length },
-    { label: 'Over 10 min', value: overSla.length, loud: overSla.length > 0 },
-    { label: 'Response rate', value: rate == null ? '—' : rate + '%' },
+    { label: 'Open', value: open },
+    { label: 'Ready to send', value: staged.length, loud: staged.length > 0 },
+    { label: 'Responded today', value: respondedToday },
+    { label: 'Response rate today', value: rate == null ? '—' : rate + '%' },
   ]
   return (
     <div style={{ display: 'flex', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
@@ -768,7 +794,7 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId })
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
         {header}
-        <SummaryStrip />
+        <SummaryStrip worldId={worldId} />
         <div style={{ display: 'flex', gap: 4, padding: '12px 24px 0', flexWrap: 'wrap' }}>
           <TabBtn active={tab === 'all'} onClick={() => setTab('all')} label="All" />
           <TabBtn active={tab === 'requests'} onClick={() => setTab('requests')} label="Requests" />
@@ -788,7 +814,7 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId })
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
       {header}
-      <SummaryStrip />
+      <SummaryStrip worldId={worldId} />
       <div style={{ display: 'flex', gap: 4, padding: '10px 24px 0', borderBottom: `1px solid ${LINE}` }}>
         <TabBtn active={view === 'all'} onClick={() => setView('all')} label="All support" />
         <TabBtn active={view === 'streams'} onClick={() => setView('streams')} label="Requests & chat" />
