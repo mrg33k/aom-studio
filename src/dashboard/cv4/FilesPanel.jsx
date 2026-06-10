@@ -1092,9 +1092,24 @@ export default function FilesPanel({ projectSlug, missionSlug }) {
   // story ("what's new since I last looked"). Without it the rail is just the
   // project list a third time.
   const latestFiles = useMemo(() => {
-    const dated = files.filter(f => (f._ts || 0) > 0 && (!filterFn || filterFn(f)))
+    // Scaffold canon (README/CONTEXT/BUILD/…) updates constantly and says
+    // nothing — without this filter "Latest" is five identical filing docs
+    // from one project. Deliverables are the story; cap 2 per project so one
+    // busy project can't own the whole strip.
+    const SCAFFOLD = /^(readme|context|build|vision|research|last-conversation|history|rules|phonebook|agent)(\.|$)/i
+    const dated = files.filter(f => (f._ts || 0) > 0 && (!filterFn || filterFn(f))
+      && !SCAFFOLD.test(((f.name || '').split('/').pop() || '')))
     dated.sort((a, b) => (b._ts || 0) - (a._ts || 0))
-    return dated.slice(0, 5).map(f => {
+    const perProj = {}
+    const picked = []
+    for (const f of dated) {
+      const proj = (f.relativePath || '').split('/').filter(Boolean)[0] || ''
+      perProj[proj] = (perProj[proj] || 0) + 1
+      if (perProj[proj] > 2) continue
+      picked.push(f)
+      if (picked.length === 5) break
+    }
+    return picked.map(f => {
       const proj = (f.relativePath || '').split('/').filter(Boolean)[0] || ''
       const short = (f.name || '').split('/').pop()
       return { ...f, name: short, age: proj && proj !== short ? proj + ' · ' + (f.age || '') : f.age }
