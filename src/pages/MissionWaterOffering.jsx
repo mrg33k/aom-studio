@@ -348,7 +348,7 @@ export default function MissionWaterOffering() {
                                         className="font-mono text-[11px] tracking-[0.08em] whitespace-nowrap flex-shrink-0"
                                         style={{ color: '#E85D26' }}
                                       >
-                                        {fmt(cost)} <span className="text-[#071530]/35">of {p.price}</span>
+                                        {fmt(cost)}
                                       </motion.span>
                                     )}
                                   </AnimatePresence>
@@ -360,6 +360,28 @@ export default function MissionWaterOffering() {
                         );
                       })}
                     </ul>
+                    <AnimatePresence>
+                      {showCosts && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -4 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -4 }}
+                          transition={{ duration: 0.3, delay: 0.2 + p.deliverables.length * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                          className="flex items-center justify-between mb-7 pt-4 border-t border-[#071530]/10"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#071530]/30">
+                              {p.deliverables.length} deliverables
+                            </span>
+                            <span className="font-mono text-[8px] text-[#071530]/20">—</span>
+                            <span className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#071530]/30">adds up to</span>
+                          </div>
+                          <span className="font-mono text-[13px] tracking-[0.06em] font-medium" style={{ color: '#071530' }}>
+                            {p.price}
+                          </span>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                     <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-3">Add-ons &amp; options <span className="text-[#071530]/30 normal-case tracking-normal font-body" style={{ fontSize: '9px' }}>— tap to see pricing</span></p>
                     <div className="flex flex-wrap gap-2 mb-8">
                       {p.addons.map((a, ai) => {
