@@ -23,6 +23,21 @@ export const DOT = {
   idle: 'rgba(140,155,175,0.35)',
 }
 
+// One overlay language for every popup. Audited 2026-06-09 (M16): backdrops
+// ranged 0.55/blur2 → 0.65/none → 0.85/blur6; panel radii 8/14/18; shadows in
+// three flavors; zIndex scattered at 50/199/300/1100. Every modal should feel
+// like the same hand opened it. Adopt these tokens when touching any popup;
+// don't invent new values.
+export const OVERLAY = {
+  backdrop: 'rgba(0,0,0,0.6)',
+  backdropBlur: 'blur(4px)',
+  panelRadius: 12,
+  panelShadow: '0 20px 56px rgba(0,0,0,0.45)',
+  zBackdrop: 900,
+  zPanel: 910,
+  zLightbox: 1100,
+}
+
 let dotCssInjected = false
 function ensureDotCss() {
   if (dotCssInjected || typeof document === 'undefined') return
