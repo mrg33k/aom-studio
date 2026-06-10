@@ -126,7 +126,7 @@ function ConstructionRedirect() {
 function BrandRedirect() {
   const navigate = useNavigate()
   useEffect(() => {
-    navigate('/brand/v4', { replace: true })
+    navigate('/brand/v5', { replace: true })
   }, [navigate])
   return null
 }
@@ -239,7 +239,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/r4" element={<HomeR4Preview />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandRedirect />} />
-          <Route path="/brand/v4" element={<BrandGuidelinesV4 />} />
+          <Route path="/brand/v5" element={<BrandGuidelinesV4 />} />
+          <Route path="/brand/v4" element={<BrandRedirect />} />
           <Route path="/brands" element={<BrandsHub />} />
           <Route path="/brands/ambition" element={<AmbitionBrandGuidelinesV2 />} />
           <Route path="/brands/ambition/v1" element={<AmbitionBrandGuidelines />} />
