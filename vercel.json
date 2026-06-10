@@ -458,6 +458,14 @@
     {
       "source": "/superstition/:path*",
       "destination": "/superstition/:path*"
+    },
+    {
+      "source": "/lozano",
+      "destination": "/lozano/index.html"
+    },
+    {
+      "source": "/lozano/:path*",
+      "destination": "/lozano/:path*"
     }
   ],
   "redirects": [
