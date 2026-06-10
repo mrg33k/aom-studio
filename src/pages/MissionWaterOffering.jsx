@@ -6,7 +6,7 @@
 // /missionwateroffering · /mission-water-offering · /missionwater/offering
 // Mission: conrad-foundation:mission-water
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ─── SEO ──────────────────────────────────────────────────────────────────────
 function useSEO() {
@@ -81,12 +81,49 @@ function Kicker({ children, className = '' }) {
   );
 }
 
+// ─── Cost allocation bar ───────────────────────────────────────────────────────
+function AllocationBar({ cost, total, visible }) {
+  const pct = Math.round((cost / total) * 100);
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          className="overflow-hidden"
+        >
+          <div className="mt-2 mb-0.5">
+            <div className="h-[3px] w-full rounded-full overflow-hidden" style={{ background: 'rgba(7,21,48,0.08)' }}>
+              <motion.div
+                className="h-full rounded-full"
+                style={{ background: '#E85D26' }}
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.55, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+              />
+            </div>
+            <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-[#071530]/35 mt-1">{pct}% of piece total</p>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── The three pieces ───────────────────────────────────────────────────────────
+// Cost allocation reasoning:
+//   Game ($15K):      $6,500 game engine/branching · $3,000 NASA visuals+HUD · $1,800 characters+badges · $2,200 Blippy mascot · $1,500 hosting+updates
+//   Platform ($12K):  $3,500 live broadcast+roster · $1,800 archive+search · $3,000 self-paced modules · $2,200 submissions+grading · $1,500 dashboards
+//   Marketing ($10K): $2,000 brand system · $2,200 landing pages+SEO · $1,800 launch creative+assets · $2,500 sizzle video · $1,500 email+calendar
+
 const PILLARS = [
   {
     n: '01',
     name: 'The Game',
     price: '$15,000',
+    priceNum: 15000,
     tagline: 'The interactive experience',
     summary:
       'The story-driven, branching water-science game students play start to finish. Live today and built to grow.',
@@ -97,6 +134,7 @@ const PILLARS = [
       'Blippy mascot companion',
       'Mobile + desktop, hosted, ongoing updates',
     ],
+    costs: [6500, 3000, 1800, 2200, 1500],
     addons: [
       { label: 'Additional story chapters', price: '$4,500' },
       { label: 'Classroom / multiplayer mode', price: '$3,200' },
@@ -107,6 +145,7 @@ const PILLARS = [
     n: '02',
     name: 'The Platform',
     price: '$12,000',
+    priceNum: 12000,
     tagline: 'The masterclass, online',
     summary:
       'Everything around the game that turns it into a real program — live classes, an archive, coursework, and dashboards. One window, everything inside.',
@@ -117,6 +156,7 @@ const PILLARS = [
       'Student submissions with educator grading',
       'Educator + parent dashboards (separate logins)',
     ],
+    costs: [3500, 1800, 3000, 2200, 1500],
     addons: [
       { label: 'Completion certificates', price: '$800' },
       { label: 'Payments / paid enrollment', price: '$2,500' },
@@ -127,6 +167,7 @@ const PILLARS = [
     n: '03',
     name: 'The Marketing',
     price: '$10,000',
+    priceNum: 10000,
     tagline: 'Go-to-market for all of it',
     summary:
       'The brand, the story, and the campaign that gets Mission Water in front of students, schools, and funders.',
@@ -137,6 +178,7 @@ const PILLARS = [
       'Promo / sizzle video',
       'Email sequences + 60-day content calendar',
     ],
+    costs: [2000, 2200, 1800, 2500, 1500],
     addons: [
       { label: 'Ongoing monthly social management', price: '$2,000/mo' },
       { label: 'Funder + district one-pager', price: '$1,200' },
@@ -145,9 +187,15 @@ const PILLARS = [
   },
 ];
 
+// ─── Format dollar amount ──────────────────────────────────────────────────────
+function fmt(n) {
+  return '$' + n.toLocaleString('en-US');
+}
+
 export default function MissionWaterOffering() {
   useSEO();
   const [activeAddon, setActiveAddon] = useState(null); // 'pi-ai' format
+  const [showCosts, setShowCosts] = useState(false);
 
   return (
     <div className="bg-white text-[#071530] min-h-screen scroll-smooth" style={{ fontFeatureSettings: '"liga" 1, "kern" 1' }}>
@@ -192,13 +240,53 @@ export default function MissionWaterOffering() {
       <section id="pieces" className="bg-white px-6 md:px-12 py-16 md:py-24 scroll-mt-20">
         <div className="max-w-[1200px] mx-auto">
           <motion.div className="mb-12" {...fadeUp()}>
-            <Kicker className="mb-3">What you get</Kicker>
-            <h2 className="font-display-serif text-[32px] md:text-[50px] leading-[1.0] tracking-[-0.025em] text-[#071530]">
-              Every piece, in plain terms.
-            </h2>
-            <p className="font-body text-[16px] text-[#071530]/55 leading-[1.6] max-w-[600px] mt-4">
-              No vague line items. Here is exactly what each piece delivers — and what you can add or swap as you go.
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+              <div>
+                <Kicker className="mb-3">What you get</Kicker>
+                <h2 className="font-display-serif text-[32px] md:text-[50px] leading-[1.0] tracking-[-0.025em] text-[#071530]">
+                  Every piece, in plain terms.
+                </h2>
+                <p className="font-body text-[16px] text-[#071530]/55 leading-[1.6] max-w-[600px] mt-4">
+                  No vague line items. Here is exactly what each piece delivers — and what you can add or swap as you go.
+                </p>
+              </div>
+              {/* Cost toggle */}
+              <div className="flex-shrink-0">
+                <button
+                  onClick={() => setShowCosts(v => !v)}
+                  className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.18em] px-5 py-2.5 rounded-full transition-all duration-250 cursor-pointer"
+                  style={{
+                    border: showCosts ? '1px solid rgba(232,93,38,0.55)' : '1px solid rgba(7,21,48,0.18)',
+                    color: showCosts ? '#E85D26' : 'rgba(7,21,48,0.55)',
+                    background: showCosts ? 'rgba(232,93,38,0.06)' : 'transparent',
+                  }}
+                >
+                  <span
+                    className="w-3.5 h-3.5 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors"
+                    style={{
+                      borderColor: showCosts ? '#E85D26' : 'rgba(7,21,48,0.35)',
+                      background: showCosts ? '#E85D26' : 'transparent',
+                    }}
+                  >
+                    {showCosts && (
+                      <svg width="6" height="5" viewBox="0 0 6 5" fill="none">
+                        <path d="M1 2.5L2.5 4L5 1" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </span>
+                  {showCosts ? 'Cost breakdown on' : 'Show cost breakdown'}
+                </button>
+                {showCosts && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-[#071530]/35 mt-2 text-right"
+                  >
+                    Per-deliverable allocation
+                  </motion.p>
+                )}
+              </div>
+            </div>
           </motion.div>
 
           <div className="space-y-7">
@@ -215,18 +303,62 @@ export default function MissionWaterOffering() {
                     <h3 className="font-display-serif text-[30px] md:text-[36px] leading-[1.0] tracking-[-0.02em] text-white mb-1">{p.name}</h3>
                     <p className="font-mono text-[9.5px] uppercase tracking-[0.2em] text-white/45 mb-6">{p.tagline}</p>
                     <p className="font-body text-[14px] text-white/60 leading-[1.6]">{p.summary}</p>
+
+                    {/* Total cost pill inside the dark panel */}
+                    <AnimatePresence>
+                      {showCosts && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 4 }}
+                          transition={{ duration: 0.3, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+                          className="mt-auto pt-6"
+                        >
+                          <div className="rounded-lg px-4 py-3" style={{ background: 'rgba(232,93,38,0.12)', border: '1px solid rgba(232,93,38,0.25)' }}>
+                            <p className="font-mono text-[8.5px] uppercase tracking-[0.2em] text-white/45 mb-1">Piece total</p>
+                            <p className="font-display-serif text-[28px] text-[#E85D26] tracking-[-0.02em] leading-none">{p.price}</p>
+                            <p className="font-mono text-[8px] uppercase tracking-[0.18em] text-white/35 mt-1">Split across 5 deliverables</p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Right — deliverables + add-ons + price (bottom right) */}
                   <div className="p-8 md:p-10 bg-[#F4F2EF] flex flex-col">
                     <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-5">What she gets</p>
                     <ul className="space-y-3.5 mb-8">
-                      {p.deliverables.map((d, di) => (
-                        <li key={di} className="flex gap-3">
-                          <span className="text-[#E85D26] font-mono text-[13px] leading-[1.4] shrink-0 mt-[1px]">▸</span>
-                          <span className="font-body text-[15px] text-[#071530]/80 leading-[1.5]">{d}</span>
-                        </li>
-                      ))}
+                      {p.deliverables.map((d, di) => {
+                        const cost = p.costs[di];
+                        const total = p.priceNum;
+                        return (
+                          <li key={di}>
+                            <div className="flex gap-3 items-start">
+                              <span className="text-[#E85D26] font-mono text-[13px] leading-[1.4] shrink-0 mt-[1px]">▸</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                                  <span className="font-body text-[15px] text-[#071530]/80 leading-[1.5]">{d}</span>
+                                  <AnimatePresence>
+                                    {showCosts && (
+                                      <motion.span
+                                        initial={{ opacity: 0, x: 6 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 4 }}
+                                        transition={{ duration: 0.25, delay: 0.05 + di * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                                        className="font-mono text-[11px] tracking-[0.08em] whitespace-nowrap flex-shrink-0"
+                                        style={{ color: '#E85D26' }}
+                                      >
+                                        {fmt(cost)} <span className="text-[#071530]/35">of {p.price}</span>
+                                      </motion.span>
+                                    )}
+                                  </AnimatePresence>
+                                </div>
+                                <AllocationBar cost={cost} total={total} visible={showCosts} />
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                     <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-[#071530]/45 mb-3">Add-ons &amp; options <span className="text-[#071530]/30 normal-case tracking-normal font-body" style={{ fontSize: '9px' }}>— tap to see pricing</span></p>
                     <div className="flex flex-wrap gap-2 mb-8">
