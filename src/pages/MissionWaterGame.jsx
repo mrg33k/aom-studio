@@ -325,6 +325,7 @@ export default function MissionWaterGame() {
               regionsCompleted={regionsCompleted}
               regionsTotal={3}
               completedPhaseIds={runState.history || []}
+              nextPhaseId={hubNextPhaseId}
               activeChapter={activeChapter}
               onContinue={onHubContinue}
               onOpenKit={onHubOpenKit}

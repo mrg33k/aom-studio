@@ -28,81 +28,63 @@ const SPACE_DARK  = '#070B14';
 const CYAN        = '#00E5CC';
 const TEXT_SOFT   = '#C8D8F0';
 
-// ─── Star canvas background (two layers, slow procedural drift) ───────────────
+// ─── Star canvas background (canonical twinkle starfield — same as RoleSelect) ─
 function StarCanvas() {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
-  const animRef = useRef({ raf: 0 });
-
+  const ref = useRef(null);
   useEffect(() => {
-    const cnv = canvasRef.current;
-    const container = containerRef.current;
-    if (!cnv || !container) return;
-
-    const STAR_COUNTS = [120, 60];
-    const SPEEDS = [0.012, 0.024];
-    const SIZES = [1.5, 2.5];
-
-    function starPositions(count, seed) {
-      const rng = mulberry32(seed);
-      return Array.from({ length: count }, () => ({
-        x: rng(),
-        y: rng() * 0.85,
-        alpha: 0.4 + rng() * 0.6,
-      }));
-    }
-    const layers = [
-      starPositions(STAR_COUNTS[0], 0xA1B2C3),
-      starPositions(STAR_COUNTS[1], 0xD4E5F6),
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rand = mulberry32(0xA1B2C3);
+    const LAYERS = [
+      { count: 180, minR: 0.4, maxR: 1.1, minA: 0.25, maxA: 0.65, spd: 0.012 },
+      { count: 70,  minR: 0.9, maxR: 2.0, minA: 0.50, maxA: 1.00, spd: 0.022 },
     ];
-
-    let W = 0, H = 0;
-    const resize = () => {
-      const rect = container.getBoundingClientRect();
-      W = Math.max(320, Math.floor(rect.width));
-      H = Math.max(240, Math.floor(rect.height));
-      const dpr = window.devicePixelRatio || 1;
-      cnv.width = Math.floor(W * dpr);
-      cnv.height = Math.floor(H * dpr);
-      cnv.style.width = `${W}px`;
-      cnv.style.height = `${H}px`;
-      const ctx = cnv.getContext('2d');
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-    const ro = new ResizeObserver(resize);
-    ro.observe(container);
-    resize();
-
-    const ctx = cnv.getContext('2d');
-    let offsets = [0, 0];
-
-    const tick = () => {
-      if (!W || !H) { animRef.current.raf = requestAnimationFrame(tick); return; }
+    let W = 0, H = 0, raf;
+    let stars = [];
+    function buildStars(w, h) {
+      stars = [];
+      for (const L of LAYERS) {
+        for (let i = 0; i < L.count; i++) {
+          stars.push({
+            x: rand() * w, y: rand() * h,
+            r: L.minR + rand() * (L.maxR - L.minR),
+            a: L.minA + rand() * (L.maxA - L.minA),
+            spd: L.spd * (0.7 + rand() * 0.6),
+            dx: (rand() - 0.5) * 0.006,
+          });
+        }
+      }
+    }
+    function draw() {
       ctx.clearRect(0, 0, W, H);
-      layers.forEach((stars, li) => {
-        offsets[li] = (offsets[li] + SPEEDS[li]) % W;
-        const sz = SIZES[li];
-        stars.forEach((s) => {
-          const x = ((s.x * W) + offsets[li]) % W;
-          const y = s.y * H;
-          ctx.fillStyle = `rgba(255,255,255,${s.alpha})`;
-          ctx.fillRect(Math.round(x), Math.round(y), sz, sz);
-        });
-      });
-      animRef.current.raf = requestAnimationFrame(tick);
-    };
-
-    animRef.current.raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(animRef.current.raf);
-      ro.disconnect();
-    };
+      for (const s of stars) {
+        s.y -= s.spd; s.x += s.dx;
+        if (s.y < -2) s.y = H + 2;
+        if (s.x < -2) s.x = W + 2;
+        if (s.x > W + 2) s.x = -2;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,220,255,${s.a})`;
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    }
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      canvas.width = width; canvas.height = height;
+      W = width; H = height;
+      buildStars(W, H);
+    });
+    ro.observe(canvas);
+    draw();
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
   }, []);
-
   return (
-    <div ref={containerRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
-    </div>
+    <canvas
+      ref={ref}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+    />
   );
 }
 
@@ -157,6 +139,26 @@ function ParallaxLayer({ src, speed, style }) {
     />
   );
 }
+
+// ─── Mission icons (inline SVG line art — same language as RoleSelect) ───────
+const MISSION_ICONS = {
+  water: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2.7s6.5 7.1 6.5 12.05A6.5 6.5 0 0 1 12 21.25a6.5 6.5 0 0 1-6.5-6.5C5.5 9.8 12 2.7 12 2.7z" />
+    </svg>
+  ),
+  oxygen: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="3.5" />
+    </svg>
+  ),
+  energy: (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="13 2 3 14 11 14 11 22 21 10 13 10 13 2" />
+    </svg>
+  ),
+};
 
 // ─── Entry animations ─────────────────────────────────────────────────────────
 function useEntryAnim() {
@@ -241,7 +243,7 @@ function MissionCard({ active, locked, title, icon, subtitle, missionNum, visibl
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 22,
+        color: locked ? 'rgba(200,216,240,0.35)' : CYAN,
         marginTop: 3,
       }}>
         {icon}
@@ -493,7 +495,7 @@ export default function WelcomeScreen({ onStart }) {
               : 'none',
             backgroundSize: 'cover',
             backgroundPosition: 'center 30%',
-            opacity: 0.72,
+            opacity: 0.55,
           }}
         />
       </div>
@@ -526,6 +528,14 @@ export default function WelcomeScreen({ onStart }) {
         position: 'absolute', top: 0, left: 0, right: 0, height: '15%',
         background: 'linear-gradient(to bottom, rgba(7,11,20,0.6) 0%, transparent 100%)',
         pointerEvents: 'none',
+      }} />
+
+      {/* ─ Scanline overlay — same instrument texture as the rest of the game ── */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        pointerEvents: 'none',
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px)',
+        zIndex: 1,
       }} />
 
       {/* ─ Blippy companion — absolute, lower-left; does NOT offset the centered panel ─ */}
@@ -676,7 +686,7 @@ export default function WelcomeScreen({ onStart }) {
                   locked={false}
                   title="WATER"
                   subtitle="Earth is running out of fresh water. Investigate the crisis — then take the mission to the Moon."
-                  icon="💧"
+                  icon={MISSION_ICONS.water}
                   missionNum="01"
                   visible={card0Ready}
                   onStart={onStart}
@@ -686,7 +696,7 @@ export default function WelcomeScreen({ onStart }) {
                   locked
                   title="OXYGEN"
                   subtitle="Sustain life in deep space. Master the systems that keep a crew alive between worlds."
-                  icon="⚗️"
+                  icon={MISSION_ICONS.oxygen}
                   missionNum="02"
                   visible={card1Ready}
                 />
@@ -695,7 +705,7 @@ export default function WelcomeScreen({ onStart }) {
                   locked
                   title="ENERGY"
                   subtitle="Power a lunar settlement from scratch. Design the systems that will light civilization's next chapter."
-                  icon="⚡"
+                  icon={MISSION_ICONS.energy}
                   missionNum="03"
                   visible={card2Ready}
                 />

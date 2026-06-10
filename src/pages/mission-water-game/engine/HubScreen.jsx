@@ -1,14 +1,86 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 // ─── prefers-reduced-motion ───────────────────────────────────────────────────
 const REDUCED = typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// ─── StarCanvas (space background — DESIGN.md Layer 1, same as RoleSelect) ───
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function StarCanvas() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rand = mulberry32(0xbeac0742);
+    const LAYERS = [
+      { count: 180, minR: 0.4, maxR: 1.1, minA: 0.25, maxA: 0.65, spd: 0.012 },
+      { count: 70,  minR: 0.9, maxR: 2.0, minA: 0.50, maxA: 1.00, spd: 0.022 },
+    ];
+    let W = 0, H = 0, raf;
+    let stars = [];
+    function buildStars(w, h) {
+      stars = [];
+      for (const L of LAYERS) {
+        for (let i = 0; i < L.count; i++) {
+          stars.push({
+            x: rand() * w, y: rand() * h,
+            r: L.minR + rand() * (L.maxR - L.minR),
+            a: L.minA + rand() * (L.maxA - L.minA),
+            spd: L.spd * (0.7 + rand() * 0.6),
+            dx: (rand() - 0.5) * 0.006,
+          });
+        }
+      }
+    }
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      for (const s of stars) {
+        s.y -= s.spd; s.x += s.dx;
+        if (s.y < -2) s.y = H + 2;
+        if (s.x < -2) s.x = W + 2;
+        if (s.x > W + 2) s.x = -2;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,220,255,${s.a})`;
+        ctx.fill();
+      }
+      raf = requestAnimationFrame(draw);
+    }
+    const ro = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      canvas.width = width; canvas.height = height;
+      W = width; H = height;
+      buildStars(W, H);
+    });
+    ro.observe(canvas);
+    draw();
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  }, []);
+  return (
+    <canvas
+      ref={ref}
+      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+    />
+  );
+}
+
 /**
  * HubScreen — Between-phase action hub.
  *
- * R16: Added MISSION MANIFEST overlay (7th option) with chapter progress,
- * badge inventory, and resource stats. Sidebar replaced entirely by this overlay.
+ * R17: Same-world visual pass — starfield + scanlines replace the photo bg,
+ * Cleo hub card art wired in (public/mission-water/hub/), real Blippy replaces
+ * the SVG placeholder, MISSION MAP is now a real overlay built on the
+ * holographic globe art with correct region states.
  *
  * Props:
  *   phaseContext   {string}   Summary of where the cadet is
@@ -16,6 +88,7 @@ const REDUCED = typeof window !== 'undefined' &&
  *   regionsCompleted {number} how many investigation regions are done
  *   regionsTotal   {number}  total investigation regions (3 for ch1)
  *   completedPhaseIds {string[]} list of completed phase IDs for map display
+ *   nextPhaseId    {string|null} the phase the cadet is heading to (drives map "current")
  *   activeChapter  {number}  current chapter number (1, 2, 3)
  *   onContinue     {function} advances to the next phase
  *   onOpenKit      {function} opens the Mission Kit overlay in HUD
@@ -27,13 +100,19 @@ export default function HubScreen({
   regionsCompleted,
   regionsTotal,
   completedPhaseIds,
+  nextPhaseId = null,
   activeChapter = 1,
   onContinue,
   onOpenKit,
   onJumpToPhase,
 }) {
   const [pace, setPace] = useState('thorough'); // 'thorough' | 'efficient'
-  const [showMap, setShowMap] = useState(false);
+  // DEV-ONLY deep-link for the /screens board: ?hubview=map opens the map overlay
+  const [showMap, setShowMap] = useState(() =>
+    import.meta.env.DEV &&
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('hubview') === 'map'
+  );
   const [showManifest, setShowManifest] = useState(false); // R16: MISSION MANIFEST overlay
   const [fieldInterviewResult, setFieldInterviewResult] = useState(null);
   const [labAnalysisResult, setLabAnalysisResult] = useState(null);
@@ -99,22 +178,15 @@ export default function HubScreen({
     );
   };
 
-  // Phase map pills
-  const regionPhases = [
-    { id: 'ch1_phoenix_arrive', label: 'PHOENIX' },
-    { id: 'ch1_mumbai_arrive', label: 'MUMBAI' },
-    { id: 'ch1_sao_paulo_arrive', label: 'SÃO PAULO' },
-  ];
-
-  // Per-card gradient backgrounds — unique to each option
-  const cardGradients = {
-    continue:        'linear-gradient(135deg, rgba(0,229,204,0.12) 0%, rgba(0,90,80,0.18) 60%, rgba(7,11,20,0.85) 100%)',
-    kit:             'linear-gradient(135deg, rgba(255,183,3,0.10) 0%, rgba(120,70,0,0.15) 60%, rgba(7,11,20,0.85) 100%)',
-    map:             'linear-gradient(135deg, rgba(26,144,255,0.10) 0%, rgba(10,40,100,0.18) 60%, rgba(7,11,20,0.85) 100%)',
-    pace:            'linear-gradient(135deg, rgba(160,80,255,0.10) 0%, rgba(60,10,100,0.15) 60%, rgba(7,11,20,0.85) 100%)',
-    field_interview: 'linear-gradient(135deg, rgba(255,80,80,0.09) 0%, rgba(100,20,20,0.14) 60%, rgba(7,11,20,0.85) 100%)',
-    lab_analysis:    'linear-gradient(135deg, rgba(0,180,255,0.10) 0%, rgba(0,60,120,0.15) 60%, rgba(7,11,20,0.85) 100%)',
-    manifest:        'linear-gradient(135deg, rgba(255,183,3,0.12) 0%, rgba(120,70,0,0.18) 60%, rgba(7,11,20,0.85) 100%)',
+  // Cleo hub card art (public/mission-water/hub/) — committed 63fa3ae7, wired R17
+  const cardArt = {
+    continue:        '/mission-water/hub/hub_continue.jpg',
+    kit:             '/mission-water/hub/hub_review_kit.jpg',
+    map:             '/mission-water/hub/hub_mission_map.jpg',
+    pace:            '/mission-water/hub/hub_change_pace.jpg',
+    field_interview: '/mission-water/hub/hub_field_interview.jpg',
+    lab_analysis:    '/mission-water/hub/hub_lab_analysis.jpg',
+    manifest:        null, // full-width text card, no art
   };
 
   const hubOptions = [
@@ -143,7 +215,7 @@ export default function HubScreen({
       title: 'CHECK MISSION MAP',
       description: 'Review your investigation progress across all regions.',
       free: true,
-      action: () => setShowMap((v) => !v),
+      action: () => setShowMap(true),
     },
     {
       id: 'pace',
@@ -190,45 +262,55 @@ export default function HubScreen({
       title: 'MISSION MANIFEST',
       description: 'Chapter progress, badge inventory, mission stats, and chapter navigation.',
       free: true,
+      fullWidth: true,
       action: () => setShowManifest(true),
     },
   ];
 
   return (
     <div style={styles.root}>
-      {/* ── Keyframes for card entrance flicker ── */}
+      {/* ── Keyframes for card entrance flicker + map pulse ── */}
       <style>{`
         @keyframes hub-card-flicker {
           0%   { opacity: 0;   }
           25%  { opacity: 0.3; }
           100% { opacity: 1;   }
         }
+        @keyframes hub-pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(0,229,204,0.45); }
+          70%  { box-shadow: 0 0 0 8px rgba(0,229,204,0);  }
+          100% { box-shadow: 0 0 0 0 rgba(0,229,204,0);    }
+        }
+        @keyframes hub-site-ping {
+          0%   { transform: scale(0.6); opacity: 0.9; }
+          100% { transform: scale(2.2); opacity: 0;   }
+        }
         @media (prefers-reduced-motion: reduce) {
           .hub-card { animation: none !important; opacity: 1 !important; }
+          .hub-map-current { animation: none !important; }
+          .hub-site-ping { animation: none !important; opacity: 0 !important; }
         }
       `}</style>
-      {/* ── Space background ── */}
-      <img
-        src="/mission-water/chapter-1/backgrounds/ch1_intro_earth.jpg"
-        alt=""
-        style={styles.bgImage}
-        aria-hidden="true"
-      />
-      <div style={styles.bgOverlay} />
+
+      {/* ── Space background — starfield + scanlines, same world as RoleSelect ── */}
+      <div style={styles.bgSpace}>
+        <StarCanvas />
+      </div>
+      <div style={styles.scanlines} />
 
       {/* ── Main scrollable content ── */}
       <div style={styles.scrollLayer}>
         <div style={styles.centerFrame}>
 
-          {/* Header — fades in immediately on mount */}
+          {/* Header — canon pattern: cyan kicker / white Orbitron title / dim sub */}
           <div style={{
             ...styles.header,
             opacity:    headerReady ? 1 : 0,
             transform:  headerReady ? 'translateY(0)' : 'translateY(-8px)',
             transition: 'opacity 350ms ease, transform 350ms ease',
           }}>
-            <div style={styles.headerAccentLine} />
-            <div style={styles.headerKicker}>MISSION HUB</div>
+            <div style={styles.headerKicker}>MISSION WATER — INVESTIGATION CHECKPOINT</div>
+            <div style={styles.headerTitle}>MISSION HUB</div>
             <div style={styles.headerContext}>{phaseContext}</div>
             <div style={styles.headerAccentLineFull} />
             {/* Progress dots */}
@@ -255,6 +337,7 @@ export default function HubScreen({
               const isLocked = !opt.free && (opt.tokenAvail ?? 0) <= 0;
               const isHovered = hoveredCard === opt.id;
               const hasResult = !!opt.result;
+              const art = cardArt[opt.id];
 
               return (
                 <div
@@ -264,6 +347,7 @@ export default function HubScreen({
                     opacity: 0,
                     animation: 'hub-card-flicker 200ms ease forwards',
                     animationDelay: `${200 + idx * 80}ms`,
+                    ...(opt.fullWidth ? { gridColumn: '1 / -1' } : {}),
                   }}
                 >
                 <div
@@ -272,7 +356,6 @@ export default function HubScreen({
                   onMouseLeave={() => setHoveredCard(null)}
                   style={{
                     ...styles.card,
-                    background: isLocked ? 'rgba(10,22,40,0.7)' : (cardGradients[opt.id] || styles.card.background),
                     ...(opt.primary ? styles.cardPrimary : {}),
                     ...(isLocked ? styles.cardLocked : {}),
                     ...(isHovered && !isLocked ? styles.cardHover : {}),
@@ -288,86 +371,73 @@ export default function HubScreen({
                     }
                   }}
                 >
-                  <div style={styles.cardHeader}>
-                    <span style={styles.cardIcon}>{opt.icon}</span>
-                    <span style={{
-                      ...styles.cardTitle,
-                      ...(opt.primary ? styles.cardTitlePrimary : {}),
+                  {/* Cleo art banner — dimmed, fades into the panel below */}
+                  {art && (
+                    <div style={styles.cardArtWrap} aria-hidden="true">
+                      <img
+                        src={art}
+                        alt=""
+                        loading="lazy"
+                        style={{
+                          ...styles.cardArtImg,
+                          filter: isLocked
+                            ? 'grayscale(1) brightness(0.45)'
+                            : isHovered ? 'brightness(0.95)' : 'brightness(0.75)',
+                        }}
+                      />
+                      <div style={styles.cardArtFade} />
+                    </div>
+                  )}
+
+                  <div style={styles.cardBody}>
+                    <div style={styles.cardHeader}>
+                      <span style={styles.cardIcon}>{opt.icon}</span>
+                      <span style={{
+                        ...styles.cardTitle,
+                        ...(opt.primary ? styles.cardTitlePrimary : {}),
+                      }}>
+                        {opt.title}
+                      </span>
+                      {isLocked && <span style={styles.lockedBadge}>LOCKED</span>}
+                      {!opt.free && !isLocked && (
+                        <span style={styles.costBadge}>−1 {tokenLabel(opt.tokenType)}</span>
+                      )}
+                    </div>
+
+                    <p style={{
+                      ...styles.cardDesc,
+                      ...(isLocked ? styles.cardDescLocked : {}),
                     }}>
-                      {opt.title}
-                    </span>
-                    {isLocked && <span style={styles.lockedBadge}>LOCKED</span>}
-                    {!opt.free && !isLocked && (
-                      <span style={styles.costBadge}>−1 {tokenLabel(opt.tokenType)}</span>
+                      {opt.description}
+                    </p>
+
+                    {/* Inline result for field interview / lab analysis */}
+                    {hasResult && (
+                      <div style={styles.inlineResult}>
+                        <div style={styles.inlineResultLine} />
+                        <p style={styles.inlineResultText}>{opt.result}</p>
+                      </div>
+                    )}
+
+                    {/* Pace toggle state */}
+                    {opt.id === 'pace' && (
+                      <div style={styles.paceToggle}>
+                        <span style={{
+                          ...styles.pacePill,
+                          ...(pace === 'thorough' ? styles.pacePillActive : styles.pacePillDim),
+                        }}>
+                          THOROUGH
+                        </span>
+                        <span style={styles.paceSlash}>/</span>
+                        <span style={{
+                          ...styles.pacePill,
+                          ...(pace === 'efficient' ? styles.pacePillActive : styles.pacePillDim),
+                        }}>
+                          EFFICIENT
+                        </span>
+                      </div>
                     )}
                   </div>
-
-                  <p style={{
-                    ...styles.cardDesc,
-                    ...(isLocked ? styles.cardDescLocked : {}),
-                  }}>
-                    {opt.description}
-                  </p>
-
-                  {/* Inline result for field interview / lab analysis */}
-                  {hasResult && (
-                    <div style={styles.inlineResult}>
-                      <div style={styles.inlineResultLine} />
-                      <p style={styles.inlineResultText}>{opt.result}</p>
-                    </div>
-                  )}
-
-                  {/* Map expansion */}
-                  {opt.id === 'map' && showMap && (
-                    <div style={styles.mapContainer}>
-                      <div style={styles.mapPills}>
-                        {regionPhases.map((rp) => {
-                          const done = (completedPhaseIds || []).some(
-                            (id) => id === rp.id || id === rp.id.replace('_arrive', '_findings')
-                          );
-                          // Current if not done but previous regions are done
-                          const isCurrent = !done && (completedPhaseIds || []).length > 0
-                            && !regionPhases.filter((x) => x.id !== rp.id).every(
-                              (x) => !(completedPhaseIds || []).includes(x.id)
-                            );
-                          return (
-                            <div
-                              key={rp.id}
-                              style={{
-                                ...styles.mapPill,
-                                ...(done ? styles.mapPillDone : {}),
-                                ...(isCurrent ? styles.mapPillCurrent : {}),
-                                ...(!done && !isCurrent ? styles.mapPillUpcoming : {}),
-                              }}
-                            >
-                              {done && <span style={styles.mapPillCheck}>✓</span>}
-                              {isCurrent && <span style={styles.mapPillDot} />}
-                              {rp.label}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Pace toggle state */}
-                  {opt.id === 'pace' && (
-                    <div style={styles.paceToggle}>
-                      <span style={{
-                        ...styles.pacePill,
-                        ...(pace === 'thorough' ? styles.pacePillActive : styles.pacePillDim),
-                      }}>
-                        THOROUGH
-                      </span>
-                      <span style={styles.paceSlash}>/</span>
-                      <span style={{
-                        ...styles.pacePill,
-                        ...(pace === 'efficient' ? styles.pacePillActive : styles.pacePillDim),
-                      }}>
-                        EFFICIENT
-                      </span>
-                    </div>
-                  )}
                 </div>
                 </div>
               );
@@ -375,6 +445,15 @@ export default function HubScreen({
           </div>
         </div>
       </div>
+
+      {/* ── MISSION MAP overlay (R17 — holographic globe + region states) ── */}
+      {showMap && (
+        <MissionMap
+          completedPhaseIds={completedPhaseIds || []}
+          nextPhaseId={nextPhaseId}
+          onClose={() => setShowMap(false)}
+        />
+      )}
 
       {/* ── MISSION MANIFEST overlay (R16) ── */}
       {showManifest && (
@@ -389,20 +468,164 @@ export default function HubScreen({
         />
       )}
 
-      {/* ── Blippy lower-left — slides in from right at 400ms ── */}
-      {!showManifest && (
+      {/* ── Blippy lower-left — real Blippy art, same treatment as RoleSelect ── */}
+      {!showManifest && !showMap && (
         <div style={{
           ...styles.blippy,
           opacity:    blippyReady ? 1 : 0,
           transform:  blippyReady ? 'translateX(0) scale(1)' : 'translateX(40px) scale(0.8)',
           transition: 'opacity 300ms ease-out, transform 300ms ease-out',
         }}>
+          <div style={styles.blippyCircle}>
+            <img
+              src="/mission-water/welcome/blippy_welcome_pose.png"
+              alt="Blippy"
+              style={styles.blippyImg}
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          </div>
           <div style={styles.blippyBubble}>
             <span style={styles.blippyText}>{blippyText}</span>
           </div>
-          <BlippyAvatar />
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── MissionMap overlay (R17) ─────────────────────────────────────────────────
+//
+// The holographic globe (Cleo, hub_mission_map.jpg) with the three Ch1
+// investigation sites pinned over it. Region state:
+//   done     — arrive phase in history and not the current target
+//   current  — region of nextPhaseId (where the cadet is heading / investigating)
+//   upcoming — everything else
+
+const MAP_REGIONS = [
+  // x/y = pin position over the globe art (percent of the image box),
+  // matched to the glow points Cleo painted into hub_mission_map.jpg
+  { key: 'ch1_phoenix',   label: 'PHOENIX',    sub: 'ARIZONA, USA',    x: 29.5, y: 30 },
+  { key: 'ch1_sao_paulo', label: 'SÃO PAULO',  sub: 'BRAZIL',          x: 54.5, y: 67 },
+  { key: 'ch1_mumbai',    label: 'MUMBAI',     sub: 'INDIA',           x: 76,   y: 32 },
+];
+
+function regionOfPhase(phaseId) {
+  if (!phaseId) return null;
+  const m = MAP_REGIONS.find((r) => phaseId.startsWith(r.key));
+  return m ? m.key : null;
+}
+
+function MissionMap({ completedPhaseIds, nextPhaseId, onClose }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 20);
+    return () => clearTimeout(t);
+  }, []);
+
+  const currentRegion = regionOfPhase(nextPhaseId);
+
+  const stateOf = (regionKey) => {
+    if (regionKey === currentRegion) return 'current';
+    const arrived = completedPhaseIds.includes(`${regionKey}_arrive`);
+    const reviewed = completedPhaseIds.includes(`${regionKey}_findings`);
+    if (arrived || reviewed) return 'done';
+    return 'upcoming';
+  };
+
+  const stateColor = { done: CYAN, current: '#FFFFFF', upcoming: 'rgba(232,240,248,0.4)' };
+
+  return (
+    <div
+      style={styles.mapOverlayRoot}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={styles.mapBackdrop} onClick={onClose} />
+
+      <div style={{
+        ...styles.mapPanel,
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.97)',
+        transition: 'opacity 280ms ease, transform 280ms ease',
+      }}>
+        {/* Header */}
+        <div style={styles.mapHeaderRow}>
+          <div>
+            <div style={styles.mapKicker}>ORBITAL TRACKING — CHAPTER 01</div>
+            <div style={styles.mapTitle}>MISSION MAP</div>
+          </div>
+          <button onClick={onClose} style={styles.mapCloseBtn}>CLOSE</button>
+        </div>
+
+        {/* Globe with site pins */}
+        <div style={styles.mapGlobeWrap}>
+          <img
+            src="/mission-water/hub/hub_mission_map.jpg"
+            alt="Holographic Earth with investigation sites"
+            style={styles.mapGlobeImg}
+          />
+          {MAP_REGIONS.map((r) => {
+            const st = stateOf(r.key);
+            return (
+              <div key={r.key} style={{ ...styles.mapPin, left: `${r.x}%`, top: `${r.y}%` }}>
+                {st === 'current' && (
+                  <span className="hub-site-ping" style={styles.mapPinPing} />
+                )}
+                <span style={{
+                  ...styles.mapPinDot,
+                  background: st === 'upcoming' ? 'rgba(232,240,248,0.7)' : CYAN,
+                  boxShadow: st === 'upcoming' ? '0 0 6px rgba(232,240,248,0.5)' : `0 0 10px ${CYAN}`,
+                }} />
+                <span style={{
+                  ...styles.mapPinLabel,
+                  color: st === 'upcoming' ? 'rgba(232,240,248,0.85)' : stateColor[st],
+                  textShadow: st === 'upcoming'
+                    ? '0 1px 4px rgba(7,11,20,0.9), 0 0 10px rgba(7,11,20,0.9)'
+                    : '0 1px 4px rgba(7,11,20,0.9), 0 0 8px rgba(0,229,204,0.6)',
+                }}>
+                  {r.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Region status rows */}
+        <div style={styles.mapLegendCol}>
+          {MAP_REGIONS.map((r) => {
+            const st = stateOf(r.key);
+            return (
+              <div
+                key={r.key}
+                className={st === 'current' ? 'hub-map-current' : ''}
+                style={{
+                  ...styles.mapLegendRow,
+                  borderColor: st === 'current' ? CYAN
+                    : st === 'done' ? 'rgba(0,229,204,0.35)'
+                    : 'rgba(232,240,248,0.12)',
+                  background: st === 'current' ? 'rgba(0,229,204,0.08)'
+                    : st === 'done' ? 'rgba(0,229,204,0.04)'
+                    : 'transparent',
+                  animation: st === 'current' && !REDUCED ? 'hub-pulse 2s ease-out infinite' : 'none',
+                }}
+              >
+                <span style={{ ...styles.mapLegendStatus, color: stateColor[st] }}>
+                  {st === 'done' ? '✓' : st === 'current' ? '◉' : '○'}
+                </span>
+                <span style={{ ...styles.mapLegendLabel, color: st === 'upcoming' ? 'rgba(232,240,248,0.45)' : '#FFFFFF' }}>
+                  {r.label}
+                </span>
+                <span style={styles.mapLegendSub}>{r.sub}</span>
+                <span style={{
+                  ...styles.mapLegendState,
+                  color: st === 'done' ? CYAN : st === 'current' ? '#FFFFFF' : 'rgba(232,240,248,0.35)',
+                }}>
+                  {st === 'done' ? 'ANALYZED' : st === 'current' ? 'IN PROGRESS' : 'AWAITING'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
@@ -725,35 +948,6 @@ function tokenLabel(type) {
   return type.toUpperCase().slice(0, 4);
 }
 
-// Simple SVG Blippy avatar placeholder
-function BlippyAvatar() {
-  return (
-    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" style={styles.blippysvg}>
-      {/* Body */}
-      <ellipse cx="40" cy="50" rx="24" ry="22" fill="#0A1628" stroke="#00E5CC" strokeWidth="1.5" />
-      {/* Head */}
-      <circle cx="40" cy="28" r="18" fill="#0A1628" stroke="#00E5CC" strokeWidth="1.5" />
-      {/* Eyes */}
-      <ellipse cx="33" cy="26" rx="3.5" ry="4" fill="#00E5CC" />
-      <ellipse cx="47" cy="26" rx="3.5" ry="4" fill="#00E5CC" />
-      {/* Pupils */}
-      <circle cx="33" cy="27" r="1.5" fill="#070B14" />
-      <circle cx="47" cy="27" r="1.5" fill="#070B14" />
-      {/* Antenna */}
-      <line x1="40" y1="10" x2="40" y2="2" stroke="#00E5CC" strokeWidth="1.5" />
-      <circle cx="40" cy="2" r="2" fill="#00E5CC" />
-      {/* Arms */}
-      <line x1="16" y1="46" x2="6" y2="38" stroke="#00E5CC" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="64" y1="46" x2="74" y2="38" stroke="#00E5CC" strokeWidth="1.5" strokeLinecap="round" />
-      {/* Legs */}
-      <line x1="32" y1="70" x2="28" y2="78" stroke="#00E5CC" strokeWidth="1.5" strokeLinecap="round" />
-      <line x1="48" y1="70" x2="52" y2="78" stroke="#00E5CC" strokeWidth="1.5" strokeLinecap="round" />
-      {/* Smile */}
-      <path d="M 33 33 Q 40 39 47 33" stroke="#00E5CC" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 // ─── styles ──────────────────────────────────────────────────────────────────
 
 const CYAN = '#00E5CC';
@@ -770,22 +964,22 @@ const styles = {
     inset: 0,
     zIndex: 200,
     overflow: 'hidden',
+    background: SPACE_DARK,
     fontFamily: 'Rajdhani, sans-serif',
   },
 
-  bgImage: {
+  bgSpace: {
     position: 'absolute',
     inset: 0,
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-    objectPosition: 'center',
+    background: SPACE_DARK,
   },
 
-  bgOverlay: {
+  scanlines: {
     position: 'absolute',
     inset: 0,
-    background: 'rgba(7, 11, 20, 0.55)',
+    pointerEvents: 'none',
+    backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px)',
+    zIndex: 1,
   },
 
   scrollLayer: {
@@ -796,6 +990,7 @@ const styles = {
     flexDirection: 'column',
     alignItems: 'center',
     padding: '32px 16px 120px',
+    zIndex: 2,
   },
 
   centerFrame: {
@@ -806,22 +1001,31 @@ const styles = {
     gap: 24,
   },
 
-  // ── Header ──────────────────────────────────────────────────────
+  // ── Header — canon pattern (matches RoleSelect / BudgetPlanning) ──
   header: {
     textAlign: 'center',
     paddingTop: 16,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
 
-  headerAccentLine: {
-    width: 48,
-    height: 2,
-    background: CYAN,
-    boxShadow: `0 0 10px ${CYAN}`,
-    marginBottom: 2,
+  headerKicker: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 9,
+    letterSpacing: '0.3em',
+    color: CYAN,
+    textTransform: 'uppercase',
+  },
+
+  headerTitle: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontWeight: 700,
+    fontSize: 26,
+    letterSpacing: '0.08em',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
   },
 
   headerAccentLineFull: {
@@ -832,21 +1036,11 @@ const styles = {
     marginTop: 4,
   },
 
-  headerKicker: {
-    fontFamily: 'Orbitron, sans-serif',
-    fontWeight: 900,
-    fontSize: 22,
-    letterSpacing: '0.35em',
-    color: CYAN,
-    textTransform: 'uppercase',
-    textShadow: `0 0 20px rgba(0,229,204,0.6), 0 0 40px rgba(0,229,204,0.2)`,
-  },
-
   headerContext: {
     fontFamily: 'Rajdhani, sans-serif',
     fontWeight: 600,
-    fontSize: 16,
-    color: 'rgba(232,240,248,0.75)',
+    fontSize: 15,
+    color: TEXT_DIM,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
   },
@@ -877,27 +1071,25 @@ const styles = {
   // ── Card grid ────────────────────────────────────────────────────
   cardGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
     gap: 14,
-    // Mobile: single column via @media not available inline, use JS style below
   },
 
   card: {
-    background: 'rgba(10, 22, 40, 0.85)',
+    background: PANEL_BG,
     border: `1px solid ${BORDER_CYAN}`,
     borderRadius: 4,
-    padding: '18px 20px',
     cursor: 'pointer',
     minHeight: 120,
     transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
     display: 'flex',
     flexDirection: 'column',
-    gap: 10,
+    overflow: 'hidden',
   },
 
   cardPrimary: {
     border: `2px solid ${CYAN}`,
-    background: 'rgba(0, 229, 204, 0.06)',
+    boxShadow: '0 0 18px rgba(0,229,204,0.18)',
   },
 
   cardHover: {
@@ -906,9 +1098,42 @@ const styles = {
   },
 
   cardLocked: {
-    opacity: 0.5,
+    opacity: 0.55,
     borderColor: 'rgba(232, 240, 248, 0.12)',
     cursor: 'not-allowed',
+  },
+
+  // Cleo art banner on each card
+  cardArtWrap: {
+    position: 'relative',
+    width: '100%',
+    height: 92,
+    flexShrink: 0,
+    overflow: 'hidden',
+  },
+
+  cardArtImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'center',
+    display: 'block',
+    transition: 'filter 0.15s ease',
+  },
+
+  cardArtFade: {
+    position: 'absolute',
+    inset: 0,
+    background: `linear-gradient(to bottom, rgba(10,22,40,0.1) 0%, rgba(10,22,40,0.25) 60%, ${PANEL_BG} 100%)`,
+    pointerEvents: 'none',
+  },
+
+  cardBody: {
+    padding: '14px 20px 18px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    flex: 1,
   },
 
   cardHeader: {
@@ -1000,59 +1225,170 @@ const styles = {
     fontStyle: 'italic',
   },
 
-  // ── Map ───────────────────────────────────────────────────────────
-  mapContainer: {
-    marginTop: 4,
-  },
-
-  mapPills: {
-    display: 'flex',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-
-  mapPill: {
-    fontFamily: 'Orbitron, sans-serif',
-    fontSize: 9,
-    letterSpacing: '0.2em',
-    padding: '5px 12px',
-    borderRadius: 2,
+  // ── Mission Map overlay ───────────────────────────────────────────
+  mapOverlayRoot: {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 300,
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    justifyContent: 'center',
+    padding: 16,
+  },
+
+  mapBackdrop: {
+    position: 'absolute',
+    inset: 0,
+    background: 'rgba(7,11,20,0.8)',
+  },
+
+  mapPanel: {
+    position: 'relative',
+    zIndex: 1,
+    width: 'min(680px, 96vw)',
+    maxHeight: '92vh',
+    overflowY: 'auto',
+    background: 'rgba(5,8,18,0.97)',
+    border: '1px solid rgba(0,229,204,0.25)',
+    borderRadius: 4,
+    boxShadow: '0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(0,229,204,0.08)',
+    padding: '24px 26px 26px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 18,
+  },
+
+  mapHeaderRow: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+
+  mapKicker: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 9,
+    letterSpacing: '0.35em',
+    color: CYAN,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+  },
+
+  mapTitle: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontWeight: 700,
+    fontSize: 20,
+    color: '#FFFFFF',
+    letterSpacing: '0.08em',
     textTransform: 'uppercase',
   },
 
-  mapPillDone: {
-    background: 'rgba(0, 229, 204, 0.15)',
-    border: `1px solid ${CYAN}`,
+  mapCloseBtn: {
+    background: 'transparent',
+    border: '1px solid rgba(0,229,204,0.3)',
     color: CYAN,
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 12,
+    letterSpacing: '0.15em',
+    padding: '8px 14px',
+    borderRadius: 2,
+    cursor: 'pointer',
+    flexShrink: 0,
   },
 
-  mapPillCurrent: {
-    background: 'rgba(0, 229, 204, 0.06)',
-    border: `1px solid ${CYAN}`,
-    color: TEXT_PRIMARY,
-    animation: 'pulse 1.5s ease-in-out infinite',
+  mapGlobeWrap: {
+    position: 'relative',
+    width: '100%',
+    borderRadius: 4,
+    overflow: 'hidden',
+    border: '1px solid rgba(0,229,204,0.15)',
   },
 
-  mapPillUpcoming: {
-    background: 'rgba(232, 240, 248, 0.04)',
-    border: '1px solid rgba(232, 240, 248, 0.15)',
-    color: 'rgba(232, 240, 248, 0.4)',
+  mapGlobeImg: {
+    width: '100%',
+    display: 'block',
   },
 
-  mapPillCheck: {
-    color: CYAN,
-    fontSize: 10,
+  mapPin: {
+    position: 'absolute',
+    transform: 'translate(-50%, -50%)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 4,
+    pointerEvents: 'none',
   },
 
-  mapPillDot: {
-    display: 'inline-block',
-    width: 6,
-    height: 6,
+  mapPinPing: {
+    position: 'absolute',
+    top: -4,
+    width: 16,
+    height: 16,
     borderRadius: '50%',
-    background: CYAN,
+    border: `2px solid ${CYAN}`,
+    animation: 'hub-site-ping 1.6s ease-out infinite',
+  },
+
+  mapPinDot: {
+    width: 8,
+    height: 8,
+    borderRadius: '50%',
+  },
+
+  mapPinLabel: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 9,
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase',
+    whiteSpace: 'nowrap',
+  },
+
+  mapLegendCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+
+  mapLegendRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    border: '1px solid',
+    borderRadius: 4,
+    padding: '10px 14px',
+  },
+
+  mapLegendStatus: {
+    fontSize: 12,
+    width: 16,
+    textAlign: 'center',
+    flexShrink: 0,
+  },
+
+  mapLegendLabel: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontWeight: 700,
+    fontSize: 11,
+    letterSpacing: '0.18em',
+    textTransform: 'uppercase',
+    flexShrink: 0,
+  },
+
+  mapLegendSub: {
+    fontFamily: 'Rajdhani, sans-serif',
+    fontSize: 12,
+    letterSpacing: '0.1em',
+    color: 'rgba(232,240,248,0.4)',
+    textTransform: 'uppercase',
+    flex: 1,
+  },
+
+  mapLegendState: {
+    fontFamily: 'Orbitron, sans-serif',
+    fontSize: 8,
+    letterSpacing: '0.2em',
+    textTransform: 'uppercase',
+    flexShrink: 0,
   },
 
   // ── Pace toggle ────────────────────────────────────────────────────
@@ -1091,7 +1427,7 @@ const styles = {
     fontSize: 13,
   },
 
-  // ── Blippy ───────────────────────────────────────────────────────
+  // ── Blippy — real art in cyan porthole (matches RoleSelect) ───────
   blippy: {
     position: 'fixed',
     bottom: 24,
@@ -1101,6 +1437,26 @@ const styles = {
     gap: 10,
     zIndex: 250,
     maxWidth: 320,
+  },
+
+  blippyCircle: {
+    flexShrink: 0,
+    width: 80,
+    height: 80,
+    borderRadius: '50%',
+    border: `2px solid ${CYAN}`,
+    overflow: 'hidden',
+    background: 'rgba(0,229,204,0.06)',
+    boxShadow: `0 0 12px rgba(0,229,204,0.20)`,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  blippyImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
   },
 
   blippyBubble: {
@@ -1117,9 +1473,5 @@ const styles = {
     fontSize: 13,
     color: TEXT_PRIMARY,
     lineHeight: 1.5,
-  },
-
-  blippysvg: {
-    flexShrink: 0,
   },
 };

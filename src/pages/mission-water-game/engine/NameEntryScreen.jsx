@@ -164,6 +164,9 @@ export default function NameEntryScreen({ onConfirm }) {
         <StarCanvas />
       </div>
 
+      {/* Scanline overlay — same instrument texture as the rest of the game */}
+      <div style={S.scanlines} />
+
       {/* Scrollable overlay — centers panel vertically */}
       <div style={S.overlay}>
         <div style={S.flex1} />
@@ -196,7 +199,7 @@ export default function NameEntryScreen({ onConfirm }) {
                   transition: 'opacity 300ms ease, transform 300ms ease',
                 }}>CADET?</span>
               </h1>
-              <p  style={S.subtext}>EPIC. BADGE DAY.</p>
+              <p  style={S.subtext}>EVERY MISSION BEGINS WITH A NAME.</p>
             </div>
 
             {/* Name input */}
@@ -298,6 +301,14 @@ const S = {
   },
   flex1: { flex: 1, minHeight: 24 },
 
+  scanlines: {
+    position: 'absolute',
+    inset: 0,
+    pointerEvents: 'none',
+    backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px)',
+    zIndex: 1,
+  },
+
   panelOuter: {
     width: '100%',
     maxWidth: 'min(640px, 90vw)',
@@ -316,23 +327,22 @@ const S = {
     gap: 28,
   },
 
+  // Canon header pattern (matches RoleSelect): cyan Orbitron kicker, white title
   kicker: {
-    fontFamily: '"Rajdhani", sans-serif',
-    fontWeight: 600,
-    fontSize: 'clamp(10px,1.5vw,12px)',
+    fontFamily: '"Orbitron", sans-serif',
+    fontSize: 'clamp(9px,1.4vw,11px)',
     letterSpacing: '0.35em',
-    color: TEXT_OFF,
+    color: CYAN,
     textTransform: 'uppercase',
-    marginBottom: 6,
+    marginBottom: 8,
   },
 
-  // DESIGN.md: Orbitron 700, clamp(20px,4vw,36px), #00E5CC, 0.2em
   headline: {
     fontFamily: '"Orbitron", sans-serif',
     fontWeight: 700,
-    fontSize: 'clamp(20px,4vw,36px)',
-    letterSpacing: '0.2em',
-    color: CYAN,
+    fontSize: 'clamp(20px,4vw,32px)',
+    letterSpacing: '0.1em',
+    color: '#FFFFFF',
     textTransform: 'uppercase',
     margin: 0,
     marginBottom: 8,
