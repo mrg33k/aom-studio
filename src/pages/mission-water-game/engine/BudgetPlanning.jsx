@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import StarCanvas from './StarCanvas.jsx';
-import Blippy from './Blippy.jsx';
 
 // ─── palette ─────────────────────────────────────────────────────────────────
 const SPACE_DARK = '#070B14';
@@ -285,12 +284,6 @@ export default function BudgetPlanning({ selectedRole, rolesData, onConfirm, onB
 
           {/* Blippy — shared full-body component, lower-left of the briefing
               column, FLIPPED so he faces the allocation panel (the action). */}
-          {/* Default pose gestures right — toward the allocation panel. */}
-          <div style={styles.blippyAnchor}>
-            <Blippy
-              text="Tokens are your skills — supplies keep you alive out there. Spend every point, then hit DEPLOY MISSION."
-            />
-          </div>
         </div>
 
         {/* ── RIGHT COLUMN — resource allocation panel ── */}
@@ -811,12 +804,4 @@ const styles = {
     transition: 'opacity 150ms ease, box-shadow 150ms ease',
   },
 
-  // ── Blippy companion — shared full-body component ────────────────
-  blippyAnchor: {
-    position: 'absolute',
-    bottom: 20,
-    left: 24,
-    zIndex: 3,
-    pointerEvents: 'none',
-  },
 };

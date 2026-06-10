@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StarCanvas from './StarCanvas.jsx';
-import Blippy from './Blippy.jsx';
 
 /**
  * NameEntryScreen — R9 Conrad Foundation Mission Water Game
@@ -166,14 +165,6 @@ export default function NameEntryScreen({ onConfirm }) {
           {/* ── end instrument panel ─────────────────────────────────────── */}
 
         </div>
-
-        {/* Blippy — in flow under the panel; floats lower-left only when the
-            centered panel has free margin (≥1180px) */}
-        <Blippy
-          dock={1180}
-          visible={blippyReady}
-          text={bubbleReady ? 'Type your name and hit CONFIRM — the Council logs every cadet who flies.' : null}
-        />
 
         <div style={S.flex1} />
       </div>

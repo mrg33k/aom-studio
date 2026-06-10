@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import StarCanvas from './StarCanvas.jsx';
-import Blippy from './Blippy.jsx';
 
 /**
  * WelcomeScreen — Grand Opening title screen for Space Mission: Water.
@@ -573,14 +572,6 @@ export default function WelcomeScreen({ onStart }) {
           </div>{/* /wg-panel-outer */}
 
         </div>{/* /wg-outer-wrapper */}
-
-        {/* Blippy — in flow under the panel; floats lower-left only when the
-            centered panel has free margin (≥1200px) */}
-        <Blippy
-          dock={1200}
-          visible={blippyReady}
-          text={bubbleReady ? 'Ready, Cadet? Pick your mission and press BEGIN.' : null}
-        />
 
         {/* Bottom flex spacer — mirrors top spacer for centering */}
         <div style={{ flex: '1 0 0' }} />

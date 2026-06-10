@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import StarCanvas from './StarCanvas.jsx';
-import Blippy from './Blippy.jsx';
 import { SUPPLY_DEFS, SUPPLY_MAX } from './PhaseManager.js';
 
 // ─── prefers-reduced-motion ───────────────────────────────────────────────────
@@ -71,45 +70,21 @@ export default function HubScreen({
   // THEN the header, then the cards. Bg breathes in before any box appears.
   const [worldReady,  setWorldReady]  = useState(REDUCED);
   const [headerReady, setHeaderReady] = useState(REDUCED);
-  const [blippyReady, setBlippyReady] = useState(REDUCED);
 
   useEffect(() => {
     if (REDUCED) return;
     const t0 = setTimeout(() => setWorldReady(true),  30);
     const t1 = setTimeout(() => setHeaderReady(true), 750);
-    const t2 = setTimeout(() => setBlippyReady(true), 1250);
-    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t0); clearTimeout(t1); };
   }, []);
 
   // Resource token + supply counts
   const communityTokens = currentResources?.community_partnerships ?? 0;
   const samplingTokens = currentResources?.sampling_kits ?? 0;
   const toolsSupply = supplies?.tools ?? 0;
-  const lowSupplies = supplies
-    ? (supplies.food ?? 1) <= 2 || (supplies.power ?? 1) <= 2
-    : false;
-  const emptySupplies = supplies
-    ? (supplies.food ?? 1) <= 0 || (supplies.power ?? 1) <= 0
-    : false;
 
-  // Blippy guiding line — tells the cadet what to DO here, staged by progress
-  // and by how the supplies are holding up.
-  const blippyText = (() => {
-    if (emptySupplies) {
-      return 'We are running on empty, Cadet — hit the SUPPLY STORE before you push on, or the next leg costs us.';
-    }
-    if (lowSupplies) {
-      return 'Supplies are getting thin. Spend some credits at the SUPPLY STORE, then CONTINUE.';
-    }
-    const ratio = regionsTotal > 0 ? regionsCompleted / regionsTotal : 0;
-    if (ratio >= 0.66) {
-      return 'Final region ahead — use the tokens you have left, then CONTINUE to face the Council.';
-    }
-    if (ratio >= 0.33) {
-      return 'Tokens run out fast. Spend them where they count, then hit CONTINUE INVESTIGATION.';
-    }
-    return 'This is your checkpoint. Pick an action card — or hit CONTINUE INVESTIGATION when you are ready.';
-  })();
+  // (Blippy's hub guiding line lives in MissionWaterGame now — the one
+  // persistent companion speaks for every screen.)
 
   const spendFieldInterview = () => {
     if (communityTokens <= 0) return;
@@ -407,11 +382,6 @@ export default function HubScreen({
           </div>
         </div>
 
-        {/* Blippy — in flow under the card grid; floats lower-left only when
-            the centered frame has free margin (≥1420px) */}
-        {!showStore && !showMap && (
-          <Blippy visible={blippyReady} dock={1420} text={blippyText} />
-        )}
       </div>
 
       {/* ── MISSION MAP overlay (R17 — holographic globe + region states) ── */}

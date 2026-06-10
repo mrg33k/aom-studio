@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Blippy from './Blippy.jsx';
 
 /**
  * HUD — Mission Water Game instrument panel overlay.
@@ -89,7 +88,7 @@ export default function HUD({ phase, hud, onChoose, resources, playerName }) {
 
   return (
     <div style={styles.root}>
-      {/* ── R18a sequencing + Blippy placement ──────────────────── */}
+      {/* ── R18a sequencing ─────────────────────────────────────── */}
       <style>{`
         /* Debrief card lands AFTER the background image has breathed in */
         @keyframes hud-card-in {
@@ -97,10 +96,6 @@ export default function HUD({ phase, hud, onChoose, resources, playerName }) {
           to   { opacity: 1; transform: translateY(0); }
         }
         .hud-debrief { animation: hud-card-in 500ms ease 750ms both; }
-        /* Blippy — full-body companion left of the debrief card; hidden when
-           the viewport is too narrow to fit him beside the card */
-        .hud-blippy { position: absolute; bottom: 26px; left: 18px; z-index: 20; pointer-events: none; }
-        @media (max-width: 1400px) { .hud-blippy { display: none; } }
         @media (prefers-reduced-motion: reduce) {
           .hud-debrief { animation: none; }
         }
@@ -123,14 +118,6 @@ export default function HUD({ phase, hud, onChoose, resources, playerName }) {
       {isCouncil && (hud.discovery_ids || []).length > 0 && (
         <FramedAwards ids={hud.discovery_ids} />
       )}
-
-      {/* ── BLIPPY COMPANION — shared full-body component, beside the card ── */}
-      <div className="hud-blippy">
-        <Blippy
-          size="sm"
-          text="Read the briefing, then pick your move below."
-        />
-      </div>
 
       {/* ── MISSION DEBRIEF + CHOICES ───────────────────────────── */}
       <div style={styles.bottom}>

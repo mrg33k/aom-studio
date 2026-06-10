@@ -10,6 +10,7 @@ import BudgetPlanning from './mission-water-game/engine/BudgetPlanning.jsx';
 import WelcomeScreen from './mission-water-game/engine/WelcomeScreen.jsx';
 import NameEntryScreen from './mission-water-game/engine/NameEntryScreen.jsx';
 import ManifestDrawer, { ManifestTab } from './mission-water-game/engine/ManifestDrawer.jsx';
+import Blippy from './mission-water-game/engine/Blippy.jsx';
 import {
   initRunState,
   getCurrentPhase,
@@ -18,6 +19,7 @@ import {
   applyPurchase,
   spendHubAction,
   setPace,
+  isWeakened,
 } from './mission-water-game/engine/PhaseManager.js';
 
 // ─── Hub logic helpers ────────────────────────────────────────────────────────
@@ -292,6 +294,47 @@ export default function MissionWaterGame() {
 
   const activeChapter = phase ? (phase.chapter || 1) : 1;
 
+  // ── R18c — ONE persistent Blippy, buttery mechanics ─────────────────────────
+  // He never unmounts: the root owns him, screens just change which guiding
+  // line he speaks. No per-screen teleports, no dock that can drop him below
+  // the fold.
+  const screenKey = !hasStarted ? 'welcome'
+    : !nameEntered ? 'name'
+    : !selectedRole ? 'role'
+    : !budgetConfirmed ? 'budget'
+    : showHub ? 'hub'
+    : 'game';
+
+  const blippyGuide = (() => {
+    const cadet = (playerName || 'Cadet').trim();
+    switch (screenKey) {
+      case 'welcome':
+        return 'Ready, Cadet? Pick your mission and press BEGIN.';
+      case 'name':
+        return 'Type your name and hit CONFIRM — the Council logs every cadet who flies.';
+      case 'role':
+        return `Choose your role, ${cadet} — each investigator sees the problem differently.`;
+      case 'budget':
+        return 'Tokens are your skills — supplies keep you alive out there. Spend every point, then hit DEPLOY MISSION.';
+      case 'hub': {
+        const s = runState.supplies || {};
+        if (isWeakened(runState)) {
+          return 'We are running on empty, Cadet — hit the SUPPLY STORE before you push on, or the next leg costs us.';
+        }
+        if ((s.food ?? 5) <= 2 || (s.power ?? 5) <= 2) {
+          return 'Supplies are getting thin. Spend some credits at the SUPPLY STORE, then CONTINUE.';
+        }
+        const done = countRegionsCompleted(runState.history || []);
+        if (done >= 2) return 'Final region ahead — use the tokens you have left, then CONTINUE to face the Council.';
+        if (done >= 1) return 'Tokens run out fast. Spend them where they count, then hit CONTINUE INVESTIGATION.';
+        return 'This is your checkpoint. Pick an action card — or hit CONTINUE INVESTIGATION when you are ready.';
+      }
+      case 'game':
+      default:
+        return 'Read the briefing, then pick your move below.';
+    }
+  })();
+
   // Mount-time: set <title> for browser tab.
   useEffect(() => {
     const prev = document.title;
@@ -398,6 +441,9 @@ export default function MissionWaterGame() {
           />
         </div>
       )}
+
+      {/* ── R18c — ONE persistent floating Blippy, alive across every screen ── */}
+      <Blippy screenKey={screenKey} text={blippyGuide} />
 
       {/* ── R18b — persistent MANIFEST: tab + drawer on EVERY screen ────── */}
       <ManifestTab runState={runState} onOpen={() => setShowManifest(true)} />

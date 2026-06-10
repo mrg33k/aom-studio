@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import StarCanvas from './StarCanvas.jsx';
-import Blippy from './Blippy.jsx';
 
 // ─── prefers-reduced-motion ───────────────────────────────────────────────────
 const REDUCED = typeof window !== 'undefined' &&
@@ -299,13 +298,6 @@ export default function RoleSelect({ rolesData, playerName = '', onConfirm }) {
             </button>
           </div>
         </div>
-
-        {/* Blippy — in flow under the panel; floats lower-left only when the
-            wide role panel has free margin (≥1680px) */}
-        <Blippy
-          dock={1680}
-          text={`Choose your role, ${cadet} — each investigator sees the problem differently.`}
-        />
 
         <div style={styles.flex1} />
       </div>
