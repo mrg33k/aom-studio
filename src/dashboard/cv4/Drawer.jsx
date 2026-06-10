@@ -622,7 +622,7 @@ function DrawerBody({
           // Sort by most recent mission activity — project with the newest
           // last_message_at across any of its missions floats to the top.
           // Projects with no activity data fall to the bottom alphabetically.
-          [...projectRooms].sort((a, b) => {
+          (() => {
             const getRecent = (slug) => {
               const entry = tasksByProject?.get(slug)
               let max = 0
@@ -640,11 +640,17 @@ function DrawerBody({
               }
               return max
             }
-            const ta = getRecent(a.slug)
-            const tb = getRecent(b.slug)
-            if (ta !== tb) return tb - ta  // most recent first
-            return (a.name || '').localeCompare(b.name || '')  // alpha fallback
-          }).map(p => {
+            const ranked = [...projectRooms]
+              .map(p => ({ p, ts: getRecent(p.slug) }))
+              .sort((x, y) => {
+                if (x.ts !== y.ts) return y.ts - x.ts  // most recent first
+                return (x.p.name || '').localeCompare(y.p.name || '')  // alpha fallback
+              })
+            // The living and the dormant should read differently: a quiet
+            // divider separates projects with an activity signal from the
+            // silent alphabetical tail, so 25 rows stop reading as one wall.
+            const firstQuiet = ranked.findIndex(x => x.ts === 0)
+            return ranked.map(({ p }, rankIdx) => {
             // R4 — prefer the live registry-backed tree (from missions-tree
             // API), fall back to the static missions.json catalog. The
             // registry is authoritative; the static catalog is stale.
@@ -670,6 +676,13 @@ function DrawerBody({
             const hasMissions = missions.length > 0
             return (
               <div key={p.slug}>
+                {rankIdx === firstQuiet && firstQuiet > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 8px 4px' }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase',
+                      color: C.muted, fontFamily: MENU.monoFont }}>Quiet</span>
+                    <span style={{ flex: 1, height: 1, background: C.border2 }} />
+                  </div>
+                )}
                 <FolderRow
                   label={p.name}
                   hasChildren={hasMissions}
@@ -730,6 +743,7 @@ function DrawerBody({
               </div>
             )
           })
+          })()
         )}
       </TreeSection>
 
