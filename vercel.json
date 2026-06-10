@@ -482,6 +482,14 @@
     {
       "source": "/sensible/:path*",
       "destination": "/sensible/:path*"
+    },
+    {
+      "source": "/swan",
+      "destination": "/swan/index.html"
+    },
+    {
+      "source": "/swan/:path*",
+      "destination": "/swan/:path*"
     }
   ],
   "redirects": [

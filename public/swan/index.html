@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swan Burial &amp; Cremation — concept by AOM</title>
+<meta name="description" content="Family owned since 1964. Transparent pricing. We own and operate our own crematory. Quiet, dignified care for southern Arizona.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#f5f1e8;       /* warm ivory ground */
+    --ivory-2:#efe9db;     /* panels */
+    --ink:#211f1b;         /* warm near-black */
+    --ink-soft:#6a655c;    /* secondary */
+    --stone:#a59d8d;       /* muted label */
+    --gold:#c0954a;        /* single accent (their swan gold) */
+    --gold-soft:#d2ab68;
+    --line:rgba(33,31,27,.14);
+    --line-soft:rgba(33,31,27,.08);
+    --line-d:rgba(245,241,232,.18);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Hanken Grotesk',system-ui,sans-serif;background:var(--ivory);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.7;font-weight:400;overflow-x:hidden}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 clamp(24px,6vw,56px)}
+  .serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
+  img{max-width:100%;display:block}
+
+  #intro{position:fixed;inset:0;z-index:999;background:var(--ivory);display:flex;align-items:center;justify-content:center;animation:introOut 1s ease 1.8s forwards}
+  #intro img{width:min(280px,64vw);opacity:0;animation:fadeIn 1.1s ease .2s forwards}
+  @keyframes fadeIn{to{opacity:1}}
+  @keyframes introOut{to{opacity:0;visibility:hidden}}
+
+  /* slow, restrained reveal — the only "movement" */
+  .obs{opacity:0;transform:translateY(22px);transition:opacity 1.4s cubic-bezier(.2,.7,.2,1),transform 1.4s cubic-bezier(.2,.7,.2,1)}
+  .obs.in{opacity:1;transform:none}
+  .rule{height:1px;background:var(--gold);width:0;transition:width 1.6s cubic-bezier(.2,.7,.2,1)}
+  .rule.in{width:64px}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:13.5px;letter-spacing:.4px;border-radius:1px;padding:15px 32px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:background .25s,color .25s,transform .25s}
+  .btn-ink{background:var(--ink);color:var(--ivory)}
+  .btn-ink:hover{background:#000;transform:translateY(-1px)}
+  .btn-line{border:1px solid var(--ink);color:var(--ink);background:transparent}
+  .btn-line:hover{background:var(--ink);color:var(--ivory)}
+  .btn-gold{background:var(--gold);color:#fff}
+  .btn-gold:hover{background:var(--gold-soft)}
+
+  /* HEADER — minimal */
+  header{position:absolute;top:0;left:0;right:0;z-index:30}
+  nav{display:flex;align-items:center;justify-content:space-between;padding:30px 0}
+  .navlogo{height:42px;width:auto}
+  .navlinks{display:flex;gap:36px;list-style:none}
+  .navlinks a{text-decoration:none;color:var(--ink);font-size:13px;font-weight:500;letter-spacing:.3px;opacity:.78;transition:opacity .2s}
+  .navlinks a:hover{opacity:1}
+  .navcta{display:flex;align-items:center;gap:20px}
+  .phone{font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none;white-space:nowrap}
+
+  /* HERO — type-first, vast whitespace */
+  .hero{min-height:100vh;display:flex;align-items:center;padding:140px 0 90px}
+  .hero-label{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--stone);font-weight:600;margin-bottom:30px;display:flex;align-items:center;gap:16px}
+  .hero-label .ln{width:34px;height:1px;background:var(--gold)}
+  .hero h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(52px,9vw,128px);line-height:.96;letter-spacing:-.5px;color:var(--ink);margin-bottom:34px;max-width:14ch}
+  .hero h1 em{font-style:italic;color:var(--gold)}
+  .hero .sub{font-size:clamp(16px,1.7vw,19px);line-height:1.7;color:var(--ink-soft);max-width:440px;margin-bottom:42px}
+  .hero-cta{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+
+  /* STATEMENT SECTIONS — one thought per screen */
+  .stmt{padding:clamp(90px,14vw,180px) 0;border-top:1px solid var(--line-soft)}
+  .stmt-label{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--stone);font-weight:600;margin-bottom:34px}
+  .stmt-q{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(30px,4.6vw,60px);line-height:1.14;color:var(--ink);max-width:18ch;letter-spacing:-.3px}
+  .stmt-q em{font-style:italic;color:var(--gold)}
+  .stmt.center{text-align:center}
+  .stmt.center .stmt-q{margin:0 auto;max-width:24ch}
+  .stmt.center .rule{margin:0 auto 34px}
+  .stmt-attr{margin-top:34px;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+
+  /* PRICING — surface the transparency they promise but hide */
+  .pricing{padding:clamp(80px,12vw,150px) 0;border-top:1px solid var(--line-soft);background:var(--ivory-2)}
+  .pricing-head{max-width:560px;margin-bottom:60px}
+  .pricing-head .pe{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:18px}
+  .pricing-head h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,5vw,64px);line-height:1.02;color:var(--ink);letter-spacing:-.4px;margin-bottom:18px}
+  .pricing-head p{font-size:16px;line-height:1.7;color:var(--ink-soft)}
+  .price-rows{display:grid;gap:0;border-top:1px solid var(--line)}
+  .price-row{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:baseline;padding:26px 4px;border-bottom:1px solid var(--line)}
+  .price-row .pname{font-family:'Instrument Serif',serif;font-size:clamp(22px,2.6vw,30px);color:var(--ink)}
+  .price-row .pdesc{font-size:13.5px;color:var(--ink-soft);margin-top:4px;max-width:46ch}
+  .price-row .pamt{font-family:'Instrument Serif',serif;font-size:clamp(24px,3vw,36px);color:var(--gold);white-space:nowrap}
+  .price-row .pamt small{font-family:'Hanken Grotesk',sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--stone);display:block;text-align:right;font-weight:600}
+  .price-note{margin-top:30px;font-size:14px;color:var(--ink-soft)}
+
+  /* SERVICES — restrained two-column list */
+  .svc{padding:clamp(80px,12vw,150px) 0;border-top:1px solid var(--line-soft)}
+  .svc-head{margin-bottom:56px}
+  .svc-head .se{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:16px}
+  .svc-head h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(34px,5vw,64px);line-height:1.02;color:var(--ink);letter-spacing:-.4px}
+  .svc-list{display:grid;grid-template-columns:1fr 1fr;gap:0 clamp(40px,6vw,80px)}
+  .svc-item{display:flex;gap:20px;padding:28px 0;border-bottom:1px solid var(--line-soft);align-items:baseline}
+  .svc-item .si{font-family:'Instrument Serif',serif;font-style:italic;font-size:18px;color:var(--gold);flex-shrink:0;width:30px}
+  .svc-item h3{font-family:'Instrument Serif',serif;font-size:24px;color:var(--ink);margin-bottom:5px;line-height:1.1}
+  .svc-item p{font-size:13.5px;line-height:1.6;color:var(--ink-soft)}
+
+  /* FORM — ultra-minimal, single calm panel */
+  .reach{padding:clamp(90px,13vw,170px) 0;border-top:1px solid var(--line-soft);text-align:center}
+  .reach .re{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:20px}
+  .reach h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(36px,6vw,80px);line-height:1.0;color:var(--ink);letter-spacing:-.5px;margin-bottom:22px}
+  .reach .rsub{font-size:16px;color:var(--ink-soft);max-width:480px;margin:0 auto 48px;line-height:1.7}
+  .reach-form{max-width:520px;margin:0 auto;text-align:left}
+  .rf-modes{display:flex;gap:0;margin-bottom:34px;border:1px solid var(--line)}
+  .rf-mode{flex:1;padding:14px 8px;cursor:pointer;text-align:center;font-size:13px;font-weight:600;color:var(--ink-soft);transition:background .2s,color .2s;border-right:1px solid var(--line)}
+  .rf-mode:last-child{border-right:none}
+  .rf-mode.sel{background:var(--ink);color:var(--ivory)}
+  .rf-urgent{display:none;margin-bottom:26px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center}
+  .rf-urgent a{font-family:'Instrument Serif',serif;font-size:30px;color:var(--ink);text-decoration:none}
+  .rf-urgent .u{font-size:13px;color:var(--ink-soft);margin-top:6px}
+  .rf-field{margin-bottom:0;border-bottom:1px solid var(--line)}
+  .rf-field input,.rf-field textarea{width:100%;border:none;background:transparent;padding:18px 2px;font-family:inherit;font-size:16px;color:var(--ink)}
+  .rf-field input::placeholder,.rf-field textarea::placeholder{color:var(--stone)}
+  .rf-field input:focus,.rf-field textarea:focus{outline:none}
+  .rf-field textarea{min-height:80px;resize:vertical}
+  .rf-submit{width:100%;background:var(--ink);color:var(--ivory);border:none;border-radius:1px;padding:18px;font-family:inherit;font-size:14px;font-weight:600;letter-spacing:.5px;cursor:pointer;margin-top:30px;transition:background .2s}
+  .rf-submit:hover{background:#000}
+  .rf-foot{text-align:center;font-size:11.5px;color:var(--stone);margin-top:16px;letter-spacing:.3px}
+  .rf-success{display:none;text-align:center;padding:30px 0}
+  .rf-success.show{display:block}
+  .rf-success .ck{font-family:'Instrument Serif',serif;font-size:44px;color:var(--gold);margin-bottom:14px}
+  .rf-success h3{font-family:'Instrument Serif',serif;font-size:32px;color:var(--ink);margin-bottom:10px}
+  .rf-success p{font-size:14.5px;color:var(--ink-soft);max-width:380px;margin:0 auto;line-height:1.6}
+
+  /* FOOTER — deep ink, gold logo */
+  footer{background:var(--ink);color:rgba(245,241,232,.78);padding:80px 0 36px}
+  .foot-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-bottom:56px;align-items:flex-start}
+  .foot-logo{height:52px;width:auto;margin-bottom:16px}
+  .foot-brand p{font-size:14px;line-height:1.6;color:rgba(245,241,232,.66);max-width:320px}
+  .foot-cols{display:flex;gap:clamp(40px,6vw,80px);flex-wrap:wrap}
+  .foot-col h4{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-soft);font-weight:700;margin-bottom:16px}
+  .foot-col a,.foot-col p{display:block;font-size:14px;color:rgba(245,241,232,.74);text-decoration:none;margin-bottom:9px;line-height:1.5}
+  .foot-col a:hover{color:var(--gold-soft)}
+  .foot-bottom{border-top:1px solid var(--line-d);padding-top:26px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;color:rgba(245,241,232,.5)}
+  .foot-bottom a{color:var(--gold-soft);text-decoration:none}
+
+  /* DRAWER (ink/ivory minimal) */
+  .drawer{position:fixed;left:0;right:0;bottom:0;z-index:600;background:var(--ivory);border-top:1px solid var(--gold);box-shadow:0 -16px 50px rgba(33,31,27,.16);transform:translateY(calc(100% - 62px));transition:transform .55s cubic-bezier(.5,0,.2,1)}
+  .drawer.open{transform:translateY(0)}
+  .drawer-handle{height:62px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 clamp(20px,5vw,46px);cursor:pointer}
+  .dh-left{display:flex;align-items:center;gap:14px;min-width:0}
+  .dh-grade{width:40px;height:40px;border-radius:50%;border:1px solid var(--gold);color:var(--gold);font-family:'Instrument Serif',serif;font-size:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .dh-txt b{font-family:'Instrument Serif',serif;font-size:18px;color:var(--ink);display:block;line-height:1.1;font-weight:400}
+  .dh-txt span{font-size:12.5px;color:var(--ink-soft)}
+  .dh-toggle{font-size:12.5px;font-weight:700;letter-spacing:.5px;color:var(--gold);white-space:nowrap;flex-shrink:0;display:inline-flex;gap:8px;align-items:center}
+  .dh-toggle .chev{transition:transform .4s}
+  .drawer.open .dh-toggle .chev{transform:rotate(180deg)}
+  .drawer-body{max-height:min(74vh,720px);overflow-y:auto;padding:12px clamp(20px,5vw,46px) 40px}
+  .rc-intro{text-align:center;max-width:720px;margin:8px auto 30px}
+  .rc-intro .rce{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:14px}
+  .rc-intro h3{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(28px,3.6vw,46px);color:var(--ink);line-height:1.04}
+  .rc-intro h3 em{font-style:italic;color:var(--gold)}
+  .rc-grades{display:flex;align-items:center;justify-content:center;gap:clamp(16px,3vw,34px);margin:0 auto 34px}
+  .rc-grade{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .rc-grade .g{width:clamp(70px,9vw,94px);height:clamp(70px,9vw,94px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:clamp(34px,4.6vw,48px)}
+  .rc-grade.today .g{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
+  .rc-grade.new .g{background:var(--ink);color:var(--ivory)}
+  .rc-grade span{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
+  .rc-arrow{font-family:'Instrument Serif',serif;font-size:32px;color:var(--gold)}
+  .rc-rows{max-width:900px;margin:0 auto 32px}
+  .rc-colhead{display:grid;grid-template-columns:1.1fr 1.3fr 1.3fr;gap:clamp(14px,2.4vw,26px);max-width:900px;margin:0 auto 6px;padding:0 4px}
+  .rc-colhead span{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:700}
+  .rc-colhead .h-today{color:var(--ink-soft)}.rc-colhead .h-new{color:var(--gold)}
+  .rc-row{display:grid;grid-template-columns:1.1fr 1.3fr 1.3fr;gap:clamp(14px,2.4vw,26px);align-items:start;padding:20px 4px;border-bottom:1px solid var(--line-soft)}
+  .rc-crit{font-family:'Instrument Serif',serif;font-size:20px;color:var(--ink);line-height:1.15}
+  .rc-cell{display:flex;gap:9px;font-size:13.5px;line-height:1.5}
+  .rc-cell .mk{flex-shrink:0;font-weight:700}
+  .rc-cell.today{color:var(--ink-soft)}.rc-cell.today .mk{color:var(--stone)}
+  .rc-cell.new{color:var(--ink)}.rc-cell.new .mk{color:var(--gold)}
+  .drawer-cta{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;margin-top:8px}
+  .drawer-cta .dctitle{font-family:'Instrument Serif',serif;font-style:italic;font-size:22px;color:var(--ink)}
+  @media(max-width:680px){.rc-row{grid-template-columns:1fr;gap:8px}.rc-colhead{display:none}.rc-crit{border-bottom:1px solid var(--line-soft);padding-bottom:6px}}
+
+  /* REVEAL */
+  .reveal-overlay{position:fixed;inset:0;z-index:800;background:rgba(20,19,16,.88);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:30px;opacity:0;transition:opacity .4s}
+  .reveal-overlay.open{display:flex;opacity:1}
+  .reveal-card{position:relative;width:100%;max-width:1180px;max-height:94vh;overflow-y:auto;background:var(--ivory);border-radius:6px;box-shadow:0 50px 120px rgba(0,0,0,.5)}
+  .reveal-top{text-align:center;padding:34px 30px 8px}
+  .reveal-top .re-eye{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px}
+  .reveal-top h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(28px,3.4vw,46px);color:var(--ink);line-height:1.04}
+  .reveal-top p{font-size:14.5px;color:var(--ink-soft);margin:10px auto 0;max-width:540px}
+  .compare{display:grid;grid-template-columns:.82fr 1.3fr;gap:clamp(20px,3.5vw,44px);align-items:center;padding:18px clamp(24px,5vw,56px) 10px}
+  .cmp{display:flex;flex-direction:column;gap:12px}
+  .cmp-tag{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+  .cmp-old .cmp-tag{color:var(--ink-soft)}.cmp-new .cmp-tag{color:var(--gold)}
+  .cmp-tag .tdot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .bframe{border-radius:9px;overflow:hidden;background:#fff;border:1px solid var(--line)}
+  .cmp-old .bframe{box-shadow:0 10px 26px rgba(33,31,27,.18);opacity:.82;filter:saturate(.62);transform:scale(.96)}
+  .cmp-new .bframe{box-shadow:0 36px 80px rgba(33,31,27,.3),0 0 0 4px rgba(192,149,74,.16);border-color:var(--gold)}
+  .bbar{height:36px;display:flex;align-items:center;gap:7px;padding:0 14px;background:var(--ivory-2);border-bottom:1px solid var(--line)}
+  .bbar .bdot{width:10px;height:10px;border-radius:50%;background:var(--line)}
+  .burl{flex:1;text-align:center;font-size:11.5px;color:var(--ink-soft);background:#fff;border:1px solid var(--line);border-radius:20px;padding:4px 12px;margin:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bview{overflow:hidden;position:relative;background:#fff}
+  .cmp-old .bview{height:clamp(230px,28vw,300px)}
+  .cmp-new .bview{height:clamp(360px,42vw,480px)}
+  .bview img{width:100%;display:block}
+  .cmp-new .bview.scroll img{animation:scrollNew 38s ease-in-out infinite alternate}
+  @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 480px))}}
+  .bview .noimg{height:100%;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:13px;text-align:center;padding:20px}
+  .reveal-foot{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:24px 30px 34px;text-align:center}
+  .reveal-foot .rf-line{font-family:'Instrument Serif',serif;font-style:italic;font-size:20px;color:var(--ink)}
+  .reveal-close{position:absolute;top:16px;right:18px;z-index:3;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.85);color:var(--ink);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+  @media(max-width:820px){
+    .navlinks{display:none}
+    .svc-list{grid-template-columns:1fr}
+    .compare{grid-template-columns:1fr;gap:18px}
+    .cmp-old .bview{height:200px}.cmp-new .bview{height:300px}
+    @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 300px))}}
+    .foot-top{flex-direction:column;gap:30px}
+  }
+  @media(max-width:520px){.price-row{grid-template-columns:1fr;gap:6px}.price-row .pamt{text-align:left}.price-row .pamt small{text-align:left}}
+</style>
+</head>
+<body>
+
+<div id="intro"><img src="/swan/swan-logo-ink.png" alt="Swan Burial &amp; Cremation"></div>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <a href="#"><img class="navlogo" src="/swan/swan-logo-ink.png" alt="Swan Burial &amp; Cremation"></a>
+      <ul class="navlinks">
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#care">Our care</a></li>
+        <li><a href="#reach">Plan ahead</a></li>
+      </ul>
+      <div class="navcta">
+        <a class="phone" href="tel:5207472525">(520) 747-2525</a>
+        <a class="btn btn-ink" href="#reach">Begin</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-label obs">Tucson, Arizona<span class="ln"></span>Since 1964</div>
+    <h1 class="obs">Quiet dignity, <em>for sixty years.</em></h1>
+    <p class="sub obs">Family owned and operated. Transparent pricing. We own and operate our own crematory — so your loved one remains in our care, and no one else's, from the first moment to the last.</p>
+    <div class="hero-cta obs">
+      <a class="btn btn-ink" href="#reach">Plan ahead</a>
+      <a class="btn btn-line" href="tel:5207472525">We're here 24/7</a>
+    </div>
+  </div>
+</section>
+
+<!-- STATEMENT: mission -->
+<section class="stmt center" id="care">
+  <div class="wrap">
+    <div class="rule obs"></div>
+    <p class="stmt-q serif obs">To help families create a goodbye that <em>honors the life</em> — personal, meaningful, and entirely their own.</p>
+    <div class="stmt-attr obs">Our mission, since 1964</div>
+  </div>
+</section>
+
+<!-- STATEMENT: own crematory -->
+<section class="stmt">
+  <div class="wrap">
+    <div class="stmt-label obs">In our care</div>
+    <p class="stmt-q serif obs">Because we own and operate our own crematory, your loved one <em>never leaves our hands.</em></p>
+  </div>
+</section>
+
+<!-- PRICING — surface what they promise -->
+<section class="pricing" id="pricing">
+  <div class="wrap">
+    <div class="pricing-head obs">
+      <div class="pe">Transparent pricing</div>
+      <h2>No surprises. Just honest numbers.</h2>
+      <p>We've always believed families deserve to know the cost up front. Here it is, plainly — the way it should be.</p>
+    </div>
+    <div class="price-rows obs">
+      <div class="price-row">
+        <div><div class="pname serif">Direct Cremation</div><div class="pdesc">Simple, dignified cremation in our own care — no service required.</div></div>
+        <div class="pamt serif">$1,365<small>Starting</small></div>
+      </div>
+      <div class="price-row">
+        <div><div class="pname serif">Immediate Burial</div><div class="pdesc">A simple burial without embalming or formal ceremony.</div></div>
+        <div class="pamt serif">$1,440<small>Starting</small></div>
+      </div>
+      <div class="price-row">
+        <div><div class="pname serif">Memorial &amp; Traditional Services</div><div class="pdesc">A full gathering — visitation, ceremony, and personalization, shaped to your family.</div></div>
+        <div class="pamt serif">From here<small>Full list on request</small></div>
+      </div>
+    </div>
+    <p class="price-note obs">Every family is different. Ask us for the complete price list any time — there is never an obligation.</p>
+  </div>
+</section>
+
+<!-- STATEMENT: personalization -->
+<section class="stmt center">
+  <div class="wrap">
+    <div class="rule obs"></div>
+    <p class="stmt-q serif obs">"Without personalization, you get a cookie-cutter experience. <em>Music says what words cannot.</em>"</p>
+    <div class="stmt-attr obs">On how we honor a life</div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="svc" id="services">
+  <div class="wrap">
+    <div class="svc-head obs">
+      <div class="se">How we care for you</div>
+      <h2>Everything a family may need.</h2>
+    </div>
+    <div class="svc-list obs">
+      <div class="svc-item"><div class="si serif">i</div><div><h3>Cremation</h3><p>Direct or with a service — always in our own licensed crematory.</p></div></div>
+      <div class="svc-item"><div class="si serif">ii</div><div><h3>Burial</h3><p>Immediate or traditional, arranged with quiet care.</p></div></div>
+      <div class="svc-item"><div class="si serif">iii</div><div><h3>Gatherings</h3><p>Funeral, memorial, visitation — including evening, weekend, and holiday services.</p></div></div>
+      <div class="svc-item"><div class="si serif">iv</div><div><h3>Veterans</h3><p>Military honors for those who served southern Arizona and beyond.</p></div></div>
+      <div class="svc-item"><div class="si serif">v</div><div><h3>Personalization</h3><p>Music, readings, photographs, artwork — the details that make it theirs.</p></div></div>
+      <div class="svc-item"><div class="si serif">vi</div><div><h3>Planning ahead</h3><p>Set your wishes down now with our checklist and Talk of a Lifetime guide.</p></div></div>
+      <div class="svc-item"><div class="si serif">vii</div><div><h3>Grief support</h3><p>A full year of weekly messages, plus etiquette and hospice resources.</p></div></div>
+      <div class="svc-item"><div class="si serif">viii</div><div><h3>Obituaries</h3><p>Tributes and flowers, so loved ones near and far can remember together.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FORM -->
+<section class="reach" id="reach">
+  <div class="wrap">
+    <div class="re obs">Reach our family</div>
+    <h2 class="obs">Let's begin, quietly.</h2>
+    <p class="rsub obs">Leave one note, and a member of the Swan family will reach you personally — never a call center, never a sales pitch.</p>
+    <div class="reach-form obs">
+      <form id="reachForm" novalidate>
+        <div class="rf-modes">
+          <div class="rf-mode sel" data-mode="plan">Planning ahead</div>
+          <div class="rf-mode" data-mode="loss">We've lost someone</div>
+          <div class="rf-mode" data-mode="ask">A question</div>
+        </div>
+        <div class="rf-urgent" id="rfUrgent"><a href="tel:5207472525">(520) 747-2525</a><div class="u">If you need us this moment, please call — we answer 24/7.</div></div>
+        <div class="rf-field"><input type="text" id="rf-name" placeholder="Your name"></div>
+        <div class="rf-field"><input type="tel" id="rf-phone" placeholder="Phone"></div>
+        <div class="rf-field"><input type="email" id="rf-email" placeholder="Email (optional)"></div>
+        <div class="rf-field"><textarea id="rf-note" placeholder="Anything you'd like us to know"></textarea></div>
+        <button type="submit" class="rf-submit" id="rfSubmit">Send to the Swan family</button>
+        <div class="rf-foot">Private and never shared · nothing is final · no cost to begin</div>
+      </form>
+      <div class="rf-success" id="rfSuccess">
+        <div class="ck serif">&#10003;</div>
+        <h3 id="rfSuccessHead">Thank you — we have it.</h3>
+        <p id="rfSuccessText">A member of the Swan family will reach out personally, with care and without pressure.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <img class="foot-logo" src="/swan/swan-logo.png" alt="Swan Burial &amp; Cremation">
+        <p>Family owned and operated, serving southern Arizona since 1964. Transparent pricing, and our own licensed crematory.</p>
+      </div>
+      <div class="foot-cols">
+        <div class="foot-col"><h4>Care</h4><a href="#services">Cremation</a><a href="#services">Burial</a><a href="#services">Veterans</a><a href="#reach">Plan Ahead</a></div>
+        <div class="foot-col"><h4>Families</h4><a href="#reach">Immediate Need</a><a href="#services">Obituaries</a><a href="#pricing">Pricing</a><a href="#services">Grief Support</a></div>
+        <div class="foot-col"><h4>Reach us</h4><p>1335 S. Swan Road<br>Tucson, AZ 85711</p><a href="tel:5207472525">(520) 747-2525</a><p>Available 24 / 7</p></div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© Swan Burial &amp; Cremation — formerly Hudgel-Swan · Serving southern Arizona since 1964</span>
+      <span>Concept rebuild by <a href="https://aheadofmarket.com">Ahead of Market</a></span>
+    </div>
+  </div>
+</footer>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-handle" id="drawerHandle">
+    <div class="dh-left"><div class="dh-grade serif">A</div><div class="dh-txt"><b>Why this site would serve your families better</b><span>Six honest reasons — tap to see the report card</span></div></div>
+    <div class="dh-toggle">See the report card <span class="chev">▲</span></div>
+  </div>
+  <div class="drawer-body">
+    <div class="rc-intro"><div class="rce">A quiet report card</div><h3>Today your site earns a <em>C</em>. Here's how we'd make it an <em>A</em>.</h3></div>
+    <div class="rc-grades">
+      <div class="rc-grade today"><div class="g serif">C</div><span>Your site today</span></div>
+      <div class="rc-arrow serif">&rarr;</div>
+      <div class="rc-grade new"><div class="g serif">A</div><span>What we'd build</span></div>
+    </div>
+    <div class="rc-colhead"><span></span><span class="h-today">Today</span><span class="h-new">What we'd do</span></div>
+    <div class="rc-rows">
+      <div class="rc-row"><div class="rc-crit">Transparent pricing</div><div class="rc-cell today"><span class="mk">&times;</span>It's your promise — but no prices appear on the homepage.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Prices shown plainly, up front, the way "transparent" should mean.</div></div>
+      <div class="rc-row"><div class="rc-crit">Your own crematory</div><div class="rc-cell today"><span class="mk">&times;</span>A real advantage, mentioned only in passing.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Made a centerpiece — "never leaves our hands" is reassurance families want.</div></div>
+      <div class="rc-row"><div class="rc-crit">Sixty years</div><div class="rc-cell today"><span class="mk">&times;</span>1964 is a remarkable story, barely told.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Worn quietly and proudly, as the trust signal it is.</div></div>
+      <div class="rc-row"><div class="rc-crit">First impression</div><div class="rc-cell today"><span class="mk">&times;</span>Dated and busy — it doesn't feel like calm, premium care.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Still, spare, and dignified — restraint that signals confidence.</div></div>
+      <div class="rc-row"><div class="rc-crit">On a phone</div><div class="rc-cell today"><span class="mk">&times;</span>Most families search by phone in a hard moment.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Built mobile-first, so nothing strains when it matters.</div></div>
+      <div class="rc-row"><div class="rc-crit">Reaching you</div><div class="rc-cell today"><span class="mk">&times;</span>No simple, calm way to start online.</div><div class="rc-cell new"><span class="mk">&#10003;</span>One quiet form, straight to your family.</div></div>
+    </div>
+    <div class="drawer-cta"><div class="dctitle serif">See it for yourself, side by side</div><button class="btn btn-ink" id="openReveal">Show me old vs. new</button></div>
+  </div>
+</div>
+
+<!-- REVEAL -->
+<div class="reveal-overlay" id="revealModal" aria-hidden="true">
+  <div class="reveal-card" role="dialog" aria-modal="true" aria-label="Old site versus new site">
+    <button class="reveal-close" id="revealClose" aria-label="Close">&times;</button>
+    <div class="reveal-top">
+      <div class="re-eye">A gentle before &amp; after</div>
+      <h2>Sixty years of trust, shown the way it deserves.</h2>
+      <p>Everything your families rely on is still here — only quieter, clearer, and more befitting your name.</p>
+    </div>
+    <div class="compare">
+      <div class="cmp cmp-old">
+        <div class="cmp-tag"><span class="tdot"></span>Your site today</div>
+        <div class="bframe"><div class="bbar"><span class="bdot"></span><span class="bdot"></span><span class="bdot"></span><span class="burl">swanfuneral.com</span></div>
+          <div class="bview"><img src="/swan/old-site.png" alt="Current site" onerror="this.style.display='none';this.parentNode.querySelector('.noimg').style.display='flex'"><div class="noimg" style="display:none">swanfuneral.com</div></div></div>
+      </div>
+      <div class="cmp cmp-new">
+        <div class="cmp-tag"><span class="tdot"></span>What we started for you</div>
+        <div class="bframe"><div class="bbar"><span class="bdot"></span><span class="bdot"></span><span class="bdot"></span><span class="burl">a concept by Ahead of Market</span></div>
+          <div class="bview scroll"><img src="/swan/new-site.png" alt="Your new site" onerror="this.style.display='none';this.parentNode.querySelector('.noimg').style.display='flex'"><div class="noimg" style="display:none">your new site</div></div></div>
+      </div>
+    </div>
+    <div class="reveal-foot">
+      <span class="rf-line">Sixty years of care, shown the way it deserves.</span>
+      <a class="btn btn-ink" href="#reach" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let's talk about it</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var modes=document.querySelectorAll('.rf-mode');
+  var urgent=document.getElementById('rfUrgent');
+  var submit=document.getElementById('rfSubmit');
+  var COPY={
+    plan:{submit:'Send to the Swan family',urgent:false,sHead:'Thank you — we have it.',sText:'A member of the Swan family will reach out personally, with care and without pressure.'},
+    loss:{submit:'Send — please call me back',urgent:true,sHead:'We have you.',sText:'A member of the Swan family is being notified now and will call you right away. If you need us this moment, please call (520) 747-2525.'},
+    ask:{submit:'Send my question',urgent:false,sHead:'Thank you — we have it.',sText:'A member of the Swan family will get back to you personally, with no pressure.'}
+  };
+  function apply(m){var c=COPY[m];modes.forEach(function(x){x.classList.toggle('sel',x.getAttribute('data-mode')===m);});urgent.style.display=c.urgent?'block':'none';submit.textContent=c.submit;document.getElementById('rfSuccessHead').textContent=c.sHead;document.getElementById('rfSuccessText').textContent=c.sText;}
+  modes.forEach(function(x){x.addEventListener('click',function(){apply(x.getAttribute('data-mode'));});});
+  document.getElementById('reachForm').addEventListener('submit',function(e){e.preventDefault();this.style.display='none';document.getElementById('rfSuccess').classList.add('show');});
+
+  var drawer=document.getElementById('drawer');
+  document.getElementById('drawerHandle').addEventListener('click',function(){drawer.classList.toggle('open');});
+  var reveal=document.getElementById('revealModal');
+  function openR(){reveal.classList.add('open');reveal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+  function closeR(){reveal.classList.remove('open');reveal.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+  document.getElementById('openReveal').addEventListener('click',openR);
+  document.getElementById('revealClose').addEventListener('click',closeR);
+  reveal.addEventListener('click',function(e){if(e.target===reveal)closeR();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&reveal.classList.contains('open'))closeR();});
+
+  var obs=document.querySelectorAll('.obs,.rule');
+  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.18});obs.forEach(function(el){io.observe(el);});}
+  else{obs.forEach(function(el){el.classList.add('in');});}
+})();
+</script>
+</body>
+</html>
