@@ -139,7 +139,10 @@ export default function CornerV4() {
   const [activeTool, setActiveTool] = useState(null)
   const [selectedMail, setSelectedMail] = useState(null)
   // corner:support N1 — Support Inbox view (Patrik workspace only)
-  const [showSupportInbox, setShowSupportInbox] = useState(false)
+  // ?support=1 deep-links straight to the Support dashboard (verify-at URL for
+  // corner:support-desk — also how agents screenshot this surface).
+  const [showSupportInbox, setShowSupportInbox] = useState(() =>
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('support'))
   // corner:support-desk M10 — pending support count for the headphones-icon badge.
   const [supportPending, setSupportPending] = useState(0)
   useEffect(() => {
