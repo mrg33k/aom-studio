@@ -374,6 +374,24 @@
       margin-bottom: 8px;
     }
     .sig-field-wrap { display: flex; flex-direction: column; }
+    .sig-field .sig-value {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--ink);
+      line-height: 1.2;
+      padding-bottom: 5px;
+    }
+    .sig-field.is-sign { min-height: 104px; }
+    .sig-field .sig-ink {
+      height: 92px;
+      width: auto;
+      max-width: 100%;
+      display: block;
+      margin: 0 0 -6px -4px;
+      pointer-events: none;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
 
     /* Download CTA */
     .cta-wrap {
@@ -517,7 +535,7 @@
   <div class="topbar">
     <div class="topbar-inner">
       <span class="topbar-brand"><span class="pulse"></span>Included Health × AOM In-House LLC</span>
-      <span class="topbar-meta">Schedule 1 · May 27, 2026</span>
+      <span class="topbar-meta">Schedule 1 · June 3, 2026</span>
     </div>
   </div>
 
@@ -539,7 +557,7 @@
       </div>
       <div class="meta-row">
         <div class="meta-label">Date</div>
-        <div class="meta-value">May 27, 2026</div>
+        <div class="meta-value">June 3, 2026</div>
       </div>
       <div class="meta-row">
         <div class="meta-label">Total Budget</div>
@@ -636,19 +654,19 @@
           <div class="sig-party-fields">
             <div class="sig-field-wrap">
               <div class="sig-label">Name</div>
-              <div class="sig-field"></div>
+              <div class="sig-field"><span class="sig-value">Anthony Matheson</span></div>
             </div>
             <div class="sig-field-wrap">
               <div class="sig-label">Signature</div>
-              <div class="sig-field"></div>
+              <div class="sig-field is-sign"><img class="sig-ink" src="anthony-matheson-signature.png" alt="Anthony Matheson signature" /></div>
             </div>
             <div class="sig-field-wrap">
               <div class="sig-label">Title</div>
-              <div class="sig-field"></div>
+              <div class="sig-field"><span class="sig-value">Owner</span></div>
             </div>
             <div class="sig-field-wrap">
               <div class="sig-label">Date</div>
-              <div class="sig-field"></div>
+              <div class="sig-field"><span class="sig-value">June 3, 2026</span></div>
             </div>
           </div>
         </div>
@@ -663,7 +681,7 @@
             </div>
             <div class="sig-field-wrap">
               <div class="sig-label">Signature</div>
-              <div class="sig-field"></div>
+              <div class="sig-field is-sign"></div>
             </div>
             <div class="sig-field-wrap">
               <div class="sig-label">Title</div>
