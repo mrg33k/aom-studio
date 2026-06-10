@@ -474,6 +474,14 @@
     {
       "source": "/carrillos/:path*",
       "destination": "/carrillos/:path*"
+    },
+    {
+      "source": "/sensible",
+      "destination": "/sensible/index.html"
+    },
+    {
+      "source": "/sensible/:path*",
+      "destination": "/sensible/:path*"
     }
   ],
   "redirects": [
