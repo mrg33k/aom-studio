@@ -31,6 +31,41 @@ const MONO = '"JetBrains Mono", ui-monospace, monospace'
 
 const STATUS_LABEL = { heard: 'Heard', working: 'Working', needs_team: 'Needs you', resolved: 'Resolved' }
 
+// ── M13 press-send: staged-work tag parsing + card animations ────────────────
+// An agent that finished the work embeds `[staged_draft:<gmail-draft-id>|conn:<uuid>]`
+// in the wish message. The card then renders as READY TO SEND: the human's only
+// step is the amber button (or asking for a change).
+const STAGED_RE = /\[staged_draft:([^|\]\s]+)\|conn:([^\]\s]+)\]/
+
+function parseStaged(message) {
+  const m = STAGED_RE.exec(message || '')
+  if (!m) return null
+  return { draftId: m[1], connectionId: m[2], cleanMessage: (message || '').replace(STAGED_RE, '').trim() }
+}
+
+let pressSendCssInjected = false
+function ensurePressSendCss() {
+  if (pressSendCssInjected || typeof document === 'undefined') return
+  pressSendCssInjected = true
+  const el = document.createElement('style')
+  el.textContent = `
+    @keyframes ps-breathe { 0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.0), 0 0 18px rgba(245,158,11,0.10); }
+      50% { box-shadow: 0 0 0 1px rgba(245,158,11,0.22), 0 0 28px rgba(245,158,11,0.22); } }
+    @keyframes ps-pop { 0% { transform: scale(0.92); opacity: 0.4; } 60% { transform: scale(1.04); } 100% { transform: scale(1); opacity: 1; } }
+    @keyframes ps-shimmer { 0% { background-position: -160px 0; } 100% { background-position: 160px 0; } }
+    .ps-card { animation: ps-breathe 3.2s ease-in-out infinite; }
+    .ps-send-btn { transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease; }
+    .ps-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(245,158,11,0.45); filter: brightness(1.06); }
+    .ps-send-btn:active { transform: translateY(0) scale(0.98); }
+    .ps-send-btn[disabled] { background-image: linear-gradient(100deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0) 70%);
+      background-size: 160px 100%; background-repeat: no-repeat; animation: ps-shimmer 1.1s linear infinite; cursor: wait; }
+    .ps-sent { animation: ps-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .ps-ghost-btn { transition: border-color 140ms ease, color 140ms ease; }
+    .ps-ghost-btn:hover { border-color: rgba(245,158,11,0.7) !important; color: inherit; }
+  `
+  document.head.appendChild(el)
+}
+
 function timeAgo(iso) {
   if (!iso) return ''
   const d = (Date.now() - new Date(iso).getTime()) / 1000
@@ -83,7 +118,106 @@ function RequestsStream() {
   )
 }
 
+// ── M13: the press-send card — work is DONE, the human only fires ─────────────
+function PressSendCard({ w, staged }) {
+  ensurePressSendCss()
+  const [phase, setPhase] = useState('ready') // ready | sending | sent | error
+  const [err, setErr] = useState('')
+  const [changeOpen, setChangeOpen] = useState(false)
+  const [note, setNote] = useState('')
+  const [noteState, setNoteState] = useState('idle') // idle | sending | done
+
+  async function fire() {
+    setPhase('sending'); setErr('')
+    try {
+      const r = await authFetch('/api/support/send-staged', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', wish_id: w.id, draft_id: staged.draftId, connection_id: staged.connectionId }),
+      })
+      const d = await r.json()
+      if (!r.ok || !d.ok) { setPhase('error'); setErr(d.error || 'send failed'); return }
+      setPhase('sent')
+    } catch { setPhase('error'); setErr('Could not reach the send endpoint.') }
+  }
+
+  async function sendNote() {
+    if (!note.trim()) return
+    setNoteState('sending')
+    try {
+      const r = await authFetch('/api/support/send-staged', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'change', wish_id: w.id, note }),
+      })
+      const d = await r.json()
+      setNoteState(r.ok && d.ok ? 'done' : 'idle')
+    } catch { setNoteState('idle') }
+  }
+
+  const sent = phase === 'sent'
+  return (
+    <div className={sent ? 'ps-sent' : 'ps-card'} style={{
+      background: `radial-gradient(120% 140% at 0% 0%, ${AMBER_SOFT} 0%, ${INK_CARD} 55%)`,
+      border: `1.5px solid ${sent ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.55)'}`,
+      borderRadius: 10, padding: '16px 16px 14px', marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.14em',
+          color: '#1A1206', background: AMBER, padding: '3px 10px', borderRadius: 999 }}>
+          {sent ? 'SENT ✓' : '✦ WORK DONE — READY TO SEND'}
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{timeAgo(w.created_at)}</span>
+      </div>
+      <div style={{ fontFamily: SERIF, fontSize: 19, color: BONE, margin: '12px 0 4px', lineHeight: 1.2 }}>
+        {w.name || w.email}
+      </div>
+      <p style={{ margin: 0, fontSize: 13, color: BONE_DIM, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+        {staged.cleanMessage}
+      </p>
+      {phase !== 'sent' && (
+        <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button className="ps-send-btn" disabled={phase === 'sending'} onClick={fire} style={{
+            fontFamily: BODY, fontWeight: 700, fontSize: 14, color: '#1A1206', background: AMBER,
+            border: 'none', borderRadius: 8, padding: '10px 22px', cursor: 'pointer', letterSpacing: '0.01em' }}>
+            {phase === 'sending' ? 'Sending…' : 'Send it →'}
+          </button>
+          <button className="ps-ghost-btn" onClick={() => setChangeOpen((v) => !v)} style={{
+            fontFamily: BODY, fontWeight: 600, fontSize: 13, color: BONE_DIM, background: 'transparent',
+            border: `1px solid ${LINE}`, borderRadius: 8, padding: '9px 16px', cursor: 'pointer' }}>
+            Ask for a change
+          </button>
+          {phase === 'error' && <span style={{ fontSize: 12, color: '#F0A07A' }}>{err}</span>}
+        </div>
+      )}
+      {sent && (
+        <p style={{ margin: '12px 0 0', fontFamily: MONO, fontSize: 11, color: AMBER }}>
+          Reply is on its way. Card resolves itself — nothing else needed.
+        </p>
+      )}
+      {changeOpen && !sent && (
+        <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+          {noteState === 'done' ? (
+            <span style={{ fontSize: 12, color: AMBER, fontFamily: MONO }}>Noted — the agent is revising. A fresh card will appear when it's re-staged.</span>
+          ) : (
+            <>
+              <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What should change?"
+                onKeyDown={(e) => { if (e.key === 'Enter') sendNote() }}
+                style={{ flex: 1, fontFamily: BODY, fontSize: 13, color: BONE, background: INK_PANEL,
+                  border: `1px solid ${LINE}`, borderRadius: 8, padding: '8px 12px', outline: 'none' }} />
+              <button onClick={sendNote} disabled={noteState === 'sending'} style={{
+                fontFamily: BODY, fontWeight: 600, fontSize: 13, color: BONE, background: 'transparent',
+                border: `1px solid rgba(245,158,11,0.55)`, borderRadius: 8, padding: '8px 14px', cursor: 'pointer' }}>
+                {noteState === 'sending' ? '…' : 'Send note'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function WishRow({ w, dim }) {
+  const staged = parseStaged(w.message)
+  if (staged && w.status !== 'resolved') return <PressSendCard w={w} staged={staged} />
   const loud = w.status === 'needs_team'
   const overSla = w.status !== 'resolved' && (Date.now() - new Date(w.created_at).getTime()) > 10 * 60 * 1000
   const [open, setOpen] = useState(false)
@@ -417,6 +551,7 @@ function wishToItem(w) {
     key: 'w' + w.id, kind: 'Request', who: w.name || w.email || 'Someone',
     text: w.message || '', reply: w.latest_response?.body || null, status,
     date: w.created_at ? new Date(w.created_at).getTime() : 0, link: null,
+    wish: w, // M13: lets the unified card render the press-send variant
   }
 }
 function emailToItem(it, replied) {
@@ -432,6 +567,11 @@ function emailToItem(it, replied) {
 function SupportItemCard({ it }) {
   const st = UNI_STATUS[it.status] || { label: it.status, loud: false }
   const [open, setOpen] = useState(false)
+  // M13: a wish carrying staged work renders as the press-send hero card.
+  if (it.wish && it.wish.status !== 'resolved') {
+    const staged = parseStaged(it.wish.message)
+    if (staged) return <PressSendCard w={it.wish} staged={staged} />
+  }
   return (
     <div style={{ background: st.loud ? AMBER_SOFT : INK_CARD, border: `1px solid ${st.loud ? 'rgba(245,158,11,0.35)' : LINE}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: BONE }}>

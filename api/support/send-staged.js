@@ -1,0 +1,113 @@
+// POST /api/support/send-staged — the M13 press-send button (corner:support-desk).
+//
+// The press-send model (Patrik 2026-06-09): the agent gets the job fully DONE and
+// stages the reply as a Gmail draft; the support card on the dashboard carries the
+// staged work and the human's ONLY step is pressing Send (or asking for a change).
+// This endpoint is the Send button's wire: it fires an existing Gmail draft as-is
+// and closes the wish out on the board.
+//
+// Body:
+//   { action: 'send',   wish_id, draft_id, connection_id }   → sends the staged draft,
+//       logs a visible update on the wish, flips status → resolved.
+//   { action: 'change', wish_id, note }                      → logs the requested change
+//       on the wish (kind=change_request) and flips status → working so the agent
+//       picks it up, revises, and re-stages.
+//
+// Auth: verified aom dashboard session ONLY (verifyTenant) — sending client email is
+// the irreversible step; it stays behind the human's own login. No password fallback.
+
+import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
+import { verifyTenant } from '../_lib/verifyTenant.js'
+
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+function supa(path, opts = {}) {
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      Prefer: opts.method === 'PATCH' || opts.method === 'POST' ? 'return=representation' : undefined,
+      ...(opts.headers || {}),
+    },
+  })
+}
+
+async function logUpdate(wishId, kind, body, status) {
+  await supa('support_wish_updates', {
+    method: 'POST',
+    body: JSON.stringify({
+      wish_id: wishId, kind, body, status: status || undefined,
+      author: 'patrik', visible_to_client: false,
+    }),
+  })
+}
+
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+  if (req.method === 'OPTIONS') return res.status(200).end()
+  if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'POST only' })
+
+  try {
+    await verifyTenant('aom', req)
+  } catch {
+    return res.status(401).json({ ok: false, error: 'Sign in to the dashboard to send.' })
+  }
+
+  let body
+  try {
+    body = typeof req.body === 'object' ? req.body : JSON.parse(req.body || '{}')
+  } catch {
+    return res.status(400).json({ ok: false, error: 'invalid JSON' })
+  }
+  const { action, wish_id, draft_id, connection_id, note } = body
+  if (!wish_id) return res.status(400).json({ ok: false, error: 'wish_id required' })
+
+  if (action === 'change') {
+    if (!note || !note.trim()) return res.status(400).json({ ok: false, error: 'note required' })
+    await logUpdate(wish_id, 'change_request', note.trim())
+    await logUpdate(wish_id, 'status_change', 'Change requested — agent revising and re-staging.', 'working')
+    await supa(`support_wishes?id=eq.${wish_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'working', updated_at: new Date().toISOString() }),
+    })
+    return res.status(200).json({ ok: true, changed: true })
+  }
+
+  if (action === 'send') {
+    if (!draft_id || !connection_id) {
+      return res.status(400).json({ ok: false, error: 'draft_id and connection_id required' })
+    }
+    let creds
+    try {
+      creds = await getGmailTokenByConnection(connection_id)
+    } catch (e) {
+      return res.status(502).json({ ok: false, error: 'gmail-auth', detail: String(e).slice(0, 200) })
+    }
+    const sendResp = await gmailFetch(creds.accessToken, '/drafts/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: draft_id }),
+    })
+    if (!sendResp.ok) {
+      const text = await sendResp.text().catch(() => '')
+      return res.status(sendResp.status === 404 ? 404 : 502).json({
+        ok: false, error: 'gmail-drafts-send', status: sendResp.status, detail: text.slice(0, 300),
+      })
+    }
+    const sent = await sendResp.json()
+    await logUpdate(wish_id, 'response', 'Staged reply sent (press-send from the support dashboard).', undefined)
+    await logUpdate(wish_id, 'status_change', 'Sent — resolved from the dashboard.', 'resolved')
+    await supa(`support_wishes?id=eq.${wish_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'resolved', updated_at: new Date().toISOString() }),
+    })
+    return res.status(200).json({ ok: true, sent: true, id: sent.id, threadId: sent.threadId })
+  }
+
+  return res.status(400).json({ ok: false, error: `unknown action "${action}"` })
+}
