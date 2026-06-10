@@ -95,7 +95,12 @@ function buildRfc822({ from, to, cc, bcc, subject, bodyHtml, bodyText, inReplyTo
   if (to) headers.push(`To: ${to}`)
   if (cc) headers.push(`Cc: ${cc}`)
   if (bcc) headers.push(`Bcc: ${bcc}`)
-  headers.push(`Subject: ${subject}`)
+  // RFC 2047: non-ASCII subjects (em-dashes, ×, accents) must be encoded-word wrapped,
+  // or clients render mojibake ("â€”" for "—"). ASCII subjects pass through untouched.
+  const subjectHeader = /^[\x20-\x7E]*$/.test(subject)
+    ? subject
+    : `=?UTF-8?B?${Buffer.from(subject, 'utf8').toString('base64')}?=`
+  headers.push(`Subject: ${subjectHeader}`)
   headers.push('MIME-Version: 1.0')
   if (inReplyTo) headers.push(`In-Reply-To: ${inReplyTo}`)
   if (references) headers.push(`References: ${references}`)
