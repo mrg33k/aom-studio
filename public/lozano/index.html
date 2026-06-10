@@ -63,7 +63,7 @@
   /* ===== FULL-BLEED CENTERED HERO ===== */
   .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden;padding:120px 22px 90px}
   .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
-  .hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(24,32,26,.62) 0%,rgba(28,38,30,.42) 38%,rgba(30,40,32,.5) 78%,rgba(34,44,34,.72) 100%)}
+  .hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(18,26,20,.74) 0%,rgba(22,30,24,.58) 40%,rgba(22,30,24,.6) 74%,rgba(28,38,28,.8) 100%),radial-gradient(120% 70% at 50% 56%,rgba(16,24,18,.42),transparent 70%)}
   .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:140px;z-index:1;background:linear-gradient(180deg,transparent,var(--cream))}
   .hero-inner{position:relative;z-index:2;max-width:860px}
   .hero .eyebrow{font-family:'Fraunces',serif;font-style:italic;font-size:clamp(18px,2.4vw,23px);color:var(--clay-soft);margin-bottom:20px}
@@ -647,8 +647,8 @@
     obs.forEach(function(el){io.observe(el);});
   }else{obs.forEach(function(el){el.classList.add('in');});}
 
-  /* gentle drawer auto-peek after settle */
-  setTimeout(function(){if(!drawer.classList.contains('open')){drawer.classList.add('open');setTimeout(function(){drawer.classList.remove('open');},3600);}},6500);
+  /* gentle one-time nudge of the drawer handle (no full open — invites the tap) */
+  setTimeout(function(){drawer.style.transition='transform .5s cubic-bezier(.5,0,.2,1)';drawer.style.transform='translateY(calc(100% - 78px))';setTimeout(function(){drawer.style.transform='';},900);},6500);
 })();
 </script>
 </body>
