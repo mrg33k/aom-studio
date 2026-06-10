@@ -238,30 +238,30 @@
   /* REVEAL */
   .reveal-overlay{position:fixed;inset:0;z-index:800;background:rgba(40,42,28,.86);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:30px;opacity:0;transition:opacity .4s}
   .reveal-overlay.open{display:flex;opacity:1}
-  .reveal-card{position:relative;width:100%;max-width:1040px;max-height:94vh;overflow-y:auto;background:var(--cream-3);border-radius:8px;box-shadow:0 50px 120px rgba(0,0,0,.5)}
-  .reveal-top{text-align:center;padding:34px 30px 16px}
-  .reveal-top .re-eye{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px}
-  .reveal-top h2{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(26px,3.2vw,42px);color:var(--brown);line-height:1.08}
-  .reveal-top p{font-size:15px;color:var(--brown-soft);margin:12px auto 0;max-width:560px}
-  .compare{display:grid;grid-template-columns:1fr 1.22fr;gap:clamp(16px,3vw,30px);align-items:end;padding:14px clamp(20px,4vw,46px) 8px}
+  .reveal-card{position:relative;width:100%;max-width:1180px;max-height:94vh;overflow-y:auto;background:var(--cream-3);border-radius:10px;box-shadow:0 50px 120px rgba(0,0,0,.5)}
+  .reveal-top{text-align:center;padding:30px 30px 8px}
+  .reveal-top .re-eye{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:9px}
+  .reveal-top h2{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(26px,3.2vw,40px);color:var(--brown);line-height:1.06}
+  .reveal-top p{font-size:14.5px;color:var(--brown-soft);margin:10px auto 0;max-width:540px}
+  .compare{display:grid;grid-template-columns:.82fr 1.3fr;gap:clamp(20px,3.5vw,44px);align-items:center;padding:18px clamp(24px,5vw,56px) 10px}
   .cmp{display:flex;flex-direction:column;gap:12px}
   .cmp-tag{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
   .cmp-old .cmp-tag{color:var(--brown-soft)}.cmp-new .cmp-tag{color:var(--olive-2)}
   .cmp-tag .tdot{width:7px;height:7px;border-radius:50%;background:currentColor}
   /* browser-window frames */
   .bframe{border-radius:11px;overflow:hidden;background:#fff;border:1px solid var(--line)}
-  .cmp-old .bframe{box-shadow:0 12px 30px rgba(60,50,37,.16);opacity:.9;filter:saturate(.86)}
-  .cmp-new .bframe{box-shadow:0 30px 68px rgba(108,114,78,.42);border-color:var(--olive-soft)}
+  .cmp-old .bframe{box-shadow:0 10px 26px rgba(60,50,37,.18);opacity:.82;filter:saturate(.62) brightness(1.02);transform:scale(.96)}
+  .cmp-new .bframe{box-shadow:0 36px 80px rgba(108,114,78,.46),0 0 0 4px rgba(108,114,78,.14);border-color:var(--olive)}
   .bbar{height:36px;display:flex;align-items:center;gap:7px;padding:0 14px;background:#ece5d5;border-bottom:1px solid var(--line)}
   .bbar .bdot{width:10px;height:10px;border-radius:50%}
   .bbar .bdot.r{background:#d49a82}.bbar .bdot.y{background:#dcc283}.bbar .bdot.g{background:#a7b384}
   .burl{flex:1;text-align:center;font-size:11.5px;color:var(--brown-soft);background:#fff;border:1px solid var(--line);border-radius:20px;padding:4px 12px;margin:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .bview{overflow:hidden;position:relative;background:#fff}
-  .cmp-old .bview{height:clamp(250px,30vw,330px)}
-  .cmp-new .bview{height:400px}
+  .cmp-old .bview{height:clamp(230px,28vw,300px)}
+  .cmp-new .bview{height:clamp(360px,42vw,480px)}
   .bview img{width:100%;display:block}
-  .cmp-new .bview.scroll img{animation:scrollNew 36s ease-in-out infinite alternate}
-  @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 400px))}}
+  .cmp-new .bview.scroll img{animation:scrollNew 38s ease-in-out infinite alternate}
+  @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 480px))}}
   .bview .noimg{height:100%;display:flex;align-items:center;justify-content:center;color:var(--brown-soft);font-size:13px;text-align:center;padding:20px;background:repeating-linear-gradient(135deg,#fff,#fff 12px,#efe8d6 12px,#efe8d6 24px)}
   .reveal-foot{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:24px 30px 34px;text-align:center}
   .reveal-foot .rf-line{font-family:'Fraunces',serif;font-style:italic;font-size:19px;color:var(--brown)}
