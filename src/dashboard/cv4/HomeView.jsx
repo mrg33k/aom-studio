@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { authFetch } from '../lib/authFetch.js'
+import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
@@ -529,6 +530,9 @@ export default function HomeView({
               return (
                 <div key={p.slug} className={'hm-proj' + (isExpanded ? ' expanded' : '')}>
                   <div className="hm-proj-head">
+                    <span style={{ color: '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}>
+                      <FolderIcon open={isExpanded} />
+                    </span>
                     <button
                       className="hm-proj-name"
                       onClick={() => handleProjectSelect(p, null)}
@@ -574,7 +578,8 @@ export default function HomeView({
                           className="hm-mission"
                           onClick={() => handleProjectSelect(p, m)}
                         >
-                          <span className={'hm-mdot' + (m.status === 'running' || m.status === 'active' ? ' active' : m.status === 'queued' ? ' queued' : '')}></span>
+                          <span style={{ color: '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
+                          <StatusDot state={m.status === 'running' || m.status === 'active' ? 'running' : 'idle'} size={6} />
                           <span className="hm-mname">{m.name || m.slug}</span>
                           <span className="hm-mage">{relativeTime(m.last_message_at)}</span>
                         </button>
@@ -620,6 +625,9 @@ export default function HomeView({
                 return (
                   <div key={p.slug} className={'hm-proj' + (isExpanded ? ' expanded' : '')}>
                     <div className="hm-proj-head">
+                      <span style={{ color: '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}>
+                        <FolderIcon open={isExpanded} />
+                      </span>
                       <button
                         className="hm-proj-name"
                         onClick={() => handleProjectSelect(p, null)}
@@ -665,7 +673,8 @@ export default function HomeView({
                             className="hm-mission"
                             onClick={() => handleProjectSelect(p, m)}
                           >
-                            <span className={'hm-mdot' + (m.status === 'running' || m.status === 'active' ? ' active' : m.status === 'queued' ? ' queued' : '')}></span>
+                            <span style={{ color: '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
+                          <StatusDot state={m.status === 'running' || m.status === 'active' ? 'running' : 'idle'} size={6} />
                             <span className="hm-mname">{m.name || m.slug}</span>
                             <span className="hm-mage">{relativeTime(m.last_message_at)}</span>
                           </button>

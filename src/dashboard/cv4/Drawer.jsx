@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
+import { FolderIcon as KitFolderIcon, MissionIcon as KitMissionIcon } from './lib/uiKit.jsx'
 import missionsData from '../data/missions.json'
 import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
 import { authFetch } from '../lib/authFetch.js'
@@ -1243,29 +1244,14 @@ function Empty({ label }) {
   )
 }
 
+// Shared vocabulary (M16-R3): the same FolderIcon the Home view uses — one
+// object, one identity, everywhere. Wrapper pins the Explorer's muted color.
 function FolderIcon({ open }) {
-  if (open) {
-    return (
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: C.muted, flexShrink: 0 }}>
-        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v1H3z"/>
-        <path d="M3 10h18l-2 8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-      </svg>
-    )
-  }
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: C.muted, flexShrink: 0 }}>
-      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-    </svg>
-  )
+  return <KitFolderIcon open={open} color={C.muted} />
 }
 
 function DocIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ color: C.muted, flexShrink: 0 }}>
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-    </svg>
-  )
+  return <KitMissionIcon color={C.muted} />
 }
 
 // R20 — NestedUnderMail retired. Projects is its own top-level
