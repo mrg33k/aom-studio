@@ -100,8 +100,6 @@ const PILLARS = [
     addons: [
       'Additional story chapters',
       'Classroom / multiplayer mode',
-      'Cinematic AI video backgrounds',
-      'Teacher authoring tools',
       'Localization / translation',
     ],
   },
@@ -123,8 +121,6 @@ const PILLARS = [
       'Payments / paid enrollment',
       'LMS integration (Google Classroom, Canvas)',
       'Completion certificates',
-      'Multi-school / cohort management',
-      'White-label for the next masterclass',
     ],
   },
   {
@@ -144,8 +140,6 @@ const PILLARS = [
     addons: [
       'Ongoing monthly social management',
       'Funder + district one-pager',
-      'Additional video production',
-      'PR / press outreach',
       'Sponsor / grant deck',
     ],
   },

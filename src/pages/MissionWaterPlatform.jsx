@@ -1,5 +1,5 @@
-// R11 — Conrad Foundation · Mission Water platform
-// Watch Live enhanced: upcoming calendar, Q&A widget, archive preview, sign-up bell.
+// R14 — Conrad Foundation · Mission Water platform
+// Interactive Q&A, video centering + seek, add-on trim (from R11 base).
 // /MissionWaterPlatform · /missionwaterplatform · /platform
 // Mission: conrad-foundation:mission-water
 import React, { useEffect, useRef, useState } from 'react';
@@ -320,19 +320,34 @@ function initials(name) {
   return name.split(' ').map((w) => w[0]).join('');
 }
 
-function QAWidget({ collapsed }) {
-  if (collapsed) {
-    return (
-      <div
-        className="rounded-xl px-4 py-3 flex items-center gap-3"
-        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
-      >
-        <div className="w-2 h-2 rounded-full bg-white/20" />
-        <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-white/35">
-          Q&amp;A opens when class goes live
-        </span>
-      </div>
-    );
+function QAWidget() {
+  const [questions, setQuestions] = useState(LIVE_QUESTIONS.slice(0, 3));
+  const [draft, setDraft] = useState('');
+  const [roomCount, setRoomCount] = useState(306);
+  const scrollRef = useRef(null);
+
+  // Auto-scroll to bottom when a new question arrives
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [questions]);
+
+  function handleSend() {
+    const text = draft.trim();
+    if (!text) return;
+    const now = new Date();
+    const t = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setQuestions((prev) => [...prev, { who: 'You', txt: text, t }]);
+    setDraft('');
+    setRoomCount((c) => c + 1);
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   }
 
   return (
@@ -361,12 +376,16 @@ function QAWidget({ collapsed }) {
             </span>
           ))}
         </div>
-        <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/40">+306 watching</span>
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.14em] text-white/40">+{roomCount} watching</span>
       </div>
 
       {/* Questions */}
-      <div className="px-4 py-3 space-y-3 max-h-[180px] overflow-y-auto" style={{ background: 'rgba(0,0,0,0.10)' }}>
-        {LIVE_QUESTIONS.slice(0, 3).map((q, i) => (
+      <div
+        ref={scrollRef}
+        className="px-4 py-3 space-y-3 max-h-[180px] overflow-y-auto"
+        style={{ background: 'rgba(0,0,0,0.10)' }}
+      >
+        {questions.map((q, i) => (
           <div key={i} className="flex gap-2">
             <span className="w-5 h-5 shrink-0 rounded-full bg-[#143B6E] flex items-center justify-center font-mono text-[6.5px] text-white/75 uppercase mt-0.5">
               {initials(q.who)}
@@ -383,11 +402,18 @@ function QAWidget({ collapsed }) {
       <div className="px-3 py-2.5 border-t border-white/10" style={{ background: 'rgba(255,255,255,0.04)' }}>
         <div className="flex items-center gap-2 bg-white/[0.06] border border-white/10 rounded-full pl-3 pr-2 py-1.5">
           <input
-            disabled
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Ask Nancy a question…"
-            className="flex-1 min-w-0 bg-transparent font-body text-[11px] text-white/60 placeholder-white/25 outline-none cursor-default"
+            className="flex-1 min-w-0 bg-transparent font-body text-[11px] text-white/80 placeholder-white/25 outline-none"
           />
-          <span className="font-mono text-[8px] uppercase tracking-[0.14em] text-[#E85D26] px-2">Send</span>
+          <button
+            onClick={handleSend}
+            className="font-mono text-[8px] uppercase tracking-[0.14em] text-[#E85D26] px-2 cursor-pointer hover:text-[#E85D26]/70 transition-colors"
+          >
+            Send
+          </button>
         </div>
       </div>
     </div>
@@ -461,6 +487,7 @@ const SAMPLE_POSTER = '/ConradFoundation/nancy-still-placeholder.jpg';
 
 function LivePanel({ onRegister }) {
   const [muted, setMuted] = useState(true);
+  const videoRef = useRef(null);
   const isLive = LIVE.status === 'live';
 
   // Real class airing — full-screen stream
@@ -480,15 +507,20 @@ function LivePanel({ onRegister }) {
     <div className="w-full h-full flex overflow-hidden" style={{ background: '#071530' }}>
 
       {/* ── Left column: video feed ────────────────────────────────────────── */}
-      <div className="relative flex-1 min-w-0 bg-black overflow-hidden">
+      <div className="relative flex-1 min-w-0 bg-black overflow-hidden flex items-center justify-center">
         <video
+          ref={videoRef}
           src={SAMPLE_FEED}
           poster={SAMPLE_POSTER}
           autoPlay
           muted={muted}
           loop
           playsInline
+          onLoadedData={() => {
+            if (videoRef.current) videoRef.current.currentTime = 1;
+          }}
           className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: 'center center' }}
         />
 
         {/* Top overlay */}
@@ -557,7 +589,7 @@ function LivePanel({ onRegister }) {
           <div className="border-t border-white/8" />
 
           {/* Q&A widget */}
-          <QAWidget collapsed={!isLive} />
+          <QAWidget />
 
           {/* Divider */}
           <div className="border-t border-white/8" />
