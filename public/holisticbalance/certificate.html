@@ -237,7 +237,7 @@
       width: 100%;
       height: 80px;
       border: 1px solid var(--border);
-      background: white;
+      background: var(--cream);
       cursor: crosshair;
       touch-action: none;
     }
@@ -404,6 +404,12 @@
     const holder  = document.getElementById('sigPlaceholder');
     let drawing   = false;
     let hasSig    = false;
+
+    function fillBg() {
+      ctx.fillStyle = '#F7F2EA';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    fillBg();
 
     function getPos(e) {
       const r = canvas.getBoundingClientRect();
