@@ -29,29 +29,41 @@ import {
 function AttachmentPreview({ att, onClose }) {
   const [textBody, setTextBody] = useState(null)
   const url = att?.url || ''
+  // inlineText: content carried on the att itself (e.g. a support email body)
+  // — rendered directly, no URL or fetch involved (corner:support-desk M18).
+  const inlineText = att?.inlineText || null
   const name = att?.name || (url ? decodeURIComponent(url.split('/').pop().split('?')[0]) : 'file')
   const mime = (att?.mime || '').toLowerCase()
   const ext = (name.split('.').pop() || '').toLowerCase()
 
-  const isImage  = mime.startsWith('image/') || ['png','jpg','jpeg','gif','webp','svg','bmp','heic'].includes(ext)
-  const isVideo  = mime.startsWith('video/') || ['mp4','mov','webm','mkv','avi','m4v'].includes(ext)
-  const isAudio  = mime.startsWith('audio/') || ['mp3','wav','m4a','flac','aac','ogg'].includes(ext)
-  const isPdf    = mime === 'application/pdf' || ext === 'pdf'
-  const isOffice = ['pptx','ppt','docx','doc','xlsx','xls'].includes(ext)
-  const isText   = (
+  const isImage  = !inlineText && (mime.startsWith('image/') || ['png','jpg','jpeg','gif','webp','svg','bmp','heic'].includes(ext))
+  const isVideo  = !inlineText && (mime.startsWith('video/') || ['mp4','mov','webm','mkv','avi','m4v'].includes(ext))
+  const isAudio  = !inlineText && (mime.startsWith('audio/') || ['mp3','wav','m4a','flac','aac','ogg'].includes(ext))
+  const isPdf    = !inlineText && (mime === 'application/pdf' || ext === 'pdf')
+  const isOffice = !inlineText && ['pptx','ppt','docx','doc','xlsx','xls'].includes(ext)
+  const isText   = !!inlineText || (
     mime.startsWith('text/') ||
     mime === 'application/json' || mime === 'application/xml' || mime === 'application/yaml' ||
     ['md','txt','csv','json','yaml','yml','py','js','jsx','ts','tsx','html','xml','log','css','sh'].includes(ext)
   )
 
   useEffect(() => {
-    if (!isText || !url) return
+    if (inlineText || !isText || !url) return
     setTextBody(null)
     fetch(url)
       .then(r => r.ok ? r.text() : 'Could not load file.')
       .then(setTextBody)
       .catch(() => setTextBody('Could not load file.'))
-  }, [url, isText])
+  }, [url, isText, inlineText])
+
+  // Escape-to-close at the document level. The old onKeyDown on the backdrop
+  // div only fired when that div held focus, which it almost never did — the
+  // "attachments are hard to close out of" bug (corner:support-desk M18).
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape') { e.stopPropagation(); onClose() } }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   if (!att) return null
 
@@ -94,19 +106,20 @@ function AttachmentPreview({ att, onClose }) {
             fontSize: 14, color: C.text, fontFamily: "'Inter', sans-serif",
             fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
           }}>{name}</span>
-          <a href={url} download={name} style={{
+          {url && <a href={url} download={name} style={{
             fontSize: 12, color: C.text2, textDecoration: 'none',
             padding: '6px 12px', border: `1px solid ${C.border2}`, borderRadius: 6,
             fontFamily: "'Inter', sans-serif",
-          }}>Download</a>
-          <a href={url} target="_blank" rel="noopener noreferrer" style={{
+          }}>Download</a>}
+          {url && <a href={url} target="_blank" rel="noopener noreferrer" style={{
             fontSize: 12, color: C.text2, textDecoration: 'none',
             padding: '6px 12px', border: `1px solid ${C.border2}`, borderRadius: 6,
             fontFamily: "'Inter', sans-serif",
-          }}>Open in new tab</a>
-          <button onClick={onClose} aria-label="Close preview" style={{
-            background: 'none', border: 'none', color: C.muted,
-            cursor: 'pointer', fontSize: 18, padding: '0 4px', lineHeight: 1,
+          }}>Open in new tab</a>}
+          <button onClick={onClose} aria-label="Close preview" title="Close (Esc)" style={{
+            background: 'rgba(255,255,255,0.06)', border: `1px solid ${C.border2}`,
+            borderRadius: 8, color: C.text, cursor: 'pointer',
+            fontSize: 16, lineHeight: 1, padding: '8px 12px', flexShrink: 0,
           }}>{'\u2715'}</button>
         </div>
         <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -134,7 +147,7 @@ function AttachmentPreview({ att, onClose }) {
               fontFamily: "'JetBrains Mono', monospace",
               whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.6,
               alignSelf: 'stretch',
-            }}>{textBody == null ? 'Loading...' : textBody}</div>
+            }}>{inlineText != null ? inlineText : (textBody == null ? 'Loading...' : textBody)}</div>
           )}
           {!isImage && !isVideo && !isAudio && !isPdf && !isOffice && !isText && (
             <div style={{ padding: 40, textAlign: 'center', color: C.muted }}>
@@ -147,6 +160,82 @@ function AttachmentPreview({ att, onClose }) {
               }}>Download {name}</a>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+// parseSupportWish — recognizes the support-desk pipeline drop
+// ('[SUPPORT WISH SUP-XXXX] from Name <email> (source):\n\nbody') so chat can
+// render a compact email card instead of the raw email body in the bubble
+// (corner:support-desk M18, 2026-06-11).
+function parseSupportWish(text) {
+  if (!text || !text.startsWith('[SUPPORT WISH ')) return null
+  const m = /^\[SUPPORT WISH (SUP-[A-Z0-9]+)\] from ([^]*?) \(([\w-]+)\):\n+([^]*)$/.exec(text)
+  if (!m) return null
+  const code = m[1], source = m[3], body = m[4]
+  const from = m[2].replace(/\s+/g, ' ').trim()
+  const fromName = (from.split('<')[0] || '').trim() || from
+  const firstLine = body.split('\n').map(l => l.trim()).find(Boolean) || '(no subject)'
+  const subject = firstLine.length > 110 ? firstLine.slice(0, 107) + '…' : firstLine
+  return { code, from, fromName, source, body, subject }
+}
+
+// SupportEmailCard — attachment-style chip for a support email/wish in chat.
+// The full email never renders inline; clicking opens it in the same
+// AttachmentPreview overlay files use (corner:support-desk M18).
+function SupportEmailCard({ wish, onOpen }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      data-testid="support-email-card"
+      title={`Open ${wish.code}`}
+      onClick={onOpen}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
+      style={{
+        alignSelf: 'flex-end',
+        background: `linear-gradient(180deg, ${C.s2}, ${C.s1})`,
+        border: `1px solid ${C.border2}`,
+        borderRadius: 16,
+        padding: '12px 14px',
+        display: 'flex', alignItems: 'center', gap: 12,
+        maxWidth: 360, minWidth: 240,
+        cursor: 'pointer',
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+        boxShadow: '0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.25)',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-1px)'
+        e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 18px rgba(0,0,0,0.4)'
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = 'translateY(0)'
+        e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.25)'
+        e.currentTarget.style.borderColor = C.border2
+      }}
+    >
+      {/* Envelope glyph — same visual weight as the file-card doc icon */}
+      <div style={{ flexShrink: 0, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }}>
+        <svg viewBox="0 0 44 34" width={40} height={31} aria-hidden="true">
+          <rect x="1" y="1" width="42" height="32" rx="5" fill="rgba(255,255,255,0.06)" stroke={C.accent} strokeWidth="1.5" />
+          <path d="M3 5 L22 19 L41 5" fill="none" stroke={C.accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <div style={{ minWidth: 0, flex: 1, fontFamily: "'Inter', sans-serif" }}>
+        <div style={{
+          fontSize: 13, fontWeight: 600, color: C.text,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>{wish.fromName}</div>
+        <div style={{
+          fontSize: 12, color: C.text2, marginTop: 2,
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        }}>{wish.subject}</div>
+        <div style={{ fontSize: 10, color: C.muted, marginTop: 4, letterSpacing: '0.02em' }}>
+          {wish.code} {'·'} {wish.source === 'email' ? 'email' : wish.source} {'·'} click to open
         </div>
       </div>
     </div>
@@ -1283,6 +1372,21 @@ function MessageList({ roomType = 'agent' }) {
                       // Subtle outline on the bubble whose context-menu is open.
                       const isMenuTarget = msgMenu?.message?.id === msg.id
                       const menuOutline = isMenuTarget ? '1.5px solid rgba(52,211,153,0.55)' : null
+                      // Support emails arrive as full bodies in msg.text — render a
+                      // compact email card instead; the body opens in the preview
+                      // overlay on click (corner:support-desk M18).
+                      const supportWish = isUser ? parseSupportWish(msg.text) : null
+                      if (supportWish) {
+                        return (
+                          <SupportEmailCard
+                            wish={supportWish}
+                            onOpen={() => setPreviewAtt({
+                              name: `${supportWish.code} — ${supportWish.fromName}`,
+                              inlineText: `From: ${supportWish.from}\nSource: ${supportWish.source} · ${supportWish.code}\n\n${supportWish.body}`,
+                            })}
+                          />
+                        )
+                      }
                       if (isUser) {
                         return (
                           <div data-bubble="user" data-menu-target={isMenuTarget || undefined} style={{
