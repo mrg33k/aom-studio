@@ -3,8 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sensible Funerals &amp; Cremation — concept by AOM</title>
+<title>Sensible Funerals &amp; Cremation — Where Memories Live On · Tucson, AZ</title>
 <meta name="description" content="Where memories live on. The only family and veteran-owned funeral home in Tucson — caring, transparent, here for you 24/7.">
+<meta name="theme-color" content="#595e3d">
+<meta property="og:title" content="Sensible Funerals &amp; Cremation — Where Memories Live On">
+<meta property="og:description" content="The only family and veteran-owned funeral home in Tucson — caring, transparent, here for you 24/7.">
+<meta property="og:image" content="https://www.aheadofmarket.com/sensible/sensible-hero-poster.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23595e3d'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' fill='%23e7ddc9' text-anchor='middle' font-style='italic'%3ES%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -48,8 +54,12 @@
   .btn-gold:hover{background:var(--gold-soft);transform:translateY(-1px)}
   .btn-line{border:1.5px solid var(--brown);color:var(--brown);background:transparent}
   .btn-line:hover{background:var(--brown);color:var(--cream)}
-  .btn-line-l{border:1.5px solid rgba(233,224,202,.6);color:var(--cream);background:transparent}
+  .btn-line-l{border:1.5px solid rgba(233,224,202,.8);color:var(--cream);background:transparent}
   .btn-line-l:hover{background:rgba(233,224,202,.14)}
+  a:focus-visible,button:focus-visible,.rf-mode:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+  ::selection{background:var(--gold-soft);color:var(--brown)}
+  section[id]{scroll-margin-top:24px}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.obs{opacity:1!important;transform:none!important}}
 
   /* THIN GOLD TOP BAR (recompose has this) */
   .topbar{background:var(--gold);color:#fff;text-align:center;font-size:12.5px;font-weight:600;letter-spacing:.4px;padding:9px 16px}
@@ -73,8 +83,8 @@
   .hero{position:relative;padding:clamp(60px,8vw,104px) 0 clamp(50px,7vw,90px);overflow:hidden}
   .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,70px);align-items:center}
   .hero-eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:18px}
-  .hero h1{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(42px,6vw,82px);line-height:1.0;color:var(--brown);letter-spacing:-.5px;margin-bottom:24px}
-  .hero h1 em{font-style:italic;color:var(--olive-2)}
+  .hero h1{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(42px,6vw,82px);line-height:1.0;color:var(--brown);letter-spacing:-.5px;margin-bottom:24px;text-wrap:balance}
+  .hero h1 em{font-style:italic;color:var(--olive-2);white-space:nowrap}
   .hero .sub{font-size:17px;line-height:1.75;color:var(--brown-soft);max-width:440px;margin-bottom:30px}
   .hero-cta{display:flex;gap:13px;flex-wrap:wrap}
   /* floating specimen stage — big, transparent, bleeding past edges */
@@ -82,10 +92,10 @@
   .spec{position:absolute;will-change:transform;animation:float var(--dur,7s) ease-in-out infinite alternate;pointer-events:none}
   .spec img{display:block;width:100%;filter:drop-shadow(0 18px 26px rgba(60,50,37,.2))}
   @keyframes float{from{transform:translateY(0) rotate(var(--r,0deg))}to{transform:translateY(-18px) rotate(var(--r2,0deg))}}
-  .s-moss{top:-6%;left:-6%;width:58%;--dur:8s;--r:-3deg;--r2:1deg;z-index:2}
-  .s-cone{top:30%;right:-8%;width:40%;--dur:6.5s;--r:4deg;--r2:-2deg;z-index:3}
-  .s-fern{bottom:-12%;left:-2%;width:56%;--dur:9s;--r:-2deg;--r2:3deg;z-index:1}
-  .s-bloom{bottom:14%;right:18%;width:34%;--dur:7.2s;--r:3deg;--r2:-1deg;z-index:2}
+  .s-moss{top:-14%;left:-10%;width:64%;--dur:8s;--r:-3deg;--r2:1deg;z-index:2}
+  .s-cone{top:26%;right:-14%;width:46%;--dur:6.5s;--r:4deg;--r2:-2deg;z-index:3}
+  .s-fern{bottom:-24%;left:-6%;width:62%;--dur:9s;--r:-2deg;--r2:3deg;z-index:1}
+  .s-bloom{bottom:10%;right:16%;width:36%;--dur:7.2s;--r:3deg;--r2:-1deg;z-index:2}
   /* page-level scattered specimens — part of the whole composition, bleed across sections */
   .scatter{position:absolute;pointer-events:none;z-index:4;will-change:transform;animation:float var(--dur,8s) ease-in-out infinite alternate}
   .scatter img{display:block;width:100%;filter:drop-shadow(0 16px 24px rgba(60,50,37,.18))}
@@ -181,7 +191,7 @@
   .rf-success p{font-size:14.5px;color:var(--brown-soft);max-width:380px;margin:0 auto;line-height:1.6}
 
   /* FOOTER (deep olive) */
-  footer{background:var(--olive-2);color:rgba(233,224,202,.82);padding:64px 0 28px}
+  footer{background:var(--olive-2);color:rgba(233,224,202,.82);padding:64px 0 110px}
   .foot-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:38px;margin-bottom:42px}
   .foot-brand .fmark{font-family:'Fraunces',serif;font-style:italic;font-size:25px;color:var(--gold-soft);margin-bottom:6px}
   .foot-brand .ftag{font-size:12.5px;color:var(--olive-soft);font-weight:600;letter-spacing:.5px;margin-bottom:14px;text-transform:uppercase}
@@ -317,10 +327,10 @@
     <div class="hero-copy">
       <div class="hero-eyebrow">A gentler way through goodbye</div>
       <h1>Where memories <em>live on.</em></h1>
-      <p class="sub">An ending can still hold beauty. We care for Tucson's families with honesty, warmth, and the quiet dignity every life deserves — here for you any hour of the day or night.</p>
+      <p class="sub">An ending can still hold beauty. We care for Tucson’s families with honesty, warmth, and the quiet dignity every life deserves — here for you any hour of the day or night.</p>
       <div class="hero-cta">
         <a class="btn btn-olive" href="#reach">Plan ahead, gently</a>
-        <a class="btn btn-line" href="tel:5206222262">We're here 24/7</a>
+        <a class="btn btn-line" href="tel:5206222262">We’re here 24/7</a>
       </div>
     </div>
     <div class="stage">
@@ -347,7 +357,7 @@
       <div class="i2img"><img src="/sensible/spec-fern.jpg" alt=""></div>
       <div>
         <h3>Memories that live on</h3>
-        <p>A service shaped around the person — their story, their people, their faith. And a full year of grief support that doesn't end at the goodbye.</p>
+        <p>A service shaped around the person — their story, their people, their faith. And a full year of grief support that doesn’t end at the goodbye.</p>
         <a href="#story">Our family</a>
       </div>
     </div>
@@ -385,7 +395,7 @@
   <div class="scatter sc-fern2"><img src="/sensible/cut-fern.png" alt=""></div>
   <div class="wrap obs">
     <div class="oe">Our promise to you</div>
-    <h2>"Transparent, straightforward, and here whenever you need us — so you can focus on what matters most."</h2>
+    <h2>“Transparent, straightforward, and here whenever you need us — so you can focus on what matters most.”</h2>
     <div class="olive-row">
       <div class="olive-item"><b>24/7</b><span>Real people, any hour</span></div>
       <div class="olive-item"><b>Clear</b><span>Honest, upfront pricing</span></div>
@@ -403,7 +413,7 @@
       <div class="se">Our family, for yours</div>
       <h2>The only family and <em>veteran-owned</em> home in Tucson.</h2>
       <p>We started Sensible to make a hard time as manageable as it can be — with honest, straightforward care and no pressure, ever. We believe there is no greater honor than serving those who have given so much.</p>
-      <p>However you come to us — planning gently for the future, or facing a loss right now — you'll find real people, real answers, and care that continues long after the service.</p>
+      <p>However you come to us — planning gently for the future, or facing a loss right now — you’ll find real people, real answers, and care that continues long after the service.</p>
     </div>
   </div>
 </section>
@@ -414,16 +424,16 @@
     <div class="reach-card obs">
       <div class="reach-head">
         <div class="re">Reach our family</div>
-        <h2>Let's talk, whenever you're ready.</h2>
+        <h2>Let’s talk, whenever you’re ready.</h2>
         <p>Leave one gentle note and a member of our family will reach you personally — never a call center.</p>
       </div>
       <form id="reachForm" novalidate>
         <div class="rf-modes">
           <div class="rf-mode sel" data-mode="plan"><b>Planning ahead</b><span>For peace of mind</span></div>
-          <div class="rf-mode" data-mode="loss"><b>We've lost someone</b><span>We're here now</span></div>
+          <div class="rf-mode" data-mode="loss"><b>We’ve lost someone</b><span>We’re here now</span></div>
           <div class="rf-mode" data-mode="ask"><b>Just a question</b><span>However we can help</span></div>
         </div>
-        <div class="rf-urgent" id="rfUrgent"><div><a href="tel:5206222262">(520) 622-2262</a><div class="u">If you need us this moment, please call — we answer 24/7. Or leave your details and we'll call you right back.</div></div></div>
+        <div class="rf-urgent" id="rfUrgent"><div><a href="tel:5206222262">(520) 622-2262</a><div class="u">If you need us this moment, please call — we answer 24/7. Or leave your details and we’ll call you right back.</div></div></div>
         <div class="rf-row">
           <div class="rf-field"><label>First name</label><input type="text" id="rf-first"></div>
           <div class="rf-field"><label>Last name</label><input type="text" id="rf-last"></div>
@@ -432,14 +442,14 @@
           <div class="rf-field"><label>Phone</label><input type="tel" id="rf-phone" placeholder="(520) 000-0000"></div>
           <div class="rf-field"><label>Email <span style="text-transform:none;color:var(--brown-soft);font-weight:400">(optional)</span></label><input type="email" id="rf-email"></div>
         </div>
-        <div class="rf-field"><label id="rf-notelabel">Anything you'd like us to know (optional)</label><textarea id="rf-note" placeholder="A name, a wish, a question — whatever is on your heart."></textarea></div>
+        <div class="rf-field"><label id="rf-notelabel">Anything you’d like us to know (optional)</label><textarea id="rf-note" placeholder="A name, a wish, a question — whatever is on your heart."></textarea></div>
         <button type="submit" class="rf-submit" id="rfSubmit">Send to our family</button>
         <div class="rf-foot">Private and never shared · nothing is final · no cost to begin</div>
       </form>
       <div class="rf-success" id="rfSuccess">
         <div class="rf-check">&#10003;</div>
         <h3 id="rfSuccessHead">Thank you — we have it.</h3>
-        <p id="rfSuccessText">A member of our family will reach out personally, with care and without pressure. You're not alone in this.</p>
+        <p id="rfSuccessText">A member of our family will reach out personally, with care and without pressure. You’re not alone in this.</p>
       </div>
     </div>
   </div>
@@ -474,7 +484,7 @@
   <div class="drawer-body">
     <div class="rc-intro">
       <div class="rce">A quiet report card</div>
-      <h3>Today your site earns a <em>C</em>. Here's how we'd make it an <em>A</em>.</h3>
+      <h3>Today your site earns a <em>C</em>. Here’s how we’d make it an <em>A</em>.</h3>
     </div>
     <div class="rc-grades">
       <div class="rc-grade today"><div class="g serif">C</div><span>Your site today</span></div>
@@ -485,22 +495,22 @@
     <div class="rc-rows">
       <div class="rc-row">
         <div class="rc-crit">First impression</div>
-        <div class="rc-cell today"><span class="mk">&times;</span>Heavy and dated — it doesn't feel like "where memories live on."</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>Heavy and dated — it doesn’t feel like “where memories live on.”</div>
         <div class="rc-cell new"><span class="mk">&#10003;</span>Warm, hopeful, and alive — the feeling your name promises.</div>
       </div>
       <div class="rc-row">
         <div class="rc-crit">Pricing</div>
         <div class="rc-cell today"><span class="mk">&times;</span>Hidden in a downloadable PDF — families have to dig.</div>
-        <div class="rc-cell new"><span class="mk">&#10003;</span>Shown openly. You're "Sensible" — let families trust what they can see.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Shown openly. You’re “Sensible” — let families trust what they can see.</div>
       </div>
       <div class="rc-row">
         <div class="rc-crit">Your best story</div>
-        <div class="rc-cell today"><span class="mk">&times;</span>"Only family + veteran-owned in Tucson" is buried.</div>
-        <div class="rc-cell new"><span class="mk">&#10003;</span>Front and center — it's your most powerful reason to choose you.</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>“Only family + veteran-owned in Tucson” is buried.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Front and center — it’s your most powerful reason to choose you.</div>
       </div>
       <div class="rc-row">
         <div class="rc-crit">Spanish-speaking families</div>
-        <div class="rc-cell today"><span class="mk">&times;</span>"Hablamos Español" is an afterthought.</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>“Hablamos Español” is an afterthought.</div>
         <div class="rc-cell new"><span class="mk">&#10003;</span>First-class, for the families who need it most.</div>
       </div>
       <div class="rc-row">
@@ -525,7 +535,7 @@
     <div class="reveal-top">
       <div class="re-eye">A gentle before &amp; after</div>
       <h2>Same heart. A feeling that finally matches it.</h2>
-      <p>Everything your families rely on is still here — only now it's warm, honest, and as alive as your name promises.</p>
+      <p>Everything your families rely on is still here — only now it’s warm, honest, and as alive as your name promises.</p>
     </div>
     <div class="compare">
       <div class="cmp cmp-old">
@@ -545,7 +555,7 @@
     </div>
     <div class="reveal-foot">
       <span class="rf-line">Where memories live on — finally, a site that feels that way.</span>
-      <a class="btn btn-olive" href="#reach" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let's talk about it</a>
+      <a class="btn btn-olive" href="#reach" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let’s talk about it</a>
     </div>
   </div>
 </div>

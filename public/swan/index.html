@@ -3,8 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Swan Burial &amp; Cremation — concept by AOM</title>
+<title>Swan Burial &amp; Cremation — Quiet Dignity Since 1964 · Tucson, AZ</title>
 <meta name="description" content="Family owned since 1964. Transparent pricing. We own and operate our own crematory. Quiet, dignified care for southern Arizona.">
+<meta name="theme-color" content="#211f1b">
+<meta property="og:title" content="Swan Burial &amp; Cremation — Quiet Dignity Since 1964">
+<meta property="og:description" content="Family owned and operated. Transparent pricing. Our own crematory — your loved one never leaves our care.">
+<meta property="og:image" content="https://www.aheadofmarket.com/swan/swan-logo.png">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23211f1b'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' fill='%23c0954a' text-anchor='middle'%3ES%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -46,6 +52,10 @@
   .btn-line:hover{background:var(--ink);color:var(--ivory)}
   .btn-gold{background:var(--gold);color:#fff}
   .btn-gold:hover{background:var(--gold-soft)}
+  a:focus-visible,button:focus-visible,.rf-mode:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+  ::selection{background:var(--gold-soft);color:var(--ink)}
+  section[id]{scroll-margin-top:24px}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.obs{opacity:1!important;transform:none!important}.rule{width:64px!important}}
 
   /* HEADER — minimal */
   header{position:absolute;top:0;left:0;right:0;z-index:30}
@@ -57,11 +67,12 @@
   .navcta{display:flex;align-items:center;gap:20px}
   .phone{font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none;white-space:nowrap}
 
-  /* HERO — type-first, vast whitespace */
-  .hero{min-height:100vh;display:flex;align-items:center;padding:140px 0 90px}
+  /* HERO — type-first, vast whitespace (composed, not empty: the 1964 figure owns the right) */
+  .hero{min-height:calc(100vh - 62px);display:flex;align-items:center;padding:140px 0 110px;position:relative;overflow:hidden}
+  .hero-1964{position:absolute;right:clamp(-40px,2vw,60px);top:50%;transform:translateY(-50%);font-family:'Instrument Serif',serif;font-style:italic;font-size:clamp(180px,26vw,380px);line-height:1;color:rgba(33,31,27,.055);user-select:none;pointer-events:none;letter-spacing:-.02em}
   .hero-label{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--stone);font-weight:600;margin-bottom:30px;display:flex;align-items:center;gap:16px}
   .hero-label .ln{width:34px;height:1px;background:var(--gold)}
-  .hero h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(52px,9vw,128px);line-height:.96;letter-spacing:-.5px;color:var(--ink);margin-bottom:34px;max-width:14ch}
+  .hero h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(52px,9vw,128px);line-height:.96;letter-spacing:-.5px;color:var(--ink);margin-bottom:34px;max-width:14ch;text-wrap:balance}
   .hero h1 em{font-style:italic;color:var(--gold)}
   .hero .sub{font-size:clamp(16px,1.7vw,19px);line-height:1.7;color:var(--ink-soft);max-width:440px;margin-bottom:42px}
   .hero-cta{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -118,6 +129,7 @@
   .rf-field input,.rf-field textarea{width:100%;border:none;background:transparent;padding:18px 2px;font-family:inherit;font-size:16px;color:var(--ink)}
   .rf-field input::placeholder,.rf-field textarea::placeholder{color:var(--stone)}
   .rf-field input:focus,.rf-field textarea:focus{outline:none}
+  .rf-field:focus-within{border-bottom-color:var(--gold)}
   .rf-field textarea{min-height:80px;resize:vertical}
   .rf-submit{width:100%;background:var(--ink);color:var(--ivory);border:none;border-radius:1px;padding:18px;font-family:inherit;font-size:14px;font-weight:600;letter-spacing:.5px;cursor:pointer;margin-top:30px;transition:background .2s}
   .rf-submit:hover{background:#000}
@@ -129,7 +141,7 @@
   .rf-success p{font-size:14.5px;color:var(--ink-soft);max-width:380px;margin:0 auto;line-height:1.6}
 
   /* FOOTER — deep ink, gold logo */
-  footer{background:var(--ink);color:rgba(245,241,232,.78);padding:80px 0 36px}
+  footer{background:var(--ink);color:rgba(245,241,232,.78);padding:80px 0 110px}
   .foot-top{display:flex;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-bottom:56px;align-items:flex-start}
   .foot-logo{height:52px;width:auto;margin-bottom:16px}
   .foot-brand p{font-size:14px;line-height:1.6;color:rgba(245,241,232,.66);max-width:320px}
@@ -242,13 +254,14 @@
 
 <!-- HERO -->
 <section class="hero">
+  <div class="hero-1964" aria-hidden="true">1964</div>
   <div class="wrap">
     <div class="hero-label obs">Tucson, Arizona<span class="ln"></span>Since 1964</div>
     <h1 class="obs">Quiet dignity, <em>for sixty years.</em></h1>
-    <p class="sub obs">Family owned and operated. Transparent pricing. We own and operate our own crematory — so your loved one remains in our care, and no one else's, from the first moment to the last.</p>
+    <p class="sub obs">Family owned and operated. Transparent pricing. We own and operate our own crematory — so your loved one remains in our care, and no one else’s, from the first moment to the last.</p>
     <div class="hero-cta obs">
       <a class="btn btn-ink" href="#reach">Plan ahead</a>
-      <a class="btn btn-line" href="tel:5207472525">We're here 24/7</a>
+      <a class="btn btn-line" href="tel:5207472525">We’re here 24/7</a>
     </div>
   </div>
 </section>
@@ -276,7 +289,7 @@
     <div class="pricing-head obs">
       <div class="pe">Transparent pricing</div>
       <h2>No surprises. Just honest numbers.</h2>
-      <p>We've always believed families deserve to know the cost up front. Here it is, plainly — the way it should be.</p>
+      <p>We’ve always believed families deserve to know the cost up front. Here it is, plainly — the way it should be.</p>
     </div>
     <div class="price-rows obs">
       <div class="price-row">
@@ -300,7 +313,7 @@
 <section class="stmt center">
   <div class="wrap">
     <div class="rule obs"></div>
-    <p class="stmt-q serif obs">"Without personalization, you get a cookie-cutter experience. <em>Music says what words cannot.</em>"</p>
+    <p class="stmt-q serif obs">“Without personalization, you get a cookie-cutter experience. <em>Music says what words cannot.</em>”</p>
     <div class="stmt-attr obs">On how we honor a life</div>
   </div>
 </section>
@@ -329,20 +342,20 @@
 <section class="reach" id="reach">
   <div class="wrap">
     <div class="re obs">Reach our family</div>
-    <h2 class="obs">Let's begin, quietly.</h2>
+    <h2 class="obs">Let’s begin, quietly.</h2>
     <p class="rsub obs">Leave one note, and a member of the Swan family will reach you personally — never a call center, never a sales pitch.</p>
     <div class="reach-form obs">
       <form id="reachForm" novalidate>
         <div class="rf-modes">
           <div class="rf-mode sel" data-mode="plan">Planning ahead</div>
-          <div class="rf-mode" data-mode="loss">We've lost someone</div>
+          <div class="rf-mode" data-mode="loss">We’ve lost someone</div>
           <div class="rf-mode" data-mode="ask">A question</div>
         </div>
         <div class="rf-urgent" id="rfUrgent"><a href="tel:5207472525">(520) 747-2525</a><div class="u">If you need us this moment, please call — we answer 24/7.</div></div>
         <div class="rf-field"><input type="text" id="rf-name" placeholder="Your name"></div>
         <div class="rf-field"><input type="tel" id="rf-phone" placeholder="Phone"></div>
         <div class="rf-field"><input type="email" id="rf-email" placeholder="Email (optional)"></div>
-        <div class="rf-field"><textarea id="rf-note" placeholder="Anything you'd like us to know"></textarea></div>
+        <div class="rf-field"><textarea id="rf-note" placeholder="Anything you’d like us to know"></textarea></div>
         <button type="submit" class="rf-submit" id="rfSubmit">Send to the Swan family</button>
         <div class="rf-foot">Private and never shared · nothing is final · no cost to begin</div>
       </form>
@@ -382,7 +395,7 @@
     <div class="dh-toggle">See the report card <span class="chev">▲</span></div>
   </div>
   <div class="drawer-body">
-    <div class="rc-intro"><div class="rce">A quiet report card</div><h3>Today your site earns a <em>C</em>. Here's how we'd make it an <em>A</em>.</h3></div>
+    <div class="rc-intro"><div class="rce">A quiet report card</div><h3>Today your site earns a <em>C</em>. Here’s how we’d make it an <em>A</em>.</h3></div>
     <div class="rc-grades">
       <div class="rc-grade today"><div class="g serif">C</div><span>Your site today</span></div>
       <div class="rc-arrow serif">&rarr;</div>
@@ -390,10 +403,10 @@
     </div>
     <div class="rc-colhead"><span></span><span class="h-today">Today</span><span class="h-new">What we'd do</span></div>
     <div class="rc-rows">
-      <div class="rc-row"><div class="rc-crit">Transparent pricing</div><div class="rc-cell today"><span class="mk">&times;</span>It's your promise — but no prices appear on the homepage.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Prices shown plainly, up front, the way "transparent" should mean.</div></div>
-      <div class="rc-row"><div class="rc-crit">Your own crematory</div><div class="rc-cell today"><span class="mk">&times;</span>A real advantage, mentioned only in passing.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Made a centerpiece — "never leaves our hands" is reassurance families want.</div></div>
+      <div class="rc-row"><div class="rc-crit">Transparent pricing</div><div class="rc-cell today"><span class="mk">&times;</span>It’s your promise — but no prices appear on the homepage.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Prices shown plainly, up front, the way “transparent” should mean.</div></div>
+      <div class="rc-row"><div class="rc-crit">Your own crematory</div><div class="rc-cell today"><span class="mk">&times;</span>A real advantage, mentioned only in passing.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Made a centerpiece — “never leaves our hands” is reassurance families want.</div></div>
       <div class="rc-row"><div class="rc-crit">Sixty years</div><div class="rc-cell today"><span class="mk">&times;</span>1964 is a remarkable story, barely told.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Worn quietly and proudly, as the trust signal it is.</div></div>
-      <div class="rc-row"><div class="rc-crit">First impression</div><div class="rc-cell today"><span class="mk">&times;</span>Dated and busy — it doesn't feel like calm, premium care.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Still, spare, and dignified — restraint that signals confidence.</div></div>
+      <div class="rc-row"><div class="rc-crit">First impression</div><div class="rc-cell today"><span class="mk">&times;</span>Dated and busy — it doesn’t feel like calm, premium care.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Still, spare, and dignified — restraint that signals confidence.</div></div>
       <div class="rc-row"><div class="rc-crit">On a phone</div><div class="rc-cell today"><span class="mk">&times;</span>Most families search by phone in a hard moment.</div><div class="rc-cell new"><span class="mk">&#10003;</span>Built mobile-first, so nothing strains when it matters.</div></div>
       <div class="rc-row"><div class="rc-crit">Reaching you</div><div class="rc-cell today"><span class="mk">&times;</span>No simple, calm way to start online.</div><div class="rc-cell new"><span class="mk">&#10003;</span>One quiet form, straight to your family.</div></div>
     </div>
@@ -424,7 +437,7 @@
     </div>
     <div class="reveal-foot">
       <span class="rf-line">Sixty years of care, shown the way it deserves.</span>
-      <a class="btn btn-ink" href="#reach" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let's talk about it</a>
+      <a class="btn btn-ink" href="#reach" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let’s talk about it</a>
     </div>
   </div>
 </div>

@@ -3,8 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Carrillo's Tucson Mortuary — concept by AOM</title>
+<title>Carrillo&rsquo;s Tucson Mortuary — Faithfully Serving Since 1914</title>
 <meta name="description" content="Faithfully serving Tucson since 1914. Four generations of the Carrillo family, caring for our community with dignity, every faith and every background.">
+<meta name="theme-color" content="#5e2a2a">
+<meta property="og:title" content="Carrillo's Tucson Mortuary — Faithfully Serving Since 1914">
+<meta property="og:description" content="Four generations of the Carrillo family, caring for Tucson’s families with dignity — every faith, every background.">
+<meta property="og:image" content="https://www.aheadofmarket.com/carrillos/carrillos-hero-poster.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%235e2a2a'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' fill='%23c29a57' text-anchor='middle'%3EC%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -42,8 +48,12 @@
   .btn-primary:hover{transform:translateY(-2px);background:var(--maroon-2);box-shadow:0 14px 32px rgba(94,42,42,.36)}
   .btn-gold{background:var(--gold);color:var(--walnut)}
   .btn-gold:hover{transform:translateY(-2px);background:var(--gold-soft)}
-  .btn-ghost{border:1.5px solid rgba(243,236,219,.55);color:var(--paper);background:transparent}
-  .btn-ghost:hover{background:rgba(243,236,219,.12)}
+  .btn-ghost{border:1.5px solid rgba(243,236,219,.8);color:var(--paper);background:rgba(40,20,18,.25)}
+  .btn-ghost:hover{background:rgba(243,236,219,.16);border-color:var(--paper);transform:translateY(-2px)}
+  a:focus-visible,button:focus-visible,.bf-mode:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:3px}
+  ::selection{background:var(--gold-soft);color:var(--walnut)}
+  section[id]{scroll-margin-top:24px}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal,.obs{opacity:1!important;transform:none!important}}
   .btn-line{border:1.5px solid var(--maroon);color:var(--maroon);background:transparent}
   .btn-line:hover{background:var(--maroon);color:var(--paper)}
 
@@ -53,28 +63,28 @@
   .brand{display:flex;align-items:center;gap:13px}
   .brand .mark{width:48px;height:48px;border-radius:50%;border:1.5px solid rgba(194,154,87,.7);display:flex;align-items:center;justify-content:center;color:var(--gold-soft);font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600}
   .brand .name{font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:600;color:var(--paper);line-height:1.02}
-  .brand .name span{display:block;font-family:'Hanken Grotesk',sans-serif;font-size:9px;letter-spacing:2.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-top:4px}
-  .navlinks{display:flex;gap:30px;list-style:none}
-  .navlinks a{text-decoration:none;color:var(--paper);font-size:13.5px;font-weight:500;opacity:.85;transition:color .2s}
-  .navlinks a:hover{color:var(--gold-soft)}
+  .brand .name span{display:block;font-family:'Hanken Grotesk',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#d8b277;font-weight:600;margin-top:4px}
+  .navlinks{display:flex;gap:32px;list-style:none}
+  .navlinks a{text-decoration:none;color:var(--paper);font-size:14px;font-weight:500;opacity:.92;transition:color .2s,opacity .2s}
+  .navlinks a:hover{color:var(--gold-soft);opacity:1}
   .navcta{display:flex;align-items:center;gap:16px}
-  .espanol{font-size:12px;font-weight:600;color:var(--gold-soft);border:1px solid rgba(194,154,87,.5);border-radius:3px;padding:6px 12px}
+  .espanol{font-size:12px;font-weight:600;color:#d8b277;border:1px solid rgba(194,154,87,.7);border-radius:3px;padding:6px 12px;background:rgba(40,20,18,.25)}
   .phone{font-size:14px;font-weight:600;color:var(--paper);text-decoration:none;white-space:nowrap}
   .phone:hover{color:var(--gold-soft)}
 
   /* HERO — framed museum plate */
   .hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;padding:130px 22px 90px}
   .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
-  .hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(40,20,18,.7),rgba(48,24,20,.5) 45%,rgba(40,20,18,.68)),radial-gradient(120% 70% at 50% 50%,transparent 40%,rgba(30,16,14,.5))}
+  .hero::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(40,20,18,.62),rgba(48,24,20,.28) 42%,rgba(40,20,18,.55)),radial-gradient(70% 60% at 50% 52%,rgba(30,16,14,.55),rgba(30,16,14,.18) 68%,transparent)}
   .hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:140px;z-index:1;background:linear-gradient(180deg,transparent,var(--paper))}
-  .hero-inner{position:relative;z-index:2;max-width:820px;padding:clamp(28px,5vw,56px);border:1px solid rgba(194,154,87,.4)}
+  .hero-inner{position:relative;z-index:2;max-width:820px;padding:clamp(28px,5vw,56px);border:1px solid rgba(194,154,87,.55);background:linear-gradient(180deg,rgba(40,20,18,.30),rgba(40,20,18,.44))}
   .hero-inner::before,.hero-inner::after{content:"";position:absolute;width:18px;height:18px;border:2px solid var(--gold-soft)}
   .hero-inner::before{top:-2px;left:-2px;border-right:0;border-bottom:0}
   .hero-inner::after{bottom:-2px;right:-2px;border-left:0;border-top:0}
-  .hero .est{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--gold-soft);margin-bottom:18px;font-weight:600}
-  .hero h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(44px,7vw,92px);line-height:1.0;color:var(--paper);margin-bottom:18px;letter-spacing:.2px}
-  .hero .tagline{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(20px,2.6vw,28px);color:var(--gold-soft);margin-bottom:26px}
-  .hero .sub{font-size:16px;line-height:1.66;color:rgba(243,236,219,.9);max-width:540px;margin:0 auto 32px}
+  .hero .est{font-size:13px;letter-spacing:4px;text-transform:uppercase;color:#d8b277;margin-bottom:18px;font-weight:600;text-shadow:0 1px 12px rgba(0,0,0,.4)}
+  .hero h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(44px,7vw,92px);line-height:1.0;color:var(--paper);margin-bottom:18px;letter-spacing:-0.01em;text-wrap:balance;text-shadow:0 2px 28px rgba(20,8,6,.5)}
+  .hero .tagline{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(20px,2.6vw,28px);color:#d8b277;margin-bottom:26px;text-shadow:0 1px 16px rgba(20,8,6,.45)}
+  .hero .sub{font-size:16px;line-height:1.66;color:rgba(243,236,219,.95);max-width:540px;margin:0 auto 32px;text-shadow:0 1px 12px rgba(20,8,6,.4)}
   .hero-cta{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
   .scrolltip{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);z-index:2;color:rgba(243,236,219,.7);font-size:11px;letter-spacing:2px;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:10px}
   .scrolltip .ln{width:1px;height:42px;background:linear-gradient(180deg,var(--gold-soft),transparent);animation:sp 2.4s ease-in-out infinite}
@@ -83,7 +93,7 @@
   /* SECTION HEAD */
   .sec-head{max-width:720px;margin:0 auto 60px;text-align:center}
   .sec-eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold-deep);font-weight:700;margin-bottom:14px}
-  .sec-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(34px,4.6vw,58px);line-height:1.04;color:var(--maroon);letter-spacing:.2px}
+  .sec-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:clamp(34px,4.6vw,58px);line-height:1.04;color:var(--maroon);letter-spacing:-0.01em;text-wrap:balance}
   .sec-sub{font-size:16.5px;color:var(--ink-soft);margin-top:16px;line-height:1.66}
 
   /* TIMELINE — the centerpiece */
@@ -111,7 +121,7 @@
   .svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:46px;background:var(--line);border:1px solid var(--line)}
   .svc-card{background:var(--card);padding:34px 30px;transition:background .25s}
   .svc-card:hover{background:#fff}
-  .svc-card .sn serif,.svc-card .sn{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--gold-deep);margin-bottom:10px}
+  .svc-card .sn{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--gold-deep);margin-bottom:10px}
   .svc-card h3{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:23px;color:var(--maroon);margin-bottom:9px;line-height:1.15}
   .svc-card p{font-size:14px;line-height:1.6;color:var(--ink-soft)}
   .svc-note{text-align:center;margin-top:34px;font-size:14.5px;color:var(--ink-soft)}
@@ -155,7 +165,7 @@
   .bf-success p{font-size:14.5px;color:var(--ink-soft);max-width:380px;margin:0 auto;line-height:1.6}
 
   /* FOOTER */
-  footer{background:var(--maroon-2);color:rgba(243,236,219,.82);padding:70px 0 30px}
+  footer{background:var(--maroon-2);color:rgba(243,236,219,.82);padding:70px 0 110px}
   .foot-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px;margin-bottom:46px}
   .foot-brand .fmark{font-family:'Cormorant Garamond',serif;font-size:27px;color:var(--gold-soft);margin-bottom:14px;line-height:1.15}
   .foot-brand p{font-size:14px;line-height:1.6;color:rgba(243,236,219,.74);max-width:300px}
@@ -248,7 +258,7 @@
       <nav>
         <div class="brand reveal d1">
           <div class="mark serif">C</div>
-          <div class="name">Carrillo's Tucson Mortuary<span>Est. 1914 · Tucson, Arizona</span></div>
+          <div class="name">Carrillo’s Tucson Mortuary<span>Est. 1914 · Tucson, Arizona</span></div>
         </div>
         <ul class="navlinks reveal d2">
           <li><a href="#timeline">Our History</a></li>
@@ -264,12 +274,12 @@
   </div>
   <div class="hero-inner reveal d3">
     <div class="est">Tucson, Arizona · Established 1914</div>
-    <h1>Carrillo's Tucson Mortuary</h1>
+    <h1>Carrillo’s Tucson Mortuary</h1>
     <div class="tagline">Faithfully serving our community for over a century.</div>
-    <p class="sub">Four generations of the Carrillo family, caring for Tucson's families with dignity and respect — every faith, every background, every life worth remembering.</p>
+    <p class="sub">Four generations of the Carrillo family, caring for Tucson’s families with dignity and respect — every faith, every background, every life worth remembering.</p>
     <div class="hero-cta">
       <a class="btn btn-gold" href="#book">Plan ahead with us</a>
-      <a class="btn btn-ghost" href="tel:5206227487">We're here 24/7</a>
+      <a class="btn btn-ghost" href="tel:5206227487">We’re here 24/7</a>
     </div>
   </div>
   <div class="scrolltip reveal d5"><span>Our story</span><span class="ln"></span></div>
@@ -314,7 +324,7 @@
         <div class="tl-year">Now</div>
         <div class="tl-gen">Still here for you</div>
         <h3>Your family is next.</h3>
-        <p>Whatever you're facing, you'll be cared for by a family that has done this faithfully for more than a hundred years.</p>
+        <p>Whatever you’re facing, you’ll be cared for by a family that has done this faithfully for more than a hundred years.</p>
       </div>
     </div>
     <div class="tl-cap obs"><p class="sig serif">"Faithfully serving the community since 1914."</p></div>
@@ -354,7 +364,7 @@
           <div class="bf-lead serif">What brings you to us today?</div>
           <div class="bf-modes">
             <div class="bf-mode sel" data-mode="plan"><b>Planning ahead</b><span>For peace of mind</span></div>
-            <div class="bf-mode" data-mode="loss"><b>We've lost someone</b><span>We're here now</span></div>
+            <div class="bf-mode" data-mode="loss"><b>We’ve lost someone</b><span>We’re here now</span></div>
             <div class="bf-mode" data-mode="ask"><b>I have a question</b><span>However we can help</span></div>
           </div>
           <div class="bf-urgent" id="bfUrgent">
@@ -368,7 +378,7 @@
             <div class="bf-field"><label>Phone</label><input type="tel" id="bf-phone" placeholder="(520) 000-0000"></div>
             <div class="bf-field"><label>Email <span style="text-transform:none;color:var(--ink-soft);font-weight:400">(optional)</span></label><input type="email" id="bf-email"></div>
           </div>
-          <div class="bf-field"><label id="bf-notelabel">Anything you'd like us to know (optional)</label><textarea id="bf-note" placeholder="A name, a wish, a question — whatever is on your heart."></textarea></div>
+          <div class="bf-field"><label id="bf-notelabel">Anything you’d like us to know (optional)</label><textarea id="bf-note" placeholder="A name, a wish, a question — whatever is on your heart."></textarea></div>
           <button type="submit" class="bf-submit" id="bfSubmit">Send to the Carrillo family</button>
           <div class="bf-foot">Your information is private and never shared. Nothing is final, and there is no cost to begin.</div>
           <div class="bf-phone">
@@ -399,7 +409,7 @@
       <div class="foot-col"><h4>Reach Us</h4><p>204 S. Stone Avenue<br>Tucson, AZ 85701</p><a href="tel:5206227487">(520) 622-7487</a><p>Available 24 / 7 · Hablamos Español</p></div>
     </div>
     <div class="foot-bottom">
-      <span>© Carrillo's Tucson Mortuary, Inc. · Faithfully serving the community since 1914</span>
+      <span>© Carrillo’s Tucson Mortuary, Inc. · Faithfully serving the community since 1914</span>
       <span>Concept rebuild by <a href="https://aheadofmarket.com">Ahead of Market</a></span>
     </div>
   </div>
@@ -412,14 +422,14 @@
     <div class="dh-toggle">See the report card <span class="chev">▲</span></div>
   </div>
   <div class="drawer-body">
-    <div class="dcard-intro"><h3>A quiet report card</h3><p>We kept everything a hundred years built — and fixed what's quietly costing you the families who never reach you.</p></div>
+    <div class="dcard-intro"><h3>A quiet report card</h3><p>We kept everything a hundred years built — and fixed what’s quietly costing you the families who never reach you.</p></div>
     <div class="dcards">
       <div class="dcard"><div class="dn">i.</div><h4>A site that's actually up</h4><p>Your website is unreachable right now. A family searching for you at 2am finds nothing. This one is fast, reliable, and always there.</p></div>
-      <div class="dcard"><div class="dn">ii.</div><h4>Your century, finally shown</h4><p>Four generations since 1914 is an extraordinary story — and it's buried in plain text today. We made it the heart of the page.</p></div>
+      <div class="dcard"><div class="dn">ii.</div><h4>Your century, finally shown</h4><p>Four generations since 1914 is an extraordinary story — and it’s buried in plain text today. We made it the heart of the page.</p></div>
       <div class="dcard"><div class="dn">iii.</div><h4>No more dead ends</h4><p>Key pages 404 when the site is up. Here every family lands on one clear, dignified next step.</p></div>
       <div class="dcard"><div class="dn">iv.</div><h4>Spanish, warmly offered</h4><p>Tucson is nearly half Hispanic, and your site has no Spanish option. We put "Hablamos Español" right up front.</p></div>
       <div class="dcard"><div class="dn">v.</div><h4>Built for the phone</h4><p>Most families search on their phone in a hard moment. This is built mobile-first, so nothing breaks when it matters.</p></div>
-      <div class="dcard"><div class="dn">vi.</div><h4>A look worthy of the name</h4><p>A century of trust deserves better than a dated template. This feels like the institution you've earned the right to be.</p></div>
+      <div class="dcard"><div class="dn">vi.</div><h4>A look worthy of the name</h4><p>A century of trust deserves better than a dated template. This feels like the institution you’ve earned the right to be.</p></div>
     </div>
     <div class="drawer-cta"><div class="dctitle serif">See the difference for yourself</div><button class="btn btn-primary" id="openReveal">Show me old vs. new</button></div>
   </div>
@@ -432,7 +442,7 @@
     <div class="reveal-top">
       <div class="re-eye">A gentle before &amp; after</div>
       <h2>A hundred years of trust,<br>shown the way it deserves.</h2>
-      <p>Everything your families rely on is still here — only now it's reliable, reachable, and worthy of the name on the door.</p>
+      <p>Everything your families rely on is still here — only now it’s reliable, reachable, and worthy of the name on the door.</p>
     </div>
     <div class="compare">
       <div class="cmp cmp-old">
@@ -446,7 +456,7 @@
     </div>
     <div class="reveal-foot">
       <span class="rf-line">Four generations of care, finally shown the way it deserves.</span>
-      <a class="btn btn-primary" href="#book" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let's talk about it</a>
+      <a class="btn btn-primary" href="#book" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let’s talk about it</a>
     </div>
   </div>
 </div>

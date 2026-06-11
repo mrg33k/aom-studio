@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Preston Funeral Home — concept by AOM</title>
+<title>Preston Funeral Home — Our Family, Serving Yours · Phoenix, AZ</title>
+<meta name="description" content="Family owned and operated since 1982. Preston Funeral Home guides Arizona families through their hardest days with dignity and respect — plan gently online, or reach us any hour.">
+<meta name="theme-color" content="#120e09">
+<meta property="og:title" content="Preston Funeral Home — Our Family, Serving Yours">
+<meta property="og:description" content="Family owned and operated since 1982. Begin planning gently online, or reach us the moment you need us.">
+<meta property="og:image" content="https://www.aheadofmarket.com/preston/preston-hero-poster.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23120e09'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' fill='%23d6b277' text-anchor='middle'%3EP%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -65,9 +72,9 @@
   .brand{display:flex;align-items:center;gap:13px;flex-shrink:0}
   .brand .mark{width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(214,178,119,.5);display:flex;align-items:center;justify-content:center;color:var(--gold-soft);font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;flex-shrink:0}
   .brand .name{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;letter-spacing:.4px;color:var(--bone);line-height:1.05}
-  .brand .name span{display:block;font-family:'Hanken Grotesk',sans-serif;font-size:9.5px;letter-spacing:2.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;margin-top:4px}
+  .brand .name span{display:block;font-family:'Hanken Grotesk',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#e0c08a;font-weight:600;margin-top:4px}
   .navlinks{display:flex;gap:32px;list-style:none}
-  .navlinks a{text-decoration:none;color:var(--bone);font-size:14px;font-weight:500;opacity:.78;transition:opacity .2s,color .2s;white-space:nowrap}
+  .navlinks a{text-decoration:none;color:var(--bone);font-size:14px;font-weight:500;opacity:.9;transition:opacity .2s,color .2s;white-space:nowrap}
   .navlinks a:hover{opacity:1;color:var(--gold-soft)}
   .navcta{display:flex;align-items:center;gap:18px;flex-shrink:0}
   .phone{font-size:14px;font-weight:600;color:var(--bone);text-decoration:none;letter-spacing:.3px;white-space:nowrap;display:flex;align-items:center;gap:7px}
@@ -75,23 +82,27 @@
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14.5px;border-radius:40px;padding:13px 24px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:transform .2s,box-shadow .2s,background .2s,color .2s;white-space:nowrap}
   .btn-primary{background:var(--gold);color:#23190b;box-shadow:0 10px 28px rgba(192,150,78,.32)}
   .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(192,150,78,.42);background:var(--gold-soft)}
-  .btn-ghost{border:1.5px solid rgba(244,238,226,.45);color:var(--bone);background:transparent}
-  .btn-ghost:hover{background:rgba(244,238,226,.1);border-color:var(--bone)}
+  .btn-ghost{border:1.5px solid rgba(244,238,226,.8);color:var(--bone);background:rgba(18,14,9,.3)}
+  .btn-ghost:hover{background:rgba(244,238,226,.14);border-color:var(--bone);transform:translateY(-2px)}
+  a:focus-visible,button:focus-visible,.pc-opt:focus-visible,.mf-tile:focus-visible,.mf-chip:focus-visible,.mf-choice:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+  ::selection{background:var(--gold-soft);color:#23190b}
+  section[id],div[id]{scroll-margin-top:24px}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal{opacity:1!important;transform:none!important}}
   .btn-ghost-dark{border:1.5px solid var(--gold);color:var(--gold)}
   .btn-ghost-dark:hover{background:var(--gold);color:#23190b}
 
   .hero{position:relative;z-index:2;display:grid;grid-template-columns:1fr .9fr;gap:48px;align-items:center;padding-top:46px;padding-bottom:84px}
   .ribbon{display:inline-flex;align-items:center;gap:9px;background:rgba(244,238,226,.08);border:1px solid var(--line-d);border-radius:40px;padding:8px 17px 8px 13px;font-size:12px;font-weight:600;letter-spacing:.4px;color:var(--gold-soft);margin-bottom:24px;backdrop-filter:blur(4px)}
   .ribbon .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(192,150,78,.22);flex-shrink:0}
-  .eyebrow{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:20px;color:var(--gold-soft);margin-bottom:14px;letter-spacing:.2px}
-  h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(44px,5.4vw,76px);line-height:1.02;letter-spacing:-.5px;color:var(--bone);margin-bottom:22px}
+  .eyebrow{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:21px;color:#e0c08a;margin-bottom:14px;letter-spacing:.2px;text-shadow:0 1px 14px rgba(10,7,4,.6)}
+  h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(44px,5.4vw,76px);line-height:1.02;letter-spacing:-.5px;color:var(--bone);margin-bottom:22px;text-shadow:0 2px 28px rgba(10,7,4,.5);text-wrap:balance}
   h1 .it{font-style:italic;color:var(--gold-soft)}
-  .sub{font-size:17.5px;line-height:1.66;color:rgba(244,238,226,.82);max-width:480px;margin-bottom:32px;font-weight:400}
+  .sub{font-size:17.5px;line-height:1.66;color:rgba(244,238,226,.9);max-width:480px;margin-bottom:32px;font-weight:400;text-shadow:0 1px 12px rgba(10,7,4,.45)}
   .cta-row{display:flex;gap:14px;align-items:stretch;margin-bottom:36px;flex-wrap:wrap}
   .trust{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--line-d)}
   .t-item{display:flex;flex-direction:column;gap:4px}
-  .t-item b{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--gold-soft);line-height:1}
-  .t-item span{font-size:11px;color:rgba(244,238,226,.62);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+  .t-item b{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:#e0c08a;line-height:1;text-shadow:0 1px 10px rgba(10,7,4,.5)}
+  .t-item span{font-size:11.5px;color:rgba(244,238,226,.74);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
   .divider{width:1px;height:38px;background:var(--line-d)}
 
   /* HERO INLINE PLAN CARD (the form is the visible hero) */
@@ -350,7 +361,7 @@
       <p class="sub reveal d4">For over forty years, Preston Funeral Home has guided Arizona families through their hardest days with dignity and respect. Now you can begin planning gently, online, in your own time — or reach us the moment you need us.</p>
       <div class="cta-row reveal d4">
         <button class="btn btn-primary" data-open="pre">Begin a plan online</button>
-        <a class="btn btn-ghost" href="tel:6023040083">We're here right now</a>
+        <a class="btn btn-ghost" href="tel:6023040083">We’re here right now</a>
       </div>
       <div class="trust reveal d5">
         <div class="t-item"><b>Since 1982</b><span>Four decades of care</span></div>
@@ -364,8 +375,8 @@
     <!-- THE FORM IS THE VISIBLE HERO -->
     <div class="plancard reveal d4" id="plancard">
       <div class="pc-eyebrow"><span class="pcdot"></span>Start your plan online</div>
-      <div class="pc-title">Let's begin, gently.</div>
-      <div class="pc-sub">A few quiet questions — no pressure, no cost. We'll take it one step at a time.</div>
+      <div class="pc-title">Let’s begin, gently.</div>
+      <div class="pc-sub">A few quiet questions — no pressure, no cost. We’ll take it one step at a time.</div>
       <div class="pc-steps"><i class="on"></i><i></i><i></i></div>
       <div class="pc-q">Who is this plan for?</div>
       <div class="pc-opts">
@@ -388,9 +399,9 @@
 <section class="paths" id="paths">
   <div class="wrap">
     <div class="sec-head">
-      <div class="sec-eyebrow">However you've come to us</div>
+      <div class="sec-eyebrow">However you’ve come to us</div>
       <h2 class="sec-title">Two ways we can help today</h2>
-      <p class="sec-sub">Whether you're planning quietly for the future or facing a loss right now, there's a clear, caring path forward.</p>
+      <p class="sec-sub">Whether you’re planning quietly for the future or facing a loss right now, there's a clear, caring path forward.</p>
     </div>
     <div class="path-grid">
       <div class="path path-pre">
@@ -399,7 +410,7 @@
         <p class="pd">Take the weight off the people you love. Set your wishes down now, privately and online, and we'll hold them with care until they're ever needed.</p>
         <ul>
           <li><span class="ck">&#10003;</span>Record your wishes from home, at your own pace</li>
-          <li><span class="ck">&#10003;</span>Lock in today's pricing and ease the burden later</li>
+          <li><span class="ck">&#10003;</span>Lock in today’s pricing and ease the burden later</li>
           <li><span class="ck">&#10003;</span>Spare your family difficult decisions in a hard moment</li>
         </ul>
         <div class="pcta">
@@ -407,9 +418,9 @@
         </div>
       </div>
       <div class="path path-now">
-        <span class="pe"><span class="pedot"></span>We're here now</span>
-        <h3>You've lost someone</h3>
-        <p class="pd">We are so sorry. You don't have to figure this out alone. Reach us any hour — a member of our family will answer and walk with you from the very first step.</p>
+        <span class="pe"><span class="pedot"></span>We’re here now</span>
+        <h3>You’ve lost someone</h3>
+        <p class="pd">We are so sorry. You don’t have to figure this out alone. Reach us any hour — a member of our family will answer and walk with you from the very first step.</p>
         <ul>
           <li><span class="ck">&#10003;</span>Available 24 hours a day, every day</li>
           <li><span class="ck">&#10003;</span>Immediate transfer into our care, anywhere in Arizona</li>
@@ -417,7 +428,7 @@
         </ul>
         <div class="pcta">
           <a class="pphone" href="tel:6023040083">(602) 304-0083</a>
-          <div class="pnote">Answered personally, 24 / 7 — or start below and we'll call you.</div>
+          <div class="pnote">Answered personally, 24 / 7 — or start below and we’ll call you.</div>
           <button class="btn btn-ghost-dark" data-open="now">Start arrangements</button>
         </div>
       </div>
@@ -466,7 +477,7 @@
   </div>
 </div>
 
-<div class="credit">Concept rebuild by AOM · built using Preston Funeral Home's real brand &amp; story · <a href="https://aheadofmarket.com">aheadofmarket.com</a></div>
+<div class="credit">Concept rebuild by AOM · built using Preston Funeral Home’s real brand &amp; story · <a href="https://aheadofmarket.com">aheadofmarket.com</a></div>
 
 <!-- ===== INTAKE MODAL ===== -->
 <div class="modal-overlay" id="intakeModal" aria-hidden="true">
@@ -500,7 +511,7 @@
         </div>
 
         <!-- persistent reassurance — this leads to a person, not a brochure (pre-need only; at-need has the call banner) -->
-        <div class="mf-trust" id="mfTrust"><span class="ti">&#9829;</span><span>You'll be speaking with a member of the Preston family &mdash; never a call center, never a sales pitch.</span></div>
+        <div class="mf-trust" id="mfTrust"><span class="ti">&#9829;</span><span>You’ll be speaking with a member of the Preston family &mdash; never a call center, never a sales pitch.</span></div>
 
         <!-- STEP 1 -->
         <div class="mf-step show" data-step="1">
@@ -518,7 +529,7 @@
               <div class="mf-tile" data-svc="Cremation">Cremation</div>
               <div class="mf-tile" data-svc="A memorial service">A memorial</div>
               <div class="mf-tile" data-svc="A graveside service">Graveside</div>
-              <div class="mf-tile mf-tile-wide" data-svc="Not sure yet — please guide me">I'm not sure yet &mdash; please guide us</div>
+              <div class="mf-tile mf-tile-wide" data-svc="Not sure yet — please guide me">I’m not sure yet &mdash; please guide us</div>
             </div>
           </div>
           <div class="mf-actions">
@@ -550,7 +561,7 @@
 
         <!-- STEP 3 -->
         <div class="mf-step" data-step="3">
-          <div class="mf-field"><div class="mf-q" id="noteLabel">Anything you'd like us to know? <span style="text-transform:none;font-weight:400;color:var(--sage);font-family:'Hanken Grotesk',sans-serif;font-size:13px">(optional)</span></div>
+          <div class="mf-field"><div class="mf-q" id="noteLabel">Anything you’d like us to know? <span style="text-transform:none;font-weight:400;color:var(--sage);font-family:'Hanken Grotesk',sans-serif;font-size:13px">(optional)</span></div>
             <textarea id="note" placeholder="A name, a wish, a question — whatever is on your heart."></textarea>
           </div>
           <div class="mf-actions">
