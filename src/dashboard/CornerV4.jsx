@@ -61,6 +61,7 @@ import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 // R10 — MailListPanel moved into the left rail (cv4/LeftMailPanel.jsx),
 // imported via cv4/Drawer.jsx; no longer mounted here directly.
 import MailRoom from './cv4/MailRoom.jsx'
+import RoutinesBoard from './cv4/RoutinesBoard.jsx'
 // corner:support N1 — Support Inbox (Patrik workspace only, worldId==='aom')
 import SupportInbox from './cv4/SupportInbox.jsx'
 import SupportDashboard from './cv4/SupportDashboard.jsx'
@@ -2625,6 +2626,11 @@ export default function CornerV4() {
             {/* corner:support N1 — Support Inbox (Patrik only) */}
             {showSupportInbox && worldId === 'aom' ? (
               <SupportDashboard isDesktop={isDesktop} worldId={worldId} onClose={() => setShowSupportInbox(false)} />
+            ) : activeTool === 'routines' ? (
+              /* corner:routines R3 — full-area card view of every open loop.
+                 Selecting any agent / project / mission / mail clears
+                 activeTool, which force-closes this board. */
+              <RoutinesBoard worldId={worldId} onClose={() => setActiveTool(null)} />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */

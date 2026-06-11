@@ -773,7 +773,12 @@ function DrawerBody({
           create, attach to a room, pick model. RoutinesPanel owns its data
           (fetches /api/dashboard/routines); the room picker reuses the
           drawer's projects/missions/agents. */}
-      <TreeSection title="Routines" collapsible defaultCollapsed>
+      <TreeSection
+        title="Routines"
+        collapsible
+        defaultCollapsed
+        onHeaderClick={() => { onSelectTool?.('routines'); onClose() }}
+      >
         <RoutinesPanel
           worldId={worldId}
           projectRooms={projectRooms}
@@ -858,7 +863,10 @@ function DrawerBody({
 // badge = boolean — renders a small orange dot next to the title (used by
 // Mail section to signal new email since the user last opened the section).
 // onOpen = callback — fires when the section transitions from closed to open.
-function TreeSection({ title, action = null, collapsible = false, defaultCollapsed = false, badge = false, onOpen, children }) {
+// onHeaderClick = callback — fires on EVERY header click (open or close),
+// unlike onOpen which only fires on the closed→open transition. Used by
+// Routines to open the full-area board in the center column.
+function TreeSection({ title, action = null, collapsible = false, defaultCollapsed = false, badge = false, onOpen, onHeaderClick, children }) {
   const [open, setOpen] = useState(!defaultCollapsed)
   const showChildren = !collapsible || open
 
@@ -866,7 +874,8 @@ function TreeSection({ title, action = null, collapsible = false, defaultCollaps
     const next = !open
     setOpen(next)
     if (next && onOpen) onOpen()
-  }, [open, onOpen])
+    if (onHeaderClick) onHeaderClick()
+  }, [open, onOpen, onHeaderClick])
 
   return (
     <section style={{

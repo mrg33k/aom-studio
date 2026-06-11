@@ -84,6 +84,9 @@ export default async function handler(req, res) {
         model,
         interval_minutes: interval,
         status: 'running',
+        started_at: new Date().toISOString(),
+        // Coarse estimate: one agent turn ≈ 8k tokens × runs/day.
+        tokens_day_est: interval ? Math.round(8000 * (1440 / interval)) : null,
         // First tick fires on the next daemon poll for interval routines;
         // manual-only routines wait for an explicit "run now".
         next_run_at: interval ? new Date().toISOString() : null,
@@ -113,6 +116,9 @@ export default async function handler(req, res) {
       if ('interval_minutes' in b) {
         patch.interval_minutes = Number.isFinite(+b.interval_minutes) && +b.interval_minutes > 0
           ? Math.round(+b.interval_minutes)
+          : null;
+        patch.tokens_day_est = patch.interval_minutes
+          ? Math.round(8000 * (1440 / patch.interval_minutes))
           : null;
       }
       if (b.action === 'pause') patch.status = 'paused';
