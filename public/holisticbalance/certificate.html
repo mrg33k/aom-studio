@@ -665,7 +665,7 @@
       certCtx.clearRect(0, 0, certCanvas.width, certCanvas.height);
       const maxW = certCanvas.width * 0.9;
       const maxH = certCanvas.height * 0.86;
-      const scale = Math.min(maxW / b.w, maxH / b.h);
+      const scale = Math.min(maxW / b.w, maxH / b.h, 1.15);   // cap upscale so small signatures stay crisp
       const dw = b.w * scale;
       const dh = b.h * scale;
       const dx = (certCanvas.width - dw) / 2;
