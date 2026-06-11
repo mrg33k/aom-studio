@@ -2318,7 +2318,7 @@
   Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
     const img = new Image();
     img.onload = () => { IMG[name] = img; res(); };
-    img.onerror = rej;
+    img.onerror = () => { console.error('ASSET FAILED:', name); rej(new Error('asset: ' + name)); };
     img.src = `assets/${name}.png`;
   }))).then(() => {
     // prescale to on-screen size (x DPR) — kills minification shimmer in motion
