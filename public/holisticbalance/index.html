@@ -406,6 +406,120 @@
       cursor: default;
     }
 
+    /* ── ADD-ONS SECTION ── */
+    .addons-section {
+      padding: 0 48px 80px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .addons-header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--cream-dark);
+    }
+
+    .addons-header .section-tag {
+      margin-bottom: 10px;
+    }
+
+    .addons-header h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      font-weight: 500;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+    }
+
+    .addons-header p {
+      font-size: 0.9rem;
+      color: var(--text-mid);
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    .addons-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .addon-card {
+      background: var(--cream);
+      border: 1px solid var(--cream-dark);
+      border-radius: 4px;
+      padding: 32px 28px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .addon-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(44,95,71,0.09);
+    }
+
+    .addon-icon {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem;
+      color: var(--emerald);
+      margin-bottom: 16px;
+      line-height: 1;
+    }
+
+    .addon-card h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.25rem;
+      font-weight: 500;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+      line-height: 1.25;
+    }
+
+    .addon-card p {
+      font-size: 0.82rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+      flex: 1;
+      margin-bottom: 20px;
+    }
+
+    .addon-link {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .addon-link::after {
+      content: '→';
+      transition: transform 0.2s;
+    }
+
+    .addon-card:hover .addon-link::after {
+      transform: translateX(4px);
+    }
+
+    .addon-badge {
+      display: inline-block;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      background: var(--emerald);
+      color: #fff;
+      padding: 3px 10px;
+      border-radius: 2px;
+      margin-bottom: 14px;
+      width: fit-content;
+    }
+
     /* ── APPROACH STRIP ── */
     .approach-strip {
       background: var(--emerald-dark);
@@ -553,6 +667,8 @@
       .intro-strip { grid-template-columns: 1fr; padding: 40px 24px; text-align: center; }
       .courses-section { padding: 60px 24px; }
       .courses-grid { grid-template-columns: 1fr; }
+      .addons-section { padding: 0 24px 60px; }
+      .addons-grid { grid-template-columns: 1fr; }
       .approach-strip { padding: 60px 24px; }
       .courtney-strip { flex-direction: column; padding: 60px 24px; gap: 32px; }
       .courtney-img-placeholder { width: 100%; height: 200px; }
@@ -767,6 +883,59 @@
 
   </div>
 </section>
+
+<!-- ADD-ONS -->
+<div style="background: var(--warm-white);">
+  <div class="addons-section">
+    <div class="addons-header">
+      <p class="section-tag">Tools &amp; Resources</p>
+      <h2>Everything You Need to Succeed</h2>
+      <p>Each course comes with companion tools — trackers, workbooks, and a certificate to mark your progress.</p>
+    </div>
+    <div class="addons-grid">
+
+      <!-- TRACKER -->
+      <a class="addon-card" href="/holisticbalance/gut-health-tracker.html">
+        <span class="addon-badge">Add-On Product</span>
+        <div class="addon-icon">◎</div>
+        <h3>4-Week Gut Health Tracker</h3>
+        <p>
+          A standalone daily tracking tool — log your water intake, fermented foods,
+          gut feeling, energy, sleep, and mood across 28 days. Typeable in your browser
+          and prints cleanly as a PDF.
+        </p>
+        <span class="addon-link">Open Tracker</span>
+      </a>
+
+      <!-- WORKBOOK -->
+      <a class="addon-card" href="/holisticbalance/gut-healing-workbook.html">
+        <span class="addon-badge">Included with Course</span>
+        <div class="addon-icon">✦</div>
+        <h3>Course Companion Workbook</h3>
+        <p>
+          A typeable, printable workbook that follows every module of the Gut Healing
+          course — reflection prompts, action checklists, bonus recipes, and a
+          commitment tracker all in one place.
+        </p>
+        <span class="addon-link">Open Workbook</span>
+      </a>
+
+      <!-- CERTIFICATE -->
+      <a class="addon-card" href="/holisticbalance/certificate.html">
+        <span class="addon-badge">Earned on Completion</span>
+        <div class="addon-icon">◈</div>
+        <h3>Certificate of Completion</h3>
+        <p>
+          Once you've finished the course, print your personalized certificate —
+          a beautiful, frameable record of your commitment to your wellness journey,
+          signed by Courtney.
+        </p>
+        <span class="addon-link">Preview Certificate</span>
+      </a>
+
+    </div>
+  </div>
+</div>
 
 <!-- APPROACH STRIP -->
 <section class="approach-strip">
