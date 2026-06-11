@@ -236,6 +236,11 @@ export default function CornerV4() {
   // immediately after a new project or mission is created via the self-serve door.
   const [drawerRefreshKey, setDrawerRefreshKey] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
+  // corner-ui-cv4 R23: side menus auto-close after 10s without hover and
+  // reopen when the screen-edge gutter is hovered. Hover state feeds the
+  // idle timers below; the gutters live in the main desktop row.
+  const [leftRailHover, setLeftRailHover] = useState(false)
+  const [rightRailHover, setRightRailHover] = useState(false)
   // corner:skills-picker R1 — Skills shelf takeover of the left rail, plus
   // the mission-picker modal that fires after the user clicks a skill chip.
   const [skillsShelfOpen, setSkillsShelfOpen] = useState(false)
@@ -270,6 +275,18 @@ export default function CornerV4() {
   // R7.1: Tasks panel lives in a right-side docked drawer on desktop. Open
   // by default; toggle button sits in the second-row nav's right slot.
   const [tasksDrawerOpen, setTasksDrawerOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1024)
+  // corner-ui-cv4 R23: 10s no-hover idle timers. While a drawer is open and
+  // the pointer isn't over it, count down; hovering it resets the countdown.
+  useEffect(() => {
+    if (!isDesktop || !drawerOpen || leftRailHover) return undefined
+    const t = setTimeout(() => setDrawerOpen(false), 10000)
+    return () => clearTimeout(t)
+  }, [isDesktop, drawerOpen, leftRailHover])
+  useEffect(() => {
+    if (!isDesktop || !tasksDrawerOpen || rightRailHover) return undefined
+    const t = setTimeout(() => setTasksDrawerOpen(false), 10000)
+    return () => clearTimeout(t)
+  }, [isDesktop, tasksDrawerOpen, rightRailHover])
   // R8.0: theme is owned by `useThemeMode` (Arizona auto-seed + manual
   // override). `setTheme(...)` here is wired to the hook so the legacy
   // moon-toggle button keeps working and the CSS-vars repaint
@@ -2564,7 +2581,24 @@ export default function CornerV4() {
           so the eye doesn't have to dart left/right when both drawers are
           collapsed. Mobile/tablet still uses the tab toggle in ContextNav. */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
-        {isDesktop && drawerOpen && !showSupportInbox && (
+        {isDesktop && !showSupportInbox && (
+          /* R23: animated wrapper — collapses to a 14px hover gutter after
+             10s without hover; hovering the gutter slides the drawer back
+             open. The drawer keeps its fixed 300px width inside so the
+             collapse reads as a smooth slide, not a squish. */
+          <div
+            data-cv4-left-rail-wrap
+            onMouseEnter={() => { setLeftRailHover(true); if (!drawerOpen) setDrawerOpen(true) }}
+            onMouseLeave={() => setLeftRailHover(false)}
+            style={{
+              width: drawerOpen ? 300 : 14,
+              flexShrink: 0,
+              display: 'flex',
+              overflow: 'hidden',
+              transition: 'width 0.35s ease',
+              cursor: drawerOpen ? 'auto' : 'pointer',
+            }}
+          >
           <CV4Drawer
             docked
             open={drawerOpen}
@@ -2611,6 +2645,7 @@ export default function CornerV4() {
               window.location.href = '/'
             }}
           />
+          </div>
         )}
         <div data-cv4-content-col style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           {/* Center the chat column on wide screens so messages don't hug the
@@ -2677,7 +2712,24 @@ export default function CornerV4() {
             )}
           </div>
         </div>
-        {isDesktop && tasksDrawerOpen && !showSupportInbox && (
+        {isDesktop && !showSupportInbox && (
+          /* R23: animated wrapper — same idle-close / hover-reopen behavior
+             as the left rail. Inner aside keeps its fixed clamp width so the
+             collapse slides instead of squishing. */
+          <div
+            data-cv4-right-rail-wrap
+            onMouseEnter={() => { setRightRailHover(true); if (!tasksDrawerOpen) setTasksDrawerOpen(true) }}
+            onMouseLeave={() => setRightRailHover(false)}
+            style={{
+              width: tasksDrawerOpen ? 'clamp(300px, 20vw, 460px)' : 14,
+              flexShrink: 0,
+              display: 'flex',
+              justifyContent: 'flex-start',
+              overflow: 'hidden',
+              transition: 'width 0.35s ease',
+              cursor: tasksDrawerOpen ? 'auto' : 'pointer',
+            }}
+          >
           <aside
             data-cv4-tasks-drawer
             style={{
@@ -2694,6 +2746,7 @@ export default function CornerV4() {
                 to the left rail (LeftMailPanel inside CV4Drawer). */}
             <RightMenu handleSelectMission={handleSelectMission} handleSelectProject={handleSelectProject} handleSelectTask={handleSelectTask} />
           </aside>
+          </div>
         )}
       </div>
 
