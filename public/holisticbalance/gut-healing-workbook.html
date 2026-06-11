@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Techniques for Gut Healing — Workbook · Holistic Balance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --emerald:       #2C5F47;
+      --emerald-dark:  #1E4433;
+      --emerald-light: #4A7C62;
+      --cream:         #F7F2EA;
+      --cream-dark:    #EDE5D6;
+      --warm-white:    #FDFAF5;
+      --text-dark:     #1C2B24;
+      --text-mid:      #4A5C52;
+      --text-light:    #7A8C82;
+      --gold:          #C4973A;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Jost', sans-serif;
+      background-color: var(--warm-white);
+      color: var(--text-dark);
+      font-weight: 300;
+      line-height: 1.75;
+    }
+
+    /* ── SCREEN TOOLBAR ── */
+    .toolbar {
+      background: var(--emerald-dark);
+      padding: 14px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .back-link {
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(247,242,234,0.55);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--cream); }
+
+    .divider { color: rgba(247,242,234,0.2); font-size: 0.8rem; }
+
+    .toolbar-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--cream);
+    }
+
+    .btn-print {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      font-size: 0.72rem;
+      font-family: 'Jost', sans-serif;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border-radius: 2px;
+      border: 1.5px solid rgba(247,242,234,0.35);
+      color: var(--cream);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-print:hover {
+      background: rgba(247,242,234,0.1);
+      border-color: rgba(247,242,234,0.7);
+    }
+
+    /* ── PAGE CONTAINER ── */
+    .workbook {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 60px 40px 80px;
+    }
+
+    /* ── COVER ── */
+    .cover {
+      text-align: center;
+      padding: 64px 0 72px;
+      border-bottom: 1px solid var(--cream-dark);
+      margin-bottom: 64px;
+    }
+
+    .cover-eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      font-weight: 500;
+      margin-bottom: 24px;
+    }
+
+    .cover h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.8rem;
+      font-weight: 500;
+      line-height: 1.15;
+      color: var(--text-dark);
+      margin-bottom: 10px;
+    }
+
+    .cover h1 em {
+      font-style: italic;
+      color: var(--emerald);
+    }
+
+    .cover-subtitle {
+      font-size: 0.82rem;
+      color: var(--text-light);
+      letter-spacing: 0.06em;
+      margin-top: 12px;
+      margin-bottom: 36px;
+    }
+
+    .cover-rule {
+      width: 48px;
+      height: 2px;
+      background: var(--emerald);
+      margin: 0 auto 32px;
+    }
+
+    .cover-intro {
+      font-size: 0.92rem;
+      color: var(--text-mid);
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    /* ── NAME BLOCK ── */
+    .name-block {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-top: 40px;
+      padding-top: 40px;
+      border-top: 1px solid var(--cream-dark);
+    }
+
+    .name-field {
+      flex: 1;
+      min-width: 180px;
+    }
+
+    .field-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .field-line {
+      width: 100%;
+      height: 1px;
+      background: var(--cream-dark);
+      margin-top: 28px;
+    }
+
+    /* ── MODULE SECTION ── */
+    .module-section {
+      margin-bottom: 80px;
+      page-break-inside: avoid;
+    }
+
+    .module-header {
+      margin-bottom: 40px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid var(--cream-dark);
+    }
+
+    .module-eyebrow {
+      font-size: 0.62rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      font-weight: 500;
+      margin-bottom: 14px;
+    }
+
+    .module-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.1rem;
+      font-weight: 500;
+      line-height: 1.2;
+      color: var(--text-dark);
+    }
+
+    .module-title em {
+      font-style: italic;
+      color: var(--emerald-light);
+    }
+
+    .module-why {
+      margin-top: 20px;
+      padding: 20px 24px;
+      background: var(--cream);
+      border-left: 3px solid var(--gold);
+      font-size: 0.9rem;
+      color: var(--text-mid);
+      line-height: 1.75;
+      font-style: italic;
+    }
+
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      font-weight: 500;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-label::before {
+      content: '';
+      display: block;
+      width: 16px;
+      height: 1px;
+      background: var(--emerald);
+    }
+
+    /* ── REFLECTION BLOCK ── */
+    .reflection-section {
+      margin-bottom: 36px;
+    }
+
+    .reflection-prompt-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .reflection-prompt-sub {
+      font-size: 0.84rem;
+      color: var(--text-mid);
+      margin-bottom: 16px;
+    }
+
+    .reflection-prompt-question {
+      font-size: 0.86rem;
+      color: var(--text-dark);
+      font-style: italic;
+      margin-bottom: 20px;
+      padding: 14px 18px;
+      background: var(--cream);
+      border-radius: 2px;
+      line-height: 1.75;
+    }
+
+    .write-lines {
+      margin-top: 4px;
+    }
+
+    .write-line {
+      width: 100%;
+      height: 1px;
+      background: var(--cream-dark);
+      margin-bottom: 26px;
+    }
+
+    /* ── CHECKLIST ── */
+    .checklist-section {
+      margin-top: 40px;
+      padding-top: 36px;
+      border-top: 1px solid var(--cream-dark);
+    }
+
+    .checklist-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--text-dark);
+      margin-bottom: 20px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--cream-dark);
+    }
+
+    .check-item:last-child { border-bottom: none; }
+
+    .check-box {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--cream-dark);
+      border-radius: 2px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .check-text {
+      font-size: 0.88rem;
+      color: var(--text-mid);
+      line-height: 1.5;
+    }
+
+    /* ── NOTES BLOCK ── */
+    .notes-section {
+      margin-top: 36px;
+    }
+
+    .notes-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      font-weight: 500;
+      margin-bottom: 20px;
+    }
+
+    /* ── DIVIDER ── */
+    .module-divider {
+      width: 100%;
+      height: 1px;
+      background: var(--cream-dark);
+      margin: 64px 0;
+      position: relative;
+    }
+
+    .module-divider::after {
+      content: '✦';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--warm-white);
+      padding: 0 12px;
+      font-size: 0.5rem;
+      color: var(--emerald-light);
+    }
+
+    /* ── BACK COVER ── */
+    .back-cover {
+      margin-top: 80px;
+      padding-top: 60px;
+      border-top: 1px solid var(--cream-dark);
+      text-align: center;
+    }
+
+    .back-cover-rule {
+      width: 32px;
+      height: 2px;
+      background: var(--emerald);
+      margin: 0 auto 28px;
+    }
+
+    .back-cover p {
+      font-size: 0.88rem;
+      color: var(--text-mid);
+      max-width: 460px;
+      margin: 0 auto 12px;
+      line-height: 1.8;
+    }
+
+    .back-cover p em {
+      font-style: italic;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+    }
+
+    .back-cover .brand-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: var(--emerald);
+      margin-top: 28px;
+      letter-spacing: 0.04em;
+    }
+
+    .back-cover .brand-url {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      letter-spacing: 0.1em;
+      margin-top: 4px;
+    }
+
+    /* ── PRINT STYLES ── */
+    @media print {
+      .toolbar { display: none !important; }
+
+      body { background: #fff; }
+
+      .workbook { max-width: 100%; padding: 40px 48px 60px; }
+
+      .cover { padding: 40px 0 56px; }
+
+      .module-section { page-break-inside: avoid; }
+
+      .module-header { page-break-after: avoid; }
+
+      .reflection-section { page-break-inside: avoid; }
+
+      .checklist-section { page-break-inside: avoid; }
+
+      .write-line { background: #ccc; }
+
+      .check-box { border-color: #aaa; }
+
+      .module-divider { page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SCREEN TOOLBAR (hidden on print) -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <a class="back-link" href="gut-healing.html">← Back to Course</a>
+    <span class="divider">|</span>
+    <span class="toolbar-title">Techniques for Gut Healing — Workbook</span>
+  </div>
+  <button class="btn-print" onclick="window.print()">↓ Save as PDF</button>
+</div>
+
+<div class="workbook">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-eyebrow">Holistic Balance Health · Courtney Boyce, Functional Nutritionist &amp; COTA/L</div>
+    <h1>Techniques for<br><em>Gut Healing</em></h1>
+    <div class="cover-subtitle">Personal Workbook · All 5 Modules</div>
+    <div class="cover-rule"></div>
+    <p class="cover-intro">
+      This workbook is yours to use, fill in, and return to as often as you need.
+      Each module includes the core reflection prompt and action checklist from the
+      course — so you can do the work, track your progress, and keep a record of
+      where you started and how far you've come.
+    </p>
+
+    <div class="name-block">
+      <div class="name-field">
+        <div class="field-label">Name</div>
+        <div class="field-line"></div>
+      </div>
+      <div class="name-field">
+        <div class="field-label">Date Started</div>
+        <div class="field-line"></div>
+      </div>
+      <div class="name-field">
+        <div class="field-label">Date Completed</div>
+        <div class="field-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━ MODULE 1 ━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <div class="module-section">
+
+    <div class="module-header">
+      <div class="module-eyebrow">Module 01 &nbsp;·&nbsp; Foundation</div>
+      <div class="module-title">Understanding<br><em>Your Gut</em></div>
+      <div class="module-why">
+        Your gut is the foundation of your entire body — not just digestion, but immunity,
+        energy, and even how you feel emotionally. Before anything else can heal, this is
+        where we begin.
+      </div>
+    </div>
+
+    <!-- Reflection -->
+    <div class="reflection-section">
+      <div class="section-label">Reflection</div>
+      <div class="reflection-prompt-title">Where are you starting from?</div>
+      <p class="reflection-prompt-sub">Before we begin healing, it helps to know what you're healing from. Take a moment to write honestly — no judgment, just observation.</p>
+
+      <div class="reflection-prompt-question">
+        Which symptoms from the list below feel familiar to you? When did you first notice them? How do they affect your daily life?<br><br>
+        <em>Symptoms to consider: bloating or gas after meals · chronic fatigue · brain fog · mood swings or anxiety · frequent illness · skin conditions · food sensitivities · irregular digestion</em>
+      </div>
+
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="checklist-section">
+      <div class="section-label">Action Checklist</div>
+      <div class="checklist-title">Module 1 — Take Action</div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've read through the full module and understand the gut-brain connection.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've identified at least 2 symptoms that feel relevant to my gut health.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've written my reflection honestly and with curiosity, not judgment.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I'm approaching this course with openness to what's possible.</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-section">
+      <div class="notes-label">Additional Notes</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="module-divider"></div>
+
+  <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━ MODULE 2 ━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <div class="module-section">
+
+    <div class="module-header">
+      <div class="module-eyebrow">Module 02 &nbsp;·&nbsp; Nutrition Foundation</div>
+      <div class="module-title">Whole Foods<br><em>as Medicine</em></div>
+      <div class="module-why">
+        "Our food should be our medicine and our medicine should be our food." Every
+        healing protocol Courtney uses begins with this principle — not because it's
+        simple, but because it is foundational.
+      </div>
+    </div>
+
+    <!-- Reflection -->
+    <div class="reflection-section">
+      <div class="section-label">Reflection</div>
+      <div class="reflection-prompt-title">Your relationship with whole foods</div>
+      <p class="reflection-prompt-sub">Honest self-assessment is the beginning of real change. There are no wrong answers here.</p>
+
+      <div class="reflection-prompt-question">
+        How much of what you currently eat would you describe as whole foods? What gets in the way of eating this way more often? What's one swap you feel ready to make this week?
+      </div>
+
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- My Swap Commitment -->
+    <div class="reflection-section" style="margin-top: 32px;">
+      <div class="section-label">My Commitment</div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-bottom: 12px;">The one swap I'm making this week:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-top: 24px; margin-bottom: 12px;">Five whole foods I already eat regularly:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="checklist-section">
+      <div class="section-label">Action Checklist</div>
+      <div class="checklist-title">Module 2 — Take Action</div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've read through the whole foods framework and understand why it matters for gut health.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've identified one swap I'll make in my eating this week.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've noted 5 whole foods I already eat regularly.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've written my reflection and understand my current starting point.</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-section">
+      <div class="notes-label">Additional Notes</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="module-divider"></div>
+
+  <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━ MODULE 3 ━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <div class="module-section">
+
+    <div class="module-header">
+      <div class="module-eyebrow">Module 03 &nbsp;·&nbsp; Gut Restoration</div>
+      <div class="module-title">Fermented Foods<br><em>&amp; Probiotics</em></div>
+      <div class="module-why">
+        Fermented foods are one of the most powerful gut-healing tools available — and
+        they've been used in traditional cultures for thousands of years. Adding them
+        to your diet is one of the most direct ways to nourish your gut microbiome.
+      </div>
+    </div>
+
+    <!-- Reflection -->
+    <div class="reflection-section">
+      <div class="section-label">Reflection</div>
+      <div class="reflection-prompt-title">Your probiotic baseline</div>
+      <p class="reflection-prompt-sub">Take stock of what's already in your diet before adding more.</p>
+
+      <div class="reflection-prompt-question">
+        Which fermented foods from the list below do you already eat? Which ones feel approachable to try? Is there anything that's held you back from eating fermented foods in the past?<br><br>
+        <em>Fermented foods: plain yogurt (live cultures) · kefir · sauerkraut · kimchi · kombucha (low sugar) · miso paste · tempeh · naturally fermented pickles</em>
+      </div>
+
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- Tracking section -->
+    <div class="reflection-section" style="margin-top: 32px;">
+      <div class="section-label">My Plan</div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-bottom: 12px;">Two fermented foods I'll incorporate this week:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-top: 24px; margin-bottom: 12px;">Prebiotic foods I have at home right now:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="checklist-section">
+      <div class="section-label">Action Checklist</div>
+      <div class="checklist-title">Module 3 — Take Action</div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I understand the difference between probiotics (live bacteria) and prebiotics (fiber that feeds them).</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've identified at least 2 fermented foods I'll incorporate this week.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've checked my fridge/pantry and noted what prebiotic foods I have available.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've written my reflection and committed to a starting point.</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-section">
+      <div class="notes-label">Additional Notes</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="module-divider"></div>
+
+  <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━ MODULE 4 ━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <div class="module-section">
+
+    <div class="module-header">
+      <div class="module-eyebrow">Module 04 &nbsp;·&nbsp; Healing Protocol</div>
+      <div class="module-title">Anti-Inflammatory<br><em>Eating</em></div>
+      <div class="module-why">
+        Chronic gut inflammation is at the root of most digestive disorders and many
+        chronic illnesses. What you eat directly determines the level of inflammation in
+        your gut — and certain foods are remarkably powerful at reversing it.
+      </div>
+    </div>
+
+    <!-- Reflection -->
+    <div class="reflection-section">
+      <div class="section-label">Reflection</div>
+      <div class="reflection-prompt-title">Your inflammation picture</div>
+      <p class="reflection-prompt-sub">Awareness is the first step toward change.</p>
+
+      <div class="reflection-prompt-question">
+        Looking at both lists — the foods that reduce and the foods that increase inflammation — what does a typical day of eating look like for you? What's one anti-inflammatory food you could add this week? What's one inflammatory food you could reduce?
+      </div>
+
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- My 7-Day Plan -->
+    <div class="reflection-section" style="margin-top: 32px;">
+      <div class="section-label">My 7-Day Plan</div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-bottom: 12px;">One anti-inflammatory food I'll add this week:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-top: 24px; margin-bottom: 12px;">One pro-inflammatory food I'll reduce this week:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-top: 24px; margin-bottom: 12px;">My top 3 go-to anti-inflammatory foods:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="checklist-section">
+      <div class="section-label">Action Checklist</div>
+      <div class="checklist-title">Module 4 — Take Action</div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I understand how chronic inflammation affects gut health and the whole body.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've identified my top 3 go-to anti-inflammatory foods.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've chosen one pro-inflammatory food to reduce this week.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've written my reflection and have a specific plan for the next 7 days.</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-section">
+      <div class="notes-label">Additional Notes</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="module-divider"></div>
+
+  <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━ MODULE 5 ━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+  <div class="module-section">
+
+    <div class="module-header">
+      <div class="module-eyebrow">Module 05 &nbsp;·&nbsp; Daily Practice</div>
+      <div class="module-title">Hydration<br><em>for Healing</em></div>
+      <div class="module-why">
+        Water is the most overlooked gut-healing tool. Your digestive system depends on
+        adequate hydration at every stage — from enzyme production, to nutrient absorption,
+        to the movement of waste. Most people are mildly dehydrated most of the time.
+      </div>
+    </div>
+
+    <!-- Reflection -->
+    <div class="reflection-section">
+      <div class="section-label">Reflection</div>
+      <div class="reflection-prompt-title">Your hydration honest check</div>
+      <p class="reflection-prompt-sub">Most people discover they're significantly under-hydrated when they actually track it.</p>
+
+      <div class="reflection-prompt-question">
+        How much water do you typically drink in a day? What does your morning routine look like — do you hydrate before coffee? Which herbal teas feel appealing to try? What's one hydration habit you'll commit to this week?
+      </div>
+
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- Hydration Calculator -->
+    <div class="reflection-section" style="margin-top: 32px;">
+      <div class="section-label">My Hydration Target</div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-bottom: 6px;">Calculate your daily target:</div>
+      <p class="reflection-prompt-sub" style="margin-bottom: 16px;">Body weight (lbs) ÷ 2 = daily water goal in ounces</p>
+      <div class="write-lines">
+        <div class="write-line" style="margin-bottom: 8px;"></div>
+      </div>
+      <p class="reflection-prompt-sub" style="margin-top: 8px; font-size: 0.76rem; color: var(--text-light);">My weight: ___ lbs ÷ 2 = ___ oz per day (approx. ___ cups)</p>
+
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-top: 28px; margin-bottom: 12px;">Herbal teas I'll add to my routine:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+      <div class="reflection-prompt-title" style="font-size: 1rem; margin-top: 24px; margin-bottom: 12px;">My one hydration commitment this week:</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+    <!-- Checklist -->
+    <div class="checklist-section">
+      <div class="section-label">Action Checklist</div>
+      <div class="checklist-title">Module 5 — Take Action</div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've calculated my daily hydration target (body weight ÷ 2 = oz/day).</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've chosen at least one herbal tea to add to my daily routine.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I'll place a glass of water on my nightstand to drink first thing tomorrow morning.</span>
+      </div>
+      <div class="check-item">
+        <div class="check-box"></div>
+        <span class="check-text">I've completed all 5 modules and filled in this workbook.</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="notes-section">
+      <div class="notes-label">Additional Notes</div>
+      <div class="write-lines">
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+        <div class="write-line"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BACK COVER -->
+  <div class="back-cover">
+    <div class="back-cover-rule"></div>
+    <p>
+      <em>"Our food should be our medicine &amp; our medicine should be our food."</em>
+    </p>
+    <p style="margin-top: 16px;">
+      If you're ready to go deeper on any of these techniques — or want personalized
+      support for your gut healing journey — Courtney offers one-on-one functional
+      nutrition consultations.
+    </p>
+    <div class="brand-name">Holistic Balance Health</div>
+    <div class="brand-url">holisticbalancehealth.com</div>
+  </div>
+
+</div><!-- /workbook -->
+
+</body>
+</html>
