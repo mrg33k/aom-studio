@@ -62,6 +62,7 @@ import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 // imported via cv4/Drawer.jsx; no longer mounted here directly.
 import MailRoom from './cv4/MailRoom.jsx'
 import RoutinesBoard from './cv4/RoutinesBoard.jsx'
+import ChatWaveBackground from './cv4/ChatWaveBackground.jsx'
 // corner:support N1 — Support Inbox (Patrik workspace only, worldId==='aom')
 import SupportInbox from './cv4/SupportInbox.jsx'
 import SupportDashboard from './cv4/SupportDashboard.jsx'
@@ -2660,7 +2661,19 @@ export default function CornerV4() {
                 }}
               />
             ) : (
-              <ChatPanel key={selectedAgent?.slug || 'chat'} />
+              /* corner-ui-cv4: ambient per-chat wave background (canvas
+                 adaptation of 21st.dev ai-input-hero). Hue is hashed from the
+                 room identity so each chat gets its own color; theme prop
+                 keeps it readable in both light and dark. */
+              <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+                <ChatWaveBackground
+                  chatKey={conversationTarget?.path || conversationTarget?.name || selectedAgent?.slug || 'chat'}
+                  theme={theme}
+                />
+                <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+                  <ChatPanel key={selectedAgent?.slug || 'chat'} />
+                </div>
+              </div>
             )}
           </div>
         </div>
