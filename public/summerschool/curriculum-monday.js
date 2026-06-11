@@ -429,6 +429,19 @@ window.CURRICULUM.monday = {
       cta: 'Done' },
 
     // ===== SUBJECT 3 — MATH (Percentages) =====
+    { id: 'mon-m-challenge', kind: 'topic', type: 'concept', minutes: 8, subject: 'Math', tag: 'Math · Challenge',
+      title: 'Challenge — 5 percentage problems',
+      body: [
+        'Work all five. Show your steps. Use the 10% trick wherever it helps.',
+        '<strong>1.</strong> You scored 34 out of 40 on a test. What percent did you get?',
+        '<strong>2.</strong> A shirt costs $45. It\'s 20% off. What do you pay?',
+        '<strong>3.</strong> Ethan has $120 saved. He spends 35% on games. How much is left?',
+        '<strong>4.</strong> A team won 18 out of 24 games. What\'s their win percentage?',
+        '<strong>5.</strong> You tip 15% on a $28 meal. What\'s the total bill?'
+      ],
+      typedCheck: { q: 'Pick two of the five problems above. Write out your steps — not just the answer, but HOW you got there. Show the math.' },
+      cta: 'Done' },
+
     { id: 'mon-m-10', kind: 'topic', type: 'concept', minutes: 3, subject: 'Math', tag: 'Math · 10 of 10',
       title: 'Lock it in — Math done',
       body: [

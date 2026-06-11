@@ -434,6 +434,19 @@ window.CURRICULUM.tuesday = {
       cta: 'Done' },
 
     // ===== SUBJECT 3 — MATH (Fractions ↔ Decimals) =====
+    { id: 'tue-m-challenge', kind: 'topic', type: 'concept', minutes: 8, subject: 'Math', tag: 'Math · Challenge',
+      title: 'Challenge — 5 fraction/decimal problems',
+      body: [
+        'Work all five. Show your division or your reasoning.',
+        '<strong>1.</strong> Convert 3/8 to a decimal. Show your division.',
+        '<strong>2.</strong> Write 0.625 as a fraction in simplest form.',
+        '<strong>3.</strong> Which is bigger: 5/6 or 0.81? Prove it.',
+        '<strong>4.</strong> Convert 7/12 to a decimal. Round to the nearest hundredth.',
+        '<strong>5.</strong> You ran 3/4 of a mile. Your friend ran 0.7 miles. Who ran more?'
+      ],
+      typedCheck: { q: 'Pick two of the five problems above. Show your full work — not just the answer, but every step. Explain your reasoning.' },
+      cta: 'Done' },
+
     { id: 'tue-m-10', kind: 'topic', type: 'concept', minutes: 3, subject: 'Math', tag: 'Math · 10 of 10',
       title: 'Lock it in — Math done',
       body: [

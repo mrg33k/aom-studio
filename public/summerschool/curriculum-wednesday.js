@@ -432,6 +432,19 @@ window.CURRICULUM.wednesday = {
       cta: 'Done' },
 
     // ===== SUBJECT 3 — MATH (Word Problems — CUBES) =====
+    { id: 'wed-m-challenge', kind: 'topic', type: 'concept', minutes: 8, subject: 'Math', tag: 'Math · Challenge',
+      title: 'Challenge — 5 word problems',
+      body: [
+        'Use CUBES on each one. Circle the numbers, underline the question, box the key words, show your work.',
+        '<strong>1.</strong> A train travels 240 miles in 4 hours. How far does it go in 7 hours at the same speed?',
+        '<strong>2.</strong> 5 workers finish a job in 12 days. How long would 3 workers take?',
+        '<strong>3.</strong> A recipe uses 2.5 cups of flour for 24 cookies. How many cups do you need for 60 cookies?',
+        '<strong>4.</strong> You earn $12.50 per hour. You work 6.5 hours. How much do you make?',
+        '<strong>5.</strong> A pool holds 18,000 gallons. It fills at 450 gallons per hour. How many hours to fill it?'
+      ],
+      typedCheck: { q: 'Pick two of the five problems above. Write out every step using CUBES. Show the math clearly — not just the answer.' },
+      cta: 'Done' },
+
     { id: 'wed-m-10', kind: 'topic', type: 'concept', minutes: 3, subject: 'Math', tag: 'Math · 10 of 10',
       title: 'Lock it in — Math done',
       body: [

@@ -452,6 +452,19 @@ window.CURRICULUM.thursday = {
       cta: 'Done' },
 
     // ===== SUBJECT 3 — MATH (Ratios) =====
+    { id: 'thu-m-challenge', kind: 'topic', type: 'concept', minutes: 8, subject: 'Math', tag: 'Math · Challenge',
+      title: 'Challenge — 5 ratio problems',
+      body: [
+        'Work all five. Set up a proportion and show your cross-multiplication (or unit-rate) work.',
+        '<strong>1.</strong> A map uses 1 inch = 25 miles. Two cities are 3.5 inches apart on the map. How far apart are they really?',
+        '<strong>2.</strong> You mix OJ and water in a 2:5 ratio. You have 35 cups of water. How many cups of OJ do you need?',
+        '<strong>3.</strong> Ethan scores 4 goals per 3 games. How many goals in 15 games?',
+        '<strong>4.</strong> A car uses 1 gallon per 32 miles. How many gallons for a 240-mile trip?',
+        '<strong>5.</strong> In a class of 30 students, the boy-to-girl ratio is 3:2. How many girls are in the class?'
+      ],
+      typedCheck: { q: 'Pick two of the five problems above. Show your proportion set-up and all your work. Explain how you solved it.' },
+      cta: 'Done' },
+
     { id: 'thu-m-10', kind: 'topic', type: 'concept', minutes: 3, subject: 'Math', tag: 'Math · 10 of 10',
       title: 'Lock it in — Math done',
       body: [
