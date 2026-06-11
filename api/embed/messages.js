@@ -94,6 +94,12 @@ export default async function handler(req, res) {
       if (m.attachment || (Array.isArray(m.attachments) && m.attachments.length)) {
         return false
       }
+      // Drop empty/whitespace-only rows — the bridge occasionally writes a
+      // blank assistant message after tool work; it renders as a tiny empty
+      // bubble in the widget (seen live 2026-06-11).
+      const bodyText =
+        (row.role === 'user' && m.visitor_text) || row.text || ''
+      if (!String(bodyText).trim()) return false
       const rowSlug = m.mission_slug || m.mission || ''
       const rowShort = rowSlug.includes(':') ? rowSlug.split(':').pop() : rowSlug
       if (rowSlug && rowShort !== wantShort) return false

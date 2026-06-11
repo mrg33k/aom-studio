@@ -214,12 +214,13 @@
     if (liveInput) appState.inputValue = liveInput.value;
 
     const messagesHtml = appState.messages
+      .filter((msg) => msg.text && msg.text.trim())
       .map((msg, idx) => {
         const isWizard = msg.role === 'wizard' || msg.role === 'assistant';
         const classes = isWizard ? 'message wizard-message' : 'message user-message';
         const video = extractVideoUrl(msg.text);
         const videoHtml = video ? createVideoEmbed(video) : '';
-        return `<div class="${classes}">${escapeHtml(msg.text)}${videoHtml}</div>`;
+        return `<div class="${classes}">${formatMessage(msg.text)}${videoHtml}</div>`;
       })
       .join('');
 
@@ -286,6 +287,15 @@
   }
 
   // Escape HTML to prevent injection
+  // Escape HTML first, then render the tiny markdown subset agents emit
+  // (**bold**, *italic*, line breaks) so Ethan never sees raw asterisks.
+  function formatMessage(text) {
+    return escapeHtml(text.trim())
+      .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,!?]|$)/g, '$1<em>$2</em>')
+      .replace(/\n/g, '<br>');
+  }
+
   function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
