@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>French Funerals &amp; Cremations — A Personalized Continuum of Care · Albuquerque, NM</title>
+<meta name="description" content="Serving Albuquerque and Rio Rancho families since 1907. French Funerals &amp; Cremations guides New Mexico families through their hardest days with dignity and care — plan gently online, or reach us any hour.">
+<meta name="theme-color" content="#120e09">
+<meta property="og:title" content="French Funerals &amp; Cremations — A Personalized Continuum of Care">
+<meta property="og:description" content="Serving Albuquerque families since 1907. Begin planning gently online, or reach us the moment you need us.">
+<meta property="og:image" content="https://www.aheadofmarket.com/french/french-hero-poster.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23120e09'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' fill='%23d6b277' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --espresso:#1b1610;
+    --espresso-deep:#120e09;
+    --espresso-2:#241d14;
+    --ink:#241d15;
+    --bone:#f4eee2;
+    --ivory:#f6f1e8;
+    --ivory-2:#efe7d8;
+    --gold:#c0964e;
+    --gold-soft:#d6b277;
+    --sage:#7c6f59;
+    --line:rgba(40,32,22,.14);
+    --line-d:rgba(244,238,226,.16);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Hanken Grotesk',system-ui,sans-serif;
+    background:var(--ivory);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:0 clamp(20px,4vw,34px)}
+  .serif{font-family:'Cormorant Garamond',Georgia,serif}
+
+  /* ===== INTRO ===== */
+  #intro{position:fixed;inset:0;z-index:999;background:var(--espresso-deep);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+    animation:introOut 1s cubic-bezier(.7,0,.3,1) 1.9s forwards}
+  #intro .imark{width:118px;height:118px;border-radius:50%;border:1.5px solid rgba(214,178,119,.4);display:flex;align-items:center;justify-content:center;
+    font-family:'Cormorant Garamond',serif;font-size:62px;font-weight:500;color:var(--bone);
+    opacity:0;transform:scale(.82);animation:markIn 1s cubic-bezier(.2,.7,.2,1) .15s forwards}
+  #intro .iname{font-family:'Cormorant Garamond',serif;font-size:25px;letter-spacing:7px;text-transform:uppercase;color:var(--bone);font-weight:500;
+    opacity:0;animation:nameIn .9s ease .6s forwards}
+  #intro .iest{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold-soft);font-weight:600;opacity:0;animation:nameIn .9s ease .85s forwards}
+  #intro .iline{width:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);animation:lineIn 1.1s ease .55s forwards}
+  @keyframes markIn{to{opacity:1;transform:scale(1)}}
+  @keyframes nameIn{to{opacity:1}}
+  @keyframes lineIn{to{width:230px}}
+  @keyframes introOut{to{opacity:0;visibility:hidden;transform:translateY(-14px)}}
+
+  .reveal{opacity:0;transform:translateY(16px);animation:rise 1s cubic-bezier(.2,.7,.2,1) forwards}
+  .d1{animation-delay:2.15s}.d2{animation-delay:2.25s}.d3{animation-delay:2.35s}.d4{animation-delay:2.45s}.d5{animation-delay:2.55s}.d6{animation-delay:2.65s}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  .obs{opacity:0;transform:translateY(26px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
+  .obs.in{opacity:1;transform:none}
+  .obs[data-stagger]{opacity:1;transform:none}
+  .obs[data-stagger]>*{opacity:0;transform:translateY(24px);transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+  .obs[data-stagger].in>*{opacity:1;transform:none}
+  .obs[data-stagger].in>*:nth-child(2){transition-delay:.1s}
+  .obs[data-stagger].in>*:nth-child(3){transition-delay:.2s}
+  .obs[data-stagger].in>*:nth-child(4){transition-delay:.3s}
+  .obs[data-stagger].in>*:nth-child(5){transition-delay:.4s}
+  .obs[data-stagger].in>*:nth-child(6){transition-delay:.5s}
+  .obs[data-stagger].in>*:nth-child(7){transition-delay:.6s}
+  .obs[data-stagger].in>*:nth-child(8){transition-delay:.7s}
+  @keyframes kb{from{transform:scale(1)}to{transform:scale(1.07)}}
+  .kb img{animation:kb 28s ease-in-out infinite alternate}
+  @keyframes dotpulse{0%,100%{box-shadow:0 0 0 4px rgba(192,150,78,.22)}50%{box-shadow:0 0 0 8px rgba(192,150,78,.1)}}
+  .ribbon .dot{animation:dotpulse 2.6s ease-in-out infinite}
+
+  /* ===== HERO ===== */
+  .hero-section{position:relative;overflow:hidden;background:var(--espresso-deep);color:var(--bone)}
+  .hero-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;opacity:.5}
+  .hero-section::before{content:"";position:absolute;inset:0;z-index:1;
+    background:radial-gradient(120% 80% at 18% 30%,rgba(27,22,16,.62) 0%,rgba(18,14,9,.82) 55%,rgba(18,14,9,.96) 100%)}
+  .hero-section::after{content:"";position:absolute;left:0;right:0;bottom:0;height:120px;z-index:1;background:linear-gradient(180deg,transparent,var(--espresso-deep))}
+
+  nav{position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:22px 0;gap:20px}
+  .brand{display:flex;align-items:center;gap:13px;flex-shrink:0}
+  .brand .mark{width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(214,178,119,.5);display:flex;align-items:center;justify-content:center;color:var(--gold-soft);font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;flex-shrink:0}
+  .brand .name{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;letter-spacing:.4px;color:var(--bone);line-height:1.05}
+  .brand .name span{display:block;font-family:'Hanken Grotesk',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#e0c08a;font-weight:600;margin-top:4px}
+  .navlinks{display:flex;gap:32px;list-style:none}
+  .navlinks a{text-decoration:none;color:var(--bone);font-size:14px;font-weight:500;opacity:.9;transition:opacity .2s,color .2s;white-space:nowrap}
+  .navlinks a:hover{opacity:1;color:var(--gold-soft)}
+  .navcta{display:flex;align-items:center;gap:18px;flex-shrink:0}
+  .phone{font-size:14px;font-weight:600;color:var(--bone);text-decoration:none;letter-spacing:.3px;white-space:nowrap;display:flex;align-items:center;gap:7px}
+  .phone:hover{color:var(--gold-soft)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14.5px;border-radius:40px;padding:13px 24px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:transform .2s,box-shadow .2s,background .2s,color .2s;white-space:nowrap}
+  .btn-primary{background:var(--gold);color:#23190b;box-shadow:0 10px 28px rgba(192,150,78,.32)}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(192,150,78,.42);background:var(--gold-soft)}
+  .btn-ghost{border:1.5px solid rgba(244,238,226,.8);color:var(--bone);background:rgba(18,14,9,.3)}
+  .btn-ghost:hover{background:rgba(244,238,226,.14);border-color:var(--bone);transform:translateY(-2px)}
+  a:focus-visible,button:focus-visible,.pc-opt:focus-visible,.mf-tile:focus-visible,.mf-chip:focus-visible,.mf-choice:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+  ::selection{background:var(--gold-soft);color:#23190b}
+  section[id],div[id]{scroll-margin-top:24px}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal,.obs,.obs[data-stagger]>*{opacity:1!important;transform:none!important}}
+  .btn-ghost-dark{border:1.5px solid var(--gold);color:var(--gold)}
+  .btn-ghost-dark:hover{background:var(--gold);color:#23190b}
+
+  .hero{position:relative;z-index:2;display:grid;grid-template-columns:1fr .9fr;gap:48px;align-items:center;padding-top:46px;padding-bottom:84px}
+  .ribbon{display:inline-flex;align-items:center;gap:9px;background:rgba(244,238,226,.08);border:1px solid var(--line-d);border-radius:40px;padding:8px 17px 8px 13px;font-size:12px;font-weight:600;letter-spacing:.4px;color:var(--gold-soft);margin-bottom:24px;backdrop-filter:blur(4px)}
+  .ribbon .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 4px rgba(192,150,78,.22);flex-shrink:0}
+  .eyebrow{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:21px;color:#e0c08a;margin-bottom:14px;letter-spacing:.2px;text-shadow:0 1px 14px rgba(10,7,4,.6)}
+  h1{font-family:'Cormorant Garamond',serif;font-weight:500;font-size:clamp(44px,5.4vw,76px);line-height:1.02;letter-spacing:-.5px;color:var(--bone);margin-bottom:22px;text-shadow:0 2px 28px rgba(10,7,4,.5);text-wrap:balance}
+  h1 .it{font-style:italic;color:var(--gold-soft)}
+  .sub{font-size:17.5px;line-height:1.66;color:rgba(244,238,226,.9);max-width:480px;margin-bottom:32px;font-weight:400;text-shadow:0 1px 12px rgba(10,7,4,.45)}
+  .cta-row{display:flex;gap:14px;align-items:stretch;margin-bottom:36px;flex-wrap:wrap}
+  .trust{display:flex;align-items:center;gap:22px;flex-wrap:wrap;padding-top:26px;border-top:1px solid var(--line-d)}
+  .t-item{display:flex;flex-direction:column;gap:4px}
+  .t-item b{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:#e0c08a;line-height:1;text-shadow:0 1px 10px rgba(10,7,4,.5)}
+  .t-item span{font-size:11.5px;color:rgba(244,238,226,.74);font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+  .divider{width:1px;height:38px;background:var(--line-d)}
+
+  /* HERO PLAN CARD */
+  .plancard{position:relative;justify-self:center;width:100%;max-width:462px;background:var(--ivory);border-radius:20px;padding:32px 34px 28px;box-shadow:0 36px 90px rgba(10,7,4,.55);color:var(--ink)}
+  .plancard::before{content:"";position:absolute;inset:0;border-radius:20px;box-shadow:inset 0 0 0 1px rgba(192,150,78,.28);pointer-events:none}
+  .pc-eyebrow{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+  .pc-eyebrow .pcdot{width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  .pc-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--ink);line-height:1.1;margin-bottom:6px}
+  .pc-sub{font-size:13.5px;color:var(--sage);margin-bottom:20px;line-height:1.5}
+  .pc-steps{display:flex;gap:7px;margin-bottom:20px}
+  .pc-steps i{height:4px;flex:1;border-radius:3px;background:var(--ivory-2)}
+  .pc-steps i.on{background:var(--gold)}
+  .pc-q{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:600;color:var(--ink);margin-bottom:14px;line-height:1.2;letter-spacing:-.2px}
+  .pc-opts{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+  .pc-opt{display:flex;align-items:center;gap:13px;border:1.5px solid var(--line);border-radius:13px;padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s;background:#fff}
+  .pc-opt:hover{border-color:var(--gold-soft);background:#fffdf9}
+  .pc-opt.sel{border-color:var(--gold);background:#fdf8ef;box-shadow:0 0 0 3px rgba(192,150,78,.12)}
+  .pc-opt .ring{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:border-color .2s}
+  .pc-opt.sel .ring{border-color:var(--gold)}
+  .pc-opt.sel .ring::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--gold)}
+  .pc-opt .ot{font-size:15px;font-weight:600;color:var(--ink);line-height:1.2}
+  .pc-opt .ot span{display:block;font-size:12px;font-weight:400;color:var(--sage);margin-top:2px}
+  .pc-go{width:100%;background:var(--gold);color:#23190b;border:none;border-radius:40px;padding:15px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 10px 26px rgba(192,150,78,.3);transition:transform .2s,box-shadow .2s,background .2s}
+  .pc-go:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(192,150,78,.4);background:var(--gold-soft)}
+  .pc-foot{text-align:center;font-size:11.5px;color:var(--sage);margin-top:13px}
+
+  /* ===== TWO-PATH SECTION ===== */
+  .paths{background:var(--ivory);position:relative;z-index:2;padding:clamp(56px,7vw,92px) 0}
+  .sec-head{text-align:center;max-width:620px;margin:0 auto clamp(38px,5vw,54px)}
+  .sec-eyebrow{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:19px;color:var(--gold);margin-bottom:10px}
+  .sec-title{font-family:'Cormorant Garamond',serif;font-size:clamp(32px,4.2vw,48px);font-weight:500;color:var(--ink);line-height:1.06;letter-spacing:-.4px;margin-bottom:14px}
+  .sec-sub{font-size:16px;color:var(--sage);line-height:1.6}
+  .path-grid{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+  .path{position:relative;border-radius:20px;padding:38px 36px 34px;overflow:hidden;display:flex;flex-direction:column}
+  .path-pre{background:#fff;border:1px solid var(--line)}
+  .path-now{background:var(--espresso);color:var(--bone)}
+  .path .pe{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:18px}
+  .path-pre .pe{color:var(--gold)}
+  .path-now .pe{color:var(--gold-soft)}
+  .path .pe .pedot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .path h3{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;line-height:1.08;margin-bottom:12px}
+  .path-pre h3{color:var(--ink)}
+  .path-now h3{color:var(--bone)}
+  .path p.pd{font-size:15px;line-height:1.62;margin-bottom:22px}
+  .path-pre p.pd{color:var(--sage)}
+  .path-now p.pd{color:rgba(244,238,226,.8)}
+  .path ul{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
+  .path li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;line-height:1.45}
+  .path-pre li{color:var(--ink)}
+  .path-now li{color:rgba(244,238,226,.92)}
+  .path li .ck{flex-shrink:0;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px}
+  .path-pre li .ck{background:#fdf3e1;color:var(--gold)}
+  .path-now li .ck{background:rgba(214,178,119,.18);color:var(--gold-soft)}
+  .path .pcta{margin-top:auto}
+  .path-pre .pphone,.path-now .pphone{display:block;font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;letter-spacing:.3px;margin-bottom:6px;text-decoration:none}
+  .path-now .pphone{color:var(--gold-soft)}
+  .path-now .pnote{font-size:13px;color:rgba(244,238,226,.62);margin-bottom:18px}
+  .path .btn{width:100%}
+
+  /* ===== FAMILY STORY ===== */
+  .story{background:var(--ivory-2);position:relative;z-index:2;padding:clamp(56px,7vw,96px) 0}
+  .story-grid{display:grid;grid-template-columns:.92fr 1.08fr;gap:clamp(34px,5vw,64px);align-items:center}
+  .story-photo{position:relative;width:100%}
+  .story-photo .frame{position:relative;width:100%;aspect-ratio:5/4;border-radius:18px;overflow:hidden;background:var(--espresso);box-shadow:0 30px 70px rgba(28,22,14,.3)}
+  .story-photo .frame img{width:100%;height:100%;object-fit:cover;object-position:center;display:block}
+  .story-photo .ring{position:absolute;inset:0;border-radius:18px;box-shadow:inset 0 0 0 1px rgba(192,150,78,.3);pointer-events:none}
+  .story-photo .cap{position:absolute;left:18px;bottom:18px;z-index:3;background:rgba(18,14,9,.78);backdrop-filter:blur(5px);color:var(--bone);border-radius:12px;padding:11px 16px}
+  .story-photo .cap b{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;display:block;line-height:1.1}
+  .story-photo .cap span{font-size:11px;letter-spacing:.4px;color:var(--gold-soft);text-transform:uppercase;font-weight:600}
+  .story-copy .sec-eyebrow{margin-bottom:8px}
+  .story-copy h2{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,4vw,46px);font-weight:500;color:var(--ink);line-height:1.05;letter-spacing:-.4px;margin-bottom:20px}
+  .story-copy p{font-size:16.5px;line-height:1.74;color:#41382b;margin-bottom:16px;max-width:560px}
+  .story-copy p .lead{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);font-size:19px}
+  .story-sign{display:flex;align-items:center;gap:16px;margin-top:26px;padding-top:24px;border-top:1px solid var(--line)}
+  .story-sign .ssmark{font-family:'Cormorant Garamond',serif;font-size:34px;color:var(--gold);line-height:1}
+  .story-sign .sstext b{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--ink);display:block;line-height:1.1}
+  .story-sign .sstext span{font-size:12.5px;color:var(--sage)}
+
+  /* ===== SERVICES STRIP ===== */
+  .strip{background:var(--espresso);color:var(--bone);position:relative;z-index:2}
+  .strip .wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:clamp(48px,6vw,64px) clamp(22px,5vw,46px);gap:26px}
+  .strip .label{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,3.6vw,40px);font-weight:500;letter-spacing:-.3px;color:var(--bone)}
+  .strip .label .it{font-style:italic;color:var(--gold-soft)}
+  .strip ul{display:flex;gap:14px 30px;list-style:none;flex-wrap:wrap;justify-content:center;max-width:880px}
+  .strip li{font-family:'Hanken Grotesk',sans-serif;font-size:15.5px;font-weight:500;letter-spacing:.3px;color:rgba(244,238,226,.88);position:relative}
+  .strip li:not(:last-child)::after{content:"";position:absolute;right:-16px;top:50%;width:4px;height:4px;border-radius:50%;background:var(--gold);transform:translateY(-50%)}
+
+  .credit{text-align:center;font-size:12px;color:var(--sage);padding:22px;letter-spacing:.3px;background:var(--ivory)}
+  .credit a{color:var(--gold);text-decoration:none;font-weight:600}
+
+  /* ===== INTAKE MODAL ===== */
+  .modal-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;
+    background:rgba(12,8,4,.6);backdrop-filter:blur(8px);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s ease}
+  .modal-overlay.open{opacity:1;visibility:visible}
+  .modal-card{position:relative;display:grid;grid-template-columns:.8fr 1fr;width:min(940px,100%);max-height:92vh;overflow:hidden;
+    background:var(--ivory);border-radius:22px;box-shadow:0 40px 100px rgba(9,6,3,.6);
+    transform:translateY(20px) scale(.97);opacity:0;transition:transform .45s cubic-bezier(.2,.7,.2,1) .05s,opacity .4s ease .05s}
+  .modal-overlay.open .modal-card{transform:translateY(0) scale(1);opacity:1}
+  .modal-close{position:absolute;top:16px;right:18px;z-index:6;width:38px;height:38px;border-radius:50%;border:none;cursor:pointer;
+    background:rgba(255,255,255,.8);color:var(--ink);font-size:22px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .2s,transform .2s}
+  .modal-close:hover{background:#fff;transform:rotate(90deg)}
+  .modal-aside{position:relative;background:var(--espresso-deep);color:var(--bone);padding:42px 36px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+  .modal-aside .am-bg{position:absolute;inset:0;background:url('/french/french-photo-3.jpg') center/cover;opacity:.22}
+  .modal-aside::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,14,9,.7),rgba(18,14,9,.92))}
+  .am-top{position:relative;z-index:2}
+  .am-eyebrow{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold-soft);font-size:18px;margin-bottom:14px}
+  .am-title{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;line-height:1.08;margin-bottom:16px;letter-spacing:-.3px;color:var(--bone)}
+  .am-text{font-size:15.5px;line-height:1.72;color:rgba(244,238,226,.86)}
+  .am-steps{position:relative;z-index:2;list-style:none;display:flex;flex-direction:column;gap:26px;margin-top:40px}
+  .am-steps li{display:flex;gap:16px;align-items:flex-start;font-size:16px;line-height:1.5;color:rgba(244,238,226,.92);transition:color .3s}
+  .am-steps li .num{flex-shrink:0;width:34px;height:34px;border-radius:50%;border:1px solid rgba(214,178,119,.5);color:var(--gold-soft);font-size:14.5px;display:flex;align-items:center;justify-content:center;font-weight:600;transition:background .3s,color .3s,border-color .3s}
+  .am-steps li.active .num{background:var(--gold);color:#23190b;border-color:var(--gold)}
+  .am-steps li.done .num{background:rgba(214,178,119,.2);color:var(--gold-soft)}
+  .am-foot{position:relative;z-index:2;margin-top:28px;padding-top:18px;border-top:1px solid rgba(244,238,226,.16);font-size:12px;letter-spacing:.3px;color:rgba(244,238,226,.72)}
+  .am-foot b{color:var(--gold-soft);font-weight:600}
+
+  .modal-form{padding:40px 40px 36px;overflow-y:auto;position:relative}
+  .mf-mode{font-size:11.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+  .mf-head{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:var(--ink);margin-bottom:6px;letter-spacing:-.3px;line-height:1.1}
+  .mf-sub{font-size:14px;color:var(--sage);margin-bottom:22px;font-weight:500;line-height:1.5}
+  .mf-prog{display:flex;gap:7px;margin-bottom:22px}
+  .mf-prog i{height:4px;flex:1;border-radius:3px;background:var(--ivory-2);transition:background .3s}
+  .mf-prog i.on{background:var(--gold)}
+  .mf-seal{width:50px;height:50px;border-radius:50%;border:1.5px solid rgba(192,150,78,.5);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600;color:var(--gold);margin-bottom:18px}
+  .mf-trust{display:flex;align-items:center;gap:10px;font-size:13px;color:#5d5240;background:linear-gradient(180deg,#fbf6ec,#f8f1e2);border:1px solid rgba(192,150,78,.24);border-radius:12px;padding:12px 15px;margin-bottom:24px;line-height:1.45}
+  .mf-trust .ti{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px}
+  .mf-q{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--ink);margin-bottom:14px;letter-spacing:-.2px;line-height:1.18}
+  .mf-q-sm{font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink);margin-bottom:11px}
+  .mf-tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .mf-tile{display:flex;align-items:center;gap:11px;border:1.5px solid var(--line);border-radius:13px;padding:15px 16px;cursor:pointer;background:#fff;transition:border-color .2s,background .2s,box-shadow .2s;font-size:14.5px;font-weight:600;color:var(--ink);line-height:1.2}
+  .mf-tile .ic{flex-shrink:0;width:18px;height:18px;color:var(--gold);opacity:.85}
+  .mf-tile:hover{border-color:var(--gold-soft);background:#fffdf9}
+  .mf-tile.sel{border-color:var(--gold);background:#fdf8ef;box-shadow:0 0 0 3px rgba(192,150,78,.12)}
+  .mf-tile.sel .ic{opacity:1}
+  .mf-tile-wide{grid-column:1 / -1}
+  .mf-chips{display:flex;gap:10px;flex-wrap:wrap}
+  .mf-chip{border:1.5px solid var(--line);border-radius:40px;padding:10px 18px;cursor:pointer;background:#fff;font-size:14px;font-weight:600;color:var(--ink);transition:border-color .2s,background .2s,box-shadow .2s}
+  .mf-chip:hover{border-color:var(--gold-soft);background:#fffdf9}
+  .mf-chip.sel{border-color:var(--gold);background:#fdf8ef;box-shadow:0 0 0 3px rgba(192,150,78,.12)}
+  .mf-step{display:none;animation:fadeStep .4s ease}
+  .mf-step.show{display:block}
+  @keyframes fadeStep{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .mf-field{margin-bottom:15px}
+  .mf-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .mf-field label{display:block;font-size:11.5px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--ink);margin-bottom:8px}
+  .mf-field input,.mf-field select,.mf-field textarea{width:100%;font-family:inherit;font-size:15px;color:var(--ink);background:#fbf7ef;border:1px solid var(--line);border-radius:11px;padding:14px 15px;transition:border-color .2s,box-shadow .2s,background .2s;outline:none}
+  .mf-field input::placeholder,.mf-field textarea::placeholder{color:#b3a890}
+  .mf-field textarea{resize:vertical;min-height:74px}
+  .mf-field input:focus,.mf-field select:focus,.mf-field textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(192,150,78,.15);background:#fff}
+  .mf-field select{appearance:none;-webkit-appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23c0964e' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
+  .mf-choices{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+  .mf-choice{display:flex;align-items:center;gap:13px;border:1.5px solid var(--line);border-radius:13px;padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s;background:#fff}
+  .mf-choice:hover{border-color:var(--gold-soft);background:#fffdf9}
+  .mf-choice.sel{border-color:var(--gold);background:#fdf8ef;box-shadow:0 0 0 3px rgba(192,150,78,.12)}
+  .mf-choice .ring{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:border-color .2s}
+  .mf-choice.sel .ring{border-color:var(--gold)}
+  .mf-choice.sel .ring::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--gold)}
+  .mf-choice .ct{font-size:15px;font-weight:600;color:var(--ink);line-height:1.2}
+  .mf-choice .ct span{display:block;font-size:12px;font-weight:400;color:var(--sage);margin-top:2px}
+  .mf-actions{display:flex;gap:12px;align-items:center;margin-top:24px}
+  .mf-back{background:none;border:none;color:var(--sage);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:8px 4px;transition:color .2s}
+  .mf-back:hover{color:var(--ink)}
+  .mf-next{flex:1;background:var(--gold);color:#23190b;border:none;border-radius:40px;padding:15px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 10px 26px rgba(192,150,78,.3);transition:transform .2s,box-shadow .2s,background .2s}
+  .mf-next:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(192,150,78,.4);background:var(--gold-soft)}
+  .mf-privacy{font-size:12px;color:var(--sage);margin-top:16px;text-align:center}
+  .mf-urgent{background:#fdf3e1;border:1px solid rgba(192,150,78,.3);border-radius:13px;padding:16px 18px;margin-bottom:20px;display:flex;gap:13px;align-items:center}
+  .mf-urgent .uph{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--ink);text-decoration:none;line-height:1}
+  .mf-urgent .ut{font-size:12.5px;color:var(--sage);line-height:1.4}
+  .mf-success{display:none;flex-direction:column;align-items:center;text-align:center;padding:30px 10px}
+  .mf-success.show{display:flex}
+  .mf-check{width:66px;height:66px;border-radius:50%;background:var(--gold);color:#23190b;display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:20px}
+  .mf-success h3{font-family:'Cormorant Garamond',serif;font-size:27px;color:var(--ink);font-weight:600;margin-bottom:10px}
+  .mf-success p{font-size:14.5px;color:var(--sage);max-width:36ch;line-height:1.62}
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width:980px){
+    .navlinks{display:none}
+    .navcta{display:none}
+    .hero{grid-template-columns:1fr;gap:38px;padding-top:30px;padding-bottom:70px}
+    .plancard{order:2;justify-self:stretch;width:100%}
+    .hero-copy{order:1}
+    .sub{max-width:none}
+    .path-grid{grid-template-columns:1fr;gap:20px}
+    .story-grid{grid-template-columns:1fr;gap:34px}
+    .story-photo{order:1}
+    .story-copy{order:2}
+    .story-copy p{max-width:none}
+    .modal-card{grid-template-columns:1fr}
+    .modal-aside{display:none}
+  }
+  @media (max-width:560px){
+    nav{padding:16px 0}
+    .brand .name{font-size:18px}
+    .brand .mark{width:40px;height:40px;font-size:22px}
+    .phone{display:none}
+    .hero{gap:30px;padding-top:20px;padding-bottom:56px}
+    h1{font-size:clamp(38px,11vw,52px)}
+    .sub{font-size:16px}
+    .cta-row{flex-direction:column;gap:12px}
+    .cta-row .btn{width:100%}
+    .trust{gap:16px 20px;padding-top:22px}
+    .divider{display:none}
+    .plancard{padding:26px 22px 22px}
+    .path{padding:32px 26px 30px}
+    .modal-overlay{padding:0;align-items:stretch}
+    .modal-card{width:100%;max-height:100vh;border-radius:0;overflow-y:auto}
+    .modal-form{padding:54px 24px 40px}
+    .mf-row{grid-template-columns:1fr}
+    .strip ul{gap:12px 22px}
+    .strip li{font-size:14.5px}
+  }
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="imark serif">F</div>
+  <div class="iline"></div>
+  <div class="iname">French Funerals &amp; Cremations</div>
+  <div class="iest">Serving Albuquerque Since 1907</div>
+</div>
+
+<section class="hero-section">
+  <video class="hero-video" autoplay muted loop playsinline poster="/french/french-hero-poster.jpg">
+    <source src="/french/french-hero-bg.mp4" type="video/mp4">
+  </video>
+
+  <div class="wrap">
+    <nav>
+      <div class="brand reveal d1">
+        <div class="mark serif">F</div>
+        <div class="name">French Funerals &amp; Cremations
+          <span>Est. 1907 · Albuquerque, New Mexico</span>
+        </div>
+      </div>
+      <ul class="navlinks reveal d2">
+        <li><a href="#paths">Plan Ahead</a></li>
+        <li><a href="#services">Our Services</a></li>
+        <li><a href="#story">Our Story</a></li>
+        <li><a href="#story">About Us</a></li>
+      </ul>
+      <div class="navcta reveal d2">
+        <a class="phone" href="tel:5058436333">(505) 843-6333</a>
+        <button class="btn btn-primary" data-open="pre">Begin Your Plan</button>
+      </div>
+    </nav>
+  </div>
+
+  <div class="wrap hero">
+    <div class="hero-copy">
+      <div class="ribbon reveal d2"><span class="dot"></span>Now offering online pre-planning</div>
+      <div class="eyebrow reveal d3">Serving Albuquerque families since 1907</div>
+      <h1 class="reveal d3">A Personalized<br><span class="it">Continuum of Care.</span></h1>
+      <p class="sub reveal d4">For over 118 years, French Funerals &amp; Cremations has guided New Mexico families through their hardest days with dignity and compassion. Five locations across Albuquerque and Rio Rancho — plan gently online, in your own time, or reach us the moment you need us.</p>
+      <div class="cta-row reveal d4">
+        <button class="btn btn-primary" data-open="pre">Begin a plan online</button>
+        <a class="btn btn-ghost" href="tel:5058436333">We're here right now</a>
+      </div>
+      <div class="trust reveal d5">
+        <div class="t-item"><b>Since 1907</b><span>118 years of care</span></div>
+        <div class="divider"></div>
+        <div class="t-item"><b>5 Locations</b><span>Albuquerque &amp; Rio Rancho</span></div>
+        <div class="divider"></div>
+        <div class="t-item"><b>Top 7%</b><span>Selected Independent Funeral Homes</span></div>
+      </div>
+    </div>
+
+    <!-- THE FORM IS THE VISIBLE HERO -->
+    <div class="plancard reveal d4" id="plancard">
+      <div class="pc-eyebrow"><span class="pcdot"></span>Start your plan online</div>
+      <div class="pc-title">Let's begin, gently.</div>
+      <div class="pc-sub">A few quiet questions — no pressure, no cost. We'll take it one step at a time.</div>
+      <div class="pc-steps"><i class="on"></i><i></i><i></i></div>
+      <div class="pc-q">Who is this plan for?</div>
+      <div class="pc-opts">
+        <div class="pc-opt" data-pc="myself">
+          <div class="ring"></div>
+          <div class="ot">Myself<span>Planning ahead for peace of mind</span></div>
+        </div>
+        <div class="pc-opt" data-pc="loved">
+          <div class="ring"></div>
+          <div class="ot">A loved one<span>Planning on behalf of family</span></div>
+        </div>
+      </div>
+      <button class="pc-go" id="pcGo">Continue</button>
+      <div class="pc-foot">Takes about two minutes · Your information stays private</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== TWO PATHS ===== -->
+<section class="paths" id="paths">
+  <div class="wrap">
+    <div class="sec-head obs" data-stagger>
+      <div class="sec-eyebrow">However you've come to us</div>
+      <h2 class="sec-title">Two ways we can help today</h2>
+      <p class="sec-sub">Whether you're planning quietly for the future or facing a loss right now, there's a clear, caring path forward.</p>
+    </div>
+    <div class="path-grid obs" data-stagger>
+      <div class="path path-pre">
+        <span class="pe"><span class="pedot"></span>Plan ahead</span>
+        <h3>Plan ahead, in your own time</h3>
+        <p class="pd">Take the weight off the people you love. Set your wishes down now, privately and online, and we'll hold them with care until they're ever needed.</p>
+        <ul>
+          <li><span class="ck">&#10003;</span>Record your wishes from home, at your own pace</li>
+          <li><span class="ck">&#10003;</span>Lock in today's pricing and ease the burden later</li>
+          <li><span class="ck">&#10003;</span>Spare your family difficult decisions in a hard moment</li>
+        </ul>
+        <div class="pcta">
+          <button class="btn btn-primary" data-open="pre">Begin your plan</button>
+        </div>
+      </div>
+      <div class="path path-now">
+        <span class="pe"><span class="pedot"></span>We're here now</span>
+        <h3>You've lost someone</h3>
+        <p class="pd">We are so sorry. You don't have to figure this out alone. Reach us any hour — a member of our family will answer and walk with you from the very first step.</p>
+        <ul>
+          <li><span class="ck">&#10003;</span>Available 24 hours a day, every day</li>
+          <li><span class="ck">&#10003;</span>Five locations across Albuquerque and Rio Rancho</li>
+          <li><span class="ck">&#10003;</span>Gentle, unhurried guidance through every arrangement</li>
+        </ul>
+        <div class="pcta">
+          <a class="pphone" href="tel:5058436333">(505) 843-6333</a>
+          <div class="pnote">Answered personally, 24 / 7 — or start below and we'll call you.</div>
+          <button class="btn btn-ghost-dark" data-open="now">Start arrangements</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FAMILY STORY ===== -->
+<section class="story" id="story">
+  <div class="wrap story-grid obs" data-stagger>
+    <div class="story-photo">
+      <div class="frame kb">
+        <img src="/french/french-photo-5.jpg" alt="French Funerals founding family — Albuquerque, New Mexico">
+        <div class="ring"></div>
+        <div class="cap"><b>Chester T. French</b><span>Founder · Est. 1907</span></div>
+      </div>
+    </div>
+    <div class="story-copy">
+      <div class="sec-eyebrow">Our story, your family's trust</div>
+      <h2>118 years rooted in New Mexico.</h2>
+      <p><span class="lead">Losing someone is one of the hardest things a family can face</span> — emotional, overwhelming, and often uncertain. Finding guidance that truly honors who they were shouldn't add to that burden.</p>
+      <p>French Funerals &amp; Cremations was founded in 1907 by Chester T. French, who arrived in Albuquerque from Tennessee and built something lasting at the corner of 5th and Central. Over a century later, we remain among fewer than 7% of funeral homes in the country invited to join Selected Independent Funeral Homes — the highest standard in our profession. Tom Antram, our President and CEO, became the first New Mexican to serve as president of that organization.</p>
+      <div class="story-sign">
+        <span class="ssmark serif">F</span>
+        <div class="sstext"><b>The French Funerals Family</b><span>118 years of service · Albuquerque, New Mexico</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SERVICES ===== -->
+<div class="strip" id="services">
+  <div class="wrap obs" data-stagger>
+    <span class="label serif">Everything a family may need, <span class="it">under one roof</span></span>
+    <ul>
+      <li>Pre-Planning</li>
+      <li>Traditional Funerals</li>
+      <li>Cremation Services</li>
+      <li>Celebrations of Life</li>
+      <li>Veteran Services</li>
+      <li>Green Funerals</li>
+      <li>Pet Cremation</li>
+      <li>Grief Support</li>
+      <li>Bilingual Services</li>
+    </ul>
+  </div>
+</div>
+
+<div class="credit">Concept rebuild by AOM · built using French Funerals &amp; Cremations' real brand &amp; story · <a href="https://aheadofmarket.com">aheadofmarket.com</a></div>
+
+<!-- ===== INTAKE MODAL ===== -->
+<div class="modal-overlay" id="intakeModal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Begin a plan">
+    <button class="modal-close" id="modalClose" aria-label="Close">&times;</button>
+    <aside class="modal-aside">
+      <div class="am-bg"></div>
+      <div class="am-top">
+        <div class="am-eyebrow" id="amEyebrow">Pre-Planning</div>
+        <h2 class="am-title" id="amTitle">Plan ahead, with care.</h2>
+        <p class="am-text" id="amText">A few gentle questions so we can prepare a plan that reflects your wishes. There's no cost, and nothing is final until you say so.</p>
+        <ul class="am-steps" id="amSteps"></ul>
+      </div>
+      <div class="am-foot">Serving New Mexico families since <b>1907</b> · with dignity &amp; care</div>
+    </aside>
+
+    <div class="modal-form">
+      <form id="intakeForm" novalidate>
+        <div class="mf-seal serif">F</div>
+        <div class="mf-mode" id="mfMode">Pre-Planning · Online</div>
+        <h3 class="mf-head" id="mfHead">Begin your plan</h3>
+        <p class="mf-sub" id="mfSub">One step at a time. You can stop anytime.</p>
+        <div class="mf-prog" id="mfProg"><i class="on"></i><i></i><i></i></div>
+
+        <div class="mf-urgent" id="mfUrgent" style="display:none">
+          <div>
+            <a class="uph" href="tel:5058436333">(505) 843-6333</a>
+            <div class="ut">If you need us this moment, please call — we answer 24/7. Or leave your details below and we'll call you right back.</div>
+          </div>
+        </div>
+
+        <div class="mf-trust" id="mfTrust"><span class="ti">&#9829;</span><span>You'll be speaking with a member of the French Funerals family &mdash; never a call center, never a sales pitch.</span></div>
+
+        <!-- STEP 1 -->
+        <div class="mf-step show" data-step="1">
+          <div class="mf-field" id="whoField">
+            <div class="mf-q">Who is this plan for?</div>
+            <div class="mf-choices" id="whoChoices">
+              <div class="mf-choice" data-who="myself"><div class="ring"></div><div class="ct">Myself<span>Planning ahead for peace of mind</span></div></div>
+              <div class="mf-choice" data-who="loved"><div class="ring"></div><div class="ct">A loved one<span>Planning on behalf of family</span></div></div>
+            </div>
+          </div>
+          <div class="mf-field">
+            <div class="mf-q" id="serviceLabel">What kind of service feels right?</div>
+            <div class="mf-tiles" id="serviceTiles">
+              <div class="mf-tile" data-svc="A traditional service">A traditional service</div>
+              <div class="mf-tile" data-svc="Cremation">Cremation</div>
+              <div class="mf-tile" data-svc="A celebration of life">A celebration of life</div>
+              <div class="mf-tile" data-svc="A graveside service">Graveside</div>
+              <div class="mf-tile mf-tile-wide" data-svc="Not sure yet — please guide me">I'm not sure yet &mdash; please guide us</div>
+            </div>
+          </div>
+          <div class="mf-actions">
+            <button type="button" class="mf-next" data-next>Continue</button>
+          </div>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="mf-step" data-step="2">
+          <div class="mf-q" id="reachLead">How can we reach you?</div>
+          <div class="mf-row">
+            <div class="mf-field"><label>First name</label><input type="text" id="fName"></div>
+            <div class="mf-field"><label>Last name</label><input type="text" id="lName"></div>
+          </div>
+          <div class="mf-field"><label>Phone</label><input type="tel" id="phone" placeholder="(505) 000-0000"></div>
+          <div class="mf-field"><label>Email <span style="text-transform:none;font-weight:400;color:var(--sage)">(optional)</span></label><input type="email" id="email"></div>
+          <div class="mf-field"><div class="mf-q-sm" id="reachLabel">Best way to reach you</div>
+            <div class="mf-chips" id="reachChips">
+              <div class="mf-chip" data-reach="A phone call">A phone call</div>
+              <div class="mf-chip" data-reach="A text message">A text message</div>
+              <div class="mf-chip" data-reach="An email">An email</div>
+            </div>
+          </div>
+          <div class="mf-actions">
+            <button type="button" class="mf-back" data-back>Back</button>
+            <button type="button" class="mf-next" data-next>Continue</button>
+          </div>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="mf-step" data-step="3">
+          <div class="mf-field"><div class="mf-q" id="noteLabel">Anything you'd like us to know? <span style="text-transform:none;font-weight:400;color:var(--sage);font-family:'Hanken Grotesk',sans-serif;font-size:13px">(optional)</span></div>
+            <textarea id="note" placeholder="A name, a wish, a question — whatever is on your heart."></textarea>
+          </div>
+          <div class="mf-actions">
+            <button type="button" class="mf-back" data-back>Back</button>
+            <button type="submit" class="mf-next" id="mfSubmit">Send to the French Funerals family</button>
+          </div>
+          <p class="mf-privacy">Your information is private and never shared. This is not a commitment of any kind.</p>
+        </div>
+      </form>
+
+      <div class="mf-success" id="mfSuccess">
+        <div class="mf-check">&#10003;</div>
+        <h3 id="successHead">Thank you — we have it.</h3>
+        <p id="successText">A member of the French Funerals family will reach out personally, with care and without pressure. You're not alone in this.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var obs=document.querySelectorAll('.obs');
+  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.14});obs.forEach(function(el){io.observe(el);});}
+  else{obs.forEach(function(el){el.classList.add('in');});}
+
+  var modal=document.getElementById('intakeModal');
+  var openers=document.querySelectorAll('[data-open]');
+  var closeBtn=document.getElementById('modalClose');
+  var form=document.getElementById('intakeForm');
+  var success=document.getElementById('mfSuccess');
+  var prog=document.getElementById('mfProg');
+  var amSteps=document.getElementById('amSteps');
+  var stepEls={}; form.querySelectorAll('.mf-step').forEach(function(s){stepEls[s.getAttribute('data-step')]=s;});
+  var cur=0, mode='pre', active=[];
+
+  var FLOW={ pre:['1','2','3'], now:['2','3'] };
+
+  var COPY={
+    pre:{mode:'Pre-Planning · Online',head:'Begin your plan',sub:'One step at a time. You can stop anytime.',
+         amE:'Pre-Planning',amT:'Plan ahead, with care.',amX:"A few gentle questions so we can prepare a plan that reflects your wishes. There's no cost, and nothing is final until you say so.",
+         service:'What kind of service feels right?',note:"Anything you'd like us to know? (optional)",
+         sHead:'Thank you — we have it.',
+         sText:"A member of the French Funerals family will reach out personally, with care and without pressure. You're not alone in this.",
+         submit:'Send to the French Funerals family',urgent:false,
+         steps:['Who the plan is for, and the kind of service.','How we can reach you, privately.',"Anything you'd like us to know."]},
+    now:{mode:'We\'re Here Now · 24/7',head:'We\'re here for you',sub:'Leave your details and a member of our family will call you right back.',
+         amE:'Immediate Need',amT:'We\'re with you now.',amX:'You don\'t have to do this alone. Share a few details and a member of our family will reach you right away, any hour of the day or night.',
+         note:'Tell us what\'s happening, however you can. (optional)',
+         sHead:'We\'ve got you.',
+         sText:'A member of the French Funerals family is being notified now and will call you right away. If you need us this moment, please call (505) 843-6333.',
+         submit:'Send — please call me back',urgent:true,
+         steps:['How we can reach you right now.','Anything we should know.']}
+  };
+
+  function applyMode(m){
+    mode=m; var c=COPY[m];
+    document.getElementById('mfMode').textContent=c.mode;
+    document.getElementById('mfHead').textContent=c.head;
+    document.getElementById('mfSub').textContent=c.sub;
+    document.getElementById('amEyebrow').textContent=c.amE;
+    document.getElementById('amTitle').textContent=c.amT;
+    document.getElementById('amText').textContent=c.amX;
+    document.getElementById('noteLabel').innerHTML=c.note.replace('(optional)',"<span style=\"text-transform:none;font-weight:400;color:var(--sage);font-family:'Hanken Grotesk',sans-serif;font-size:13px\">(optional)</span>");
+    if(c.service) document.getElementById('serviceLabel').textContent=c.service;
+    document.getElementById('successHead').textContent=c.sHead;
+    document.getElementById('successText').textContent=c.sText;
+    document.getElementById('mfUrgent').style.display=c.urgent?'flex':'none';
+    document.getElementById('mfTrust').style.display=c.urgent?'none':'flex';
+    document.getElementById('mfSubmit').textContent=c.submit;
+    active=FLOW[m].map(function(n){return stepEls[n];});
+    prog.innerHTML=''; c.steps.forEach(function(){var i=document.createElement('i');prog.appendChild(i);});
+    amSteps.innerHTML=''; c.steps.forEach(function(t,idx){
+      var li=document.createElement('li');
+      li.innerHTML='<span class="num">'+(idx+1)+'</span> '+t; amSteps.appendChild(li);
+    });
+  }
+
+  function showStep(i){
+    cur=i;
+    var asideLis=amSteps.children, dots=prog.children;
+    Object.keys(stepEls).forEach(function(k){stepEls[k].classList.remove('show');});
+    active.forEach(function(s,idx){s.classList.toggle('show',idx===i);});
+    for(var d=0;d<dots.length;d++){dots[d].classList.toggle('on',d<=i);}
+    for(var a=0;a<asideLis.length;a++){
+      asideLis[a].classList.toggle('active',a===i);
+      asideLis[a].classList.toggle('done',a<i);
+    }
+  }
+
+  function openM(m,presetWho){
+    applyMode(m);
+    form.style.display='';
+    success.classList.remove('show');
+    showStep(0);
+    if(presetWho){ setWho(presetWho); }
+    modal.classList.add('open');modal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
+  }
+  function closeM(){modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+
+  function setWho(val){
+    document.querySelectorAll('#whoChoices .mf-choice').forEach(function(ch){
+      ch.classList.toggle('sel',ch.getAttribute('data-who')===val);
+    });
+  }
+  document.querySelectorAll('#whoChoices .mf-choice').forEach(function(ch){
+    ch.addEventListener('click',function(){setWho(ch.getAttribute('data-who'));});
+  });
+  function singleSelect(scope,sel){
+    var items=document.querySelectorAll(scope+' '+sel);
+    items.forEach(function(el){el.addEventListener('click',function(){
+      items.forEach(function(x){x.classList.remove('sel');});
+      el.classList.add('sel');
+    });});
+  }
+  singleSelect('#serviceTiles','.mf-tile');
+  singleSelect('#reachChips','.mf-chip');
+
+  openers.forEach(function(b){b.addEventListener('click',function(e){e.preventDefault();openM(b.getAttribute('data-open'));});});
+  closeBtn.addEventListener('click',closeM);
+  modal.addEventListener('click',function(e){if(e.target===modal)closeM();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&modal.classList.contains('open'))closeM();});
+
+  form.querySelectorAll('[data-next]').forEach(function(b){b.addEventListener('click',function(){if(cur<active.length-1)showStep(cur+1);});});
+  form.querySelectorAll('[data-back]').forEach(function(b){b.addEventListener('click',function(){if(cur>0)showStep(cur-1);});});
+
+  form.addEventListener('submit',function(e){e.preventDefault();form.style.display='none';success.classList.add('show');});
+
+  var pcGo=document.getElementById('pcGo');
+  var pcSel=null;
+  document.querySelectorAll('#plancard .pc-opt').forEach(function(o){
+    o.addEventListener('click',function(){
+      document.querySelectorAll('#plancard .pc-opt').forEach(function(x){x.classList.remove('sel');});
+      o.classList.add('sel'); pcSel=o.getAttribute('data-pc');
+    });
+  });
+  pcGo.addEventListener('click',function(){ openM('pre', pcSel||'myself'); showStep(1); });
+})();
+</script>
+
+</body>
+</html>
