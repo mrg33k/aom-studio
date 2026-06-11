@@ -760,10 +760,12 @@ function wishToItem(w) {
   // 'working', which silently excluded it from the Needs-you filter.
   const ready = w.status !== 'resolved' && !!parseStaged(w.message)
   const status = w.status === 'resolved' ? 'resolved' : (w.status === 'needs_team' || ready) ? 'needs_you' : 'working'
+  // M17b: structured message — headline as subject, ask as preview, original collapsed.
+  const { summary, original } = splitOriginal((w.message || '').replace(STAGED_RE, '').trim())
+  const { headline, ask } = parseWishSummary(summary)
   return {
     key: 'w' + w.id, kind: 'Request', who: w.name || w.email || 'Someone', ready,
-    // strip the machine tag — resolved/fallback cards must never show raw [staged_draft:…]
-    text: (w.message || '').replace(STAGED_RE, '').trim(),
+    subject: headline || null, text: ask, original,
     reply: w.latest_response?.body || null, status,
     date: w.created_at ? new Date(w.created_at).getTime() : 0, link: null,
     wish: w, // M13: lets the unified card render the press-send variant
@@ -810,9 +812,12 @@ function SupportItemCard({ it }) {
           <span style={{ fontSize: 11, color: BONE_FAINT }}>{timeAgoMs(it.date)}</span>
         </div>
       </button>
-      {open && it.link && (
+      {open && (it.link || it.original) && (
         <div style={{ marginTop: 8, borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
-          <a href={it.link} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: AMBER, textDecoration: 'none' }}>Open in Gmail →</a>
+          {it.original && <OriginalBlock original={it.original} />}
+          {it.link && (
+            <a href={it.link} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: AMBER, textDecoration: 'none' }}>Open in Gmail →</a>
+          )}
         </div>
       )}
       {it.wish && it.status !== 'resolved' && (
