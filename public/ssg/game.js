@@ -2319,7 +2319,7 @@
     const img = new Image();
     img.onload = () => { IMG[name] = img; res(); };
     img.onerror = () => { console.error('ASSET FAILED:', name); rej(new Error('asset: ' + name)); };
-    img.src = `assets/${name}.png`;
+    img.src = `assets/${name}.webp`;
   }))).then(() => {
     // prescale to on-screen size (x DPR) — kills minification shimmer in motion
     const targets = {
