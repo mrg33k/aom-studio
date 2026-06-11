@@ -2562,6 +2562,7 @@
     wizard: () => ({ near: wizardNear(), open: wizardOpen }),
     world: () => ({ MAP, ROWS, COLS, PROPS, PORTALS, PORTAL: PORTALS[0], SPAWN, levelIdx, W }),
     go: (i) => loadLevel(i),
+    forceWalk: () => { for (const n of NPCS) if (n.level === levelIdx) { n.state = 'walk'; n.stateT = 5; n.heading = Math.random() * Math.PI * 2; } },
   };
 
   Promise.all(ASSET_FILES.map(name => new Promise((res, rej) => {
