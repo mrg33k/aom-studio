@@ -14,6 +14,7 @@ import missionsData from '../data/missions.json'
 import useHomeSearch from '../components/cv3/conversations/useHomeSearch.js'
 import { authFetch } from '../lib/authFetch.js'
 import LeftMailPanel from './LeftMailPanel.jsx'
+import RoutinesPanel from './RoutinesPanel.jsx'
 import SkillsShelf from './SkillsShelf.jsx'
 import SkillsBadge from './SkillsBadge.jsx'
 import { MissionContextMenu, ProjectContextMenu, useIsMobile, useLongPress } from '../components/cv3/ContextMenuVariants.jsx'
@@ -766,6 +767,28 @@ function DrawerBody({
             />
           ))
         )}
+      </TreeSection>
+
+      {/* corner:routines R1 (2026-06-11) — open loops live here: list, kill,
+          create, attach to a room, pick model. RoutinesPanel owns its data
+          (fetches /api/dashboard/routines); the room picker reuses the
+          drawer's projects/missions/agents. */}
+      <TreeSection title="Routines" collapsible defaultCollapsed>
+        <RoutinesPanel
+          worldId={worldId}
+          projectRooms={projectRooms}
+          agents={agents}
+          getMissions={(projectSlug) => {
+            const liveMeta = tasksByProject?.get(projectSlug)?.missionMeta
+            if (liveMeta && liveMeta.size > 0) {
+              return Array.from(liveMeta.keys()).map(key => {
+                const rawSlug = key.startsWith(`${projectSlug}:`) ? key.slice(projectSlug.length + 1) : key
+                return { slug: rawSlug, name: rawSlug.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) }
+              })
+            }
+            return (missionsByProject.get(projectSlug) || []).map(m => ({ slug: m.slug, name: m.name }))
+          }}
+        />
       </TreeSection>
 
       {/* R20 (2026-05-25) — Mail moved below Projects (2026-05-28 per Patrik).
