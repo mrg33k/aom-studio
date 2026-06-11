@@ -2662,13 +2662,25 @@ export default function CornerV4() {
           />
           </div>
         )}
-        <div data-cv4-content-col onMouseDown={closeRailsOnContentClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        <div data-cv4-content-col onMouseDown={closeRailsOnContentClick} style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* corner-ui-cv4 R22: ambient per-chat wave (real ai-input-hero
+              Three.js pipeline). Mounted at the content-col level so it
+              stretches the full center area — with the rails closed it spans
+              edge to edge, with them open it fills whatever is left. Only in
+              chat mode; home/support/mail/routines stay clean. */}
+          {!showSupportInbox && activeTool !== 'routines' && !selectedMail && !isHomeMode && (isDesktop || tab !== 'tasks') && (
+            <ChatWaveBackground
+              chatKey={conversationTarget?.path || conversationTarget?.name || selectedAgent?.slug || 'chat'}
+              theme={theme}
+            />
+          )}
           {/* Center the chat column on wide screens so messages don't hug the
               left edge — especially when both side drawers are closed. */}
           <div
             data-cv4-content-inner
             style={{
               flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              position: 'relative', zIndex: 1, // keep chat above the wave canvas
               width: '100%',
               maxWidth: showSupportInbox ? '100%' : (isDesktop ? 840 : '100%'),
               margin: '0 auto',
@@ -2711,19 +2723,7 @@ export default function CornerV4() {
                 }}
               />
             ) : (
-              /* corner-ui-cv4: ambient per-chat wave background (canvas
-                 adaptation of 21st.dev ai-input-hero). Hue is hashed from the
-                 room identity so each chat gets its own color; theme prop
-                 keeps it readable in both light and dark. */
-              <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-                <ChatWaveBackground
-                  chatKey={conversationTarget?.path || conversationTarget?.name || selectedAgent?.slug || 'chat'}
-                  theme={theme}
-                />
-                <div style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
-                  <ChatPanel key={selectedAgent?.slug || 'chat'} />
-                </div>
-              </div>
+              <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
           </div>
         </div>
