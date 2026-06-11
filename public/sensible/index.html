@@ -297,6 +297,19 @@
   .reveal-foot{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:24px 30px 34px;text-align:center}
   .reveal-foot .rf-line{font-family:'Fraunces',serif;font-style:italic;font-size:19px;color:var(--brown)}
   .reveal-close{position:absolute;top:16px;right:18px;z-index:3;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.85);color:var(--brown);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  /* talk stage — "Let’s talk" crossfade inside the reveal */
+  .rv-stage{transition:opacity .45s cubic-bezier(.2,.7,.2,1),transform .45s cubic-bezier(.2,.7,.2,1)}
+  .rv-stage.out{opacity:0;transform:translateY(12px);pointer-events:none}
+  .rv-talk{display:none;opacity:0;transform:translateY(16px);transition:opacity .65s cubic-bezier(.2,.7,.2,1),transform .65s cubic-bezier(.2,.7,.2,1);text-align:center;padding:64px 30px 70px}
+  .rv-talk.show{display:block}
+  .rv-talk.in{opacity:1;transform:none}
+  .rv-talk .te{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:14px}
+  .rv-talk h2{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.6vw,46px);color:var(--brown);line-height:1.06;margin-bottom:14px}
+  .rv-talk p{font-size:15px;color:var(--brown-soft);max-width:480px;margin:0 auto 28px;line-height:1.65}
+  .rv-talk .tphone{display:inline-block;font-family:'Fraunces',serif;font-weight:500;font-size:clamp(34px,5vw,54px);color:var(--olive-2);text-decoration:none;line-height:1.1;margin-bottom:14px;transition:color .2s}
+  .rv-talk .tphone:hover{color:var(--gold)}
+  .rv-talk .taddr{font-size:13.5px;color:var(--brown-soft);line-height:1.7;margin-bottom:28px}
+
 
   @media(max-width:900px){
     .navlinks,.espanol{display:none}
@@ -553,6 +566,7 @@
 <div class="reveal-overlay" id="revealModal" aria-hidden="true">
   <div class="reveal-card" role="dialog" aria-modal="true" aria-label="Old site versus new site">
     <button class="reveal-close" id="revealClose" aria-label="Close">&times;</button>
+    <div class="rv-stage" id="revealMain">
     <div class="reveal-top">
       <div class="re-eye">A gentle before &amp; after</div>
       <h2>Same heart. A feeling that finally matches it.</h2>
@@ -576,7 +590,16 @@
     </div>
     <div class="reveal-foot">
       <span class="rf-line">Where memories live on — finally, a site that feels that way.</span>
-      <a class="btn btn-olive" href="#reach" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Let’s talk about it</a>
+      <button class="btn btn-olive" id="revealTalkBtn">Let’s talk about it</button>
+    </div>
+    </div>
+    <div class="rv-talk" id="revealTalk">
+      <div class="te">Let’s talk</div>
+      <h2>Our family is ready to listen.</h2>
+      <p>Call any hour, or leave one gentle note online and a member of our family will reach you personally — never a call center.</p>
+      <a class="tphone" href="tel:5206222262">(520) 622-2262</a>
+      <div class="taddr">109 W Grant Road · Tucson, AZ 85705<br>Real people, any hour · Hablamos Español</div>
+      <a class="btn btn-olive" href="#reach" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Leave one gentle note</a>
     </div>
   </div>
 </div>
@@ -598,7 +621,11 @@
   var drawer=document.getElementById('drawer');
   document.getElementById('drawerHandle').addEventListener('click',function(){drawer.classList.toggle('open');});
   var reveal=document.getElementById('revealModal');
-  function openR(){reveal.classList.add('open');reveal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+  
+  /* talk stage: crossfade reveal content -> contact info */
+  var rvMain=document.getElementById('revealMain'),rvTalk=document.getElementById('revealTalk'),rvBtn=document.getElementById('revealTalkBtn');
+  if(rvBtn){rvBtn.addEventListener('click',function(){rvMain.classList.add('out');setTimeout(function(){rvMain.style.display='none';rvTalk.classList.add('show');requestAnimationFrame(function(){requestAnimationFrame(function(){rvTalk.classList.add('in');});});},430);});}
+  function openR(){if(rvMain){rvMain.style.display='';rvMain.classList.remove('out');rvTalk.classList.remove('show');rvTalk.classList.remove('in');}reveal.classList.add('open');reveal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
   function closeR(){reveal.classList.remove('open');reveal.setAttribute('aria-hidden','true');document.body.style.overflow='';}
   document.getElementById('openReveal').addEventListener('click',openR);
   document.getElementById('revealClose').addEventListener('click',closeR);
