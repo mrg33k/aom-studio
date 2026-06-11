@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-11T18:55:25.741Z",
+  "generated_at": "2026-06-11T21:27:22.318Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -604,6 +604,20 @@
       "path": "corner/missions/routines"
     },
     {
+      "slug": "corner:rules-consolidation",
+      "raw_slug": "rules-consolidation",
+      "folder_name": "rules-consolidation",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Rules Consolidation",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/rules-consolidation"
+    },
+    {
       "slug": "corner:sdk-native-dispatch",
       "raw_slug": "sdk-native-dispatch",
       "folder_name": "sdk-native-dispatch",
@@ -784,6 +798,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/top-nav"
+    },
+    {
+      "slug": "corner:truth-check",
+      "raw_slug": "truth-check",
+      "folder_name": "truth-check",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Truth Check",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/truth-check"
     },
     {
       "slug": "corner:user-settings",
@@ -2662,6 +2690,34 @@
       "path": "corner/users/aom/projects/holistic-balance/missions/course-mapping"
     },
     {
+      "slug": "holistic-balance:hb-mobile-app",
+      "raw_slug": "hb-mobile-app",
+      "folder_name": "hb-mobile-app",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "holistic-balance",
+      "workstream": null,
+      "name": "Hb Mobile App",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/holistic-balance/missions/hb-mobile-app"
+    },
+    {
+      "slug": "holistic-balance:health-app",
+      "raw_slug": "health-app",
+      "folder_name": "health-app",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "holistic-balance",
+      "workstream": null,
+      "name": "Health App",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/holistic-balance/missions/health-app"
+    },
+    {
       "slug": "holistic-balance:marketing",
       "raw_slug": "marketing",
       "folder_name": "marketing",
@@ -3295,8 +3351,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 59,
-      "in_flight": 59,
+      "total": 61,
+      "in_flight": 61,
       "done": 0
     },
     {
@@ -3355,8 +3411,8 @@
     },
     {
       "slug": "holistic-balance",
-      "total": 3,
-      "in_flight": 3,
+      "total": 5,
+      "in_flight": 5,
       "done": 0
     },
     {
