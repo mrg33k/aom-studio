@@ -230,7 +230,7 @@
         </div>
 
         <div class="action-panel">
-          <div class="action-title">&#9876; Today's Quests</div>
+          <div class="action-title">&#10022; Today's Quests</div>
           <div class="action-placeholder">
             The Wizard will reveal your quests here when you're ready.
           </div>
