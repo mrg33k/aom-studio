@@ -97,6 +97,15 @@ export default async function handler(req, res) {
     if (req.method === 'PATCH') {
       const b = req.body || {};
       if (!b.id) return res.status(400).json({ error: 'id required' });
+      // System loops (launchd mirrors, kind='system') only support
+      // pause/resume — the daemon reconciles those into launchctl.
+      const cur = await sb(
+        `routines?id=eq.${encodeURIComponent(b.id)}&client_id=eq.${encodeURIComponent(clientId)}&select=kind`
+      );
+      const [curRow] = cur.ok ? await cur.json() : [];
+      if (curRow?.kind === 'system' && !['pause', 'resume'].includes(b.action)) {
+        return res.status(400).json({ error: 'system loops only support pause/resume' });
+      }
       const patch = { updated_at: new Date().toISOString() };
       if (typeof b.name === 'string' && b.name.trim()) patch.name = b.name.trim();
       if (typeof b.prompt === 'string' && b.prompt.trim()) patch.prompt = b.prompt.trim();
@@ -128,7 +137,7 @@ export default async function handler(req, res) {
       const id = (req.body && req.body.id) || req.query.id;
       if (!id) return res.status(400).json({ error: 'id required' });
       const r = await sb(
-        `routines?id=eq.${encodeURIComponent(id)}&client_id=eq.${encodeURIComponent(clientId)}`,
+        `routines?id=eq.${encodeURIComponent(id)}&client_id=eq.${encodeURIComponent(clientId)}&kind=eq.user`,
         { method: 'DELETE', prefer: 'return=minimal' }
       );
       if (!r.ok) return res.status(r.status).json({ error: await r.text() });

@@ -93,17 +93,38 @@ export default function RoutinesPanel({ worldId, projectRooms = [], agents = [],
       ) : routines.length === 0 && !creating ? (
         <Hint>No open loops. Create one and it runs in the room you attach it to.</Hint>
       ) : (
-        routines.map(r => (
-          <RoutineRow
-            key={r.id}
-            routine={r}
-            busy={busyId === r.id}
-            onPause={() => act(r.id, 'pause')}
-            onResume={() => act(r.id, 'resume')}
-            onRunNow={() => act(r.id, 'run_now')}
-            onDelete={() => remove(r)}
-          />
-        ))
+        <>
+          {routines.filter(r => r.kind !== 'system').map(r => (
+            <RoutineRow
+              key={r.id}
+              routine={r}
+              busy={busyId === r.id}
+              onPause={() => act(r.id, 'pause')}
+              onResume={() => act(r.id, 'resume')}
+              onRunNow={() => act(r.id, 'run_now')}
+              onDelete={() => remove(r)}
+            />
+          ))}
+          {routines.some(r => r.kind === 'system') && (
+            <div style={{
+              fontSize: 9, fontWeight: 700, color: C.dim,
+              letterSpacing: '0.12em', textTransform: 'uppercase',
+              fontFamily: FONT.mono, padding: '10px 8px 3px',
+            }}>System</div>
+          )}
+          {routines.filter(r => r.kind === 'system')
+            .sort((a, b) => (a.status === 'running' ? 0 : 1) - (b.status === 'running' ? 0 : 1) || a.name.localeCompare(b.name))
+            .map(r => (
+              <RoutineRow
+                key={r.id}
+                routine={r}
+                system
+                busy={busyId === r.id}
+                onPause={() => act(r.id, 'pause')}
+                onResume={() => act(r.id, 'resume')}
+              />
+            ))}
+        </>
       )}
 
       {creating ? (
@@ -138,16 +159,20 @@ export default function RoutinesPanel({ worldId, projectRooms = [], agents = [],
   )
 }
 
-function RoutineRow({ routine, busy, onPause, onResume, onRunNow, onDelete }) {
+function RoutineRow({ routine, system = false, busy, onPause, onResume, onRunNow, onDelete }) {
   const [open, setOpen] = useState(false)
   const running = routine.status === 'running'
   const errored = routine.status === 'error'
   const dotColor = errored ? '#FCA5A5' : (running ? AMBER : 'rgba(255,255,255,0.18)')
-  const room = routine.room_type === 'agent'
-    ? routine.agent_slug
-    : (routine.room_type === 'mission'
-      ? `${routine.project_slug} / ${routine.mission_slug}`
-      : routine.project_slug)
+  const room = system
+    ? 'system'
+    : (routine.room_type === 'agent'
+      ? routine.agent_slug
+      : (routine.room_type === 'mission'
+        ? `${routine.project_slug} / ${routine.mission_slug}`
+        : routine.project_slug))
+  const displayName = system ? routine.name.replace(/^com\.aom(-ea)?\./, '') : routine.name
+  const cadence = system && !routine.interval_minutes ? 'always on' : intervalLabel(routine.interval_minutes)
 
   return (
     <div style={{ borderRadius: 5, opacity: busy ? 0.5 : 1 }}>
@@ -169,17 +194,17 @@ function RoutineRow({ routine, busy, onPause, onResume, onRunNow, onDelete }) {
           flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 500,
           color: errored ? '#FCA5A5' : C.text2, fontFamily: FONT.body,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>{routine.name}</span>
+        }}>{displayName}</span>
         <span style={{
           fontSize: 9, color: C.dim, fontFamily: FONT.mono, flexShrink: 0,
           letterSpacing: '0.04em',
-        }}>{intervalLabel(routine.interval_minutes)}</span>
+        }}>{cadence}</span>
       </div>
 
       {open && (
         <div style={{ padding: '2px 8px 8px 22px' }}>
           <div style={{ fontSize: 10, color: C.dim, fontFamily: FONT.mono, marginBottom: 2 }}>
-            {room} · {routine.model} · ran {ago(routine.last_run_at)}
+            {system ? `system loop on the studio · ${routine.status}` : `${room} · ${routine.model} · ran ${ago(routine.last_run_at)}`}
           </div>
           {routine.last_error && (
             <div style={{ fontSize: 10, color: '#FCA5A5', fontFamily: FONT.mono, marginBottom: 4 }}>
@@ -194,8 +219,8 @@ function RoutineRow({ routine, busy, onPause, onResume, onRunNow, onDelete }) {
             {running
               ? <MiniBtn onClick={onPause}>Kill</MiniBtn>
               : <MiniBtn onClick={onResume}>Resume</MiniBtn>}
-            <MiniBtn onClick={onRunNow}>Run now</MiniBtn>
-            <MiniBtn danger onClick={onDelete}>Delete</MiniBtn>
+            {!system && <MiniBtn onClick={onRunNow}>Run now</MiniBtn>}
+            {!system && <MiniBtn danger onClick={onDelete}>Delete</MiniBtn>}
           </div>
         </div>
       )}
