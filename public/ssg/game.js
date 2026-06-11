@@ -1797,6 +1797,7 @@
       drawList.push({
         key: (p.x + p.y) * 100 + h * 2 + 1,
         world: true,
+        propType: p.type,
         fn: () => {
           drawShadow(p.x + 0.5, p.y + 0.5, h, 0, TILE_W * 0.3);
           const px2 = p.x + 0.5 + wob;
@@ -2175,6 +2176,9 @@
     // occlusion ghost: bone silhouette ONLY where world geometry covers the hero.
     // Render the silhouette to an offscreen canvas, mask it with the occluding
     // draws (destination-in), composite the intersection back at low alpha.
+    // Ghost-over-canopy polish: if the occluder is a tree canopy, use an
+    // outline-only ghost (shadowBlur stroke) instead of a filled bone silhouette
+    // so the hero reads clearly against dark tree crowns.
     if (heroDraw) {
       const heroKey = (player.x + player.y) * 100 + player.z * 2 + 1.5;
       const occluders = drawList.filter(d => d.world && d.key > heroKey);
@@ -2186,6 +2190,8 @@
         }
         const worldT = ctx.getTransform();
         const main = ctx;
+        // detect if any occluder is a tree canopy
+        const hasTreeOccluder = occluders.some(d => d.propType === 'tree');
         // 1) union of all occluding geometry -> maskCanvas
         mctx.setTransform(1, 0, 0, 1, 0, 0);
         mctx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
@@ -2206,8 +2212,22 @@
         // 3) composite the intersection back over the scene
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.globalAlpha = 0.5;
-        ctx.drawImage(occCanvas, 0, 0);
+        if (hasTreeOccluder) {
+          // outline-only ghost for tree canopies: draw the masked silhouette as
+          // a glowing outline (shadowBlur around the shape) at very low fill alpha
+          // so the outline reads against both dark and mid-tone canopies
+          ctx.globalAlpha = 0.18; // near-transparent fill — preserves shape hint
+          ctx.drawImage(occCanvas, 0, 0);
+          // stroke glow pass: composite the silhouette again with strong shadow
+          ctx.globalAlpha = 0.85;
+          ctx.shadowColor = 'rgba(230,220,200,0.95)';
+          ctx.shadowBlur = 5;
+          ctx.drawImage(occCanvas, 0, 0);
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.globalAlpha = 0.5;
+          ctx.drawImage(occCanvas, 0, 0);
+        }
         ctx.restore();
       }
     }
