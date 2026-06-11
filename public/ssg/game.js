@@ -109,7 +109,26 @@
         [-1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,-1],
         [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
       ],
-      props: [],
+      // R50: homestead landmark density — grindables + a waystone landmark
+      // cottage at tiles [4,1],[5,1],[4,2],[5,2]; portal at (2,2)
+      props: [
+        { type: 'tree',     x: 1,  y: 7 },
+        { type: 'tree',     x: 9,  y: 7 },
+        { type: 'tree',     x: 1,  y: 4 },
+        { type: 'tree',     x: 9,  y: 2 },
+        { type: 'crystal',  x: 3,  y: 5 },
+        { type: 'crystal',  x: 6,  y: 5 },
+        { type: 'crystal',  x: 4,  y: 7 },
+        { type: 'crystal',  x: 8,  y: 4 },
+        { type: 'crystal',  x: 7,  y: 6 },
+        { type: 'boulder',  x: 2,  y: 4 },
+        { type: 'boulder',  x: 8,  y: 7 },
+        { type: 'boulder',  x: 2,  y: 6 },
+        { type: 'boulder',  x: 7,  y: 2 },
+        { type: 'boulder',  x: 9,  y: 5 },
+        { type: 'waystone', x: 8,  y: 2 },  // landmark anchor, east end of plot
+        { type: 'boulder',  x: 5,  y: 6 },
+      ],
     },
     {
       // R35: the hub — a plaza of roads whose job is connecting everywhere.
