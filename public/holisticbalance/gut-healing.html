@@ -564,6 +564,43 @@
       border-top: 1px solid var(--cream-dark);
     }
 
+    /* ── TRUE/FALSE BLOCKS ── */
+    .tf-block { margin: 18px 0; }
+    .tf-statement { font-size: 0.92rem; color: var(--text-dark); margin-bottom: 10px; line-height: 1.6; }
+    .tf-buttons { display: flex; gap: 10px; }
+    .tf-btn {
+      padding: 8px 22px;
+      border: 1.5px solid var(--emerald);
+      background: transparent;
+      color: var(--emerald);
+      font-size: 0.82rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.15s;
+      font-family: 'Jost', sans-serif;
+    }
+    .tf-btn.selected { background: var(--emerald); color: #fff; }
+    .tf-btn:hover:not(.selected) { background: var(--cream); }
+
+    /* ── FILL-IN BLOCKS ── */
+    .fill-in-block { margin: 16px 0; }
+    .fill-in-label { display: block; font-size: 0.86rem; color: var(--text-dark); margin-bottom: 6px; font-style: italic; }
+    .fill-in-input {
+      width: 100%;
+      border: none;
+      border-bottom: 1.5px solid var(--cream-dark);
+      background: transparent;
+      font-size: 0.9rem;
+      padding: 6px 0;
+      color: var(--text-dark);
+      outline: none;
+      font-family: 'Jost', sans-serif;
+    }
+    .fill-in-input::placeholder { color: var(--text-light); }
+    .fill-in-input:focus { border-bottom-color: var(--emerald); }
+
     /* ── REFLECTION ── */
     .reflection-block {
       background: var(--cream);
@@ -964,13 +1001,29 @@
           for attention. The good news: it responds well to care.
         </p>
 
-        <!-- INLINE QUESTION 1a -->
-        <div class="inline-question">
-          <div class="inline-question-label">Quick Check →</div>
-          <p>Which of these symptoms have you noticed in your own body? Be specific — when do they tend to show up?</p>
-          <textarea class="reflection-textarea" id="r1a" placeholder="e.g. I get bloated almost every evening, especially after pasta or bread..."></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">I often feel bloated, gassy, or sluggish after meals.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm1tf1', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm1tf1', 'False')">False</button>
+          </div>
         </div>
+        <div class="tf-block">
+          <p class="tf-statement">I experience brain fog, low energy, or mood swings regularly.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm1tf2', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm1tf2', 'False')">False</button>
+          </div>
+        </div>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m1fi1">The symptom I struggle with most is:</label>
+          <input class="fill-in-input" id="m1fi1" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m1fi2">My goal for completing this course is:</label>
+          <input class="fill-in-input" id="m1fi2" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
+        <p class="save-note">Your responses are saved in your browser as you type.</p>
       </div>
 
       <div class="content-section">
@@ -985,25 +1038,6 @@
           state is directly affected. Healing your gut is not just physical healing.
           <strong>It is emotional healing too.</strong>
         </p>
-
-        <!-- INLINE QUESTION 1b -->
-        <div class="inline-question">
-          <div class="inline-question-label">Pause &amp; Reflect →</div>
-          <p>Have you ever noticed a connection between how you feel emotionally and how your gut feels physically? Describe a specific moment.</p>
-          <textarea class="reflection-textarea" id="r1b" placeholder="e.g. Before a difficult conversation at work, my stomach tightens and I lose my appetite..."></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
-        </div>
-      </div>
-
-      <div class="reflection-block">
-        <div class="reflection-label">Reflect</div>
-        <h3>Where are you starting from?</h3>
-        <p>
-          Before we begin healing, it helps to know what you're healing from. Take a moment
-          to write honestly — no judgment, just observation.
-        </p>
-        <textarea class="reflection-textarea" id="r1" placeholder="Which symptoms from the list above feel familiar to you? When did you first notice them? How do they affect your daily life?"></textarea>
-        <p class="save-note">Your responses are saved in your browser as you type.</p>
       </div>
 
       <div class="checklist-block">
@@ -1065,12 +1099,12 @@
           eat highly processed foods, you are often feeding inflammation instead.
         </p>
 
-        <!-- INLINE QUESTION 2a -->
-        <div class="inline-question">
-          <div class="inline-question-label">Quick Check →</div>
-          <p>On a typical day, roughly what % of what you eat would you call a whole food? What's your honest answer?</p>
-          <textarea class="reflection-textarea" id="r2a" placeholder="Be honest — not aspirational. What does a real Tuesday look like for you?"></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">Most of what I eat comes from a box, bag, or drive-through.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm2tf1', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm2tf1', 'False')">False</button>
+          </div>
         </div>
       </div>
 
@@ -1131,20 +1165,21 @@
           <li><span class="food-dot"></span>Cereal → oatmeal with seeds</li>
         </ul>
 
-        <!-- INLINE QUESTION 2b -->
-        <div class="inline-question">
-          <div class="inline-question-label">Pause &amp; Reflect →</div>
-          <p>Which swap from the list above feels most doable for you this week? What's the one thing that makes it hard?</p>
-          <textarea class="reflection-textarea" id="r2b" placeholder="e.g. The cereal → oatmeal swap feels possible, but mornings are rushed and I usually just grab whatever is fast..."></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">I often feel hungry again within 1–2 hours of eating a meal.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm2tf2', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm2tf2', 'False')">False</button>
+          </div>
         </div>
-      </div>
-
-      <div class="reflection-block">
-        <div class="reflection-label">Reflect</div>
-        <h3>Your relationship with whole foods</h3>
-        <p>Honest self-assessment is the beginning of real change. There are no wrong answers here.</p>
-        <textarea class="reflection-textarea" id="r2" placeholder="How much of what you currently eat would you describe as whole foods? What gets in the way of eating this way more often? What's one swap you feel ready to make this week?"></textarea>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m2fi1">One processed food I eat often that I could swap out:</label>
+          <input class="fill-in-input" id="m2fi1" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m2fi2">A whole food I already eat and love:</label>
+          <input class="fill-in-input" id="m2fi2" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
         <p class="save-note">Your responses are saved in your browser as you type.</p>
       </div>
 
@@ -1233,12 +1268,12 @@
           heat kills the beneficial bacteria.
         </p>
 
-        <!-- INLINE QUESTION 3a -->
-        <div class="inline-question">
-          <div class="inline-question-label">Quick Check →</div>
-          <p>Which of these do you already eat? Which one would you be willing to try for the first time this week?</p>
-          <textarea class="reflection-textarea" id="r3a" placeholder="e.g. I eat plain yogurt already. I'd be willing to try kimchi — I've seen it at the store but never bought it..."></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">I currently eat fermented foods at least once a week.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm3tf1', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm3tf1', 'False')">False</button>
+          </div>
         </div>
       </div>
 
@@ -1274,12 +1309,12 @@
           <li><span class="food-dot"></span>Cauliflower</li>
         </ul>
 
-        <!-- INLINE QUESTION 3b -->
-        <div class="inline-question">
-          <div class="inline-question-label">Pause &amp; Reflect →</div>
-          <p>How many prebiotic foods did you eat yesterday? What could you add to tomorrow's meals?</p>
-          <textarea class="reflection-textarea" id="r3b" placeholder="e.g. I had garlic in dinner and oats for breakfast — so maybe 2. Tomorrow I could add a banana to my morning..."></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">I've taken antibiotics in the past two years.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm3tf2', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm3tf2', 'False')">False</button>
+          </div>
         </div>
       </div>
 
@@ -1316,10 +1351,14 @@
       </div>
 
       <div class="reflection-block">
-        <div class="reflection-label">Reflect</div>
-        <h3>Your probiotic baseline</h3>
-        <p>Take stock of what's already in your diet before adding more.</p>
-        <textarea class="reflection-textarea" id="r3" placeholder="Which fermented foods from the list above do you already eat? Which ones feel approachable to try? Is there anything that's held you back from eating fermented foods in the past?"></textarea>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m3fi1">A fermented food I'm willing to try this week:</label>
+          <input class="fill-in-input" id="m3fi1" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m3fi2">One prebiotic food I can add to my next grocery list:</label>
+          <input class="fill-in-input" id="m3fi2" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
         <p class="save-note">Your responses are saved in your browser as you type.</p>
       </div>
 
@@ -1391,12 +1430,12 @@
           </p>
         </div>
 
-        <!-- INLINE QUESTION 4a -->
-        <div class="inline-question">
-          <div class="inline-question-label">Quick Check →</div>
-          <p>What does your typical breakfast look like? Does it lean anti-inflammatory or pro-inflammatory? Be honest.</p>
-          <textarea class="reflection-textarea" id="r4a" placeholder="e.g. Usually coffee + a granola bar or cereal. Probably more pro-inflammatory than I'd like to admit..."></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">I regularly eat foods like processed sugar, alcohol, or refined carbs.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm4tf1', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm4tf1', 'False')">False</button>
+          </div>
         </div>
       </div>
 
@@ -1434,12 +1473,12 @@
           a diet that's 80% anti-inflammatory gives your gut the environment it needs to heal.
         </p>
 
-        <!-- INLINE QUESTION 4b -->
-        <div class="inline-question">
-          <div class="inline-question-label">Pause &amp; Reflect →</div>
-          <p>Which inflammatory foods show up most often in your week? What's driving that — convenience, habit, stress?</p>
-          <textarea class="reflection-textarea" id="r4b" placeholder="e.g. Sugary drinks every afternoon — it's habit more than anything. I reach for them when I hit my 3pm slump..."></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">I often experience joint pain, skin issues, or chronic fatigue.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm4tf2', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm4tf2', 'False')">False</button>
+          </div>
         </div>
       </div>
 
@@ -1496,10 +1535,14 @@
       </div>
 
       <div class="reflection-block">
-        <div class="reflection-label">Reflect</div>
-        <h3>Your inflammation picture</h3>
-        <p>Awareness is the first step toward change.</p>
-        <textarea class="reflection-textarea" id="r4" placeholder="Looking at both lists — the foods that reduce and the foods that increase inflammation — what does a typical day of eating look like for you? What's one anti-inflammatory food you could add this week? What's one inflammatory food you could reduce?"></textarea>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m4fi1">One anti-inflammatory food I'll add to my diet this week:</label>
+          <input class="fill-in-input" id="m4fi1" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m4fi2">One inflammatory food I'm ready to cut back on:</label>
+          <input class="fill-in-input" id="m4fi2" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
         <p class="save-note">Your responses are saved in your browser as you type.</p>
       </div>
 
@@ -1583,12 +1626,12 @@
           </p>
         </div>
 
-        <!-- INLINE QUESTION 5a -->
-        <div class="inline-question">
-          <div class="inline-question-label">Quick Check →</div>
-          <p>How many glasses of water did you drink yesterday? Be honest — most people drink less than they think.</p>
-          <textarea class="reflection-textarea" id="r5a" placeholder="Count honestly. Coffee and juice don't count. How many actual glasses of water?"></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">I drink at least 6–8 glasses of water per day.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm5tf1', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm5tf1', 'False')">False</button>
+          </div>
         </div>
       </div>
 
@@ -1623,20 +1666,24 @@
           Replace one a day with herbal tea or infused water and notice the difference.
         </p>
 
-        <!-- INLINE QUESTION 5b -->
-        <div class="inline-question">
-          <div class="inline-question-label">Pause &amp; Reflect →</div>
-          <p>What's your biggest obstacle to drinking more water? What's one small change you could make tomorrow?</p>
-          <textarea class="reflection-textarea" id="r5b" placeholder="e.g. I forget until I'm already thirsty. Tomorrow I could set a reminder at 10am and 2pm to drink a glass..."></textarea>
-          <p class="save-note">Saved automatically as you type.</p>
+        <div class="tf-block">
+          <p class="tf-statement">I usually drink coffee or tea before I drink water in the morning.</p>
+          <div class="tf-buttons">
+            <button class="tf-btn" onclick="selectTF(this, 'm5tf2', 'True')">True</button>
+            <button class="tf-btn" onclick="selectTF(this, 'm5tf2', 'False')">False</button>
+          </div>
         </div>
       </div>
 
       <div class="reflection-block">
-        <div class="reflection-label">Reflect</div>
-        <h3>Your hydration honest check</h3>
-        <p>Most people discover they're significantly under-hydrated when they actually track it.</p>
-        <textarea class="reflection-textarea" id="r5" placeholder="How much water do you typically drink in a day? What does your morning routine look like — do you hydrate before coffee? Which herbal teas feel appealing to try? What's one hydration habit you'll commit to this week?"></textarea>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m5fi1">My daily water goal (body weight ÷ 2 = ___ oz):</label>
+          <input class="fill-in-input" id="m5fi1" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
+        <div class="fill-in-block">
+          <label class="fill-in-label" for="m5fi2">One herbal tea I'll add to my routine:</label>
+          <input class="fill-in-input" id="m5fi2" type="text" placeholder="Write your answer here..." oninput="saveInput(this)">
+        </div>
         <p class="save-note">Your responses are saved in your browser as you type.</p>
       </div>
 
@@ -1823,16 +1870,47 @@
     });
   }
 
-  // ── REFLECTION AUTOSAVE (includes all inline question IDs) ──
-  // All textarea IDs that should persist: r1, r1a, r1b, r2, r2a, r2b, r3, r3a, r3b, r4, r4a, r4b, r5, r5a, r5b
-  document.querySelectorAll('.reflection-textarea').forEach(ta => {
-    const key = 'reflection_' + ta.id;
-    ta.value = state[key] || '';
-    ta.addEventListener('input', () => {
-      state[key] = ta.value;
-      saveState(state);
+  // ── TRUE/FALSE ──
+  function selectTF(btn, key, value) {
+    const group = btn.closest('.tf-buttons');
+    group.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    if (!state.tf) state.tf = {};
+    state.tf[key] = value;
+    saveState(state);
+  }
+
+  // ── FILL-IN INPUTS ──
+  function saveInput(el) {
+    if (!state.inputs) state.inputs = {};
+    state.inputs[el.id] = el.value;
+    saveState(state);
+  }
+
+  // ── RESTORE T/F ──
+  if (state.tf) {
+    Object.entries(state.tf).forEach(([key, value]) => {
+      document.querySelectorAll('.tf-buttons').forEach(group => {
+        const btn = group.closest('.tf-block');
+        if (!btn) return;
+        const btns = group.querySelectorAll('.tf-btn');
+        btns.forEach(b => {
+          const onclickAttr = b.getAttribute('onclick') || '';
+          if (onclickAttr.includes("'" + key + "'") && onclickAttr.includes("'" + value + "'")) {
+            b.classList.add('selected');
+          }
+        });
+      });
     });
-  });
+  }
+
+  // ── RESTORE FILL-IN INPUTS ──
+  if (state.inputs) {
+    Object.entries(state.inputs).forEach(([id, value]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = value;
+    });
+  }
 
   // ── RESTORE CHECKLISTS ──
   if (state.checks) {
