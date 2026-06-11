@@ -68,6 +68,14 @@
       "destination": "/cv4-static/views/:path*"
     },
     {
+      "source": "/ssg",
+      "destination": "/ssg/index.html"
+    },
+    {
+      "source": "/ssg/:path*",
+      "destination": "/ssg/:path*"
+    },
+    {
       "source": "/summerschool",
       "destination": "/summerschool/index.html"
     },
