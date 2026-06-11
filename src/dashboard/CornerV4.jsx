@@ -241,6 +241,11 @@ export default function CornerV4() {
   // idle timers below; the gutters live in the main desktop row.
   const [leftRailHover, setLeftRailHover] = useState(false)
   const [rightRailHover, setRightRailHover] = useState(false)
+  // Once a rail has been hovered and left, the close delay drops from the
+  // initial 10s to a couple of beats — lingering open after the pointer
+  // leaves feels too slow. Resets when the rail closes.
+  const [leftRailTouched, setLeftRailTouched] = useState(false)
+  const [rightRailTouched, setRightRailTouched] = useState(false)
   // corner:skills-picker R1 — Skills shelf takeover of the left rail, plus
   // the mission-picker modal that fires after the user clicks a skill chip.
   const [skillsShelfOpen, setSkillsShelfOpen] = useState(false)
@@ -279,14 +284,24 @@ export default function CornerV4() {
   // the pointer isn't over it, count down; hovering it resets the countdown.
   useEffect(() => {
     if (!isDesktop || !drawerOpen || leftRailHover) return undefined
-    const t = setTimeout(() => setDrawerOpen(false), 10000)
+    const t = setTimeout(() => { setDrawerOpen(false); setLeftRailTouched(false) }, leftRailTouched ? 2000 : 10000)
     return () => clearTimeout(t)
-  }, [isDesktop, drawerOpen, leftRailHover])
+  }, [isDesktop, drawerOpen, leftRailHover, leftRailTouched])
   useEffect(() => {
     if (!isDesktop || !tasksDrawerOpen || rightRailHover) return undefined
-    const t = setTimeout(() => setTasksDrawerOpen(false), 10000)
+    const t = setTimeout(() => { setTasksDrawerOpen(false); setRightRailTouched(false) }, rightRailTouched ? 2000 : 10000)
     return () => clearTimeout(t)
-  }, [isDesktop, tasksDrawerOpen, rightRailHover])
+  }, [isDesktop, tasksDrawerOpen, rightRailHover, rightRailTouched])
+  // R23b: clicking anywhere in the chat / center column dismisses both
+  // side menus right away — the user's focus moved to the conversation.
+  const closeRailsOnContentClick = useCallback(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      setDrawerOpen(false)
+      setTasksDrawerOpen(false)
+      setLeftRailTouched(false)
+      setRightRailTouched(false)
+    }
+  }, [])
   // R8.0: theme is owned by `useThemeMode` (Arizona auto-seed + manual
   // override). `setTheme(...)` here is wired to the hook so the legacy
   // moon-toggle button keeps working and the CSS-vars repaint
@@ -2589,7 +2604,7 @@ export default function CornerV4() {
           <div
             data-cv4-left-rail-wrap
             onMouseEnter={() => { setLeftRailHover(true); if (!drawerOpen) setDrawerOpen(true) }}
-            onMouseLeave={() => setLeftRailHover(false)}
+            onMouseLeave={() => { setLeftRailHover(false); setLeftRailTouched(true) }}
             style={{
               width: drawerOpen ? 300 : 14,
               flexShrink: 0,
@@ -2647,7 +2662,7 @@ export default function CornerV4() {
           />
           </div>
         )}
-        <div data-cv4-content-col style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+        <div data-cv4-content-col onMouseDown={closeRailsOnContentClick} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           {/* Center the chat column on wide screens so messages don't hug the
               left edge — especially when both side drawers are closed. */}
           <div
@@ -2719,7 +2734,7 @@ export default function CornerV4() {
           <div
             data-cv4-right-rail-wrap
             onMouseEnter={() => { setRightRailHover(true); if (!tasksDrawerOpen) setTasksDrawerOpen(true) }}
-            onMouseLeave={() => setRightRailHover(false)}
+            onMouseLeave={() => { setRightRailHover(false); setRightRailTouched(true) }}
             style={{
               width: tasksDrawerOpen ? 'clamp(300px, 20vw, 460px)' : 14,
               flexShrink: 0,
