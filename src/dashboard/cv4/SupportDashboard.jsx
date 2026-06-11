@@ -57,8 +57,29 @@ function splitOriginal(text) {
 // Old free-text cards fall through with no headline and render as plain body.
 function parseWishSummary(summary) {
   const lines = (summary || '').split('\n').map((s) => s.trim()).filter(Boolean)
-  if (lines.length >= 2) return { headline: lines[0], ask: lines.slice(1).join(' ') }
+  if (lines.length >= 2) return { headline: lines[0], ask: lines.slice(1).join('\n') }
   return { headline: null, ask: (summary || '').trim() }
+}
+
+// M17c: the ask renders as a real bullet list — amber markers, readable desktop type.
+// Plain (non-bulleted, pre-M17c) text falls through as a paragraph.
+function AskList({ ask, size = 15 }) {
+  if (!ask) return null
+  const lines = ask.split('\n').map((s) => s.trim()).filter(Boolean)
+  const bullets = lines.filter((l) => l.startsWith('•'))
+  if (bullets.length === 0) {
+    return <p style={{ margin: 0, fontSize: size, color: BONE, lineHeight: 1.6 }}>{ask}</p>
+  }
+  return (
+    <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {lines.map((l, i) => (
+        <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
+          <span style={{ color: AMBER, fontSize: size - 2, lineHeight: 1.6, flexShrink: 0 }}>●</span>
+          <span style={{ fontSize: size, color: BONE, lineHeight: 1.6 }}>{l.replace(/^•\s*/, '')}</span>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 function OriginalBlock({ original }) {
@@ -280,7 +301,7 @@ function PressSendCard({ w, staged }) {
     <div className={sent ? 'ps-sent' : 'ps-card'} style={{
       background: `radial-gradient(120% 140% at 0% 0%, ${AMBER_SOFT} 0%, ${INK_CARD} 55%)`,
       border: `1.5px solid ${sent ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.55)'}`,
-      borderRadius: 10, padding: '16px 16px 14px', marginBottom: 12 }}>
+      borderRadius: 10, padding: '20px 22px 18px', marginBottom: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.14em',
           color: '#1A1206', background: AMBER, padding: '3px 10px', borderRadius: 999 }}>
@@ -298,7 +319,7 @@ function PressSendCard({ w, staged }) {
           )
         })()}
       </div>
-      <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 12.5, color: BONE_DIM, margin: '12px 0 0',
+      <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: BONE_DIM, margin: '14px 0 0',
         letterSpacing: '0.01em' }}>
         {w.name || w.email}
       </div>
@@ -308,28 +329,39 @@ function PressSendCard({ w, staged }) {
         return (
           <>
             {headline && (
-              <div style={{ fontFamily: SERIF, fontSize: 19, color: BONE, margin: '2px 0 0', lineHeight: 1.25 }}>
+              <div style={{ fontFamily: SERIF, fontSize: 25, color: BONE, margin: '4px 0 0', lineHeight: 1.2 }}>
                 {headline}
               </div>
             )}
-            {ask && (
-              <div style={{ marginTop: 8 }}>
-                <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: BONE_FAINT }}>
-                  They asked
+            {/* M17c: their points on the left, the original on the right (scrollable). */}
+            <div style={{ display: 'grid', gridTemplateColumns: original ? 'repeat(auto-fit, minmax(300px, 1fr))' : '1fr',
+              gap: 20, marginTop: 16, alignItems: 'start' }}>
+              {ask && (
+                <div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
+                    color: AMBER, marginBottom: 10 }}>They asked</div>
+                  <AskList ask={ask} size={15} />
                 </div>
-                <p style={{ margin: '3px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.55 }}>{ask}</p>
-              </div>
-            )}
-            <OriginalBlock original={original} />
+              )}
+              {original && (
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
+                    color: BONE_FAINT, marginBottom: 10 }}>Original message</div>
+                  <div style={{ padding: '12px 14px', background: INK_PANEL, borderRadius: 6,
+                    border: `1px solid ${LINE}`, fontSize: 13.5, color: BONE_DIM, lineHeight: 1.6,
+                    whiteSpace: 'pre-wrap', maxHeight: 280, overflowY: 'auto' }}>{original}</div>
+                </div>
+              )}
+            </div>
           </>
         )
       })()}
 
       {/* The reply that actually goes out, verbatim — plus its attachments. */}
-      <div style={{ marginTop: 12, padding: '10px 14px', background: INK_PANEL,
+      <div style={{ marginTop: 18, padding: '14px 18px', background: INK_PANEL,
         borderLeft: `2.5px solid ${AMBER}`, borderRadius: '4px 8px 8px 4px' }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: AMBER }}>
-          The reply{preview && !preview.error && preview.to ? ` · to ${preview.to}` : ''}
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: AMBER }}>
+          Our reply{preview && !preview.error && preview.to ? ` · to ${preview.to}` : ''}
         </div>
         {preview === null && (
           <p style={{ margin: '6px 0 0', fontSize: 12.5, color: BONE_FAINT, fontStyle: 'italic' }}>Opening the staged reply…</p>
@@ -344,7 +376,7 @@ function PressSendCard({ w, staged }) {
             {preview.subject && (
               <div style={{ margin: '6px 0 0', fontSize: 12, color: BONE_DIM, fontWeight: 600 }}>{preview.subject}</div>
             )}
-            <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE, lineHeight: 1.6, whiteSpace: 'pre-wrap',
+            <p style={{ margin: '8px 0 0', fontSize: 15, color: BONE, lineHeight: 1.65, whiteSpace: 'pre-wrap',
               display: '-webkit-box', WebkitLineClamp: fullReply ? 999 : 8, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
               {preview.text || '(no text body)'}
             </p>
@@ -461,10 +493,10 @@ function WishRow({ w, dim }) {
           return (
             <>
               {headline && (
-                <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: BONE,
+                <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 15, color: BONE,
                   margin: '6px 0 0', lineHeight: 1.35 }}>{headline}</div>
               )}
-              <p style={{ margin: headline ? '3px 0 0' : '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.45,
+              <p style={{ margin: headline ? '4px 0 0' : '6px 0 0', fontSize: 14, color: BONE_DIM, lineHeight: 1.5, whiteSpace: 'pre-wrap',
                 display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ask}</p>
             </>
           )
@@ -799,8 +831,8 @@ function SupportItemCard({ it }) {
           </span>
           <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: st.loud ? AMBER : BONE_DIM, border: `1px solid ${st.loud ? AMBER : LINE}`, padding: '1px 7px', borderRadius: 10, whiteSpace: 'nowrap', flexShrink: 0 }}>{st.label}</span>
         </div>
-        {it.subject && <p style={{ margin: '5px 0 0', fontSize: 13, color: BONE_DIM, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</p>}
-        {it.text && <p style={{ margin: '4px 0 0', fontSize: 12, color: BONE_FAINT, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.text}</p>}
+        {it.subject && <p style={{ margin: '5px 0 0', fontSize: 14.5, fontWeight: 600, color: BONE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</p>}
+        {it.text && <p style={{ margin: '5px 0 0', fontSize: 13.5, color: BONE_DIM, lineHeight: 1.5, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.text}</p>}
         {it.reply && (
           <div style={{ marginTop: 7, padding: '6px 9px', background: AMBER_SOFT, borderLeft: `2px solid ${AMBER}`, borderRadius: 3 }}>
             <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: AMBER }}>We replied</span>
