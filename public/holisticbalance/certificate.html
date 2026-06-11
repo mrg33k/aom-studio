@@ -227,6 +227,57 @@
       letter-spacing: 0.06em;
     }
 
+    /* ── E-SIGNATURE PAD ────────────────────── */
+    .sig-pad-wrap {
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .sig-canvas {
+      display: block;
+      width: 100%;
+      height: 80px;
+      border: 1px solid var(--border);
+      background: white;
+      cursor: crosshair;
+      touch-action: none;
+    }
+    .sig-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: #c9c0b5;
+      text-transform: uppercase;
+    }
+    .sig-clear {
+      display: inline-block;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      text-decoration: none;
+      cursor: pointer;
+      opacity: 0.6;
+      border: none;
+      background: none;
+      padding: 2px 0;
+      margin-top: 4px;
+    }
+    .sig-clear:hover { opacity: 1; }
+    @media print {
+      .sig-clear { display: none !important; }
+      .sig-placeholder { display: none !important; }
+      .sig-canvas { border: none; background: transparent; }
+    }
+
     /* ── TAGLINE ─────────────────────────────── */
     .cert-tagline {
       font-family: 'Cormorant Garamond', serif;
@@ -327,9 +378,12 @@
         <div class="cert-sig-title">Certified Health Coach · Holistic Balance</div>
       </div>
       <div class="cert-sig-block">
-        <div class="cert-sig-line"></div>
-        <div class="cert-sig-name">&nbsp;</div>
-        <div class="cert-sig-title">Date</div>
+        <div class="sig-pad-wrap">
+          <canvas class="sig-canvas" id="sigCanvas" width="600" height="160"></canvas>
+          <div class="sig-placeholder" id="sigPlaceholder">Sign here</div>
+        </div>
+        <button class="sig-clear" id="sigClear" onclick="clearSig()">Clear</button>
+        <div class="cert-sig-title" style="margin-top:6px;">Student Signature</div>
       </div>
     </div>
 
@@ -343,6 +397,61 @@
     const d = new Date();
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     el.textContent = months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+
+    // ── SIGNATURE PAD ────────────────────────────────────────────────
+    const canvas  = document.getElementById('sigCanvas');
+    const ctx     = canvas.getContext('2d');
+    const holder  = document.getElementById('sigPlaceholder');
+    let drawing   = false;
+    let hasSig    = false;
+
+    function getPos(e) {
+      const r = canvas.getBoundingClientRect();
+      const scaleX = canvas.width  / r.width;
+      const scaleY = canvas.height / r.height;
+      const src = e.touches ? e.touches[0] : e;
+      return {
+        x: (src.clientX - r.left) * scaleX,
+        y: (src.clientY - r.top)  * scaleY
+      };
+    }
+
+    function startDraw(e) {
+      e.preventDefault();
+      drawing = true;
+      const p = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+    }
+    function moveDraw(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      const p = getPos(e);
+      ctx.lineWidth   = 1.8;
+      ctx.lineCap     = 'round';
+      ctx.lineJoin    = 'round';
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      if (!hasSig) { hasSig = true; holder.style.display = 'none'; }
+    }
+    function stopDraw() { drawing = false; ctx.beginPath(); }
+
+    function clearSig() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasSig = false;
+      holder.style.display = '';
+    }
+
+    canvas.addEventListener('mousedown',  startDraw);
+    canvas.addEventListener('mousemove',  moveDraw);
+    canvas.addEventListener('mouseup',    stopDraw);
+    canvas.addEventListener('mouseleave', stopDraw);
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove',  moveDraw,  { passive: false });
+    canvas.addEventListener('touchend',   stopDraw);
   </script>
 
 </body>
