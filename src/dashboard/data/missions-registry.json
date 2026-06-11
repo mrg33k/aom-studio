@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-11T16:53:35.483Z",
+  "generated_at": "2026-06-11T18:55:25.741Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -2564,6 +2564,20 @@
       "path": "corner/users/aom/projects/brandon-wiley-documentary/missions/wiley-park-launch"
     },
     {
+      "slug": "bridge-smoke:amnesia-probe",
+      "raw_slug": "amnesia-probe",
+      "folder_name": "amnesia-probe",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "bridge-smoke",
+      "workstream": null,
+      "name": "Amnesia Probe",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/bridge-smoke/missions/amnesia-probe"
+    },
+    {
       "slug": "conrad-foundation:interactive-game",
       "raw_slug": "interactive-game",
       "folder_name": "interactive-game",
@@ -3319,6 +3333,12 @@
       "slug": "brandon-wiley-documentary",
       "total": 2,
       "in_flight": 2,
+      "done": 0
+    },
+    {
+      "slug": "bridge-smoke",
+      "total": 1,
+      "in_flight": 1,
       "done": 0
     },
     {

@@ -255,10 +255,23 @@ export default async function handler(req, res) {
     })
   }
 
+  // Registry missions key by full slug ("<project>:<slug>") while dynamic
+  // sources key by the short slug — so a .has() check alone misses the case
+  // where the same mission exists in both (e.g. a drawer-created mission that
+  // landed in the registry on a later deploy, while its agent_status row
+  // lives on forever). Also compare against registry raw_slugs to dedupe.
+  function projectHasMission(proj, shortSlug, fullSlug) {
+    if (proj.missions.has(shortSlug) || proj.missions.has(fullSlug)) return true
+    for (const x of proj.missions.values()) {
+      if (x.raw_slug && x.raw_slug === shortSlug) return true
+    }
+    return false
+  }
+
   // Add dynamic missions (drawer-created) if not already in the registry.
   for (const dm of dynamicMissions) {
     const proj = getProject(dm.projectSlug)
-    if (!proj.missions.has(dm.missionSlug) && !proj.missions.has(dm.fullSlug)) {
+    if (!projectHasMission(proj, dm.missionSlug, dm.fullSlug)) {
       proj.missions.set(dm.missionSlug, {
         slug: dm.missionSlug,
         name: dm.name,
@@ -277,7 +290,7 @@ export default async function handler(req, res) {
     if (allowedProjectSlugs !== null && !allowedProjectSlugs.has(em.projectSlug)) continue
     const proj = getProject(em.projectSlug)
     const fullSlug = `${em.projectSlug}:${em.missionSlug}`
-    if (!proj.missions.has(em.missionSlug) && !proj.missions.has(fullSlug)) {
+    if (!projectHasMission(proj, em.missionSlug, fullSlug)) {
       proj.missions.set(em.missionSlug, {
         slug: em.missionSlug,
         name: em.name,
@@ -367,7 +380,14 @@ export default async function handler(req, res) {
     const childrenByParent = new Map()
     const knownRawSlugs = new Set(missions.map(m => m.raw_slug).filter(Boolean))
     for (const m of missions) {
-      if (!m.raw_slug) continue
+      // corner:left-menu — non-registry missions (drawer-created via
+      // agent_status, CLI-scaffolded via mission_created events, or derived
+      // from a tagged task) carry no raw_slug. They used to be skipped here,
+      // which dropped them from `tree` entirely — and since Drawer.jsx
+      // prefers `tree` over the flat list whenever the tree is non-empty,
+      // any NEW mission added to a project that already had registry
+      // missions was invisible until the next deploy rebuilt the registry.
+      // Treat their slug as the raw key so they render as tree roots.
       const parentKey = (m.parent_raw_slug && knownRawSlugs.has(m.parent_raw_slug))
         ? m.parent_raw_slug
         : null
@@ -377,7 +397,7 @@ export default async function handler(req, res) {
     function buildSubtree(parentRawSlug) {
       const list = (childrenByParent.get(parentRawSlug) || []).slice()
       list.sort(byMissionRecency)
-      return list.map(m => ({ ...m, children: buildSubtree(m.raw_slug) }))
+      return list.map(m => ({ ...m, children: buildSubtree(m.raw_slug || m.slug) }))
     }
     const tree = buildSubtree(null)
 
