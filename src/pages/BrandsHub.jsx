@@ -2,13 +2,25 @@ import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Clock } from 'lucide-react'
 
-/* Load Barlow Condensed for Ambition card -- injected in effect to avoid module-scope crash */
-function useBarlowFont() {
+/* Load each brand's display font so every card reads in its own typeface --
+   injected in effect to avoid module-scope crash */
+const BRAND_FONTS_URL =
+  'https://fonts.googleapis.com/css2' +
+  '?family=Barlow+Condensed:wght@700;800' +
+  '&family=Oswald:wght@600;700' +
+  '&family=Figtree:wght@700;800' +
+  '&family=Jost:wght@600;700' +
+  '&family=Playfair+Display:wght@700;900' +
+  '&family=Instrument+Serif' +
+  '&display=swap'
+
+function useBrandFonts() {
   useEffect(() => {
-    if (!document.querySelector('link[href*="Barlow+Condensed"]')) {
+    if (!document.querySelector('link[data-brands-hub-fonts]')) {
       const link = document.createElement('link')
-      link.href = 'https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap'
+      link.href = BRAND_FONTS_URL
       link.rel = 'stylesheet'
+      link.setAttribute('data-brands-hub-fonts', '1')
       document.head.appendChild(link)
     }
   }, [])
@@ -37,7 +49,15 @@ const brands = [
     description: 'Logo system and brand identity for a semiconductor industry coalition. Three concepts: seal, monogram, badge.',
     accentColor: '#0E9FFF',
     link: '/brands/s3c',
-    fontClass: 'font-headline',
+    fontOverride: "'Playfair Display', serif",
+  },
+  {
+    name: 'Corner',
+    full: 'The agent workspace by AOM',
+    description: 'Editorial rhythm with amber on deep ink. Instrument Serif display, Hanken Grotesk body — the design system behind the Corner product.',
+    accentColor: '#F59E0B',
+    link: '/corner',
+    fontOverride: "'Instrument Serif', Georgia, serif",
   },
   {
     name: 'Included Health',
@@ -45,7 +65,7 @@ const brands = [
     description: 'Digital health company connecting people to quality care. Electric blue identity built for trust and clarity.',
     accentColor: '#0012E7',
     link: '/brands/included-health',
-    fontClass: 'font-headline',
+    fontOverride: "'Figtree', sans-serif",
   },
   {
     name: 'Artlink',
@@ -53,7 +73,7 @@ const brands = [
     description: 'Quiet authority built on restraint. A geometric wordmark, a single red accent, and the disciplined use of negative space. NeutraFace Bold + Light. Referred via Arsenal GPA.',
     accentColor: '#CD2127',
     link: '/brands/artlink',
-    fontClass: 'font-headline',
+    fontOverride: "'Jost', sans-serif",
   },
   {
     name: 'Space Rising',
@@ -61,7 +81,7 @@ const brands = [
     description: "Arizona's space economy is launching. Visual identity for Space Rising and the Arizona Space Congress — dark, cosmic, and grounded in desert reality.",
     accentColor: '#E5451F',
     link: '/brands/space-rising',
-    fontClass: 'font-headline',
+    fontOverride: "'Oswald', sans-serif",
   },
   {
     name: 'Valor to Victory',
@@ -69,12 +89,12 @@ const brands = [
     description: 'Nonprofit empowering veterans through homeownership, real estate investment, VA loan education, and financial guidance.',
     accentColor: '#C9A84C',
     link: '/brands/v2v',
-    fontClass: 'font-headline',
+    fontOverride: "'Playfair Display', serif",
   },
 ]
 
 export default function BrandsHub() {
-  useBarlowFont()
+  useBrandFonts()
   return (
     <div className="min-h-screen bg-[#FDF6EC] text-[#0A0A0A] relative">
       {/* Top bar */}
