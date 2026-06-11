@@ -171,6 +171,10 @@
 
   // Render the chat UI
   function render() {
+    // Preserve anything the user has typed across re-renders (polls)
+    const liveInput = document.querySelector('.chat-input');
+    if (liveInput) appState.inputValue = liveInput.value;
+
     const messagesHtml = appState.messages
       .map((msg, idx) => {
         const isWizard = msg.role === 'wizard' || msg.role === 'assistant';
@@ -182,14 +186,24 @@
       .join('');
 
     const loadingIndicator = appState.isLoading
-      ? '<div class="message wizard-message loading">The Wizard is thinking...</div>'
+      ? `<div class="message wizard-message typing-indicator">
+           <span class="typing-label">The Wizard is conjuring a reply</span>
+           <span class="typing-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
+         </div>`
       : '';
 
     const html = `
       <div class="wizard-chat-container">
         <div class="chat-header">
+          <div class="header-ornament">&#10022;</div>
           <h1>Morning, Ethan</h1>
-          <p>Chat with the Wizard about today's lessons</p>
+          <p>The Wizard awaits &mdash; today's lessons are ready</p>
+          <div class="header-ornament">&#10022;</div>
+        </div>
+
+        <div class="wizard-rail">
+          <img class="wizard-figure" src="/summerschool/wizard.png?v=20260611a" alt="The Wizard" />
+          <div class="wizard-nameplate">The Wizard</div>
         </div>
 
         <div class="messages-container">
@@ -201,7 +215,7 @@
           <input
             type="text"
             class="chat-input"
-            placeholder="Type your message..."
+            placeholder="Speak to the Wizard..."
             value="${escapeHtml(appState.inputValue)}"
             ${appState.isLoading ? 'disabled' : ''}
             onkeyup="if (event.key === 'Enter') window.__wizardChat.send(this.value)"
@@ -211,14 +225,14 @@
             ${appState.isLoading ? 'disabled' : ''}
             onclick="window.__wizardChat.send(document.querySelector('.chat-input').value)"
           >
-            Send
+            Send &#10038;
           </button>
         </div>
 
         <div class="action-panel">
-          <div class="action-title">Today's Challenges</div>
+          <div class="action-title">&#9876; Today's Quests</div>
           <div class="action-placeholder">
-            The Wizard will show challenges here when you're ready.
+            The Wizard will reveal your quests here when you're ready.
           </div>
         </div>
       </div>

@@ -24,3 +24,4 @@ scripts/.enrich-progress.json
 src/dashboard/__fixtures__/
 /corner/missions/
 public/__screens-board.html
+!public/summerschool/**/*.png
