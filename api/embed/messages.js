@@ -57,10 +57,47 @@ export default async function handler(req, res) {
   }
   res.setHeader('Access-Control-Allow-Origin', origin || '*')
 
+  // The visitor's own message ids — the allowlist anchor. The bridge sets
+  // reply_to to the message it answers, so "replies to this visitor" is an
+  // exact set. Everything else in the room (operator chat, build updates,
+  // task bubbles) must NEVER reach the embed (Patrik 2026-06-11: Ethan only
+  // sees the chat with his teacher).
+  const visitorMsgIds = new Set()
+  if (visitorId) {
+    const up = new URLSearchParams()
+    up.set('select', 'id,metadata')
+    up.set('agent', `eq.${cfg.routing.agent}`)
+    up.set('project', `eq.${cfg.routing.project}`)
+    up.set('client_id', `eq.${cfg.routing.client_id}`)
+    up.set('role', 'eq.user')
+    up.set(
+      'timestamp',
+      `gt.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()}`
+    )
+    up.set('order', 'timestamp.desc')
+    up.set('limit', '200')
+    try {
+      const ur = await fetch(`${SUPABASE_URL}/rest/v1/messages?${up.toString()}`, {
+        headers: sbHeaders(),
+      })
+      if (ur.ok) {
+        for (const row of await ur.json()) {
+          const meta = row.metadata || {}
+          if ((meta.embed_visitor_id || '') === visitorId) {
+            visitorMsgIds.add(row.id)
+          }
+        }
+      }
+    } catch (_) {
+      // non-fatal — falls through to the strict filter below, which will
+      // simply show no untagged agent rows until the next poll succeeds
+    }
+  }
+
   // Build the PostgREST query: assistant messages on the right agent+project,
   // newer than since, with the right mission_slug metadata, scoped to client.
   const params = new URLSearchParams()
-  params.set('select', 'id,role,text,timestamp,metadata')
+  params.set('select', 'id,role,text,timestamp,metadata,reply_to')
   params.set('agent', `eq.${cfg.routing.agent}`)
   params.set('project', `eq.${cfg.routing.project}`)
   params.set('client_id', `eq.${cfg.routing.client_id}`)
@@ -108,10 +145,17 @@ export default async function handler(req, res) {
       if (row.role === 'user' && (m.embed_visitor_id || '') !== visitorId) {
         return false
       }
-      // If a visitor_id was provided, only return rows tagged for that
-      // visitor OR untagged replies (older agents won't carry visitor_id).
-      if (visitorId && m.embed_visitor_id && m.embed_visitor_id !== visitorId) {
-        return false
+      // Agent rows: strict allowlist. Show only rows tagged for this visitor
+      // (embed-ai path) or bridge replies whose reply_to is one of the
+      // visitor's own messages. Operator conversations and build/status
+      // traffic in the same room never pass.
+      if (row.role !== 'user' && visitorId) {
+        const tagged = m.embed_visitor_id || ''
+        if (tagged) {
+          if (tagged !== visitorId) return false
+        } else if (!row.reply_to || !visitorMsgIds.has(row.reply_to)) {
+          return false
+        }
       }
       return true
     })
