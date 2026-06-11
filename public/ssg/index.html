@@ -162,6 +162,135 @@
     font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
     color: rgba(232,224,208,0.3); margin-top: 8px; text-align: center; padding-bottom: 4px;
   }
+
+  /* ──────────────────────────────────────────────────
+     WoW-style HUD  (R18-HUD)
+  ────────────────────────────────────────────────── */
+  #wow-hud {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 18px 14px;
+    pointer-events: none;
+    font-family: 'Hanken Grotesk', sans-serif;
+    z-index: 3;
+  }
+
+  /* ---- character frame (bottom-left) ---- */
+  #hud-char {
+    display: flex; align-items: flex-end; gap: 10px;
+  }
+  #hud-portrait {
+    width: 56px; height: 56px; border-radius: 4px; flex-shrink: 0;
+    background: rgba(11,14,20,0.85);
+    border: 2px solid rgba(245,166,35,0.55);
+    position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #hud-portrait-canvas { width: 56px; height: 56px; }
+  #hud-bars {
+    display: flex; flex-direction: column; gap: 4px; justify-content: flex-end; padding-bottom: 2px;
+  }
+  .hud-bar-row { display: flex; flex-direction: column; gap: 1px; }
+  .hud-bar-label {
+    font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(232,224,208,0.5); margin-bottom: 1px;
+  }
+  .hud-bar {
+    width: 120px; height: 10px; border-radius: 2px;
+    background: rgba(11,14,20,0.75); border: 1px solid rgba(232,224,208,0.12);
+    overflow: hidden; position: relative;
+  }
+  .hud-bar-fill {
+    height: 100%; border-radius: 1px; width: 100%;
+    transition: width 0.3s ease;
+  }
+  #hp-fill  { background: linear-gradient(90deg, #8b1a1a, #c0392b, #e74c3c); }
+  #xp-fill  { background: linear-gradient(90deg, #2c4d8a, #3498db, #5dade2); }
+  .hud-bar-val {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    font-size: 8px; font-weight: 600; color: rgba(232,224,208,0.9);
+    font-family: 'JetBrains Mono', monospace; line-height: 1; text-shadow: 0 1px 2px #000;
+  }
+
+  /* ---- action bar (bottom-center) ---- */
+  #hud-actionbar {
+    display: flex; gap: 5px; align-items: flex-end;
+    padding-bottom: 2px;
+  }
+  .ab-slot {
+    width: 46px; height: 46px; border-radius: 4px;
+    background: rgba(11,14,20,0.82);
+    border: 1.5px solid rgba(245,166,35,0.38);
+    position: relative; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: border-color 0.15s;
+    gap: 1px;
+  }
+  .ab-slot.active { border-color: rgba(245,166,35,0.9); background: rgba(245,166,35,0.12); }
+  .ab-slot.empty  { border-color: rgba(232,224,208,0.1); }
+  .ab-icon { font-size: 18px; line-height: 1; text-shadow: 0 1px 3px #000; }
+  .ab-key  {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 600;
+    color: rgba(245,166,35,0.85); letter-spacing: 0.05em;
+    position: absolute; bottom: 3px; right: 4px;
+    text-shadow: 0 1px 2px #000;
+  }
+  .ab-name {
+    font-size: 8px; color: rgba(232,224,208,0.6); letter-spacing: 0.06em;
+    text-transform: uppercase; text-shadow: 0 1px 2px #000;
+  }
+
+  /* ---- right panel: bag + minimap ---- */
+  #hud-right {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  }
+  #hud-bag {
+    display: flex; gap: 10px; align-items: center;
+    background: rgba(11,14,20,0.72); border: 1px solid rgba(245,166,35,0.28);
+    border-radius: 4px; padding: 5px 10px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--bone);
+  }
+  .bag-item { display: flex; align-items: center; gap: 5px; }
+  .bag-icon { font-size: 13px; }
+  #hud-minimap-wrap {
+    position: relative; width: 108px; height: 108px;
+  }
+  #minimap-canvas {
+    width: 108px; height: 108px; border-radius: 50%;
+    border: 2px solid rgba(245,166,35,0.5);
+    display: block;
+    box-shadow: 0 0 12px rgba(245,166,35,0.15), inset 0 0 8px rgba(0,0,0,0.5);
+  }
+  #minimap-zone {
+    position: absolute; bottom: -14px; left: 50%; transform: translateX(-50%);
+    font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(245,166,35,0.75); white-space: nowrap; text-shadow: 0 1px 2px #000;
+  }
+  /* compass N on minimap */
+  #minimap-compass {
+    position: absolute; top: 4px; right: 4px;
+    font-size: 8px; font-weight: 700; color: rgba(245,166,35,0.85);
+    font-family: 'JetBrains Mono', monospace; text-shadow: 0 1px 2px #000;
+  }
+
+  /* ---- zone banner (center, fades in on portal travel) ---- */
+  #zone-banner {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity 0.5s ease; z-index: 4;
+  }
+  #zone-banner.show { opacity: 1; }
+  #zone-banner h2 {
+    font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 38px;
+    color: var(--bone); letter-spacing: 0.04em;
+    text-shadow: 0 2px 20px rgba(11,14,20,0.9), 0 0 40px rgba(11,14,20,0.7);
+  }
+  #zone-banner p {
+    font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: rgba(245,166,35,0.75); margin-top: 5px;
+    text-shadow: 0 1px 8px rgba(11,14,20,0.9);
+  }
 </style>
 </head>
 <body>
@@ -206,35 +335,95 @@
     <h1>Iso <em>Proto</em></h1>
     <p>Movement Mechanics Prototype</p>
   </div>
-  <div class="controls">
-    <div class="key-group">
-      <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
-      <span class="key-label">move</span>
-    </div>
-    <div class="key-group">
-      <span class="key">SPACE</span>
-      <span class="key-label">jump</span>
-    </div>
-    <div class="key-group">
-      <span class="key">SHIFT</span>
-      <span class="key-label">sprint</span>
-    </div>
-    <div class="key-group">
-      <span class="key">E</span>
-      <span class="key-label">smash</span>
-    </div>
-    <div class="key-group">
-      <span class="key">B</span>
-      <span class="key-label">build</span>
-    </div>
-    <div class="key-group">
-      <span class="key">M</span>
-      <span class="key-label">sound</span>
-    </div>
-  </div>
-  <div class="stats" id="stats"></div>
   <div class="toast" id="toast"></div>
   <div class="quest" id="quest"></div>
+  <!-- legacy stats hidden, values now in WoW HUD -->
+  <div class="stats" id="stats" style="display:none"></div>
+</div>
+
+<!-- WoW-style HUD -->
+<div id="wow-hud">
+  <!-- character frame -->
+  <div id="hud-char">
+    <div id="hud-portrait">
+      <canvas id="hud-portrait-canvas" width="56" height="56"></canvas>
+    </div>
+    <div id="hud-bars">
+      <div class="hud-bar-row">
+        <div class="hud-bar-label">Health</div>
+        <div class="hud-bar"><div class="hud-bar-fill" id="hp-fill"></div><span class="hud-bar-val" id="hp-val">100</span></div>
+      </div>
+      <div class="hud-bar-row">
+        <div class="hud-bar-label">XP</div>
+        <div class="hud-bar"><div class="hud-bar-fill" id="xp-fill"></div><span class="hud-bar-val" id="xp-val">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- action bar -->
+  <div id="hud-actionbar">
+    <div class="ab-slot" id="ab-move">
+      <span class="ab-icon">🧭</span>
+      <span class="ab-name">Move</span>
+      <span class="ab-key">WASD</span>
+    </div>
+    <div class="ab-slot" id="ab-jump" data-slot="1">
+      <span class="ab-icon">🌀</span>
+      <span class="ab-name">Jump</span>
+      <span class="ab-key">SPC</span>
+    </div>
+    <div class="ab-slot" id="ab-sprint" data-slot="2">
+      <span class="ab-icon">💨</span>
+      <span class="ab-name">Sprint</span>
+      <span class="ab-key">SHFT</span>
+    </div>
+    <div class="ab-slot" id="ab-smash" data-slot="3">
+      <span class="ab-icon">⚒️</span>
+      <span class="ab-name">Smash</span>
+      <span class="ab-key">E</span>
+    </div>
+    <div class="ab-slot" id="ab-build" data-slot="4">
+      <span class="ab-icon">🧱</span>
+      <span class="ab-name">Build</span>
+      <span class="ab-key">B</span>
+    </div>
+    <div class="ab-slot" id="ab-wizard" data-slot="5">
+      <span class="ab-icon">🧙</span>
+      <span class="ab-name">Wizard</span>
+      <span class="ab-key">T</span>
+    </div>
+    <div class="ab-slot" id="ab-sound" data-slot="6">
+      <span class="ab-icon">🔊</span>
+      <span class="ab-name">Sound</span>
+      <span class="ab-key">M</span>
+    </div>
+    <div class="ab-slot empty">
+      <span class="ab-icon" style="opacity:0.2">⬛</span>
+    </div>
+  </div>
+
+  <!-- right: bag + minimap -->
+  <div id="hud-right">
+    <div id="hud-bag">
+      <div class="bag-item"><span class="bag-icon">✦</span><span id="shard-count">0</span></div>
+      <div class="bag-item"><span class="bag-icon">●</span><span id="rock-count">0</span></div>
+      <div class="bag-item" style="border-left:1px solid rgba(232,224,208,0.15);padding-left:10px">
+        <span style="font-size:10px;color:rgba(232,224,208,0.5)">⚔</span>
+        <span id="destroy-count" style="color:rgba(232,224,208,0.7)">0</span>
+      </div>
+    </div>
+    <div id="hud-minimap-wrap">
+      <canvas id="minimap-canvas" width="108" height="108"></canvas>
+      <span id="minimap-compass">N</span>
+      <div id="minimap-zone"></div>
+    </div>
+  </div>
+</div>
+
+<!-- zone name banner (fades in on portal travel) -->
+<div id="zone-banner">
+  <h2 id="zone-banner-name"></h2>
+  <p id="zone-banner-sub"></p>
 </div>
 <script src="lessons.js"></script>
 <script src="game.js"></script>

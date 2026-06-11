@@ -442,6 +442,9 @@
   const particles = [];
   const motes = [];
   let time = 0, lastT = 0, fps = 60, jumps = 0, falls = 0;
+  // WoW HUD: player HP (max 100, reduced by hard falls, regens slowly)
+  let playerHp = 100, playerHpMax = 100;
+  const XP_PER_DESTROY = 12, XP_PER_LEVEL = 100;
   let warp = null, warpCooldown = 0; // level-transition fade state
   let bumpCool = 0; // wall-bump puff cooldown
   let skidCool = 0; // skid-reversal dust cooldown
@@ -872,6 +875,12 @@
     }
     audio(); // unlock AudioContext on first real keypress
     keys[e.code] = true;
+    // action bar flash
+    const abMap = { Space: 1, KeyE: 3, KeyB: 4, KeyT: 5, KeyM: 6, ShiftLeft: 2, ShiftRight: 2 };
+    if (abMap[e.code] !== undefined && !e.repeat) {
+      const slot = document.querySelector(`.ab-slot[data-slot="${abMap[e.code]}"]`);
+      if (slot) { slot.classList.add('active'); setTimeout(() => slot.classList.remove('active'), 180); }
+    }
   });
   window.addEventListener('keyup', e => { keys[e.code] = false; });
   // a key held across a focus change never gets its keyup (browser eats it) —
@@ -966,6 +975,7 @@
   // ---------- physics ----------
   function respawn(reason) {
     falls++;
+    playerHp = Math.max(10, playerHp - 15); // falling costs HP; minimum 10 so player survives
     player.dead = 1;
     setTimeout(() => {
       player.x = SPAWN.x; player.y = SPAWN.y; player.z = 2.5;
@@ -1055,6 +1065,16 @@
           player.z = (floorAt(Math.floor(d.x), Math.floor(d.y)) ?? 0) + 0.01;
           player.vx = player.vy = player.vz = 0;
           cam.init = false; // snap camera to the new level
+          // WoW zone banner
+          (function() {
+            const banner = document.getElementById('zone-banner');
+            const nameEl = document.getElementById('zone-banner-name');
+            if (banner && nameEl) {
+              nameEl.textContent = LEVELS[d.level].name || '';
+              banner.classList.add('show');
+              setTimeout(() => banner.classList.remove('show'), 2600);
+            }
+          })();
           particles.length = 0; // old-level particles die with the level
           loot.length = 0;       // unclaimed loot too — rooms reset whole
           burst(player.x, player.y, player.z, 18, 'rgba(245,166,35,', 1.5, 1.6);
@@ -1088,6 +1108,9 @@
       return;
     }
     if (player.dead) return;
+
+    // slow HP regen (1.5 hp/sec)
+    playerHp = Math.min(playerHpMax, playerHp + dt * 1.5);
 
     // input -> world-axis velocity (screen-relative diagonals).
     // During a gate cutscene the world keeps breathing but the player is held
@@ -1406,6 +1429,8 @@
           addTrauma(0.22);
           SFX.crack();
           destroys++;
+          // smashing props heals a tiny bit (feel good feedback)
+          playerHp = Math.min(playerHpMax, playerHp + 3);
         }
       }
     }
@@ -2270,18 +2295,100 @@
     setTimeout(() => wizSay(r, 'wiz'), 450 + Math.random() * 500);
   }
 
-  // ---------- stats ----------
+  // ---------- WoW HUD wiring ----------
   const statsEl = document.getElementById('stats');
+
+  // minimap rendering
+  function drawMinimap() {
+    const mc = document.getElementById('minimap-canvas');
+    if (!mc) return;
+    const ctx = mc.getContext('2d');
+    const W = mc.width, H = mc.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // clip to circle
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(W/2, H/2, W/2 - 1, 0, Math.PI * 2);
+    ctx.clip();
+
+    // draw level tiles as dots
+    const tiles = LEVELS[levelIdx].tiles;
+    if (tiles && tiles.length) {
+      const cols = tiles[0].length, rows = tiles.length;
+      const scaleX = W / cols, scaleY = H / rows;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const t = tiles[r][c];
+          if (!t) continue;
+          let col = '#2a4a2a';
+          if (t.type === 'water') col = '#1a3a5c';
+          else if (t.type === 'stone' || t.type === 'wall') col = '#4a4a5a';
+          else if (t.type === 'grass') col = '#2a5a2a';
+          ctx.fillStyle = col;
+          ctx.fillRect(c * scaleX, r * scaleY, scaleX + 0.5, scaleY + 0.5);
+        }
+      }
+      // portals as amber dots
+      (LEVELS[levelIdx].portals || []).forEach(p => {
+        ctx.fillStyle = '#f5a623';
+        ctx.beginPath();
+        ctx.arc(p.x * scaleX + scaleX/2, p.y * scaleY + scaleY/2, 3, 0, Math.PI*2);
+        ctx.fill();
+      });
+      // player dot
+      const cols2 = tiles[0].length, rows2 = tiles.length;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(player.x * (W/cols2), player.y * (H/rows2), 3, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // minimap border ring
+    ctx.beginPath();
+    ctx.arc(W/2, H/2, W/2 - 1, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(245,166,35,0.6)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
   setInterval(() => {
-    const h = floorAt(Math.floor(player.x), Math.floor(player.y));
-    statsEl.innerHTML =
-      `<span class="amber">${LEVELS[levelIdx].name}</span><br>` +
-      `elev <span class="amber">${h === null ? '—' : h}</span> &nbsp; ` +
-      `jumps <span class="amber">${jumps}</span> &nbsp; ` +
-      `falls <span class="amber">${falls}</span><br>` +
-      `bag: <span class="amber">✦ ${bag.shard}</span> shards &nbsp; ` +
-      `<span class="amber">● ${bag.rock}</span> rocks<br>` +
-      `${fps.toFixed(0)} fps`;
+    // HP bar
+    const hpPct = Math.round((playerHp / playerHpMax) * 100);
+    const hpFill = document.getElementById('hp-fill');
+    const hpVal = document.getElementById('hp-val');
+    if (hpFill) hpFill.style.width = hpPct + '%';
+    if (hpVal) hpVal.textContent = Math.round(playerHp) + ' / ' + playerHpMax;
+
+    // XP bar
+    const xpTotal = destroys * XP_PER_DESTROY;
+    const level = Math.floor(xpTotal / XP_PER_LEVEL) + 1;
+    const xpInLevel = xpTotal % XP_PER_LEVEL;
+    const xpFill = document.getElementById('xp-fill');
+    const xpVal = document.getElementById('xp-val');
+    if (xpFill) xpFill.style.width = xpInLevel + '%';
+    if (xpVal) xpVal.textContent = 'Lv ' + level + '  ' + xpInLevel + ' / ' + XP_PER_LEVEL + ' xp';
+
+    // bag counts
+    const sc = document.getElementById('shard-count');
+    const rc = document.getElementById('rock-count');
+    const dc = document.getElementById('destroy-count');
+    if (sc) sc.textContent = bag.shard;
+    if (rc) rc.textContent = bag.rock;
+    if (dc) dc.textContent = destroys;
+
+    // minimap
+    drawMinimap();
+
+    // legacy stats div (hidden but keep it alive for debug)
+    if (statsEl) {
+      const h = floorAt(Math.floor(player.x), Math.floor(player.y));
+      statsEl.innerHTML =
+        `<span class="amber">${LEVELS[levelIdx].name}</span><br>` +
+        `elev <span class="amber">${h === null ? '—' : h}</span> &nbsp; ` +
+        `${fps.toFixed(0)} fps`;
+    }
   }, 250);
 
   // ---------- boot ----------
