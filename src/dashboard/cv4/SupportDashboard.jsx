@@ -53,6 +53,14 @@ function splitOriginal(text) {
   return { summary: text.slice(0, i).trim(), original: text.slice(i + ORIGINAL_DELIM.length).trim() }
 }
 
+// M17b: structured summaries — line 1 is the subject (headline), the rest is the ask.
+// Old free-text cards fall through with no headline and render as plain body.
+function parseWishSummary(summary) {
+  const lines = (summary || '').split('\n').map((s) => s.trim()).filter(Boolean)
+  if (lines.length >= 2) return { headline: lines[0], ask: lines.slice(1).join(' ') }
+  return { headline: null, ask: (summary || '').trim() }
+}
+
 function OriginalBlock({ original }) {
   const [show, setShow] = useState(false)
   if (!original) return null
@@ -290,16 +298,28 @@ function PressSendCard({ w, staged }) {
           )
         })()}
       </div>
-      <div style={{ fontFamily: SERIF, fontSize: 19, color: BONE, margin: '12px 0 4px', lineHeight: 1.2 }}>
+      <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 12.5, color: BONE_DIM, margin: '12px 0 0',
+        letterSpacing: '0.01em' }}>
         {w.name || w.email}
       </div>
       {(() => {
         const { summary, original } = splitOriginal(staged.cleanMessage)
+        const { headline, ask } = parseWishSummary(summary)
         return (
           <>
-            <p style={{ margin: 0, fontSize: 13, color: BONE_DIM, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
-              {summary}
-            </p>
+            {headline && (
+              <div style={{ fontFamily: SERIF, fontSize: 19, color: BONE, margin: '2px 0 0', lineHeight: 1.25 }}>
+                {headline}
+              </div>
+            )}
+            {ask && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: BONE_FAINT }}>
+                  They asked
+                </div>
+                <p style={{ margin: '3px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.55 }}>{ask}</p>
+              </div>
+            )}
             <OriginalBlock original={original} />
           </>
         )
@@ -436,8 +456,19 @@ function WishRow({ w, dim }) {
             </span>
           </span>
         </div>
-        <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.4,
-          display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{msgParts.summary}</p>
+        {(() => {
+          const { headline, ask } = parseWishSummary(msgParts.summary)
+          return (
+            <>
+              {headline && (
+                <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: BONE,
+                  margin: '6px 0 0', lineHeight: 1.35 }}>{headline}</div>
+              )}
+              <p style={{ margin: headline ? '3px 0 0' : '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.45,
+                display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ask}</p>
+            </>
+          )
+        })()}
         {w.latest_response && (
           <div style={{ marginTop: 7, padding: '6px 9px', background: AMBER_SOFT, borderLeft: `2px solid ${AMBER}`, borderRadius: 3 }}>
             <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: AMBER }}>We replied</span>
