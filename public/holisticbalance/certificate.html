@@ -204,7 +204,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 40px;
-      margin-bottom: 36px;
+      margin-bottom: 26px;
     }
     .cert-sig-block { text-align: center; }
     .cert-sig-line {
@@ -226,20 +226,34 @@
       color: var(--text-light);
       letter-spacing: 0.06em;
     }
-
-    /* ── E-SIGNATURE PAD ────────────────────── */
-    .sig-pad-wrap {
-      position: relative;
-      margin-bottom: 8px;
+    /* Courtney's "signed" script — same height as the student canvas so both lines align */
+    .cert-sig-script {
+      height: 64px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 2px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--text);
     }
-    .sig-canvas {
+
+    /* ── E-SIGNATURE (on-cert display) ───────── */
+    .sig-display-wrap {
+      position: relative;
+      cursor: pointer;
+      margin-bottom: 0;
+    }
+    .sig-display {
       display: block;
       width: 100%;
-      height: 80px;
-      border: 1px solid var(--border);
-      background: var(--cream);
-      cursor: crosshair;
-      touch-action: none;
+      height: 64px;
+      background: transparent;
+    }
+    .sig-display-wrap.unsigned .sig-display {
+      border: 1px dashed var(--border);
     }
     .sig-placeholder {
       position: absolute;
@@ -256,7 +270,7 @@
       text-transform: uppercase;
     }
     .sig-clear {
-      display: inline-block;
+      display: none;
       font-family: 'Jost', sans-serif;
       font-size: 0.62rem;
       font-weight: 500;
@@ -271,11 +285,138 @@
       padding: 2px 0;
       margin-top: 4px;
     }
+    .sig-clear.visible { display: inline-block; }
     .sig-clear:hover { opacity: 1; }
+
+    /* ── SIGNING MODAL ───────────────────────── */
+    .sig-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(26, 26, 26, 0.45);
+      padding: 20px;
+    }
+    .sig-modal.open { display: flex; }
+    .sig-modal-panel {
+      background: var(--warm-white);
+      border: 1.5px solid var(--border);
+      padding: 28px 30px 24px;
+      width: min(680px, 94vw);
+    }
+    .sig-modal-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .sig-modal-hint {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-light);
+    }
+    .sig-modal-pad {
+      position: relative;
+      margin: 16px 0 4px;
+    }
+    .sig-modal-canvas {
+      display: block;
+      width: 100%;
+      height: 240px;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      cursor: crosshair;
+      touch-action: none;
+    }
+    /* baseline guide inside the big pad */
+    .sig-modal-pad::after {
+      content: '';
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      bottom: 52px;
+      height: 1px;
+      background: var(--emerald);
+      opacity: 0.3;
+      pointer-events: none;
+    }
+    .sig-modal-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+    }
+    .sig-modal-actions .left { display: flex; gap: 18px; }
+    .btn-ghost {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px 0;
+    }
+    .btn-ghost:hover { color: var(--text); }
+    .btn-solid {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: white;
+      background: var(--emerald);
+      border: 1px solid var(--emerald);
+      padding: 10px 28px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-solid:hover { opacity: 0.88; }
+
+    /* ── COURTNEY'S NOTE ─────────────────────── */
+    .cert-note {
+      max-width: 520px;
+      margin: 0 auto 24px;
+      text-align: center;
+    }
+    .cert-note-label {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.6rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin-bottom: 8px;
+    }
+    .cert-note-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.02rem;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .cert-note-sign {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.95rem;
+      font-style: italic;
+      color: var(--text-light);
+      margin-top: 6px;
+    }
+
     @media print {
       .sig-clear { display: none !important; }
       .sig-placeholder { display: none !important; }
-      .sig-canvas { border: none; background: transparent; }
+      .sig-modal { display: none !important; }
+      .sig-display-wrap.unsigned .sig-display { border: none; }
     }
 
     /* ── TAGLINE ─────────────────────────────── */
@@ -373,21 +514,49 @@
 
     <div class="cert-sig-row">
       <div class="cert-sig-block">
+        <div class="cert-sig-script">Courtney</div>
         <div class="cert-sig-line"></div>
         <div class="cert-sig-name">Courtney</div>
         <div class="cert-sig-title">Certified Health Coach · Holistic Balance</div>
       </div>
       <div class="cert-sig-block">
-        <div class="sig-pad-wrap">
-          <canvas class="sig-canvas" id="sigCanvas" width="600" height="160"></canvas>
-          <div class="sig-placeholder" id="sigPlaceholder">Sign here</div>
+        <div class="sig-display-wrap unsigned" id="sigDisplayWrap" title="Click to sign">
+          <canvas class="sig-display" id="sigCanvas" width="600" height="160"></canvas>
+          <div class="sig-placeholder" id="sigPlaceholder">Click to sign</div>
         </div>
-        <button class="sig-clear" id="sigClear" onclick="clearSig()">Clear</button>
-        <div class="cert-sig-title" style="margin-top:6px;">Student Signature</div>
+        <div class="cert-sig-line" style="margin-top:0;"></div>
+        <div class="cert-sig-name" id="studentSigName">&nbsp;</div>
+        <div class="cert-sig-title">Student Signature</div>
+        <button class="sig-clear" id="sigClear" onclick="clearSig()">Clear signature</button>
       </div>
     </div>
 
+    <div class="cert-note">
+      <div class="cert-note-label">A note from Courtney</div>
+      <p class="cert-note-text">You showed up for yourself through every module of this course, and I hope you feel very proud of the progress you&rsquo;ve made &mdash; you earned this. Remember: you are so supported, every step of the way.</p>
+      <div class="cert-note-sign">&mdash; Courtney</div>
+    </div>
+
     <div class="cert-tagline">Your wellness journey is just beginning.</div>
+
+  <!-- SIGNING MODAL (hidden until the signature box is clicked) -->
+  </div>
+
+  <div class="sig-modal" id="sigModal">
+    <div class="sig-modal-panel">
+      <div class="sig-modal-title">Sign your certificate</div>
+      <div class="sig-modal-hint">Draw your signature on the line below &mdash; finger or mouse</div>
+      <div class="sig-modal-pad">
+        <canvas class="sig-modal-canvas" id="sigModalCanvas" width="900" height="320"></canvas>
+      </div>
+      <div class="sig-modal-actions">
+        <div class="left">
+          <button class="btn-ghost" onclick="modalClear()">Clear</button>
+          <button class="btn-ghost" onclick="modalCancel()">Cancel</button>
+        </div>
+        <button class="btn-solid" onclick="modalDone()">Place on certificate</button>
+      </div>
+    </div>
 
   </div>
 
@@ -398,66 +567,123 @@
     const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
     el.textContent = months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
 
-    // ── SIGNATURE PAD ────────────────────────────────────────────────
-    const canvas  = document.getElementById('sigCanvas');
-    const ctx     = canvas.getContext('2d');
-    const holder  = document.getElementById('sigPlaceholder');
-    let drawing   = false;
-    let hasSig    = false;
-
-    function fillBg() {
-      ctx.fillStyle = '#F7F2EA';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // ── STUDENT NAME MIRROR ──────────────────────────────────────────
+    // Whatever is typed in the big name field appears under the signature line.
+    const nameField = document.querySelector('.cert-name');
+    const sigName   = document.getElementById('studentSigName');
+    function mirrorName() {
+      const t = nameField.textContent.trim();
+      sigName.textContent = t || ' ';
     }
-    fillBg();
+    nameField.addEventListener('input', mirrorName);
+    mirrorName();
+
+    // ── E-SIGNATURE: click-to-enlarge modal ──────────────────────────
+    const certCanvas = document.getElementById('sigCanvas');
+    const certCtx    = certCanvas.getContext('2d');
+    const wrap       = document.getElementById('sigDisplayWrap');
+    const holder     = document.getElementById('sigPlaceholder');
+    const clearBtn   = document.getElementById('sigClear');
+    const modal      = document.getElementById('sigModal');
+    const padCanvas  = document.getElementById('sigModalCanvas');
+    const padCtx     = padCanvas.getContext('2d');
+    let drawing = false;
+
+    wrap.addEventListener('click', () => modal.classList.add('open'));
 
     function getPos(e) {
-      const r = canvas.getBoundingClientRect();
-      const scaleX = canvas.width  / r.width;
-      const scaleY = canvas.height / r.height;
+      const r = padCanvas.getBoundingClientRect();
+      const scaleX = padCanvas.width  / r.width;
+      const scaleY = padCanvas.height / r.height;
       const src = e.touches ? e.touches[0] : e;
       return {
         x: (src.clientX - r.left) * scaleX,
         y: (src.clientY - r.top)  * scaleY
       };
     }
-
     function startDraw(e) {
       e.preventDefault();
       drawing = true;
       const p = getPos(e);
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
+      padCtx.beginPath();
+      padCtx.moveTo(p.x, p.y);
     }
     function moveDraw(e) {
       if (!drawing) return;
       e.preventDefault();
       const p = getPos(e);
-      ctx.lineWidth   = 1.8;
-      ctx.lineCap     = 'round';
-      ctx.lineJoin    = 'round';
-      ctx.strokeStyle = '#1a1a1a';
-      ctx.lineTo(p.x, p.y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(p.x, p.y);
-      if (!hasSig) { hasSig = true; holder.style.display = 'none'; }
+      padCtx.lineWidth   = 2.6;
+      padCtx.lineCap     = 'round';
+      padCtx.lineJoin    = 'round';
+      padCtx.strokeStyle = '#1a1a1a';
+      padCtx.lineTo(p.x, p.y);
+      padCtx.stroke();
+      padCtx.beginPath();
+      padCtx.moveTo(p.x, p.y);
     }
-    function stopDraw() { drawing = false; ctx.beginPath(); }
+    function stopDraw() { drawing = false; padCtx.beginPath(); }
+
+    padCanvas.addEventListener('mousedown',  startDraw);
+    padCanvas.addEventListener('mousemove',  moveDraw);
+    padCanvas.addEventListener('mouseup',    stopDraw);
+    padCanvas.addEventListener('mouseleave', stopDraw);
+    padCanvas.addEventListener('touchstart', startDraw, { passive: false });
+    padCanvas.addEventListener('touchmove',  moveDraw,  { passive: false });
+    padCanvas.addEventListener('touchend',   stopDraw);
+
+    function modalClear() {
+      padCtx.clearRect(0, 0, padCanvas.width, padCanvas.height);
+    }
+    function modalCancel() {
+      modal.classList.remove('open');
+    }
+
+    // Find the bounding box of the drawn ink (alpha channel), so the
+    // signature can be trimmed and placed neatly on the line.
+    function inkBounds(c, cx) {
+      const img = cx.getImageData(0, 0, c.width, c.height).data;
+      let minX = c.width, minY = c.height, maxX = -1, maxY = -1;
+      for (let y = 0; y < c.height; y++) {
+        for (let x = 0; x < c.width; x++) {
+          if (img[(y * c.width + x) * 4 + 3] > 20) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      return maxX < 0 ? null : { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+    }
+
+    function modalDone() {
+      const b = inkBounds(padCanvas, padCtx);
+      modal.classList.remove('open');
+      if (!b) return;   // nothing drawn — treat as cancel
+
+      // Fit the trimmed signature onto the cert canvas, resting on the line
+      certCtx.clearRect(0, 0, certCanvas.width, certCanvas.height);
+      const maxW = certCanvas.width * 0.9;
+      const maxH = certCanvas.height * 0.86;
+      const scale = Math.min(maxW / b.w, maxH / b.h);
+      const dw = b.w * scale;
+      const dh = b.h * scale;
+      const dx = (certCanvas.width - dw) / 2;
+      const dy = certCanvas.height - dh - 6;   // sit just above the line
+      certCtx.drawImage(padCanvas, b.x, b.y, b.w, b.h, dx, dy, dw, dh);
+
+      wrap.classList.remove('unsigned');
+      holder.style.display = 'none';
+      clearBtn.classList.add('visible');
+    }
 
     function clearSig() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      hasSig = false;
+      certCtx.clearRect(0, 0, certCanvas.width, certCanvas.height);
+      modalClear();
+      wrap.classList.add('unsigned');
       holder.style.display = '';
+      clearBtn.classList.remove('visible');
     }
-
-    canvas.addEventListener('mousedown',  startDraw);
-    canvas.addEventListener('mousemove',  moveDraw);
-    canvas.addEventListener('mouseup',    stopDraw);
-    canvas.addEventListener('mouseleave', stopDraw);
-    canvas.addEventListener('touchstart', startDraw, { passive: false });
-    canvas.addEventListener('touchmove',  moveDraw,  { passive: false });
-    canvas.addEventListener('touchend',   stopDraw);
   </script>
 
 </body>
