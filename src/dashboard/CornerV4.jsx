@@ -1329,6 +1329,11 @@ export default function CornerV4() {
     )
   }
 
+  // corner-ui-cv4 R22: wave background shows only in chat mode — home,
+  // support inbox, routines board, and mail room stay clean. The same flag
+  // turns on the frosted message panel so text reads over the wave.
+  const chatWaveActive = !showSupportInbox && activeTool !== 'routines' && !selectedMail && !isHomeMode && (isDesktop || tab !== 'tasks')
+
   return (
     <CornerAuthProvider value={authValue}>
       <CornerDataProvider value={dataValue}>
@@ -2668,7 +2673,7 @@ export default function CornerV4() {
               stretches the full center area — with the rails closed it spans
               edge to edge, with them open it fills whatever is left. Only in
               chat mode; home/support/mail/routines stay clean. */}
-          {!showSupportInbox && activeTool !== 'routines' && !selectedMail && !isHomeMode && (isDesktop || tab !== 'tasks') && (
+          {chatWaveActive && (
             <ChatWaveBackground
               chatKey={conversationTarget?.path || conversationTarget?.name || selectedAgent?.slug || 'chat'}
               theme={theme}
@@ -2684,6 +2689,16 @@ export default function CornerV4() {
               width: '100%',
               maxWidth: showSupportInbox ? '100%' : (isDesktop ? 840 : '100%'),
               margin: '0 auto',
+              // R22d: frosted panel behind the messages so text reads over
+              // the wave — translucent room ink + blur; wave glows through
+              // softly inside and at full strength on either side.
+              ...(chatWaveActive ? {
+                background: theme === 'light' ? 'rgba(250,247,240,0.66)' : 'rgba(6,9,15,0.55)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                borderLeft: '1px solid ' + C.border,
+                borderRight: '1px solid ' + C.border,
+              } : {}),
             }}
           >
             {/* corner:support N1 — Support Inbox (Patrik only) */}
