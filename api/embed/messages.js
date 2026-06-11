@@ -72,9 +72,16 @@ export default async function handler(req, res) {
     const rows = await r.json()
     // Filter to rows tagged for this mission. Other project messages might
     // share the same agent+project pair if multiple missions are in flight.
+    // The bridge normalizes mission slugs to the short form (R16), so a
+    // reply may carry "summerschool" while the embed config says
+    // "aheadofmarket.com:summerschool". Match either form.
+    const wantSlug = cfg.routing.mission_slug || ''
+    const wantShort = wantSlug.includes(':') ? wantSlug.split(':').pop() : wantSlug
     const filtered = rows.filter((row) => {
       const m = row.metadata || {}
-      if (m.mission_slug && m.mission_slug !== cfg.routing.mission_slug) return false
+      const rowSlug = m.mission_slug || m.mission || ''
+      const rowShort = rowSlug.includes(':') ? rowSlug.split(':').pop() : rowSlug
+      if (rowSlug && rowShort !== wantShort) return false
       // If a visitor_id was provided, only return rows tagged for that
       // visitor OR untagged replies (older agents won't carry visitor_id).
       if (visitorId && m.embed_visitor_id && m.embed_visitor_id !== visitorId) {
