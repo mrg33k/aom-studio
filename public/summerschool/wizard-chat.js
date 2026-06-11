@@ -73,6 +73,23 @@
         if (data.since_ts) {
           appState.sinceTs = appState.sinceTs || data.since_ts;
         }
+        // The API now returns the Wizard's reply inline — render it right
+        // away instead of waiting on the poll (poll dedupes by id).
+        if (data.reply && data.reply.text) {
+          appState.messages.push({
+            role: 'assistant',
+            text: data.reply.text,
+            timestamp: Date.now(),
+            id: data.reply.id,
+          });
+        } else if (data.ai_error) {
+          console.error('Wizard reply error:', data.ai_error);
+          appState.messages.push({
+            role: 'assistant',
+            text: "Hmm, my crystal ball flickered — try sending that again in a moment!",
+            timestamp: Date.now(),
+          });
+        }
       }
     } catch (e) {
       console.error('Send error:', e);

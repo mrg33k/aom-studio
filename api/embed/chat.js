@@ -198,6 +198,8 @@ export default async function handler(req, res) {
     // If the embed has an ai block, call Gemini directly and write the reply
     // back to Supabase so the widget poll can find it without needing the
     // local tmux bridge (which only runs on Patrik's studio machine).
+    let aiReply = null
+    let aiError = null
     if (cfg.ai && cfg.ai.system_prompt && GEMINI_API_KEY) {
       try {
         const history = await fetchHistory(cfg, visitor_id || null)
@@ -223,23 +225,36 @@ export default async function handler(req, res) {
               embed_visitor_id: visitor_id || null,
             },
           }
-          // Fire-and-forget write — don't block the response on it
-          fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+          // MUST await: on Vercel the lambda freezes the moment the response
+          // is sent, so a fire-and-forget write silently never lands (the
+          // 2026-06-11 summerschool no-reply bug).
+          const writeRes = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
             method: 'POST',
             headers: sbHeaders(),
             body: JSON.stringify(replyRow),
-          }).catch(() => {})
+          })
+          if (!writeRes.ok) {
+            aiError = `reply write failed: ${writeRes.status}`
+            console.error('[embed/chat] reply write failed:', writeRes.status)
+          } else {
+            aiReply = { id: replyRow.id, text: replyText }
+          }
         }
       } catch (aiErr) {
-        // AI failure is non-fatal — log and fall through. The widget will
-        // poll and get nothing, which is better than a 500 to the user.
-        console.error('[embed/chat] AI auto-reply failed:', aiErr && aiErr.message)
+        // AI failure is non-fatal — surfaced in the response so the widget
+        // can show a useful state instead of silence.
+        aiError = String(aiErr && aiErr.message)
+        console.error('[embed/chat] AI auto-reply failed:', aiError)
       }
     }
 
     return res.status(200).json({
       ok: true,
       message_id: row.id,
+      // Inline AI reply (if the embed has an ai block) — the widget renders
+      // this immediately instead of waiting on the poll.
+      reply: aiReply,
+      ai_error: aiError,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {
