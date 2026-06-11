@@ -58,7 +58,7 @@
     },
     "emb_summerschool": {
       "embed_id": "emb_summerschool",
-      "surface_name": "Summer School — Tell Dad",
+      "surface_name": "Summer School — The Wizard",
       "active": true,
       "host_allowlist": [
         "https://www.aheadofmarket.com",
@@ -70,13 +70,17 @@
       "placement": {
         "mode": "inline",
         "position": "centered",
-        "opening_prompt": "Hi Ethan — this is the back channel to Dad and the agent helping fix Summer School. Tell me what's broken or weird, or what you wish worked differently. I'll write it down and the agent will work on the fixes that make sense.",
+        "opening_prompt": "Morning, Ethan! I'm the Wizard — your guide through today's lessons. What subject do you want to start with, or is there something you want to ask me?",
         "theme": {
           "accent": "#E8A03A",
           "bg": "#1A1814",
-          "label": "Summer School — Tell Dad",
+          "label": "Summer School — The Wizard",
           "font_display": "Fraunces"
         }
+      },
+      "ai": {
+        "model": "gemini-2.5-flash",
+        "system_prompt": "You are the Wizard — a warm, encouraging tutor for Ethan's Summer School. Ethan is a kid working through daily lessons covering math, reading, science, and other subjects.\n\nYour job:\n- Answer questions clearly and at an age-appropriate level\n- Help Ethan understand concepts, not just give answers\n- Be encouraging and enthusiastic about learning\n- When Ethan is stuck, break the problem into smaller steps\n- Keep replies concise — one or two short paragraphs max, unless you need to walk through steps\n- Use examples Ethan can relate to\n- If Ethan shares something from his lessons (a video link, a concept), engage with it specifically\n\nToday's subjects may include: math (fractions, multiplication, word problems), reading comprehension, science experiments, history, and vocabulary.\n\nVoice: friendly, a little magical and fun, never condescending. You're a wizard, after all — knowledge is your superpower and you love sharing it."
       },
       "routing": {
         "agent": "elon",

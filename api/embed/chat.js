@@ -16,6 +16,7 @@ const SUPABASE_URL =
 const SUPABASE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY
 
 // Default overlay (the original SR embed). Embeds created since 2026-06-10
 // carry their own persona overlay in placement.overlay — that wins. This
@@ -44,6 +45,59 @@ function sbHeaders() {
     'Content-Type': 'application/json',
     Prefer: 'return=representation',
   }
+}
+
+// Fetch recent conversation history for the embed session so Gemini has context
+async function fetchHistory(cfg, visitorId, limit = 10) {
+  const params = new URLSearchParams()
+  params.set('select', 'role,text,timestamp')
+  params.set('agent', `eq.${cfg.routing.agent}`)
+  params.set('project', `eq.${cfg.routing.project}`)
+  params.set('client_id', `eq.${cfg.routing.client_id}`)
+  params.set('role', 'in.(user,assistant)')
+  params.set('order', 'timestamp.desc')
+  params.set('limit', String(limit))
+  const url = `${SUPABASE_URL}/rest/v1/messages?${params.toString()}`
+  try {
+    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } })
+    if (!r.ok) return []
+    const rows = await r.json()
+    // Filter to this visitor/mission, reverse to chronological order
+    return rows
+      .filter((m) => {
+        const meta = m.metadata || {}
+        if (meta.mission_slug && meta.mission_slug !== cfg.routing.mission_slug) return false
+        if (visitorId && meta.embed_visitor_id && meta.embed_visitor_id !== visitorId) return false
+        return true
+      })
+      .reverse()
+      .map((m) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }],
+      }))
+  } catch (_) {
+    return []
+  }
+}
+
+// Call Gemini and return the text reply
+async function callGemini(systemPrompt, history, userMessage, model = 'gemini-2.5-flash') {
+  const contents = [...history, { role: 'user', parts: [{ text: userMessage }] }]
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
+        contents,
+      }),
+    }
+  )
+  const data = await resp.json()
+  if (!resp.ok) throw new Error(`Gemini ${resp.status}: ${data?.error?.message}`)
+  const parts = data?.candidates?.[0]?.content?.parts || []
+  return parts.filter((p) => p.text).map((p) => p.text).join('').trim()
 }
 
 export default async function handler(req, res) {
@@ -139,13 +193,55 @@ export default async function handler(req, res) {
     }
     const inserted = await sbRes.json()
     const insertedRow = Array.isArray(inserted) ? inserted[0] : inserted
+    const sinceTs = (insertedRow && insertedRow.timestamp) || new Date().toISOString()
+
+    // If the embed has an ai block, call Gemini directly and write the reply
+    // back to Supabase so the widget poll can find it without needing the
+    // local tmux bridge (which only runs on Patrik's studio machine).
+    if (cfg.ai && cfg.ai.system_prompt && GEMINI_API_KEY) {
+      try {
+        const history = await fetchHistory(cfg, visitor_id || null)
+        const replyText = await callGemini(
+          cfg.ai.system_prompt,
+          history,
+          visitorText,
+          cfg.ai.model || 'gemini-2.5-flash'
+        )
+        if (replyText) {
+          const replyRow = {
+            id: crypto.randomUUID(),
+            agent: cfg.routing.agent,
+            role: 'assistant',
+            text: replyText,
+            source: 'corner-dashboard',
+            client_id: cfg.routing.client_id,
+            project: cfg.routing.project,
+            metadata: {
+              mission_slug: cfg.routing.mission_slug,
+              embed_id: embed_id,
+              embed_source: 'embed-ai',
+              embed_visitor_id: visitor_id || null,
+            },
+          }
+          // Fire-and-forget write — don't block the response on it
+          fetch(`${SUPABASE_URL}/rest/v1/messages`, {
+            method: 'POST',
+            headers: sbHeaders(),
+            body: JSON.stringify(replyRow),
+          }).catch(() => {})
+        }
+      } catch (aiErr) {
+        // AI failure is non-fatal — log and fall through. The widget will
+        // poll and get nothing, which is better than a 500 to the user.
+        console.error('[embed/chat] AI auto-reply failed:', aiErr && aiErr.message)
+      }
+    }
 
     return res.status(200).json({
       ok: true,
       message_id: row.id,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
-      since_ts:
-        (insertedRow && insertedRow.timestamp) || new Date().toISOString(),
+      since_ts: sinceTs,
       routing: {
         agent: row.agent,
         project: row.project,
