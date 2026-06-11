@@ -7,15 +7,15 @@
   'use strict';
 
   const APP_HOST = document.getElementById('app-host');
-  const ROOM_ID = 'iso-wizard-parent-teacher-council'; // Where Ethan's messages go
-  const POLL_INTERVAL_MS = 1000; // Poll for new messages every 1s
+  const EMBED_ID = 'emb_summerschool'; // Registered embed ID in _embeds.json
+  const POLL_INTERVAL_MS = 1500; // Poll for new messages every 1.5s
 
   // App state
   let appState = {
     messages: [],
     inputValue: '',
     isLoading: false,
-    lastMessageId: null, // Track last message we've seen, avoid duplicates
+    sinceTs: null, // ISO timestamp — poll for messages newer than this
     sessionId: null,
   };
 
@@ -56,15 +56,10 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          roomId: ROOM_ID,
-          message: text,
-          userId: 'ethan', // Kid's identifier
-          sessionId: appState.sessionId,
-          context: {
-            day: getTodayDay(),
-            role: 'student',
-            source: 'summerschool-chat',
-          },
+          embed_id: EMBED_ID,
+          content: text,
+          visitor_id: 'ethan-' + appState.sessionId,
+          host_origin: window.location.origin,
         }),
       });
 
@@ -72,6 +67,12 @@
         console.error('Send failed:', response.status, response.statusText);
         // Rollback the optimistic message
         appState.messages.pop();
+      } else {
+        const data = await response.json();
+        // Use the server's since_ts so we poll from after the user message
+        if (data.since_ts) {
+          appState.sinceTs = appState.sinceTs || data.since_ts;
+        }
       }
     } catch (e) {
       console.error('Send error:', e);
@@ -84,8 +85,14 @@
 
   // Poll for new messages from the Wizard
   async function pollMessages() {
+    if (!appState.sinceTs) return; // sinceTs set at init; just a safety guard
     try {
-      const response = await fetch(`/api/embed/messages?roomId=${ROOM_ID}&after=${appState.lastMessageId || 0}`, {
+      const params = new URLSearchParams({
+        embed_id: EMBED_ID,
+        since: appState.sinceTs,
+        visitor_id: 'ethan-' + appState.sessionId,
+      });
+      const response = await fetch(`/api/embed/messages?${params.toString()}`, {
         headers: { 'Accept': 'application/json' },
       });
 
@@ -95,23 +102,25 @@
       }
 
       const data = await response.json();
-      if (Array.isArray(data.messages)) {
+      if (Array.isArray(data.messages) && data.messages.length > 0) {
+        // Track the newest timestamp so next poll doesn't re-fetch the same rows
+        const seenIds = new Set(appState.messages.map((m) => m.id).filter(Boolean));
+        let gotNew = false;
         for (const msg of data.messages) {
-          // Avoid duplicates
-          if (msg.id && msg.id === appState.lastMessageId) continue;
-
+          if (seenIds.has(msg.id)) continue;
           appState.messages.push({
             role: msg.role || 'wizard',
             text: msg.text || msg.content || '',
             timestamp: msg.timestamp || Date.now(),
             id: msg.id,
           });
-
-          appState.lastMessageId = msg.id;
+          // Advance since_ts to just after the last message we saw
+          if (msg.timestamp && msg.timestamp > appState.sinceTs) {
+            appState.sinceTs = msg.timestamp;
+          }
+          gotNew = true;
         }
-        if (data.messages.length > 0) {
-          render();
-        }
+        if (gotNew) render();
       }
     } catch (e) {
       console.warn('Poll error:', e);
@@ -228,6 +237,9 @@
   function init() {
     initSessionId();
 
+    // Start the poll window from now so we don't pick up old messages
+    appState.sinceTs = new Date().toISOString();
+
     // Render initial UI
     appState.messages.push({
       role: 'wizard',
@@ -236,7 +248,7 @@
     });
     render();
 
-    // Start polling for new messages every 1s
+    // Start polling for new messages
     setInterval(pollMessages, POLL_INTERVAL_MS);
   }
 
