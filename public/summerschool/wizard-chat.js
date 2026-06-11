@@ -25,14 +25,52 @@
     return DAY_NAMES[new Date().getDay()];
   }
 
-  // Initialize session ID (simple UUID)
+  // Initialize visitor ID — localStorage so the conversation survives
+  // refreshes and new tabs (was sessionStorage, which wiped on refresh).
   function initSessionId() {
-    let sid = sessionStorage.getItem('wizard-chat-session-id');
+    let sid = localStorage.getItem('wizard-chat-session-id');
     if (!sid) {
-      sid = 'ss-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-      sessionStorage.setItem('wizard-chat-session-id', sid);
+      // Migrate any old sessionStorage id so today's thread isn't lost
+      sid = sessionStorage.getItem('wizard-chat-session-id');
+      if (!sid) {
+        sid = 'ss-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      }
+      localStorage.setItem('wizard-chat-session-id', sid);
     }
     appState.sessionId = sid;
+  }
+
+  // Load this visitor's recent conversation from the server (survives
+  // refresh, new tab, device sleep — the server is the source of truth).
+  async function loadHistory() {
+    try {
+      const params = new URLSearchParams({
+        embed_id: EMBED_ID,
+        history: '1',
+        visitor_id: 'ethan-' + appState.sessionId,
+      });
+      const response = await fetch(`/api/embed/messages?${params.toString()}`, {
+        headers: { 'Accept': 'application/json' },
+      });
+      if (!response.ok) return false;
+      const data = await response.json();
+      if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
+      for (const msg of data.messages) {
+        appState.messages.push({
+          role: msg.role || 'wizard',
+          text: msg.text || '',
+          timestamp: msg.timestamp || Date.now(),
+          id: msg.id,
+        });
+        if (msg.timestamp && (!appState.sinceTs || msg.timestamp > appState.sinceTs)) {
+          appState.sinceTs = msg.timestamp;
+        }
+      }
+      return true;
+    } catch (e) {
+      console.warn('History load error:', e);
+      return false;
+    }
   }
 
   // Send a message to the Wizard
@@ -265,18 +303,22 @@
   };
 
   // Initialize and start polling
-  function init() {
+  async function init() {
     initSessionId();
 
-    // Start the poll window from now so we don't pick up old messages
+    // Start the poll window from now; loadHistory advances it if needed
     appState.sinceTs = new Date().toISOString();
+    render();
 
-    // Render initial UI
-    appState.messages.push({
-      role: 'wizard',
-      text: 'Hello! I\'m the Wizard. I\'m excited to work with you today. What subject would you like to start with?',
-      timestamp: Date.now(),
-    });
+    // Pull the existing conversation back — refresh must not lose the thread
+    const hadHistory = await loadHistory();
+    if (!hadHistory) {
+      appState.messages.push({
+        role: 'wizard',
+        text: 'Hello! I\'m the Wizard. I\'m excited to work with you today. What subject would you like to start with?',
+        timestamp: Date.now(),
+      });
+    }
     render();
 
     // Start polling for new messages

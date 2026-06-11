@@ -29,7 +29,7 @@ body {
 .wizard-chat-container {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  grid-template-columns: 290px 1fr 280px;
+  grid-template-columns: clamp(280px, 24vw, 420px) 1fr 280px;
   height: 100vh;
 }
 
@@ -93,7 +93,7 @@ body {
 .wizard-figure {
   width: 100%;
   max-width: 96%;
-  max-height: 62vh;
+  max-height: 70vh;
   object-fit: contain;
   height: auto;
   display: block;

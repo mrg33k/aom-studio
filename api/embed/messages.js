@@ -39,7 +39,14 @@ export default async function handler(req, res) {
 
   const q = req.query || {}
   const embedId = q.embed_id
-  const since = q.since || new Date(Date.now() - 5 * 60 * 1000).toISOString()
+  // history=1 → initial page load: return the visitor's full recent
+  // conversation (user + agent rows) so a refresh doesn't lose the thread.
+  const historyMode = q.history === '1'
+  const since =
+    q.since ||
+    new Date(
+      Date.now() - (historyMode ? 7 * 24 * 60 * 60 * 1000 : 5 * 60 * 1000)
+    ).toISOString()
   const visitorId = q.visitor_id || ''
 
   const cfg = await getEmbed(embedId)
@@ -57,10 +64,13 @@ export default async function handler(req, res) {
   params.set('agent', `eq.${cfg.routing.agent}`)
   params.set('project', `eq.${cfg.routing.project}`)
   params.set('client_id', `eq.${cfg.routing.client_id}`)
-  params.set('role', 'in.(assistant,agent)')
+  params.set(
+    'role',
+    historyMode ? 'in.(user,assistant,agent)' : 'in.(assistant,agent)'
+  )
   params.set('timestamp', `gt.${since}`)
   params.set('order', 'timestamp.asc')
-  params.set('limit', '20')
+  params.set('limit', historyMode ? '200' : '20')
 
   const url = `${SUPABASE_URL}/rest/v1/messages?${params.toString()}`
   try {
@@ -79,9 +89,19 @@ export default async function handler(req, res) {
     const wantShort = wantSlug.includes(':') ? wantSlug.split(':').pop() : wantSlug
     const filtered = rows.filter((row) => {
       const m = row.metadata || {}
+      // Never surface file-share / attachment messages (the mission-folder
+      // watcher posts these for operators; they confuse embed visitors).
+      if (m.attachment || (Array.isArray(m.attachments) && m.attachments.length)) {
+        return false
+      }
       const rowSlug = m.mission_slug || m.mission || ''
       const rowShort = rowSlug.includes(':') ? rowSlug.split(':').pop() : rowSlug
       if (rowSlug && rowShort !== wantShort) return false
+      // User rows only ever belong to their own visitor — in history mode a
+      // user row without a matching visitor tag is someone else's (operator).
+      if (row.role === 'user' && (m.embed_visitor_id || '') !== visitorId) {
+        return false
+      }
       // If a visitor_id was provided, only return rows tagged for that
       // visitor OR untagged replies (older agents won't carry visitor_id).
       if (visitorId && m.embed_visitor_id && m.embed_visitor_id !== visitorId) {
@@ -93,7 +113,11 @@ export default async function handler(req, res) {
       messages: filtered.map((row) => ({
         id: row.id,
         role: row.role,
-        text: row.text,
+        // User rows store "— Web Portal"-suffixed text; show the clean
+        // visitor text preserved in metadata instead.
+        text:
+          (row.role === 'user' && row.metadata && row.metadata.visitor_text) ||
+          row.text,
         timestamp: row.timestamp,
       })),
     })
