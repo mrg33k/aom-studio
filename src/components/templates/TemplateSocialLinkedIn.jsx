@@ -10,7 +10,7 @@ const C = {
 }
 
 function Dot({ s = '0.5em', c = C.orange }) {
-  return <span style={{ display: 'inline-block', width: s, height: s, borderRadius: '50%', background: c, marginLeft: '0.06em', verticalAlign: 'baseline' }} />
+  return <span style={{ display: 'inline-block', width: s, height: s, borderRadius: 0, background: c, marginLeft: '0.06em', verticalAlign: 'baseline' }} />
 }
 
 /* LinkedIn — 1.91:1. Orange brand panel left, statement right. */

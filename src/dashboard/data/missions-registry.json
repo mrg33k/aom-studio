@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-10T02:43:45.910Z",
+  "generated_at": "2026-06-11T16:53:35.483Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -588,6 +588,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/room-switcher"
+    },
+    {
+      "slug": "corner:routines",
+      "raw_slug": "routines",
+      "folder_name": "routines",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Routines",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/routines"
     },
     {
       "slug": "corner:sdk-native-dispatch",
@@ -2732,6 +2746,20 @@
       "path": "corner/users/aom/projects/isa-energy/missions/isa-energy-film"
     },
     {
+      "slug": "iso-wizard:parent-teacher-council",
+      "raw_slug": "parent-teacher-council",
+      "folder_name": "parent-teacher-council",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "iso-wizard",
+      "workstream": null,
+      "name": "Parent Teacher Council",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/iso-wizard/missions/parent-teacher-council"
+    },
+    {
       "slug": "kohrs:april-2026-batch",
       "raw_slug": "april-2026-batch",
       "folder_name": "april-2026-batch",
@@ -3253,8 +3281,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 58,
-      "in_flight": 58,
+      "total": 59,
+      "in_flight": 59,
       "done": 0
     },
     {
@@ -3327,6 +3355,12 @@
       "slug": "isa-energy",
       "total": 3,
       "in_flight": 3,
+      "done": 0
+    },
+    {
+      "slug": "iso-wizard",
+      "total": 1,
+      "in_flight": 1,
       "done": 0
     },
     {
