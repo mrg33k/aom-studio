@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISO PROTO — Movement Mechanics</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 4 28 12 16 20 4 12Z' fill='%23f5a623'/%3E%3Cpath d='M4 12v8l12 8v-8Z' fill='%23b87d18'/%3E%3Cpath d='M28 12v8l-12 8v-8Z' fill='%23925f0e'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Hanken+Grotesk:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0b0e14;
+    --bone: #e8e0d0;
+    --amber: #f5a623;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--ink); }
+  canvas { display: block; width: 100vw; height: 100vh; }
+
+  .hud {
+    position: fixed; inset: 0; pointer-events: none;
+    font-family: 'Hanken Grotesk', sans-serif; color: var(--bone);
+    /* bone text needs an ink shadow now that the sky is light (R35) */
+    text-shadow: 0 1px 3px rgba(11,14,20,0.65), 0 0 14px rgba(11,14,20,0.35);
+  }
+  .title {
+    position: absolute; top: 28px; left: 36px;
+  }
+  .title h1 {
+    font-family: 'Instrument Serif', serif; font-weight: 400;
+    font-size: 34px; letter-spacing: 0.02em; color: var(--bone);
+  }
+  .title h1 em { color: var(--amber); font-style: italic; }
+  .title p {
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(232,224,208,0.45); margin-top: 2px;
+  }
+  .controls {
+    position: absolute; bottom: 28px; left: 36px;
+    display: flex; gap: 22px; align-items: center;
+  }
+  .key-group { display: flex; gap: 8px; align-items: center; }
+  .key {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+    border: 1px solid rgba(232,224,208,0.28); border-bottom-width: 2px;
+    border-radius: 5px; padding: 4px 8px; color: var(--bone);
+    background: rgba(11,14,20,0.45);
+  }
+  .key-label { font-size: 12px; color: rgba(232,224,208,0.85); letter-spacing: 0.04em; }
+  .stats {
+    position: absolute; bottom: 28px; right: 36px; text-align: right;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: rgba(232,224,208,0.8); line-height: 1.7;
+  }
+  .stats .amber { color: var(--amber); }
+  .toast {
+    position: absolute; top: 34px; right: 36px;
+    font-family: 'Instrument Serif', serif; font-style: italic; font-size: 19px;
+    color: var(--amber); opacity: 0; transition: opacity 0.5s ease;
+  }
+  .toast.show { opacity: 1; }
+  .quest {
+    position: absolute; top: 84px; left: 36px; max-width: 340px;
+    font-family: 'Instrument Serif', serif; font-style: italic; font-size: 16px;
+    color: var(--amber); opacity: 0; transition: opacity 0.6s ease;
+    line-height: 1.45;
+  }
+  .quest::before { content: '◈ '; font-style: normal; }
+  .quest.show { opacity: 0.95; }
+  .loading {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: var(--ink); z-index: 10; transition: opacity 0.8s ease;
+    font-family: 'Instrument Serif', serif; font-size: 22px; color: rgba(232,224,208,0.6);
+    font-style: italic;
+  }
+  .loading.done { opacity: 0; pointer-events: none; }
+
+  /* ---- gate cutscene: letterbox + challenge overlay (R27) ---- */
+  .letterbox { position: fixed; left: 0; right: 0; height: 11vh; background: #000;
+    z-index: 6; transition: transform 0.7s cubic-bezier(.6,0,.3,1); pointer-events: none; }
+  .letterbox.top { top: 0; transform: translateY(-100%); }
+  .letterbox.bottom { bottom: 0; transform: translateY(100%); }
+  body.cutscene .letterbox.top { transform: translateY(0); }
+  body.cutscene .letterbox.bottom { transform: translateY(0); }
+
+  .challenge {
+    position: fixed; inset: 0; z-index: 7; display: flex;
+    align-items: center; justify-content: center;
+    background: rgba(11,14,20,0.55); backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+    font-family: 'Hanken Grotesk', sans-serif; color: var(--bone);
+  }
+  .challenge.show { opacity: 1; pointer-events: auto; }
+  .challenge-card {
+    width: min(620px, 86vw); padding: 42px 48px;
+    background: rgba(11,14,20,0.92); border: 1px solid rgba(245,166,35,0.35);
+    border-radius: 6px; text-align: center;
+  }
+  .challenge-card h2 {
+    font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 26px;
+    color: var(--amber); margin-bottom: 6px;
+  }
+  .challenge-card .sub {
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: rgba(232,224,208,0.45); margin-bottom: 24px;
+  }
+  .challenge-card .wave {
+    font-size: 19px; line-height: 1.55; min-height: 88px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .challenge-card .progress {
+    height: 2px; background: rgba(232,224,208,0.15); margin-top: 26px; border-radius: 1px;
+  }
+  .challenge-card .progress span {
+    display: block; height: 100%; background: var(--amber); width: 0%;
+    transition: width 0.2s linear; border-radius: 1px;
+  }
+  .challenge-card .answers { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+  .challenge-card .answers button {
+    font-family: 'Hanken Grotesk', sans-serif; font-size: 16px; font-weight: 600;
+    padding: 13px 18px; background: rgba(232,224,208,0.06); color: var(--bone);
+    border: 1px solid rgba(232,224,208,0.2); border-radius: 4px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .challenge-card .answers button:hover {
+    background: rgba(245,166,35,0.14); border-color: var(--amber);
+  }
+  .challenge-card .answers button.wrong { border-color: #c0392b; color: #e07b6d; }
+
+  /* ---- wizard chat panel (R28) ---- */
+  .wizard-chat {
+    position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 92vw);
+    z-index: 8; display: flex; flex-direction: column;
+    background: rgba(11,14,20,0.96); border-left: 1px solid rgba(245,166,35,0.3);
+    font-family: 'Hanken Grotesk', sans-serif; color: var(--bone);
+    transform: translateX(100%); transition: transform 0.45s cubic-bezier(.6,0,.3,1);
+  }
+  .wizard-chat.show { transform: translateX(0); }
+  .wiz-head { padding: 24px 26px 14px; border-bottom: 1px solid rgba(232,224,208,0.1); }
+  .wiz-head h2 { font-family: 'Instrument Serif', serif; font-weight: 400; font-size: 24px; color: var(--amber); }
+  .wiz-head p { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(232,224,208,0.4); margin-top: 3px; }
+  .wiz-head .wiz-close {
+    position: absolute; top: 20px; right: 20px; background: none; border: none;
+    color: rgba(232,224,208,0.5); font-size: 20px; cursor: pointer; font-family: inherit;
+  }
+  .wiz-log { flex: 1; overflow-y: auto; padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .wiz-msg { max-width: 86%; padding: 10px 14px; border-radius: 6px; font-size: 14.5px; line-height: 1.45; }
+  .wiz-msg.wiz { align-self: flex-start; background: rgba(245,166,35,0.1); border: 1px solid rgba(245,166,35,0.22); }
+  .wiz-msg.me { align-self: flex-end; background: rgba(232,224,208,0.08); border: 1px solid rgba(232,224,208,0.15); }
+  .wiz-msg.ponder { font-style: italic; color: rgba(232,224,208,0.55); animation: ponder-pulse 2.1s ease-in-out infinite; }
+  @keyframes ponder-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  .wiz-foot { padding: 14px 18px 10px; border-top: 1px solid rgba(232,224,208,0.1); }
+  .wiz-foot input {
+    width: 100%; padding: 12px 14px; font-family: inherit; font-size: 14.5px;
+    background: rgba(232,224,208,0.06); color: var(--bone);
+    border: 1px solid rgba(232,224,208,0.2); border-radius: 4px; outline: none;
+  }
+  .wiz-foot input:focus { border-color: var(--amber); }
+  .wiz-foot .wiz-note {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(232,224,208,0.3); margin-top: 8px; text-align: center; padding-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="loading" id="loading">summoning the world&hellip;</div>
+<div class="letterbox top"></div>
+<div class="letterbox bottom"></div>
+<div class="wizard-chat" id="wizard-chat">
+  <div class="wiz-head">
+    <h2>The Wizard</h2>
+    <p>keeper of the isles</p>
+    <button class="wiz-close" onclick="document.getElementById('wizard-chat').classList.remove('show'); window.dispatchEvent(new KeyboardEvent('keydown', {code: 'Escape'}))">✕</button>
+  </div>
+  <div class="wiz-log" id="wiz-log"></div>
+  <div class="wiz-foot">
+    <input id="wiz-input" type="text" placeholder="ask the wizard… (enter to send)" autocomplete="off">
+    <div class="wiz-note">the wizard is still waking up — soon he remembers everything</div>
+  </div>
+</div>
+<!-- R39: the morning note — the day starts as a quest, not a menu -->
+<div class="challenge" id="daycard">
+  <div class="challenge-card">
+    <h2>A Note from the Wizard</h2>
+    <div class="sub">left at your door this morning</div>
+    <div class="wave" style="display:flex" id="day-body"></div>
+    <div class="answers" style="display:flex">
+      <button id="day-go">Let's go</button>
+    </div>
+  </div>
+</div>
+<div class="challenge" id="challenge">
+  <div class="challenge-card">
+    <h2 id="ch-title">The Sealed Way</h2>
+    <div class="sub" id="ch-sub">read closely — the gate listens</div>
+    <div class="wave" id="ch-wave"></div>
+    <div class="answers" id="ch-answers" style="display:none"></div>
+    <div class="progress"><span id="ch-bar"></span></div>
+  </div>
+</div>
+<div class="hud">
+  <div class="title">
+    <h1>Iso <em>Proto</em></h1>
+    <p>Movement Mechanics Prototype</p>
+  </div>
+  <div class="controls">
+    <div class="key-group">
+      <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
+      <span class="key-label">move</span>
+    </div>
+    <div class="key-group">
+      <span class="key">SPACE</span>
+      <span class="key-label">jump</span>
+    </div>
+    <div class="key-group">
+      <span class="key">SHIFT</span>
+      <span class="key-label">sprint</span>
+    </div>
+    <div class="key-group">
+      <span class="key">E</span>
+      <span class="key-label">smash</span>
+    </div>
+    <div class="key-group">
+      <span class="key">B</span>
+      <span class="key-label">build</span>
+    </div>
+    <div class="key-group">
+      <span class="key">M</span>
+      <span class="key-label">sound</span>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="toast" id="toast"></div>
+  <div class="quest" id="quest"></div>
+</div>
+<script src="lessons.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

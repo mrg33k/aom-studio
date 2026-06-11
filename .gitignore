@@ -14,6 +14,7 @@ test-screenshots/
 *.png
 !public/images/**/*.png
 !public/mission-water/**/*.png
+!public/ssg/**/*.png
 
 # session 15/16 hygiene
 supabase/.temp/
