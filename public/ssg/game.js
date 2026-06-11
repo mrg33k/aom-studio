@@ -194,6 +194,19 @@
         { type: 'boulder', x: 7,  y: 6 },
         { type: 'waystone', x: 2, y: 3 },  // R47: route markers — travel reads as a journey
         { type: 'waystone', x: 5, y: 9 },
+        // R49: expanded grindables — hermit's road is worth the detour
+        { type: 'crystal', x: 10, y: 4 },
+        { type: 'crystal', x: 11, y: 7 },
+        { type: 'crystal', x: 8,  y: 10 },
+        { type: 'crystal', x: 3,  y: 7 },
+        { type: 'boulder', x: 10, y: 2 },
+        { type: 'boulder', x: 11, y: 5 },
+        { type: 'boulder', x: 9,  y: 8 },
+        { type: 'boulder', x: 6,  y: 10 },
+        { type: 'boulder', x: 3,  y: 9 },
+        { type: 'boulder', x: 1,  y: 6 },
+        { type: 'crystal', x: 10, y: 9 },
+        { type: 'crystal', x: 7,  y: 2 },
       ],
     },
     {
@@ -235,6 +248,20 @@
         { type: 'crystal', x: 7,  y: 7 },
         { type: 'crystal', x: 3,  y: 10 },
         { type: 'waystone', x: 4, y: 10 }, // R47: marks the way home out of the deep woods
+        // R49: crystal grove density — this is the grind zone
+        { type: 'crystal', x: 8,  y: 0 },
+        { type: 'crystal', x: 2,  y: 1 },
+        { type: 'crystal', x: 9,  y: 3 },
+        { type: 'crystal', x: 6,  y: 6 },
+        { type: 'crystal', x: 1,  y: 4 },
+        { type: 'crystal', x: 10, y: 7 },
+        { type: 'crystal', x: 5,  y: 9 },
+        { type: 'boulder', x: 7,  y: 1 },
+        { type: 'boulder', x: 1,  y: 6 },
+        { type: 'boulder', x: 9,  y: 6 },
+        { type: 'boulder', x: 6,  y: 3 },
+        { type: 'boulder', x: 11, y: 2 },
+        { type: 'boulder', x: 3,  y: 6 },
       ],
     },
   ];
@@ -334,7 +361,8 @@
     'tree', 'crystal', 'boulder', 'wizard', 'path', 'npc_mara', 'npc_marn',
     'bldg_bakery', 'bldg_mill', 'bldg_house', 'npc_pip', 'npc_wick',
     'owl_stand', 'owl_fly', 'owl_walk', 'owl_sit', 'bldg_cottage', 'bldg_tower', 'waystone',
-    'fox_stand', 'fox_trot1', 'fox_trot2', 'fox_sit'];
+    'fox_stand', 'fox_trot1', 'fox_trot2', 'fox_sit',
+    'cabin_hermit', 'shrine_forest', 'npc_traveler', 'npc_sage', 'temple_crystal'];
   const HERO_FRAMES = ['hero', 'hero_back_stand', 'hero_side_stand',
     'nfw0', 'nfw1', 'nfw2', 'nfw3', 'nfw5', 'nfw6', 'nfw7', 'nfw8',
     'nbw0', 'nbw1', 'nbw2', 'nbw3', 'nbw4', 'nbw5', 'nbw6', 'nbw7',
@@ -479,6 +507,11 @@
     { img: 'bldg_cottage', level: 2, x: 5.0, y: 2.85, w: 2.4, blocks: [[4,1],[5,1],[4,2],[5,2]] },
     // the Wizard's tower — the Emerald landmark ("look for the tower")
     { img: 'bldg_tower',   level: 0, x: 7.5, y: 7.85, w: 1.6, blocks: [[7,6],[7,7]] },
+    // R49: Forest Path — hermit's cabin tucked in the north-west clearing; forest shrine mid-route
+    { img: 'cabin_hermit', level: 4, x: 3.5, y: 3.85, w: 2.2, blocks: [[2,2],[3,2],[4,2],[2,3],[3,3],[4,3]] },
+    { img: 'shrine_forest',level: 4, x: 9.5, y: 6.85, w: 1.8, blocks: [[9,5],[10,5],[9,6],[10,6]] },
+    // R49: Deep Forest — crystal grove temple at the heart of the zone
+    { img: 'temple_crystal',level: 5, x: 5.5, y: 5.85, w: 2.6, blocks: [[4,4],[5,4],[6,4],[4,5],[5,5],[6,5]] },
   ];
   // engine-side perk implementations; lesson content names them by id (R42)
   const PERK_FNS = {
@@ -486,6 +519,7 @@
     magnet:      () => { PERKS.magnetR = 2.4; },
     shards:      () => { PERKS.dropBonus = 2; },
     cheapBlocks: () => { PERKS.blockCost = 1; },
+    none:        () => {},  // R49: stub wanderers — no mechanical reward
   };
   // lesson progress is DAY-KEYED (R42): a new day automatically starts fresh
   // (companions persist forever; perks are re-earned each day with the lessons)
@@ -504,6 +538,41 @@
     { id: 'marn', name: 'Old Marn the Miller', img: 'npc_marn', level: 3, x: 12.5, y: 11.5, w: 0.6,  lesson: ISO_DAY.lessons.marn }, // in front of the mill door
     { id: 'pip',  name: 'Pip the Storyteller', img: 'npc_pip',  level: 3, x: 13.5, y: 4.5,  w: 0.6,  lesson: ISO_DAY.lessons.pip  }, // in front of the NE house
     { id: 'wick', name: 'Wick the Tinker',     img: 'npc_wick', level: 3, x: 4.5,  y: 12.4, w: 0.62, lesson: ISO_DAY.lessons.wick }, // in front of the SW house
+    // R49: Forest Path wanderers — stub responders, no curriculum, character voice only
+    { id: 'traveler', name: 'The Traveler', img: 'npc_traveler', level: 4, x: 7.5, y: 4.5, w: 0.62, lesson: {
+        title: 'A Traveler on the Road',
+        waves: [
+          'Hm. Another soul on the Forest Path. Not many come this way.',
+          'The cabin belongs to a hermit — been there longer than the trees, they say. The shrine ahead is older still.',
+          'Watch the shadows past the waystone. These woods know when you\'re paying attention.',
+        ],
+        subText: 'listen — wanderers know things',
+        subAsk: 'what did the traveler notice?',
+        question: 'What does the Traveler say about the shrine?',
+        answers: [ 'It\'s older than the cabin', 'It was built last summer', 'The Wizard made it' ],
+        correct: 0,
+        passToast: 'The Traveler nods. Roads have memory.',
+        sendTo: '',
+        perk: 'none',
+      },
+    },
+    { id: 'sage', name: 'The Forest Sage', img: 'npc_sage', level: 4, x: 5.5, y: 7.5, w: 0.62, lesson: {
+        title: 'The Forest Sage',
+        waves: [
+          'Slow down. The Deep Forest does not open for the impatient.',
+          'The crystal grove temple at the heart — those crystals predate the road. Smash carefully.',
+          'Take what the forest offers. Leave the rest. That\'s the whole lesson.',
+        ],
+        subText: 'the sage speaks slowly for a reason',
+        subAsk: 'what did the sage say about the temple?',
+        question: 'What does the Sage say about the crystals in the grove?',
+        answers: [ 'They predate the road', 'They regrow in winter', 'The Wizard planted them' ],
+        correct: 0,
+        passToast: 'The Sage turns back to the trees.',
+        sendTo: '',
+        perk: 'none',
+      },
+    },
   ];
   // re-apply earned perks on load (lessons persist like companions)
   for (const n of NPCS) if (lessonsDone.has(n.id)) PERK_FNS[n.lesson.perk]();
@@ -2439,6 +2508,12 @@
       owl_stand: TILE_W * 0.4, owl_fly: TILE_W * 0.45, owl_walk: TILE_W * 0.4, owl_sit: TILE_W * 0.4,
       bldg_cottage: TILE_W * 2.4, bldg_tower: TILE_W * 1.6, waystone: TILE_W * 0.68,
       fox_stand: TILE_W * 0.5, fox_trot1: TILE_W * 0.5, fox_trot2: TILE_W * 0.5, fox_sit: TILE_W * 0.5,
+      // R49: Forest Path + Deep Forest assets
+      cabin_hermit:   TILE_W * 2.2,
+      shrine_forest:  TILE_W * 1.8,
+      npc_traveler:   TILE_W * 0.66,
+      npc_sage:       TILE_W * 0.68,
+      temple_crystal: TILE_W * 2.6,
     };
     for (const f of HERO_FRAMES) targets[f] = TILE_W * 0.78;
     for (const k of ASSET_FILES) IMG[k] = prescale(IMG[k], (targets[k] || TILE_W) * DPR);
