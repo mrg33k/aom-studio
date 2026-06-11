@@ -89,6 +89,26 @@ body {
   50% { opacity: 1; }
 }
 
+/* Video embed styling */
+.message iframe {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-top: 12px;
+}
+
+.wizard-message iframe {
+  background: rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.user-message iframe {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px;
+  border-radius: 8px;
+}
+
 /* Input Area */
 .chat-input-area {
   grid-column: 1;

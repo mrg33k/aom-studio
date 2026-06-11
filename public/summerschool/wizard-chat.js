@@ -118,13 +118,40 @@
     }
   }
 
+  // Extract YouTube/Vimeo URL from text
+  function extractVideoUrl(text) {
+    // YouTube patterns: youtu.be/ID or youtube.com/watch?v=ID
+    const youtubeMatch = text.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (youtubeMatch) {
+      return { type: 'youtube', id: youtubeMatch[1] };
+    }
+    // Vimeo pattern: vimeo.com/ID
+    const vimeoMatch = text.match(/vimeo\.com\/(\d+)/);
+    if (vimeoMatch) {
+      return { type: 'vimeo', id: vimeoMatch[1] };
+    }
+    return null;
+  }
+
+  // Create video embed HTML
+  function createVideoEmbed(video) {
+    if (video.type === 'youtube') {
+      return `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${video.id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius: 8px; margin-top: 8px;"></iframe>`;
+    } else if (video.type === 'vimeo') {
+      return `<iframe src="https://player.vimeo.com/video/${video.id}" width="100%" height="315" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen style="border-radius: 8px; margin-top: 8px;"></iframe>`;
+    }
+    return '';
+  }
+
   // Render the chat UI
   function render() {
     const messagesHtml = appState.messages
       .map((msg, idx) => {
         const isWizard = msg.role === 'wizard' || msg.role === 'assistant';
         const classes = isWizard ? 'message wizard-message' : 'message user-message';
-        return `<div class="${classes}">${escapeHtml(msg.text)}</div>`;
+        const video = extractVideoUrl(msg.text);
+        const videoHtml = video ? createVideoEmbed(video) : '';
+        return `<div class="${classes}">${escapeHtml(msg.text)}${videoHtml}</div>`;
       })
       .join('');
 
