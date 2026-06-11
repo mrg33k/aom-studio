@@ -43,6 +43,35 @@ function parseStaged(message) {
   return { draftId: m[1], connectionId: m[2], cleanMessage: (message || '').replace(STAGED_RE, '').trim() }
 }
 
+// ── M17: wish messages carry a summary + the full original behind a delimiter ─
+// support-email-watch / support-triage compose `summary\n\n--- ORIGINAL MESSAGE ---\noriginal`.
+// Cards lead with the summary; the original is one tap away.
+const ORIGINAL_DELIM = '--- ORIGINAL MESSAGE ---'
+function splitOriginal(text) {
+  const i = (text || '').indexOf(ORIGINAL_DELIM)
+  if (i === -1) return { summary: (text || '').trim(), original: null }
+  return { summary: text.slice(0, i).trim(), original: text.slice(i + ORIGINAL_DELIM.length).trim() }
+}
+
+function OriginalBlock({ original }) {
+  const [show, setShow] = useState(false)
+  if (!original) return null
+  return (
+    <div style={{ marginTop: 8 }}>
+      <button onClick={(e) => { e.stopPropagation(); setShow((v) => !v) }} style={{ background: 'transparent',
+        border: 'none', padding: 0, fontFamily: MONO, fontSize: 10, letterSpacing: '0.08em',
+        textTransform: 'uppercase', color: AMBER, cursor: 'pointer' }}>
+        {show ? 'Hide original message' : 'View original message'}
+      </button>
+      {show && (
+        <p style={{ margin: '6px 0 0', padding: '8px 10px', background: INK_PANEL, borderRadius: 4,
+          border: `1px solid ${LINE}`, fontSize: 12, color: BONE_DIM, lineHeight: 1.5,
+          whiteSpace: 'pre-wrap', maxHeight: 320, overflowY: 'auto' }}>{original}</p>
+      )}
+    </div>
+  )
+}
+
 let pressSendCssInjected = false
 function ensurePressSendCss() {
   if (pressSendCssInjected || typeof document === 'undefined') return
@@ -264,9 +293,17 @@ function PressSendCard({ w, staged }) {
       <div style={{ fontFamily: SERIF, fontSize: 19, color: BONE, margin: '12px 0 4px', lineHeight: 1.2 }}>
         {w.name || w.email}
       </div>
-      <p style={{ margin: 0, fontSize: 13, color: BONE_DIM, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
-        {staged.cleanMessage}
-      </p>
+      {(() => {
+        const { summary, original } = splitOriginal(staged.cleanMessage)
+        return (
+          <>
+            <p style={{ margin: 0, fontSize: 13, color: BONE_DIM, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>
+              {summary}
+            </p>
+            <OriginalBlock original={original} />
+          </>
+        )
+      })()}
 
       {/* The reply that actually goes out, verbatim — plus its attachments. */}
       <div style={{ marginTop: 12, padding: '10px 14px', background: INK_PANEL,
@@ -358,6 +395,7 @@ function PressSendCard({ w, staged }) {
 function WishRow({ w, dim }) {
   const staged = parseStaged(w.message)
   if (staged && w.status !== 'resolved') return <PressSendCard w={w} staged={staged} />
+  const msgParts = splitOriginal((w.message || '').replace(STAGED_RE, '').trim())
   const loud = w.status === 'needs_team'
   const overSla = w.status !== 'resolved' && (Date.now() - new Date(w.created_at).getTime()) > 10 * 60 * 1000
   const [open, setOpen] = useState(false)
@@ -399,7 +437,7 @@ function WishRow({ w, dim }) {
           </span>
         </div>
         <p style={{ margin: '6px 0 0', fontSize: 13, color: BONE_DIM, lineHeight: 1.4,
-          display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{(w.message || '').replace(STAGED_RE, '').trim()}</p>
+          display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{msgParts.summary}</p>
         {w.latest_response && (
           <div style={{ marginTop: 7, padding: '6px 9px', background: AMBER_SOFT, borderLeft: `2px solid ${AMBER}`, borderRadius: 3 }}>
             <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: AMBER }}>We replied</span>
@@ -419,6 +457,7 @@ function WishRow({ w, dim }) {
       )}
       {open && (
         <div style={{ marginTop: 10, borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
+          <OriginalBlock original={msgParts.original} />
           {loading && <span style={{ fontSize: 12, color: BONE_FAINT }}>Loading activity…</span>}
           {updates && updates.length === 0 && <span style={{ fontSize: 12, color: BONE_FAINT }}>No activity yet — heard, awaiting triage.</span>}
           {updates && updates.map((u) => (
