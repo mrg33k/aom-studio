@@ -181,12 +181,15 @@ export default function ChatWaveBackground({ chatKey, theme = 'dark' }) {
     }
 
     function createInstancedMaterial() {
-      // demo: base hsl(220,100%,50%), emissive #1f3dbc — re-derived per chat hue
+      // demo: base hsl(220,100%,50%), emissive #1f3dbc — re-derived per chat hue.
+      // Light theme is NOT a faded dark theme: rich saturated ink bars whose
+      // bloom halo tints the bone ground — a "printed light" look with the
+      // same energy as dark's additive glow.
       const baseCol = isLight
-        ? new THREE.Color(`hsl(${hue},70%,38%)`)
+        ? new THREE.Color(`hsl(${hue},85%,30%)`)
         : new THREE.Color(`hsl(${hue},100%,50%)`)
       const emisCol = isLight
-        ? new THREE.Color(`hsl(${hue},65%,30%)`)
+        ? new THREE.Color(`hsl(${hue},80%,46%)`)
         : new THREE.Color(`hsl(${hue},72%,43%)`)
 
       return new THREE.ShaderMaterial({
@@ -211,7 +214,7 @@ export default function ChatWaveBackground({ chatKey, theme = 'dark' }) {
           uEmissive: { value: emisCol },
           uBaseEmissive: { value: 0.05 },
           uRotationAngle: { value: THREE.MathUtils.degToRad(23.4) },
-          uAlphaMul: { value: isLight ? 0.55 : 1.0 },
+          uAlphaMul: { value: isLight ? 0.95 : 1.0 },
         },
         vertexShader: `
           attribute float aXPos, aPosNorm, aGroup, aGlow;
@@ -392,7 +395,7 @@ export default function ChatWaveBackground({ chatKey, theme = 'dark' }) {
 
       bloomPass = new UnrealBloomPass(
         new THREE.Vector2(cameraWidth, cameraHeight),
-        isLight ? 0.45 : 1.0, // softer bloom on light so it doesn't wash out
+        isLight ? 0.85 : 1.0, // light keeps real bloom — ink bars + colored halo
         0.68,
         0.0
       )
@@ -400,7 +403,7 @@ export default function ChatWaveBackground({ chatKey, theme = 'dark' }) {
       composer.addPass(bloomPass)
 
       grainPass = new ShaderPass(FilmGrainShader)
-      grainPass.uniforms.intensity.value = isLight ? 0.55 : 0.9
+      grainPass.uniforms.intensity.value = isLight ? 0.8 : 0.9
       grainPass.uniforms.grainScale.value = 0.3
       composer.addPass(grainPass)
 
