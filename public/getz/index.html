@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getz Funeral Home — Three Generations Caring for Las Cruces · Las Cruces, NM</title>
+<meta name="description" content="Three generations of family service in Las Cruces. Getz Funeral Home has guided New Mexico families through their hardest days since the family first opened its doors — with dignity, warmth, and no pressure.">
+<meta name="theme-color" content="#595e3d">
+<meta property="og:title" content="Getz Funeral Home — Three Generations Caring for Las Cruces">
+<meta property="og:description" content="Three generations of family service in Las Cruces. Plan gently online, or reach us the moment you need us.">
+<meta property="og:image" content="https://www.aheadofmarket.com/sensible/sensible-hero-poster.jpg">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23595e3d'/%3E%3Ctext x='32' y='44' font-family='Georgia,serif' font-size='36' fill='%23e7ddc9' text-anchor='middle' font-style='italic'%3EG%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#e7ddc9;
+    --cream-2:#e2d8bf;
+    --cream-3:#efe8d6;
+    --olive:#6c724e;
+    --olive-2:#595e3d;
+    --olive-soft:#9aa07e;
+    --brown:#3c3225;
+    --brown-soft:#6b5f4c;
+    --gold:#b0894a;
+    --gold-soft:#c9aa6e;
+    --line:rgba(60,50,37,.18);
+    --line-d:rgba(233,224,202,.22);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:'Hanken Grotesk',system-ui,sans-serif;background:var(--cream);color:var(--brown);-webkit-font-smoothing:antialiased;line-height:1.7;font-weight:400;overflow-x:hidden}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 clamp(22px,5vw,46px)}
+  .narrow{max-width:840px}
+  .serif{font-family:'Fraunces',Georgia,serif}
+  img{max-width:100%;display:block}
+
+  #intro{position:fixed;inset:0;z-index:999;background:var(--cream);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;animation:introOut 1s cubic-bezier(.7,0,.3,1) 1.7s forwards}
+  #intro .imark{width:72px;height:72px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;color:var(--olive-2);font-family:'Fraunces',serif;font-style:italic;font-size:40px;opacity:0;animation:nameIn .9s ease .15s forwards}
+  #intro .iname{font-family:'Fraunces',serif;font-size:22px;color:var(--brown);opacity:0;animation:nameIn .9s ease .35s forwards;margin-top:4px}
+  #intro .itag{font-size:12px;letter-spacing:4px;text-transform:uppercase;color:var(--brown-soft);font-weight:600;opacity:0;animation:nameIn .9s ease .55s forwards}
+  @keyframes nameIn{to{opacity:1}}
+  @keyframes introOut{to{opacity:0;visibility:hidden}}
+  .obs{opacity:0;transform:translateY(26px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+  .obs.in{opacity:1;transform:none}
+  .obs[data-stagger]{opacity:1;transform:none}
+  .obs[data-stagger]>*{opacity:0;transform:translateY(24px);transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+  .obs[data-stagger].in>*{opacity:1;transform:none}
+  .obs[data-stagger].in>*:nth-child(2){transition-delay:.1s}
+  .obs[data-stagger].in>*:nth-child(3){transition-delay:.2s}
+  .obs[data-stagger].in>*:nth-child(4){transition-delay:.3s}
+  .obs[data-stagger].in>*:nth-child(5){transition-delay:.4s}
+  .obs[data-stagger].in>*:nth-child(6){transition-delay:.5s}
+  @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
+  .kb img{animation:kb 28s ease-in-out infinite alternate}
+  .hero-copy>*{opacity:0;transform:translateY(18px);animation:rise2 .9s cubic-bezier(.2,.7,.2,1) forwards}
+  .hero-copy>*:nth-child(1){animation-delay:1.9s}
+  .hero-copy>*:nth-child(2){animation-delay:2.05s}
+  .hero-copy>*:nth-child(3){animation-delay:2.2s}
+  .hero-copy>*:nth-child(4){animation-delay:2.35s}
+  @keyframes rise2{to{opacity:1;transform:translateY(0)}}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:.2px;border-radius:2px;padding:14px 30px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:background .2s,color .2s,transform .2s}
+  .btn-olive{background:var(--olive-2);color:var(--cream)}
+  .btn-olive:hover{background:#474c30;transform:translateY(-1px)}
+  .btn-gold{background:var(--gold);color:#fff}
+  .btn-gold:hover{background:var(--gold-soft);transform:translateY(-1px)}
+  .btn-line{border:1.5px solid var(--brown);color:var(--brown);background:transparent}
+  .btn-line:hover{background:var(--brown);color:var(--cream)}
+  a:focus-visible,button:focus-visible,.rf-mode:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+  ::selection{background:var(--gold-soft);color:var(--brown)}
+  section[id]{scroll-margin-top:24px}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.obs,.obs[data-stagger]>*,.hero-copy>*{opacity:1!important;transform:none!important}}
+
+  /* THIN GOLD TOP BAR */
+  .topbar{background:var(--gold);color:#fff;text-align:center;font-size:12.5px;font-weight:600;letter-spacing:.4px;padding:9px 16px}
+  .topbar a{color:#fff;text-decoration:underline;text-underline-offset:2px}
+
+  /* HEADER */
+  header{position:relative;z-index:30;border-bottom:1px solid var(--line)}
+  nav{display:flex;align-items:center;justify-content:space-between;padding:20px 0;gap:20px}
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+  .brand .mark{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;color:var(--olive-2);font-family:'Fraunces',serif;font-style:italic;font-size:24px}
+  .brand .name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:var(--brown);line-height:1.05}
+  .brand .name span{display:block;font-family:'Hanken Grotesk',sans-serif;font-size:9px;letter-spacing:2.4px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-top:3px}
+  .navlinks{display:flex;gap:30px;list-style:none}
+  .navlinks a{text-decoration:none;color:var(--brown);font-size:14px;font-weight:500;opacity:.86;transition:opacity .2s}
+  .navlinks a:hover{opacity:1;color:var(--olive-2)}
+  .navcta{display:flex;align-items:center;gap:14px}
+  .phone{font-size:14px;font-weight:600;color:var(--brown);text-decoration:none;white-space:nowrap}
+
+  /* HERO */
+  .hero{position:relative;padding:clamp(36px,4.5vw,64px) 0 clamp(50px,7vw,90px);overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(30px,5vw,70px);align-items:center}
+  .hero-eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:16px}
+  .hero h1{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(42px,5.6vw,76px);line-height:1.0;color:var(--brown);letter-spacing:-.5px;margin-bottom:20px;text-wrap:balance}
+  .hero h1 em{font-style:italic;color:var(--olive-2);white-space:nowrap}
+  .hero .sub{font-size:16.5px;line-height:1.7;color:var(--brown-soft);max-width:440px;margin-bottom:26px}
+  .hero-cta{display:flex;gap:13px;flex-wrap:wrap}
+  /* floating specimen stage */
+  .stage{position:relative;height:clamp(380px,46vw,560px)}
+  .spec{position:absolute;will-change:transform;animation:float var(--dur,7s) ease-in-out infinite alternate;pointer-events:none}
+  .spec img{display:block;width:100%;filter:drop-shadow(0 18px 26px rgba(60,50,37,.2))}
+  @keyframes float{from{transform:translateY(0) rotate(var(--r,0deg))}to{transform:translateY(-18px) rotate(var(--r2,0deg))}}
+  .s-moss{top:-14%;left:-10%;width:64%;--dur:8s;--r:-3deg;--r2:1deg;z-index:2}
+  .s-cone{top:26%;right:-14%;width:46%;--dur:6.5s;--r:4deg;--r2:-2deg;z-index:3}
+  .s-fern{bottom:-24%;left:-6%;width:62%;--dur:9s;--r:-2deg;--r2:3deg;z-index:1}
+  .s-bloom{bottom:10%;right:16%;width:36%;--dur:7.2s;--r:3deg;--r2:-1deg;z-index:2}
+  /* page-level scattered specimens */
+  .scatter{position:absolute;pointer-events:none;z-index:4;will-change:transform;animation:float var(--dur,8s) ease-in-out infinite alternate}
+  .scatter img{display:block;width:100%;filter:drop-shadow(0 16px 24px rgba(60,50,37,.18))}
+
+  /* TWO-COLUMN INTRO CARDS */
+  .intro2{padding:clamp(20px,3vw,40px) 0 clamp(60px,8vw,96px)}
+  .intro2-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .i2{background:var(--cream-3);border:1px solid var(--line);padding:34px 32px;display:flex;gap:22px;align-items:flex-start}
+  .i2 .i2img{width:84px;height:84px;flex-shrink:0;border-radius:6px;overflow:hidden}
+  .i2 .i2img img{width:100%;height:100%;object-fit:cover}
+  .i2 h3{font-family:'Fraunces',serif;font-weight:500;font-size:24px;color:var(--brown);margin-bottom:8px;line-height:1.12}
+  .i2 p{font-size:14.5px;line-height:1.66;color:var(--brown-soft);margin-bottom:12px}
+  .i2 a{font-size:13px;font-weight:700;color:var(--olive-2);text-decoration:none;letter-spacing:.3px}
+  .i2 a::after{content:" →"}
+
+  /* SPECIMEN COLLAGE BAND */
+  .collage{position:relative;padding:clamp(40px,6vw,70px) 0 clamp(50px,7vw,80px);text-align:center}
+  .collage .ce{font-family:'Fraunces',serif;font-style:italic;font-size:clamp(24px,3.4vw,38px);color:var(--brown);max-width:760px;margin:0 auto 36px;line-height:1.3}
+  .collage-img{border-radius:10px;overflow:hidden;max-width:1000px;margin:0 auto;box-shadow:0 24px 60px rgba(60,50,37,.14)}
+
+  /* SECTION HEAD */
+  .sec-head{max-width:680px;margin:0 auto 48px;text-align:center}
+  .sec-eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:14px}
+  .sec-title{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(30px,4.4vw,52px);line-height:1.04;color:var(--brown);letter-spacing:-.4px}
+
+  /* SERVICES */
+  .svc{padding:clamp(60px,8vw,100px) 0}
+  .svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+  .svc-card{background:var(--cream);padding:36px 34px;transition:background .25s}
+  .svc-card:hover{background:var(--cream-3)}
+  .svc-card .sn{font-family:'Fraunces',serif;font-style:italic;font-size:17px;color:var(--gold);margin-bottom:10px}
+  .svc-card h3{font-family:'Fraunces',serif;font-weight:500;font-size:25px;color:var(--brown);margin-bottom:9px;line-height:1.12}
+  .svc-card p{font-size:14.5px;line-height:1.66;color:var(--brown-soft)}
+  .svc-note{text-align:center;margin-top:32px;font-size:14.5px;color:var(--brown-soft)}
+  .svc-note b{color:var(--olive-2)}
+
+  /* OLIVE BLOCK */
+  .olive-block{position:relative;background:var(--olive);color:var(--cream);padding:clamp(70px,9vw,120px) 0;text-align:center}
+  .svc{position:relative}.story{position:relative}
+  .sc-leaf{top:-40px;left:-30px;width:clamp(120px,12vw,190px);--dur:9s;--r:-8deg;--r2:-3deg}
+  .sc-mush{bottom:10px;right:2%;width:clamp(80px,8vw,120px);--dur:7s;--r:6deg;--r2:1deg}
+  .sc-moss2{top:-46px;left:6%;width:clamp(130px,13vw,200px);--dur:8.5s;--r:-4deg;--r2:1deg}
+  .sc-cone2{top:-34px;right:8%;width:clamp(90px,9vw,140px);--dur:6.8s;--r:8deg;--r2:2deg}
+  .sc-fern2{bottom:-50px;right:-20px;width:clamp(150px,15vw,240px);--dur:9.5s;--r:6deg;--r2:-2deg;z-index:4}
+  @media(max-width:560px){.scatter{display:none}}
+  .olive-block .oe{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--olive-soft);font-weight:700;margin-bottom:18px}
+  .olive-block h2{font-family:'Fraunces',serif;font-weight:400;font-style:italic;font-size:clamp(28px,4.4vw,50px);line-height:1.2;max-width:840px;margin:0 auto 14px}
+  .olive-block p{font-size:16px;color:rgba(233,224,202,.84);max-width:560px;margin:0 auto}
+  .olive-row{display:flex;justify-content:center;gap:clamp(24px,5vw,64px);flex-wrap:wrap;margin-top:44px}
+  .olive-item b{font-family:'Fraunces',serif;font-size:30px;color:var(--gold-soft);line-height:1;display:block;margin-bottom:5px}
+  .olive-item span{font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:rgba(233,224,202,.74);font-weight:600}
+
+  /* STORY BLOCK */
+  .story{padding:clamp(60px,8vw,100px) 0}
+  .story-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(34px,5vw,70px);align-items:center}
+  .story-photo{border-radius:10px;overflow:hidden;box-shadow:0 22px 56px rgba(60,50,37,.16)}
+  .story-photo img{width:100%;height:clamp(330px,44vw,460px);object-fit:cover}
+  .story-copy .se{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:14px}
+  .story-copy h2{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(28px,3.8vw,46px);line-height:1.06;color:var(--brown);margin-bottom:20px;letter-spacing:-.3px}
+  .story-copy h2 em{font-style:italic;color:var(--olive-2)}
+  .story-copy p{font-size:16px;line-height:1.78;color:var(--brown-soft);margin-bottom:16px}
+
+  /* FORM */
+  .reach{padding:clamp(60px,8vw,100px) 0}
+  .reach-card{max-width:660px;margin:0 auto;background:var(--cream-3);border:1px solid var(--line);padding:clamp(30px,4vw,48px)}
+  .reach-head{text-align:center;margin-bottom:30px}
+  .reach-head .re{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px}
+  .reach-head h2{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(28px,4vw,46px);line-height:1.05;color:var(--brown);letter-spacing:-.3px}
+  .reach-head p{font-size:15px;color:var(--brown-soft);margin-top:12px}
+  .rf-modes{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+  .rf-mode{flex:1;min-width:140px;border:1.5px solid var(--line);padding:14px;cursor:pointer;transition:all .2s;background:var(--cream);text-align:center}
+  .rf-mode:hover{border-color:var(--olive)}
+  .rf-mode.sel{border-color:var(--olive-2);background:#e6e0cb;box-shadow:inset 0 0 0 1px var(--olive-2)}
+  .rf-mode b{font-family:'Fraunces',serif;font-size:17px;color:var(--brown);display:block;font-weight:500}
+  .rf-mode span{font-size:12px;color:var(--brown-soft)}
+  .rf-urgent{display:none;gap:12px;align-items:center;background:#e6e0cb;border:1px solid var(--line);padding:14px 16px;margin-bottom:18px}
+  .rf-urgent a{font-family:'Fraunces',serif;font-size:23px;color:var(--olive-2);text-decoration:none}
+  .rf-urgent .u{font-size:12.5px;color:var(--brown-soft);line-height:1.45}
+  .rf-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .rf-field{margin-bottom:16px}
+  .rf-field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--brown-soft);margin-bottom:7px}
+  .rf-field input,.rf-field textarea{width:100%;border:1.5px solid var(--line);border-radius:2px;padding:13px 15px;font-family:inherit;font-size:15px;color:var(--brown);background:var(--cream);transition:border-color .2s}
+  .rf-field input:focus,.rf-field textarea:focus{outline:none;border-color:var(--olive)}
+  .rf-field textarea{min-height:88px;resize:vertical}
+  .rf-submit{width:100%;background:var(--olive-2);color:var(--cream);border:none;border-radius:2px;padding:16px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s,transform .2s}
+  .rf-submit:hover{background:#474c30;transform:translateY(-1px)}
+  .rf-foot{text-align:center;font-size:11.5px;color:var(--brown-soft);margin-top:14px}
+  .rf-success{display:none;text-align:center;padding:30px 10px}
+  .rf-success.show{display:block}
+  .rf-check{width:58px;height:58px;border-radius:50%;background:var(--olive);color:var(--cream);font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .rf-success h3{font-family:'Fraunces',serif;font-size:26px;color:var(--brown);margin-bottom:10px}
+  .rf-success p{font-size:14.5px;color:var(--brown-soft);max-width:380px;margin:0 auto;line-height:1.6}
+
+  /* FOOTER */
+  footer{background:var(--olive-2);color:rgba(233,224,202,.82);padding:64px 0 110px}
+  .foot-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:38px;margin-bottom:42px}
+  .foot-brand .fmark{font-family:'Fraunces',serif;font-style:italic;font-size:25px;color:var(--gold-soft);margin-bottom:6px}
+  .foot-brand .ftag{font-size:12.5px;color:var(--olive-soft);font-weight:600;letter-spacing:.5px;margin-bottom:14px;text-transform:uppercase}
+  .foot-brand p{font-size:14px;line-height:1.6;color:rgba(233,224,202,.72);max-width:290px}
+  .foot-col h4{font-size:11.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold-soft);font-weight:700;margin-bottom:15px}
+  .foot-col a,.foot-col p{display:block;font-size:14px;color:rgba(233,224,202,.76);text-decoration:none;margin-bottom:9px;line-height:1.5}
+  .foot-col a:hover{color:var(--gold-soft)}
+  .foot-bottom{border-top:1px solid var(--line-d);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12.5px;color:rgba(233,224,202,.52)}
+  .foot-bottom a{color:var(--gold-soft);text-decoration:none}
+
+  /* DRAWER */
+  .drawer{position:fixed;left:0;right:0;bottom:0;z-index:600;background:var(--cream-3);border-top:2px solid var(--gold);box-shadow:0 -16px 50px rgba(60,50,37,.18);transform:translateY(calc(100% - 64px));transition:transform .55s cubic-bezier(.5,0,.2,1)}
+  .drawer.open{transform:translateY(0)}
+  .drawer-handle{height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 clamp(18px,4vw,40px);cursor:pointer}
+  .dh-left{display:flex;align-items:center;gap:14px;min-width:0}
+  .dh-grade{width:42px;height:42px;border-radius:50%;background:var(--olive-2);color:var(--cream);font-family:'Fraunces',serif;font-style:italic;font-size:21px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .dh-txt b{font-family:'Fraunces',serif;font-weight:500;font-size:17px;color:var(--brown);display:block;line-height:1.12}
+  .dh-txt span{font-size:12.5px;color:var(--brown-soft)}
+  .dh-toggle{display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:700;color:var(--olive-2);white-space:nowrap;flex-shrink:0}
+  .dh-toggle .chev{transition:transform .4s;font-size:11px}
+  .drawer.open .dh-toggle .chev{transform:rotate(180deg)}
+  .drawer-body{max-height:min(74vh,720px);overflow-y:auto;padding:10px clamp(18px,4vw,40px) 36px}
+  .rc-intro{text-align:center;max-width:720px;margin:8px auto 26px}
+  .rc-intro .rce{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:12px}
+  .rc-intro h3{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(26px,3.4vw,42px);color:var(--brown);line-height:1.08;letter-spacing:-.3px}
+  .rc-intro h3 em{font-style:italic;color:var(--olive-2)}
+  .rc-grades{display:flex;align-items:center;justify-content:center;gap:clamp(14px,3vw,30px);margin:0 auto 30px}
+  .rc-grade{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .rc-grade .g{width:clamp(70px,9vw,92px);height:clamp(70px,9vw,92px);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-weight:500;font-size:clamp(34px,4.6vw,46px)}
+  .rc-grade.today .g{background:#d9ceb4;color:var(--brown-soft);border:1px solid var(--line)}
+  .rc-grade.new .g{background:var(--olive-2);color:var(--cream)}
+  .rc-grade span{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--brown-soft);font-weight:700}
+  .rc-grade.new span{color:var(--olive-2)}
+  .rc-arrow{font-family:'Fraunces',serif;font-size:30px;color:var(--gold);margin-top:-18px}
+  .rc-rows{max-width:900px;margin:0 auto 30px;display:grid;gap:10px}
+  .rc-row{display:grid;grid-template-columns:1.1fr 1.3fr 1.3fr;gap:clamp(14px,2.4vw,26px);align-items:start;background:var(--cream);border:1px solid var(--line);padding:18px 22px}
+  .rc-crit{font-family:'Fraunces',serif;font-weight:500;font-size:17px;color:var(--brown);line-height:1.2}
+  .rc-cell{display:flex;gap:9px;font-size:13.5px;line-height:1.5}
+  .rc-cell .mk{flex-shrink:0;font-weight:700;font-size:14px;line-height:1.4}
+  .rc-cell.today{color:var(--brown-soft)}.rc-cell.today .mk{color:#b06a4a}
+  .rc-cell.new{color:var(--brown)}.rc-cell.new .mk{color:var(--olive-2)}
+  .rc-colhead{display:grid;grid-template-columns:1.1fr 1.3fr 1.3fr;gap:clamp(14px,2.4vw,26px);max-width:900px;margin:0 auto 8px;padding:0 22px}
+  .rc-colhead span{font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;font-weight:700}
+  .rc-colhead .h-today{color:#b06a4a}.rc-colhead .h-new{color:var(--olive-2)}
+  .drawer-cta{display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center}
+  .drawer-cta .dctitle{font-family:'Fraunces',serif;font-style:italic;font-size:20px;color:var(--brown)}
+  @media(max-width:680px){
+    .rc-row{grid-template-columns:1fr;gap:8px}.rc-colhead{display:none}
+    .rc-crit{font-size:16px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:2px}
+  }
+
+  /* REVEAL */
+  .reveal-overlay{position:fixed;inset:0;z-index:800;background:rgba(40,42,28,.86);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:30px;opacity:0;transition:opacity .4s}
+  .reveal-overlay.open{display:flex;opacity:1}
+  .reveal-card{position:relative;width:100%;max-width:1180px;max-height:94vh;overflow-y:auto;background:var(--cream-3);border-radius:10px;box-shadow:0 50px 120px rgba(0,0,0,.5)}
+  .reveal-top{text-align:center;padding:30px 30px 8px}
+  .reveal-top .re-eye{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:9px}
+  .reveal-top h2{font-family:'Fraunces',serif;font-weight:400;font-size:clamp(26px,3.2vw,40px);color:var(--brown);line-height:1.06}
+  .reveal-top p{font-size:14.5px;color:var(--brown-soft);margin:10px auto 0;max-width:540px}
+  .compare{display:grid;grid-template-columns:.82fr 1.3fr;gap:clamp(20px,3.5vw,44px);align-items:center;padding:18px clamp(24px,5vw,56px) 10px}
+  .cmp{display:flex;flex-direction:column;gap:12px}
+  .cmp-tag{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase}
+  .cmp-old .cmp-tag{color:var(--brown-soft)}.cmp-new .cmp-tag{color:var(--olive-2)}
+  .cmp-tag .tdot{width:7px;height:7px;border-radius:50%;background:currentColor}
+  .bframe{border-radius:11px;overflow:hidden;background:#fff;border:1px solid var(--line)}
+  .cmp-old .bframe{box-shadow:0 10px 26px rgba(60,50,37,.18);opacity:.82;filter:saturate(.62) brightness(1.02);transform:scale(.96)}
+  .cmp-new .bframe{box-shadow:0 36px 80px rgba(108,114,78,.46),0 0 0 4px rgba(108,114,78,.14);border-color:var(--olive)}
+  .bbar{height:36px;display:flex;align-items:center;gap:7px;padding:0 14px;background:#ece5d5;border-bottom:1px solid var(--line)}
+  .bbar .bdot{width:10px;height:10px;border-radius:50%}
+  .bbar .bdot.r{background:#d49a82}.bbar .bdot.y{background:#dcc283}.bbar .bdot.g{background:#a7b384}
+  .burl{flex:1;text-align:center;font-size:11.5px;color:var(--brown-soft);background:#fff;border:1px solid var(--line);border-radius:20px;padding:4px 12px;margin:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bview{overflow:hidden;position:relative;background:#fff}
+  .cmp-old .bview{height:clamp(230px,28vw,300px)}
+  .cmp-new .bview{height:clamp(360px,42vw,480px)}
+  .bview img{width:100%;display:block}
+  .cmp-new .bview.scroll img{animation:scrollNew 38s ease-in-out infinite alternate}
+  @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 480px))}}
+  .bview .noimg{height:100%;display:flex;align-items:center;justify-content:center;color:var(--brown-soft);font-size:13px;text-align:center;padding:20px;background:repeating-linear-gradient(135deg,#fff,#fff 12px,#efe8d6 12px,#efe8d6 24px)}
+  .reveal-foot{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;padding:24px 30px 34px;text-align:center}
+  .reveal-foot .rf-line{font-family:'Fraunces',serif;font-style:italic;font-size:19px;color:var(--brown)}
+  .reveal-close{position:absolute;top:16px;right:18px;z-index:3;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.85);color:var(--brown);font-size:22px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .rv-stage{transition:opacity .45s cubic-bezier(.2,.7,.2,1),transform .45s cubic-bezier(.2,.7,.2,1)}
+  .rv-stage.out{opacity:0;transform:translateY(12px);pointer-events:none}
+  .rv-talk{display:none;opacity:0;transform:translateY(16px);transition:opacity .65s cubic-bezier(.2,.7,.2,1),transform .65s cubic-bezier(.2,.7,.2,1);text-align:center;padding:64px 30px 70px}
+  .rv-talk.show{display:block}
+  .rv-talk.in{opacity:1;transform:none}
+  .rv-talk .te{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:14px}
+  .rv-talk h2{font-family:'Fraunces',serif;font-weight:500;font-size:clamp(28px,3.6vw,46px);color:var(--brown);line-height:1.06;margin-bottom:14px}
+  .rv-talk p{font-size:15px;color:var(--brown-soft);max-width:480px;margin:0 auto 28px;line-height:1.65}
+  .rv-talk .tphone{display:inline-block;font-family:'Fraunces',serif;font-weight:500;font-size:clamp(34px,5vw,54px);color:var(--olive-2);text-decoration:none;line-height:1.1;margin-bottom:14px;transition:color .2s}
+  .rv-talk .tphone:hover{color:var(--gold)}
+  .rv-talk .taddr{font-size:13.5px;color:var(--brown-soft);line-height:1.7;margin-bottom:28px}
+
+  @media(max-width:900px){
+    .navlinks{display:none}
+    .hero-grid{grid-template-columns:1fr;gap:30px}
+    .stage{height:340px;max-width:480px}
+    .intro2-grid{grid-template-columns:1fr}
+    .svc-grid{grid-template-columns:1fr}
+    .story-grid{grid-template-columns:1fr;gap:28px}
+    .rf-row{grid-template-columns:1fr}
+    .compare{grid-template-columns:1fr;gap:18px}
+    .cmp-old .bview{height:200px}.cmp-new .bview{height:300px}
+    @keyframes scrollNew{0%{transform:translateY(0)}100%{transform:translateY(calc(-100% + 300px))}}
+    .foot-grid{grid-template-columns:1fr 1fr;gap:26px}
+  }
+  @media(max-width:560px){.navcta .phone{display:none}.foot-grid{grid-template-columns:1fr}.hero h1{font-size:clamp(38px,12vw,52px)}.i2{flex-direction:column;gap:14px}}
+</style>
+</head>
+<body>
+
+<div id="intro">
+  <div class="imark serif"><em>G</em></div>
+  <div class="iname serif">Getz Funeral Home</div>
+  <div class="itag">Three generations · Las Cruces</div>
+</div>
+
+<div class="topbar">Three generations of caring for Las Cruces families · <a href="tel:5755262419">Call any hour — (575) 526-2419</a></div>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#">
+        <div class="mark serif"><em>G</em></div>
+        <div class="name">Getz Funeral Home <span>Las Cruces, New Mexico</span></div>
+      </a>
+      <ul class="navlinks">
+        <li><a href="#offer">What we offer</a></li>
+        <li><a href="#story">Our family</a></li>
+        <li><a href="#promise">Our promise</a></li>
+        <li><a href="#reach">Plan ahead</a></li>
+      </ul>
+      <div class="navcta">
+        <a class="phone" href="tel:5755262419">(575) 526-2419</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <div class="hero-eyebrow">Three generations in Las Cruces</div>
+      <h1>Still here. Still <em>family.</em></h1>
+      <p class="sub">When a Las Cruces family faces the hardest day, they reach for someone they can trust. For three generations, that has meant Getz — patient, personal, and here whenever you need us.</p>
+      <div class="hero-cta">
+        <a class="btn btn-olive" href="#reach">Plan ahead, gently</a>
+        <a class="btn btn-line" href="tel:5755262419">We answer 24/7</a>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="spec s-moss"><img src="/sensible/cut-moss.png" alt="Moss"></div>
+      <div class="spec s-cone"><img src="/sensible/cut-pinecone.png" alt="Pinecone"></div>
+      <div class="spec s-fern"><img src="/sensible/cut-fern.png" alt="Fern"></div>
+      <div class="spec s-bloom"><img src="/sensible/cut-bloom.png" alt="Dried wildflowers"></div>
+    </div>
+  </div>
+</section>
+
+<!-- TWO-COLUMN INTRO -->
+<section class="intro2">
+  <div class="wrap intro2-grid obs" data-stagger>
+    <div class="i2">
+      <div class="i2img"><img src="/sensible/spec-pinecone.jpg" alt=""></div>
+      <div>
+        <h3>Full-service care</h3>
+        <p>Traditional funerals, cremation, and celebrations of life — all arranged with patience, transparency, and no hidden costs. We walk with your family every step of the way.</p>
+        <a href="#offer">What we offer</a>
+      </div>
+    </div>
+    <div class="i2">
+      <div class="i2img"><img src="/sensible/spec-fern.jpg" alt=""></div>
+      <div>
+        <h3>Planning ahead</h3>
+        <p>The most loving thing you can do. Set your wishes down now, gently — it gives your family the gift of clarity when the moment comes and they need it most.</p>
+        <a href="#reach">Begin pre-planning</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SPECIMEN COLLAGE BAND -->
+<section class="collage">
+  <div class="scatter sc-leaf"><img src="/sensible/cut-leaf.png" alt=""></div>
+  <div class="scatter sc-mush"><img src="/sensible/cut-mushroom.png" alt=""></div>
+  <div class="wrap obs" data-stagger>
+    <p class="ce serif">Every life leaves something behind — a warmth, a way of laughing, a garden tended for decades. We make sure that story is told well.</p>
+    <div class="collage-img"><img src="/sensible/spec-collage.jpg" alt="A naturalist collection on cream — moss, pinecone, fern, and bloom"></div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="svc" id="offer">
+  <div class="wrap">
+    <div class="sec-head obs" data-stagger>
+      <div class="sec-eyebrow">What we offer</div>
+      <h2 class="sec-title">Whatever your family needs.</h2>
+    </div>
+    <div class="svc-grid obs" data-stagger>
+      <div class="svc-card">
+        <div class="sn serif">i.</div>
+        <h3>Traditional Funerals</h3>
+        <p>A full funeral service arranged around your family's faith, culture, and wishes — from the visitation through the burial, handled with care and without cutting corners.</p>
+      </div>
+      <div class="svc-card">
+        <div class="sn serif">ii.</div>
+        <h3>Cremation Services</h3>
+        <p>Simple direct cremation or cremation with a full memorial — we offer both, honestly priced, with every option explained before any decision is made.</p>
+      </div>
+      <div class="svc-card">
+        <div class="sn serif">iii.</div>
+        <h3>Pre-Planning</h3>
+        <p>Set your arrangements now, at today's prices, and give your family a gift they will thank you for. We walk you through every choice with no pressure and no obligation.</p>
+      </div>
+      <div class="svc-card">
+        <div class="sn serif">iv.</div>
+        <h3>Celebrations of Life</h3>
+        <p>A gathering that honors who they really were — their humor, their passions, their people. Personal, never a template, and shaped entirely around your family.</p>
+      </div>
+    </div>
+    <p class="svc-note">Obituary preparation · flowers &amp; tributes · grief resources · transparent pricing · <b>immediate need answered 24/7</b>.</p>
+  </div>
+</section>
+
+<!-- OLIVE BLOCK -->
+<section class="olive-block" id="promise">
+  <div class="scatter sc-moss2"><img src="/sensible/cut-moss.png" alt=""></div>
+  <div class="scatter sc-cone2"><img src="/sensible/cut-pinecone.png" alt=""></div>
+  <div class="scatter sc-fern2"><img src="/sensible/cut-fern.png" alt=""></div>
+  <div class="wrap obs" data-stagger>
+    <div class="oe">Our promise to Las Cruces</div>
+    <h2>"Three generations of names you know — because we do this work the way it was meant to be done."</h2>
+    <p>No pressure. No hidden costs. Just the same patient, personal care Chad Getz's family has offered Las Cruces since long before most families we serve were born.</p>
+    <div class="olive-row">
+      <div class="olive-item"><b>3</b><span>Generations serving Las Cruces</span></div>
+      <div class="olive-item"><b>24/7</b><span>Real people, any hour</span></div>
+      <div class="olive-item"><b>Clear</b><span>Honest, upfront pricing</span></div>
+      <div class="olive-item"><b>Care</b><span>After the service, too</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- STORY -->
+<section class="story" id="story">
+  <div class="wrap story-grid obs" data-stagger>
+    <div class="story-photo kb"><img src="/sensible/story-meadow.jpg" alt="A quiet desert meadow in New Mexico light"></div>
+    <div class="story-copy">
+      <div class="se">Three generations, one family</div>
+      <h2>Las Cruces knows the <em>Getz name.</em></h2>
+      <p>Chad Getz and his family have been caring for Las Cruces families across three generations — long enough to have served the grandparents of families they serve today. That depth of trust is not something you build overnight, and it is not something you can replicate.</p>
+      <p>When you reach Getz Funeral Home, you reach a real person who knows this community the way only someone who has lived here their whole life can. We are here any hour, for any need, without the distance of a corporate chain.</p>
+      <p>1410 E Bowman Ave has been a place of care and quiet dignity for this city for a long time. It always will be.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FORM -->
+<section class="reach" id="reach">
+  <div class="wrap">
+    <div class="reach-card obs">
+      <div class="reach-head">
+        <div class="re">Reach our family</div>
+        <h2>Whenever you're ready, we're here.</h2>
+        <p>Leave a gentle note and a member of our family will reach you personally — never a call center, never a stranger.</p>
+      </div>
+      <form id="reachForm" novalidate>
+        <div class="rf-modes">
+          <div class="rf-mode sel" data-mode="plan"><b>Planning ahead</b><span>For peace of mind</span></div>
+          <div class="rf-mode" data-mode="loss"><b>We've lost someone</b><span>We're here now</span></div>
+          <div class="rf-mode" data-mode="ask"><b>Just a question</b><span>However we can help</span></div>
+        </div>
+        <div class="rf-urgent" id="rfUrgent"><div><a href="tel:5755262419">(575) 526-2419</a><div class="u">If you need us this moment, please call — we answer 24/7. Or leave your details below and we will call you right back.</div></div></div>
+        <div class="rf-row">
+          <div class="rf-field"><label>First name</label><input type="text" id="rf-first"></div>
+          <div class="rf-field"><label>Last name</label><input type="text" id="rf-last"></div>
+        </div>
+        <div class="rf-row">
+          <div class="rf-field"><label>Phone</label><input type="tel" id="rf-phone" placeholder="(575) 000-0000"></div>
+          <div class="rf-field"><label>Email <span style="text-transform:none;color:var(--brown-soft);font-weight:400">(optional)</span></label><input type="email" id="rf-email"></div>
+        </div>
+        <div class="rf-field"><label id="rf-notelabel">Anything you would like us to know (optional)</label><textarea id="rf-note" placeholder="A name, a wish, a question — whatever is on your heart."></textarea></div>
+        <button type="submit" class="rf-submit" id="rfSubmit">Send to our family</button>
+        <div class="rf-foot">Private and never shared · nothing is final · no cost to begin</div>
+      </form>
+      <div class="rf-success" id="rfSuccess">
+        <div class="rf-check">&#10003;</div>
+        <h3 id="rfSuccessHead">Thank you — we have it.</h3>
+        <p id="rfSuccessText">A member of the Getz family will reach out personally, with care and without pressure. You are not alone in this.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <div class="fmark">Getz</div>
+        <div class="ftag">Three generations · Las Cruces</div>
+        <p>Getz Funeral Home has cared for Las Cruces families across three generations. Transparent, personal, and here any hour — because some things should never change.</p>
+      </div>
+      <div class="foot-col">
+        <h4>What we offer</h4>
+        <a href="#offer">Traditional Funerals</a>
+        <a href="#offer">Cremation Services</a>
+        <a href="#offer">Celebrations of Life</a>
+        <a href="#reach">Pre-Planning</a>
+      </div>
+      <div class="foot-col">
+        <h4>Families</h4>
+        <a href="#reach">Immediate Need</a>
+        <a href="#story">Obituaries</a>
+        <a href="#promise">Grief Support</a>
+        <a href="#reach">Pricing</a>
+      </div>
+      <div class="foot-col">
+        <h4>Reach us</h4>
+        <p>1410 E Bowman Ave<br>Las Cruces, NM 88001</p>
+        <a href="tel:5755262419">(575) 526-2419</a>
+        <p>Available 24/7 · Always a real person</p>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>&copy; Getz Funeral Home &middot; Three generations caring for Las Cruces</span>
+      <span>Concept by <a href="https://aheadofmarket.com">Ahead of Market</a></span>
+    </div>
+  </div>
+</footer>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-handle" id="drawerHandle">
+    <div class="dh-left">
+      <div class="dh-grade serif">A</div>
+      <div class="dh-txt"><b>Why this site would serve your families better</b><span>Six honest reasons — tap to see the report card</span></div>
+    </div>
+    <div class="dh-toggle">See the report card <span class="chev">&#9650;</span></div>
+  </div>
+  <div class="drawer-body">
+    <div class="rc-intro">
+      <div class="rce">A quiet report card</div>
+      <h3>Today your site earns a <em>C</em>. Here is how we would make it an <em>A</em>.</h3>
+    </div>
+    <div class="rc-grades">
+      <div class="rc-grade today"><div class="g serif">C</div><span>Your site today</span></div>
+      <div class="rc-arrow serif">&rarr;</div>
+      <div class="rc-grade new"><div class="g serif">A</div><span>What we would build</span></div>
+    </div>
+    <div class="rc-colhead"><span></span><span class="h-today">Today</span><span class="h-new">What we would do</span></div>
+    <div class="rc-rows">
+      <div class="rc-row">
+        <div class="rc-crit">First impression</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>Dated and hard to read on a phone — families searching in a hard moment deserve better.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Warm, calm, and alive — the kind of presence three generations of service has earned.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">Your best story</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>Three generations in Las Cruces is buried. Families do not know they are choosing something rare.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Front and center — the most powerful reason to choose Getz over anyone else.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">Plan ahead</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>No gentle online path to begin pre-planning. Families have to call first just to get started.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>A family can begin gently in their own time — it comes straight to you with one note.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">Help at 2am</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>A family in crisis finds no clear path to a real person on the page they land on.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>One clear, dignified 24/7 path to your family — never a form that leads nowhere.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">On a phone</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>Most families search by phone in their hardest moment. Your site strains on a small screen.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>Built mobile-first, so nothing breaks when it matters most.</div>
+      </div>
+      <div class="rc-row">
+        <div class="rc-crit">A look worthy of the name</div>
+        <div class="rc-cell today"><span class="mk">&times;</span>Three generations of trust deserves better than a generic funeral-industry template.</div>
+        <div class="rc-cell new"><span class="mk">&#10003;</span>The warmth and dignity of the Getz name — finally shown the way it deserves.</div>
+      </div>
+    </div>
+    <div class="drawer-cta">
+      <div class="dctitle serif">See it for yourself, side by side</div>
+      <button class="btn btn-olive" id="openReveal">Show me the comparison</button>
+    </div>
+  </div>
+</div>
+
+<!-- REVEAL -->
+<div class="reveal-overlay" id="revealModal" aria-hidden="true">
+  <div class="reveal-card" role="dialog" aria-modal="true" aria-label="Old site versus new site">
+    <button class="reveal-close" id="revealClose" aria-label="Close">&times;</button>
+    <div class="rv-stage" id="revealMain">
+      <div class="reveal-top">
+        <div class="re-eye">Before &amp; after</div>
+        <h2>Same family. A presence that finally matches it.</h2>
+        <p>Everything your Las Cruces families rely on is still here — only now it honors the name and the three generations behind it.</p>
+      </div>
+      <div class="compare">
+        <div class="cmp cmp-old">
+          <div class="cmp-tag"><span class="tdot"></span>Your site today</div>
+          <div class="bframe">
+            <div class="bbar"><span class="bdot r"></span><span class="bdot y"></span><span class="bdot g"></span><span class="burl">getzfuneralhome.com</span></div>
+            <div class="bview"><div class="noimg" style="display:flex">getzfuneralhome.com<br>(current site)</div></div>
+          </div>
+        </div>
+        <div class="cmp cmp-new">
+          <div class="cmp-tag"><span class="tdot"></span>What we started for you</div>
+          <div class="bframe">
+            <div class="bbar"><span class="bdot r"></span><span class="bdot y"></span><span class="bdot g"></span><span class="burl">aheadofmarket.com/getz</span></div>
+            <div class="bview scroll"><div class="noimg" style="display:flex">aheadofmarket.com/getz<br>(this site)</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="reveal-foot">
+        <span class="rf-line">Three generations of care — finally, a site that feels that way.</span>
+        <button class="btn btn-olive" id="revealTalkBtn">Let us talk about it</button>
+      </div>
+    </div>
+    <div class="rv-talk" id="revealTalk">
+      <div class="te">Let us talk</div>
+      <h2>The Getz family is ready to listen.</h2>
+      <p>Call any hour, or leave one gentle note online and we will reach you personally — never a call center, never a stranger.</p>
+      <a class="tphone" href="tel:5755262419">(575) 526-2419</a>
+      <div class="taddr">1410 E Bowman Ave &middot; Las Cruces, NM 88001<br>Real people, any hour</div>
+      <a class="btn btn-olive" href="#reach" onclick="document.getElementById('revealModal').classList.remove('open');document.body.style.overflow=''">Leave one gentle note</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var modes=document.querySelectorAll('.rf-mode');
+  var urgent=document.getElementById('rfUrgent');
+  var submit=document.getElementById('rfSubmit');
+  var noteLabel=document.getElementById('rf-notelabel');
+  var COPY={
+    plan:{submit:'Send to our family',urgent:false,note:'Anything you would like us to know (optional)',sHead:'Thank you — we have it.',sText:'A member of the Getz family will reach out personally, with care and without pressure.'},
+    loss:{submit:'Send — please call me back',urgent:true,note:'Tell us what is happening, however you can (optional)',sHead:'We have you.',sText:'A member of our family is being notified now and will call you right away. If you need us this moment, please call (575) 526-2419.'},
+    ask:{submit:'Send my question',urgent:false,note:'What can we help you with? (optional)',sHead:'Thank you — we have it.',sText:'A member of the Getz family will get back to you personally, with care and no pressure.'}
+  };
+  function apply(m){var c=COPY[m];modes.forEach(function(x){x.classList.toggle('sel',x.getAttribute('data-mode')===m);});urgent.style.display=c.urgent?'flex':'none';submit.textContent=c.submit;noteLabel.textContent=c.note;document.getElementById('rfSuccessHead').textContent=c.sHead;document.getElementById('rfSuccessText').textContent=c.sText;}
+  modes.forEach(function(x){x.addEventListener('click',function(){apply(x.getAttribute('data-mode'));});});
+  document.getElementById('reachForm').addEventListener('submit',function(e){e.preventDefault();this.style.display='none';document.getElementById('rfSuccess').classList.add('show');});
+  var drawer=document.getElementById('drawer');
+  document.getElementById('drawerHandle').addEventListener('click',function(){drawer.classList.toggle('open');});
+  var reveal=document.getElementById('revealModal');
+  var rvMain=document.getElementById('revealMain'),rvTalk=document.getElementById('revealTalk'),rvBtn=document.getElementById('revealTalkBtn');
+  if(rvBtn){rvBtn.addEventListener('click',function(){rvMain.classList.add('out');setTimeout(function(){rvMain.style.display='none';rvTalk.classList.add('show');requestAnimationFrame(function(){requestAnimationFrame(function(){rvTalk.classList.add('in');});});},430);});}
+  function openR(){if(rvMain){rvMain.style.display='';rvMain.classList.remove('out');rvTalk.classList.remove('show');rvTalk.classList.remove('in');}reveal.classList.add('open');reveal.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';}
+  function closeR(){reveal.classList.remove('open');reveal.setAttribute('aria-hidden','true');document.body.style.overflow='';}
+  document.getElementById('openReveal').addEventListener('click',openR);
+  document.getElementById('revealClose').addEventListener('click',closeR);
+  reveal.addEventListener('click',function(e){if(e.target===reveal)closeR();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&reveal.classList.contains('open'))closeR();});
+  var obs=document.querySelectorAll('.obs');
+  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.14});obs.forEach(function(el){io.observe(el);});}
+  else{obs.forEach(function(el){el.classList.add('in');});}
+  setTimeout(function(){drawer.style.transition='transform .5s cubic-bezier(.5,0,.2,1)';drawer.style.transform='translateY(calc(100% - 78px))';setTimeout(function(){drawer.style.transform='';},900);},6500);
+})();
+</script>
+</body>
+</html>
