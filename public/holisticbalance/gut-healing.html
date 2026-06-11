@@ -396,6 +396,174 @@
       flex-shrink: 0;
     }
 
+    /* ── INLINE QUESTION ── */
+    .inline-question {
+      background: var(--cream);
+      border-radius: 3px;
+      padding: 20px 24px;
+      margin: 24px 0;
+      border-left: 3px solid var(--emerald-light);
+    }
+
+    .inline-question-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--emerald-light);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .inline-question p {
+      font-size: 0.88rem;
+      color: var(--text-dark);
+      font-style: italic;
+      margin-bottom: 12px;
+    }
+
+    .inline-question .reflection-textarea {
+      min-height: 80px;
+    }
+
+    /* ── RECIPE CARD ── */
+    .recipe-card {
+      background: var(--cream);
+      border-radius: 3px;
+      padding: 28px 28px 24px;
+      margin: 32px 0;
+      border: 1px solid var(--cream-dark);
+      position: relative;
+    }
+
+    .recipe-card::before {
+      content: '⬡';
+      position: absolute;
+      top: -1px;
+      right: 20px;
+      font-size: 1.6rem;
+      color: var(--emerald-light);
+      opacity: 0.3;
+      line-height: 1;
+    }
+
+    .recipe-card-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin-bottom: 8px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .recipe-card-label::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald-light);
+      flex-shrink: 0;
+    }
+
+    .recipe-card h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+
+    .recipe-serves {
+      font-size: 0.78rem;
+      color: var(--text-light);
+      margin-bottom: 20px;
+      letter-spacing: 0.04em;
+    }
+
+    .recipe-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .recipe-col-label {
+      font-size: 0.62rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      font-weight: 500;
+      margin-bottom: 10px;
+    }
+
+    .recipe-ingredients {
+      list-style: none;
+    }
+
+    .recipe-ingredients li {
+      font-size: 0.86rem;
+      color: var(--text-mid);
+      padding: 5px 0;
+      border-bottom: 1px solid var(--cream-dark);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .recipe-ingredients li:last-child { border-bottom: none; }
+
+    .recipe-ingredients li::before {
+      content: '·';
+      color: var(--emerald-light);
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    .recipe-steps {
+      list-style: none;
+      counter-reset: step-counter;
+    }
+
+    .recipe-steps li {
+      font-size: 0.86rem;
+      color: var(--text-mid);
+      padding: 6px 0;
+      border-bottom: 1px solid var(--cream-dark);
+      display: flex;
+      gap: 10px;
+      counter-increment: step-counter;
+    }
+
+    .recipe-steps li:last-child { border-bottom: none; }
+
+    .recipe-steps li::before {
+      content: counter(step-counter);
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--emerald);
+      background: #fff;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+      border: 1px solid var(--cream-dark);
+    }
+
+    .recipe-note {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      font-style: italic;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--cream-dark);
+    }
+
     /* ── REFLECTION ── */
     .reflection-block {
       background: var(--cream);
@@ -645,6 +813,7 @@
       .top-bar { padding: 14px 20px; }
       .course-title-bar { display: none; }
       .progress-bar-wrap { width: 100px; }
+      .recipe-cols { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 600px) {
@@ -794,6 +963,14 @@
           If you recognize yourself in two or more of these, your gut microbiome is asking
           for attention. The good news: it responds well to care.
         </p>
+
+        <!-- INLINE QUESTION 1a -->
+        <div class="inline-question">
+          <div class="inline-question-label">Quick Check →</div>
+          <p>Which of these symptoms have you noticed in your own body? Be specific — when do they tend to show up?</p>
+          <textarea class="reflection-textarea" id="r1a" placeholder="e.g. I get bloated almost every evening, especially after pasta or bread..."></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="content-section">
@@ -808,6 +985,14 @@
           state is directly affected. Healing your gut is not just physical healing.
           <strong>It is emotional healing too.</strong>
         </p>
+
+        <!-- INLINE QUESTION 1b -->
+        <div class="inline-question">
+          <div class="inline-question-label">Pause &amp; Reflect →</div>
+          <p>Have you ever noticed a connection between how you feel emotionally and how your gut feels physically? Describe a specific moment.</p>
+          <textarea class="reflection-textarea" id="r1b" placeholder="e.g. Before a difficult conversation at work, my stomach tightens and I lose my appetite..."></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="reflection-block">
@@ -879,6 +1064,14 @@
           enzymes, vitamins, and minerals it needs to maintain a healthy microbiome. When you
           eat highly processed foods, you are often feeding inflammation instead.
         </p>
+
+        <!-- INLINE QUESTION 2a -->
+        <div class="inline-question">
+          <div class="inline-question-label">Quick Check →</div>
+          <p>On a typical day, roughly what % of what you eat would you call a whole food? What's your honest answer?</p>
+          <textarea class="reflection-textarea" id="r2a" placeholder="Be honest — not aspirational. What does a real Tuesday look like for you?"></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="content-section">
@@ -937,6 +1130,14 @@
           <li><span class="food-dot"></span>Sugary drinks → water + sliced citrus</li>
           <li><span class="food-dot"></span>Cereal → oatmeal with seeds</li>
         </ul>
+
+        <!-- INLINE QUESTION 2b -->
+        <div class="inline-question">
+          <div class="inline-question-label">Pause &amp; Reflect →</div>
+          <p>Which swap from the list above feels most doable for you this week? What's the one thing that makes it hard?</p>
+          <textarea class="reflection-textarea" id="r2b" placeholder="e.g. The cereal → oatmeal swap feels possible, but mornings are rushed and I usually just grab whatever is fast..."></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="reflection-block">
@@ -1031,6 +1232,14 @@
           Pasteurized or heat-processed versions will not provide the same benefit — the
           heat kills the beneficial bacteria.
         </p>
+
+        <!-- INLINE QUESTION 3a -->
+        <div class="inline-question">
+          <div class="inline-question-label">Quick Check →</div>
+          <p>Which of these do you already eat? Which one would you be willing to try for the first time this week?</p>
+          <textarea class="reflection-textarea" id="r3a" placeholder="e.g. I eat plain yogurt already. I'd be willing to try kimchi — I've seen it at the store but never bought it..."></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="content-section">
@@ -1064,6 +1273,46 @@
           <li><span class="food-dot"></span>Jerusalem artichoke</li>
           <li><span class="food-dot"></span>Cauliflower</li>
         </ul>
+
+        <!-- INLINE QUESTION 3b -->
+        <div class="inline-question">
+          <div class="inline-question-label">Pause &amp; Reflect →</div>
+          <p>How many prebiotic foods did you eat yesterday? What could you add to tomorrow's meals?</p>
+          <textarea class="reflection-textarea" id="r3b" placeholder="e.g. I had garlic in dinner and oats for breakfast — so maybe 2. Tomorrow I could add a banana to my morning..."></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
+      </div>
+
+      <!-- RECIPE CARD: MISO SOUP -->
+      <div class="recipe-card">
+        <div class="recipe-card-label">Try This Recipe</div>
+        <h3>Simple Miso Soup</h3>
+        <div class="recipe-serves">5 minutes · Serves 1 · Probiotic-rich</div>
+        <div class="recipe-cols">
+          <div>
+            <div class="recipe-col-label">Ingredients</div>
+            <ul class="recipe-ingredients">
+              <li>1 cup hot water (not boiling)</li>
+              <li>1 tbsp white miso paste</li>
+              <li>¼ block soft tofu, cubed</li>
+              <li>1 green onion, sliced</li>
+              <li>1 tsp dried wakame seaweed (optional)</li>
+            </ul>
+          </div>
+          <div>
+            <div class="recipe-col-label">Method</div>
+            <ol class="recipe-steps">
+              <li>Heat water until steaming — do NOT boil (boiling kills probiotics)</li>
+              <li>Whisk miso paste into the water until fully dissolved</li>
+              <li>Add tofu and wakame seaweed</li>
+              <li>Top with sliced green onion</li>
+              <li>Sip slowly and enjoy</li>
+            </ol>
+          </div>
+        </div>
+        <div class="recipe-note">
+          Miso is a live fermented food — gentle heat preserves the beneficial bacteria. Keep water below a boil.
+        </div>
       </div>
 
       <div class="reflection-block">
@@ -1141,6 +1390,14 @@
             but without the side effects.
           </p>
         </div>
+
+        <!-- INLINE QUESTION 4a -->
+        <div class="inline-question">
+          <div class="inline-question-label">Quick Check →</div>
+          <p>What does your typical breakfast look like? Does it lean anti-inflammatory or pro-inflammatory? Be honest.</p>
+          <textarea class="reflection-textarea" id="r4a" placeholder="e.g. Usually coffee + a granola bar or cereal. Probably more pro-inflammatory than I'd like to admit..."></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="content-section">
@@ -1176,6 +1433,14 @@
           You don't need to eliminate everything at once. Reducing frequency matters —
           a diet that's 80% anti-inflammatory gives your gut the environment it needs to heal.
         </p>
+
+        <!-- INLINE QUESTION 4b -->
+        <div class="inline-question">
+          <div class="inline-question-label">Pause &amp; Reflect →</div>
+          <p>Which inflammatory foods show up most often in your week? What's driving that — convenience, habit, stress?</p>
+          <textarea class="reflection-textarea" id="r4b" placeholder="e.g. Sugary drinks every afternoon — it's habit more than anything. I reach for them when I hit my 3pm slump..."></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="content-section">
@@ -1195,6 +1460,39 @@
           <strong>Choose fatty fish twice a week.</strong> Salmon, sardines, and mackerel are
           highest in omega-3s. Canned versions are just as beneficial and far more affordable.
         </p>
+      </div>
+
+      <!-- RECIPE CARD: GOLDEN GUT SMOOTHIE -->
+      <div class="recipe-card">
+        <div class="recipe-card-label">Try This Recipe</div>
+        <h3>Golden Gut Smoothie</h3>
+        <div class="recipe-serves">5 minutes · Serves 1 · Anti-inflammatory + prebiotic</div>
+        <div class="recipe-cols">
+          <div>
+            <div class="recipe-col-label">Ingredients</div>
+            <ul class="recipe-ingredients">
+              <li>1 cup coconut milk or oat milk</li>
+              <li>½ frozen banana</li>
+              <li>1 tsp turmeric powder</li>
+              <li>¼ tsp ginger powder</li>
+              <li>Pinch of black pepper</li>
+              <li>1 tbsp chia seeds</li>
+              <li>Handful of spinach (optional)</li>
+            </ul>
+          </div>
+          <div>
+            <div class="recipe-col-label">Method</div>
+            <ol class="recipe-steps">
+              <li>Add all ingredients to a blender</li>
+              <li>Blend until smooth, about 30 seconds</li>
+              <li>Pour and drink immediately</li>
+              <li>The black pepper is essential — it increases turmeric absorption by up to 2,000%</li>
+            </ol>
+          </div>
+        </div>
+        <div class="recipe-note">
+          This smoothie is both anti-inflammatory (turmeric, ginger) and prebiotic (banana + chia seeds feed your beneficial gut bacteria). A powerful gut-healing combination in one glass.
+        </div>
       </div>
 
       <div class="reflection-block">
@@ -1284,6 +1582,14 @@
             juices, and wakes up gut motility — gently preparing your system for the day.
           </p>
         </div>
+
+        <!-- INLINE QUESTION 5a -->
+        <div class="inline-question">
+          <div class="inline-question-label">Quick Check →</div>
+          <p>How many glasses of water did you drink yesterday? Be honest — most people drink less than they think.</p>
+          <textarea class="reflection-textarea" id="r5a" placeholder="Count honestly. Coffee and juice don't count. How many actual glasses of water?"></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="content-section">
@@ -1316,6 +1622,14 @@
           all work against your hydration goals and can disrupt your gut microbiome.
           Replace one a day with herbal tea or infused water and notice the difference.
         </p>
+
+        <!-- INLINE QUESTION 5b -->
+        <div class="inline-question">
+          <div class="inline-question-label">Pause &amp; Reflect →</div>
+          <p>What's your biggest obstacle to drinking more water? What's one small change you could make tomorrow?</p>
+          <textarea class="reflection-textarea" id="r5b" placeholder="e.g. I forget until I'm already thirsty. Tomorrow I could set a reminder at 10am and 2pm to drink a glass..."></textarea>
+          <p class="save-note">Saved automatically as you type.</p>
+        </div>
       </div>
 
       <div class="reflection-block">
@@ -1509,7 +1823,8 @@
     });
   }
 
-  // ── REFLECTION AUTOSAVE ──
+  // ── REFLECTION AUTOSAVE (includes all inline question IDs) ──
+  // All textarea IDs that should persist: r1, r1a, r1b, r2, r2a, r2b, r3, r3a, r3b, r4, r4a, r4b, r5, r5a, r5b
   document.querySelectorAll('.reflection-textarea').forEach(ta => {
     const key = 'reflection_' + ta.id;
     ta.value = state[key] || '';
