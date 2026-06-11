@@ -1468,11 +1468,45 @@
   }
 
   // ── CHECKLIST ──
+  // Map module id → its checkbox keys
+  const MODULE_CHECKS = {
+    1: ['m1c1','m1c2','m1c3','m1c4'],
+    2: ['m2c1','m2c2','m2c3','m2c4'],
+    3: ['m3c1','m3c2','m3c3','m3c4'],
+    4: ['m4c1','m4c2','m4c3','m4c4'],
+    5: ['m5c1','m5c2','m5c3','m5c4'],
+  };
+
+  function allChecked(moduleId) {
+    const keys = MODULE_CHECKS[moduleId] || [];
+    return keys.every(k => state.checks && state.checks[k]);
+  }
+
+  function updateNextButton(moduleId) {
+    const panel = document.getElementById('panel-' + moduleId);
+    if (!panel) return;
+    const nextBtn = panel.querySelector('.btn-primary');
+    if (!nextBtn) return;
+    if (allChecked(moduleId)) {
+      nextBtn.classList.add('ready');
+      nextBtn.style.boxShadow = '0 0 0 3px rgba(74,124,89,0.35)';
+      nextBtn.style.opacity = '1';
+    } else {
+      nextBtn.classList.remove('ready');
+      nextBtn.style.boxShadow = 'none';
+      nextBtn.style.opacity = '0.4';
+    }
+  }
+
   function toggleCheck(el, key) {
     el.classList.toggle('checked');
     if (!state.checks) state.checks = {};
     state.checks[key] = el.classList.contains('checked');
     saveState(state);
+    // find which module this key belongs to and update its next button
+    Object.entries(MODULE_CHECKS).forEach(([modId, keys]) => {
+      if (keys.includes(key)) updateNextButton(parseInt(modId));
+    });
   }
 
   // ── REFLECTION AUTOSAVE ──
@@ -1494,6 +1528,8 @@
         if (fn.includes(key) && val) item.classList.add('checked');
       });
     });
+    // Re-evaluate all next buttons after restoring checks
+    MODULES.forEach(m => updateNextButton(m.id));
   }
 
   // ── MOBILE NAV ──
@@ -1508,6 +1544,8 @@
   renderNav('mobileModuleNav');
   renderProgress();
   goToModule(startModule);
+  // Set initial next-button states for all modules
+  MODULES.forEach(m => updateNextButton(m.id));
 </script>
 </body>
 </html>
