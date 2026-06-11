@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Certificate of Completion · Holistic Balance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --emerald: #2C5F47;
+      --cream: #F7F2EA;
+      --warm-white: #FDFAF5;
+      --text: #1a1a1a;
+      --text-light: #6b7280;
+      --border: #d8d0c4;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Jost', sans-serif;
+      background: var(--warm-white);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 48px 24px 64px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── PRINT BUTTON ────────────────────────── */
+    .print-bar {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 24px;
+    }
+    .btn-print {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      background: transparent;
+      border: 1px solid var(--emerald);
+      padding: 9px 22px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-print:hover { background: var(--emerald); color: white; }
+
+    /* ── CERTIFICATE CARD ────────────────────── */
+    .cert {
+      width: 100%;
+      max-width: 720px;
+      background: var(--cream);
+      padding: 60px 72px 52px;
+      border: 1.5px solid var(--border);
+      position: relative;
+    }
+
+    /* corner ornaments */
+    .cert::before,
+    .cert::after {
+      content: '';
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-color: var(--emerald);
+      border-style: solid;
+    }
+    .cert::before {
+      top: 16px;
+      left: 16px;
+      border-width: 1.5px 0 0 1.5px;
+    }
+    .cert::after {
+      bottom: 16px;
+      right: 16px;
+      border-width: 0 1.5px 1.5px 0;
+    }
+
+    /* ── WORDMARK ────────────────────────────── */
+    .cert-wordmark {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .cert-rule {
+      width: 100%;
+      height: 1px;
+      background: var(--emerald);
+      margin-bottom: 36px;
+      opacity: 0.35;
+    }
+
+    /* ── HEADLINE ────────────────────────────── */
+    .cert-headline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.6rem;
+      font-weight: 400;
+      text-align: center;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: 22px;
+    }
+
+    .cert-presents {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 400;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    /* ── NAME FIELD ──────────────────────────── */
+    .cert-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.1rem;
+      font-weight: 400;
+      font-style: italic;
+      text-align: center;
+      color: var(--emerald);
+      border: none;
+      border-bottom: 1.5px solid var(--emerald);
+      background: transparent;
+      outline: none;
+      width: 100%;
+      padding: 8px 0 10px;
+      margin-bottom: 28px;
+      cursor: text;
+    }
+    .cert-name:empty::before {
+      content: attr(data-placeholder);
+      color: #b0a898;
+      font-style: italic;
+    }
+
+    /* ── BODY TEXT ───────────────────────────── */
+    .cert-body {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 300;
+      text-align: center;
+      color: var(--text-light);
+      line-height: 1.75;
+      max-width: 480px;
+      margin: 0 auto 28px;
+    }
+
+    /* ── DETAILS ─────────────────────────────── */
+    .cert-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+    .cert-detail-item + .cert-detail-item {
+      border-left: 1px solid var(--border);
+    }
+    .cert-detail-label {
+      font-size: 0.62rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin-bottom: 4px;
+    }
+    .cert-detail-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--text);
+    }
+
+    .cert-rule-2 {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 28px;
+    }
+
+    /* ── SIGNATURE ROW ───────────────────────── */
+    .cert-sig-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 36px;
+    }
+    .cert-sig-block { text-align: center; }
+    .cert-sig-line {
+      width: 100%;
+      height: 1px;
+      background: var(--text);
+      margin-bottom: 8px;
+      opacity: 0.3;
+    }
+    .cert-sig-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      font-weight: 400;
+      margin-bottom: 2px;
+    }
+    .cert-sig-title {
+      font-size: 0.68rem;
+      font-weight: 400;
+      color: var(--text-light);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── TAGLINE ─────────────────────────────── */
+    .cert-tagline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1rem;
+      font-style: italic;
+      text-align: center;
+      color: var(--text-light);
+    }
+
+    /* ── PRINT ───────────────────────────────── */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+        display: block;
+      }
+      .print-bar { display: none !important; }
+
+      .cert {
+        max-width: 100%;
+        width: 100%;
+        min-height: 100vh;
+        border: 1.5px solid var(--border);
+        padding: 60px 72px 52px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .cert-name {
+        border-bottom: 1.5px solid var(--emerald) !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .cert-wordmark,
+      .cert-headline,
+      .cert-rule,
+      .cert::before,
+      .cert::after {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PRINT BUTTON (hidden on print) -->
+  <div class="print-bar">
+    <button class="btn-print" onclick="window.print()">Print / Save PDF</button>
+  </div>
+
+  <!-- CERTIFICATE -->
+  <div class="cert">
+
+    <div class="cert-wordmark">Holistic Balance</div>
+    <div class="cert-rule"></div>
+
+    <div class="cert-headline">Certificate of Completion</div>
+
+    <p class="cert-presents">This certifies that</p>
+
+    <div
+      class="cert-name"
+      contenteditable="true"
+      data-placeholder="Your Name"
+      spellcheck="false"
+    ></div>
+
+    <p class="cert-body">
+      has successfully completed the course<br>
+      <strong style="font-family:'Cormorant Garamond',serif; font-size:1.1em; font-weight:500; font-style:italic;">Techniques for Gut Healing</strong><br>
+      — a five-module program in functional nutrition and gut health — through Holistic Balance Health Coaching.
+    </p>
+
+    <div class="cert-details">
+      <div class="cert-detail-item">
+        <div class="cert-detail-label">Course</div>
+        <div class="cert-detail-value">Gut Healing</div>
+      </div>
+      <div class="cert-detail-item">
+        <div class="cert-detail-label">Modules</div>
+        <div class="cert-detail-value">5 of 5</div>
+      </div>
+      <div class="cert-detail-item">
+        <div class="cert-detail-label">Date Completed</div>
+        <div class="cert-detail-value" id="certDate"></div>
+      </div>
+    </div>
+
+    <div class="cert-rule-2"></div>
+
+    <div class="cert-sig-row">
+      <div class="cert-sig-block">
+        <div class="cert-sig-line"></div>
+        <div class="cert-sig-name">Courtney</div>
+        <div class="cert-sig-title">Certified Health Coach · Holistic Balance</div>
+      </div>
+      <div class="cert-sig-block">
+        <div class="cert-sig-line"></div>
+        <div class="cert-sig-name">&nbsp;</div>
+        <div class="cert-sig-title">Date</div>
+      </div>
+    </div>
+
+    <div class="cert-tagline">Your wellness journey is just beginning.</div>
+
+  </div>
+
+  <script>
+    // Auto-fill the completion date
+    const el = document.getElementById('certDate');
+    const d = new Date();
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    el.textContent = months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4-Week Gut Health Tracker · Holistic Balance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --emerald: #2C5F47;
+      --emerald-light: #3a7a5c;
+      --cream: #F7F2EA;
+      --warm-white: #FDFAF5;
+      --text: #1a1a1a;
+      --text-light: #6b7280;
+      --border: #d8d0c4;
+      --border-light: #e8e2d8;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Jost', sans-serif;
+      background: var(--warm-white);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── TOOLBAR ─────────────────────────────── */
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 32px;
+      background: var(--warm-white);
+      border-bottom: 1px solid var(--border);
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 16px; }
+    .toolbar-logo {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      text-decoration: none;
+    }
+    .toolbar-logo:hover { opacity: 0.75; }
+    .toolbar-sep { width: 1px; height: 20px; background: var(--border); }
+    .toolbar-label {
+      font-size: 0.82rem;
+      font-weight: 400;
+      color: var(--text-light);
+      letter-spacing: 0.04em;
+    }
+    .btn-print {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      background: transparent;
+      border: 1px solid var(--emerald);
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-print:hover { background: var(--emerald); color: white; }
+
+    /* ── WRAPPER ─────────────────────────────── */
+    .tracker-wrapper {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 32px 80px;
+    }
+
+    /* ── COVER ───────────────────────────────── */
+    .cover {
+      padding: 72px 0 56px;
+      border-bottom: 2px solid var(--emerald);
+      margin-bottom: 60px;
+      text-align: center;
+    }
+    .cover-eyebrow {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin-bottom: 20px;
+    }
+    .cover h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 3rem;
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .cover-subtitle {
+      font-size: 0.95rem;
+      font-weight: 300;
+      color: var(--text-light);
+      max-width: 480px;
+      margin: 0 auto 48px;
+      line-height: 1.7;
+    }
+    .cover-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px 40px;
+      max-width: 560px;
+      margin: 0 auto;
+      text-align: left;
+    }
+    .cover-field label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin-bottom: 6px;
+    }
+    .cover-field .field-input {
+      display: block;
+      width: 100%;
+      border: none;
+      border-bottom: 1.5px solid var(--border);
+      background: transparent;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.95rem;
+      color: var(--text);
+      padding: 6px 0;
+      outline: none;
+    }
+    .cover-field .field-input:focus { border-bottom-color: var(--emerald); }
+
+    /* ── WEEK BLOCKS ─────────────────────────── */
+    .week-block {
+      margin-bottom: 72px;
+    }
+    .week-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      gap: 20px;
+    }
+    .week-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.7rem;
+      font-weight: 400;
+      color: var(--emerald);
+      white-space: nowrap;
+    }
+    .week-theme {
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: var(--text-light);
+      border: none;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      font-family: 'Jost', sans-serif;
+      outline: none;
+      padding: 4px 0;
+      min-width: 0;
+    }
+    .week-theme:focus { border-bottom-color: var(--emerald); }
+    .week-divider {
+      height: 2px;
+      background: var(--emerald);
+      margin-bottom: 24px;
+    }
+
+    /* ── TRACKER TABLE ───────────────────────── */
+    .tracker-table-wrap { overflow-x: auto; margin-bottom: 32px; }
+    .tracker-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      min-width: 620px;
+    }
+    .tracker-table th {
+      font-family: 'Jost', sans-serif;
+      font-weight: 500;
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--warm-white);
+      background: var(--emerald);
+      padding: 9px 8px;
+      text-align: center;
+      border: 1px solid var(--emerald-light);
+    }
+    .tracker-table th.row-label-th {
+      text-align: left;
+      padding-left: 12px;
+      width: 160px;
+    }
+    .tracker-table td {
+      border: 1px solid var(--border);
+      padding: 0;
+      vertical-align: top;
+    }
+    .tracker-table td.row-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text);
+      padding: 8px 12px;
+      background: var(--cream);
+      vertical-align: middle;
+      line-height: 1.35;
+    }
+    .tracker-table td.row-label span {
+      display: block;
+      font-size: 0.65rem;
+      font-weight: 400;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+    .tracker-table td .cell-input {
+      display: block;
+      width: 100%;
+      min-height: 34px;
+      border: none;
+      background: transparent;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.8rem;
+      color: var(--text);
+      padding: 6px 6px;
+      outline: none;
+      resize: none;
+      text-align: center;
+    }
+    .tracker-table td .cell-input:focus { background: #f0f8f4; }
+
+    /* ── REFLECTION ──────────────────────────── */
+    .reflection-section {
+      background: var(--cream);
+      border-left: 3px solid var(--emerald);
+      padding: 20px 24px;
+      margin-bottom: 0;
+    }
+    .reflection-section .section-label {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin-bottom: 14px;
+    }
+    .reflection-prompt {
+      font-size: 0.82rem;
+      font-weight: 400;
+      color: var(--text-light);
+      margin-bottom: 6px;
+    }
+    .reflection-area {
+      width: 100%;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.875rem;
+      color: var(--text);
+      padding: 6px 0;
+      outline: none;
+      margin-bottom: 16px;
+      resize: none;
+      min-height: 36px;
+      line-height: 1.5;
+    }
+    .reflection-area:focus { border-bottom-color: var(--emerald); }
+    .reflection-area:last-child { margin-bottom: 0; }
+
+    /* ── MONTHLY SUMMARY ─────────────────────── */
+    .summary-section {
+      margin-bottom: 60px;
+      padding-top: 48px;
+      border-top: 2px solid var(--emerald);
+    }
+    .summary-section .section-eyebrow {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin-bottom: 8px;
+    }
+    .summary-section h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      font-weight: 400;
+      margin-bottom: 28px;
+    }
+    .summary-prompt-block {
+      margin-bottom: 28px;
+    }
+    .summary-prompt-block .prompt-label {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .summary-write-area {
+      width: 100%;
+      border: none;
+      border-bottom: 1px solid var(--border);
+      background: transparent;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.9rem;
+      color: var(--text);
+      padding: 8px 0;
+      outline: none;
+      resize: none;
+      min-height: 48px;
+      line-height: 1.6;
+    }
+    .summary-write-area:focus { border-bottom-color: var(--emerald); }
+
+    /* ── NOTES ───────────────────────────────── */
+    .notes-section {
+      margin-bottom: 72px;
+    }
+    .notes-section .section-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin-bottom: 8px;
+    }
+    .notes-section h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      font-weight: 400;
+      margin-bottom: 20px;
+    }
+    .notes-area {
+      width: 100%;
+      min-height: 180px;
+      border: 1px solid var(--border);
+      background: var(--cream);
+      font-family: 'Jost', sans-serif;
+      font-size: 0.9rem;
+      color: var(--text);
+      padding: 16px;
+      outline: none;
+      resize: vertical;
+      line-height: 1.8;
+    }
+    .notes-area:focus { border-color: var(--emerald); }
+
+    /* ── BACK COVER ──────────────────────────── */
+    .back-cover {
+      text-align: center;
+      padding: 48px 0 32px;
+      border-top: 2px solid var(--emerald);
+    }
+    .back-cover .wordmark {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--emerald);
+      margin-bottom: 10px;
+    }
+    .back-cover .tagline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      font-style: italic;
+      color: var(--text-light);
+    }
+
+    /* ── PRINT ───────────────────────────────── */
+    @media print {
+      .toolbar { display: none !important; }
+
+      body { background: white; font-size: 11pt; }
+
+      .tracker-wrapper { max-width: 100%; padding: 0 24pt; }
+
+      .cover { padding: 40pt 0 30pt; }
+      .cover h1 { font-size: 28pt; }
+
+      .cover-field .field-input,
+      .week-theme,
+      .reflection-area,
+      .summary-write-area {
+        border-bottom: 1px solid #999 !important;
+        padding-bottom: 4px;
+      }
+
+      .tracker-table { min-width: 0; }
+      .tracker-table th { background: #2C5F47 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .tracker-table td.row-label { background: #f7f2ea !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+      .cell-input { min-height: 28px; }
+
+      .notes-area {
+        border: 1px solid #ccc !important;
+        min-height: 120pt;
+      }
+
+      .week-block { page-break-after: always; }
+      .week-block:last-of-type { page-break-after: avoid; }
+
+      .summary-section, .notes-section, .back-cover { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<nav class="toolbar no-print">
+  <div class="toolbar-left">
+    <a class="toolbar-logo" href="/holisticbalance/gut-healing.html">Holistic Balance</a>
+    <div class="toolbar-sep"></div>
+    <span class="toolbar-label">Health Tracker</span>
+  </div>
+  <button class="btn-print" onclick="window.print()">Print / Save PDF</button>
+</nav>
+
+<div class="tracker-wrapper">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-eyebrow">Holistic Balance · Gut Health Series</div>
+    <h1>Your 4-Week<br>Gut Health Tracker</h1>
+    <p class="cover-subtitle">Track your daily habits, tune into your body's signals, and build the awareness that makes lasting change possible.</p>
+    <div class="cover-fields">
+      <div class="cover-field">
+        <label>Name</label>
+        <div class="field-input" contenteditable="true"></div>
+      </div>
+      <div class="cover-field">
+        <label>Start Date</label>
+        <div class="field-input" contenteditable="true"></div>
+      </div>
+      <div class="cover-field">
+        <label>Primary Goal</label>
+        <div class="field-input" contenteditable="true"></div>
+      </div>
+      <div class="cover-field">
+        <label>Practitioner / Coach</label>
+        <div class="field-input" contenteditable="true"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEEK 1 -->
+  <div class="week-block">
+    <div class="week-header">
+      <div class="week-title">Week One</div>
+      <div class="week-theme" contenteditable="true" data-placeholder="This week's focus or theme…">This week's focus or theme…</div>
+    </div>
+    <div class="week-divider"></div>
+    <div class="tracker-table-wrap">
+      <table class="tracker-table">
+        <thead>
+          <tr>
+            <th class="row-label-th">Daily Check-In</th>
+            <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">Water Intake<span>glasses / oz / litres</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Fermented Food<span>yogurt / kimchi / kefir etc.</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Gut Feeling<span>1 (poor) – 5 (great)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Energy<span>1 (low) – 5 (high)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Sleep Quality<span>1 (poor) – 5 (restorative)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Mood<span>1 (low) – 5 (positive)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Notable Symptoms / Wins<span>bloating, energy, skin etc.</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="reflection-section">
+      <div class="section-label">End of Week Reflection</div>
+      <p class="reflection-prompt">What went well this week?</p>
+      <div class="reflection-area" contenteditable="true"></div>
+      <p class="reflection-prompt">What was harder than expected?</p>
+      <div class="reflection-area" contenteditable="true"></div>
+      <p class="reflection-prompt">One adjustment I want to make next week:</p>
+      <div class="reflection-area" contenteditable="true"></div>
+    </div>
+  </div>
+
+  <!-- WEEK 2 -->
+  <div class="week-block">
+    <div class="week-header">
+      <div class="week-title">Week Two</div>
+      <div class="week-theme" contenteditable="true" data-placeholder="This week's focus or theme…">This week's focus or theme…</div>
+    </div>
+    <div class="week-divider"></div>
+    <div class="tracker-table-wrap">
+      <table class="tracker-table">
+        <thead>
+          <tr>
+            <th class="row-label-th">Daily Check-In</th>
+            <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">Water Intake<span>glasses / oz / litres</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Fermented Food<span>yogurt / kimchi / kefir etc.</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Gut Feeling<span>1 (poor) – 5 (great)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Energy<span>1 (low) – 5 (high)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Sleep Quality<span>1 (poor) – 5 (restorative)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Mood<span>1 (low) – 5 (positive)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Notable Symptoms / Wins<span>bloating, energy, skin etc.</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="reflection-section">
+      <div class="section-label">End of Week Reflection</div>
+      <p class="reflection-prompt">What went well this week?</p>
+      <div class="reflection-area" contenteditable="true"></div>
+      <p class="reflection-prompt">What was harder than expected?</p>
+      <div class="reflection-area" contenteditable="true"></div>
+      <p class="reflection-prompt">One adjustment I want to make next week:</p>
+      <div class="reflection-area" contenteditable="true"></div>
+    </div>
+  </div>
+
+  <!-- WEEK 3 -->
+  <div class="week-block">
+    <div class="week-header">
+      <div class="week-title">Week Three</div>
+      <div class="week-theme" contenteditable="true" data-placeholder="This week's focus or theme…">This week's focus or theme…</div>
+    </div>
+    <div class="week-divider"></div>
+    <div class="tracker-table-wrap">
+      <table class="tracker-table">
+        <thead>
+          <tr>
+            <th class="row-label-th">Daily Check-In</th>
+            <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">Water Intake<span>glasses / oz / litres</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Fermented Food<span>yogurt / kimchi / kefir etc.</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Gut Feeling<span>1 (poor) – 5 (great)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Energy<span>1 (low) – 5 (high)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Sleep Quality<span>1 (poor) – 5 (restorative)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Mood<span>1 (low) – 5 (positive)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Notable Symptoms / Wins<span>bloating, energy, skin etc.</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="reflection-section">
+      <div class="section-label">End of Week Reflection</div>
+      <p class="reflection-prompt">What went well this week?</p>
+      <div class="reflection-area" contenteditable="true"></div>
+      <p class="reflection-prompt">What was harder than expected?</p>
+      <div class="reflection-area" contenteditable="true"></div>
+      <p class="reflection-prompt">One adjustment I want to make next week:</p>
+      <div class="reflection-area" contenteditable="true"></div>
+    </div>
+  </div>
+
+  <!-- WEEK 4 -->
+  <div class="week-block">
+    <div class="week-header">
+      <div class="week-title">Week Four</div>
+      <div class="week-theme" contenteditable="true" data-placeholder="This week's focus or theme…">This week's focus or theme…</div>
+    </div>
+    <div class="week-divider"></div>
+    <div class="tracker-table-wrap">
+      <table class="tracker-table">
+        <thead>
+          <tr>
+            <th class="row-label-th">Daily Check-In</th>
+            <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-label">Water Intake<span>glasses / oz / litres</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Fermented Food<span>yogurt / kimchi / kefir etc.</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Gut Feeling<span>1 (poor) – 5 (great)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Energy<span>1 (low) – 5 (high)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Sleep Quality<span>1 (poor) – 5 (restorative)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Mood<span>1 (low) – 5 (positive)</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+          <tr>
+            <td class="row-label">Notable Symptoms / Wins<span>bloating, energy, skin etc.</span></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+            <td><div class="cell-input" contenteditable="true"></div></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="reflection-section">
+      <div class="section-label">End of Week Reflection</div>
+      <p class="reflection-prompt">What went well this week?</p>
+      <div class="reflection-area" contenteditable="true"></div>
+      <p class="reflection-prompt">What was harder than expected?</p>
+      <div class="reflection-area" contenteditable="true"></div>
+      <p class="reflection-prompt">One habit I want to carry forward beyond this month:</p>
+      <div class="reflection-area" contenteditable="true"></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY SUMMARY -->
+  <div class="summary-section">
+    <div class="section-eyebrow">Monthly Summary</div>
+    <h2>Looking Back at the Month</h2>
+    <div class="summary-prompt-block">
+      <p class="prompt-label">The biggest shift I noticed over these four weeks:</p>
+      <div class="summary-write-area" contenteditable="true"></div>
+    </div>
+    <div class="summary-prompt-block">
+      <p class="prompt-label">The habits that made the most difference to how I felt:</p>
+      <div class="summary-write-area" contenteditable="true"></div>
+    </div>
+    <div class="summary-prompt-block">
+      <p class="prompt-label">Something I learned about my body that I didn't know before:</p>
+      <div class="summary-write-area" contenteditable="true"></div>
+    </div>
+    <div class="summary-prompt-block">
+      <p class="prompt-label">My intention going forward — what I want to keep, change, or explore:</p>
+      <div class="summary-write-area" contenteditable="true"></div>
+    </div>
+  </div>
+
+  <!-- NOTES -->
+  <div class="notes-section">
+    <div class="section-eyebrow">Notes &amp; Observations</div>
+    <h2>Free Space</h2>
+    <div class="notes-area" contenteditable="true"></div>
+  </div>
+
+  <!-- BACK COVER -->
+  <div class="back-cover">
+    <div class="wordmark">Holistic Balance</div>
+    <div class="tagline">Small, consistent steps. Real, lasting change.</div>
+  </div>
+
+</div>
+
+</body>
+</html>
