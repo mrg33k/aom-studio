@@ -39,11 +39,26 @@
   @keyframes fadeIn{to{opacity:1}}
   @keyframes introOut{to{opacity:0;visibility:hidden}}
 
-  /* slow, restrained reveal — the only "movement" */
+  /* slow, restrained reveal — with sequenced flow */
   .obs{opacity:0;transform:translateY(22px);transition:opacity 1.4s cubic-bezier(.2,.7,.2,1),transform 1.4s cubic-bezier(.2,.7,.2,1)}
   .obs.in{opacity:1;transform:none}
   .rule{height:1px;background:var(--gold);width:0;transition:width 1.6s cubic-bezier(.2,.7,.2,1)}
   .rule.in{width:64px}
+  /* flow: hero type cascades line by line */
+  .hero .wrap>.obs:nth-child(2){transition-delay:.15s}
+  .hero .wrap>.obs:nth-child(3){transition-delay:.32s}
+  .hero .wrap>.obs:nth-child(4){transition-delay:.5s}
+  /* flow: staggered children for rows and lists */
+  .obs[data-stagger]{opacity:1;transform:none}
+  .obs[data-stagger]>*{opacity:0;transform:translateY(20px);transition:opacity 1.1s cubic-bezier(.2,.7,.2,1),transform 1.1s cubic-bezier(.2,.7,.2,1)}
+  .obs[data-stagger].in>*{opacity:1;transform:none}
+  .obs[data-stagger].in>*:nth-child(2){transition-delay:.12s}
+  .obs[data-stagger].in>*:nth-child(3){transition-delay:.24s}
+  .obs[data-stagger].in>*:nth-child(4){transition-delay:.36s}
+  .obs[data-stagger].in>*:nth-child(5){transition-delay:.48s}
+  .obs[data-stagger].in>*:nth-child(6){transition-delay:.6s}
+  .obs[data-stagger].in>*:nth-child(7){transition-delay:.72s}
+  .obs[data-stagger].in>*:nth-child(8){transition-delay:.84s}
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-weight:600;font-size:13.5px;letter-spacing:.4px;border-radius:1px;padding:15px 32px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:background .25s,color .25s,transform .25s}
   .btn-ink{background:var(--ink);color:var(--ivory)}
@@ -55,7 +70,7 @@
   a:focus-visible,button:focus-visible,.rf-mode:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
   ::selection{background:var(--gold-soft);color:var(--ink)}
   section[id]{scroll-margin-top:24px}
-  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.obs{opacity:1!important;transform:none!important}.rule{width:64px!important}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.obs,.obs[data-stagger]>*{opacity:1!important;transform:none!important}.rule{width:64px!important}}
 
   /* HEADER — minimal */
   header{position:absolute;top:0;left:0;right:0;z-index:30}
@@ -286,12 +301,12 @@
 <!-- PRICING — surface what they promise -->
 <section class="pricing" id="pricing">
   <div class="wrap">
-    <div class="pricing-head obs">
+    <div class="pricing-head obs" data-stagger>
       <div class="pe">Transparent pricing</div>
       <h2>No surprises. Just honest numbers.</h2>
       <p>We’ve always believed families deserve to know the cost up front. Here it is, plainly — the way it should be.</p>
     </div>
-    <div class="price-rows obs">
+    <div class="price-rows obs" data-stagger>
       <div class="price-row">
         <div><div class="pname serif">Direct Cremation</div><div class="pdesc">Simple, dignified cremation in our own care — no service required.</div></div>
         <div class="pamt serif">$1,365<small>Starting</small></div>
@@ -321,11 +336,11 @@
 <!-- SERVICES -->
 <section class="svc" id="services">
   <div class="wrap">
-    <div class="svc-head obs">
+    <div class="svc-head obs" data-stagger>
       <div class="se">How we care for you</div>
       <h2>Everything a family may need.</h2>
     </div>
-    <div class="svc-list obs">
+    <div class="svc-list obs" data-stagger>
       <div class="svc-item"><div class="si serif">i</div><div><h3>Cremation</h3><p>Direct or with a service — always in our own licensed crematory.</p></div></div>
       <div class="svc-item"><div class="si serif">ii</div><div><h3>Burial</h3><p>Immediate or traditional, arranged with quiet care.</p></div></div>
       <div class="svc-item"><div class="si serif">iii</div><div><h3>Gatherings</h3><p>Funeral, memorial, visitation — including evening, weekend, and holiday services.</p></div></div>

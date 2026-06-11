@@ -42,6 +42,20 @@
   /* scroll-in */
   .obs{opacity:0;transform:translateY(30px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
   .obs.in{opacity:1;transform:none}
+  /* flow: staggered children — the grid breathes in, item by item */
+  .obs[data-stagger]{opacity:1;transform:none}
+  .obs[data-stagger]>*{opacity:0;transform:translateY(24px);transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+  .obs[data-stagger].in>*{opacity:1;transform:none}
+  .obs[data-stagger].in>*:nth-child(2){transition-delay:.1s}
+  .obs[data-stagger].in>*:nth-child(3){transition-delay:.2s}
+  .obs[data-stagger].in>*:nth-child(4){transition-delay:.3s}
+  .obs[data-stagger].in>*:nth-child(5){transition-delay:.4s}
+  .obs[data-stagger].in>*:nth-child(6){transition-delay:.5s}
+  .obs[data-stagger].in>*:nth-child(7){transition-delay:.6s}
+  .obs[data-stagger].in>*:nth-child(8){transition-delay:.7s}
+  /* flow: slow ken-burns life on still imagery */
+  @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
+  .kb img{animation:kb 28s ease-in-out infinite alternate}
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14.5px;border-radius:40px;padding:14px 28px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:transform .2s,box-shadow .2s,background .2s,color .2s;white-space:nowrap}
   .btn-primary{background:var(--clay);color:var(--bone);box-shadow:0 12px 30px rgba(143,95,58,.3)}
@@ -51,7 +65,7 @@
   a:focus-visible,button:focus-visible,.mf-choice:focus-visible,.mf-tile:focus-visible,.mf-chip:focus-visible{outline:2px solid var(--clay);outline-offset:3px;border-radius:6px}
   ::selection{background:var(--clay-soft);color:var(--pine)}
   section[id]{scroll-margin-top:24px}
-  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal,.obs{opacity:1!important;transform:none!important}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal,.obs,.obs[data-stagger]>*{opacity:1!important;transform:none!important}}
   .btn-line{border:1.5px solid var(--clay);color:var(--clay-deep);background:transparent}
   .btn-line:hover{background:var(--clay);color:var(--bone)}
 
@@ -337,7 +351,7 @@
 
 <!-- ===== OPENING QUOTE ===== -->
 <section class="quote-band">
-  <div class="wrap narrow obs">
+  <div class="wrap narrow obs" data-stagger>
     <div class="qmark serif">&ldquo;</div>
     <blockquote>Funerals have helped us say goodbye for centuries.</blockquote>
     <p>However a goodbye comes to you — sudden or long-expected, traditional or quietly personal — there is a gentle, dignified way through it. For three generations, that has been our family’s whole purpose.</p>
@@ -346,8 +360,8 @@
 
 <!-- ===== FAMILY STORY (editorial block) ===== -->
 <section class="ed" id="story">
-  <div class="wrap ed-grid obs">
-    <div class="ed-photo">
+  <div class="wrap ed-grid obs" data-stagger>
+    <div class="ed-photo kb">
       <img src="/lozano/story-pines.jpg" alt="Morning light through the ponderosa pines of Flagstaff, Arizona">
       <div class="cap"><b>Richard Lozano</b><span>Owner &amp; Funeral Director · U.S. Navy Veteran</span></div>
     </div>
@@ -371,7 +385,7 @@
       <div class="sec-eyebrow">Why a funeral matters</div>
       <h2 class="sec-title">The quiet work a goodbye does.</h2>
     </div>
-    <div class="func-list obs">
+    <div class="func-list obs" data-stagger>
       <div class="func"><div class="fnum">i.<b>Music</b></div><div><h3>Music helps us feel</h3><p>It helps everyone gathered to reach, assess, and begin to process the feelings of grief and loss that words alone can’t hold.</p></div></div>
       <div class="func"><div class="fnum">ii.<b>Readings</b></div><div><h3>Readings let us face it</h3><p>The right words — sacred or simple, even humorous — help people acknowledge the reality of a death and gently face their pain together.</p></div></div>
       <div class="func"><div class="fnum">iii.<b>Symbols</b></div><div><h3>Symbols speak for us</h3><p>When words fall short, flowers stand for love and beauty, food for nurturing and support, and candles for the spirit and its continuation.</p></div></div>
@@ -383,8 +397,8 @@
 
 <!-- ===== CARE / PERSONALIZATION (reverse editorial block) ===== -->
 <section class="ed ed-rev">
-  <div class="wrap ed-grid obs">
-    <div class="ed-photo">
+  <div class="wrap ed-grid obs" data-stagger>
+    <div class="ed-photo kb">
       <img src="/lozano/candle-pine.jpg" alt="A single candle beside a sprig of pine and wildflowers">
       <div class="cap"><b>Personalized, always</b><span>Every life remembered its own way</span></div>
     </div>
@@ -404,7 +418,7 @@
       <div class="sec-eyebrow">Everything under one roof</div>
       <h2 class="sec-title">However we can care for your family.</h2>
     </div>
-    <div class="svc-grid obs">
+    <div class="svc-grid obs" data-stagger>
       <div class="svc-card"><div class="sn">i.</div><h3>Traditional Burial</h3><p>Visitation, procession, and graveside committal — the full, time-honored goodbye, arranged with care.</p></div>
       <div class="svc-card"><div class="sn">ii.</div><h3>Cremation</h3><p>Direct, memorial, or conventional cremation — with our own on-site crematory, so your loved one never leaves our care.</p></div>
       <div class="svc-card"><div class="sn">iii.</div><h3>Veterans Services</h3><p>Military honors, burial flags, and the dignified ceremony earned by those who served. Richard is a Navy veteran himself.</p></div>

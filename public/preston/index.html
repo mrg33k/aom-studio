@@ -60,6 +60,25 @@
   .reveal{opacity:0;transform:translateY(16px);animation:rise 1s cubic-bezier(.2,.7,.2,1) forwards}
   .d1{animation-delay:2.15s}.d2{animation-delay:2.25s}.d3{animation-delay:2.35s}.d4{animation-delay:2.45s}.d5{animation-delay:2.55s}.d6{animation-delay:2.65s}
   @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  /* flow: scroll reveals + staggered children */
+  .obs{opacity:0;transform:translateY(26px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
+  .obs.in{opacity:1;transform:none}
+  .obs[data-stagger]{opacity:1;transform:none}
+  .obs[data-stagger]>*{opacity:0;transform:translateY(24px);transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+  .obs[data-stagger].in>*{opacity:1;transform:none}
+  .obs[data-stagger].in>*:nth-child(2){transition-delay:.1s}
+  .obs[data-stagger].in>*:nth-child(3){transition-delay:.2s}
+  .obs[data-stagger].in>*:nth-child(4){transition-delay:.3s}
+  .obs[data-stagger].in>*:nth-child(5){transition-delay:.4s}
+  .obs[data-stagger].in>*:nth-child(6){transition-delay:.5s}
+  .obs[data-stagger].in>*:nth-child(7){transition-delay:.6s}
+  .obs[data-stagger].in>*:nth-child(8){transition-delay:.7s}
+  /* flow: slow ken-burns life on still imagery */
+  @keyframes kb{from{transform:scale(1)}to{transform:scale(1.07)}}
+  .kb img{animation:kb 28s ease-in-out infinite alternate}
+  /* flow: live pulse on the ribbon dot */
+  @keyframes dotpulse{0%,100%{box-shadow:0 0 0 4px rgba(192,150,78,.22)}50%{box-shadow:0 0 0 8px rgba(192,150,78,.1)}}
+  .ribbon .dot{animation:dotpulse 2.6s ease-in-out infinite}
 
   /* ===== HERO (dark, video) ===== */
   .hero-section{position:relative;overflow:hidden;background:var(--espresso-deep);color:var(--bone)}
@@ -87,7 +106,7 @@
   a:focus-visible,button:focus-visible,.pc-opt:focus-visible,.mf-tile:focus-visible,.mf-chip:focus-visible,.mf-choice:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
   ::selection{background:var(--gold-soft);color:#23190b}
   section[id],div[id]{scroll-margin-top:24px}
-  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal{opacity:1!important;transform:none!important}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal,.obs,.obs[data-stagger]>*{opacity:1!important;transform:none!important}}
   .btn-ghost-dark{border:1.5px solid var(--gold);color:var(--gold)}
   .btn-ghost-dark:hover{background:var(--gold);color:#23190b}
 
@@ -398,12 +417,12 @@
 <!-- ===== TWO PATHS ===== -->
 <section class="paths" id="paths">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head obs" data-stagger>
       <div class="sec-eyebrow">However you’ve come to us</div>
       <h2 class="sec-title">Two ways we can help today</h2>
-      <p class="sec-sub">Whether you’re planning quietly for the future or facing a loss right now, there's a clear, caring path forward.</p>
+      <p class="sec-sub">Whether you’re planning quietly for the future or facing a loss right now, there’s a clear, caring path forward.</p>
     </div>
-    <div class="path-grid">
+    <div class="path-grid obs" data-stagger>
       <div class="path path-pre">
         <span class="pe"><span class="pedot"></span>Plan ahead</span>
         <h3>Plan ahead, in your own time</h3>
@@ -438,9 +457,9 @@
 
 <!-- ===== FAMILY STORY ===== -->
 <section class="story" id="story">
-  <div class="wrap story-grid">
+  <div class="wrap story-grid obs" data-stagger>
     <div class="story-photo">
-      <div class="frame">
+      <div class="frame kb">
         <img src="/preston/preston-photo-5.jpg" alt="Mrs. Irene Preston with family at Preston Funeral Home">
         <div class="ring"></div>
         <div class="cap"><b>Mrs. Irene Preston</b><span>Co-Founder · Since 1982</span></div>
@@ -461,7 +480,7 @@
 
 <!-- ===== SERVICES ===== -->
 <div class="strip" id="services">
-  <div class="wrap">
+  <div class="wrap obs" data-stagger>
     <span class="label serif">Everything a family may need, <span class="it">under one roof</span></span>
     <ul>
       <li>Pre-Planning</li>
@@ -583,6 +602,11 @@
 
 <script>
 (function(){
+  /* flow: scroll-in observer */
+  var obs=document.querySelectorAll('.obs');
+  if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target);}});},{threshold:.14});obs.forEach(function(el){io.observe(el);});}
+  else{obs.forEach(function(el){el.classList.add('in');});}
+
   var modal=document.getElementById('intakeModal');
   var openers=document.querySelectorAll('[data-open]');
   var closeBtn=document.getElementById('modalClose');

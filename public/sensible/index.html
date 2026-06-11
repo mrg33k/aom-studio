@@ -46,6 +46,27 @@
   @keyframes introOut{to{opacity:0;visibility:hidden}}
   .obs{opacity:0;transform:translateY(26px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
   .obs.in{opacity:1;transform:none}
+  /* flow: staggered children — the grid breathes in, item by item */
+  .obs[data-stagger]{opacity:1;transform:none}
+  .obs[data-stagger]>*{opacity:0;transform:translateY(24px);transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+  .obs[data-stagger].in>*{opacity:1;transform:none}
+  .obs[data-stagger].in>*:nth-child(2){transition-delay:.1s}
+  .obs[data-stagger].in>*:nth-child(3){transition-delay:.2s}
+  .obs[data-stagger].in>*:nth-child(4){transition-delay:.3s}
+  .obs[data-stagger].in>*:nth-child(5){transition-delay:.4s}
+  .obs[data-stagger].in>*:nth-child(6){transition-delay:.5s}
+  .obs[data-stagger].in>*:nth-child(7){transition-delay:.6s}
+  .obs[data-stagger].in>*:nth-child(8){transition-delay:.7s}
+  /* flow: slow ken-burns life on still imagery */
+  @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
+  .kb img{animation:kb 28s ease-in-out infinite alternate}
+  /* flow: hero copy cascades in after the intro */
+  .hero-copy>*{opacity:0;transform:translateY(18px);animation:rise2 .9s cubic-bezier(.2,.7,.2,1) forwards}
+  .hero-copy>*:nth-child(1){animation-delay:1.9s}
+  .hero-copy>*:nth-child(2){animation-delay:2.05s}
+  .hero-copy>*:nth-child(3){animation-delay:2.2s}
+  .hero-copy>*:nth-child(4){animation-delay:2.35s}
+  @keyframes rise2{to{opacity:1;transform:translateY(0)}}
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:.2px;border-radius:2px;padding:14px 30px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:background .2s,color .2s,transform .2s}
   .btn-olive{background:var(--olive-2);color:var(--cream)}
@@ -59,7 +80,7 @@
   a:focus-visible,button:focus-visible,.rf-mode:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
   ::selection{background:var(--gold-soft);color:var(--brown)}
   section[id]{scroll-margin-top:24px}
-  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.obs{opacity:1!important;transform:none!important}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.obs,.obs[data-stagger]>*,.hero-copy>*{opacity:1!important;transform:none!important}}
 
   /* THIN GOLD TOP BAR (recompose has this) */
   .topbar{background:var(--gold);color:#fff;text-align:center;font-size:12.5px;font-weight:600;letter-spacing:.4px;padding:9px 16px}
@@ -344,7 +365,7 @@
 
 <!-- TWO-COLUMN INTRO -->
 <section class="intro2">
-  <div class="wrap intro2-grid obs">
+  <div class="wrap intro2-grid obs" data-stagger>
     <div class="i2">
       <div class="i2img"><img src="/sensible/spec-moss.jpg" alt=""></div>
       <div>
@@ -368,7 +389,7 @@
 <section class="collage">
   <div class="scatter sc-leaf"><img src="/sensible/cut-leaf.png" alt=""></div>
   <div class="scatter sc-mush"><img src="/sensible/cut-mushroom.png" alt=""></div>
-  <div class="wrap obs">
+  <div class="wrap obs" data-stagger>
     <p class="ce serif">From the natural world, a gentle reminder — that endings make room for what comes next, and nothing truly loved is ever lost.</p>
     <div class="collage-img"><img src="/sensible/spec-collage.jpg" alt="A naturalist collection of moss, pinecones, ferns, leaves and bark on cream"></div>
   </div>
@@ -377,8 +398,8 @@
 <!-- SERVICES -->
 <section class="svc" id="offer">
   <div class="wrap">
-    <div class="sec-head obs"><div class="sec-eyebrow">What we offer</div><h2 class="sec-title">However we can care for you.</h2></div>
-    <div class="svc-grid obs">
+    <div class="sec-head obs" data-stagger><div class="sec-eyebrow">What we offer</div><h2 class="sec-title">However we can care for you.</h2></div>
+    <div class="svc-grid obs" data-stagger>
       <div class="svc-card"><div class="sn serif">i.</div><h3>Cremation</h3><p>Simple or full-service cremation arrangements, always with dignity, choice, and fully transparent pricing.</p></div>
       <div class="svc-card"><div class="sn serif">ii.</div><h3>Celebrations of Life</h3><p>A service built around the person — readings, music, and shared memories. Personal, never a template.</p></div>
       <div class="svc-card"><div class="sn serif">iii.</div><h3>Veterans Honors</h3><p>As a veteran-owned home, we carry out military honors and help with every VA benefit and form.</p></div>
@@ -393,7 +414,7 @@
   <div class="scatter sc-moss2"><img src="/sensible/cut-moss.png" alt=""></div>
   <div class="scatter sc-cone2"><img src="/sensible/cut-pinecone.png" alt=""></div>
   <div class="scatter sc-fern2"><img src="/sensible/cut-fern.png" alt=""></div>
-  <div class="wrap obs">
+  <div class="wrap obs" data-stagger>
     <div class="oe">Our promise to you</div>
     <h2>“Transparent, straightforward, and here whenever you need us — so you can focus on what matters most.”</h2>
     <div class="olive-row">
@@ -407,8 +428,8 @@
 
 <!-- STORY -->
 <section class="story" id="story">
-  <div class="wrap story-grid obs">
-    <div class="story-photo"><img src="/sensible/spec-moss.jpg" alt="A soft clump of green moss on cream"></div>
+  <div class="wrap story-grid obs" data-stagger>
+    <div class="story-photo kb"><img src="/sensible/spec-moss.jpg" alt="A soft clump of green moss on cream"></div>
     <div class="story-copy">
       <div class="se">Our family, for yours</div>
       <h2>The only family and <em>veteran-owned</em> home in Tucson.</h2>

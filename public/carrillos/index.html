@@ -42,6 +42,20 @@
   @keyframes rise{to{opacity:1;transform:translateY(0)}}
   .obs{opacity:0;transform:translateY(30px);transition:opacity 1s cubic-bezier(.2,.7,.2,1),transform 1s cubic-bezier(.2,.7,.2,1)}
   .obs.in{opacity:1;transform:none}
+  /* flow: staggered children — the grid breathes in, item by item */
+  .obs[data-stagger]{opacity:1;transform:none}
+  .obs[data-stagger]>*{opacity:0;transform:translateY(24px);transition:opacity .85s cubic-bezier(.2,.7,.2,1),transform .85s cubic-bezier(.2,.7,.2,1)}
+  .obs[data-stagger].in>*{opacity:1;transform:none}
+  .obs[data-stagger].in>*:nth-child(2){transition-delay:.1s}
+  .obs[data-stagger].in>*:nth-child(3){transition-delay:.2s}
+  .obs[data-stagger].in>*:nth-child(4){transition-delay:.3s}
+  .obs[data-stagger].in>*:nth-child(5){transition-delay:.4s}
+  .obs[data-stagger].in>*:nth-child(6){transition-delay:.5s}
+  .obs[data-stagger].in>*:nth-child(7){transition-delay:.6s}
+  .obs[data-stagger].in>*:nth-child(8){transition-delay:.7s}
+  /* flow: slow ken-burns life on still imagery */
+  @keyframes kb{from{transform:scale(1)}to{transform:scale(1.08)}}
+  .kb img{animation:kb 28s ease-in-out infinite alternate}
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:14px;letter-spacing:.3px;border-radius:3px;padding:14px 28px;text-decoration:none;cursor:pointer;border:none;font-family:inherit;transition:transform .2s,box-shadow .2s,background .2s,color .2s;white-space:nowrap}
   .btn-primary{background:var(--maroon);color:var(--paper);box-shadow:0 10px 26px rgba(94,42,42,.28)}
@@ -53,7 +67,7 @@
   a:focus-visible,button:focus-visible,.bf-mode:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:3px}
   ::selection{background:var(--gold-soft);color:var(--walnut)}
   section[id]{scroll-margin-top:24px}
-  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal,.obs{opacity:1!important;transform:none!important}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.reveal,.obs,.obs[data-stagger]>*{opacity:1!important;transform:none!important}}
   .btn-line{border:1.5px solid var(--maroon);color:var(--maroon);background:transparent}
   .btn-line:hover{background:var(--maroon);color:var(--paper)}
 
@@ -288,7 +302,7 @@
 <!-- TIMELINE -->
 <section class="timeline" id="timeline">
   <div class="wrap">
-    <div class="sec-head obs">
+    <div class="sec-head obs" data-stagger>
       <div class="sec-eyebrow">Four generations · one family</div>
       <h2 class="sec-title">A century of faithful service.</h2>
       <p class="sec-sub">Since 1914, the Carrillo family has cared for this community through four generations — each one carrying forward the same promise of dignity, made to every family who walks through our doors.</p>
@@ -299,7 +313,7 @@
         <div class="tl-gen">The beginning</div>
         <h3>Arturo Carrillo</h3>
         <p>The first generation opens the doors in Tucson, founding a family mortuary built on faith and the dignity of every person in its care.</p>
-        <div class="tl-figure"><img src="/carrillos/arches.jpg" alt="Historic Tucson adobe arches"></div>
+        <div class="tl-figure kb"><img src="/carrillos/arches.jpg" alt="Historic Tucson adobe arches"></div>
       </div>
       <div class="tl-item obs"><div class="tl-node"></div>
         <div class="tl-year"></div>
@@ -312,7 +326,7 @@
         <div class="tl-gen">Third generation</div>
         <h3>Leo A. Carrillo Sr.</h3>
         <p>Veterans honored, every faith welcomed, every tradition respected. The family deepens its roots in the heart of Tucson.</p>
-        <div class="tl-figure"><img src="/carrillos/chapel.jpg" alt="Warm light in a historic chapel"></div>
+        <div class="tl-figure kb"><img src="/carrillos/chapel.jpg" alt="Warm light in a historic chapel"></div>
       </div>
       <div class="tl-item obs"><div class="tl-node"></div>
         <div class="tl-year"></div>
@@ -334,11 +348,11 @@
 <!-- SERVICES -->
 <section class="svc" id="services">
   <div class="wrap">
-    <div class="sec-head obs">
+    <div class="sec-head obs" data-stagger>
       <div class="sec-eyebrow">Everything a family may need</div>
       <h2 class="sec-title">How we care for you.</h2>
     </div>
-    <div class="svc-grid obs">
+    <div class="svc-grid obs" data-stagger>
       <div class="svc-card"><div class="sn serif">i.</div><h3>Traditional Funerals</h3><p>A full, time-honored service — visitation, ceremony, and committal, arranged with care and reverence.</p></div>
       <div class="svc-card"><div class="sn serif">ii.</div><h3>Cremation</h3><p>Full-service, memorial, or private cremation — every option offered with the same dignity and choice.</p></div>
       <div class="svc-card"><div class="sn serif">iii.</div><h3>Veterans Services</h3><p>Military honors for those who served, with a dedicated veteran obituary search to help families find their own.</p></div>
