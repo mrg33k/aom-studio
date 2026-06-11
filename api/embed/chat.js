@@ -17,6 +17,9 @@ const SUPABASE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
 
+// Default overlay (the original SR embed). Embeds created since 2026-06-10
+// carry their own persona overlay in placement.overlay — that wins. This
+// constant is only the fallback for legacy configs without one.
 const ALWAYS_ON_OVERLAY = [
   'You are answering as the Space Rising — Website EA via an embedded widget',
   'on aheadofmarket.com/embed. The visitor is Patrik (or someone he sent).',
@@ -116,7 +119,8 @@ export default async function handler(req, res) {
       embed_source: 'embed-widget',
       embed_visitor_id: visitor_id || null,
       embed_origin: host_origin || origin || null,
-      embed_overlay: ALWAYS_ON_OVERLAY,
+      embed_overlay:
+        (cfg.placement && cfg.placement.overlay) || ALWAYS_ON_OVERLAY,
       // Raw visitor text (without the portal suffix) preserved in metadata
       // so future dashboard renderers can show it cleanly if they want.
       visitor_text: visitorText,
