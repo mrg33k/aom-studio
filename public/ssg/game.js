@@ -1866,7 +1866,11 @@
     }
 
     // the village people (R36): each villager idles with a breathing bob and
-    // offers their lesson; an unfinished lesson glows the prompt brighter
+    // offers their lesson; an unfinished lesson glows the prompt brighter.
+    // R20-npc: during walk state, cycle through walk frames keyed on heading
+    // view. Side/front/back cycle arrays are the same as the hero's; NPC walk
+    // sprites generate later (template pipeline) and drop in as npc_<id>_sw*
+    // keys. Until then the hero frames proxy — size difference masks the seam.
     for (const n of NPCS) {
       if (levelIdx !== n.level) continue;
       const nh = heightAt(Math.floor(n.x), Math.floor(n.y));
@@ -1875,11 +1879,41 @@
         world: true,
         fn: () => {
           const breathe = Math.sin(time * 1.0 + n.homeX * 2.7) * 2.0;
-          const step = n.state === 'walk' ? Math.abs(Math.sin(n.stepPhase * Math.PI)) * 2.6 : 0;
+          const walking = n.state === 'walk';
+          const step = walking ? Math.abs(Math.sin(n.stepPhase * Math.PI)) * 2.0 : 0;
+
+          // derive iso view from heading when walking
+          let npcImg = IMG[n.img]; // default: their unique portrait sprite
+          let npcFace = n.face;
+          if (walking) {
+            // iso screen-x component of heading: determines side vs front/back
+            const hdx = Math.cos(n.heading) - Math.sin(n.heading); // screen-x
+            const hdy = Math.cos(n.heading) + Math.sin(n.heading); // screen-y (up = away)
+            const absX = Math.abs(hdx), absY = Math.abs(hdy);
+            let view = 'side';
+            if (absY > absX * 1.7) view = hdy < 0 ? 'back' : 'front';
+            else if (absX < 0.85) view = 'side'; // hysteresis: keep side unless clearly not
+            // pick frame from hero walk cycles (NPC-specific frames replace these
+            // when npc_<id>_sw* assets exist — register them in ASSET_FILES then
+            // build a per-NPC override map here)
+            const cycleLen = SIDE_WALK.length;
+            const fi = Math.floor(n.stepPhase * cycleLen * 0.5) % cycleLen;
+            let frameKey;
+            if (view === 'side') {
+              frameKey = SIDE_WALK[fi];
+              npcFace = hdx > 0 ? 1 : -1;
+            } else if (view === 'back') {
+              frameKey = BACK_WALK[Math.floor(n.stepPhase * BACK_WALK.length * 0.5) % BACK_WALK.length];
+            } else {
+              frameKey = FRONT_WALK[Math.floor(n.stepPhase * FRONT_WALK.length * 0.5) % FRONT_WALK.length];
+            }
+            if (IMG[frameKey]) npcImg = IMG[frameKey];
+          }
+
           drawShadow(n.x, n.y, nh, 0, TILE_W * 0.26);
           ctx.save();
           ctx.translate(0, -(breathe + step));
-          drawSprite(IMG[n.img], n.x, n.y, nh, TILE_W * n.w, n.face);
+          drawSprite(npcImg, n.x, n.y, nh, TILE_W * n.w, npcFace);
           ctx.restore();
           const isNear = npcNear() === n;
           if (isNear && !cut) {
