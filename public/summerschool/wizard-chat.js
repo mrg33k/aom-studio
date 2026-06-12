@@ -80,10 +80,9 @@
           </div>`;
       })
       .join('');
-    const noteHtml = parsed.note
-      ? `<div class="quest-note">${escapeHtml(parsed.note)}</div>`
-      : '';
-    return `<div class="quest-list">${rows}</div>${noteHtml}`;
+    // The ledger's now=/note= fields are the Wizard's internal teacher notes
+    // (frank observations, save points) — never rendered on Ethan's screen.
+    return `<div class="quest-list">${rows}</div>`;
   }
 
   // Derive today's day name for curriculum context
