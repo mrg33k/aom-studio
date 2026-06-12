@@ -80,6 +80,30 @@ async function fetchHistory(cfg, visitorId, limit = 10) {
   }
 }
 
+// Fetch the latest council-written context note for this embed (events table,
+// event_type='wizard_context'). This is the adjustable layer: the Parent
+// Teacher Council updates it nightly (lesson plan, reinforcements) without a
+// code deploy. Returns '' when none exists or on any error — never fatal.
+async function fetchWizardContext(embedId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload,timestamp')
+  params.set('event_type', 'eq.wizard_context')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return ''
+    const rows = await r.json()
+    const text = rows?.[0]?.payload?.text
+    return typeof text === 'string' ? text.trim() : ''
+  } catch (_) {
+    return ''
+  }
+}
+
 // Call Gemini and return the text reply
 async function callGemini(systemPrompt, history, userMessage, model = 'gemini-2.5-flash') {
   const contents = [...history, { role: 'user', parts: [{ text: userMessage }] }]
@@ -202,9 +226,15 @@ export default async function handler(req, res) {
     let aiError = null
     if (cfg.ai && cfg.ai.system_prompt && GEMINI_API_KEY) {
       try {
-        const history = await fetchHistory(cfg, visitor_id || null)
+        const [history, councilNotes] = await Promise.all([
+          fetchHistory(cfg, visitor_id || null),
+          fetchWizardContext(embed_id),
+        ])
+        const systemPrompt = councilNotes
+          ? `${cfg.ai.system_prompt}\n\n=== COUNCIL NOTES (current plan — follow these) ===\n${councilNotes}`
+          : cfg.ai.system_prompt
         const replyText = await callGemini(
-          cfg.ai.system_prompt,
+          systemPrompt,
           history,
           visitorText,
           cfg.ai.model || 'gemini-2.5-flash'
