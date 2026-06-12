@@ -50,11 +50,15 @@ function sbHeaders() {
 // Fetch recent conversation history for the embed session so Gemini has context
 async function fetchHistory(cfg, visitorId, limit = 10) {
   const params = new URLSearchParams()
-  params.set('select', 'role,text,timestamp')
+  params.set('select', 'role,text,timestamp,metadata')
   params.set('agent', `eq.${cfg.routing.agent}`)
   params.set('project', `eq.${cfg.routing.project}`)
   params.set('client_id', `eq.${cfg.routing.client_id}`)
   params.set('role', 'in.(user,assistant)')
+  // Scope server-side to this visitor — without this, the last-10 window is
+  // shared across every visitor in the room (Patrik's ?reset tests would
+  // bleed into Ethan's session). Caught by the 2026-06-12 restart drill.
+  if (visitorId) params.set('metadata->>embed_visitor_id', `eq.${visitorId}`)
   params.set('order', 'timestamp.desc')
   params.set('limit', String(limit))
   const url = `${SUPABASE_URL}/rest/v1/messages?${params.toString()}`
