@@ -24,8 +24,32 @@ async function fetchCompanyForSEO(slug) {
 
 const OG_IMAGE = 'https://www.aheadofmarket.com/og-image.png';
 
-// Per-page metadata. Homepage excluded (uses index.html defaults).
+// Per-page metadata. Entries here override the generic index.html tags for social crawlers.
 const PAGE_META = {
+  '/': {
+    title: 'AOM | We Make Companies Impossible to Ignore',
+    description: 'AOM builds the content, websites, and systems that make companies impossible to ignore. Video production, social media, AI-powered workflows, and web — for construction companies, founders, and brands that do real work.',
+    urlBase: 'https://www.aheadofmarket.com',
+    siteName: 'AOM | Ahead of Market',
+  },
+  '/about': {
+    title: 'About AOM | The Team Behind the Work',
+    description: 'AOM is a Phoenix-based creative and AI advisory studio. We make companies impossible to ignore through video, social media, web, and AI-powered business systems.',
+    urlBase: 'https://www.aheadofmarket.com',
+    siteName: 'AOM | Ahead of Market',
+  },
+  '/ai': {
+    title: 'AI Tools for Business | Free AI Prompts by AOM',
+    description: 'Free AI-powered tools for small business owners. Get instant prompts for client communications, hiring, sales outreach, operations, and content — built by AOM.',
+    urlBase: 'https://www.aheadofmarket.com',
+    siteName: 'AOM | Ahead of Market',
+  },
+  '/ai-guide': {
+    title: 'AI Tools for Business | Free AI Prompts by AOM',
+    description: 'Free AI-powered tools for small business owners. Get instant prompts for client communications, hiring, sales outreach, operations, and content — built by AOM.',
+    urlBase: 'https://www.aheadofmarket.com',
+    siteName: 'AOM | Ahead of Market',
+  },
   '/directory': {
     title: 'US Municipality Directory | 19,475 Cities & Towns',
     description: 'Search, filter, and export data on 19,475 US municipalities. Population, location, type, and more. Built for government affairs teams.',
@@ -251,6 +275,10 @@ export default async function middleware(request) {
 
 export const config = {
   matcher: [
+    '/',
+    '/about',
+    '/ai',
+    '/ai-guide',
     '/directory',
     '/skills',
     '/briefs/:path*',

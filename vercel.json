@@ -16,6 +16,10 @@
       "destination": "/embed.html"
     },
     {
+      "source": "/about",
+      "destination": "/index.html"
+    },
+    {
       "source": "/dashboard",
       "destination": "/index.html"
     },
