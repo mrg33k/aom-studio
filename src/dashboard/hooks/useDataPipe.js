@@ -642,39 +642,144 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
 
     // Supabase Realtime subscriptions -- instant updates without waiting for poll.
     // Only active where supabase client is configured (production + local with env vars).
-    let agentStatusChannel = null
-    let tasksChannel = null
-    let messagesChannel = null
+    //
+    // corner:chat-reliability (2026-06-12 incident hardening):
+    // Original code only console.log'd the status callback. CHANNEL_ERROR /
+    // TIMED_OUT / CLOSED were silently ignored — the supabase-js client
+    // re-attempted on its own schedule, but had nothing here to keep
+    // re-creating the channel if the inner socket flapped. When ONE tab got
+    // stuck in a fast remount/reconnect loop it machine-gunned the DB at
+    // ~200 subscribes/sec, tipping the t4g.micro into a drop->reconnect
+    // death spiral. See corner/missions/chat-reliability/CONTEXT.md.
+    //
+    // The hardening (mirrors useChatMessages R74 self-heal):
+    //   1. Status-aware: SUBSCRIBED resets attempt; CHANNEL_ERROR /
+    //      TIMED_OUT / CLOSED schedules a reconnect with exponential
+    //      backoff + jitter (NOT an immediate retry).
+    //   2. Rate cap: a single client cannot re-subscribe to one channel
+    //      more than ~twice per second even under repeated failures
+    //      (MIN_SUBSCRIBE_INTERVAL_MS floor on the reconnect path).
+    //   3. Jitter: each delay is randomised in [0.5x, 1.5x] of the
+    //      backoff base so when the server drops everyone at once,
+    //      clients don't return in lockstep (thundering-herd defense).
+    //   The supabase.js socket-level reconnect is also jittered now —
+    //   together these mean a failing realtime layer degrades gracefully
+    //   instead of cascading.
+    let cleanupRealtime = () => {}
     if (supabase) {
       const cid = channelIdRef.current
       console.log('[Corner Realtime] Subscribing to agent_status, tasks, messages... id:', cid)
 
-      // agent_status table: any change triggers a (debounced) refresh (RNB, alive dots, agent status)
-      agentStatusChannel = supabase
-        .channel(`agent-status-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
-          console.log('[Corner Realtime] agent_status changed')
-          scheduleFetch()
-        })
-        .subscribe((status) => console.log('[Corner Realtime] agent_status sub:', status))
+      // Per-channel reconnect state. attempt counts CHANNEL_ERROR/TIMED_OUT/CLOSED
+      // events since the last SUBSCRIBED; lastSubscribeAt clamps how fast we may
+      // call subscribe() back-to-back (the rate cap).
+      const MIN_SUBSCRIBE_INTERVAL_MS = 500
+      const MAX_BACKOFF_MS = 30_000
+      const subState = {
+        agent_status: { attempt: 0, lastSubscribeAt: 0, retryTimer: null, channel: null },
+        tasks:        { attempt: 0, lastSubscribeAt: 0, retryTimer: null, channel: null },
+        messages:     { attempt: 0, lastSubscribeAt: 0, retryTimer: null, channel: null },
+      }
+      let realtimeActive = true
 
-      // tasks table: any change triggers (debounced) refresh (new tasks, status changes -> pills + RNB)
-      tasksChannel = supabase
-        .channel(`tasks-changes-${cid}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-          console.log('[Corner Realtime] tasks changed')
-          scheduleFetch()
-        })
-        .subscribe((status) => console.log('[Corner Realtime] tasks sub:', status))
+      // Exponential backoff with ±50% jitter, floored at the rate-cap interval.
+      function nextDelayMs(attempt) {
+        const base = Math.min(MAX_BACKOFF_MS, 1_000 * Math.pow(2, Math.max(0, attempt)))
+        const jittered = Math.round(base * (0.5 + Math.random()))
+        return Math.max(MIN_SUBSCRIBE_INTERVAL_MS, jittered)
+      }
 
-      // messages table: INSERT triggers (debounced) refresh (new chat messages update throughput + unread)
-      messagesChannel = supabase
-        .channel(`messages-inserts-${cid}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
-          console.log('[Corner Realtime] messages INSERT')
-          scheduleFetch()
-        })
-        .subscribe((status) => console.log('[Corner Realtime] messages sub:', status))
+      function scheduleResubscribe(key, subscribeFn) {
+        const s = subState[key]
+        if (!s || !realtimeActive) return
+        const attempt = s.attempt
+        s.attempt = attempt + 1
+        if (s.retryTimer) clearTimeout(s.retryTimer)
+        s.retryTimer = setTimeout(() => {
+          if (!realtimeActive) return
+          // Rate cap: even if the backoff timer fires fast (e.g. attempt=0,
+          // jitter landed near the floor), enforce a minimum gap between
+          // subscribe() calls so a misbehaving channel cannot machine-gun
+          // the server.
+          const since = Date.now() - s.lastSubscribeAt
+          if (since < MIN_SUBSCRIBE_INTERVAL_MS) {
+            s.retryTimer = setTimeout(subscribeFn, MIN_SUBSCRIBE_INTERVAL_MS - since)
+            return
+          }
+          subscribeFn()
+        }, nextDelayMs(attempt))
+      }
+
+      function handleStatus(key, label, subscribeFn) {
+        return (status) => {
+          if (!realtimeActive) return
+          if (status === 'SUBSCRIBED') {
+            subState[key].attempt = 0
+            console.log(`[Corner Realtime] ${label} SUBSCRIBED`)
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn(`[Corner Realtime] ${label} ${status} — reconnecting with backoff (attempt ${subState[key].attempt + 1})`)
+            scheduleResubscribe(key, subscribeFn)
+          } else {
+            // Other transitional statuses (e.g. 'joining') — log only.
+            console.log(`[Corner Realtime] ${label} sub:`, status)
+          }
+        }
+      }
+
+      function subscribeAgentStatus() {
+        const s = subState.agent_status
+        if (!realtimeActive) return
+        s.lastSubscribeAt = Date.now()
+        try { if (s.channel) supabase.removeChannel(s.channel) } catch (_) {}
+        s.channel = supabase
+          .channel(`agent-status-changes-${cid}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'agent_status' }, () => {
+            console.log('[Corner Realtime] agent_status changed')
+            scheduleFetch()
+          })
+          .subscribe(handleStatus('agent_status', 'agent_status', subscribeAgentStatus))
+      }
+
+      function subscribeTasks() {
+        const s = subState.tasks
+        if (!realtimeActive) return
+        s.lastSubscribeAt = Date.now()
+        try { if (s.channel) supabase.removeChannel(s.channel) } catch (_) {}
+        s.channel = supabase
+          .channel(`tasks-changes-${cid}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+            console.log('[Corner Realtime] tasks changed')
+            scheduleFetch()
+          })
+          .subscribe(handleStatus('tasks', 'tasks', subscribeTasks))
+      }
+
+      function subscribeMessages() {
+        const s = subState.messages
+        if (!realtimeActive) return
+        s.lastSubscribeAt = Date.now()
+        try { if (s.channel) supabase.removeChannel(s.channel) } catch (_) {}
+        s.channel = supabase
+          .channel(`messages-inserts-${cid}`)
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+            console.log('[Corner Realtime] messages INSERT')
+            scheduleFetch()
+          })
+          .subscribe(handleStatus('messages', 'messages', subscribeMessages))
+      }
+
+      subscribeAgentStatus()
+      subscribeTasks()
+      subscribeMessages()
+
+      cleanupRealtime = () => {
+        realtimeActive = false
+        for (const key of Object.keys(subState)) {
+          const s = subState[key]
+          if (s.retryTimer) { clearTimeout(s.retryTimer); s.retryTimer = null }
+          if (s.channel) { try { supabase.removeChannel(s.channel) } catch (_) {} ; s.channel = null }
+        }
+      }
     } else {
       console.log('[Corner Realtime] supabase client is null -- no Realtime subscriptions')
     }
@@ -682,9 +787,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
     return () => {
       clearInterval(timer)
       if (realtimeDebounce) clearTimeout(realtimeDebounce)
-      if (agentStatusChannel) supabase.removeChannel(agentStatusChannel)
-      if (tasksChannel) supabase.removeChannel(tasksChannel)
-      if (messagesChannel) supabase.removeChannel(messagesChannel)
+      cleanupRealtime()
     }
   }, [worldId, fetchAll])
 

@@ -14,6 +14,35 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === '1'
 
+// corner:chat-reliability (2026-06-12 incident).
+// One stuck dashboard tab fired ~200 realtime subscribe calls/sec when the
+// underlying websocket flapped under load. The default phoenix socket
+// `reconnectAfterMs` returns short fixed intervals with no jitter, so when
+// the DB drops every client at once they ALL reconnect on the same schedule —
+// the thundering-herd that re-spikes the server and sustains the spiral.
+// This factor randomises the reconnect delay with bounded exponential
+// backoff so a mass-disconnect spreads its reconnects across time instead
+// of stacking them on the same instant. See corner/missions/chat-reliability/CONTEXT.md.
+function jitteredSocketReconnect(tries) {
+  // tries is 1-indexed by phoenix; clamp to a safe range.
+  const n = Math.max(0, Math.min(10, (tries | 0) - 1))
+  const base = Math.min(30_000, 1_000 * Math.pow(2, n))
+  // Jitter band: [0.5 * base, 1.5 * base] — preserves the backoff shape
+  // while guaranteeing two simultaneously-disconnected clients land at
+  // different times. Random in [0.5, 1.5).
+  const factor = 0.5 + Math.random()
+  return Math.round(base * factor)
+}
+
+const REALTIME_CONFIG = {
+  // Underlying phoenix websocket reconnect schedule.
+  reconnectAfterMs: jitteredSocketReconnect,
+  // Heartbeat at 30s (default) — kept explicit so it's visible alongside
+  // the reconnect tuning. Lower values churn the server, higher values
+  // delay drop detection; 30s is the supabase-js default and has worked.
+  heartbeatIntervalMs: 30_000,
+}
+
 let _supabase = null
 
 if (USE_FIXTURES) {
@@ -22,7 +51,9 @@ if (USE_FIXTURES) {
   // eslint-disable-next-line no-console
   console.log('[supabase] FIXTURE MODE — using local JSON snapshot:', fixtureSummary())
 } else if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-  _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    realtime: REALTIME_CONFIG,
+  })
 }
 
 // Returns null if env vars are missing AND fixture mode is off.
