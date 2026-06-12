@@ -12,6 +12,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { C } from '../lib/cv3Colors.js'
+import { authFetch } from '../lib/authFetch.js'
 import { Badge, Tab } from '../components/cv3/shared.jsx'
 import { ChatIcon, TasksIcon } from '../components/cv3/icons.jsx'
 import ContextFullnessMeter from '../components/cv3/session/ContextFullnessMeter.jsx'
@@ -77,6 +78,33 @@ export default function CV4ContextNav({
 
   const sortedProjects = [...projects].sort((a, b) => (a.name || '').localeCompare(b.name || ''))
   const showMeters = tab === 'chat' && selectedAgent?.slug
+
+  // Model badge (corner:gemini-workers R4) — which brain answers this room.
+  // Self-contained: fetch the agent_models prefs once per world; effective =
+  // per-chat pick, else the '_all' blanket switch, else default Claude.
+  const [modelPrefs, setModelPrefs] = useState({})
+  useEffect(() => {
+    if (!worldId) return
+    authFetch(`/api/dashboard/agent-model?client=${encodeURIComponent(worldId)}`)
+      .then(r => (r.ok ? r.json() : { models: {} }))
+      .then(({ models }) => { if (models) setModelPrefs(models) })
+      .catch(() => {})
+  }, [worldId, selectedAgent?.slug, conversationTarget?.slug])
+  const badgeChatKey = selectedAgent?.slug
+    || (conversationTarget?.type === 'project' && conversationTarget?.slug ? `project:${conversationTarget.slug}` : null)
+  let effectiveModel = 'default'
+  if (badgeChatKey) {
+    const own = (modelPrefs[badgeChatKey] || '').trim()
+    const all = (modelPrefs._all || '').trim()
+    effectiveModel = (own && own !== 'default') ? own : ((all && all !== 'default') ? all : 'default')
+  }
+  const modelBadgeLabel = {
+    default: 'Claude', opus: 'Claude Opus', sonnet: 'Claude Sonnet',
+    haiku: 'Claude Haiku', 'gemini-3.5-flash': 'Gemini 3.5 Flash',
+    'gemini-3.1-pro': 'Gemini 3.1 Pro',
+  }[effectiveModel] || effectiveModel
+  const modelBadgeIsGemini = effectiveModel.startsWith('gemini')
+  const showModelBadge = !!badgeChatKey && activeTool !== 'mail'
 
   return (
     <div
@@ -164,6 +192,23 @@ export default function CV4ContextNav({
               textTransform: 'uppercase',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>{title}</span>
+          )}
+          {showModelBadge && (
+            <span
+              data-testid="model-badge"
+              title="The AI model answering this room — change it in chat settings or Account → AI model"
+              style={{
+                fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
+                padding: '2px 7px', borderRadius: 999, flexShrink: 0,
+                textTransform: 'uppercase',
+                fontFamily: "'Hanken Grotesk', -apple-system, sans-serif",
+                color: modelBadgeIsGemini ? '#60A5FA' : C.muted,
+                background: modelBadgeIsGemini ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${modelBadgeIsGemini ? 'rgba(96,165,250,0.35)' : 'rgba(255,255,255,0.10)'}`,
+              }}
+            >
+              {modelBadgeLabel}
+            </span>
           )}
           {activeTool === 'mail' && onExitTool && (
             <button
