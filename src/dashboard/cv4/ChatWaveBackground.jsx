@@ -25,7 +25,7 @@ function hashHue(str) {
   return ((h % 360) + 360) % 360
 }
 
-const SPEED = 0.5 // half the demo tempo — slow, subtle
+const SPEED = 0.1 // 1/10 demo tempo (Patrik 2026-06-11: "way slower, 20% of what it is now")
 
 // Demo keyframes verbatim
 const PI15 = Math.PI * 1.5
