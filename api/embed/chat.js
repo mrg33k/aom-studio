@@ -171,6 +171,24 @@ async function saveDayState(embedId, visitorId, state) {
   }
 }
 
+// Persist AI failures so the nightly council loop can query error rates —
+// otherwise a midday Gemini outage is invisible (Ethan just sees retry bubbles).
+async function saveAiError(embedId, visitorId, error) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-ai-error',
+        event_type: 'wizard_ai_error',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', date: phoenixDate(), error: String(error).slice(0, 500) },
+      }),
+    })
+  } catch (_) {
+    /* non-fatal */
+  }
+}
+
 // Strip the trailing <<DAY: ...>> marker; returns { text, state }.
 function extractDayState(replyText) {
   const m = replyText.match(/<<DAY:([\s\S]*?)>>\s*$/)
@@ -362,6 +380,7 @@ export default async function handler(req, res) {
           if (!writeRes.ok) {
             aiError = `reply write failed: ${writeRes.status}`
             console.error('[embed/chat] reply write failed:', writeRes.status)
+            await saveAiError(embed_id, visitor_id, aiError)
           } else {
             aiReply = { id: replyRow.id, text: replyText }
           }
@@ -371,6 +390,7 @@ export default async function handler(req, res) {
         // can show a useful state instead of silence.
         aiError = String(aiErr && aiErr.message)
         console.error('[embed/chat] AI auto-reply failed:', aiError)
+        await saveAiError(embed_id, visitor_id, aiError)
       }
     }
 
