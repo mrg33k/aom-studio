@@ -412,6 +412,9 @@ export default async function handler(req, res) {
           user_name: body.user_name || 'Patrik',
           user_id: body.user_id || '',
           thread_id: body.thread_id || body.client_id || '',
+          // corner:gemini-workers R10 — per-message model override from the
+          // /cvg Gemini workbench surface. Absent on /dashboard sends.
+          ...(body.model ? { model: String(body.model) } : {}),
         }),
         signal: controller.signal,
       })

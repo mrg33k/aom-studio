@@ -60,6 +60,8 @@ const AmbitionPerformanceV2 = lazy(() => import('./pages/AmbitionPerformanceV2.j
 const Corner = lazy(() => import('./pages/Corner.jsx'))
 const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
+// corner:gemini-workers R10 — /cvg Gemini workbench (CornerV4 duplicate).
+const CornerVG = lazy(() => import('./dashboard/CornerVG.jsx'))
 const MissionRoom = lazy(() => import('./dashboard/MissionRoom.jsx'))
 const MissionsIndex = lazy(() => import('./dashboard/MissionsIndex.jsx'))
 const CleoWorkspacesIndex = lazy(() => import('./dashboard/components/cv3/CleoWorkspacesIndex.jsx'))
@@ -379,6 +381,12 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/cv4/project/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
           <Route path="/cv4/projects/:projectId/chat" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          {/* corner:gemini-workers R10 — /cvg Gemini workbench. Duplicate of
+              the live dashboard; every send carries a Gemini model override. */}
+          <Route path="/cvg" element={<AuthGuard><CornerVG /></AuthGuard>} />
+          <Route path="/cvg/project/:projectId" element={<AuthGuard><CornerVG /></AuthGuard>} />
+          <Route path="/cvg/projects/:projectId" element={<AuthGuard><CornerVG /></AuthGuard>} />
+          <Route path="/cvg/projects/:projectId/chat" element={<AuthGuard><CornerVG /></AuthGuard>} />
           {/* CV3 escape hatch — rollback path during R7.21 transition. */}
           <Route path="/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/cv3/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />

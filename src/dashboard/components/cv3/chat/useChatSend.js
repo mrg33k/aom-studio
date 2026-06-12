@@ -15,6 +15,18 @@ import { authFetch } from '../../../lib/authFetch.js'
 import { bumpContextMeter } from '../session/ContextFullnessMeter.jsx'
 import { getProjectEA } from '../../../data/project-ea.js'
 
+// corner:gemini-workers R10 — /cvg is the Gemini workbench surface. Every
+// send from /cvg carries an explicit model override so the room bridge runs
+// the turn on the Gemini lane regardless of the room's saved model pref.
+// The live /dashboard surface sends no override and rides the saved prefs.
+function cvgModelOverride() {
+  if (typeof window === 'undefined') return {}
+  if (!window.location.pathname.startsWith('/cvg')) return {}
+  let m = null
+  try { m = window.localStorage.getItem('cvgModel') } catch { /* private mode */ }
+  return { model: m || 'gemini-3.5-flash' }
+}
+
 // Wraps an email into a Mail Room context block prepended to the user's
 // message. The EA reads this and understands: "this is what we're replying
 // to. Use the /api/dashboard/mail/send tool when the user confirms send."
@@ -280,6 +292,7 @@ export default function useChatSend({
             room: selectedAgent.slug,
             project: '',
             client_id: worldId,
+            ...cvgModelOverride(),
             ...userIdentity,
             ...(replyMeta ? { metadata: { reply_to: replyMeta } } : {}),
           }),
@@ -480,6 +493,7 @@ export default function useChatSend({
           project: projectSlug,
           ...(missionSlugForSend ? { mission: missionSlugForSend } : {}),
           client_id: projectClientId,
+          ...cvgModelOverride(),
           ...userIdentity,
           ...(replyMetaProj || missionSlugForSend
             ? { metadata: {

@@ -60,6 +60,18 @@
       "destination": "/index.html"
     },
     {
+      "source": "/cvg",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cvg/project/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cvg/projects/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/cv4-static",
       "destination": "/cv4-static/views/home.html"
     },
