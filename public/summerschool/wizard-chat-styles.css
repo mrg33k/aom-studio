@@ -24,6 +24,7 @@ body {
     radial-gradient(ellipse at 85% 90%, rgba(68, 58, 114, 0.10), transparent 55%),
     radial-gradient(ellipse at 50% 50%, var(--color-bg) 40%, var(--color-bg-deep) 100%);
   color: var(--color-text);
+  overflow: hidden;
 }
 
 .wizard-chat-container {
@@ -31,6 +32,7 @@ body {
   grid-template-rows: auto 1fr auto;
   grid-template-columns: clamp(280px, 24vw, 420px) 1fr 280px;
   height: 100vh;
+  height: 100dvh;
 }
 
 /* Header — quest-banner style */
@@ -129,6 +131,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
 }
 
 .message {
@@ -280,6 +283,7 @@ body {
     #f8f2e2;
   border-left: 1px solid var(--color-border);
   overflow-y: auto;
+  min-height: 0;
 }
 
 .action-title {
@@ -411,6 +415,7 @@ body {
     grid-row: 5;
     border-left: none;
     border-top: 1px solid var(--color-border);
+    max-height: 30vh;
   }
 
   .message { max-width: 95%; }
