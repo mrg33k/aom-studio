@@ -3,6 +3,7 @@ import { TYPE, LH, LS } from '../../../lib/typeScale.js'
 import { useChatCore, useChatSettingsCtx } from '../chat/ChatPanelContext.jsx'
 import AvatarUploader from '../shared/AvatarUploader.jsx'
 import SharedRoomSettings from '../shared-rooms/SharedRoomSettings.jsx'
+import { MODEL_OPTIONS } from '../chat/chatConstants.js'
 
 // Full-screen settings overlay for the project-chat room. Tabs:
 //   General (room name)
@@ -18,6 +19,7 @@ export default function ProjectSettingsModal() {
     settingsTab, setSettingsTab, setSettingsOpen,
     chatNameInput, setChatNameInput, saveRoomName,
     currentVoice, selectVoice,
+    currentModel, selectModel,
     collaborators, setCollaborators,
     inviteEmail, setInviteEmail,
     inviteLoading, setInviteLoading,
@@ -84,7 +86,7 @@ export default function ProjectSettingsModal() {
           gap: isMobile ? 6 : 2,
           ...(isMobile && { overflowX: 'auto', WebkitOverflowScrolling: 'touch' }),
         }}>
-          {['General', 'Voice', ...(selectedProject ? ['Members', 'Collaborators'] : []), 'Google', 'Keys'].map(item => (
+          {['General', 'Model', 'Voice', ...(selectedProject ? ['Members', 'Collaborators'] : []), 'Google', 'Keys'].map(item => (
             <button
               key={item}
               onClick={() => setSettingsTab(item)}
@@ -195,6 +197,41 @@ export default function ProjectSettingsModal() {
                 fontFamily: "'Inter', sans-serif", outline: 'none',
               }}
             />
+          </div>
+          )}
+          {/* Model selection (corner:gemini-workers R3) */}
+          {settingsTab === 'Model' && (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+              Model
+            </div>
+            <div style={{ fontSize: 12, color: C.text2, fontFamily: "'Inter', sans-serif", marginBottom: 10, lineHeight: 1.5 }}>
+              Which AI answers in this room. Takes effect on your next message — memory carries over.
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {MODEL_OPTIONS.map(({ id, label, desc }) => (
+                <button
+                  key={id}
+                  onClick={() => selectModel(id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 12px', borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s',
+                    background: currentModel === id ? 'rgba(96,165,250,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${currentModel === id ? 'rgba(96,165,250,0.4)' : 'rgba(255,255,255,0.06)'}`,
+                  }}
+                >
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: currentModel === id ? '#60A5FA' : C.text, fontFamily: "'Inter', sans-serif" }}>{label}</div>
+                    <div style={{ fontSize: 11, color: C.text2, marginTop: 1, fontFamily: "'Inter', sans-serif" }}>{desc}</div>
+                  </div>
+                  {currentModel === id && (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
           )}
           {/* Voice selection */}

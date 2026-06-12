@@ -45,3 +45,17 @@ export const VOICE_OPTIONS = [
   { id: 'sadaltager',    label: 'Sadaltager',    desc: 'Knowledgeable' },
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
+
+// Per-chat model selection (corner:gemini-workers R3). The bridge daemon
+// reads this preference per message and routes the turn: claude aliases ride
+// the normal warm pool; gemini ids run the whole turn on the Gemini CLI lane.
+// New model arrives → add a row here (and a lane in the daemon if it's a new
+// provider). ids must match what scripts/bridge-daemon.py understands.
+export const MODEL_OPTIONS = [
+  { id: 'default',          label: 'Auto (Claude Sonnet)', desc: 'System default' },
+  { id: 'opus',             label: 'Claude Opus',          desc: 'Deepest reasoning' },
+  { id: 'sonnet',           label: 'Claude Sonnet',        desc: 'Fast + capable' },
+  { id: 'haiku',            label: 'Claude Haiku',         desc: 'Fastest, light' },
+  { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash',     desc: 'Low cost, full tools' },
+  { id: 'gemini-3.1-pro',   label: 'Gemini 3.1 Pro',       desc: 'Gemini deep reasoning' },
+]

@@ -62,6 +62,31 @@ export default function useChatSettings({
     }).catch(() => {})
   }, [currentChatKey, worldId])
 
+  // ── Per-chat model selection (corner:gemini-workers R3) ─────────────────
+  // Same shape as voice: user_preferences key='agent_models' via the
+  // agent-model endpoint. The bridge daemon reads it per message and routes
+  // the turn (claude pool vs gemini lane) — the UI only stores the choice.
+  const [agentModels, setAgentModels] = useState({})
+  const currentModel = currentChatKey ? (agentModels[currentChatKey] || 'default') : 'default'
+
+  useEffect(() => {
+    if (!worldId) return
+    authFetch(`/api/dashboard/agent-model?client=${encodeURIComponent(worldId)}`)
+      .then(r => r.ok ? r.json() : { models: {} })
+      .then(({ models }) => { if (models) setAgentModels(models) })
+      .catch(() => {})
+  }, [worldId])
+
+  const selectModel = useCallback((model) => {
+    if (!currentChatKey) return
+    setAgentModels(prev => ({ ...prev, [currentChatKey]: model }))
+    authFetch('/api/dashboard/agent-model', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: currentChatKey, model, client_id: worldId }),
+    }).catch(() => {})
+  }, [currentChatKey, worldId])
+
   // ── When settings modal opens, refresh name + collaborators + env keys ───
   useEffect(() => {
     if (settingsOpen) {
@@ -181,6 +206,8 @@ export default function useChatSettings({
     keySaveMsg, setKeySaveMsg,
     agentVoices, setAgentVoices,
     currentVoice, selectVoice,
+    agentModels, setAgentModels,
+    currentModel, selectModel,
     saveRoomName, saveEnvKey, deleteEnvKey,
   }
 }

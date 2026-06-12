@@ -634,6 +634,8 @@ export default function ChatPanel() {
     keySaveMsg: settings.keySaveMsg, setKeySaveMsg: settings.setKeySaveMsg,
     agentVoices: settings.agentVoices, setAgentVoices: settings.setAgentVoices,
     currentVoice: settings.currentVoice, selectVoice: settings.selectVoice,
+    agentModels: settings.agentModels, setAgentModels: settings.setAgentModels,
+    currentModel: settings.currentModel, selectModel: settings.selectModel,
     saveRoomName: settings.saveRoomName,
     saveEnvKey: settings.saveEnvKey, deleteEnvKey: settings.deleteEnvKey,
   }), [
@@ -644,7 +646,8 @@ export default function ChatPanel() {
     settings.inviteMsg, settings.collaborators, settings.envKeys,
     settings.envKeysLoading, settings.newKeyName, settings.newKeyValue,
     settings.newKeyScope, settings.keySaveMsg, settings.agentVoices,
-    settings.currentVoice, settings.selectVoice, settings.saveRoomName,
+    settings.currentVoice, settings.selectVoice, settings.agentModels,
+    settings.currentModel, settings.selectModel, settings.saveRoomName,
     settings.saveEnvKey, settings.deleteEnvKey,
   ])
 
