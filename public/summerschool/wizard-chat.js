@@ -26,20 +26,27 @@
     if (!state || typeof state !== 'string') return null;
     const quests = [];
     let note = '';
-    for (const part of state.split(';')) {
+    // Split on ';' but not inside parens — the checklist detail uses commas
+    // and may contain ';'-free prose; parens carry per-subject steps.
+    for (const part of state.split(/;(?![^(]*\))/)) {
       const m = part.match(/^\s*([^=]+?)\s*=\s*(.+?)\s*$/);
       if (!m) continue;
       const key = m[1].trim();
       const val = m[2].trim();
-      if (/^note$/i.test(key)) {
-        note = val;
+      if (/^(note|now)$/i.test(key)) {
+        // "now" is the Wizard's save point — more useful on screen than the
+        // internal revisit note when both exist.
+        if (/^now$/i.test(key) || !note) note = val;
         continue;
       }
       // Specials1(Communication) → Communication; plain keys pass through
       const special = key.match(/^Specials?\d*\s*\(([^)]+)\)$/i);
       const name = special ? special[1].trim() : key;
-      const status = val.toLowerCase().replace(/\s+/g, '-');
-      quests.push({ name, status });
+      // Status is the first token; optional "(convo done, step: ...)" detail follows
+      const detailMatch = val.match(/^([^(\s]+)\s*(?:\(([^)]*)\))?/);
+      const status = (detailMatch ? detailMatch[1] : val).toLowerCase().replace(/\s+/g, '-');
+      const stepMatch = detailMatch && detailMatch[2] ? detailMatch[2].match(/step:\s*([^,)]+)/i) : null;
+      quests.push({ name, status, step: stepMatch ? stepMatch[1].trim() : '' });
     }
     return quests.length ? { quests, note } : null;
   }
@@ -63,9 +70,12 @@
     const rows = parsed.quests
       .map((q) => {
         const meta = questStatusMeta(q.status);
+        const stepHtml = q.step && q.status === 'in-progress'
+          ? `<div class="quest-step">${escapeHtml(q.step)}</div>`
+          : '';
         return `<div class="quest-row ${meta.cls}">
             <span class="quest-icon">${meta.icon}</span>
-            <span class="quest-name">${escapeHtml(q.name)}</span>
+            <span class="quest-name">${escapeHtml(q.name)}${stepHtml}</span>
             <span class="quest-status">${meta.label}</span>
           </div>`;
       })

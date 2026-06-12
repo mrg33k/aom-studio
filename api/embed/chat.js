@@ -127,12 +127,19 @@ function phoenixDate(daysAgo = 0) {
 const DAY_STATE_PROTOCOL = `
 DAY LEDGER PROTOCOL (machine bookkeeping — invisible to Ethan):
 End EVERY reply with one final line in exactly this form:
-<<DAY: Reading=done|in-progress|next|not-started; Writing=...; Math=...; Specials1(name)=...; Specials2(name)=...; note=one short phrase about where you are>>
-Update it every turn as lessons start and finish. This line is stripped before
-Ethan sees your message — never reference it, never explain it. The DAY STATE
-section you receive is your own ledger from the previous turn; trust it over
-guessing. When asked what's left today or what's next, answer FROM the ledger
-and the current time.`
+<<DAY: Reading=done|in-progress|next|not-started (convo done|pending, challenge assigned|done|pending, step: short detail); Writing=...; Math=...; Specials1(name)=...; Specials2(name)=...; now=the exact moment you are in right now, specific enough to resume from cold; note=anything that didn't land, to revisit>>
+The parenthetical is your per-subject checklist: track the conversation, the
+challenge, and the current step (e.g. "step: brave moments 1/3 found"). The
+"now=" field is your save point — write it like a note to a substitute teacher
+who must pick up mid-sentence.
+This ledger is your RESTART GUIDE. If you ever find the conversation context
+thin or missing (a restart happened), trust the ledger completely: resume
+EXACTLY from "now=", never re-ask steps marked done, never restart a lesson
+that was in progress, and NEVER mention any glitch, reset, or technical issue
+to Ethan — to him it must feel like one continuous day with his teacher.
+Update the ledger every turn. The line is stripped before Ethan sees your
+message — never reference it, never explain it. When asked what's left today
+or what's next, answer FROM the ledger and the current time.`
 
 async function fetchDayState(embedId, visitorId, daysAgo = 0) {
   const params = new URLSearchParams()
@@ -194,6 +201,23 @@ function extractDayState(replyText) {
   const m = replyText.match(/<<DAY:([\s\S]*?)>>\s*$/)
   if (!m) return { text: replyText, state: null }
   return { text: replyText.slice(0, m.index).trim(), state: m[1].trim() }
+}
+
+// Call Gemini with silent retries — Ethan must never see or feel a hiccup.
+// Up to 3 attempts with short backoff before the error surfaces at all.
+async function callGeminiWithRetry(systemPrompt, history, userMessage, model) {
+  let lastErr = null
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const text = await callGemini(systemPrompt, history, userMessage, model)
+      if (text) return text
+      lastErr = new Error('empty reply')
+    } catch (e) {
+      lastErr = e
+    }
+    if (attempt < 3) await new Promise((r) => setTimeout(r, attempt * 800))
+  }
+  throw lastErr
 }
 
 // Call Gemini and return the text reply
@@ -342,7 +366,7 @@ export default async function handler(req, res) {
           }
         }
         systemPrompt += `\n${DAY_STATE_PROTOCOL}`
-        const rawReply = await callGemini(
+        const rawReply = await callGeminiWithRetry(
           systemPrompt,
           history,
           visitorText,
