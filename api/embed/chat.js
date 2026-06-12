@@ -320,7 +320,7 @@ export default async function handler(req, res) {
           // paying attention ("yesterday you crushed the math part").
           const yesterday = await fetchDayState(embed_id, visitor_id || null, 1)
           if (yesterday?.payload?.state) {
-            systemPrompt += `\n\n=== YESTERDAY (your final ledger from the previous session) ===\n${yesterday.payload.state}\nOpen today by naturally referencing yesterday — one specific thing that went well or needs another pass. Keep it to one warm sentence, then move into today. Do not recite the ledger.`
+            systemPrompt += `\n\n=== YESTERDAY (your final ledger from the previous session) ===\n${yesterday.payload.state}\nGREETING RULE — overrides the standard opener for THIS first reply only: your very first sentence MUST mention one specific thing from yesterday's ledger (something he crushed, or something left unfinished that you'll pick back up). Example shape: "Morning, Ethan! Yesterday you crushed those math problems — today let's finish that writing piece you started." THEN continue into today's normal opener. Never recite the ledger itself.`
           }
         }
         systemPrompt += `\n${DAY_STATE_PROTOCOL}`
