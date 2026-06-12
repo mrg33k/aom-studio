@@ -175,7 +175,9 @@ function parseSupportWish(text) {
   if (!text || !text.startsWith('[SUPPORT WISH ')) return null
   const m = /^\[SUPPORT WISH (SUP-[A-Z0-9]+)\] from ([^]*?) \(([\w-]+)\):\n+([^]*)$/.exec(text)
   if (!m) return null
-  const code = m[1], source = m[3], body = m[4]
+  const code = m[1], source = m[3]
+  // staged_draft routing tokens are dashboard plumbing — never user-visible
+  const body = m[4].replace(/\n*\[staged_draft:[^\]]+\]\s*/g, '\n').trim()
   const from = m[2].replace(/\s+/g, ' ').trim()
   const fromName = (from.split('<')[0] || '').trim() || from
   const firstLine = body.split('\n').map(l => l.trim()).find(Boolean) || '(no subject)'
