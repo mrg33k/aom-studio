@@ -113,8 +113,11 @@ function phoenixNow() {
   })
 }
 
-function phoenixDate() {
-  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' })
+function phoenixDate(daysAgo = 0) {
+  return new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toLocaleDateString(
+    'en-CA',
+    { timeZone: 'America/Phoenix' }
+  )
 }
 
 // Day-state protocol: the Wizard maintains its own lesson ledger. Every reply
@@ -131,13 +134,13 @@ section you receive is your own ledger from the previous turn; trust it over
 guessing. When asked what's left today or what's next, answer FROM the ledger
 and the current time.`
 
-async function fetchDayState(embedId, visitorId) {
+async function fetchDayState(embedId, visitorId, daysAgo = 0) {
   const params = new URLSearchParams()
   params.set('select', 'payload,timestamp')
   params.set('event_type', 'eq.wizard_day_state')
   params.set('payload->>embed_id', `eq.${embedId}`)
   params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
-  params.set('payload->>date', `eq.${phoenixDate()}`)
+  params.set('payload->>date', `eq.${phoenixDate(daysAgo)}`)
   params.set('order', 'timestamp.desc')
   params.set('limit', '1')
   try {
@@ -312,6 +315,13 @@ export default async function handler(req, res) {
           systemPrompt += `\n\n=== DAY STATE (your ledger from earlier today) ===\n${dayState.payload.state}`
         } else {
           systemPrompt += `\n\n=== DAY STATE ===\nNo ledger yet today — this is the first exchange of the day. Start the ledger fresh.`
+          // Cross-day memory: on the first exchange of a new day, hand the
+          // Wizard yesterday's final ledger so the greeting proves he was
+          // paying attention ("yesterday you crushed the math part").
+          const yesterday = await fetchDayState(embed_id, visitor_id || null, 1)
+          if (yesterday?.payload?.state) {
+            systemPrompt += `\n\n=== YESTERDAY (your final ledger from the previous session) ===\n${yesterday.payload.state}\nOpen today by naturally referencing yesterday — one specific thing that went well or needs another pass. Keep it to one warm sentence, then move into today. Do not recite the ledger.`
+          }
         }
         systemPrompt += `\n${DAY_STATE_PROTOCOL}`
         const rawReply = await callGemini(
