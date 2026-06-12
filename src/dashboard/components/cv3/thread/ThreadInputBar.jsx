@@ -8,7 +8,6 @@ import ImageGenPicker from '../shared/ImageGenPicker.jsx'
 import ComposerCommandsMenu from '../../../cv4/ComposerCommandsMenu.jsx'
 import {
   useChatCore,
-  useChatSendCtx,
   useChatComposerCtx,
   useChatAttachmentsCtx,
   useChatVoiceCtx,
@@ -23,7 +22,6 @@ import AttachedSkillChip from '../../../cv4/AttachedSkillChip.jsx'
 // mic-or-send button that toggles between voice mode and send.
 export default function ThreadInputBar() {
   const { selectedAgent, chatInputFocused, setChatInputFocused } = useChatCore()
-  const { sending } = useChatSendCtx()
   const {
     input, setInput, inputRef,
     handleSend, handleKeyDown,
@@ -276,29 +274,28 @@ export default function ThreadInputBar() {
             </svg>
           </button>
         )}
-        {/* Send button (shown when input or chips present) */}
+        {/* Send button (shown when input or chips present).
+            R-send-lock (corner:dashboard-speed): never disabled. The button
+            used to lock for the full chat-bridge POST (3-4s on a slow
+            bridge), silently eating taps. Sends are non-blocking now —
+            every tap sends immediately with its own optimistic bubble. */}
         {hasContent && (
           <button
             title="Send"
             onClick={handleSend}
-            disabled={sending}
             style={{
               width: 42, height: 42, borderRadius: '50%',
               background: C.accent, border: 'none',
-              color: '#000', cursor: sending ? 'default' : 'pointer',
+              color: '#000', cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0, opacity: sending ? 0.6 : 1,
+              flexShrink: 0,
               transition: 'transform 0.15s',
             }}
           >
-            {sending ? (
-              <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.15)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <line x1="22" y1="2" x2="11" y2="13"/>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-              </svg>
-            )}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
           </button>
         )}
       </div>

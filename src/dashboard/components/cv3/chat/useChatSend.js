@@ -1,10 +1,22 @@
 // useChatSend -- all send paths for ChatPanel.
-// Owns the send-idempotency refs (no overlapping sends, no same-text
-// double-submits within 2s), the reply-to chip ref mirror, and the three
+// Owns the send-idempotency refs (no same-text double-submits within 2s),
+// the reply-to chip ref mirror, and the three
 // send entry points: handleSend (keyboard default for agent chat),
 // sendAgentText (voice-friendly), sendProjectText / handleProjectSend /
 // handleProjectKeyDown (project chat). All three paths POST to
 // /api/dashboard/chat-bridge and open an SSE stream on success.
+//
+// R-send-lock (corner:dashboard-speed, 2026-06-12): sends are NON-BLOCKING.
+// The composer used to lock on `sending`/`inFlightSendRef` for the full
+// chat-bridge POST round trip — and that POST blocks on the local bridge
+// daemon's ack (BRIDGE_TIMEOUT 3s + overhead ≈ 3-4s on a slow lane). Any
+// Enter inside the window was silently dropped: the user typed, pressed
+// send, nothing rendered, and the message sat in the composer until they
+// pressed again ("you almost think it's not sending then it pops in").
+// Now every send fires immediately with its own optimistic bubble and temp
+// id; only the same-text-within-2s dedup remains as double-submit
+// protection. Overlapping POSTs are safe — the bridge already queues turns
+// per room, and the realtime INSERT swap matches temps by role+text.
 //
 // R3b: dropped the sendAgentTextRef/sendProjectTextRef input params —
 // the shell populates those refs from the returned callbacks so the
@@ -91,9 +103,14 @@ export default function useChatSend({
   // CV4 Mail Room (corner:cv4-tools-mail R1): read selectedMail from
   // CornerNav so handleSend can prepend the email context. Cleared on send.
   const { activeTool, selectedMail, setSelectedMail } = useCornerNav()
-  // ── Idempotency refs (block overlap + same-text within 2s) ───────────────
+  // ── Idempotency refs ──────────────────────────────────────────────────────
+  // inFlightSendRef is informational only (R-send-lock) — it no longer gates
+  // sends. lastSendSigRef blocks same-text double-submits within 2s.
   const inFlightSendRef = useRef(false)
   const lastSendSigRef = useRef({ sig: '', ts: 0 })
+  // Temp ids carry a random suffix so two sends in the same millisecond
+  // (possible now that sends overlap) can't collide.
+  const makeTempId = (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
   // Ref mirror of replyTo so handlers don't need it in their deps lists.
   const replyToRef = useRef(null)
@@ -180,7 +197,7 @@ export default function useChatSend({
     // MCP computer.type) that bypasses React's onChange still submits.
     const rawText = (input || inputRef.current?.value || '').trim()
     const chips = pasteChipsRef?.current || []
-    if ((!rawText && !chips.length) || sending || !selectedAgent) return
+    if ((!rawText && !chips.length) || !selectedAgent) return
     // Image-gen branch: when a tool is pinned, route to /api/dashboard/image-gen
     // instead of chat-bridge. Skips the agent reply path entirely.
     if (selectedImageTool) {
@@ -199,7 +216,6 @@ export default function useChatSend({
     const chipsKey = chips.map(c => c.id).join(',')
     const sig = `${selectedAgent.slug}:${cleanText}:${chipsKey}:${attSnapshot.map(a => a.id).join(',')}`
     const nowMs = Date.now()
-    if (inFlightSendRef.current) return
     if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
     inFlightSendRef.current = true
     lastSendSigRef.current = { sig, ts: nowMs }
@@ -226,7 +242,7 @@ export default function useChatSend({
 
     // Optimistic user message
     const now = new Date().toISOString()
-    const tempUserId = `temp-user-${Date.now()}`
+    const tempUserId = makeTempId('temp-user')
     const replyMeta = buildReplyMeta(replySnap)
     setMessages(prev => [...prev, {
       id: tempUserId,
@@ -325,10 +341,6 @@ export default function useChatSend({
     if (!trimmed) return
     const sig = `${selectedAgent.slug}:${trimmed}:${attSnapshot.map(a => a.id).join(',')}`
     const nowMs = Date.now()
-    if (inFlightSendRef.current) {
-      console.warn('[sendAgentText] bailed: already in flight')
-      return
-    }
     if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) {
       console.warn('[sendAgentText] bailed: dedup window (same text within 2s)')
       return
@@ -349,7 +361,7 @@ export default function useChatSend({
     if (inputRef.current) inputRef.current.style.height = 'auto'
     setSending(true)
     const now = new Date().toISOString()
-    const tempUserId = `temp-user-${Date.now()}`
+    const tempUserId = makeTempId('temp-user')
     const replyMetaVoice = buildReplyMeta(replySnap)
     setMessages(prev => [...prev, {
       id: tempUserId,
@@ -442,7 +454,6 @@ export default function useChatSend({
     const chipsKey = chips.map(c => c.id).join(',')
     const sig = `${agentKey}:${trimmed}:${chipsKey}:${attSnapshot.map(a => a.id).join(',')}`
     const nowMs = Date.now()
-    if (inFlightSendRef.current) return
     if (lastSendSigRef.current.sig === sig && nowMs - lastSendSigRef.current.ts < 2000) return
     inFlightSendRef.current = true
     lastSendSigRef.current = { sig, ts: nowMs }
@@ -463,7 +474,7 @@ export default function useChatSend({
     setSending(true)
     const projectClientId = selectedProject.isShared ? `shared:${selectedProject.slug}` : worldId
     const now = new Date().toISOString()
-    const tempUserId = `temp-proj-${Date.now()}`
+    const tempUserId = makeTempId('temp-proj')
     const replyMetaProj = buildReplyMeta(replySnap)
     setMessages(prev => [...prev, {
       id: tempUserId,
@@ -523,7 +534,7 @@ export default function useChatSend({
     const hasChips = pasteChipsRef?.current?.length > 0
     // Fall back to the DOM value for programmatic/MCP input that bypasses React onChange.
     const text = (input || inputRef.current?.value || '').trim()
-    if ((!text && !hasChips) || sending) return
+    if (!text && !hasChips) return
     setInput('')
     if (inputRef.current) inputRef.current.style.height = 'auto'
     await sendProjectText(text)
