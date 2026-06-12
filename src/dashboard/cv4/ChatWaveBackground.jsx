@@ -466,8 +466,10 @@ export default function ChatWaveBackground({ chatKey, theme = 'dark' }) {
       const dt = Math.min(0.1, (now - last) / 1000) * SPEED
       last = now
 
-      // timeline sample (looping, demo keyframes, half speed)
-      const t = (((now - t0) / 1000) * SPEED) % LOOP
+      // timeline sample (looping, demo keyframes, slowed). Start at t=6 —
+      // mid first swell — so a freshly opened chat is already breathing
+      // instead of sitting near-flat for the slowed loop's long intro.
+      const t = (6 + ((now - t0) / 1000) * SPEED) % LOOP
       const s1 = sampleKeys(KEYS1, t)
       const s2 = sampleKeys(KEYS2, t)
       wave1.gain = s1.gain; wave1.frequency = s1.frequency; wave1.waveLength = s1.waveLength
