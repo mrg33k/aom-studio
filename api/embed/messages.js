@@ -150,6 +150,13 @@ export default async function handler(req, res) {
       // visitor's own messages. Operator conversations and build/status
       // traffic in the same room never pass.
       if (row.role !== 'user' && visitorId) {
+        // Embeds with their own ai block: ONLY embed-ai replies surface.
+        // Bridge/operator replies in the same room are agent narration
+        // ("updating the ledger... standing by") — never for the visitor
+        // (seen live on /summerschool 2026-06-11).
+        if (cfg.ai && cfg.ai.system_prompt && m.embed_source !== 'embed-ai') {
+          return false
+        }
         const tagged = m.embed_visitor_id || ''
         if (tagged) {
           if (tagged !== visitorId) return false
