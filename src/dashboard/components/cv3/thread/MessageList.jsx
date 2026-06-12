@@ -161,6 +161,38 @@ function AttachmentPreview({ att, onClose }) {
             </div>
           )}
         </div>
+        {/* Sticky bottom close bar — always visible on mobile/long content so
+            users aren't stranded without a dismiss affordance when scrolled
+            past the header X button (corner:support-desk M18+). */}
+        <div style={{
+          display: 'flex', justifyContent: 'center',
+          padding: '12px 20px',
+          borderTop: `1px solid ${C.border}`,
+          flexShrink: 0,
+          background: 'rgba(15,23,42,0.9)',
+        }}>
+          <button
+            onClick={onClose}
+            aria-label="Close preview"
+            style={{
+              background: 'rgba(255,255,255,0.07)',
+              border: `1px solid ${C.border2}`,
+              borderRadius: 10,
+              color: C.text,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: "'Inter', sans-serif",
+              letterSpacing: '-0.01em',
+              padding: '10px 40px',
+              transition: 'background 0.15s ease, border-color 0.15s ease',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.borderColor = C.border2 }}
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -183,6 +215,39 @@ function parseSupportWish(text) {
   const firstLine = body.split('\n').map(l => l.trim()).find(Boolean) || '(no subject)'
   const subject = firstLine.length > 110 ? firstLine.slice(0, 107) + '…' : firstLine
   return { code, from, fromName, source, body, subject }
+}
+
+// parseMailRoomContext — recognises mail-room chat messages that begin with
+// '[Mail Room context — ...]' (both the reply-to-email format from useChatSend
+// and the discuss-support-email format from SupportDashboard). Extracts the
+// structured header so the chat can render a compact pill instead of dumping
+// the full message body — the same principle as parseSupportWish for [SUPPORT
+// WISH ...] messages (corner:support-desk, post-M18 follow-up).
+function parseMailRoomContext(text) {
+  if (!text || !text.startsWith('[Mail Room context — ')) return null
+  // The first line is the bracket header, e.g.
+  // '[Mail Room context — the user wants to reply to this email]'
+  // '[Mail Room context — discuss this support email]'
+  const contextType = text.includes('discuss') ? 'discuss' : 'reply'
+
+  const fromM  = /^From: (.+)$/m.exec(text)
+  const subjM  = /^Subject: (.+)$/m.exec(text)
+  const prevM  = /^Preview: (.+)$/m.exec(text)
+
+  const from     = fromM ? fromM[1].trim() : ''
+  const fromName = (from.split('<')[0] || '').trim() || from
+  const subject  = subjM ? subjM[1].trim() : '(no subject)'
+  const preview  = prevM ? prevM[1].trim() : ''
+
+  // Separate user's own text (appended after '---\n' in the reply format).
+  const sepIdx  = text.indexOf('\n---\n')
+  const userText = sepIdx !== -1 ? text.slice(sepIdx + 5).trim() : ''
+
+  // Build a clean context body for the overlay — strip the routing
+  // instruction lines so the user sees email content, not system prompts.
+  const fullContext = text
+
+  return { contextType, from, fromName, subject, preview, userText, fullContext }
 }
 
 // SupportEmailCard — attachment-style chip for a support email/wish in chat.
@@ -240,6 +305,99 @@ function SupportEmailCard({ wish, onOpen }) {
           {wish.code} {'·'} {wish.source === 'email' ? 'email' : wish.source} {'·'} click to open
         </div>
       </div>
+    </div>
+  )
+}
+
+
+// MailContextCard — compact pill for a [Mail Room context — ...] message.
+// Matches the visual language of SupportEmailCard: same chip shape, same
+// hover lift, same envelope icon family — just with a different badge label
+// (REPLY vs DISCUSS) and inbox-sourced sender/subject.
+// Clicking opens the full context in the AttachmentPreview overlay.
+function MailContextCard({ ctx, onOpen }) {
+  const isDiscuss = ctx.contextType === 'discuss'
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+      <div
+        role="button"
+        tabIndex={0}
+        data-testid="mail-context-card"
+        title={`Open email context — ${ctx.fromName}`}
+        onClick={onOpen}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } }}
+        style={{
+          alignSelf: 'flex-end',
+          background: `linear-gradient(180deg, ${C.s2}, ${C.s1})`,
+          border: `1px solid ${C.border2}`,
+          borderRadius: 16,
+          padding: '12px 14px',
+          display: 'flex', alignItems: 'center', gap: 12,
+          maxWidth: 360, minWidth: 240,
+          cursor: 'pointer',
+          transition: 'transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease',
+          boxShadow: '0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.25)',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-1px)'
+          e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 18px rgba(0,0,0,0.4)'
+          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = '0 1px 0 rgba(255,255,255,0.02) inset, 0 2px 8px rgba(0,0,0,0.25)'
+          e.currentTarget.style.borderColor = C.border2
+        }}
+      >
+        {/* Inbox/arrow icon — visually distinct from the open-envelope icon on
+            SupportEmailCard so users can tell the two apart at a glance. */}
+        <div style={{ flexShrink: 0, filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.35))' }}>
+          <svg viewBox="0 0 44 34" width={40} height={31} aria-hidden="true">
+            <rect x="1" y="1" width="42" height="32" rx="5" fill="rgba(255,255,255,0.06)" stroke={C.border2} strokeWidth="1.5" />
+            <path d="M3 5 L22 19 L41 5" fill="none" stroke={C.text2} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            {/* Small arrow badge indicating "reply" or "discuss" */}
+            {isDiscuss
+              ? <circle cx="34" cy="27" r="7" fill={C.accent} />
+              : <circle cx="34" cy="27" r="7" fill="rgba(52,211,153,0.85)" />
+            }
+            {isDiscuss
+              ? <text x="34" y="31" textAnchor="middle" fontSize="8" fill="#000" fontWeight="700">?</text>
+              : <path d="M30.5 27 L33.5 24 L36.5 27 M33.5 24 L33.5 30" fill="none" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+            }
+          </svg>
+        </div>
+        <div style={{ minWidth: 0, flex: 1, fontFamily: "'Inter', sans-serif" }}>
+          <div style={{
+            fontSize: 13, fontWeight: 600, color: C.text,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>{ctx.fromName || '(unknown sender)'}</div>
+          <div style={{
+            fontSize: 12, color: C.text2, marginTop: 2,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>{ctx.subject}</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 4, letterSpacing: '0.02em' }}>
+            {isDiscuss ? 'discuss' : 'reply'} {'·'} email {'·'} click to open
+          </div>
+        </div>
+      </div>
+      {/* If the user added their own text AFTER the mail context block
+          (the reply format appends user input after '---'), render it as a
+          normal user bubble below the pill so the conversation reads cleanly. */}
+      {ctx.userText && (
+        <div style={{
+          padding: '10px 16px',
+          borderRadius: '18px 18px 4px 18px',
+          fontSize: 14, lineHeight: 1.6,
+          color: '#fff',
+          background: '#2563EB',
+          wordBreak: 'break-word',
+          fontFamily: "'Inter', sans-serif",
+          letterSpacing: '-0.01em',
+          whiteSpace: 'pre-wrap',
+        }}>
+          {ctx.userText}
+        </div>
+      )}
     </div>
   )
 }
@@ -1385,6 +1543,24 @@ function MessageList({ roomType = 'agent' }) {
                             onOpen={() => setPreviewAtt({
                               name: `${supportWish.code} — ${supportWish.fromName}`,
                               inlineText: `From: ${supportWish.from}\nSource: ${supportWish.source} · ${supportWish.code}\n\n${supportWish.body}`,
+                            })}
+                          />
+                        )
+                      }
+                      // Mail Room context messages ([Mail Room context — ...]) also
+                      // carry full email bodies as user messages — collapse to a pill
+                      // identical to SupportEmailCard. Handles both the reply-to-email
+                      // format (useChatSend) and the discuss-email format (SupportDashboard).
+                      const mailCtx = isUser ? parseMailRoomContext(msg.text) : null
+                      if (mailCtx) {
+                        return (
+                          <MailContextCard
+                            ctx={mailCtx}
+                            onOpen={() => setPreviewAtt({
+                              name: mailCtx.contextType === 'discuss'
+                                ? `Email — ${mailCtx.fromName}`
+                                : `Reply to ${mailCtx.fromName}`,
+                              inlineText: mailCtx.fullContext,
                             })}
                           />
                         )
