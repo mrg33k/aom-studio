@@ -333,7 +333,7 @@
     if (!hadHistory) {
       appState.messages.push({
         role: 'wizard',
-        text: 'Hello! I\'m the Wizard. I\'m excited to work with you today. What subject would you like to start with?',
+        text: 'Morning, Ethan! Good to see you. Before we open the books, I have a real question for you — when you don\'t understand something, what do you usually do: ask for help, or go quiet and try to figure it out alone?',
         timestamp: Date.now(),
       });
     }
