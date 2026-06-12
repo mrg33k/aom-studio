@@ -1201,6 +1201,30 @@ export default function CornerV4() {
     }
   }, [tab, selectedAgent, agents])
 
+  // corner:support-desk M18 — "Chat about this email": jump from a Support card into
+  // the EA chat with the email context posted as the opening message. The agent reads
+  // the context block, the human discusses, the agent replies on the real email thread
+  // via the mail tools (draft-first; nothing sends without a go-ahead).
+  const handleDiscussSupportEmail = useCallback(async (text) => {
+    const target = agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || selectedAgent || agents?.[0]
+    if (!target) return
+    setShowSupportInbox(false)
+    setSelectedAgent(target)
+    setConversationTarget({ name: target.name, type: 'agent' })
+    setTab('chat')
+    setUnreadChat(0)
+    try {
+      await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: target.slug, text, role: 'user', source: 'corner-dashboard',
+          client_id: worldId, ...parentUserIdentity,
+        }),
+      }).catch(() => null)
+    } catch (e) { /* message lands via realtime when it persists */ }
+  }, [agents, selectedAgent, worldId, parentUserIdentity])
+
   const handleInputBarSend = useCallback(async () => {
     const text = inputBarText.trim()
     if (!text || inputBarSending) return
@@ -2703,7 +2727,8 @@ export default function CornerV4() {
           >
             {/* corner:support N1 — Support Inbox (Patrik only) */}
             {showSupportInbox && worldId === 'aom' ? (
-              <SupportDashboard isDesktop={isDesktop} worldId={worldId} onClose={() => setShowSupportInbox(false)} />
+              <SupportDashboard isDesktop={isDesktop} worldId={worldId} onClose={() => setShowSupportInbox(false)}
+                onDiscuss={handleDiscussSupportEmail} />
             ) : activeTool === 'routines' ? (
               /* corner:routines R3 — full-area card view of every open loop.
                  Selecting any agent / project / mission / mail clears

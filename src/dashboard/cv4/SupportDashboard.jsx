@@ -82,6 +82,39 @@ function AskList({ ask, size = 15 }) {
   )
 }
 
+// ── M18: "Chat about this email" — context block the EA chat opens with ──────
+// Mirrors the Mail Room context shape agents already act on (mail-room-send-protocol):
+// who, subject, the original text, the staged draft if one exists. Closing
+// instruction keeps the loop draft-first.
+function buildDiscussText({ who, email, subject, original, ask, staged, accessCode }) {
+  const lines = [
+    '[Mail Room context — discuss this support email]',
+    `From: ${who}${email && email !== who ? ` <${email}>` : ''}`,
+    subject ? `Subject: ${subject}` : null,
+    accessCode ? `Support card: ${accessCode}` : null,
+    staged ? `Staged Gmail draft: ${staged.draftId} (connection ${staged.connectionId})` : null,
+    '',
+    ask ? `What they're asking:\n${ask}\n` : null,
+    original ? `Original message:\n${original.slice(0, 2500)}\n` : null,
+    "Let's talk through how to respond. When we land on a reply, " +
+      (staged ? 'update the staged draft' : 'draft the reply threaded on the original email') +
+      " — don't send anything until I say so.",
+  ].filter((l) => l !== null)
+  return lines.join('\n')
+}
+
+function DiscussBtn({ onDiscuss, payload, style }) {
+  if (!onDiscuss) return null
+  return (
+    <button className="ps-ghost-btn" onClick={(e) => { e.stopPropagation(); onDiscuss(buildDiscussText(payload)) }}
+      title="Open a chat with your agent about this email"
+      style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13, color: BONE_DIM, background: 'transparent',
+        border: `1px solid ${LINE}`, borderRadius: 8, padding: '9px 16px', cursor: 'pointer', ...style }}>
+      Chat about this
+    </button>
+  )
+}
+
 function OriginalBlock({ original }) {
   const [show, setShow] = useState(false)
   if (!original) return null
@@ -243,7 +276,7 @@ function ResolveBtn({ wishId, onDone, style }) {
 }
 
 // ── M13: the press-send card — work is DONE, the human only fires ─────────────
-function PressSendCard({ w, staged }) {
+function PressSendCard({ w, staged, onDiscuss }) {
   ensurePressSendCss()
   const [phase, setPhase] = useState('ready') // ready | sending | sent | error
   const [err, setErr] = useState('')
@@ -412,6 +445,12 @@ function PressSendCard({ w, staged }) {
             border: `1px solid ${LINE}`, borderRadius: 8, padding: '9px 16px', cursor: 'pointer' }}>
             Ask for a change
           </button>
+          {(() => {
+            const { summary, original } = splitOriginal(staged.cleanMessage)
+            const { headline, ask } = parseWishSummary(summary)
+            return <DiscussBtn onDiscuss={onDiscuss} payload={{ who: w.name || w.email, email: w.email,
+              subject: headline, original, ask, staged, accessCode: w.access_code }} />
+          })()}
           <ResolveBtn wishId={w.id} style={{ marginLeft: 'auto' }} />
           {phase === 'error' && <span style={{ fontSize: 12, color: '#F0A07A' }}>{err}</span>}
         </div>
@@ -813,13 +852,13 @@ function emailToItem(it, replied) {
   }
 }
 
-function SupportItemCard({ it }) {
+function SupportItemCard({ it, onDiscuss }) {
   const st = UNI_STATUS[it.status] || { label: it.status, loud: false }
   const [open, setOpen] = useState(false)
   // M13: a wish carrying staged work renders as the press-send hero card.
   if (it.wish && it.wish.status !== 'resolved') {
     const staged = parseStaged(it.wish.message)
-    if (staged) return <PressSendCard w={it.wish} staged={staged} />
+    if (staged) return <PressSendCard w={it.wish} staged={staged} onDiscuss={onDiscuss} />
   }
   return (
     <div style={{ background: st.loud ? AMBER_SOFT : INK_CARD, border: `1px solid ${st.loud ? 'rgba(245,158,11,0.35)' : LINE}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
@@ -852,9 +891,13 @@ function SupportItemCard({ it }) {
           )}
         </div>
       )}
-      {it.wish && it.status !== 'resolved' && (
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
-          <ResolveBtn wishId={it.wish.id} />
+      {it.status !== 'resolved' && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginTop: 6 }}>
+          <DiscussBtn onDiscuss={onDiscuss} style={{ fontSize: 11, padding: '4px 12px' }}
+            payload={{ who: it.who, email: it.wish?.email, subject: it.subject,
+              original: it.original || it.text, ask: it.original ? it.text : null,
+              staged: null, accessCode: it.wish?.access_code }} />
+          {it.wish && <ResolveBtn wishId={it.wish.id} />}
         </div>
       )}
     </div>
@@ -863,7 +906,7 @@ function SupportItemCard({ it }) {
 
 // The unified list, purely presentational — data + filter live in the parent so
 // the headline, the chips, and the list can never tell three different stories.
-function ItemsList({ items, loaded, filter }) {
+function ItemsList({ items, loaded, filter, onDiscuss }) {
   const shown = filter === 'all' ? items : items.filter((i) => i.status === filter)
   const firstDoneIdx = filter === 'all' ? shown.findIndex((i) => i.status === 'responded' || i.status === 'resolved') : -1
   return (
@@ -887,7 +930,7 @@ function ItemsList({ items, loaded, filter }) {
               <span style={{ flex: 1, height: 1, background: LINE }} />
             </div>
           )}
-          <SupportItemCard it={it} />
+          <SupportItemCard it={it} onDiscuss={onDiscuss} />
         </div>
       ))}
     </div>
@@ -895,7 +938,7 @@ function ItemsList({ items, loaded, filter }) {
 }
 
 // ── Full dashboard ───────────────────────────────────────────────────────────
-export default function SupportDashboard({ isDesktop = true, onClose, worldId }) {
+export default function SupportDashboard({ isDesktop = true, onClose, worldId, onDiscuss }) {
   const [view, setView] = useState('all') // all | streams | chat | inbox (chat = mobile-only pane)
   const [filter, setFilter] = useState('all') // all | needs_you | responded | resolved
 
@@ -948,7 +991,7 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId })
           {chips}
         </div>
         <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          {view === 'all' ? <ItemsList items={items} loaded={loaded} filter={filter} />
+          {view === 'all' ? <ItemsList items={items} loaded={loaded} filter={filter} onDiscuss={onDiscuss} />
             : view === 'streams' ? <RequestsStream />
               : view === 'chat' ? <SupportInbox isDesktop={false} />
                 : <InboxPanel worldId={worldId} />}
@@ -969,7 +1012,7 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId })
       </div>
       {view === 'all' ? (
         <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <ItemsList items={items} loaded={loaded} filter={filter} />
+          <ItemsList items={items} loaded={loaded} filter={filter} onDiscuss={onDiscuss} />
         </div>
       ) : view === 'streams' ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
