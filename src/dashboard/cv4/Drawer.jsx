@@ -1258,7 +1258,8 @@ function GlobalModelSwitch({ worldId }) {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug: '_all', model: id, client_id: worldId }),
-    }).catch(() => {})
+    }).then(() => { try { window.dispatchEvent(new Event('aom-model-pref-changed')) } catch { /* ignore */ } })
+      .catch(() => {})
   }
 
   const active = GLOBAL_MODEL_CHOICES.find(m => m.id === globalModel)

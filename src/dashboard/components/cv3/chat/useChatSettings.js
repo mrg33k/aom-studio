@@ -84,7 +84,8 @@ export default function useChatSettings({
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug: currentChatKey, model, client_id: worldId }),
-    }).catch(() => {})
+    }).then(() => { try { window.dispatchEvent(new Event('aom-model-pref-changed')) } catch { /* ignore */ } })
+      .catch(() => {})
   }, [currentChatKey, worldId])
 
   // Global switch: the '_all' key flips EVERY chat at once (per-chat choices
@@ -96,7 +97,8 @@ export default function useChatSettings({
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug: '_all', model, client_id: worldId }),
-    }).catch(() => {})
+    }).then(() => { try { window.dispatchEvent(new Event('aom-model-pref-changed')) } catch { /* ignore */ } })
+      .catch(() => {})
   }, [worldId])
 
   // ── When settings modal opens, refresh name + collaborators + env keys ───

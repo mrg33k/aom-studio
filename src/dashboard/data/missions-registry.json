@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-11T21:27:22.318Z",
+  "generated_at": "2026-06-12T07:13:10.540Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -238,6 +238,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/followups"
+    },
+    {
+      "slug": "corner:gemini-workers",
+      "raw_slug": "gemini-workers",
+      "folder_name": "gemini-workers",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Gemini Workers",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/gemini-workers"
     },
     {
       "slug": "corner:home",
@@ -3351,8 +3365,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 61,
-      "in_flight": 61,
+      "total": 62,
+      "in_flight": 62,
       "done": 0
     },
     {

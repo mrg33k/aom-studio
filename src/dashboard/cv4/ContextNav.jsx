@@ -85,10 +85,15 @@ export default function CV4ContextNav({
   const [modelPrefs, setModelPrefs] = useState({})
   useEffect(() => {
     if (!worldId) return
-    authFetch(`/api/dashboard/agent-model?client=${encodeURIComponent(worldId)}`)
+    const load = () => authFetch(`/api/dashboard/agent-model?client=${encodeURIComponent(worldId)}`)
       .then(r => (r.ok ? r.json() : { models: {} }))
       .then(({ models }) => { if (models) setModelPrefs(models) })
       .catch(() => {})
+    load()
+    // Any model switch (chat settings Model tab or the Account blanket
+    // switch) fires this event so the badge updates without a reload.
+    window.addEventListener('aom-model-pref-changed', load)
+    return () => window.removeEventListener('aom-model-pref-changed', load)
   }, [worldId, selectedAgent?.slug, conversationTarget?.slug])
   const badgeChatKey = selectedAgent?.slug
     || (conversationTarget?.type === 'project' && conversationTarget?.slug ? `project:${conversationTarget.slug}` : null)
