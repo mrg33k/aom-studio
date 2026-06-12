@@ -295,6 +295,7 @@ export default async function handler(req, res) {
     // local tmux bridge (which only runs on Patrik's studio machine).
     let aiReply = null
     let aiError = null
+    let latestDayState = null
     if (cfg.ai && cfg.ai.system_prompt && GEMINI_API_KEY) {
       try {
         const [history, councilNotes, dayState] = await Promise.all([
@@ -320,6 +321,7 @@ export default async function handler(req, res) {
           cfg.ai.model || 'gemini-2.5-flash'
         )
         const { text: replyText, state: newDayState } = extractDayState(rawReply || '')
+        latestDayState = newDayState || dayState?.payload?.state || null
         if (newDayState) {
           await saveDayState(embed_id, visitor_id || null, newDayState)
         }
@@ -369,6 +371,9 @@ export default async function handler(req, res) {
       // this immediately instead of waiting on the poll.
       reply: aiReply,
       ai_error: aiError,
+      // Latest day ledger (the Wizard's own subject-by-subject state) so the
+      // widget can keep the Today's Quests panel in sync without extra polls.
+      day_state: latestDayState,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {

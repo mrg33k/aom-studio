@@ -307,6 +307,80 @@ body {
   background: rgba(253, 248, 236, 0.7);
 }
 
+/* Quest list — driven by the Wizard's day ledger */
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quest-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(253, 248, 236, 0.85);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+
+.quest-icon {
+  font-size: 13px;
+  width: 18px;
+  text-align: center;
+  color: #8a7c5e;
+}
+
+.quest-name {
+  flex: 1;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--color-text);
+}
+
+.quest-status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #8a7c5e;
+}
+
+.quest-row.quest-done {
+  border-left-color: var(--color-gold);
+  background: rgba(212, 175, 55, 0.12);
+}
+.quest-row.quest-done .quest-icon,
+.quest-row.quest-done .quest-status { color: var(--color-gold-soft); }
+.quest-row.quest-done .quest-name {
+  color: #8a7c5e;
+  text-decoration: line-through;
+  text-decoration-color: rgba(212, 175, 55, 0.6);
+}
+
+.quest-row.quest-active {
+  border-left-color: var(--color-indigo);
+  border-color: var(--color-indigo);
+  background: rgba(68, 58, 114, 0.07);
+  box-shadow: 0 1px 4px rgba(68, 58, 114, 0.12);
+}
+.quest-row.quest-active .quest-icon,
+.quest-row.quest-active .quest-status { color: var(--color-indigo); }
+
+.quest-row.quest-next .quest-icon { color: var(--color-gold-soft); }
+
+.quest-row.quest-todo { opacity: 0.75; }
+
+.quest-note {
+  margin-top: 12px;
+  font-size: 12.5px;
+  font-style: italic;
+  line-height: 1.5;
+  color: #6f6049;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .wizard-chat-container {

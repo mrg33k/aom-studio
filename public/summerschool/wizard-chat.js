@@ -17,7 +17,64 @@
     isLoading: false,
     sinceTs: null, // ISO timestamp — poll for messages newer than this
     sessionId: null,
+    dayState: null, // Wizard's day ledger string — drives Today's Quests
   };
+
+  // Parse the Wizard's day ledger ("Reading=done; Specials1(Music)=next; note=...")
+  // into quest entries + a note. Unknown fragments are skipped, not crashed on.
+  function parseDayState(state) {
+    if (!state || typeof state !== 'string') return null;
+    const quests = [];
+    let note = '';
+    for (const part of state.split(';')) {
+      const m = part.match(/^\s*([^=]+?)\s*=\s*(.+?)\s*$/);
+      if (!m) continue;
+      const key = m[1].trim();
+      const val = m[2].trim();
+      if (/^note$/i.test(key)) {
+        note = val;
+        continue;
+      }
+      // Specials1(Communication) → Communication; plain keys pass through
+      const special = key.match(/^Specials?\d*\s*\(([^)]+)\)$/i);
+      const name = special ? special[1].trim() : key;
+      const status = val.toLowerCase().replace(/\s+/g, '-');
+      quests.push({ name, status });
+    }
+    return quests.length ? { quests, note } : null;
+  }
+
+  function questStatusMeta(status) {
+    switch (status) {
+      case 'done': return { icon: '&#10004;', label: 'Done', cls: 'quest-done' };
+      case 'in-progress': return { icon: '&#9670;', label: 'In progress', cls: 'quest-active' };
+      case 'next': return { icon: '&#10148;', label: 'Up next', cls: 'quest-next' };
+      default: return { icon: '&#9675;', label: 'Not started', cls: 'quest-todo' };
+    }
+  }
+
+  function renderQuestsPanel() {
+    const parsed = parseDayState(appState.dayState);
+    if (!parsed) {
+      return `<div class="action-placeholder">
+            The Wizard will reveal your quests here when you're ready.
+          </div>`;
+    }
+    const rows = parsed.quests
+      .map((q) => {
+        const meta = questStatusMeta(q.status);
+        return `<div class="quest-row ${meta.cls}">
+            <span class="quest-icon">${meta.icon}</span>
+            <span class="quest-name">${escapeHtml(q.name)}</span>
+            <span class="quest-status">${meta.label}</span>
+          </div>`;
+      })
+      .join('');
+    const noteHtml = parsed.note
+      ? `<div class="quest-note">${escapeHtml(parsed.note)}</div>`
+      : '';
+    return `<div class="quest-list">${rows}</div>${noteHtml}`;
+  }
 
   // Derive today's day name for curriculum context
   function getTodayDay() {
@@ -62,6 +119,7 @@
       });
       if (!response.ok) return false;
       const data = await response.json();
+      if (data.day_state) appState.dayState = data.day_state;
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
       for (const msg of data.messages) {
         appState.messages.push({
@@ -115,6 +173,7 @@
         appState.messages.pop();
       } else {
         const data = await response.json();
+        if (data.day_state) appState.dayState = data.day_state;
         // Use the server's since_ts so we poll from after the user message
         if (data.since_ts) {
           appState.sinceTs = appState.sinceTs || data.since_ts;
@@ -278,9 +337,7 @@
 
         <div class="action-panel">
           <div class="action-title">&#10022; Today's Quests</div>
-          <div class="action-placeholder">
-            The Wizard will reveal your quests here when you're ready.
-          </div>
+          ${renderQuestsPanel()}
         </div>
       </div>
     `;

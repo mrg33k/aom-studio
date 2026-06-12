@@ -20,6 +20,33 @@ function sbHeaders() {
   }
 }
 
+function phoenixDate() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' })
+}
+
+// Latest day ledger for this visitor today (written by api/embed/chat.js).
+// Drives the widget's Today's Quests panel on page load.
+async function fetchDayState(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_day_state')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('payload->>date', `eq.${phoenixDate()}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return null
+    const rows = await r.json()
+    return rows?.[0]?.payload?.state || null
+  } catch (_) {
+    return null
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store')
   const origin = req.headers.origin || ''
@@ -166,7 +193,13 @@ export default async function handler(req, res) {
       }
       return true
     })
+    // History mode = page load: include today's day ledger so the quests
+    // panel renders the real state immediately (chat POSTs keep it fresh).
+    const dayState = historyMode
+      ? await fetchDayState(embedId, visitorId)
+      : null
     return res.status(200).json({
+      day_state: dayState,
       messages: filtered.map((row) => ({
         id: row.id,
         role: row.role,
