@@ -19,6 +19,7 @@
     sinceTs: null, // ISO timestamp — poll for messages newer than this
     sessionId: null,
     dayState: null, // Wizard's day ledger string — drives Today's Quests
+    theme: localStorage.getItem('wizard-theme') || 'light',
   };
 
   // Parse the Wizard's day ledger ("Reading=done; Specials1(Music)=next; note=...")
@@ -313,10 +314,16 @@
     const html = `
       <div class="wizard-chat-container">
         <div class="chat-header">
-          <div class="header-ornament">&#10022;</div>
-          <h1>Morning, Ethan</h1>
+          <h1><span class="header-ornament-inline">&#10022;</span> Morning, Ethan <span class="header-ornament-inline">&#10022;</span></h1>
           <p>The Wizard awaits &mdash; today's lessons are ready</p>
-          <div class="header-ornament">&#10022;</div>
+          <div class="theme-selector" title="Choose Light or Dark Theme">
+            <button class="theme-btn light ${appState.theme === 'light' ? 'active' : ''}" onclick="window.__wizardChat.setTheme('light')" title="Light Theme">
+              <span class="theme-icon">&#9728;</span><span class="theme-btn-text"> Light</span>
+            </button>
+            <button class="theme-btn dark ${appState.theme === 'dark' ? 'active' : ''}" onclick="window.__wizardChat.setTheme('dark')" title="Dark Theme">
+              <span class="theme-icon">&#9790;</span><span class="theme-btn-text"> Dark</span>
+            </button>
+          </div>
         </div>
 
         <div class="wizard-rail">
@@ -387,11 +394,34 @@
         sendMessage(text);
       }
     },
+    toggleTheme: () => {
+      appState.theme = appState.theme === 'light' ? 'dark' : 'light';
+      localStorage.setItem('wizard-theme', appState.theme);
+      applyTheme();
+      render();
+    },
+    setTheme: (theme) => {
+      if (appState.theme !== theme) {
+        appState.theme = theme;
+        localStorage.setItem('wizard-theme', theme);
+        applyTheme();
+        render();
+      }
+    },
   };
+
+  function applyTheme() {
+    if (appState.theme === 'dark') {
+      document.documentElement.classList.add('dark-theme');
+    } else {
+      document.documentElement.classList.remove('dark-theme');
+    }
+  }
 
   // Initialize and start polling
   async function init() {
     initSessionId();
+    applyTheme();
 
     // Start the poll window from now; loadHistory advances it if needed
     appState.sinceTs = new Date().toISOString();

@@ -62,16 +62,14 @@ body {
   color: rgba(243, 234, 217, 0.85);
 }
 
-.header-ornament {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 22px;
+.header-ornament-inline {
+  display: inline-block;
+  font-size: 20px;
   color: var(--color-gold);
   opacity: 0.85;
+  margin: 0 12px;
+  vertical-align: middle;
 }
-.header-ornament:first-child { left: 28px; }
-.header-ornament:last-child { right: 28px; }
 
 /* Wizard rail — the character stands on the left */
 .wizard-rail {
@@ -425,4 +423,155 @@ body {
   letter-spacing: 0;
   color: #6f6049;
   margin-top: 2px;
+}
+
+/* Dark Theme Overrides */
+html.dark-theme {
+  --color-bg: #1a1814;
+  --color-bg-deep: #11100b;
+  --color-wizard: #2a2520;
+  --color-indigo: #251f40;
+  --color-indigo-deep: #161226;
+  --color-gold: #c9a430;
+  --color-gold-soft: #a88825;
+  --color-text: #e8dfc8;
+  --color-border: #3d352b;
+}
+
+html.dark-theme .action-panel {
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.04), transparent 30%),
+    #1f1d18;
+}
+
+html.dark-theme .action-placeholder {
+  background: rgba(26, 24, 20, 0.7);
+  color: #a89f8d;
+}
+
+html.dark-theme .quest-row {
+  background: rgba(26, 24, 20, 0.85);
+}
+
+html.dark-theme .quest-status {
+  color: #a89f8d;
+}
+
+html.dark-theme .quest-icon {
+  color: #a89f8d;
+}
+
+html.dark-theme .quest-step {
+  color: #a89f8d;
+}
+
+html.dark-theme .quest-row.quest-done .quest-name {
+  color: #a89f8d;
+}
+
+html.dark-theme .chat-input-area {
+  background: rgba(26, 24, 20, 0.6);
+}
+
+html.dark-theme .chat-input {
+  background-color: #22201b;
+}
+
+html.dark-theme .wizard-nameplate {
+  background: linear-gradient(180deg, #2a2520, #1f1d18);
+  color: var(--color-gold);
+}
+
+/* Theme Selector — segmented control in the top-right corner */
+.theme-selector {
+  position: absolute;
+  top: 18px;
+  right: 24px;
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 20px;
+  padding: 2px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.theme-btn {
+  background: transparent;
+  border: none;
+  border-radius: 18px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(243, 234, 217, 0.65);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.theme-btn:hover {
+  color: var(--color-gold);
+}
+
+.theme-btn.active {
+  background: var(--color-gold);
+  color: var(--color-indigo-deep);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.theme-btn-text {
+  font-family: inherit;
+  font-weight: inherit;
+}
+
+.theme-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+html.dark-theme .theme-selector {
+  background: rgba(0, 0, 0, 0.45);
+  border-color: rgba(212, 175, 55, 0.2);
+}
+
+@media (max-width: 900px) {
+  .theme-selector {
+    top: 12px;
+    right: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .theme-btn-text {
+    display: none;
+  }
+  .theme-btn {
+    padding: 6px;
+    border-radius: 50%;
+  }
+}
+
+html.dark-theme .typing-label {
+  color: #a89f8d;
+}
+
+html.dark-theme .chat-input:disabled {
+  background-color: #2a2520;
+  color: #666;
+}
+
+html.dark-theme .send-button:disabled {
+  background: #3d352b;
+  border-color: #2a2520;
+  color: #666;
+}
+
+html.dark-theme .quest-note {
+  color: #a89f8d;
 }
