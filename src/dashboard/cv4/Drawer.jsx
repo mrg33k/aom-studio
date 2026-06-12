@@ -808,6 +808,10 @@ function DrawerBody({
       {/* R20 — Account also collapsible (default open) so every section
           shares the same chevron heading affordance. */}
       <TreeSection title="Account" collapsible>
+        {/* Blanket model switch (corner:gemini-workers R4) — flips EVERY chat
+            between Claude and Gemini in one tap. Per-chat picks (chat settings
+            → Model) still win over this. The bridge reads the '_all' key. */}
+        <GlobalModelSwitch worldId={worldId} />
         {/* "Reset to AOM" is a super-admin backdoor — wipes world override +
             force-reloads. Useful when the super-admin is debugging tenant
             world-switcher state; harmful (and confusing) for any other user,
@@ -1218,6 +1222,86 @@ function AgentRow({ agent, active, onClick }) {
         flex: 1,
         fontFamily: MENU.bodyFont,
       }}>{agent.name}</span>
+    </div>
+  )
+}
+
+// Blanket model switch (corner:gemini-workers R4). Lives in the Account
+// section: one tap moves EVERY chat to the picked model via the '_all' key in
+// user_preferences/agent_models. Per-chat picks (chat settings → Model) win
+// over this. Options list mirrors MODEL_OPTIONS in cv3 chatConstants — keep
+// the two in sync when a new model arrives.
+const GLOBAL_MODEL_CHOICES = [
+  { id: 'default',          label: 'Claude (default)' },
+  { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
+  { id: 'gemini-3.1-pro',   label: 'Gemini 3.1 Pro' },
+  { id: 'opus',             label: 'Claude Opus' },
+  { id: 'haiku',            label: 'Claude Haiku' },
+]
+
+function GlobalModelSwitch({ worldId }) {
+  const [globalModel, setGlobalModel] = useState('default')
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!worldId) return
+    authFetch(`/api/dashboard/agent-model?client=${encodeURIComponent(worldId)}`)
+      .then(r => (r.ok ? r.json() : { models: {} }))
+      .then(({ models }) => { if (models && models._all) setGlobalModel(models._all) })
+      .catch(() => {})
+  }, [worldId])
+
+  const pick = (id) => {
+    setGlobalModel(id)
+    setOpen(false)
+    authFetch('/api/dashboard/agent-model', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: '_all', model: id, client_id: worldId }),
+    }).catch(() => {})
+  }
+
+  const active = GLOBAL_MODEL_CHOICES.find(m => m.id === globalModel)
+  return (
+    <div data-testid="global-model-switch">
+      <div
+        data-row
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '5px 8px', borderRadius: 5, cursor: 'pointer', color: C.muted,
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 500, color: C.text2, fontFamily: MENU.bodyFont }}>
+          AI model — all chats
+        </span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: globalModel === 'default' ? C.muted : '#60A5FA', fontFamily: MENU.bodyFont }}>
+          {(active || {}).label || globalModel}
+        </span>
+      </div>
+      {open && (
+        <div style={{ padding: '2px 8px 6px 16px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {GLOBAL_MODEL_CHOICES.map(({ id, label }) => (
+            <div
+              key={id}
+              data-testid={`global-model-${id}`}
+              onClick={() => pick(id)}
+              style={{
+                padding: '4px 8px', borderRadius: 5, cursor: 'pointer',
+                fontSize: 12, fontFamily: MENU.bodyFont,
+                fontWeight: globalModel === id ? 700 : 500,
+                color: globalModel === id ? '#60A5FA' : C.text2,
+                background: globalModel === id ? 'rgba(96,165,250,0.10)' : 'transparent',
+              }}
+            >
+              {label}{globalModel === id ? '  ✓' : ''}
+            </div>
+          ))}
+          <div style={{ fontSize: 10.5, color: C.muted, fontFamily: MENU.bodyFont, padding: '2px 8px 0', lineHeight: 1.5 }}>
+            Applies to every chat. A chat with its own pick (chat settings → Model) keeps it.
+          </div>
+        </div>
+      )}
     </div>
   )
 }

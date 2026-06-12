@@ -53,7 +53,19 @@ export default function ThreadHeader() {
     filesOpen, setFilesOpen, settingsOpen, setSettingsOpen,
     profileOpen, setProfileOpen,
     recipesOpen, setRecipesOpen,
+    currentModel, globalModel,
   } = useChatSettingsCtx()
+  // Model badge (corner:gemini-workers R4): which brain answers this room.
+  // Effective = per-chat pick, else the all-chats switch, else default Claude.
+  const effectiveModel = (currentModel && currentModel !== 'default')
+    ? currentModel
+    : (globalModel && globalModel !== 'default' ? globalModel : 'default')
+  const modelBadgeLabel = {
+    default: 'Claude', opus: 'Claude Opus', sonnet: 'Claude Sonnet',
+    haiku: 'Claude Haiku', 'gemini-3.5-flash': 'Gemini 3.5 Flash',
+    'gemini-3.1-pro': 'Gemini 3.1 Pro',
+  }[effectiveModel] || effectiveModel
+  const modelBadgeIsGemini = effectiveModel.startsWith('gemini')
 
   const { switcherOpen, setSwitcherOpen, switcherRef } = useThreadQuickSwitcher()
 
@@ -124,6 +136,20 @@ export default function ThreadHeader() {
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
               {selectedAgent.name}
+            </span>
+            <span
+              data-testid="model-badge"
+              title="The AI model answering this chat — change it in Settings → Model"
+              style={{
+                fontSize: 9.5, fontWeight: 700, letterSpacing: '0.04em',
+                padding: '2px 6px', borderRadius: 999, flexShrink: 0,
+                textTransform: 'uppercase', fontFamily: "'Inter', sans-serif",
+                color: modelBadgeIsGemini ? '#60A5FA' : C.muted,
+                background: modelBadgeIsGemini ? 'rgba(96,165,250,0.12)' : 'rgba(255,255,255,0.06)',
+                border: `1px solid ${modelBadgeIsGemini ? 'rgba(96,165,250,0.35)' : 'rgba(255,255,255,0.10)'}`,
+              }}
+            >
+              {modelBadgeLabel}
             </span>
             <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
               style={{ flexShrink: 0, transform: switcherOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 150ms ease' }}
