@@ -303,6 +303,13 @@ export default async function handler(req, res) {
   // No inline preamble injection needed here.
   const dashboardText = `${visitorText}\n\n— Web Portal`
 
+  // When the embed has an ai block, THIS endpoint answers the turn (Gemini,
+  // below) — the listener/room-bridge path must not also serve it. The flag
+  // tells supabase-listener.py to skip the row; without it both lanes answer
+  // and the slower one sprays stall notices into the live chat next to the
+  // good reply (2026-06-12 summerschool incident, 44 notices).
+  const aiServed = !!(cfg.ai && cfg.ai.system_prompt && GEMINI_API_KEY)
+
   const row = {
     id: crypto.randomUUID(),
     agent: cfg.routing.agent,
@@ -325,6 +332,7 @@ export default async function handler(req, res) {
       // Raw visitor text (without the portal suffix) preserved in metadata
       // so future dashboard renderers can show it cleanly if they want.
       visitor_text: visitorText,
+      ...(aiServed ? { embed_self_served: true } : {}),
     },
   }
 
@@ -348,7 +356,7 @@ export default async function handler(req, res) {
     let aiReply = null
     let aiError = null
     let latestDayState = null
-    if (cfg.ai && cfg.ai.system_prompt && GEMINI_API_KEY) {
+    if (aiServed) {
       try {
         const [history, councilNotes, dayState] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
@@ -393,6 +401,11 @@ export default async function handler(req, res) {
             source: 'corner-dashboard',
             client_id: cfg.routing.client_id,
             project: cfg.routing.project,
+            // Ties the reply to its user turn — the room bridge's restart
+            // resume checks reply_to to decide a turn was already answered;
+            // without it every Gemini-answered turn re-serves after a bridge
+            // restart (2026-06-12: 27 sim turns re-served at boot).
+            reply_to: row.id,
             metadata: {
               mission_slug: cfg.routing.mission_slug,
               embed_id: embed_id,
