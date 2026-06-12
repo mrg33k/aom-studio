@@ -28,6 +28,14 @@
   // Initialize visitor ID — localStorage so the conversation survives
   // refreshes and new tabs (was sessionStorage, which wiped on refresh).
   function initSessionId() {
+    // Testing reset: /summerschool?reset wipes the saved session and starts
+    // a brand-new day (fresh visitor id = fresh history + fresh AI memory).
+    // Param is stripped from the URL so a refresh doesn't re-reset.
+    if (new URLSearchParams(window.location.search).has('reset')) {
+      localStorage.removeItem('wizard-chat-session-id');
+      sessionStorage.removeItem('wizard-chat-session-id');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
     let sid = localStorage.getItem('wizard-chat-session-id');
     if (!sid) {
       // Migrate any old sessionStorage id so today's thread isn't lost
