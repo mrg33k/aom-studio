@@ -9,6 +9,7 @@
   const APP_HOST = document.getElementById('app-host');
   const EMBED_ID = 'emb_summerschool'; // Registered embed ID in _embeds.json
   const POLL_INTERVAL_MS = 1500; // Poll for new messages every 1.5s
+  const VIDEO_EMBEDS_ENABLED = false; // Off until the curated-video layer is approved (council decision #2)
 
   // App state
   let appState = {
@@ -294,7 +295,9 @@
       .map((msg, idx) => {
         const isWizard = msg.role === 'wizard' || msg.role === 'assistant';
         const classes = isWizard ? 'message wizard-message' : 'message user-message';
-        const video = extractVideoUrl(msg.text);
+        // Video embeds disabled pending the curated-video decision (canon: no video in chat).
+        // Re-enable by flipping VIDEO_EMBEDS_ENABLED once the council approves a curated layer.
+        const video = VIDEO_EMBEDS_ENABLED ? extractVideoUrl(msg.text) : null;
         const videoHtml = video ? createVideoEmbed(video) : '';
         return `<div class="${classes}">${formatMessage(msg.text)}${videoHtml}</div>`;
       })
