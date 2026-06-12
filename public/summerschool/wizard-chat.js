@@ -19,7 +19,7 @@
     sinceTs: null, // ISO timestamp — poll for messages newer than this
     sessionId: null,
     dayState: null, // Wizard's day ledger string — drives Today's Quests
-    theme: localStorage.getItem('wizard-theme') || 'light',
+    theme: localStorage.getItem('wizard-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   };
 
   // Parse the Wizard's day ledger ("Reading=done; Specials1(Music)=next; note=...")
