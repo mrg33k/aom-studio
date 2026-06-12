@@ -104,6 +104,77 @@ async function fetchWizardContext(embedId) {
   }
 }
 
+// Phoenix wall-clock string for the prompt — the model has no clock of its own.
+function phoenixNow() {
+  return new Date().toLocaleString('en-US', {
+    timeZone: 'America/Phoenix',
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  })
+}
+
+function phoenixDate() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' })
+}
+
+// Day-state protocol: the Wizard maintains its own lesson ledger. Every reply
+// ends with a hidden <<DAY: ...>> marker; we strip it before Ethan sees the
+// text and persist it, then inject it back on the next message. This keeps
+// "what's done / what's next" accurate beyond the 10-message history window.
+const DAY_STATE_PROTOCOL = `
+DAY LEDGER PROTOCOL (machine bookkeeping — invisible to Ethan):
+End EVERY reply with one final line in exactly this form:
+<<DAY: Reading=done|in-progress|next|not-started; Writing=...; Math=...; Specials1(name)=...; Specials2(name)=...; note=one short phrase about where you are>>
+Update it every turn as lessons start and finish. This line is stripped before
+Ethan sees your message — never reference it, never explain it. The DAY STATE
+section you receive is your own ledger from the previous turn; trust it over
+guessing. When asked what's left today or what's next, answer FROM the ledger
+and the current time.`
+
+async function fetchDayState(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload,timestamp')
+  params.set('event_type', 'eq.wizard_day_state')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('payload->>date', `eq.${phoenixDate()}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return null
+    const rows = await r.json()
+    return rows?.[0] || null
+  } catch (_) {
+    return null
+  }
+}
+
+async function saveDayState(embedId, visitorId, state) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-day-state',
+        event_type: 'wizard_day_state',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', date: phoenixDate(), state },
+      }),
+    })
+  } catch (_) {
+    /* non-fatal — next turn re-derives from history */
+  }
+}
+
+// Strip the trailing <<DAY: ...>> marker; returns { text, state }.
+function extractDayState(replyText) {
+  const m = replyText.match(/<<DAY:([\s\S]*?)>>\s*$/)
+  if (!m) return { text: replyText, state: null }
+  return { text: replyText.slice(0, m.index).trim(), state: m[1].trim() }
+}
+
 // Call Gemini and return the text reply
 async function callGemini(systemPrompt, history, userMessage, model = 'gemini-2.5-flash') {
   const contents = [...history, { role: 'user', parts: [{ text: userMessage }] }]
@@ -226,19 +297,32 @@ export default async function handler(req, res) {
     let aiError = null
     if (cfg.ai && cfg.ai.system_prompt && GEMINI_API_KEY) {
       try {
-        const [history, councilNotes] = await Promise.all([
+        const [history, councilNotes, dayState] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
+          fetchDayState(embed_id, visitor_id || null),
         ])
-        const systemPrompt = councilNotes
-          ? `${cfg.ai.system_prompt}\n\n=== COUNCIL NOTES (current plan — follow these) ===\n${councilNotes}`
-          : cfg.ai.system_prompt
-        const replyText = await callGemini(
+        let systemPrompt = cfg.ai.system_prompt
+        if (councilNotes) {
+          systemPrompt += `\n\n=== COUNCIL NOTES (current plan — follow these) ===\n${councilNotes}`
+        }
+        systemPrompt += `\n\n=== CURRENT TIME ===\nIt is now ${phoenixNow()} (Arizona). Use this for any question about time, the day, or how much is left.`
+        if (dayState?.payload?.state) {
+          systemPrompt += `\n\n=== DAY STATE (your ledger from earlier today) ===\n${dayState.payload.state}`
+        } else {
+          systemPrompt += `\n\n=== DAY STATE ===\nNo ledger yet today — this is the first exchange of the day. Start the ledger fresh.`
+        }
+        systemPrompt += `\n${DAY_STATE_PROTOCOL}`
+        const rawReply = await callGemini(
           systemPrompt,
           history,
           visitorText,
           cfg.ai.model || 'gemini-2.5-flash'
         )
+        const { text: replyText, state: newDayState } = extractDayState(rawReply || '')
+        if (newDayState) {
+          await saveDayState(embed_id, visitor_id || null, newDayState)
+        }
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
