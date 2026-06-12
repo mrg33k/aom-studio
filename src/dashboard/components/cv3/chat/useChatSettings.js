@@ -87,6 +87,18 @@ export default function useChatSettings({
     }).catch(() => {})
   }, [currentChatKey, worldId])
 
+  // Global switch: the '_all' key flips EVERY chat at once (per-chat choices
+  // still win). The bridge falls back to '_all' when a room has no own pick.
+  const globalModel = agentModels['_all'] || 'default'
+  const selectGlobalModel = useCallback((model) => {
+    setAgentModels(prev => ({ ...prev, _all: model }))
+    authFetch('/api/dashboard/agent-model', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: '_all', model, client_id: worldId }),
+    }).catch(() => {})
+  }, [worldId])
+
   // ── When settings modal opens, refresh name + collaborators + env keys ───
   useEffect(() => {
     if (settingsOpen) {
@@ -208,6 +220,7 @@ export default function useChatSettings({
     currentVoice, selectVoice,
     agentModels, setAgentModels,
     currentModel, selectModel,
+    globalModel, selectGlobalModel,
     saveRoomName, saveEnvKey, deleteEnvKey,
   }
 }

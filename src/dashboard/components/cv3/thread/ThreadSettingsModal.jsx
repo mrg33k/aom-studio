@@ -22,6 +22,7 @@ export default function ThreadSettingsModal() {
     chatNameInput, setChatNameInput, saveRoomName,
     currentVoice, selectVoice,
     currentModel, selectModel,
+    globalModel, selectGlobalModel,
     envKeys, envKeysLoading,
     newKeyName, setNewKeyName,
     newKeyValue, setNewKeyValue,
@@ -242,6 +243,32 @@ export default function ThreadSettingsModal() {
                   )}
                 </button>
               ))}
+            </div>
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                All chats
+              </div>
+              <div style={{ fontSize: 12, color: C.text2, fontFamily: "'Inter', sans-serif", marginBottom: 8, lineHeight: 1.5 }}>
+                {globalModel !== 'default'
+                  ? `Every chat is currently running on ${(MODEL_OPTIONS.find(m => m.id === globalModel) || {}).label || globalModel} unless it has its own pick.`
+                  : 'Flip every chat at once. A chat with its own pick keeps it.'}
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => selectGlobalModel(currentModel === 'default' ? 'gemini-3.5-flash' : currentModel)}
+                  style={{ padding: '7px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: "'Inter', sans-serif", color: '#60A5FA', background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.35)' }}
+                >
+                  Use {(MODEL_OPTIONS.find(m => m.id === (currentModel === 'default' ? 'gemini-3.5-flash' : currentModel)) || {}).label || 'this model'} everywhere
+                </button>
+                {globalModel !== 'default' && (
+                  <button
+                    onClick={() => selectGlobalModel('default')}
+                    style={{ padding: '7px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: "'Inter', sans-serif", color: C.text2, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
+                  >
+                    Back to Claude everywhere
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           )}
