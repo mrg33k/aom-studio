@@ -313,7 +313,7 @@ export default function ChatPanel() {
     currentUser,
   })
 
-  const bridge = useBridgeStream({ setMessages: msgs.setMessages })
+  const bridge = useBridgeStream({ setMessages: msgs.setMessages, refetchHistoryRef: msgs.refetchHistoryRef })
 
   // Poll /api/dashboard/message-steps while waiting for a reply.
   // RLS blocks realtime step delivery to the browser, so relay-emit-step.py

@@ -144,6 +144,13 @@ export default function useChatMessages({
   // Ref to hold the current refetchSteps fn so other effects can trigger it
   // without depending on the steps-subscription closure's scope.
   const refetchStepsRef = useRef(null)
+  // Same pattern for refetchHistory: each thread effect (agent / project) owns a
+  // local refetchHistory closure; this ref exposes the active surface's one so
+  // the SSE stream can pull missed segment rows the moment a turn starts. Without
+  // it, a silently-dropped Realtime socket means the live thought-segments never
+  // render until focus/visibility or the 4s safety-net — "delivered-not-rendered"
+  // death (council 2026-06-13, step 2 #1).
+  const refetchHistoryRef = useRef(null)
 
   // ── Load message history for an agent thread ──────────────────────────────
   // R63: exclude messages with a project set. Per-project observations
@@ -210,6 +217,7 @@ export default function useChatMessages({
         setMessages(prev => mergeServerRows(prev, ordered))
       } catch (_) { /* best-effort */ }
     }
+    refetchHistoryRef.current = refetchHistory
 
     const handleInsert = (payload) => {
       const msg = payload.new
@@ -404,6 +412,7 @@ export default function useChatMessages({
         setMessages(prev => mergeServerRows(prev, ordered))
       } catch (_) { /* best-effort */ }
     }
+    refetchHistoryRef.current = refetchHistory
 
     const handleInsert = (payload) => {
       const msg = payload.new
@@ -743,5 +752,6 @@ export default function useChatMessages({
     userProfiles,
     stepsByMessageId,
     refetchStepsRef,
+    refetchHistoryRef,
   }
 }

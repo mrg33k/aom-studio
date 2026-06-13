@@ -6,13 +6,35 @@
 import { useCallback, useRef, useState } from 'react'
 import { authFetch } from '../../../lib/authFetch.js'
 
-export default function useBridgeStream({ setMessages }) {
+export default function useBridgeStream({ setMessages, refetchHistoryRef }) {
   const [isAgentTyping, setIsAgentTyping] = useState(false)
   const bridgeAbortRef = useRef(null)
+  const refetchTimerRef = useRef(null)
 
   const startBridgeStream = useCallback((messageId, agentSlug) => {
     setIsAgentTyping(true)
     const tempAsstId = `bridge-stream-${messageId}`
+
+    // The backend persists each thought-segment as its own Supabase row as the
+    // turn unfolds (sse-room-bridge.py _complete_turn). Those normally arrive
+    // via Realtime, but the socket silently drops on token expiry / backgrounded
+    // tab / channel error, so the live chain never renders and the turn reads as
+    // dead. Pull history now and on a light cadence while the stream is open so
+    // the per-segment bubbles appear even when Realtime is down. mergeServerRows
+    // dedups, so an extra refetch is idempotent. (council 2026-06-13, step 2 #1)
+    const pullSegments = () => { try { refetchHistoryRef?.current?.() } catch {} }
+    pullSegments()
+    if (refetchTimerRef.current) clearInterval(refetchTimerRef.current)
+    refetchTimerRef.current = setInterval(pullSegments, 2500)
+    const stopPulling = () => {
+      if (refetchTimerRef.current) {
+        clearInterval(refetchTimerRef.current)
+        refetchTimerRef.current = null
+      }
+      // One final pull so the closing segment lands even if it was written
+      // between the last interval tick and the stream's done event.
+      pullSegments()
+    }
 
     // Insert placeholder assistant message
     setMessages(prev => [...prev, {
@@ -32,6 +54,7 @@ export default function useBridgeStream({ setMessages }) {
       signal: controller.signal,
     }).then(async (res) => {
       if (!res.ok || !res.body) {
+        stopPulling()
         setIsAgentTyping(false)
         return
       }
@@ -55,12 +78,14 @@ export default function useBridgeStream({ setMessages }) {
               const snap = fullText
               setMessages(prev => prev.map(m => m.id === tempAsstId ? { ...m, text: snap } : m))
             } else if (event.type === 'done' || event.type === 'fallback') {
+              stopPulling()
               setIsAgentTyping(false)
               // Mark streaming complete. The Realtime subscription may replace
               // this temp message with the real Supabase row (dedup by text match).
               setMessages(prev => prev.map(m => m.id === tempAsstId ? { ...m, _streaming: false } : m))
               return
             } else if (event.type === 'error') {
+              stopPulling()
               setIsAgentTyping(false)
               return
             }
@@ -69,12 +94,14 @@ export default function useBridgeStream({ setMessages }) {
       }
       // Stream ended without explicit done/fallback — clear streaming flag so
       // the render gate doesn't permanently hide the placeholder.
+      stopPulling()
       setMessages(prev => prev.map(m => m.id === tempAsstId ? { ...m, _streaming: false } : m))
       setIsAgentTyping(false)
     }).catch(() => {
+      stopPulling()
       setIsAgentTyping(false)
     })
-  }, [setMessages])
+  }, [setMessages, refetchHistoryRef])
 
   return { isAgentTyping, setIsAgentTyping, bridgeAbortRef, startBridgeStream }
 }
