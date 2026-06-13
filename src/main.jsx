@@ -58,6 +58,7 @@ const Gemma4BriefDeepseek = lazy(() => import('./pages/Gemma4BriefDeepseek.jsx')
 const AmbitionPerformance = lazy(() => import('./pages/AmbitionPerformance.jsx'))
 const AmbitionPerformanceV2 = lazy(() => import('./pages/AmbitionPerformanceV2.jsx'))
 const Corner = lazy(() => import('./pages/Corner.jsx'))
+const BookCorner = lazy(() => import('./pages/BookCorner.jsx'))
 const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
 // corner:gemini-workers R10 — /cvg Gemini workbench (CornerV4 duplicate).
@@ -302,6 +303,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/ai-guide" element={<AIGuide />} />
           <Route path="/corner" element={<Corner />} />
+          <Route path="/corner/book" element={<BookCorner />} />
           <Route path="/skills" element={<Skills />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/demo" element={<DemoPage />} />
