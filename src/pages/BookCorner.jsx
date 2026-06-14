@@ -1,6 +1,39 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Check, Calendar, Clock, User, Mail, Building2, X } from 'lucide-react';
+
+// --- FAVICON & META SWAP ON MOUNT ---
+const useCornerPageMeta = () => {
+  useEffect(() => {
+    // Save original favicon and metas
+    const originalFavicon = document.querySelector('link[rel="icon"]')?.href || ''
+    const originalTitle = document.title
+    const originalOgTitle = document.querySelector('meta[property="og:title"]')?.content || ''
+    const originalOgDesc = document.querySelector('meta[property="og:description"]')?.content || ''
+
+    // Swap to Corner branding
+    const faviconLink = document.querySelector('link[rel="icon"]')
+    if (faviconLink) {
+      faviconLink.href = '/brand/corner-c-mark.svg'
+    }
+    document.title = 'corner — book your intro call'
+
+    const ogTitle = document.querySelector('meta[property="og:title"]')
+    if (ogTitle) ogTitle.content = 'corner — book your intro call'
+
+    const ogDesc = document.querySelector('meta[property="og:description"]')
+    if (ogDesc) ogDesc.content = 'Schedule your 20-minute discovery call.'
+
+    // Restore on unmount
+    return () => {
+      if (faviconLink) faviconLink.href = originalFavicon
+      document.title = originalTitle
+      if (ogTitle) ogTitle.content = originalOgTitle
+      if (ogDesc) ogDesc.content = originalOgDesc
+    }
+  }, [])
+}
+
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -111,6 +144,8 @@ const MOCK_SLOTS = [
 
 // --- MAIN COMPONENT ---
 export default function BookCorner() {
+  useCornerPageMeta();
+
   const [step, setStep] = useState(1); // 1: select slot, 2: enter details, 3: confirm
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);

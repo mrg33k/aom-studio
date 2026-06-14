@@ -4,6 +4,39 @@ import { Check, ChevronRight, ArrowUpRight } from 'lucide-react'
 
 const CornerAsciiHeroPoc = lazy(() => import('./CornerAsciiHeroPoc'))
 
+// --- FAVICON & META SWAP ON MOUNT ---
+const useCornerPageMeta = () => {
+  useEffect(() => {
+    // Save original favicon and metas
+    const originalFavicon = document.querySelector('link[rel="icon"]')?.href || ''
+    const originalTitle = document.title
+    const originalOgTitle = document.querySelector('meta[property="og:title"]')?.content || ''
+    const originalOgDesc = document.querySelector('meta[property="og:description"]')?.content || ''
+
+    // Swap to Corner branding
+    const faviconLink = document.querySelector('link[rel="icon"]')
+    if (faviconLink) {
+      faviconLink.href = '/brand/corner-c-mark.svg'
+    }
+    document.title = 'corner — your business just got an upgrade'
+
+    const ogTitle = document.querySelector('meta[property="og:title"]')
+    if (ogTitle) ogTitle.content = 'corner — your business just got an upgrade'
+
+    const ogDesc = document.querySelector('meta[property="og:description"]')
+    if (ogDesc) ogDesc.content = 'Managed AI agents that run your business in one organized system.'
+
+    // Restore on unmount
+    return () => {
+      if (faviconLink) faviconLink.href = originalFavicon
+      document.title = originalTitle
+      if (ogTitle) ogTitle.content = originalOgTitle
+      if (ogDesc) ogDesc.content = originalOgDesc
+    }
+  }, [])
+}
+
+
 /**
  * Corner SURGE Homepage — Full Customer-First Brand Experience
  *
@@ -480,6 +513,8 @@ function CornerFooter() {
 
 // --- MAIN COMPONENT ---
 export default function CornerSurgeHomepage() {
+  useCornerPageMeta()
+
   return (
     <div style={{ backgroundColor: SURGE.charcoal, color: SURGE.white }}>
       <CornerSurgeNav />
