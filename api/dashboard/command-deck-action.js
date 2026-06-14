@@ -39,6 +39,53 @@ const DELIVERABLES_DIR = path.join(
   'corner/users/aom/missions/master-loop/deliverables'
 );
 
+const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
+// AOM-EA-relative path used by the tunnel's /project-file-raw + /command-deck-write.
+const DELIVERABLES_REL = 'corner/users/aom/missions/master-loop/deliverables';
+
+// ── Tunnel-first read/write (Vercel prod has no AOM-EA disk) ────────────────────
+// The master-loop deliverable files live on the studio machine. Reads come back
+// through the existing /project-file-raw route; writes go through the scoped
+// /command-deck-write route (only the three whitelisted files are writable).
+// Local fs is the dev fallback (vercel dev on the studio box).
+
+async function readDeliverable(name) {
+  try {
+    const url = `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(`${DELIVERABLES_REL}/${name}`)}`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
+    if (r.ok) return await r.text();
+    if (r.status === 404) return null;
+  } catch (err) {
+    // fall through to local
+  }
+  try {
+    const p = path.join(DELIVERABLES_DIR, name);
+    if (!fs.existsSync(p)) return null;
+    return fs.readFileSync(p, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+async function writeDeliverable(name, content) {
+  try {
+    const r = await fetch(`${RAG_TUNNEL_URL}/command-deck-write`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'User-Agent': 'aom-vercel-proxy' },
+      body: JSON.stringify({ name, content }),
+    });
+    if (r.ok) return true;
+  } catch (err) {
+    // fall through to local
+  }
+  try {
+    fs.writeFileSync(path.join(DELIVERABLES_DIR, name), content, 'utf8');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -94,15 +141,13 @@ async function markCallDone(callId, res) {
     return res.status(400).json({ error: 'callId required' });
   }
 
-  const needsPath = path.join(DELIVERABLES_DIR, 'needs-patrik.md');
-
   try {
-    // Read fresh
-    if (!fs.existsSync(needsPath)) {
+    // Read fresh through the tunnel (or local dev fallback).
+    let content = await readDeliverable('needs-patrik.md');
+    if (content == null) {
       return res.status(404).json({ error: 'needs-patrik.md not found' });
     }
 
-    let content = fs.readFileSync(needsPath, 'utf8');
     const originalContent = content;
 
     // Find and flip the checkbox: "- [ ] ..." -> "- [x] ..."
@@ -119,8 +164,8 @@ async function markCallDone(callId, res) {
       return res.status(400).json({ error: 'Failed to mark call done' });
     }
 
-    // Write back
-    fs.writeFileSync(needsPath, content, 'utf8');
+    const ok = await writeDeliverable('needs-patrik.md', content);
+    if (!ok) return res.status(500).json({ error: 'Failed to write needs-patrik.md' });
 
     return res.status(200).json({
       success: true,
@@ -141,17 +186,12 @@ async function answerQuestion(room, answer, res) {
     return res.status(400).json({ error: 'answer required' });
   }
 
-  const openQuestionsPath = path.join(DELIVERABLES_DIR, 'open-questions.md');
-  const roomGoalsPath = path.join(DELIVERABLES_DIR, 'room-goals.json');
-
   try {
     // ── Update open-questions.md ───────────────────────────────────────────
-    if (!fs.existsSync(openQuestionsPath)) {
+    let openQContent = await readDeliverable('open-questions.md');
+    if (openQContent == null) {
       return res.status(404).json({ error: 'open-questions.md not found' });
     }
-
-    let openQContent = fs.readFileSync(openQuestionsPath, 'utf8');
-    const originalOpenQ = openQContent;
 
     // Find the line matching the room and flip its checkbox
     const roomPattern = new RegExp(`^- \\[ \\] ${room.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} —`, 'm');
@@ -162,11 +202,10 @@ async function answerQuestion(room, answer, res) {
     openQContent = openQContent.replace(roomPattern, (match) => match.replace('[ ]', '[x]'));
 
     // ── Update room-goals.json ─────────────────────────────────────────────
-    if (!fs.existsSync(roomGoalsPath)) {
+    let goalsContent = await readDeliverable('room-goals.json');
+    if (goalsContent == null) {
       return res.status(404).json({ error: 'room-goals.json not found' });
     }
-
-    let goalsContent = fs.readFileSync(roomGoalsPath, 'utf8');
     const goals = JSON.parse(goalsContent);
 
     if (!goals.rooms) goals.rooms = {};
@@ -184,9 +223,12 @@ async function answerQuestion(room, answer, res) {
       last_reviewed: new Date().toISOString(),
     };
 
-    // Write back both files
-    fs.writeFileSync(openQuestionsPath, openQContent, 'utf8');
-    fs.writeFileSync(roomGoalsPath, JSON.stringify(goals, null, 2) + '\n', 'utf8');
+    // Write back both files (tunnel, or local dev fallback)
+    const okQ = await writeDeliverable('open-questions.md', openQContent);
+    const okG = await writeDeliverable('room-goals.json', JSON.stringify(goals, null, 2) + '\n');
+    if (!okQ || !okG) {
+      return res.status(500).json({ error: 'Failed to write deliverables' });
+    }
 
     return res.status(200).json({
       success: true,

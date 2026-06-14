@@ -46,7 +46,24 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Auth verification failed' });
   }
 
-  // ── Read ~/.claude/jobs directory ──────────────────────────────────────────
+  // ── Studio tunnel first (Vercel prod has no disk) ───────────────────────────
+  // The running Claude Code sessions live on the studio machine under
+  // ~/.claude/jobs, which Vercel can't see. The rag tunnel reads them for us.
+  // Local-fs below is the dev fallback (vercel dev on the studio box).
+  const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
+  try {
+    const ragRes = await fetch(`${RAG_TUNNEL_URL}/command-deck-sessions`, {
+      headers: { 'User-Agent': 'aom-vercel-proxy' },
+    });
+    if (ragRes.ok) {
+      const data = await ragRes.json();
+      return res.status(200).json({ sessions: Array.isArray(data?.sessions) ? data.sessions : [] });
+    }
+  } catch (err) {
+    // network error -> local fallback
+  }
+
+  // ── Read ~/.claude/jobs directory (local dev fallback) ──────────────────────
   const jobsDir = path.join(os.homedir(), '.claude', 'jobs');
 
   let sessions = [];
@@ -69,17 +86,17 @@ export default async function handler(req, res) {
         const raw = fs.readFileSync(stateFile, 'utf8');
         const state = JSON.parse(raw);
 
-        // Only include blocked or stalled sessions
-        if (!state.blocked && !state.stalled) continue;
+        // Only include blocked or stalled sessions (state field is the source).
+        const stateVal = String(state.state || '');
+        if (stateVal !== 'blocked' && stateVal !== 'stalled') continue;
 
         sessions.push({
-          name: entry.name,
-          state: state.state || 'unknown',
+          name: state.name || entry.name,
+          state: stateVal,
+          intent: state.intent || '',
           detail: state.detail || '',
           needs: state.needs || '',
           suggestedReply: state.suggestedReply || '',
-          blocked: !!state.blocked,
-          stalled: !!state.stalled,
         });
       } catch (err) {
         // Skip sessions with unparseable state.json; log silently.
