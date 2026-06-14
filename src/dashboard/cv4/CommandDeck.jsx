@@ -245,19 +245,23 @@ function HardCallCard({ item, index, onMarkDone }) {
 
 // ── Component: Steering Question Card ──────────────────────────────────────
 
-function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom }) {
+function SteeringQuestionCard({ room, question, answered, options = [], onAnswer, onJumpToRoom }) {
   const [showInput, setShowInput] = useState(false)
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
+  const [picked, setPicked] = useState(null)
   const inputRef = useRef(null)
 
   useEffect(() => {
     if (showInput && inputRef.current) inputRef.current.focus()
   }, [showInput])
 
-  const handleSendAnswer = async () => {
-    if (!answer.trim()) return
+  // One path for both a tapped option chip and a typed answer: record the choice
+  // as this room's goal. The loop reads room-goals.json on its next tick.
+  const submitAnswer = async (text, chipIndex = null) => {
+    if (!text || !text.trim()) return
     setLoading(true)
+    if (chipIndex !== null) setPicked(chipIndex)
     try {
       await authFetch('/api/dashboard/command-deck-action', {
         method: 'POST',
@@ -265,7 +269,7 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
         body: JSON.stringify({
           action: 'answer_question',
           room,
-          answer: answer.trim(),
+          answer: text.trim(),
         }),
       })
       onAnswer()
@@ -273,10 +277,14 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
       setAnswer('')
     } catch (err) {
       console.error('Error submitting answer:', err)
+      setPicked(null)
     } finally {
       setLoading(false)
     }
   }
+
+  const handleSendAnswer = () => submitAnswer(answer)
+  const hasOptions = Array.isArray(options) && options.length > 0
 
   return (
     <div style={{
@@ -335,19 +343,58 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
         <>
           {!showInput ? (
             <div style={{
-              display: 'flex',
-              gap: 6,
               borderTop: `1px solid ${C.border}`,
               paddingTop: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
             }}>
-              <CommandDeckBtn onClick={() => setShowInput(true)}>
-                Answer
-              </CommandDeckBtn>
-              {room.includes(':') && (
-                <CommandDeckBtn onClick={() => onJumpToRoom(room)}>
-                  Go to room
-                </CommandDeckBtn>
+              {/* The loop's pre-worked-out moves: tap one and it becomes the
+                  room's goal next tick. Free-text "Answer" stays as the escape
+                  hatch below. */}
+              {hasOptions && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {options.map((opt, oi) => (
+                    <button
+                      key={oi}
+                      onClick={() => submitAnswer(opt.answer || opt.label, oi)}
+                      disabled={loading}
+                      style={{
+                        textAlign: 'left',
+                        background: picked === oi ? 'rgba(234,179,8,0.18)' : 'rgba(234,179,8,0.06)',
+                        border: `1px solid ${picked === oi ? AMBER : 'rgba(234,179,8,0.32)'}`,
+                        color: C.text,
+                        fontSize: 13,
+                        fontFamily: FONT.body,
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        cursor: loading ? 'default' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        opacity: loading && picked !== oi ? 0.5 : 1,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span>{opt.label}</span>
+                      <span style={{ color: AMBER, fontWeight: 700, flexShrink: 0 }}>
+                        {picked === oi && loading ? '…' : '›'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               )}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <CommandDeckBtn onClick={() => setShowInput(true)}>
+                  {hasOptions ? 'Something else' : 'Answer'}
+                </CommandDeckBtn>
+                {room.includes(':') && (
+                  <CommandDeckBtn onClick={() => onJumpToRoom(room)}>
+                    Go to room
+                  </CommandDeckBtn>
+                )}
+              </div>
             </div>
           ) : (
             <div style={{
@@ -628,10 +675,18 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
         .filter((q) => !answeredQuestions.some((a) => a.text.includes(q.text.split(' — ')[0])))
         .map((item) => {
           const [room, question] = item.text.split(' — ')
+          const slug = room.trim()
+          // The loop pre-computes 2-4 tap-one moves per question and stores them
+          // on the room's goal entry. Each is { label, answer }.
+          const g = (goals.rooms || {})[slug] || {}
+          const options = Array.isArray(g.options)
+            ? g.options.filter((o) => o && o.label)
+            : []
           return {
-            room: room.trim(),
+            room: slug,
             question: question.trim(),
             checked: item.checked,
+            options,
           }
         })
 
@@ -804,6 +859,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
                   room={q.room}
                   question={q.question}
                   answered={q.checked}
+                  options={q.options}
                   onAnswer={handleDataChange}
                   onJumpToRoom={onJumpToRoom}
                 />
