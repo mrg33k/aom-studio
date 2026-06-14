@@ -213,11 +213,19 @@ function CornerAsciiHeroPoc() {
       const logoY = headlineY + (isMobileHeight ? 45 : 85)
       ctx.font = `bold ${logoFontSize}px Outfit, sans-serif`
 
-      // Create a simple horizontal gradient: purple on left, cyan on right
-      // This is the classic SURGE direction (135° simplified to horizontal)
+      // Create a horizontal gradient centered on the wordmark
+      // Measure "corner" to position gradient optimally
+      const cornerMetrics = ctx.measureText('corner')
+      const cornerWidth = cornerMetrics.width
+      const cornerCenterX = canvas.width / 2
+      // Gradient: spans from left edge through wordmark center to right edge
+      // Purple should dominate at and left of center, cyan at and right of center
       const textGradient = ctx.createLinearGradient(0, logoY, canvas.width, logoY)
-      textGradient.addColorStop(0.3, '#7c3aed')      // Left portion: purple
-      textGradient.addColorStop(0.7, '#06b6d4')      // Right portion: cyan
+      textGradient.addColorStop(0, '#7c3aed')        // Far left: purple
+      textGradient.addColorStop(0.4, '#7c3aed')      // Left-center: still purple
+      textGradient.addColorStop(0.5, '#06b6d4')      // Dead center: cyan
+      textGradient.addColorStop(0.6, '#06b6d4')      // Right-center: still cyan
+      textGradient.addColorStop(1, '#06b6d4')        // Far right: cyan
 
       ctx.fillStyle = textGradient
       ctx.shadowColor = 'rgba(124, 58, 237, 0.3)'
