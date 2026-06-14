@@ -2621,6 +2621,8 @@ export default function CornerV4() {
         worldId={worldId}
         activeTool={activeTool}
         onExitTool={() => setActiveTool(null)}
+        deckActive={deckTab === 'deck'}
+        onToggleDeck={() => setDeckTab(t => (t === 'deck' ? 'chat' : 'deck'))}
       />
 
       {/* ── MAIN ROW (desktop): [Files drawer] [Chat (centered)] [Tasks drawer].
@@ -2766,72 +2768,32 @@ export default function CornerV4() {
                 }}
               />
             ) : selectedAgent?.slug === 'elon' ? (
-              // command:deck M3 — Tab toggle for Elon's room (Chat vs Command Deck)
-              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-                <div style={{
-                  display: 'flex',
-                  gap: 8,
-                  padding: '8px 12px',
-                  borderBottom: '1px solid ' + C.border,
-                  background: C.dim,
-                }}>
-                  <button
-                    onClick={() => setDeckTab('chat')}
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: 13,
-                      fontWeight: deckTab === 'chat' ? 600 : 400,
-                      background: deckTab === 'chat' ? C.s1 : 'transparent',
-                      border: '1px solid ' + (deckTab === 'chat' ? C.border : 'transparent'),
-                      color: C.text1,
-                      cursor: 'pointer',
-                      borderRadius: 4,
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    Chat
-                  </button>
-                  <button
-                    onClick={() => setDeckTab('deck')}
-                    style={{
-                      padding: '6px 12px',
-                      fontSize: 13,
-                      fontWeight: deckTab === 'deck' ? 600 : 400,
-                      background: deckTab === 'deck' ? C.s1 : 'transparent',
-                      border: '1px solid ' + (deckTab === 'deck' ? C.border : 'transparent'),
-                      color: C.text1,
-                      cursor: 'pointer',
-                      borderRadius: 4,
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    Command Deck
-                  </button>
-                </div>
-                <div style={{ flex: 1, overflow: 'hidden' }}>
-                  {deckTab === 'chat' ? (
-                    <ChatPanel key="elon-chat" />
-                  ) : (
-                    <CommandDeck
-                      worldId={worldId}
-                      basePath={`/cv4/project`}
-                      onJumpToRoom={(room) => {
-                        // room format: "project:mission" or "agent-slug"
-                        if (room.includes(':')) {
-                          const [proj, mission] = room.split(':');
-                          // Navigate to project:mission
-                          navigate(`/cv4/project/${proj}/${mission}`);
-                        } else {
-                          // Navigate to agent
-                          setSelectedAgent({ slug: room, name: room });
-                          setConversationTarget({ name: room, type: 'agent' });
-                        }
-                        setDeckTab('chat'); // Auto-switch back to chat
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
+              // command:deck — entry is the loop icon in the room header (ContextNav),
+              // no in-room tab row. deckTab flips between the chat and the deck.
+              deckTab === 'deck' ? (
+                <CommandDeck
+                  worldId={worldId}
+                  basePath={`/cv4/project`}
+                  onClose={() => setDeckTab('chat')}
+                  onJumpToRoom={(room) => {
+                    // room format: "project:mission" or "agent-slug"
+                    if (room.includes(':')) {
+                      const [proj, mission] = room.split(':');
+                      // Mission rooms open via the ?mission= query param (matches
+                      // the app's real route — the old /proj/mission path bounced
+                      // to the marketing page).
+                      navigate(`/cv4/project/${proj}?mission=${encodeURIComponent(mission)}`);
+                    } else {
+                      // Navigate to agent
+                      setSelectedAgent({ slug: room, name: room });
+                      setConversationTarget({ name: room, type: 'agent' });
+                    }
+                    setDeckTab('chat'); // Auto-switch back to chat after jumping
+                  }}
+                />
+              ) : (
+                <ChatPanel key="elon-chat" />
+              )
             ) : (
               <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}

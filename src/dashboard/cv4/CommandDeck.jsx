@@ -505,7 +505,7 @@ function StuckSessionCard({ session, onJumpToRoom }) {
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
-export default function CommandDeck({ worldId, basePath, onJumpToRoom }) {
+export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }) {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -598,6 +598,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom }) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        background: C.s1,
         color: C.text2,
         fontFamily: FONT.body,
       }}>
@@ -613,18 +614,52 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom }) {
     stuckSessions.length === 0
 
   return (
+    // Solid deep ground so the chat's animated background never bleeds through
+    // (that bleed was the main reason the deck read as broken on mobile).
     <div style={{
       flex: 1,
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'auto',
-      padding: '20px',
-      maxWidth: 800,
-      margin: '0 auto',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      background: C.s1,
       width: '100%',
       color: C.text,
       fontFamily: FONT.body,
+      WebkitOverflowScrolling: 'touch',
     }}>
+      <div style={{
+        maxWidth: 760,
+        margin: '0 auto',
+        padding: 'clamp(14px, 4vw, 24px) clamp(12px, 4vw, 24px) 56px',
+        boxSizing: 'border-box',
+      }}>
+      {/* Header: title + close (the loop icon in the room header also toggles it) */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <h2 style={{
+          margin: 0, fontSize: 18, fontWeight: 700, color: C.text,
+          fontFamily: FONT.heading || FONT.body, letterSpacing: '-0.01em',
+        }}>
+          Command Deck
+        </h2>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close Command Deck"
+            title="Back to chat"
+            style={{
+              width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+              background: 'transparent', border: `1px solid ${C.border}`,
+              color: C.text2, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        )}
+      </div>
+
       {/* Loop Health */}
       <LoopHealthBanner
         loopRunning={loopRunning}
@@ -760,6 +795,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom }) {
           )}
         </>
       )}
+      </div>
     </div>
   )
 }

@@ -37,6 +37,8 @@ export default function CV4ContextNav({
   worldId,
   activeTool = null,
   onExitTool,
+  deckActive = false,
+  onToggleDeck,
 }) {
   const [switcherOpen, setSwitcherOpen] = useState(false)
   const switcherRef = useRef(null)
@@ -367,6 +369,35 @@ export default function CV4ContextNav({
           to `activeTool !== 'mail'` so the button is always present.
           Mail button only appears when activeTool === 'mail'. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, minWidth: 30, justifyContent: 'flex-end' }}>
+        {/* command:deck — loop icon, Elon's room only. Opens the Command Deck
+            (the loop's control surface) right here. Sits next to the tasks icon;
+            amber tint when the deck is open. Replaces the old in-room tab row. */}
+        {selectedAgent?.slug === 'elon' && activeTool !== 'mail' && onToggleDeck && (
+          <button
+            data-testid="cv4-context-deck-toggle"
+            onClick={onToggleDeck}
+            aria-label={deckActive ? 'Close Command Deck' : 'Open Command Deck'}
+            title={deckActive ? 'Close Command Deck' : 'Command Deck'}
+            style={{
+              width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+              background: deckActive ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.04)',
+              border: `1px solid ${deckActive ? 'rgba(251,191,36,0.45)' : 'rgba(255,255,255,0.08)'}`,
+              color: deckActive ? '#FBBF24' : C.muted,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.15s',
+            }}
+          >
+            {/* loop / cycle glyph */}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 2.1l4 4-4 4"/>
+              <path d="M3 12.9v-2a4 4 0 0 1 4-4h14"/>
+              <path d="M7 21.9l-4-4 4-4"/>
+              <path d="M21 11.1v2a4 4 0 0 1-4 4H3"/>
+            </svg>
+          </button>
+        )}
         {/* Tasks/missions panel toggle — opens the RIGHT drawer (desktop) or
             switches to tasks tab (mobile). Active (green tint) when the right
             drawer is open or the user is inside a specific mission room. */}
