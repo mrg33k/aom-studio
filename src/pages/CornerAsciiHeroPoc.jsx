@@ -214,12 +214,19 @@ function CornerAsciiHeroPoc() {
       ctx.font = `bold ${logoFontSize}px Outfit, sans-serif`
 
       // Gradient: horizontal sweep showing full purple→cyan range
-      // Measure "corner" width accurately
+      // Extend gradient beyond text width to ensure full color range is visible
       const cornerMetrics = ctx.measureText('corner')
       const cornerWidth = cornerMetrics.width
       const cornerStartX = canvas.width / 2 - cornerWidth / 2
       const cornerEndX = canvas.width / 2 + cornerWidth / 2
-      const textGradient = ctx.createLinearGradient(cornerStartX, logoY, cornerEndX, logoY)
+      // Expand gradient bounds by 20% on each side to ensure full saturation
+      const gradientPadding = (cornerEndX - cornerStartX) * 0.2
+      const textGradient = ctx.createLinearGradient(
+        cornerStartX - gradientPadding,
+        logoY,
+        cornerEndX + gradientPadding,
+        logoY
+      )
       textGradient.addColorStop(0, '#7c3aed')     // Left: pure purple
       textGradient.addColorStop(0.5, '#06b6d4')   // Middle: pure cyan
       textGradient.addColorStop(1, '#7c3aed')     // Right: back to purple
