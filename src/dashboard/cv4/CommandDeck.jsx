@@ -495,20 +495,26 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom }) {
   const load = useCallback(async () => {
     if (!worldId) return
     try {
+      // raw=1 returns the file bytes directly. Without it project-file wraps
+      // the body as { content: "..." }, which broke every list (parsed the
+      // envelope, not the file). Fixed 2026-06-14.
       // 1. Fetch open-questions.md
-      const qRes = await authFetch('/api/dashboard/project-file?path=corner/users/aom/missions/master-loop/deliverables/open-questions.md')
+      const qRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/open-questions.md')
       const qText = qRes.ok ? await qRes.text() : ''
       const openQuestions = parseMarkdownCheckboxList(qText, 'Open')
       const answeredQuestions = parseMarkdownCheckboxList(qText, 'Answered')
 
       // 2. Fetch needs-patrik.md
-      const nRes = await authFetch('/api/dashboard/project-file?path=corner/users/aom/missions/master-loop/deliverables/needs-patrik.md')
+      const nRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/needs-patrik.md')
       const nText = nRes.ok ? await nRes.text() : ''
       const openCalls = parseMarkdownCheckboxList(nText, 'Open')
 
       // 3. Fetch room-goals.json
-      const gRes = await authFetch('/api/dashboard/project-file?path=corner/users/aom/missions/master-loop/deliverables/room-goals.json')
-      const goals = gRes.ok ? await gRes.json() : { rooms: {} }
+      const gRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/room-goals.json')
+      let goals = { rooms: {} }
+      if (gRes.ok) {
+        try { goals = JSON.parse(await gRes.text()) } catch { goals = { rooms: {} } }
+      }
 
       // 4. Fetch stuck sessions
       const sRes = await authFetch('/api/dashboard/claude-sessions')
