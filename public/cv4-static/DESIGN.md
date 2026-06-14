@@ -40,13 +40,19 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS, with 
 
 ### 2. Typography: No Defaults
 
-**Font stack:**
+**Font stack (synced to live CSS 2026-06-11 — this section had drifted):**
 ```css
+/* tokens.css — base UI layer */
 --ff-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 --ff-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace;
+/* desktop.css — display/menu layer (added R-CV4-3/4, 2026-05-12) */
+--cv4-menu-display: 'Instrument Serif', Georgia, serif;
+--cv4-menu-font: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
 ```
 
-Inter is intentional (CV3 canonical choice), not a default. If a project demands a different sans-serif (Helvetica, Grotesk, etc.), that goes in a NEW DESIGN.md override, not in CV4's default.
+Inter is intentional (CV3 canonical choice) for the base UI layer. The Instrument Serif / Hanken Grotesk display layer was added by the 2026-05-12 editorial-midnight rounds and is what users see in CV4 menus and display type. If a project demands a different sans-serif (Helvetica, Grotesk, etc.), that goes in a NEW DESIGN.md override, not in CV4's default.
+
+**Marketing / external surfaces do NOT auto-inherit this system.** These tokens are product-UI chrome for the app. A marketing page, client deliverable, or any outward-facing page needs its own art direction anchored to 3 outside references (design-gate rule). Note: the Instrument-Serif-display-on-dark-with-single-accent look is on the design-gate anti-default list as a current AI tell (2026-06-11) — inside the product it is the established system; outside the product it needs a stated brand reason, not reflex inheritance.
 
 **Type scale (all sizes are `clamp()` responsive):**
 - H1: `clamp(26px, 5.5vw, 40px)` @ fw-extrabold (800), letter-spacing -0.04em
