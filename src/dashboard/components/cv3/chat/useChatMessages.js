@@ -42,6 +42,14 @@ function makeMissionMatcher(missionSlug) {
 // twin have different ids). Collaborators only ever see the twin (RLS hides
 // the owner channel from them), so for them the twin is kept. Net: everyone
 // sees each message exactly once.
+// aom:master-loop (2026-06-14): the master loop posts its internal cycle-brief as
+// a role='user' message into Elon's chat to wake Elon up each cycle. Those cues are
+// plumbing, not Patrik — hide them so the chat reads as "me talking to my assistant"
+// (Patrik sees only Elon's replies + questions). Stamped metadata.master_loop=true.
+function isHiddenLoopCue(m) {
+  return !!(m && m.role === 'user' && m.metadata && m.metadata.master_loop)
+}
+
 function dropRedundantCrossposts(rows) {
   if (!Array.isArray(rows) || rows.length === 0) return rows
   const presentIds = new Set(rows.map(r => r && r.id))
@@ -180,7 +188,7 @@ export default function useChatMessages({
       .limit(200)
       .then(({ data, error }) => {
         setLoadingMsgs(false)
-        if (!error && data) setMessages(data.reverse())
+        if (!error && data) setMessages(data.reverse().filter(m => !isHiddenLoopCue(m)))
       })
   }, [selectedAgent?.slug, worldId])
 
@@ -213,7 +221,7 @@ export default function useChatMessages({
           .order('timestamp', { ascending: false })
           .limit(200)
         if (!active || error || !Array.isArray(data)) return
-        const ordered = data.reverse()
+        const ordered = data.reverse().filter(m => !isHiddenLoopCue(m))
         setMessages(prev => mergeServerRows(prev, ordered))
       } catch (_) { /* best-effort */ }
     }
@@ -249,6 +257,10 @@ export default function useChatMessages({
           window.__R53_BLEED_LOG__ = window.__R53_BLEED_LOG__ || []
           window.__R53_BLEED_LOG__.push({ side: 'agent-thread-project', expected: selectedAgent.slug, got: msg.agent, project: msg.project, id: msg.id, ts: Date.now() })
         }
+        return
+      }
+      if (isHiddenLoopCue(msg)) {
+        console.debug('[useChatMessages] agent-thread DROP: hidden master-loop cue', { id: msg.id })
         return
       }
       console.debug('[useChatMessages] agent-thread ACCEPT → setMessages', { id: msg.id, role: msg.role })

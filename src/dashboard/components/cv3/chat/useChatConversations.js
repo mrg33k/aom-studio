@@ -5,6 +5,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../lib/supabase.js'
 
+// aom:master-loop (2026-06-14): the master loop wakes Elon each cycle by posting a
+// role='user' cycle-brief into his chat (metadata.master_loop=true). That's plumbing,
+// not Patrik — keep it out of the sidebar preview so the chat reads as his assistant.
+function isHiddenLoopCue(m) {
+  return !!(m && m.role === 'user' && m.metadata && m.metadata.master_loop)
+}
+
 export default function useChatConversations({
   agents,
   projects,
@@ -50,13 +57,15 @@ export default function useChatConversations({
     Promise.all(slugs.map(slug =>
       supabase
         .from('messages')
-        .select('agent, text, timestamp, id, role, project')
+        .select('agent, text, timestamp, id, role, project, metadata')
         .eq('client_id', worldId)
         .eq('agent', slug)
         .or('project.is.null,project.eq.')
         .order('timestamp', { ascending: false })
-        .limit(1)
-        .then(({ data }) => data?.[0] || null)
+        .limit(6)
+        // Skip the master loop's hidden cycle-brief cues so the sidebar preview
+        // shows Elon's real last message, not the plumbing. (aom:master-loop 2026-06-14)
+        .then(({ data }) => (data || []).find(m => !isHiddenLoopCue(m)) || null)
     )).then(results => {
       if (cancelled) return
       setAgentPreviews(prev => {
@@ -90,6 +99,7 @@ export default function useChatConversations({
 
     const applyMsg = (msg) => {
       if (!msg?.agent) return
+      if (isHiddenLoopCue(msg)) return  // don't let a loop cue become the sidebar preview
       const preview = {
         agent: msg.agent,
         text: (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : ''),
