@@ -52,6 +52,7 @@ const fadeUp = {
 }
 
 const staggerContainer = {
+  hidden: { opacity: 1 },
   visible: {
     transition: {
       staggerChildren: 0.08,
@@ -69,13 +70,13 @@ function Section({ children, id, className = '', bgColor = SURGE.charcoal }) {
       ref={ref}
       id={id}
       className={className}
-      style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: bgColor, display: 'block' }}
     >
       <motion.div
         initial="hidden"
         animate="visible"
         variants={staggerContainer}
-        style={{ width: '100%' }}
+        style={{ width: '100%', display: 'block' }}
       >
         {children}
       </motion.div>
