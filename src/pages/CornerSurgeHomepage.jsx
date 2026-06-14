@@ -255,12 +255,12 @@ function ProblemSection() {
               key={i}
               className="p-8 sm:p-10 rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl"
               style={{
-                backgroundColor: '#1a1a1a',
-                borderColor: '#444',
+                backgroundColor: '#252525',
+                borderColor: '#555',
               }}
             >
               <h3
-                className="text-lg sm:text-xl font-bold mb-4 leading-tight"
+                className="text-xl sm:text-2xl font-bold mb-4 leading-tight"
                 style={{ color: SURGE.white }}
               >
                 {problem.title}
@@ -330,7 +330,7 @@ function PromiseSection() {
                 border: '2px solid #e5e5e5',
               }}
             >
-              <h3 className="text-lg sm:text-xl font-bold mb-3" style={{ color: SURGE.charcoal }}>
+              <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: SURGE.charcoal }}>
                 {feature.name}
               </h3>
               <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#555' }}>{feature.desc}</p>
