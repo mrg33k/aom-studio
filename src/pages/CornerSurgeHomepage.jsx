@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect, lazy, Suspense } from 'react'
-import { motion, useInView, useScroll, useTransform } from 'framer-motion'
-import { Check, ChevronRight, ArrowUpRight } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Check, ChevronRight, ArrowUpRight, Zap, Users, FileText, AlertCircle, Database, Settings, BarChart3, Shield, Lightbulb, Clock, Target, Briefcase } from 'lucide-react'
 
 const CornerAsciiHeroPoc = lazy(() => import('./CornerAsciiHeroPoc'))
 
@@ -258,26 +258,36 @@ function ProblemSection() {
     {
       title: "You're drowning in everything except the actual work.",
       body: 'Scheduling. Follow-ups. Research. Admin. Email. You spend 15–20 hours a week on busywork. Leads fall through. Clients get impatient. This isn\'t scaling—it\'s surviving.',
-      icon: '⏰',
-      accentColor: '#ff6b35',
+      Icon: Clock,
+      accentColor: SURGE.purple,
     },
     {
       title: 'Tools don\'t solve it. They multiply the problem.',
       body: 'Zapier. ChatGPT. Slack. Airtable. Each tool solves one tiny piece and creates three new ones. More screens to check. More contexts to switch. More things to manage.',
-      icon: '⚙️',
-      accentColor: '#f7931e',
+      Icon: AlertCircle,
+      accentColor: SURGE.cyan,
     },
     {
       title: 'Hiring is a trap you\'re not ready for.',
       body: 'A part-time office manager is $30–40k a year. You\'re not ready to add a salary, benefits, and management overhead. But you need help now. You\'re stuck.',
-      icon: '💸',
-      accentColor: '#ffb81c',
+      Icon: Briefcase,
+      accentColor: '#a78bfa',
     },
   ]
 
   return (
-    <Section id="problem" bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6">
-      <div className="max-w-5xl mx-auto">
+    <Section id="problem" bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6 relative overflow-hidden">
+      {/* Atmospheric background */}
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.05 }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 20% 50%, ${SURGE.purple}, transparent 70%), radial-gradient(circle at 80% 80%, ${SURGE.cyan}, transparent 60%)`,
+          }}
+        />
+      </div>
+
+      <div className="max-w-5xl mx-auto relative z-10">
         <h2
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
@@ -296,122 +306,45 @@ function ProblemSection() {
           {problems.map((problem, i) => (
             <div
               key={i}
-              className="relative p-0.5 rounded-2xl overflow-hidden group hover:shadow-2xl transition-all duration-300"
-              style={{
-                background: `linear-gradient(135deg, rgba(124, 58, 237, 0.3) 0%, rgba(6, 182, 212, 0.1) 100%)`,
-              }}
+              className="relative group"
             >
-              {/* Inner card */}
+              {/* Gradient background glow on hover */}
               <div
-                className="p-8 sm:p-10 rounded-2xl relative z-10"
+                className="absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
                 style={{
-                  backgroundColor: '#1a1a1a',
-                  borderLeft: `4px solid ${SURGE.purple}`,
-                }}
-              >
-                <div className="text-4xl mb-4">{problem.icon}</div>
-                <h3
-                  className="text-xl sm:text-2xl font-bold mb-4 leading-tight"
-                  style={{ color: SURGE.white }}
-                >
-                  {problem.title}
-                </h3>
-                <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{problem.body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Section>
-  )
-}
-
-// --- PROMISE SECTION ---
-function PromiseSection() {
-  const featureIcons = {
-    'Research': '🔍',
-    'Follow-ups': '📧',
-    'Projects': '📋',
-    'Busywork': '✅',
-    'Quality': '⭐',
-    'You stay in control': '🎯',
-  }
-
-  const features = [
-    {
-      name: 'Research',
-      desc: 'Agents dig into your industry, competitors, and market trends without being asked.',
-    },
-    {
-      name: 'Follow-ups',
-      desc: 'No more missed leads. Agents track conversations and send timely, personalized follow-ups.',
-    },
-    {
-      name: 'Projects',
-      desc: 'Every task has a home. Agents organize work into projects you can see at a glance.',
-    },
-    {
-      name: 'Busywork',
-      desc: 'Scheduling, note-taking, data entry. Handled. While you sleep.',
-    },
-    {
-      name: 'Quality',
-      desc: "One agent checks everyone else's work. No bad work ships under your name.",
-    },
-    {
-      name: 'You stay in control',
-      desc: 'You direct. Agents execute. One organized system. No learning curves, no context switching.',
-    },
-  ]
-
-  return (
-    <Section id="promise" bgColor={SURGE.white} className="py-16 sm:py-24 px-6">
-      <div className="max-w-5xl mx-auto">
-        <h2
-          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
-          style={{ color: SURGE.charcoal }}
-        >
-          One person. The output of ten.
-        </h2>
-
-        <p
-          className="text-lg md:text-xl leading-relaxed mb-16"
-          style={{ color: '#666', maxWidth: '600px' }}
-        >
-          Managed agents run your entire business from one system. You open your inbox in the morning. The work is already moving.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {features.map((feature, i) => (
-            <div
-              key={i}
-              className="relative group cursor-pointer transition-all duration-300"
-            >
-              {/* Gradient border effect on hover */}
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{
-                  background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
-                  padding: '2px',
-                  borderRadius: '16px',
+                  background: `linear-gradient(135deg, ${problem.accentColor}, transparent)`,
                 }}
               />
 
-              {/* Card content */}
+              {/* Card with depth */}
               <div
-                className="relative p-8 sm:p-10 rounded-2xl transition-all duration-300 group-hover:shadow-2xl"
+                className="relative p-8 sm:p-10 rounded-2xl overflow-hidden transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-1"
                 style={{
-                  backgroundColor: '#f5f5f5',
-                  border: '2px solid #e5e5e5',
+                  backgroundColor: '#0f0f0f',
+                  borderTop: `2px solid ${problem.accentColor}`,
+                  boxShadow: `0 4px 20px rgba(0, 0, 0, 0.4)`,
                 }}
               >
-                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                  {featureIcons[feature.name]}
+                {/* Gradient accent corner */}
+                <div
+                  className="absolute top-0 right-0 w-20 h-20 opacity-10"
+                  style={{
+                    background: `linear-gradient(135deg, ${problem.accentColor}, transparent)`,
+                  }}
+                />
+
+                <div className="relative z-10">
+                  <div className="mb-4 p-3 inline-flex rounded-lg" style={{ backgroundColor: `${problem.accentColor}33` }}>
+                    <problem.Icon size={24} style={{ color: problem.accentColor }} strokeWidth={1.5} />
+                  </div>
+                  <h3
+                    className="text-xl sm:text-2xl font-bold mb-4 leading-tight"
+                    style={{ color: SURGE.white }}
+                  >
+                    {problem.title}
+                  </h3>
+                  <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{problem.body}</p>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: SURGE.charcoal }}>
-                  {feature.name}
-                </h3>
-                <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#555' }}>{feature.desc}</p>
               </div>
             </div>
           ))}
@@ -421,193 +354,221 @@ function PromiseSection() {
   )
 }
 
-// --- PRODUCT SHOWCASE SECTION ---
-function ProductShowcaseSection() {
+// --- PRODUCT MOCKUP COMPONENT (Reusable) ---
+function ProductMockup() {
   return (
-    <Section bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6">
-      <div className="max-w-5xl mx-auto">
-        <h2
-          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-center"
-          style={{ color: SURGE.white }}
+    <div className="relative mx-auto max-w-4xl mb-20">
+      {/* Glow backdrop */}
+      <div
+        className="absolute inset-0 rounded-3xl blur-3xl opacity-40"
+        style={{
+          background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
+          transform: 'translateY(30px)',
+        }}
+      />
+
+      {/* Browser frame */}
+      <div
+        className="relative rounded-2xl overflow-hidden shadow-2xl border"
+        style={{ backgroundColor: '#000', borderColor: '#333' }}
+      >
+        {/* Browser chrome */}
+        <div
+          className="px-6 py-4 flex items-center justify-between"
+          style={{ backgroundColor: '#111', borderBottom: '1px solid #333' }}
         >
-          Built for operators who move fast.
-        </h2>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: SURGE.purple }} />
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: SURGE.cyan }} />
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#555' }} />
+          </div>
+          <div className="text-xs font-mono" style={{ color: '#888' }}>aheadofmarket.com/dashboard</div>
+          <div className="w-8" />
+        </div>
 
-        <p
-          className="text-lg md:text-xl leading-relaxed mb-16 text-center"
-          style={{ color: '#b0b0b0', maxWidth: '600px', margin: '0 auto 3rem' }}
+        {/* Dashboard content */}
+        <div
+          className="p-8 sm:p-12"
+          style={{ backgroundColor: '#0a0a0a', minHeight: '500px' }}
         >
-          One unified system. Clean dashboard. Everything you need. Nothing you don't.
-        </p>
+          {/* Header */}
+          <div className="mb-12">
+            <div className="text-sm font-mono uppercase tracking-widest" style={{ color: '#666', marginBottom: '0.5rem' }}>
+              GOOD MORNING
+            </div>
+            <div className="text-3xl sm:text-4xl font-bold" style={{ color: SURGE.white }}>
+              You've got work waiting
+            </div>
+          </div>
 
-        {/* Mockup card with browser chrome */}
-        <div className="relative mx-auto max-w-4xl">
-          {/* Subtle glow behind mockup */}
-          <div
-            className="absolute inset-0 rounded-3xl blur-3xl opacity-30"
-            style={{
-              background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
-              transform: 'translateY(20px)',
-            }}
-          />
-
-          {/* Browser frame */}
-          <div
-            className="relative rounded-2xl overflow-hidden shadow-2xl border border-zinc-700"
-            style={{ backgroundColor: '#000' }}
-          >
-            {/* Browser chrome */}
-            <div
-              className="px-6 py-4 flex items-center justify-between"
-              style={{ backgroundColor: '#111', borderBottom: '1px solid #333' }}
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: SURGE.purple }} />
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: SURGE.cyan }} />
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#555' }} />
+          {/* Three-column layout */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Left: Agents panel */}
+            <div>
+              <div className="text-xs font-mono font-bold uppercase tracking-widest mb-4" style={{ color: '#666' }}>
+                ACTIVE AGENTS
               </div>
-              <div className="text-xs" style={{ color: '#888' }}>aheadofmarket.com/dashboard</div>
-              <div className="w-8" />
+              {['Your EA', 'Elon', 'Studio'].map((name, i) => (
+                <div
+                  key={i}
+                  className="mb-3 p-3 rounded-lg transition-colors"
+                  style={{
+                    backgroundColor: i === 0 ? 'rgba(124, 58, 237, 0.15)' : '#1a1a1a',
+                    borderLeft: i === 0 ? `3px solid ${SURGE.purple}` : '3px solid transparent',
+                  }}
+                >
+                  <div className="font-medium" style={{ color: SURGE.white, fontSize: '14px' }}>
+                    {name}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: '#666' }}>
+                    {i === 0 ? 'researching' : 'processing'}
+                  </div>
+                </div>
+              ))}
             </div>
 
-            {/* Mockup content - Dashboard view */}
-            <div
-              className="p-8 sm:p-12"
-              style={{ backgroundColor: '#0f0f0f', minHeight: '450px' }}
-            >
-              {/* Header */}
-              <div className="mb-10">
-                <div className="mb-2" style={{ color: '#888', fontSize: '12px' }}>GOOD MORNING</div>
-                <div className="text-2xl sm:text-3xl font-bold" style={{ color: SURGE.white }}>
-                  You've got work waiting
+            {/* Middle: Active tasks */}
+            <div>
+              <div className="text-xs font-mono font-bold uppercase tracking-widest mb-4" style={{ color: '#666' }}>
+                ACTIVE TASKS
+              </div>
+              {[
+                'Researching competitor pricing',
+                'Drafting 3 follow-up emails',
+                'Organizing Q2 project files',
+              ].map((task, i) => (
+                <div
+                  key={i}
+                  className="mb-3 p-3 rounded-lg"
+                  style={{
+                    backgroundColor: '#1a1a1a',
+                    borderLeft: `3px solid ${SURGE.cyan}`,
+                  }}
+                >
+                  <div className="font-medium" style={{ color: SURGE.white, fontSize: '13px' }}>
+                    {task}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: '#666' }}>
+                    in progress
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Right: Stats snapshot */}
+            <div>
+              <div className="text-xs font-mono font-bold uppercase tracking-widest mb-4" style={{ color: '#666' }}>
+                TODAY'S SNAPSHOT
+              </div>
+              <div
+                className="p-4 rounded-lg mb-4"
+                style={{
+                  backgroundColor: 'rgba(124, 58, 237, 0.15)',
+                  borderLeft: `3px solid ${SURGE.purple}`,
+                }}
+              >
+                <div className="text-xs" style={{ color: '#888' }}>Tasks Completed</div>
+                <div className="text-2xl font-bold mt-1" style={{ color: SURGE.purple }}>
+                  12
                 </div>
               </div>
-
-              {/* Two-column layout mockup */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Left: Agents column */}
-                <div>
-                  <div style={{ color: '#888', fontSize: '11px', marginBottom: '1rem', fontWeight: 600, letterSpacing: '0.1em' }}>
-                    AGENTS
-                  </div>
-                  {['Your EA', 'Elon', 'Studio'].map((agent, i) => (
-                    <div
-                      key={i}
-                      className="mb-3 p-3 rounded-lg transition-colors duration-200 hover:bg-zinc-900"
-                      style={{
-                        backgroundColor: i === 0 ? 'rgba(124, 58, 237, 0.1)' : 'transparent',
-                        borderLeft: i === 0 ? `3px solid ${SURGE.purple}` : 'none',
-                      }}
-                    >
-                      <div style={{ color: SURGE.white, fontSize: '14px', fontWeight: 500 }}>
-                        {agent}
-                      </div>
-                      <div style={{ color: '#666', fontSize: '12px' }}>active now</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Middle: Tasks column */}
-                <div>
-                  <div style={{ color: '#888', fontSize: '11px', marginBottom: '1rem', fontWeight: 600, letterSpacing: '0.1em' }}>
-                    ACTIVE TASKS
-                  </div>
-                  {[
-                    { title: 'Research competitors', agent: 'Elon' },
-                    { title: 'Follow up on leads', agent: 'Your EA' },
-                    { title: 'Draft proposal', agent: 'Studio' },
-                  ].map((task, i) => (
-                    <div
-                      key={i}
-                      className="mb-3 p-3 rounded-lg bg-zinc-900"
-                      style={{ borderLeft: `3px solid ${SURGE.cyan}` }}
-                    >
-                      <div style={{ color: SURGE.white, fontSize: '14px', fontWeight: 500 }}>
-                        {task.title}
-                      </div>
-                      <div style={{ color: '#666', fontSize: '12px' }}>{task.agent}</div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Right: Summary */}
-                <div className="flex flex-col justify-between">
-                  <div>
-                    <div style={{ color: '#888', fontSize: '11px', marginBottom: '1rem', fontWeight: 600, letterSpacing: '0.1em' }}>
-                      TODAY'S SNAPSHOT
-                    </div>
-                    <div
-                      className="p-4 rounded-lg mb-4"
-                      style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)', borderLeft: `3px solid ${SURGE.purple}` }}
-                    >
-                      <div style={{ color: '#888', fontSize: '12px' }}>Tasks Completed</div>
-                      <div className="text-2xl font-bold" style={{ color: SURGE.purple }}>8</div>
-                    </div>
-                    <div
-                      className="p-4 rounded-lg"
-                      style={{ backgroundColor: 'rgba(6, 182, 212, 0.1)', borderLeft: `3px solid ${SURGE.cyan}` }}
-                    >
-                      <div style={{ color: '#888', fontSize: '12px' }}>Time Saved</div>
-                      <div className="text-2xl font-bold" style={{ color: SURGE.cyan }}>4.5h</div>
-                    </div>
-                  </div>
+              <div
+                className="p-4 rounded-lg"
+                style={{
+                  backgroundColor: 'rgba(6, 182, 212, 0.15)',
+                  borderLeft: `3px solid ${SURGE.cyan}`,
+                }}
+              >
+                <div className="text-xs" style={{ color: '#888' }}>Time Saved Today</div>
+                <div className="text-2xl font-bold mt-1" style={{ color: SURGE.cyan }}>
+                  6.5h
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Callout text */}
-        <div className="mt-12 text-center">
-          <p style={{ color: '#888', fontSize: '14px' }}>
-            Dashboard shows real-time agent status, active work, and progress. One place. Complete visibility.
-          </p>
-        </div>
       </div>
-    </Section>
+
+      {/* Callout */}
+      <div className="mt-8 text-center">
+        <p style={{ color: '#888', fontSize: '14px' }}>
+          Real-time agent status, active work, and progress tracking. One place. Complete visibility.
+        </p>
+      </div>
+    </div>
   )
 }
 
-// --- HOW IT WORKS SECTION ---
-function HowItWorksSection() {
-  const steps = [
+// --- PROMISE SECTION ---
+function PromiseSection() {
+  const features = [
     {
-      num: '01',
-      title: 'Discovery Call',
-      body: '30 minutes. We map your operations, find where time is lost, and identify which agents save you the most.',
-      icon: '📞',
+      name: 'Research',
+      desc: 'Agents dig into your industry, competitors, and market trends without being asked.',
+      Icon: Database,
     },
     {
-      num: '02',
-      title: 'We Launch Your Team',
-      body: 'Your agents go live in the Corner system. They learn your business, your voice, your standards.',
-      icon: '🚀',
+      name: 'Follow-ups',
+      desc: 'No more missed leads. Agents track conversations and send timely, personalized follow-ups.',
+      Icon: Target,
     },
     {
-      num: '03',
-      title: 'You Direct. They Execute.',
-      body: 'Open your inbox. Assign work. Watch it get done. Agents coordinate, hand off, check each other.',
-      icon: '⚡',
+      name: 'Projects',
+      desc: 'Every task has a home. Agents organize work into projects you can see at a glance.',
+      Icon: FileText,
+    },
+    {
+      name: 'Busywork',
+      desc: 'Scheduling, note-taking, data entry. Handled. While you sleep.',
+      Icon: Check,
+    },
+    {
+      name: 'Quality',
+      desc: "One agent checks everyone else's work. No bad work ships under your name.",
+      Icon: Shield,
+    },
+    {
+      name: 'You stay in control',
+      desc: 'You direct. Agents execute. One organized system. No learning curves, no context switching.',
+      Icon: Lightbulb,
     },
   ]
 
   return (
-    <Section bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6">
-      <div className="max-w-5xl mx-auto">
+    <Section id="promise" bgColor={SURGE.charcoal} className="py-16 sm:py-32 px-6">
+      <div className="max-w-6xl mx-auto">
         <h2
-          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-16"
+          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
         >
-          Three steps to your upgraded business.
+          One person. The output of ten.
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {steps.map((step, i) => (
+        <p
+          className="text-lg md:text-xl leading-relaxed mb-20"
+          style={{ color: '#b0b0b0', maxWidth: '600px' }}
+        >
+          Managed agents run your entire business from one system. You open your inbox in the morning. The work is already moving.
+        </p>
+
+        {/* PRODUCT MOCKUP — THE HERO OF THIS SECTION */}
+        <ProductMockup />
+
+        {/* CAPABILITIES GRID */}
+        <h3
+          className="text-2xl md:text-3xl font-bold mb-8"
+          style={{ color: SURGE.white }}
+        >
+          What they handle for you.
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feature, i) => (
             <div
               key={i}
               className="relative group"
             >
-              {/* Gradient card border */}
+              {/* Gradient border effect on hover */}
               <div
                 className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{
@@ -618,21 +579,126 @@ function HowItWorksSection() {
 
               {/* Card content */}
               <div
-                className="relative p-8 sm:p-10 rounded-2xl transition-all duration-300 group-hover:shadow-2xl"
+                className="relative p-8 sm:p-10 rounded-2xl transition-all duration-300 group-hover:shadow-2xl h-full"
                 style={{
                   backgroundColor: '#1a1a1a',
-                  border: '2px solid #333',
+                  border: '1px solid #333',
                 }}
               >
-                {/* Number + Icon */}
-                <div className="flex items-start justify-between mb-6">
+                <div className="mb-4 p-3 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)' }}>
+                  <feature.Icon size={24} style={{ color: SURGE.purple }} strokeWidth={1.5} />
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: SURGE.white }}>
+                  {feature.name}
+                </h3>
+                <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{feature.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Section>
+  )
+}
+
+
+// --- HOW IT WORKS SECTION ---
+function HowItWorksSection() {
+  const steps = [
+    {
+      num: '01',
+      title: 'Discovery Call',
+      body: '30 minutes. We map your operations, find where time is lost, and identify which agents save you the most.',
+      Icon: Users,
+    },
+    {
+      num: '02',
+      title: 'We Launch Your Team',
+      body: 'Your agents go live in the Corner system. They learn your business, your voice, your standards.',
+      Icon: Zap,
+    },
+    {
+      num: '03',
+      title: 'You Direct. They Execute.',
+      body: 'Open your inbox. Assign work. Watch it get done. Agents coordinate, hand off, check each other.',
+      Icon: BarChart3,
+    },
+  ]
+
+  return (
+    <Section bgColor={SURGE.charcoal} className="py-16 sm:py-32 px-6 relative overflow-hidden">
+      {/* Atmospheric glow */}
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.03 }}>
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 50% 0%, ${SURGE.purple}, transparent 70%)`,
+          }}
+        />
+      </div>
+
+      <div className="max-w-5xl mx-auto relative z-10">
+        <h2
+          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
+          style={{ color: SURGE.white }}
+        >
+          Three steps to your upgraded business.
+        </h2>
+
+        <p
+          className="text-lg md:text-xl leading-relaxed mb-16"
+          style={{ color: '#b0b0b0', maxWidth: '600px' }}
+        >
+          Get started in three simple steps. From discovery to execution in days, not months.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+          {/* Connection line behind cards (desktop only) */}
+          <div
+            className="absolute top-24 left-0 right-0 h-0.5 hidden md:block"
+            style={{
+              background: `linear-gradient(90deg, ${SURGE.purple}44 0%, ${SURGE.cyan}44 50%, ${SURGE.purple}44 100%)`,
+            }}
+          />
+
+          {steps.map((step, i) => (
+            <div
+              key={i}
+              className="relative group"
+            >
+              {/* Gradient card border on hover */}
+              <div
+                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                style={{
+                  background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
+                  padding: '1px',
+                }}
+              />
+
+              {/* Card content */}
+              <div
+                className="relative p-8 sm:p-10 rounded-2xl transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-1 h-full"
+                style={{
+                  backgroundColor: '#0f0f0f',
+                  border: '1px solid #333',
+                }}
+              >
+                {/* Step number circle */}
+                <div className="mb-6">
                   <div
-                    className="text-5xl sm:text-6xl font-bold"
-                    style={{ color: `rgba(${SURGE.purple === '#7c3aed' ? '124, 58, 237' : '0,0,0'}, 0.2)` }}
+                    className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg"
+                    style={{
+                      background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
+                      color: SURGE.white,
+                    }}
                   >
                     {step.num}
                   </div>
-                  <div className="text-3xl">{step.icon}</div>
+                </div>
+
+                {/* Icon */}
+                <div className="mb-4 p-3 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)' }}>
+                  <step.Icon size={24} style={{ color: SURGE.purple }} strokeWidth={1.5} />
                 </div>
 
                 <h3
@@ -641,21 +707,7 @@ function HowItWorksSection() {
                 >
                   {step.title}
                 </h3>
-                <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#c0c0c0' }}>{step.body}</p>
-
-                {/* Connecting line indicator */}
-                {i < steps.length - 1 && (
-                  <div
-                    className="absolute right-0 top-1/2 hidden md:block"
-                    style={{
-                      background: SURGE.gradient,
-                      width: '2px',
-                      height: '60%',
-                      transform: 'translateX(50%)',
-                      opacity: 0.6,
-                    }}
-                  />
-                )}
+                <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{step.body}</p>
               </div>
             </div>
           ))}
@@ -668,35 +720,59 @@ function HowItWorksSection() {
 // --- FINAL CTA SECTION ---
 function FinalCtaSection() {
   return (
-    <Section id="cta" bgColor={SURGE.charcoal} className="py-20 sm:py-32 px-6">
-      <div className="max-w-3xl mx-auto text-center">
+    <Section id="cta" bgColor={SURGE.charcoal} className="py-24 sm:py-40 px-6 relative overflow-hidden">
+      {/* Full-bleed gradient glow */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background: `radial-gradient(ellipse 120% 100% at 50% 100%, ${SURGE.purple}15 0%, transparent 70%)`,
+        }}
+      />
+
+      <div className="max-w-3xl mx-auto text-center relative z-10">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)', border: `1px solid ${SURGE.purple}33` }}>
+          <span className="text-sm font-medium" style={{ color: SURGE.cyan }}>Limited availability</span>
+        </div>
+
         <h2
-          className="text-3xl sm:text-4xl md:text-6xl font-bold leading-tight mb-6"
+          className="text-4xl sm:text-5xl md:text-7xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
         >
           Ready to operate like a team of ten?
         </h2>
 
         <p
-          className="text-base sm:text-lg md:text-xl leading-relaxed mb-8 sm:mb-12"
+          className="text-lg sm:text-xl md:text-2xl leading-relaxed mb-10"
           style={{ color: '#b0b0b0' }}
         >
           Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
         </p>
 
-        <a
-          href="/corner/book"
-          className="inline-flex items-center gap-2 px-6 sm:px-10 py-3 sm:py-5 font-bold text-base sm:text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl"
-          style={{
-            background: SURGE.gradient,
-          }}
-        >
-          Book your intro call
-          <ArrowUpRight size={20} />
-        </a>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+          <a
+            href="/corner/book"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 sm:px-10 py-4 sm:py-5 font-bold text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl hover:-translate-y-1"
+            style={{
+              background: SURGE.gradient,
+            }}
+          >
+            Book your intro call
+            <ArrowUpRight size={20} />
+          </a>
+          <a
+            href="#promise"
+            className="w-full sm:w-auto px-8 py-4 font-bold text-lg rounded-lg transition-all duration-200"
+            style={{
+              color: SURGE.white,
+              border: `2px solid #444`,
+            }}
+          >
+            Learn more
+          </a>
+        </div>
 
         <p
-          className="text-xs sm:text-sm mt-6 sm:mt-8"
+          className="text-xs sm:text-sm mt-8"
           style={{ color: '#808080' }}
         >
           No credit card. No commitment. Book now.
@@ -743,7 +819,6 @@ export default function CornerSurgeHomepage() {
       <HeroSection />
       <ProblemSection />
       <PromiseSection />
-      <ProductShowcaseSection />
       <HowItWorksSection />
       <FinalCtaSection />
       <CornerFooter />
