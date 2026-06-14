@@ -20,11 +20,11 @@ import React, { useEffect, useRef, useState } from 'react'
  */
 
 const GLYPH_CHARS = '@%#*+=-:. '
-const CHAR_WIDTH = 20 // pixels — smaller cells = denser grid
-const CHAR_HEIGHT = 24
+const CHAR_WIDTH = 28 // pixels — larger for better visibility
+const CHAR_HEIGHT = 32
 const SURGE_PURPLE = '#7c3aed'
 const SURGE_CYAN = '#06b6d4'
-const CHARCOAL = '#2d2d2d'
+const CHARCOAL = '#0a0a08' // Near-black for contrast
 
 function interpolateColor(t) {
   // t = 0 → purple, t = 1 → cyan
@@ -136,16 +136,16 @@ function CornerAsciiHeroPoc() {
         const color = interpolateColor(glyph.colorT)
 
         // Render glyph
-        ctx.font = 'bold 20px "JetBrains Mono", monospace'
+        ctx.font = 'bold 28px "JetBrains Mono", monospace'
         ctx.fillStyle = color
-        ctx.globalAlpha = life * 0.95 // Near-full opacity when active
+        ctx.globalAlpha = life * 1.0 // Full opacity when active
         ctx.textAlign = 'left'
         ctx.textBaseline = 'top'
 
-        // Glow via shadow (bloom effect)
-        if (life > 0.5) {
+        // Glow via shadow (bloom effect) — stronger
+        if (life > 0.35) {
           ctx.shadowColor = color
-          ctx.shadowBlur = 6
+          ctx.shadowBlur = life > 0.6 ? 14 : 8 // Intense glow during sustain
           ctx.shadowOffsetX = 0
           ctx.shadowOffsetY = 0
         }
