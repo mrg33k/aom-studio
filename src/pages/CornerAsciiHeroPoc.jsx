@@ -214,22 +214,19 @@ function CornerAsciiHeroPoc() {
       ctx.font = `bold ${logoFontSize}px Outfit, sans-serif`
 
       // Gradient: horizontal sweep showing full purple→cyan range
-      // Extend gradient beyond text width to ensure full color range is visible
+      // Measure "corner" width accurately
       const cornerMetrics = ctx.measureText('corner')
       const cornerWidth = cornerMetrics.width
       const cornerStartX = canvas.width / 2 - cornerWidth / 2
       const cornerEndX = canvas.width / 2 + cornerWidth / 2
-      // Expand gradient bounds by 20% on each side to ensure full saturation
-      const gradientPadding = (cornerEndX - cornerStartX) * 0.2
-      const textGradient = ctx.createLinearGradient(
-        cornerStartX - gradientPadding,
-        logoY,
-        cornerEndX + gradientPadding,
-        logoY
-      )
-      textGradient.addColorStop(0, '#7c3aed')     // Left: pure purple
-      textGradient.addColorStop(0.5, '#06b6d4')   // Middle: pure cyan
-      textGradient.addColorStop(1, '#7c3aed')     // Right: back to purple
+      // Gradient bounds match text bounds exactly for clean color alignment
+      const textGradient = ctx.createLinearGradient(cornerStartX, logoY, cornerEndX, logoY)
+      // Color stops distributed to show full spectrum across text width
+      textGradient.addColorStop(0, '#7c3aed')     // Left edge: purple
+      textGradient.addColorStop(0.33, '#5a7dd6')  // Left-center: purple-cyan blend
+      textGradient.addColorStop(0.5, '#06b6d4')   // Center: pure cyan (vibrant)
+      textGradient.addColorStop(0.67, '#0f9fb8')  // Right-center: cyan-purple blend
+      textGradient.addColorStop(1, '#7c3aed')     // Right edge: purple
 
       ctx.fillStyle = textGradient
       ctx.shadowColor = 'rgba(124, 58, 237, 0.3)'
