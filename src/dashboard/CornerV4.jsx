@@ -63,6 +63,7 @@ import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 import MailRoom from './cv4/MailRoom.jsx'
 import RoutinesBoard from './cv4/RoutinesBoard.jsx'
 import ChatWaveBackground from './cv4/ChatWaveBackground.jsx'
+import CommandDeck from './cv4/CommandDeck.jsx'
 // corner:support N1 — Support Inbox (Patrik workspace only, worldId==='aom')
 import SupportInbox from './cv4/SupportInbox.jsx'
 import SupportDashboard from './cv4/SupportDashboard.jsx'
@@ -132,6 +133,8 @@ export default function CornerV4() {
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
   const [prefillMessage, setPrefillMessage] = useState(null)
+  // command:deck M3 — tab toggle for Elon's room (chat vs command deck)
+  const [deckTab, setDeckTab] = useState('chat') // 'chat' | 'deck'
   // R6.2: mission clicked from the drawer is "attached" to the composer
   // and rendered as a context chip. Cleared on send by useChatSend.
   const [attachedMission, setAttachedMission] = useState(null)
@@ -2762,6 +2765,73 @@ export default function CornerV4() {
                   }
                 }}
               />
+            ) : selectedAgent?.slug === 'elon' ? (
+              // command:deck M3 — Tab toggle for Elon's room (Chat vs Command Deck)
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+                <div style={{
+                  display: 'flex',
+                  gap: 8,
+                  padding: '8px 12px',
+                  borderBottom: '1px solid ' + C.border,
+                  background: C.dim,
+                }}>
+                  <button
+                    onClick={() => setDeckTab('chat')}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: 13,
+                      fontWeight: deckTab === 'chat' ? 600 : 400,
+                      background: deckTab === 'chat' ? C.s1 : 'transparent',
+                      border: '1px solid ' + (deckTab === 'chat' ? C.border : 'transparent'),
+                      color: C.text1,
+                      cursor: 'pointer',
+                      borderRadius: 4,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    Chat
+                  </button>
+                  <button
+                    onClick={() => setDeckTab('deck')}
+                    style={{
+                      padding: '6px 12px',
+                      fontSize: 13,
+                      fontWeight: deckTab === 'deck' ? 600 : 400,
+                      background: deckTab === 'deck' ? C.s1 : 'transparent',
+                      border: '1px solid ' + (deckTab === 'deck' ? C.border : 'transparent'),
+                      color: C.text1,
+                      cursor: 'pointer',
+                      borderRadius: 4,
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    Command Deck
+                  </button>
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  {deckTab === 'chat' ? (
+                    <ChatPanel key="elon-chat" />
+                  ) : (
+                    <CommandDeck
+                      worldId={worldId}
+                      basePath={`/cv4/project`}
+                      onJumpToRoom={(room) => {
+                        // room format: "project:mission" or "agent-slug"
+                        if (room.includes(':')) {
+                          const [proj, mission] = room.split(':');
+                          // Navigate to project:mission
+                          navigate(`/cv4/project/${proj}/${mission}`);
+                        } else {
+                          // Navigate to agent
+                          setSelectedAgent({ slug: room, name: room });
+                          setConversationTarget({ name: room, type: 'agent' });
+                        }
+                        setDeckTab('chat'); // Auto-switch back to chat
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
             ) : (
               <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
