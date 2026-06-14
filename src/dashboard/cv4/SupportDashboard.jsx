@@ -1082,13 +1082,13 @@ function FrontDeskCard({ w, outcome, onDiscuss }) {
         </div>
       )}
       {w.soft_ack_at && !w.latest_response && (
-        <div style={{ marginTop: 13, padding: '11px 14px', background: ACCENT_EMERALD_SOFT, borderRadius: 12 }}>
-          <div style={{ fontFamily: BODY, fontSize: 11, fontWeight: 600, color: ACCENT_EMERALD,
+        <div style={{ marginTop: 14, padding: '13px 15px', background: ACCENT_EMERALD_SOFT, borderRadius: 13 }}>
+          <div style={{ fontFamily: BODY, fontSize: 10, fontWeight: 600, letterSpacing: '0.03em', color: ACCENT_EMERALD,
             display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT_EMERALD }} />
             Holding note sent · {timeAgo(w.soft_ack_at)}
           </div>
-          <p style={{ margin: '5px 0 0', fontFamily: BODY, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.5 }}>
+          <p style={{ margin: '6px 0 0', fontFamily: BODY, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.5 }}>
             We let them know we have read it and will follow up. The full reply is still owed.
           </p>
         </div>
