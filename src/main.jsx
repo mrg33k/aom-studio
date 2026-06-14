@@ -316,7 +316,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/book" element={<BookAudit />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/ai-guide" element={<AIGuide />} />
-          <Route path="/corner" element={<Corner />} />
+          <Route path="/corner" element={<CornerSurgeHomepage />} />
+          <Route path="/corner/classic" element={<Corner />} />
           <Route path="/corner/hero-poc" element={<CornerAsciiHeroPoc />} />
           <Route path="/corner/surge-preview" element={<CornerSurgeHomepage />} />
           <Route path="/corner/book" element={<BookCorner />} />
