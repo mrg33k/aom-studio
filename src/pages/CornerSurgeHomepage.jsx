@@ -45,14 +45,12 @@ const fadeUp = {
     y: 0,
     transition: {
       duration: 0.6,
-      delay: i * 0.08,
       ease: [0.25, 0.46, 0.45, 0.94],
     },
   }),
 }
 
 const staggerContainer = {
-  hidden: { opacity: 1 },
   visible: {
     transition: {
       staggerChildren: 0.08,
@@ -73,10 +71,10 @@ function Section({ children, id, className = '', bgColor = SURGE.charcoal }) {
       style={{ backgroundColor: bgColor, display: 'block' }}
     >
       <motion.div
-        initial="hidden"
-        animate="visible"
+        initial={{ opacity: 1 }}
+        animate={{ opacity: 1 }}
         variants={staggerContainer}
-        style={{ width: '100%', display: 'block' }}
+        style={{ width: '100%', display: 'block', opacity: 1 }}
       >
         {children}
       </motion.div>
@@ -349,8 +347,6 @@ function PromiseSection() {
             <motion.div
               key={i}
               custom={i + 2}
-              initial="hidden"
-              animate="visible"
               variants={fadeUp}
               className="p-6 sm:p-8 rounded-2xl transition-all duration-300 hover:shadow-lg"
               style={{
@@ -395,8 +391,6 @@ function HowItWorksSection() {
       <div className="max-w-5xl mx-auto">
         <motion.h2
           custom={0}
-          initial="hidden"
-          animate="visible"
           variants={fadeUp}
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-16"
           style={{ color: SURGE.white }}
@@ -453,8 +447,6 @@ function FinalCtaSection() {
       <div className="max-w-3xl mx-auto text-center">
         <motion.h2
           custom={0}
-          initial="hidden"
-          animate="visible"
           variants={fadeUp}
           className="text-3xl sm:text-4xl md:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
@@ -464,8 +456,6 @@ function FinalCtaSection() {
 
         <motion.p
           custom={1}
-          initial="hidden"
-          animate="visible"
           variants={fadeUp}
           className="text-base sm:text-lg md:text-xl leading-relaxed mb-8 sm:mb-12"
           style={{ color: '#b0b0b0' }}
