@@ -34,6 +34,37 @@ function parseMarkdownCheckboxList(markdown, sectionName) {
   return items
 }
 
+// ── Shared button component for CommandDeck (matches RoutineCard CardBtn style)
+
+function CommandDeckBtn({ children, onClick, disabled = false, style = {} }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        background: 'none',
+        border: `1px solid ${C.border}`,
+        color: C.muted,
+        fontSize: 9,
+        fontWeight: 700,
+        cursor: disabled ? 'default' : 'pointer',
+        borderRadius: 5,
+        padding: '3px 10px',
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        fontFamily: FONT.mono,
+        lineHeight: 1.5,
+        transition: 'all 0.2s',
+        ...style,
+      }}
+      onMouseEnter={e => { !disabled && (e.currentTarget.style.borderColor = C.muted, e.currentTarget.style.color = C.text) }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border, e.currentTarget.style.color = C.muted }}
+    >
+      {children}
+    </button>
+  )
+}
+
 // ── Component: Loop Health Banner ──────────────────────────────────────────
 
 function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loading }) {
@@ -147,40 +178,72 @@ function HardCallCard({ item, index, onMarkDone }) {
       marginBottom: 12,
       fontFamily: FONT.body,
       opacity: item.checked ? 0.6 : 1,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+      {/* Header with dot + title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          flexShrink: 0,
+          background: item.checked ? 'rgba(255,255,255,0.18)' : AMBER,
+          boxShadow: !item.checked ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
+        }} />
+        <span style={{
+          fontFamily: FONT.display,
+          fontSize: 14,
+          color: item.checked ? C.muted : C.text,
+          fontWeight: 500,
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {dateTitle}
+        </span>
+      </div>
+
+      {/* Body + details */}
+      {why && (
+        <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
+          {why}
+        </p>
+      )}
+
+      {/* Meta footer with divider */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderTop: `1px solid ${C.border}`,
+        paddingTop: 8,
+        fontSize: 11,
+        color: C.muted,
+        fontFamily: FONT.mono,
+        gap: 12,
+      }}>
+        {where && <span>{where}</span>}
         <input
           type="checkbox"
           checked={item.checked}
           onChange={handleMarkDone}
           disabled={loading || item.checked}
           style={{
-            marginTop: 3,
-            width: 15,
-            height: 15,
             flexShrink: 0,
             appearance: 'none',
             WebkitAppearance: 'none',
+            width: 14,
+            height: 14,
             borderRadius: 3,
             border: `1px solid ${item.checked ? AMBER : C.border}`,
             background: item.checked ? AMBER : C.s1,
             cursor: item.checked ? 'default' : 'pointer',
           }}
         />
-        <span style={{ fontSize: 14, color: item.checked ? C.muted : C.text, fontWeight: 500, flex: 1 }}>
-          {dateTitle}
-        </span>
       </div>
-      {why && (
-        <p style={{ fontSize: 14, color: C.text2, margin: '8px 0 0 24px', lineHeight: 1.4 }}>
-          {why}
-        </p>
-      )}
-      {where && (
-        <p style={{ fontSize: 12, color: C.muted, margin: '4px 0 0 24px', fontFamily: FONT.mono }}>
-          {where}
-        </p>
-      )}
     </div>
   )
 }
@@ -225,95 +288,80 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
       padding: '14px 16px 12px',
       background: 'rgba(255,255,255,0.015)',
       border: `1px solid ${C.border}`,
-      borderLeft: `2px solid ${answered ? C.border : AMBER}`,
       borderRadius: 10,
       marginBottom: 12,
       fontFamily: FONT.body,
       opacity: answered ? 0.7 : 1,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
     }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
-        <input
-          type="checkbox"
-          checked={answered}
-          disabled
-          style={{
-            marginTop: 3,
-            width: 15,
-            height: 15,
-            flexShrink: 0,
-            appearance: 'none',
-            WebkitAppearance: 'none',
-            borderRadius: 3,
-            border: `1px solid ${answered ? AMBER : C.border}`,
-            background: answered ? AMBER : C.s1,
-            cursor: 'default',
-          }}
-        />
-        <span style={{ fontSize: 14, color: answered ? C.muted : C.text, fontWeight: 500, flex: 1 }}>
+      {/* Header with dot + room name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          flexShrink: 0,
+          background: answered ? 'rgba(255,255,255,0.18)' : AMBER,
+          boxShadow: !answered ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
+        }} />
+        <span style={{
+          fontFamily: FONT.display,
+          fontSize: 14,
+          color: answered ? C.muted : C.text,
+          fontWeight: 500,
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
           {room}
         </span>
       </div>
-      <p style={{ fontSize: 14, color: C.text2, margin: '0 0 12px 24px', lineHeight: 1.4 }}>
+
+      {/* Question body */}
+      <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
         {question}
       </p>
-      {answered && (
-        <p style={{ fontSize: 12, color: C.muted, margin: '8px 0 0 24px', fontStyle: 'italic' }}>
+
+      {/* Meta footer with divider + actions */}
+      {answered ? (
+        <div style={{
+          borderTop: `1px solid ${C.border}`,
+          paddingTop: 8,
+          fontSize: 11,
+          color: C.muted,
+          fontFamily: FONT.mono,
+        }}>
           ✓ Answered
-        </p>
-      )}
-      {!answered && (
+        </div>
+      ) : (
         <>
           {!showInput ? (
-            <div style={{ display: 'flex', gap: 8, marginLeft: 24 }}>
-              <button
-                onClick={() => setShowInput(true)}
-                style={{
-                  background: 'none',
-                  border: `1px solid ${C.border}`,
-                  color: C.muted,
-                  fontSize: 9,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  borderRadius: 5,
-                  padding: '3px 10px',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  fontFamily: FONT.mono,
-                  lineHeight: 1.5,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
-              >
+            <div style={{
+              display: 'flex',
+              gap: 6,
+              borderTop: `1px solid ${C.border}`,
+              paddingTop: 8,
+            }}>
+              <CommandDeckBtn onClick={() => setShowInput(true)}>
                 Answer
-              </button>
+              </CommandDeckBtn>
               {room.includes(':') && (
-                <button
-                  onClick={() => onJumpToRoom(room)}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${C.border}`,
-                    color: C.muted,
-                    fontSize: 9,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    borderRadius: 5,
-                    padding: '3px 10px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    fontFamily: FONT.mono,
-                    lineHeight: 1.5,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
-                >
+                <CommandDeckBtn onClick={() => onJumpToRoom(room)}>
                   Go to room
-                </button>
+                </CommandDeckBtn>
               )}
             </div>
           ) : (
-            <div style={{ marginLeft: 24 }}>
+            <div style={{
+              borderTop: `1px solid ${C.border}`,
+              paddingTop: 8,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+            }}>
               <input
                 ref={inputRef}
                 type="text"
@@ -321,7 +369,6 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
                 onChange={(e) => setAnswer(e.target.value)}
                 placeholder="Type your answer..."
                 style={{
-                  width: '100%',
                   padding: '8px 12px',
                   background: C.s1,
                   border: `1px solid ${C.border}`,
@@ -329,7 +376,6 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
                   fontSize: 13,
                   fontFamily: FONT.body,
                   borderRadius: 2,
-                  marginBottom: 8,
                   boxSizing: 'border-box',
                 }}
                 onKeyDown={(e) => {
@@ -338,53 +384,16 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
                 }}
               />
               <div style={{ display: 'flex', gap: 6 }}>
-                <button
+                <CommandDeckBtn
                   onClick={handleSendAnswer}
                   disabled={!answer.trim() || loading}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${C.border}`,
-                    color: C.muted,
-                    fontSize: 9,
-                    fontWeight: 700,
-                    cursor: loading ? 'default' : 'pointer',
-                    borderRadius: 5,
-                    padding: '3px 10px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    fontFamily: FONT.mono,
-                    lineHeight: 1.5,
-                    opacity: loading ? 0.6 : 1,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { !loading && (e.currentTarget.style.borderColor = C.muted, e.currentTarget.style.color = C.text) }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border, e.currentTarget.style.color = C.muted }}
+                  style={{ opacity: loading || !answer.trim() ? 0.6 : 1 }}
                 >
                   {loading ? 'Saving…' : 'Send'}
-                </button>
-                <button
-                  onClick={() => { setShowInput(false); setAnswer('') }}
-                  disabled={loading}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${C.border}`,
-                    color: C.muted,
-                    fontSize: 9,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    borderRadius: 5,
-                    padding: '3px 10px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    fontFamily: FONT.mono,
-                    lineHeight: 1.5,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
-                >
+                </CommandDeckBtn>
+                <CommandDeckBtn onClick={() => { setShowInput(false); setAnswer('') }}>
                   Cancel
-                </button>
+                </CommandDeckBtn>
               </div>
             </div>
           )}
@@ -417,75 +426,70 @@ function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpTo
       borderRadius: 10,
       marginBottom: 12,
       fontFamily: FONT.body,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
     }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 14, color: C.text, fontWeight: 500 }}>
+      {/* Header with dot + room name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          flexShrink: 0,
+          background: isStale ? AMBER : 'rgba(255,255,255,0.18)',
+          boxShadow: isStale ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
+        }} />
+        <span style={{
+          fontFamily: FONT.display,
+          fontSize: 14,
+          color: C.text,
+          fontWeight: 500,
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
           {room}
         </span>
-        {isStale && (
-          <span style={{ fontSize: 11, color: AMBER, fontWeight: 500 }}>
-            🟡 Stale
-          </span>
-        )}
       </div>
-      <p style={{ fontSize: 13, color: C.text2, margin: '0 0 12px 0', lineHeight: 1.4 }}>
+
+      {/* Goal body */}
+      <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
         {goal.length > 100 ? goal.substring(0, 100) + '…' : goal}
       </p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: C.text2, marginBottom: 12 }}>
-        <span>Status: <strong>{status}</strong></span>
-        <span>
-          Confidence: <strong>{confidence}</strong>
-          {confidence === 'ambiguous' && ' ⚠'}
-        </span>
-      </div>
-      <div style={{ fontSize: 11, color: C.muted, marginBottom: 12, fontFamily: FONT.mono }}>
-        Last reviewed: {timeLabel}
-      </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        <button
-          onClick={() => onJumpToRoom(room)}
-          style={{
-            background: 'none',
-            border: `1px solid ${C.border}`,
-            color: C.muted,
-            fontSize: 9,
-            fontWeight: 700,
-            cursor: 'pointer',
-            borderRadius: 5,
-            padding: '3px 10px',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            fontFamily: FONT.mono,
-            lineHeight: 1.5,
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
-        >
-          Go to room
-        </button>
-        <button
-          onClick={onRefreshGoal}
-          style={{
-            background: 'none',
-            border: `1px solid ${C.border}`,
-            color: C.muted,
-            fontSize: 9,
-            fontWeight: 700,
-            cursor: 'pointer',
-            borderRadius: 5,
-            padding: '3px 10px',
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            fontFamily: FONT.mono,
-            lineHeight: 1.5,
-            transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
-        >
-          Refresh
-        </button>
+
+      {/* Meta footer with divider + status + actions */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        borderTop: `1px solid ${C.border}`,
+        paddingTop: 8,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          fontSize: 11,
+          color: C.muted,
+          fontFamily: FONT.mono,
+        }}>
+          <span>Status: <strong>{status}</strong></span>
+          <span>
+            Confidence: <strong>{confidence}</strong>
+            {confidence === 'ambiguous' && ' ⚠'}
+          </span>
+          <span title="Last loop review time">Reviewed {timeLabel}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <CommandDeckBtn onClick={() => onJumpToRoom(room)}>
+            Go to room
+          </CommandDeckBtn>
+          <CommandDeckBtn onClick={onRefreshGoal}>
+            Refresh
+          </CommandDeckBtn>
+        </div>
       </div>
     </div>
   )
@@ -502,54 +506,77 @@ function StuckSessionCard({ session, onJumpToRoom }) {
       borderRadius: 10,
       marginBottom: 12,
       fontFamily: FONT.body,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
     }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 14, color: C.text, fontWeight: 500 }}>
+      {/* Header with dot + session name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          flexShrink: 0,
+          background: AMBER,
+          boxShadow: `0 0 0 3px rgba(234,179,8,0.14)`,
+        }} />
+        <span style={{
+          fontFamily: FONT.display,
+          fontSize: 14,
+          color: C.text,
+          fontWeight: 500,
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
           {session.name}
         </span>
-        <span style={{ fontSize: 11, background: C.s1, color: C.text2, padding: '2px 6px', borderRadius: 2 }}>
-          ⏸ {session.state === 'blocked' ? 'Waiting on input' : 'Stalled'}
+        <span style={{
+          fontSize: 10,
+          background: 'transparent',
+          color: AMBER,
+          padding: '2px 6px',
+          borderRadius: 2,
+          fontFamily: FONT.mono,
+          fontWeight: 500,
+          flexShrink: 0,
+        }}>
+          {session.state === 'blocked' ? 'Blocked' : 'Stalled'}
         </span>
       </div>
+
+      {/* Detail body */}
       {session.detail && (
-        <p style={{ fontSize: 13, color: C.text2, margin: '0 0 12px 0', lineHeight: 1.4 }}>
+        <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
           {session.detail}
         </p>
       )}
+
+      {/* Suggested reply highlight */}
       {session.suggestedReply && (
         <div style={{
-          borderLeft: `2px solid ${AMBER}`,
-          paddingLeft: 12,
-          marginBottom: 12,
           fontSize: 12,
           color: C.text2,
           fontStyle: 'italic',
+          padding: 0,
+          margin: 0,
         }}>
           <strong>Suggested:</strong> {session.suggestedReply}
         </div>
       )}
-      <button
-        onClick={() => onJumpToRoom(`agents/${session.name}`)}
-        style={{
-          background: 'none',
-          border: `1px solid ${C.border}`,
-          color: C.muted,
-          fontSize: 9,
-          fontWeight: 700,
-          cursor: 'pointer',
-          borderRadius: 5,
-          padding: '3px 10px',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          fontFamily: FONT.mono,
-          lineHeight: 1.5,
-          transition: 'all 0.2s',
-        }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
-      >
-        Answer now
-      </button>
+
+      {/* Meta footer with divider + action */}
+      <div style={{
+        display: 'flex',
+        gap: 6,
+        borderTop: `1px solid ${C.border}`,
+        paddingTop: 8,
+      }}>
+        <CommandDeckBtn onClick={() => onJumpToRoom(`agents/${session.name}`)}>
+          Answer now
+        </CommandDeckBtn>
+      </div>
     </div>
   )
 }
