@@ -1023,6 +1023,7 @@ const OUTCOME_PILL = {
   got: { label: 'Working on it', fg: ACCENT_EMERALD, bg: ACCENT_EMERALD_SOFT },
   needs: { label: 'Your decision', fg: ALERT_WARM, bg: ALERT_WARM_SOFT },
   holding: { label: 'Just arrived', fg: HOLD_BLUE, bg: HOLD_BLUE_SOFT },
+  held: { label: 'Acknowledged', fg: ACCENT_EMERALD, bg: ACCENT_EMERALD_SOFT },
 }
 
 function Avatar({ name }) {
@@ -1072,7 +1073,7 @@ function FrontDeskCard({ w, outcome, onDiscuss }) {
       <CardHead name={w.name || w.email || 'Someone'}
         account={w.source === 'email' ? (w.email || 'email') : 'spoke to us'}
         channel={w.source === 'email' ? 'email' : 'speak-freely'} when={timeAgo(w.created_at)} />
-      <OutcomePill outcome={outcome} />
+      <OutcomePill outcome={outcome === 'holding' && w.soft_ack_at && !w.latest_response ? 'held' : outcome} />
       <div style={{ marginTop: 14 }}><AskList ask={ask} size={14.5} /></div>
       {w.latest_response && (
         <div style={{ marginTop: 14, padding: '13px 15px', background: ACCENT_EMERALD_SOFT, borderRadius: 13 }}>
