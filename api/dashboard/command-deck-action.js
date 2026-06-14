@@ -48,10 +48,17 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  const { action, callId, lineMatch, room, answer, world } = req.body || {};
+
   // ── Verify tenant ──────────────────────────────────────────────────────────
+  // The master-loop deliverables live in the 'aom' world; the caller passes its
+  // world and verifyTenant(world, req) checks the JWT can reach it (Patrik is a
+  // super-admin so any valid world passes). Earlier this called verifyTenant(req)
+  // with no world, which always 400'd "tenant required" — the reason no action
+  // ever worked.
   let tenantId = null;
   try {
-    tenantId = await verifyTenant(req);
+    tenantId = await verifyTenant((world || 'aom').toString(), req);
   } catch (err) {
     if (err instanceof TenantAuthError) {
       return res.status(err.status).json({ error: err.message });
@@ -59,7 +66,9 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Auth verification failed' });
   }
 
-  const { action, callId, room, answer } = req.body || {};
+  // The frontend sends `lineMatch` (a substring of the hard call); older callers
+  // used `callId`. Accept either.
+  const callKey = callId || lineMatch;
 
   // ── Validate action ────────────────────────────────────────────────────────
   if (!action || !['mark_call_done', 'answer_question'].includes(action)) {
@@ -68,7 +77,7 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'mark_call_done') {
-      return await markCallDone(callId, res);
+      return await markCallDone(callKey, res);
     } else if (action === 'answer_question') {
       return await answerQuestion(room, answer, res);
     }

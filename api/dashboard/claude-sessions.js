@@ -34,9 +34,11 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
   // ── Verify tenant (required for dashboard access) ────────────────────────────
+  // verifyTenant takes (world, req); calling it with just (req) always 400'd.
+  const world = (req.query?.world || 'aom').toString();
   let tenantId = null;
   try {
-    tenantId = await verifyTenant(req);
+    tenantId = await verifyTenant(world, req);
   } catch (err) {
     if (err instanceof TenantAuthError) {
       return res.status(err.status).json({ error: err.message });
