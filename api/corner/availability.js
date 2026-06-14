@@ -17,28 +17,24 @@ const ARIZONA_TZ = 'America/Phoenix'
 // In this setup, Patrik is the workspace owner; we hardcode his workspace ID.
 // A real multi-tenant system would look up the workspace and its owner.
 async function getPatrikUserId() {
-  // For this MVP, we query Supabase for the workspace owner of the AOM workspace.
-  // Patrik is hardcoded as the founder; his user_id is stable.
-  // In production, this would be injected from context or a workspace config.
+  // Resolve to whoever connected the google-calendar integration. Only Patrik connects it
+  // for the public booking calendar, so the single connected row IS the right owner.
+  // No env var / workspace lookup needed: pre-connection this returns null -> {connected:false}
+  // -> the page falls back to mock slots; the instant Patrik connects, the row exists and
+  // real availability flows. An optional PATRIK_USER_ID env still overrides if ever needed.
+  if (process.env.PATRIK_USER_ID) return process.env.PATRIK_USER_ID
+
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!SUPABASE_URL || !SUPABASE_KEY) return null
 
-  // Query the AOM workspace (assumed to exist; in real multi-tenant this is per-request)
-  // For MVP: hardcode Patrik's user_id once confirmed, or look it up by workspace membership.
-  // Fallback: check for a PATRIK_USER_ID env var for testing.
-  if (process.env.PATRIK_USER_ID) {
-    return process.env.PATRIK_USER_ID
-  }
-
-  // Query workspaces and find the one owned by Patrik (or the founding workspace)
-  // For now, assume the workspace 'aom' or the first workspace, and get its owner.
-  const wsR = await fetch(
-    `${SUPABASE_URL}/rest/v1/workspaces?order=created_at.asc&limit=1&select=owner_user_id`,
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/account_integrations?integration_slug=eq.google-calendar&order=connected_at.desc&limit=1&select=user_id`,
     { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
   )
-  if (!wsR.ok) return null
-  const ws = await wsR.json()
-  return (Array.isArray(ws) && ws.length) ? ws[0].owner_user_id : null
+  if (!r.ok) return null
+  const rows = await r.json()
+  return (Array.isArray(rows) && rows.length) ? rows[0].user_id : null
 }
 
 // Utility: generate date range (business days only, Arizona time)

@@ -30,20 +30,21 @@ const PATRIK_EMAIL = 'patrik@aheadofmarket.com'
 
 // Utility: get Patrik's user ID (same logic as availability.js)
 async function getPatrikUserId() {
+  // Resolve to whoever connected the google-calendar integration (the single connected row).
+  // No workspace lookup needed; optional PATRIK_USER_ID env overrides if ever required.
+  if (process.env.PATRIK_USER_ID) return process.env.PATRIK_USER_ID
+
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL
   const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!SUPABASE_URL || !SUPABASE_KEY) return null
 
-  if (process.env.PATRIK_USER_ID) {
-    return process.env.PATRIK_USER_ID
-  }
-
-  const wsR = await fetch(
-    `${SUPABASE_URL}/rest/v1/workspaces?order=created_at.asc&limit=1&select=owner_user_id`,
+  const r = await fetch(
+    `${SUPABASE_URL}/rest/v1/account_integrations?integration_slug=eq.google-calendar&order=connected_at.desc&limit=1&select=user_id`,
     { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
   )
-  if (!wsR.ok) return null
-  const ws = await wsR.json()
-  return (Array.isArray(ws) && ws.length) ? ws[0].owner_user_id : null
+  if (!r.ok) return null
+  const rows = await r.json()
+  return (Array.isArray(rows) && rows.length) ? rows[0].user_id : null
 }
 
 // Utility: parse date + time into UTC ISO string
