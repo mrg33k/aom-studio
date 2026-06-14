@@ -73,8 +73,9 @@ function Section({ children, id, className = '', bgColor = SURGE.charcoal }) {
     >
       <motion.div
         initial="hidden"
-        animate={isInView ? 'visible' : 'visible'}
+        animate="visible"
         variants={staggerContainer}
+        style={{ width: '100%' }}
       >
         {children}
       </motion.div>
@@ -239,6 +240,8 @@ function ProblemSection() {
       <div className="max-w-5xl mx-auto">
         <motion.h2
           custom={0}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
@@ -248,6 +251,8 @@ function ProblemSection() {
 
         <motion.p
           custom={1}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           className="text-lg md:text-xl leading-relaxed mb-16"
           style={{ color: '#b0b0b0', maxWidth: '600px' }}
@@ -260,6 +265,8 @@ function ProblemSection() {
             <motion.div
               key={i}
               custom={i + 2}
+              initial="hidden"
+              animate="visible"
               variants={fadeUp}
               className="p-6 sm:p-8 rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl"
               style={{
@@ -316,6 +323,8 @@ function PromiseSection() {
       <div className="max-w-5xl mx-auto">
         <motion.h2
           custom={0}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.charcoal }}
@@ -325,6 +334,8 @@ function PromiseSection() {
 
         <motion.p
           custom={1}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           className="text-lg md:text-xl leading-relaxed mb-16"
           style={{ color: '#666', maxWidth: '600px' }}
@@ -337,6 +348,8 @@ function PromiseSection() {
             <motion.div
               key={i}
               custom={i + 2}
+              initial="hidden"
+              animate="visible"
               variants={fadeUp}
               className="p-6 sm:p-8 rounded-2xl transition-all duration-300 hover:shadow-lg"
               style={{
@@ -381,6 +394,8 @@ function HowItWorksSection() {
       <div className="max-w-5xl mx-auto">
         <motion.h2
           custom={0}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-16"
           style={{ color: SURGE.white }}
@@ -393,6 +408,8 @@ function HowItWorksSection() {
             <motion.div
               key={i}
               custom={i + 1}
+              initial="hidden"
+              animate="visible"
               variants={fadeUp}
               className="relative"
             >
@@ -435,6 +452,8 @@ function FinalCtaSection() {
       <div className="max-w-3xl mx-auto text-center">
         <motion.h2
           custom={0}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           className="text-3xl sm:text-4xl md:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
@@ -444,6 +463,8 @@ function FinalCtaSection() {
 
         <motion.p
           custom={1}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           className="text-base sm:text-lg md:text-xl leading-relaxed mb-8 sm:mb-12"
           style={{ color: '#b0b0b0' }}
@@ -453,6 +474,8 @@ function FinalCtaSection() {
 
         <motion.a
           custom={2}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           href="/corner/book"
           className="inline-flex items-center gap-2 px-6 sm:px-10 py-3 sm:py-5 font-bold text-base sm:text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl"
@@ -466,6 +489,8 @@ function FinalCtaSection() {
 
         <motion.p
           custom={3}
+          initial="hidden"
+          animate="visible"
           variants={fadeUp}
           className="text-xs sm:text-sm mt-6 sm:mt-8"
           style={{ color: '#808080' }}
