@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-14T02:27:25.864Z",
+  "generated_at": "2026-06-14T04:12:22.484Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -448,20 +448,6 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/marketing"
-    },
-    {
-      "slug": "corner:master-loop",
-      "raw_slug": "master-loop",
-      "folder_name": "master-loop",
-      "parent_raw_slug": null,
-      "depth": 0,
-      "project_slug": "corner",
-      "workstream": null,
-      "name": "Master Loop",
-      "status": "in-progress",
-      "is_done": false,
-      "last_updated": null,
-      "path": "corner/missions/master-loop"
     },
     {
       "slug": "corner:mission-marker",
@@ -3533,8 +3519,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 67,
-      "in_flight": 67,
+      "total": 66,
+      "in_flight": 66,
       "done": 0
     },
     {

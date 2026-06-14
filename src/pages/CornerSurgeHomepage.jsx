@@ -1,7 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import { Check, ChevronRight, ArrowUpRight } from 'lucide-react'
-import CornerAsciiHeroPoc from './CornerAsciiHeroPoc'
 
 /**
  * Corner SURGE Homepage — Full Customer-First Brand Experience
@@ -139,16 +138,12 @@ function CornerSurgeNav() {
 // --- HERO SECTION (with ASCII component) ---
 function HeroSection() {
   return (
-    <section className="relative min-h-[120vh] overflow-hidden" style={{ backgroundColor: SURGE.charcoal }}>
-      {/* ASCII hero backdrop */}
-      <CornerAsciiHeroPoc />
-
-      {/* Content overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pt-40 pb-20 px-6 z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
+    <div className="relative" style={{ height: '120vh', backgroundColor: SURGE.charcoal }}>
+      {/* Content — centered flex layout */}
+      <div
+        className="w-full h-full flex flex-col items-center justify-center px-6"
+      >
+        <div
           className="text-center max-w-3xl"
         >
           <h1
@@ -158,21 +153,15 @@ function HeroSection() {
             Your business just got an upgrade.
           </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7, duration: 0.8 }}
+          <p
             className="text-lg md:text-xl leading-relaxed mb-10"
             style={{ color: '#b0b0b0' }}
           >
             Managed AI agents that run your business in one organized system.
             You direct. They execute. While you sleep.
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9, duration: 0.8 }}
+          <div
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <a
@@ -196,20 +185,17 @@ function HeroSection() {
             >
               Learn more
             </a>
-          </motion.div>
+          </div>
 
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1, duration: 0.8 }}
+          <p
             className="text-sm mt-6"
             style={{ color: '#808080' }}
           >
             30-minute discovery call. No commitment.
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
       </div>
-    </section>
+    </div>
   )
 }
 
@@ -299,7 +285,7 @@ function PromiseSection() {
     },
     {
       name: 'Quality',
-      desc: 'One agent checks everyone else's work. No bad work ships under your name.',
+      desc: "One agent checks everyone else's work. No bad work ships under your name.",
     },
     {
       name: 'You stay in control',

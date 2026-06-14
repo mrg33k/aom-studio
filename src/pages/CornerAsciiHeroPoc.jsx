@@ -207,7 +207,7 @@ function CornerAsciiHeroPoc() {
     return (
       <div
         ref={containerRef}
-        className="w-full h-screen bg-gradient-to-br from-purple-700 to-cyan-500 flex items-center justify-center"
+        className="w-full h-full bg-gradient-to-br from-purple-700 to-cyan-500 flex items-center justify-center"
       >
         <div className="text-center">
           <h1 className="text-5xl font-bold text-white mb-6">Your business just got an upgrade</h1>
@@ -220,7 +220,7 @@ function CornerAsciiHeroPoc() {
   return (
     <div
       ref={containerRef}
-      className="w-full h-screen overflow-hidden"
+      className="w-full h-full overflow-hidden"
       style={{ backgroundColor: CHARCOAL }}
     >
       <canvas

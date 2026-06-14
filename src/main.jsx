@@ -61,7 +61,6 @@ const Corner = lazy(() => import('./pages/Corner.jsx'))
 const CornerSurgeHomepage = lazy(() => import('./pages/CornerSurgeHomepage.jsx'))
 const CornerAsciiHeroPoc = lazy(() => import('./pages/CornerAsciiHeroPoc.jsx'))
 const BookCorner = lazy(() => import('./pages/BookCorner.jsx'))
-const CornerAsciiHeroPoc = lazy(() => import('./pages/CornerAsciiHeroPoc.jsx'))
 const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
 // corner:gemini-workers R10 — /cvg Gemini workbench (CornerV4 duplicate).

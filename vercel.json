@@ -196,6 +196,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/corner/surge-preview",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/corner/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/dashboard/agent/:slug",
       "destination": "/index.html"
     },
