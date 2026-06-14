@@ -146,12 +146,24 @@ function DealBankRedirect() {
 // AuthGuard: checks Supabase session before rendering dashboard routes.
 // Falls through immediately if Supabase is not configured (localhost without env vars).
 // First-time users are redirected to /onboarding. Checks metadata + DB for robustness.
+// Public demo routes (like /corner/hero-poc) bypass auth and render for all users.
 function AuthGuard({ children }) {
   const navigate = useNavigate()
   const [checked, setChecked] = useState(false)
   const [authed, setAuthed] = useState(false)
 
+  // Public routes that render without auth (design POCs, public demos, etc.)
+  const PUBLIC_ROUTES = ['/corner/hero-poc']
+  const isPublicRoute = PUBLIC_ROUTES.includes(window.location.pathname)
+
   useEffect(() => {
+    // If this is a public route, skip auth entirely and render.
+    if (isPublicRoute) {
+      setAuthed(true)
+      setChecked(true)
+      return
+    }
+
     // onAuthStateChange fires immediately with current session, then on changes.
     const unsubscribe = onAuthStateChange(async (session) => {
       if (session) {
