@@ -95,43 +95,16 @@ const containerVariants = {
   },
 }
 
-// --- SECTION WRAPPER with scroll animation ---
+// --- SECTION WRAPPER (no animation gates — all content visible immediately) ---
 function Section({ children, id, className = '', bgColor = SURGE.charcoal }) {
-  const ref = useRef(null)
-  const [isVisible, setIsVisible] = useState(false)
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.unobserve(entry.target)
-        }
-      },
-      { threshold: 0.1 }
-    )
-
-    if (ref.current) {
-      observer.observe(ref.current)
-    }
-
-    return () => observer.disconnect()
-  }, [])
-
   return (
-    <motion.section
-      ref={ref}
+    <section
       id={id}
       className={className}
       style={{ backgroundColor: bgColor, display: 'block', width: '100%' }}
-      initial={{ opacity: 0, y: 20 }}
-      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
     >
-      <div style={{ width: '100%', display: 'block' }}>
-        {children}
-      </div>
-    </motion.section>
+      {children}
+    </section>
   )
 }
 
