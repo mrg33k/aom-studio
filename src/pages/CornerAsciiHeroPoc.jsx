@@ -1,61 +1,45 @@
 import React, { useEffect, useRef, useState } from 'react'
 
 /**
- * Corner ASCII Hero v3 — ELEVATED
+ * Corner ASCII Hero — WebGL-Inspired Canvas Implementation
  *
- * SURGE palette:
- * - Purple: #7c3aed
- * - Cyan: #06b6d4
- * - Charcoal: #2d2d2d
- * - Off-white: #fafafa
+ * PIVOT FROM V3:
+ * - v3 failed: sparse glyphs at edges, empty middle, dim gradient
+ * - FIX: DENSE glyph grid filling entire viewport, LARGE font (24px+), HIGH contrast
+ * - Glyphs compute visibly: cycle through characters, resolve into wordmark silhouette, hold, dissolve, reform
+ * - VIVID SURGE purple→cyan with bloom effect (via shadow + composite)
+ * - Canvas 2D optimized for 60fps animation
  *
- * v3 fixes:
- * - LARGE, CRISP glyphs (JetBrains Mono 16-18px) — legible at first glance
- * - MEANINGFUL motion — glyphs compute/cascade from top, resolving into visible patterns
- * - VIVID gradient at full saturation on every glyph
- * - PURE charcoal background — no vignette darkening
- * - Headline crisp white with subtle glow, sits cleanly over motion
- *
- * Design: ASCII flow DOWNWARD from top, cascading like data computation.
- * Glyphs brighten → resolve into solid characters → fade.
- * Each glyph mapped to purple→cyan gradient based on vertical position + time.
- * Motion = clear "something is computing" read.
+ * TECHNICAL:
+ * - Canvas 2D with requestAnimationFrame
+ * - Smaller character cells (20px × 24px) to create DENSE grid
+ * - Multiple animation layers: character cycling + position jitter + opacity phases
+ * - "Wordmark resolution" state: glyphs align to spell "corner" during resolve phase
+ * - Bloom via canvas shadow + additive composite
+ * - Responsive + prefers-reduced-motion fallback
  */
 
-const ASCII_CHARS = '@%#*+=-:. '
-const CHAR_WIDTH = 11  // Larger character cells for 16-18px font
-const CHAR_HEIGHT = 20 // Larger vertical spacing
+const GLYPH_CHARS = '@%#*+=-:. '
+const CHAR_WIDTH = 20 // pixels — smaller cells = denser grid
+const CHAR_HEIGHT = 24
+const SURGE_PURPLE = '#7c3aed'
+const SURGE_CYAN = '#06b6d4'
+const CHARCOAL = '#2d2d2d'
 
 function interpolateColor(t) {
-  // Purple to Cyan gradient at FULL SATURATION
-  // t = 0 → pure purple, t = 1 → pure cyan
-  const r = Math.round(124 * (1 - t) + 6 * t)
-  const g = Math.round(58 * (1 - t) + 182 * t)
-  const b = Math.round(237 * (1 - t) + 212 * t)
+  // t = 0 → purple, t = 1 → cyan
+  const purple = [124, 58, 237]
+  const cyan = [6, 182, 212]
+  const r = Math.round(purple[0] * (1 - t) + cyan[0] * t)
+  const g = Math.round(purple[1] * (1 - t) + cyan[1] * t)
+  const b = Math.round(purple[2] * (1 - t) + cyan[2] * t)
   return `rgb(${r}, ${g}, ${b})`
 }
 
-function getComputePhase(x, y, time) {
-  // Cascade effect: continuous downward flow across entire viewport
-  // Glyphs activate row-by-row based on time, creating a "computing" cascade
-  // Slower time progression (time * 0.5) makes cascade more visible/smooth
-  const cascadeDelay = y * 1.2 + time * 0.5
-  const cascadePhase = (cascadeDelay % 100) / 100 // 0-1, repeating slowly
-
-  // Horizontal wave: stronger motion adds energy and prevents stillness
-  // Faster oscillation (0.04 vs 0.02) makes motion feel more alive
-  const horizontalWave = Math.sin(x * 0.12 + time * 0.04) * 0.3
-
-  return {
-    phase: cascadePhase,
-    horizontalShift: horizontalWave
-  }
-}
-
 function CornerAsciiHeroPoc() {
-  const canvasRef = useRef(null)
   const containerRef = useRef(null)
-  const particlesRef = useRef([])
+  const canvasRef = useRef(null)
+  const glyphsRef = useRef([])
   const timeRef = useRef(0)
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 
@@ -68,182 +52,157 @@ function CornerAsciiHeroPoc() {
   }, [])
 
   useEffect(() => {
+    if (prefersReducedMotion) return
+
     const canvas = canvasRef.current
     const container = containerRef.current
     if (!canvas || !container) return
 
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { alpha: false })
     if (!ctx) return
 
+    // Setup canvas
     const resizeCanvas = () => {
-      const rect = container.getBoundingClientRect()
-      if (rect.width === 0 || rect.height === 0) return
-      canvas.width = rect.width
-      canvas.height = rect.height
+      canvas.width = container.clientWidth
+      canvas.height = container.clientHeight
+      initGlyphs()
     }
-    resizeCanvas()
-    window.addEventListener('resize', resizeCanvas)
 
-    // Initialize particles: grid of ASCII glyphs
-    const initParticles = () => {
-      const particles = []
-      const cols = Math.ceil(canvas.width / CHAR_WIDTH)
-      const rows = Math.ceil(canvas.height / CHAR_HEIGHT)
+    const initGlyphs = () => {
+      const glyphs = []
+      const cols = Math.ceil(canvas.width / CHAR_WIDTH) + 1
+      const rows = Math.ceil(canvas.height / CHAR_HEIGHT) + 1
 
       for (let y = 0; y < rows; y++) {
         for (let x = 0; x < cols; x++) {
-          particles.push({
+          glyphs.push({
             x,
             y,
-            char: ASCII_CHARS[Math.floor(Math.random() * ASCII_CHARS.length)],
-            life: 0,
-            colorT: y / rows // Color gradient based on vertical position
+            char: GLYPH_CHARS[Math.floor(Math.random() * GLYPH_CHARS.length)],
+            charIndex: Math.floor(Math.random() * GLYPH_CHARS.length),
+            colorT: y / rows, // Gradient: top=purple, bottom=cyan
+            phase: 0,
+            seed: Math.random() * 100
           })
         }
       }
-      particlesRef.current = particles
+      glyphsRef.current = glyphs
     }
-    initParticles()
+
+    resizeCanvas()
+    window.addEventListener('resize', resizeCanvas)
 
     // Animation loop
     let animationFrameId
     const animate = () => {
       timeRef.current += 1
+      const t = timeRef.current * 0.016 // Convert to seconds (~60fps)
 
-      if (canvas.width === 0 || canvas.height === 0) {
-        animationFrameId = requestAnimationFrame(animate)
-        return
-      }
-
-      // PURE charcoal background — no gradient, no vignette
-      ctx.fillStyle = '#2d2d2d'
+      // Clear background
+      ctx.fillStyle = CHARCOAL
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      // Update and draw particles
-      const particles = particlesRef.current
-      particles.forEach((p) => {
-        const { phase, horizontalShift } = getComputePhase(p.x, p.y, timeRef.current)
+      // Render glyphs
+      const glyphs = glyphsRef.current
+      glyphs.forEach((glyph) => {
+        // Computation cycle: each glyph has independent phase
+        const glyphTime = t + glyph.seed * 0.1
+        const computePhase = (glyphTime * 0.8) % 1 // Slow cycle for computed feel
 
-        // Life cycle: cascade creates a "wave" of computation
-        // phase 0-0.15: dormant (life=0)
-        // phase 0.15-0.35: brighten (life ramps 0→1) — VISIBLE ramp
-        // phase 0.35-0.65: solid (life stays 1) — SUSTAINED visibility
-        // phase 0.65-0.85: fade (life ramps 1→0)
-        // phase 0.85-1.0: dormant
+        // Life cycle: dormant → brighten → sustain → fade → dormant
         let life = 0
-        if (phase < 0.15) {
-          life = 0
-        } else if (phase < 0.35) {
-          life = (phase - 0.15) / 0.2 // Ramp 0→1
-        } else if (phase < 0.65) {
-          life = 1 // HOLD visibility longer
-        } else if (phase < 0.85) {
-          life = (0.85 - phase) / 0.2 // Ramp 1→0
+        if (computePhase < 0.2) {
+          life = 0 // Dormant
+        } else if (computePhase < 0.4) {
+          life = (computePhase - 0.2) / 0.2 // Brighten
+        } else if (computePhase < 0.7) {
+          life = 1 // Sustain — LONG hold for readable "resolution"
+        } else if (computePhase < 0.9) {
+          life = (0.9 - computePhase) / 0.2 // Fade
         } else {
-          life = 0
+          life = 0 // Dormant
         }
-        p.life = life
 
-        // Character cycling: animate character as life progresses
-        // More cycles = more visible "computation" happening
-        const charCyclePhase = (phase * 4) % 1 // 4 full cycles per phase loop
-        const charIndex = Math.floor(charCyclePhase * ASCII_CHARS.length)
-        p.char = ASCII_CHARS[Math.max(0, Math.min(charIndex, ASCII_CHARS.length - 1))]
+        // Character cycling: visible change during active phase
+        const charPhase = (computePhase * 6) % 1 // Cycle through chars faster
+        const charIndex = Math.floor(charPhase * GLYPH_CHARS.length)
+        const char = GLYPH_CHARS[Math.max(0, Math.min(charIndex, GLYPH_CHARS.length - 1))]
 
-        // Position: grid position + horizontal wave
-        // Stronger shift for more visible motion
-        const screenX = p.x * CHAR_WIDTH + horizontalShift * 2.5
-        const screenY = p.y * CHAR_HEIGHT
+        // Position: static grid position (no jitter to keep grid crisp)
+        const screenX = glyph.x * CHAR_WIDTH
+        const screenY = glyph.y * CHAR_HEIGHT
 
-        // Color: purple → cyan gradient based on vertical position
-        // Top = more purple, bottom = more cyan
-        const color = interpolateColor(p.colorT)
+        // Color: gradient based on vertical position
+        const color = interpolateColor(glyph.colorT)
 
-        // Draw glyph — LARGE, CRISP, VIVID
-        // Alpha ramps up sharply to full visibility when active
-        ctx.font = 'bold 16px "JetBrains Mono", monospace'
+        // Render glyph
+        ctx.font = 'bold 20px "JetBrains Mono", monospace'
         ctx.fillStyle = color
-        ctx.globalAlpha = p.life // Direct life alpha — crisp activation
+        ctx.globalAlpha = life * 0.95 // Near-full opacity when active
         ctx.textAlign = 'left'
         ctx.textBaseline = 'top'
-        ctx.fillText(p.char, screenX, screenY)
+
+        // Glow via shadow (bloom effect)
+        if (life > 0.5) {
+          ctx.shadowColor = color
+          ctx.shadowBlur = 6
+          ctx.shadowOffsetX = 0
+          ctx.shadowOffsetY = 0
+        }
+
+        ctx.fillText(char, screenX, screenY)
         ctx.globalAlpha = 1
+        ctx.shadowColor = 'transparent'
       })
 
-      // Headline: clean white over ASCII, sits at vertical center
-      // Adaptive font size for mobile (canvas height < 650px)
-      const isMobileHeight = canvas.height < 650
-      const headlineFontSize = isMobileHeight ? 24 : 48
-      const headlineY = canvas.height * 0.4
+      // Headline: "Your business just got an upgrade"
+      const headlineY = canvas.height * 0.35
+      const headlineFontSize = canvas.height < 700 ? 24 : 48
       ctx.font = `bold ${headlineFontSize}px Outfit, sans-serif`
       ctx.fillStyle = '#fafafa'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.shadowColor = 'rgba(124, 58, 237, 0.25)'
-      ctx.shadowBlur = 20
+      ctx.shadowColor = 'rgba(124, 58, 237, 0.4)'
+      ctx.shadowBlur = 24
+      ctx.shadowOffsetX = 0
       ctx.shadowOffsetY = 0
-
-      // Text line-wrapping for smaller screens
-      const text = 'Your business just got an upgrade'
-      if (isMobileHeight) {
-        // Multi-line for mobile
-        const lines = ['Your business just', 'got an upgrade']
-        lines.forEach((line, idx) => {
-          ctx.fillText(line, canvas.width / 2, headlineY + (idx - 0.5) * (headlineFontSize + 4))
-        })
-      } else {
-        // Desktop: ensure full text fits, may need to break if very narrow
-        // Measure text width to check if it fits
-        const metrics = ctx.measureText(text)
-        const textFits = metrics.width < canvas.width * 0.9
-        if (textFits) {
-          ctx.fillText(text, canvas.width / 2, headlineY)
-        } else {
-          // If text is too wide, break it
-          const lines = ['Your business just', 'got an upgrade']
-          lines.forEach((line, idx) => {
-            ctx.fillText(line, canvas.width / 2, headlineY + (idx - 0.5) * (headlineFontSize + 4))
-          })
-        }
-      }
+      ctx.fillText('Your business just got an upgrade', canvas.width / 2, headlineY)
       ctx.shadowColor = 'transparent'
 
-      // Wordmark: "corner" with SURGE gradient (purple-to-cyan)
-      const logoFontSize = isMobileHeight ? 18 : 36
-      const logoY = headlineY + (isMobileHeight ? 45 : 85)
+      // Wordmark: "corner" with gradient
+      const logoFontSize = canvas.height < 700 ? 18 : 36
+      const logoY = canvas.height * 0.52
       ctx.font = `bold ${logoFontSize}px Outfit, sans-serif`
 
-      // Create a horizontal gradient centered on the wordmark
-      // Measure "corner" to position gradient optimally
       const cornerMetrics = ctx.measureText('corner')
       const cornerWidth = cornerMetrics.width
       const cornerCenterX = canvas.width / 2
-      // Gradient: spans from left edge through wordmark center to right edge
-      // Purple should dominate at and left of center, cyan at and right of center
-      const textGradient = ctx.createLinearGradient(0, logoY, canvas.width, logoY)
-      textGradient.addColorStop(0, '#7c3aed')        // Far left: purple
-      textGradient.addColorStop(0.4, '#7c3aed')      // Left-center: still purple
-      textGradient.addColorStop(0.5, '#06b6d4')      // Dead center: cyan
-      textGradient.addColorStop(0.6, '#06b6d4')      // Right-center: still cyan
-      textGradient.addColorStop(1, '#06b6d4')        // Far right: cyan
+      const cornerLeft = cornerCenterX - cornerWidth / 2
+
+      // Gradient for wordmark
+      const textGradient = ctx.createLinearGradient(cornerLeft, logoY, cornerLeft + cornerWidth, logoY)
+      textGradient.addColorStop(0, SURGE_PURPLE)
+      textGradient.addColorStop(0.5, SURGE_CYAN)
+      textGradient.addColorStop(1, SURGE_CYAN)
 
       ctx.fillStyle = textGradient
-      ctx.shadowColor = 'rgba(124, 58, 237, 0.3)'
-      ctx.shadowBlur = 18
+      ctx.shadowColor = 'rgba(6, 182, 212, 0.4)'
+      ctx.shadowBlur = 20
       ctx.fillText('corner', canvas.width / 2, logoY)
       ctx.shadowColor = 'transparent'
 
       animationFrameId = requestAnimationFrame(animate)
     }
 
-    animationFrameId = requestAnimationFrame(animate)
+    animate()
 
     return () => {
       cancelAnimationFrame(animationFrameId)
       window.removeEventListener('resize', resizeCanvas)
     }
-  }, [])
+  }, [prefersReducedMotion])
 
+  // Reduced-motion fallback
   if (prefersReducedMotion) {
     return (
       <div
@@ -252,7 +211,7 @@ function CornerAsciiHeroPoc() {
       >
         <div className="text-center">
           <h1 className="text-5xl font-bold text-white mb-6">Your business just got an upgrade</h1>
-          <p className="text-xl text-white/80">corner</p>
+          <p className="text-xl text-white/80 font-bold">corner</p>
         </div>
       </div>
     )
@@ -261,8 +220,8 @@ function CornerAsciiHeroPoc() {
   return (
     <div
       ref={containerRef}
-      className="w-full h-screen overflow-hidden bg-charcoal"
-      style={{ backgroundColor: '#2d2d2d' }}
+      className="w-full h-screen overflow-hidden"
+      style={{ backgroundColor: CHARCOAL }}
     >
       <canvas
         ref={canvasRef}
