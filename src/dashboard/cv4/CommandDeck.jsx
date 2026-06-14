@@ -36,29 +36,33 @@ function parseMarkdownCheckboxList(markdown, sectionName) {
 
 // ── Shared button component for CommandDeck (matches RoutineCard CardBtn style)
 
-function CommandDeckBtn({ children, onClick, disabled = false, style = {} }) {
+function CommandDeckBtn({ children, onClick, disabled = false, primary = false, style = {} }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       style={{
-        background: 'none',
-        border: `1px solid ${C.border}`,
-        color: C.muted,
-        fontSize: 9,
+        background: primary ? 'rgba(234,179,8,0.10)' : 'rgba(255,255,255,0.02)',
+        border: `1px solid ${primary ? 'rgba(234,179,8,0.45)' : C.border}`,
+        color: primary ? AMBER : C.text2,
+        fontSize: 11,
         fontWeight: 700,
         cursor: disabled ? 'default' : 'pointer',
-        borderRadius: 5,
-        padding: '3px 10px',
-        letterSpacing: '0.08em',
+        borderRadius: 7,
+        padding: '8px 14px',
+        minHeight: 34,
+        letterSpacing: '0.06em',
         textTransform: 'uppercase',
         fontFamily: FONT.mono,
-        lineHeight: 1.5,
-        transition: 'all 0.2s',
+        lineHeight: 1,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.15s',
         ...style,
       }}
-      onMouseEnter={e => { !disabled && (e.currentTarget.style.borderColor = C.muted, e.currentTarget.style.color = C.text) }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = C.border, e.currentTarget.style.color = C.muted }}
+      onMouseEnter={e => { if (!disabled && !primary) { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text } }}
+      onMouseLeave={e => { if (!primary) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.text2 } }}
     >
       {children}
     </button>
@@ -213,36 +217,27 @@ function HardCallCard({ item, index, onMarkDone }) {
         </p>
       )}
 
-      {/* Meta footer with divider */}
+      {/* where it lives */}
+      {where && (
+        <p style={{ fontSize: 11, color: C.muted, margin: 0, fontFamily: FONT.mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {where}
+        </p>
+      )}
+
+      {/* Action footer */}
       <div style={{
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        gap: 6,
         borderTop: `1px solid ${C.border}`,
-        paddingTop: 8,
-        fontSize: 11,
-        color: C.muted,
-        fontFamily: FONT.mono,
-        gap: 12,
+        paddingTop: 10,
       }}>
-        {where && <span>{where}</span>}
-        <input
-          type="checkbox"
-          checked={item.checked}
-          onChange={handleMarkDone}
-          disabled={loading || item.checked}
-          style={{
-            flexShrink: 0,
-            appearance: 'none',
-            WebkitAppearance: 'none',
-            width: 14,
-            height: 14,
-            borderRadius: 3,
-            border: `1px solid ${item.checked ? AMBER : C.border}`,
-            background: item.checked ? AMBER : C.s1,
-            cursor: item.checked ? 'default' : 'pointer',
-          }}
-        />
+        {item.checked ? (
+          <span style={{ fontSize: 11, color: C.muted, fontFamily: FONT.mono, padding: '8px 0' }}>✓ done</span>
+        ) : (
+          <CommandDeckBtn onClick={handleMarkDone} disabled={loading} primary>
+            {loading ? 'Saving…' : 'Mark done'}
+          </CommandDeckBtn>
+        )}
       </div>
     </div>
   )
