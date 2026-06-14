@@ -277,8 +277,8 @@ function ProblemSection() {
 
   return (
     <Section id="problem" bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6 relative overflow-hidden">
-      {/* Atmospheric background */}
-      <div className="absolute inset-0 z-0" style={{ opacity: 0.05 }}>
+      {/* Atmospheric background — stronger visibility */}
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.12 }}>
         <div
           className="absolute inset-0"
           style={{
@@ -334,8 +334,8 @@ function ProblemSection() {
                 />
 
                 <div className="relative z-10">
-                  <div className="mb-4 p-3 inline-flex rounded-lg" style={{ backgroundColor: `${problem.accentColor}33` }}>
-                    <problem.Icon size={24} style={{ color: problem.accentColor }} strokeWidth={1.5} />
+                  <div className="mb-4 p-4 inline-flex rounded-lg" style={{ backgroundColor: `${problem.accentColor}44` }}>
+                    <problem.Icon size={28} style={{ color: problem.accentColor }} strokeWidth={1.5} />
                   </div>
                   <h3
                     className="text-xl sm:text-2xl font-bold mb-4 leading-tight"
@@ -358,19 +358,19 @@ function ProblemSection() {
 function ProductMockup() {
   return (
     <div className="relative mx-auto max-w-4xl mb-20">
-      {/* Glow backdrop */}
+      {/* Glow backdrop — stronger visibility */}
       <div
-        className="absolute inset-0 rounded-3xl blur-3xl opacity-40"
+        className="absolute inset-0 rounded-3xl blur-3xl opacity-60"
         style={{
           background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
           transform: 'translateY(30px)',
         }}
       />
 
-      {/* Browser frame */}
+      {/* Browser frame — stronger border and shadow */}
       <div
-        className="relative rounded-2xl overflow-hidden shadow-2xl border"
-        style={{ backgroundColor: '#000', borderColor: '#333' }}
+        className="relative rounded-2xl overflow-hidden shadow-2xl border-2"
+        style={{ backgroundColor: '#000', borderColor: SURGE.purple }}
       >
         {/* Browser chrome */}
         <div
@@ -389,7 +389,7 @@ function ProductMockup() {
         {/* Dashboard content */}
         <div
           className="p-8 sm:p-12"
-          style={{ backgroundColor: '#0a0a0a', minHeight: '500px' }}
+          style={{ backgroundColor: '#0a0a0a', minHeight: '600px' }}
         >
           {/* Header */}
           <div className="mb-12">
@@ -582,11 +582,11 @@ function PromiseSection() {
                 className="relative p-8 sm:p-10 rounded-2xl transition-all duration-300 group-hover:shadow-2xl h-full"
                 style={{
                   backgroundColor: '#1a1a1a',
-                  border: '1px solid #333',
+                  border: '1px solid #444',
                 }}
               >
-                <div className="mb-4 p-3 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)' }}>
-                  <feature.Icon size={24} style={{ color: SURGE.purple }} strokeWidth={1.5} />
+                <div className="mb-6 p-4 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.2)' }}>
+                  <feature.Icon size={28} style={{ color: SURGE.purple }} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: SURGE.white }}>
                   {feature.name}
@@ -627,8 +627,8 @@ function HowItWorksSection() {
 
   return (
     <Section bgColor={SURGE.charcoal} className="py-16 sm:py-32 px-6 relative overflow-hidden">
-      {/* Atmospheric glow */}
-      <div className="absolute inset-0 z-0" style={{ opacity: 0.03 }}>
+      {/* Atmospheric glow — stronger visibility */}
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.1 }}>
         <div
           className="absolute inset-0"
           style={{
@@ -653,11 +653,11 @@ function HowItWorksSection() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          {/* Connection line behind cards (desktop only) */}
+          {/* Connection line behind cards (desktop only) — stronger visibility */}
           <div
-            className="absolute top-24 left-0 right-0 h-0.5 hidden md:block"
+            className="absolute top-24 left-0 right-0 h-1 hidden md:block"
             style={{
-              background: `linear-gradient(90deg, ${SURGE.purple}44 0%, ${SURGE.cyan}44 50%, ${SURGE.purple}44 100%)`,
+              background: `linear-gradient(90deg, ${SURGE.purple}88 0%, ${SURGE.cyan}88 50%, ${SURGE.purple}88 100%)`,
             }}
           />
 
@@ -683,22 +683,23 @@ function HowItWorksSection() {
                   border: '1px solid #333',
                 }}
               >
-                {/* Step number circle */}
+                {/* Step number circle — larger and more prominent */}
                 <div className="mb-6">
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg"
+                    className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl shadow-lg"
                     style={{
                       background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
                       color: SURGE.white,
+                      boxShadow: `0 0 30px rgba(124, 58, 237, 0.4)`,
                     }}
                   >
                     {step.num}
                   </div>
                 </div>
 
-                {/* Icon */}
-                <div className="mb-4 p-3 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)' }}>
-                  <step.Icon size={24} style={{ color: SURGE.purple }} strokeWidth={1.5} />
+                {/* Icon — larger and more prominent */}
+                <div className="mb-6 p-4 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.2)' }}>
+                  <step.Icon size={28} style={{ color: SURGE.purple }} strokeWidth={1.5} />
                 </div>
 
                 <h3
