@@ -94,11 +94,11 @@ export default function MissionRoom() {
             mission room · R3b preview
           </div>
           <h1 style={{
-            fontFamily: "'Instrument Serif', serif",
-            fontWeight: 400,
+            fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+            fontWeight: 800,
             fontSize: 38,
             margin: 0,
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.03em',
           }}>{missionSlug || '(no slug)'}</h1>
           <div style={{ marginTop: 8, fontSize: 14, opacity: 0.7 }}>
             agent: <code style={{ fontFamily: "'JetBrains Mono', monospace" }}>{fullAgent}</code>

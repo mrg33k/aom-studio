@@ -254,8 +254,8 @@ function Header({ fromName, fromEmail, to, subject, when, onBack }) {
         >×</button>
       </div>
       <div style={{
-        fontSize: 19, fontWeight: 600, color: C.text, lineHeight: 1.3,
-        fontFamily: "'Instrument Serif', 'Inter', serif", marginBottom: 8,
+        fontSize: 19, fontWeight: 700, color: C.text, lineHeight: 1.3,
+        fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif", letterSpacing: '-0.02em', marginBottom: 8,
       }}>{subject}</div>
       <div style={{
         fontSize: 12, color: C.text2, display: 'flex', gap: 12, flexWrap: 'wrap',
@@ -633,8 +633,8 @@ function BinaryFallback({ label, filename, size, mimeType, onDownload }) {
         letterSpacing: '0.08em',
       }}>{label}</div>
       <div style={{
-        fontSize: 16, fontWeight: 600, color: C.text,
-        fontFamily: "'Instrument Serif', serif", marginBottom: 6,
+        fontSize: 16, fontWeight: 700, color: C.text,
+        fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif", letterSpacing: '-0.02em', marginBottom: 6,
       }}>{filename || '(unnamed)'}</div>
       <div style={{
         fontSize: 11, color: C.dim,

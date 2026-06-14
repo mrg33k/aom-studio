@@ -73,11 +73,11 @@ export default function MissionsIndex() {
             missions · primary surface · R5
           </div>
           <h1 style={{
-            fontFamily: "'Instrument Serif', serif",
-            fontWeight: 400,
+            fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+            fontWeight: 800,
             fontSize: 38,
             margin: 0,
-            letterSpacing: '-0.01em',
+            letterSpacing: '-0.03em',
           }}>Missions</h1>
           <p style={{ marginTop: 8, fontSize: 14, opacity: 0.7, maxWidth: 720 }}>
             Each mission has a persistent agent attached to it. Click into a
@@ -119,10 +119,11 @@ export default function MissionsIndex() {
               e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
             }}>
               <div style={{
-                fontFamily: "'Instrument Serif', serif",
+                fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
                 fontSize: 22,
+                fontWeight: 700,
                 marginBottom: 6,
-                letterSpacing: '-0.01em',
+                letterSpacing: '-0.02em',
               }}>{m.title}</div>
               <div style={{
                 fontFamily: "'JetBrains Mono', monospace",

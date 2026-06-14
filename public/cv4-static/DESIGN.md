@@ -40,32 +40,40 @@ CV4 v2 is a faithful 1:1 port of CV3 into static hand-authored HTML + CSS, with 
 
 ### 2. Typography: No Defaults
 
-**Font stack (synced to live CSS 2026-06-11 — this section had drifted):**
+**Font stack (updated 2026-06-14 — display serif RETIRED):**
 ```css
 /* tokens.css — base UI layer */
 --ff-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 --ff-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace;
-/* desktop.css — display/menu layer (added R-CV4-3/4, 2026-05-12) */
---cv4-menu-display: 'Instrument Serif', Georgia, serif;
+/* display/menu layer — REDESIGNED 2026-06-14 */
+--cv4-menu-display: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
 --cv4-menu-font: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
 ```
 
-Inter is intentional (CV3 canonical choice) for the base UI layer. The Instrument Serif / Hanken Grotesk display layer was added by the 2026-05-12 editorial-midnight rounds and is what users see in CV4 menus and display type. If a project demands a different sans-serif (Helvetica, Grotesk, etc.), that goes in a NEW DESIGN.md override, not in CV4's default.
+**RETIREMENT NOTICE:** Instrument Serif, Playfair, and Fraunces are no longer used in Corner. All three are AI tells (2026-06-14 assessment by Patrik). Display typography is now **Hanken Grotesk at heavy weights** (800 for H1, 700 for H2/H3), tight tracking, and intentional scale. This reads more confident and modern than serif headlines while maintaining the editorial premium feel.
 
-**Marketing / external surfaces do NOT auto-inherit this system.** These tokens are product-UI chrome for the app. A marketing page, client deliverable, or any outward-facing page needs its own art direction anchored to 3 outside references (design-gate rule). Note: the Instrument-Serif-display-on-dark-with-single-accent look is on the design-gate anti-default list as a current AI tell (2026-06-11) — inside the product it is the established system; outside the product it needs a stated brand reason, not reflex inheritance.
+Inter remains the base UI layer (CV3 canonical choice). JetBrains Mono covers data, eyebrows, and labels. All display work uses Hanken Grotesk exclusively.
 
-**Type scale (all sizes are `clamp()` responsive):**
-- H1: `clamp(26px, 5.5vw, 40px)` @ fw-extrabold (800), letter-spacing -0.04em
-- H2: `clamp(20px, 4vw, 32px)` @ fw-bold (700)
-- H3: 18px @ fw-bold (700), rarely used (prefer H2)
-- Body: 14px (base) @ fw-regular (400), line-height 1.5
-- Caption: 12px @ fw-regular (400), opacity 0.7
+**Marketing / external surfaces do NOT auto-inherit this system.** These tokens are product-UI chrome for the app. A marketing page, client deliverable, or any outward-facing page needs its own art direction anchored to 3 outside references (design-gate rule).
+
+**Type scale (all sizes are `clamp()` responsive, display font is Hanken Grotesk):**
+- **H1:** `clamp(48px, 5.5vw, 76px)` @ fw-extrabold (800), letter-spacing -0.04em, line-height 1.04
+- **H2:** `clamp(32px, 3.4vw, 46px)` @ fw-extrabold (800), letter-spacing -0.03em, line-height 1.08
+- **H3:** 26px @ fw-bold (700), letter-spacing -0.02em, line-height 1.08
+- **Eyebrow/Label:** JetBrains Mono, 12px @ fw-medium (500), letter-spacing 0.14em, text-transform uppercase, color c-accent
+- **Body:** 14px @ fw-regular (400), line-height 1.5, color c-text
+- **Data/Meta:** JetBrains Mono, 11px @ fw-regular (400), color c-muted
 
 **Hierarchy rules:**
-- H1 commands attention: must be visibly heavier and larger than H2
+- Display headings (H1/H2/H3) use Hanken Grotesk exclusively; body/labels/data use Inter/JetBrains Mono
+- H1 must be visibly heavier and larger than H2; H2 must command panels and sections
+- H3 is rarely used; prefer H2 for most headings
+- Eyebrows and labels appear in mono, uppercase, with wide letter-spacing (0.14em) to establish authority
 - Body text minimum 14px on desktop, 16px on mobile (readability floor)
-- Supporting text (captions, metadata) 12px, never below (WCAG AA contrast required)
-- Headings use 1.08 line-height (tight). Body uses 1.5 (generous).
+- Supporting text (captions, metadata) 11px, never below (WCAG AA contrast required)
+- Headings use 1.04–1.08 line-height (tight). Body uses 1.5 (generous).
+
+**Owner:** Steffen (brand)
 
 ### 3. Spacing System
 

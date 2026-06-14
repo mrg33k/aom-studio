@@ -2882,8 +2882,9 @@ export default function CornerV4() {
               borderBottom: '1px solid ' + C.border,
             }}>
               <span style={{
-                fontSize: 22, fontWeight: 400, lineHeight: 1, color: C.text,
-                fontFamily: "'Instrument Serif', Georgia, serif",
+                fontSize: 22, fontWeight: 800, lineHeight: 1, color: C.text,
+                fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+                letterSpacing: '-0.03em',
               }}>
                 Slash Commands
               </span>
@@ -3074,8 +3075,9 @@ function NewRoomModal({ kind = 'project', busy = false, error = null, onSubmit, 
         }}
       >
         <div style={{
-          fontFamily: "'Instrument Serif', Georgia, serif",
-          fontSize: 25, lineHeight: 1.1, color: C.text, marginBottom: 6,
+          fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+          fontSize: 25, fontWeight: 800, lineHeight: 1.1, color: C.text, marginBottom: 6,
+          letterSpacing: '-0.03em',
         }}>
           New {label}
         </div>
