@@ -62,8 +62,23 @@ function CornerNav() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <a href="/corner" className="text-xl font-headline font-extrabold tracking-tight text-[#111]">
-          Corner
+        <a
+          href="/corner"
+          className="text-xl font-extrabold tracking-tight lowercase"
+          style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
+          aria-label="corner"
+        >
+          <span
+            style={{
+              background: 'linear-gradient(135deg,#7c3aed,#06b6d4)',
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              color: 'transparent',
+            }}
+          >
+            c
+          </span>
+          <span className="text-[#2d2d2d]">orner</span>
         </a>
         <div className="hidden md:flex items-center gap-8">
           {[
