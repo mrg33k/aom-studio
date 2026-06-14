@@ -144,7 +144,18 @@ function HardCallCard({ item, index, onMarkDone }) {
           checked={item.checked}
           onChange={handleMarkDone}
           disabled={loading || item.checked}
-          style={{ marginTop: 2, cursor: item.checked ? 'default' : 'pointer', accentColor: AMBER }}
+          style={{
+            marginTop: 3,
+            width: 15,
+            height: 15,
+            flexShrink: 0,
+            appearance: 'none',
+            WebkitAppearance: 'none',
+            borderRadius: 3,
+            border: `1px solid ${item.checked ? AMBER : C.border}`,
+            background: item.checked ? AMBER : C.s1,
+            cursor: item.checked ? 'default' : 'pointer',
+          }}
         />
         <span style={{ fontSize: 14, color: item.checked ? C.muted : C.text, fontWeight: 500, flex: 1 }}>
           {dateTitle}
@@ -215,7 +226,18 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
           type="checkbox"
           checked={answered}
           disabled
-          style={{ marginTop: 2, accentColor: AMBER, cursor: 'default' }}
+          style={{
+            marginTop: 3,
+            width: 15,
+            height: 15,
+            flexShrink: 0,
+            appearance: 'none',
+            WebkitAppearance: 'none',
+            borderRadius: 3,
+            border: `1px solid ${answered ? AMBER : C.border}`,
+            background: answered ? AMBER : C.s1,
+            cursor: 'default',
+          }}
         />
         <span style={{ fontSize: 14, color: answered ? C.muted : C.text, fontWeight: 500, flex: 1 }}>
           {room}
