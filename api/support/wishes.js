@@ -77,8 +77,17 @@ export default async function handler(req, res) {
             if (u.wish_id && !latest[u.wish_id]) latest[u.wish_id] = { body: u.body || '', created_at: u.created_at };
           }
           for (const w of wishes) w.latest_response = latest[w.id] || null;
+          // Also flag the 10-min holding note (soft_ack) so the board shows "we replied
+          // automatically" at a glance. Newest soft_ack per wish wins.
+          const sr = await supa(`support_wish_updates?select=wish_id,created_at&kind=eq.soft_ack&wish_id=in.${encodeURIComponent(inList)}&order=created_at.desc`);
+          const sups = await sr.json();
+          const softAck = {};
+          for (const u of Array.isArray(sups) ? sups : []) {
+            if (u.wish_id && !softAck[u.wish_id]) softAck[u.wish_id] = u.created_at;
+          }
+          for (const w of wishes) w.soft_ack_at = softAck[w.id] || null;
         }
-      } catch { /* response enrichment is best-effort; board still renders without it */ }
+      } catch { /* enrichment is best-effort; board still renders without it */ }
     }
     return res.status(200).json({ ok: true, wishes });
   }

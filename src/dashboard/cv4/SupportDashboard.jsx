@@ -571,8 +571,16 @@ function WishRow({ w, dim }) {
               display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{w.latest_response.body}</p>
           </div>
         )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_FAINT }}>{w.source || 'web'}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7, alignItems: 'baseline' }}>
+          <span style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_FAINT }}>{w.source || 'web'}</span>
+            {w.soft_ack_at && !w.latest_response && (
+              <span title={`Holding note auto-sent ${timeAgo(w.soft_ack_at)} — real reply still pending`}
+                style={{ fontFamily: MONO, fontSize: 9.5, color: ACCENT_EMERALD, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 7 }}>●</span> holding note sent
+              </span>
+            )}
+          </span>
           <span style={{ fontSize: 11, color: TEXT_FAINT }}>{open ? 'hide activity' : 'activity'} · {timeAgo(w.created_at)}</span>
         </div>
       </button>
@@ -589,7 +597,7 @@ function WishRow({ w, dim }) {
           {updates && updates.map((u) => (
             <div key={u.id} style={{ display: 'flex', gap: 10, padding: '4px 0', alignItems: 'baseline' }}>
               <span style={{ fontFamily: MONO, fontSize: 10, color: ACCENT_EMERALD, minWidth: 70, textTransform: 'uppercase' }}>
-                {u.kind === 'status_change' ? (STATUS_LABEL[u.status] || u.status) : u.kind}
+                {u.kind === 'status_change' ? (STATUS_LABEL[u.status] || u.status) : u.kind === 'soft_ack' ? 'holding note' : u.kind}
               </span>
               <span style={{ flex: 1, fontSize: 12, color: TEXT_DIM, lineHeight: 1.4 }}>{u.body || ''}</span>
               <span style={{ fontSize: 10, color: TEXT_FAINT }}>{timeAgo(u.created_at)}</span>
