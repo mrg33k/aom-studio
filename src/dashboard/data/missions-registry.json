@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-12T07:13:10.540Z",
+  "generated_at": "2026-06-14T02:23:47.232Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -72,6 +72,20 @@
       "path": "corner/missions/billing-june-15"
     },
     {
+      "slug": "corner:brand",
+      "raw_slug": "brand",
+      "folder_name": "brand",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Brand",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/brand"
+    },
+    {
       "slug": "corner:bridge",
       "raw_slug": "bridge",
       "folder_name": "bridge",
@@ -126,6 +140,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/chat-quality-loop"
+    },
+    {
+      "slug": "corner:chat-reliability",
+      "raw_slug": "chat-reliability",
+      "folder_name": "chat-reliability",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Chat Reliability",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/chat-reliability"
     },
     {
       "slug": "corner:composer",
@@ -184,6 +212,20 @@
       "path": "corner/missions/design-feedback-loop"
     },
     {
+      "slug": "corner:drive-mirror",
+      "raw_slug": "drive-mirror",
+      "folder_name": "drive-mirror",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Drive Mirror",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/drive-mirror"
+    },
+    {
       "slug": "corner:embeddable-agents",
       "raw_slug": "embeddable-agents",
       "folder_name": "embeddable-agents",
@@ -224,6 +266,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/files-in-app"
+    },
+    {
+      "slug": "corner:first-paying-customer",
+      "raw_slug": "first-paying-customer",
+      "folder_name": "first-paying-customer",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "First Paying Customer",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/first-paying-customer"
     },
     {
       "slug": "corner:followups",
@@ -392,6 +448,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/marketing"
+    },
+    {
+      "slug": "corner:master-loop",
+      "raw_slug": "master-loop",
+      "folder_name": "master-loop",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Master Loop",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/master-loop"
     },
     {
       "slug": "corner:mission-marker",
@@ -868,6 +938,104 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/worktree-discipline"
+    },
+    {
+      "slug": "agent-hooks:coding-hook",
+      "raw_slug": "coding-hook",
+      "folder_name": "coding-hook",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Coding Hook",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/coding-hook"
+    },
+    {
+      "slug": "agent-hooks:communications-hook",
+      "raw_slug": "communications-hook",
+      "folder_name": "communications-hook",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Communications Hook",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/communications-hook"
+    },
+    {
+      "slug": "agent-hooks:design-hook",
+      "raw_slug": "design-hook",
+      "folder_name": "design-hook",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Design Hook",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/design-hook"
+    },
+    {
+      "slug": "agent-hooks:learning-hook",
+      "raw_slug": "learning-hook",
+      "folder_name": "learning-hook",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Learning Hook",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/learning-hook"
+    },
+    {
+      "slug": "agent-hooks:predict-impact-hook",
+      "raw_slug": "predict-impact-hook",
+      "folder_name": "predict-impact-hook",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Predict Impact Hook",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/predict-impact-hook"
+    },
+    {
+      "slug": "agent-hooks:research-hook",
+      "raw_slug": "research-hook",
+      "folder_name": "research-hook",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Research Hook",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/research-hook"
+    },
+    {
+      "slug": "agent-hooks:router",
+      "raw_slug": "router",
+      "folder_name": "router",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Router",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/router"
     },
     {
       "slug": "aheadofmarket.com:AOM-ai",
@@ -3365,8 +3533,14 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 62,
-      "in_flight": 62,
+      "total": 67,
+      "in_flight": 67,
+      "done": 0
+    },
+    {
+      "slug": "agent-hooks",
+      "total": 7,
+      "in_flight": 7,
       "done": 0
     },
     {

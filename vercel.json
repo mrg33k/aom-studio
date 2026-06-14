@@ -192,6 +192,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/corner/hero-poc",
+      "destination": "/index.html"
+    },
+    {
       "source": "/dashboard/agent/:slug",
       "destination": "/index.html"
     },

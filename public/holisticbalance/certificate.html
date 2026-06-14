@@ -228,13 +228,13 @@
     }
     /* Courtney's "signed" script — same height as the student canvas so both lines align */
     .cert-sig-script {
-      height: 64px;
+      height: 96px;
       display: flex;
       align-items: flex-end;
       justify-content: center;
-      padding-bottom: 2px;
+      padding-bottom: 4px;
       font-family: 'Cormorant Garamond', serif;
-      font-size: 2rem;
+      font-size: 2.4rem;
       font-style: italic;
       font-weight: 300;
       color: var(--text);
@@ -249,25 +249,39 @@
     .sig-display {
       display: block;
       width: 100%;
-      height: 64px;
+      height: 96px;
       background: transparent;
     }
     .sig-display-wrap.unsigned .sig-display {
-      border: 1px dashed var(--border);
+      border: none;
+    }
+    /* elegant baseline guide for unsigned state */
+    .sig-display-wrap.unsigned::before {
+      content: '';
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: 22px;
+      height: 1px;
+      background: var(--emerald);
+      opacity: 0.22;
+      pointer-events: none;
     }
     .sig-placeholder {
       position: absolute;
       inset: 0;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-end;
+      padding-bottom: 28px;
       pointer-events: none;
-      font-family: 'Jost', sans-serif;
-      font-size: 0.7rem;
-      font-weight: 400;
-      letter-spacing: 0.08em;
-      color: #c9c0b5;
-      text-transform: uppercase;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.95rem;
+      font-style: italic;
+      font-weight: 300;
+      letter-spacing: 0.03em;
+      color: #bbb3a8;
     }
     .sig-clear {
       display: none;
@@ -328,7 +342,7 @@
     .sig-modal-canvas {
       display: block;
       width: 100%;
-      height: 240px;
+      height: 280px;
       background: var(--cream);
       border: 1px solid var(--border);
       cursor: crosshair;
@@ -338,9 +352,9 @@
     .sig-modal-pad::after {
       content: '';
       position: absolute;
-      left: 8%;
-      right: 8%;
-      bottom: 52px;
+      left: 6%;
+      right: 6%;
+      bottom: 60px;
       height: 1px;
       background: var(--emerald);
       opacity: 0.3;
@@ -521,8 +535,8 @@
       </div>
       <div class="cert-sig-block">
         <div class="sig-display-wrap unsigned" id="sigDisplayWrap" title="Click to sign">
-          <canvas class="sig-display" id="sigCanvas" width="600" height="160"></canvas>
-          <div class="sig-placeholder" id="sigPlaceholder">Click to sign</div>
+          <canvas class="sig-display" id="sigCanvas" width="600" height="240"></canvas>
+          <div class="sig-placeholder" id="sigPlaceholder">Sign your name</div>
         </div>
         <div class="cert-sig-line" style="margin-top:0;"></div>
         <div class="cert-sig-name" id="studentSigName">&nbsp;</div>
@@ -533,7 +547,7 @@
 
     <div class="cert-note">
       <div class="cert-note-label">A note from Courtney</div>
-      <p class="cert-note-text">You showed up for yourself through every module of this course, and I hope you feel very proud of the progress you&rsquo;ve made &mdash; you earned this. Remember: you are so supported, every step of the way.</p>
+      <p class="cert-note-text">Completing this course takes real commitment &mdash; and you showed up for yourself every step of the way. I hope you feel genuinely proud of the progress you&rsquo;ve made, because you have truly earned this. You are so supported, and this is only the beginning of what&rsquo;s possible for you.</p>
       <div class="cert-note-sign">&mdash; Courtney</div>
     </div>
 
@@ -547,7 +561,7 @@
       <div class="sig-modal-title">Sign your certificate</div>
       <div class="sig-modal-hint">Draw your signature on the line below &mdash; finger or mouse</div>
       <div class="sig-modal-pad">
-        <canvas class="sig-modal-canvas" id="sigModalCanvas" width="900" height="320"></canvas>
+        <canvas class="sig-modal-canvas" id="sigModalCanvas" width="900" height="400"></canvas>
       </div>
       <div class="sig-modal-actions">
         <div class="left">
