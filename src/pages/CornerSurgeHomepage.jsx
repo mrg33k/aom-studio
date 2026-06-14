@@ -728,11 +728,11 @@ function HowItWorksSection() {
   )
 }
 
-// --- FINAL CTA SECTION (OFF-WHITE CARD) ---
+// --- FINAL CTA SECTION (DARK CHARCOAL) ---
 function FinalCtaSection() {
   return (
-    <Section id="cta" bgColor={SURGE.white} className="py-24 sm:py-40 px-6 relative overflow-hidden">
-      {/* Subtle background accent on white ground */}
+    <Section id="cta" bgColor={SURGE.charcoal} className="py-24 sm:py-40 px-6 relative overflow-hidden">
+      {/* Subtle background accent on dark ground */}
       <div
         className="absolute inset-0 z-0"
         style={{
@@ -742,7 +742,7 @@ function FinalCtaSection() {
       />
 
       <div className="max-w-3xl mx-auto relative z-10">
-        {/* CENTERED CTA CONTAINER ON WHITE BACKGROUND */}
+        {/* CENTERED CTA CONTAINER ON DARK BACKGROUND */}
         <div
           className="text-center"
         >
@@ -754,7 +754,7 @@ function FinalCtaSection() {
           >
             3x faster
           </div>
-          <p style={{ color: '#999', fontSize: '16px', marginTop: '4px' }}>
+          <p style={{ color: '#b8b8b8', fontSize: '16px', marginTop: '4px' }}>
             Get more done in less time
           </p>
         </div>
@@ -762,7 +762,7 @@ function FinalCtaSection() {
         {/* Headline */}
         <h2
           className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6"
-          style={{ color: SURGE.charcoal }}
+          style={{ color: SURGE.white }}
         >
           Ready to operate like a team of ten?
         </h2>
@@ -770,7 +770,7 @@ function FinalCtaSection() {
         {/* Supporting Copy */}
         <p
           className="text-base sm:text-lg md:text-xl leading-relaxed mb-12"
-          style={{ color: '#555', maxWidth: '55ch', margin: '0 auto 48px' }}
+          style={{ color: '#a8a8a8', maxWidth: '55ch', margin: '0 auto 48px' }}
         >
           Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
         </p>
@@ -791,8 +791,8 @@ function FinalCtaSection() {
             href="#promise"
             className="w-full sm:w-auto px-8 py-4 font-bold text-lg rounded-lg transition-all duration-200"
             style={{
-              color: SURGE.charcoal,
-              borderColor: '#ddd',
+              color: SURGE.white,
+              borderColor: '#555',
               border: '2px solid',
             }}
           >
@@ -803,10 +803,11 @@ function FinalCtaSection() {
         {/* Trust Copy */}
         <p
           className="text-xs sm:text-sm"
-          style={{ color: '#999' }}
+          style={{ color: '#888' }}
         >
           No credit card. No commitment. Book now.
         </p>
+      </div>
       </div>
     </Section>
   )
