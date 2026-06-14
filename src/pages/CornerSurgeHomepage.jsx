@@ -249,23 +249,23 @@ function ProblemSection() {
           Corner exists because the best operators in the world are being limited by the time they spend on everything except their actual work.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {problems.map((problem, i) => (
             <div
               key={i}
-              className="p-6 sm:p-8 rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl"
+              className="p-8 sm:p-10 rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl"
               style={{
                 backgroundColor: '#1a1a1a',
                 borderColor: '#444',
               }}
             >
               <h3
-                className="text-lg sm:text-xl font-bold mb-3 leading-tight"
+                className="text-lg sm:text-xl font-bold mb-4 leading-tight"
                 style={{ color: SURGE.white }}
               >
                 {problem.title}
               </h3>
-              <p className="text-sm sm:text-base" style={{ color: '#989898' }}>{problem.body}</p>
+              <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{problem.body}</p>
             </div>
           ))}
         </div>
@@ -320,20 +320,20 @@ function PromiseSection() {
           Managed agents run your entire business from one system. You open your inbox in the morning. The work is already moving.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {features.map((feature, i) => (
             <div
               key={i}
-              className="p-6 sm:p-8 rounded-2xl transition-all duration-300 hover:shadow-lg"
+              className="p-8 sm:p-10 rounded-2xl transition-all duration-300 hover:shadow-lg"
               style={{
                 backgroundColor: '#f5f5f5',
                 border: '2px solid #e5e5e5',
               }}
             >
-              <h3 className="text-base sm:text-lg font-bold mb-2" style={{ color: SURGE.charcoal }}>
+              <h3 className="text-lg sm:text-xl font-bold mb-3" style={{ color: SURGE.charcoal }}>
                 {feature.name}
               </h3>
-              <p className="text-sm sm:text-base" style={{ color: '#888' }}>{feature.desc}</p>
+              <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#555' }}>{feature.desc}</p>
             </div>
           ))}
         </div>
@@ -390,7 +390,7 @@ function HowItWorksSection() {
               >
                 {step.title}
               </h3>
-              <p className="text-sm sm:text-base" style={{ color: '#b0b0b0' }}>{step.body}</p>
+              <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#c0c0c0' }}>{step.body}</p>
               {i < steps.length - 1 && (
                 <div
                   className="absolute right-0 top-1/2 hidden md:block"
