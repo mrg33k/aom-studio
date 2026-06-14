@@ -62,20 +62,23 @@ const staggerContainer = {
 // --- SECTION WRAPPER ---
 function Section({ children, id, className = '', bgColor = SURGE.charcoal }) {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-60px' })
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
-    <motion.section
+    <section
       ref={ref}
       id={id}
-      initial="hidden"
-      animate={isInView ? 'visible' : 'hidden'}
-      variants={staggerContainer}
       className={className}
       style={{ backgroundColor: bgColor }}
     >
-      {children}
-    </motion.section>
+      <motion.div
+        initial="hidden"
+        animate={isInView ? 'visible' : 'visible'}
+        variants={staggerContainer}
+      >
+        {children}
+      </motion.div>
+    </section>
   )
 }
 
