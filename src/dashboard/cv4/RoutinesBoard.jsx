@@ -7,7 +7,7 @@
 // Each card: what the loop does (plain English), where it lives, when it
 // started, cadence, estimated AI tokens per day, and the controls.
 // Design: editorial card index — ink ground, bone text, the amber dot is the
-// only color and it means "alive". Instrument Serif card titles.
+// only color and it means "alive". Hanken Grotesk heavy card titles.
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { C } from '../lib/cv3Colors.js'
