@@ -1,6 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronLeft, Check, Calendar, Clock, User, Mail, Building2, X } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Check, Calendar, Clock, ArrowUpRight } from 'lucide-react';
+
+// --- SURGE COLORS & SYSTEM ---
+const SURGE = {
+  purple: '#7c3aed',
+  cyan: '#06b6d4',
+  charcoal: '#2d2d2d',
+  white: '#fafafa',
+  gradient: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+  lightGray: '#f5f5f5',
+  border: '#e5e5e5',
+  text: {
+    primary: '#2d2d2d',
+    secondary: '#666',
+    tertiary: '#a1a1aa',
+  },
+};
 
 // --- FAVICON & META SWAP ON MOUNT ---
 const useCornerPageMeta = () => {
@@ -22,7 +38,7 @@ const useCornerPageMeta = () => {
     if (ogTitle) ogTitle.content = 'corner — book your intro call'
 
     const ogDesc = document.querySelector('meta[property="og:description"]')
-    if (ogDesc) ogDesc.content = 'Schedule your 20-minute discovery call.'
+    if (ogDesc) ogDesc.content = 'Schedule your free 20–30 minute discovery call.'
 
     // Restore on unmount
     return () => {
@@ -36,12 +52,27 @@ const useCornerPageMeta = () => {
 
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] } },
+  hidden: { opacity: 0, y: 20 },
+  visible: (custom = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: custom * 0.08,
+      duration: 0.6,
+      ease: 'easeOut',
+    },
+  }),
 };
 
-const stagger = {
-  visible: { transition: { staggerChildren: 0.08 } },
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
 };
 
 // --- NAV ---
@@ -55,48 +86,38 @@ function CornerNav() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled
-          ? 'bg-white border-b border-[#E5E7EB]'
+          ? 'bg-black/80 backdrop-blur-sm border-b border-white/10'
           : 'bg-transparent border-b border-transparent'
       }`}
     >
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        {/* Wordmark */}
         <a
           href="/corner"
-          className="text-xl font-extrabold tracking-tight lowercase"
-          style={{ fontFamily: "'Outfit', system-ui, sans-serif" }}
-          aria-label="corner"
+          className="font-bold text-xl tracking-tight"
+          style={{ fontFamily: "'Outfit', system-ui, sans-serif", color: SURGE.white }}
         >
           <span
             style={{
-              background: 'linear-gradient(135deg,#7c3aed,#06b6d4)',
-              WebkitBackgroundClip: 'text',
+              background: SURGE.gradient,
               backgroundClip: 'text',
-              color: 'transparent',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
             }}
           >
-            c
+            corner
           </span>
-          <span className="text-[#2d2d2d]">orner</span>
         </a>
-        <div className="hidden md:flex items-center gap-8">
-          {[
-            { label: 'How It Works', href: '#how-it-works' },
-            { label: 'Pricing', href: '/corner#pricing' },
-          ].map((l) => (
-            <a
-              key={l.label}
-              href={l.href}
-              className="text-[14px] font-medium text-[#555] hover:text-[#111] transition-colors"
-            >
-              {l.label}
-            </a>
-          ))}
-        </div>
+
+        {/* CTA */}
         <a
           href="/corner"
-          className="hidden md:inline-flex items-center gap-2 text-[#111] text-[14px] font-semibold hover:text-[#E85D26] transition-colors"
+          className="text-[14px] font-bold px-4 py-2 rounded-lg transition-all text-white hover:shadow-lg"
+          style={{
+            background: SURGE.gradient,
+          }}
         >
           Back to Corner
         </a>
@@ -110,7 +131,8 @@ function SectionLabel({ children }) {
   return (
     <motion.p
       variants={fadeUp}
-      className="text-[11px] font-mono font-bold tracking-[0.25em] uppercase mb-5 text-[#999]"
+      className="text-[11px] font-mono font-bold tracking-[0.25em] uppercase mb-5"
+      style={{ color: SURGE.text.tertiary }}
     >
       {children}
     </motion.p>
@@ -220,36 +242,42 @@ export default function BookCorner() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#0A0A08] font-body">
+    <div className="min-h-screen" style={{ backgroundColor: SURGE.white }}>
       <CornerNav />
 
       {/* HERO SECTION */}
-      <section className="min-h-screen flex items-center justify-center px-6 pt-32 pb-24">
+      <section className="min-h-screen flex items-center justify-center px-6 pt-32 pb-24" style={{ backgroundColor: SURGE.charcoal }}>
         <div className="max-w-2xl mx-auto w-full">
           <motion.div
             initial="hidden"
             animate="visible"
-            variants={stagger}
+            variants={containerVariants}
             className="text-center"
           >
             <motion.h1
+              custom={0}
               variants={fadeUp}
-              className="text-[56px] md:text-[72px] font-headline font-black tracking-tight leading-[1.0] text-[#111] mb-6"
+              className="text-[48px] md:text-[64px] font-bold tracking-tight leading-tight mb-6"
+              style={{ fontFamily: "'Outfit', system-ui, sans-serif", color: SURGE.white }}
             >
               Book Your Intro Call
             </motion.h1>
 
             <motion.p
+              custom={1}
               variants={fadeUp}
-              className="text-xl md:text-2xl text-[#555] leading-relaxed max-w-[600px] mx-auto mb-12"
+              className="text-base md:text-xl leading-relaxed max-w-[600px] mx-auto mb-12"
+              style={{ color: '#e4e4e7' }}
             >
-              Get a free 20–30 minute walkthrough of Corner. No sales pitch, just a real conversation about your business.
+              Get a free 20–30 minute discovery call. We'll walk through how Corner helps your business. No sales pitch, no obligation.
             </motion.p>
 
             {/* MAIN BOOKING CARD */}
             <motion.div
+              custom={2}
               variants={fadeUp}
-              className="bg-white border border-[#E5E7EB] rounded-sm shadow-xl overflow-hidden max-w-4xl mx-auto"
+              className="overflow-hidden max-w-4xl mx-auto rounded-lg shadow-xl"
+              style={{ backgroundColor: SURGE.white, border: `2px solid ${SURGE.border}` }}
             >
               <AnimatePresence mode="wait">
                 {/* STEP 1: SELECT TIME SLOT */}
@@ -262,10 +290,13 @@ export default function BookCorner() {
                     className="p-8 md:p-12"
                   >
                     <div className="mb-10">
-                      <h2 className="text-3xl md:text-4xl font-headline font-black tracking-tight text-[#111] mb-3">
+                      <h2
+                        className="text-3xl md:text-4xl font-bold tracking-tight mb-3"
+                        style={{ fontFamily: "'Outfit', system-ui, sans-serif", color: SURGE.charcoal }}
+                      >
                         Select Your Time
                       </h2>
-                      <p className="text-[#666] text-base md:text-lg">
+                      <p className="text-base md:text-lg" style={{ color: SURGE.text.secondary }}>
                         Pick a slot that works best. All times are in Arizona time (MST).
                       </p>
                     </div>
@@ -278,12 +309,16 @@ export default function BookCorner() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: idx * 0.05 }}
-                          className="border border-[#E5E7EB] rounded-sm p-5 hover:border-[#E85D26] transition-colors cursor-pointer"
+                          className="border-2 rounded-lg p-6 cursor-pointer transition-all duration-200 hover:shadow-md"
+                          style={{
+                            borderColor: selectedSlot === slot ? SURGE.purple : SURGE.border,
+                            backgroundColor: selectedSlot === slot ? '#f3f0ff' : '#fafafa',
+                          }}
                           onClick={() => setSelectedSlot(slot)}
                         >
-                          <div className="flex items-center gap-3 mb-4">
-                            <Calendar size={18} className="text-[#E85D26]" />
-                            <span className="text-sm font-semibold text-[#111]">{slot.dateLabel}</span>
+                          <div className="flex items-center gap-3 mb-5">
+                            <Calendar size={20} style={{ color: SURGE.purple }} />
+                            <span className="text-sm font-bold" style={{ color: SURGE.charcoal }}>{slot.dateLabel}</span>
                           </div>
 
                           <div className="grid grid-cols-1 gap-2">
@@ -294,11 +329,12 @@ export default function BookCorner() {
                                   e.stopPropagation();
                                   handleSlotSelect(slot, t);
                                 }}
-                                className={`w-full px-4 py-3 text-sm font-semibold rounded-sm transition-all ${
-                                  selectedSlot === slot && selectedTime === t
-                                    ? 'bg-[#E85D26] text-white border border-[#E85D26]'
-                                    : 'bg-[#F8F7F6] text-[#111] border border-[#E5E7EB] hover:border-[#E85D26] hover:bg-[#FFF5F0]'
-                                }`}
+                                className="w-full px-4 py-3 text-sm font-semibold rounded-lg transition-all"
+                                style={{
+                                  backgroundColor: selectedSlot === slot && selectedTime === t ? SURGE.purple : '#ffffff',
+                                  color: selectedSlot === slot && selectedTime === t ? '#ffffff' : SURGE.charcoal,
+                                  border: selectedSlot === slot && selectedTime === t ? `2px solid ${SURGE.purple}` : `2px solid ${SURGE.border}`,
+                                }}
                               >
                                 <div className="flex items-center justify-between">
                                   <span className="flex items-center gap-2">
@@ -321,11 +357,12 @@ export default function BookCorner() {
                       <button
                         onClick={() => setStep(2)}
                         disabled={!selectedSlot || !selectedTime}
-                        className={`flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all ${
-                          selectedSlot && selectedTime
-                            ? 'bg-[#E85D26] hover:bg-[#D14F1E] text-white cursor-pointer'
-                            : 'bg-[#E5E7EB] text-[#999] cursor-not-allowed'
-                        }`}
+                        className="flex items-center gap-2 px-8 py-4 rounded-lg font-bold transition-all text-white"
+                        style={{
+                          background: selectedSlot && selectedTime ? SURGE.gradient : '#ccc',
+                          cursor: selectedSlot && selectedTime ? 'pointer' : 'not-allowed',
+                          opacity: selectedSlot && selectedTime ? 1 : 0.6,
+                        }}
                       >
                         Continue
                         <ChevronRight size={16} />
@@ -344,10 +381,13 @@ export default function BookCorner() {
                     className="p-8 md:p-12"
                   >
                     <div className="mb-10">
-                      <h2 className="text-3xl md:text-4xl font-headline font-black tracking-tight text-[#111] mb-3">
+                      <h2
+                        className="text-3xl md:text-4xl font-bold tracking-tight mb-3"
+                        style={{ fontFamily: "'Outfit', system-ui, sans-serif", color: SURGE.charcoal }}
+                      >
                         Your Details
                       </h2>
-                      <p className="text-[#666] text-base md:text-lg">
+                      <p className="text-base md:text-lg" style={{ color: SURGE.text.secondary }}>
                         A quick intro so we know who to expect. We'll send a confirmation email to this address.
                       </p>
                     </div>
@@ -355,7 +395,10 @@ export default function BookCorner() {
                     {/* FORM FIELDS */}
                     <div className="space-y-6 mb-10">
                       <div>
-                        <label className="block text-sm font-mono font-bold tracking-[0.25em] uppercase text-[#999] mb-3">
+                        <label
+                          className="block text-sm font-mono font-bold tracking-[0.25em] uppercase mb-3"
+                          style={{ color: SURGE.text.tertiary }}
+                        >
                           Full Name
                         </label>
                         <input
@@ -363,12 +406,20 @@ export default function BookCorner() {
                           value={formData.name}
                           onChange={(e) => handleFormChange('name', e.target.value)}
                           placeholder="Your name"
-                          className="w-full px-6 py-4 bg-[#F8F7F6] border border-[#E5E7EB] rounded-sm text-[#111] placeholder-[#999] focus:outline-none focus:border-[#E85D26] focus:bg-white transition-all text-base"
+                          className="w-full px-6 py-4 border-2 rounded-lg text-base transition-all focus:outline-none"
+                          style={{
+                            backgroundColor: SURGE.lightGray,
+                            borderColor: formData.name ? SURGE.purple : SURGE.border,
+                            color: SURGE.charcoal,
+                          }}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-mono font-bold tracking-[0.25em] uppercase text-[#999] mb-3">
+                        <label
+                          className="block text-sm font-mono font-bold tracking-[0.25em] uppercase mb-3"
+                          style={{ color: SURGE.text.tertiary }}
+                        >
                           Work Email
                         </label>
                         <input
@@ -376,12 +427,20 @@ export default function BookCorner() {
                           value={formData.email}
                           onChange={(e) => handleFormChange('email', e.target.value)}
                           placeholder="you@company.com"
-                          className="w-full px-6 py-4 bg-[#F8F7F6] border border-[#E5E7EB] rounded-sm text-[#111] placeholder-[#999] focus:outline-none focus:border-[#E85D26] focus:bg-white transition-all text-base"
+                          className="w-full px-6 py-4 border-2 rounded-lg text-base transition-all focus:outline-none"
+                          style={{
+                            backgroundColor: SURGE.lightGray,
+                            borderColor: formData.email ? SURGE.purple : SURGE.border,
+                            color: SURGE.charcoal,
+                          }}
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-mono font-bold tracking-[0.25em] uppercase text-[#999] mb-3">
+                        <label
+                          className="block text-sm font-mono font-bold tracking-[0.25em] uppercase mb-3"
+                          style={{ color: SURGE.text.tertiary }}
+                        >
                           Company (Optional)
                         </label>
                         <input
@@ -389,22 +448,33 @@ export default function BookCorner() {
                           value={formData.company}
                           onChange={(e) => handleFormChange('company', e.target.value)}
                           placeholder="Company name"
-                          className="w-full px-6 py-4 bg-[#F8F7F6] border border-[#E5E7EB] rounded-sm text-[#111] placeholder-[#999] focus:outline-none focus:border-[#E85D26] focus:bg-white transition-all text-base"
+                          className="w-full px-6 py-4 border-2 rounded-lg text-base transition-all focus:outline-none"
+                          style={{
+                            backgroundColor: SURGE.lightGray,
+                            borderColor: formData.company ? SURGE.purple : SURGE.border,
+                            color: SURGE.charcoal,
+                          }}
                         />
                       </div>
                     </div>
 
                     {/* SCHEDULED TIME RECAP */}
-                    <div className="bg-[#FFF5F0] border border-[#FFE5D3] rounded-sm p-6 mb-10">
-                      <p className="text-sm text-[#666] font-mono font-bold tracking-[0.25em] uppercase mb-2">
+                    <div className="border-l-4 rounded-lg p-6 mb-10" style={{ borderLeftColor: SURGE.purple, backgroundColor: '#f3f0ff' }}>
+                      <p
+                        className="text-sm font-mono font-bold tracking-[0.25em] uppercase mb-3"
+                        style={{ color: SURGE.text.tertiary }}
+                      >
                         Scheduled Time
                       </p>
-                      <div className="flex items-center gap-4 text-lg font-semibold text-[#111]">
-                        <Calendar size={18} className="text-[#E85D26]" />
-                        <span>{selectedSlot.dateLabel}</span>
-                        <span className="text-[#E85D26]">—</span>
-                        <Clock size={18} className="text-[#E85D26]" />
-                        <span>{selectedTime.display} MST</span>
+                      <div className="flex flex-col gap-3 text-lg font-semibold" style={{ color: SURGE.charcoal }}>
+                        <div className="flex items-center gap-2">
+                          <Calendar size={18} style={{ color: SURGE.purple }} />
+                          <span>{selectedSlot.dateLabel}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock size={18} style={{ color: SURGE.purple }} />
+                          <span>{selectedTime.display} MST</span>
+                        </div>
                       </div>
                     </div>
 
@@ -412,7 +482,11 @@ export default function BookCorner() {
                     <div className="flex gap-4 justify-between">
                       <button
                         onClick={() => setStep(1)}
-                        className="flex items-center gap-2 px-8 py-4 border border-[#E5E7EB] rounded-full font-semibold text-[#111] hover:border-[#E85D26] transition-all"
+                        className="flex items-center gap-2 px-8 py-4 border-2 rounded-lg font-bold transition-all"
+                        style={{
+                          borderColor: SURGE.border,
+                          color: SURGE.charcoal,
+                        }}
                       >
                         <ChevronLeft size={16} />
                         Back
@@ -420,11 +494,12 @@ export default function BookCorner() {
                       <button
                         onClick={() => setStep(3)}
                         disabled={!isFormValid}
-                        className={`flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all ${
-                          isFormValid
-                            ? 'bg-[#E85D26] hover:bg-[#D14F1E] text-white cursor-pointer'
-                            : 'bg-[#E5E7EB] text-[#999] cursor-not-allowed'
-                        }`}
+                        className="flex items-center gap-2 px-8 py-4 rounded-lg font-bold transition-all text-white"
+                        style={{
+                          background: isFormValid ? SURGE.gradient : '#ccc',
+                          cursor: isFormValid ? 'pointer' : 'not-allowed',
+                          opacity: isFormValid ? 1 : 0.6,
+                        }}
                       >
                         Review
                         <ChevronRight size={16} />
@@ -443,42 +518,54 @@ export default function BookCorner() {
                     className="p-8 md:p-12"
                   >
                     <div className="mb-10">
-                      <h2 className="text-3xl md:text-4xl font-headline font-black tracking-tight text-[#111] mb-3">
+                      <h2
+                        className="text-3xl md:text-4xl font-bold tracking-tight mb-3"
+                        style={{ fontFamily: "'Outfit', system-ui, sans-serif", color: SURGE.charcoal }}
+                      >
                         Confirm Your Booking
                       </h2>
-                      <p className="text-[#666] text-base md:text-lg">
+                      <p className="text-base md:text-lg" style={{ color: SURGE.text.secondary }}>
                         Review everything one more time. We'll send a confirmation email to {formData.email}.
                       </p>
                     </div>
 
                     {/* BOOKING SUMMARY */}
                     <div className="space-y-6 mb-10">
-                      <div className="border-l-4 border-[#E85D26] pl-6 py-4">
-                        <p className="text-xs font-mono font-bold tracking-[0.25em] uppercase text-[#999] mb-2">
+                      <div className="border-l-4 rounded-lg pl-6 py-4" style={{ borderLeftColor: SURGE.purple, backgroundColor: '#f3f0ff' }}>
+                        <p
+                          className="text-xs font-mono font-bold tracking-[0.25em] uppercase mb-2"
+                          style={{ color: SURGE.text.tertiary }}
+                        >
                           Date & Time
                         </p>
-                        <p className="text-lg font-semibold text-[#111]">
+                        <p className="text-lg font-semibold" style={{ color: SURGE.charcoal }}>
                           {selectedSlot.dateLabel} at {selectedTime.display} MST
                         </p>
                       </div>
 
-                      <div className="border-l-4 border-[#E85D26] pl-6 py-4">
-                        <p className="text-xs font-mono font-bold tracking-[0.25em] uppercase text-[#999] mb-2">
+                      <div className="border-l-4 rounded-lg pl-6 py-4" style={{ borderLeftColor: SURGE.purple, backgroundColor: '#f3f0ff' }}>
+                        <p
+                          className="text-xs font-mono font-bold tracking-[0.25em] uppercase mb-2"
+                          style={{ color: SURGE.text.tertiary }}
+                        >
                           Duration
                         </p>
-                        <p className="text-lg font-semibold text-[#111]">
+                        <p className="text-lg font-semibold" style={{ color: SURGE.charcoal }}>
                           20–30 minutes (via Zoom)
                         </p>
                       </div>
 
-                      <div className="border-l-4 border-[#E85D26] pl-6 py-4">
-                        <p className="text-xs font-mono font-bold tracking-[0.25em] uppercase text-[#999] mb-2">
+                      <div className="border-l-4 rounded-lg pl-6 py-4" style={{ borderLeftColor: SURGE.purple, backgroundColor: '#f3f0ff' }}>
+                        <p
+                          className="text-xs font-mono font-bold tracking-[0.25em] uppercase mb-2"
+                          style={{ color: SURGE.text.tertiary }}
+                        >
                           Your Info
                         </p>
-                        <div className="space-y-2 text-[#111]">
+                        <div className="space-y-2" style={{ color: SURGE.charcoal }}>
                           <p className="text-base font-semibold">{formData.name}</p>
                           <p className="text-base">{formData.email}</p>
-                          {formData.company && <p className="text-base text-[#666]">{formData.company}</p>}
+                          {formData.company && <p className="text-base" style={{ color: SURGE.text.secondary }}>{formData.company}</p>}
                         </div>
                       </div>
                     </div>
@@ -488,9 +575,13 @@ export default function BookCorner() {
                       <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-50 border border-red-200 rounded-sm p-4 mb-6"
+                        className="border-2 rounded-lg p-4 mb-6"
+                        style={{
+                          borderColor: '#fca5a5',
+                          backgroundColor: '#fee2e2',
+                        }}
                       >
-                        <p className="text-red-800 font-semibold text-sm">
+                        <p className="font-semibold text-sm" style={{ color: '#dc2626' }}>
                           Something went wrong. Please try again.
                         </p>
                       </motion.div>
@@ -501,7 +592,12 @@ export default function BookCorner() {
                       <button
                         onClick={() => setStep(2)}
                         disabled={isSubmitting}
-                        className="flex items-center gap-2 px-8 py-4 border border-[#E5E7EB] rounded-full font-semibold text-[#111] hover:border-[#E85D26] transition-all disabled:opacity-50"
+                        className="flex items-center gap-2 px-8 py-4 border-2 rounded-lg font-bold transition-all"
+                        style={{
+                          borderColor: SURGE.border,
+                          color: SURGE.charcoal,
+                          opacity: isSubmitting ? 0.5 : 1,
+                        }}
                       >
                         <ChevronLeft size={16} />
                         Edit
@@ -509,11 +605,12 @@ export default function BookCorner() {
                       <button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
-                        className={`flex items-center gap-2 px-8 py-4 rounded-full font-semibold transition-all ${
-                          isSubmitting
-                            ? 'bg-[#E5E7EB] text-[#999] cursor-not-allowed'
-                            : 'bg-[#E85D26] hover:bg-[#D14F1E] text-white cursor-pointer'
-                        }`}
+                        className="flex items-center gap-2 px-8 py-4 rounded-lg font-bold transition-all text-white"
+                        style={{
+                          background: isSubmitting ? '#ccc' : SURGE.gradient,
+                          cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                          opacity: isSubmitting ? 0.6 : 1,
+                        }}
                       >
                         {isSubmitting ? (
                           <>
@@ -544,26 +641,31 @@ export default function BookCorner() {
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-                      className="inline-flex items-center justify-center w-16 h-16 bg-[#22C55E] rounded-full mb-6"
+                      className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6"
+                      style={{ background: SURGE.gradient }}
                     >
                       <Check size={32} className="text-white" />
                     </motion.div>
 
-                    <h2 className="text-4xl md:text-5xl font-headline font-black tracking-tight text-[#111] mb-4">
+                    <h2
+                      className="text-4xl md:text-5xl font-bold tracking-tight mb-4"
+                      style={{ fontFamily: "'Outfit', system-ui, sans-serif", color: SURGE.charcoal }}
+                    >
                       You're All Set
                     </h2>
 
-                    <p className="text-lg text-[#666] mb-6 max-w-md mx-auto leading-relaxed">
-                      Check your email at <span className="font-semibold text-[#111]">{formData.email}</span> for a confirmation and Zoom link.
+                    <p className="text-lg mb-6 max-w-md mx-auto leading-relaxed" style={{ color: SURGE.text.secondary }}>
+                      Check your email at <span className="font-semibold" style={{ color: SURGE.charcoal }}>{formData.email}</span> for a confirmation and Zoom link.
                     </p>
 
-                    <p className="text-base text-[#999] mb-10">
+                    <p className="text-base mb-10" style={{ color: SURGE.text.tertiary }}>
                       We'll see you on {selectedSlot.dateLabel} at {selectedTime.display}!
                     </p>
 
                     <a
                       href="/corner"
-                      className="inline-flex items-center gap-2 px-8 py-4 bg-[#E85D26] hover:bg-[#D14F1E] text-white rounded-full font-semibold transition-all"
+                      className="inline-flex items-center gap-2 px-8 py-4 rounded-lg font-bold transition-all text-white"
+                      style={{ background: SURGE.gradient }}
                     >
                       Back to Corner
                       <ChevronRight size={16} />
@@ -581,21 +683,12 @@ export default function BookCorner() {
             transition={{ delay: 0.4 }}
             className="mt-16 text-center"
           >
-            <p className="text-sm text-[#999] max-w-md mx-auto leading-relaxed">
-              Free intro call. No sales pitch. No credit card required. We'll give you honest feedback on how Corner could help your business.
+            <p className="text-sm max-w-md mx-auto leading-relaxed" style={{ color: SURGE.text.tertiary }}>
+              Free discovery call. No sales pitch. No credit card required. Just a real conversation about how Corner helps your business.
             </p>
           </motion.div>
         </div>
       </section>
-
-      {/* FOOTER */}
-      <footer className="bg-[#F8F7F6] border-t border-[#E5E7EB] py-12 px-6">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-sm text-[#999]">
-            © 2026 Ahead of Market. All rights reserved.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
