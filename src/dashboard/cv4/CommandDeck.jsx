@@ -11,7 +11,7 @@ import { C } from '../lib/cv3Colors.js'
 const AMBER = 'var(--c-yellow)'
 const FONT = {
   body: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
-  display: "'Instrument Serif', Georgia, serif",
+  display: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
   mono: "'JetBrains Mono', monospace",
 }
 
@@ -200,7 +200,8 @@ function HardCallCard({ item, index, onMarkDone }) {
           fontFamily: FONT.display,
           fontSize: 14,
           color: item.checked ? C.muted : C.text,
-          fontWeight: 500,
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
           flex: 1,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -763,8 +764,8 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
       {/* Header: title + close (the loop icon in the room header also toggles it) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <h2 style={{
-          margin: 0, fontSize: 28, fontWeight: 400, color: C.text,
-          fontFamily: FONT.display, letterSpacing: '-0.01em',
+          margin: 0, fontSize: 28, fontWeight: 800, color: C.text,
+          fontFamily: FONT.display, letterSpacing: '-0.03em',
         }}>
           Command Deck<span style={{ color: AMBER }}>.</span>
         </h2>

@@ -6,7 +6,7 @@
 
 [data-cv4] {
   --cv4-menu-font: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  --cv4-menu-display: 'Instrument Serif', Georgia, serif;
+  --cv4-menu-display: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   --cv4-menu-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
   --cv4-menu-accent: var(--c-warning);
   --cv4-menu-row: rgba(255, 255, 255, 0.018);

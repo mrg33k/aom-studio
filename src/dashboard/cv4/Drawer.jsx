@@ -35,7 +35,7 @@ function byMissionRecency(a, b) {
 const PANEL_WIDTH = 300
 const MENU = {
   bodyFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
-  displayFont: "'Instrument Serif', Georgia, serif",
+  displayFont: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
   monoFont: "'JetBrains Mono', monospace",
   amber: 'var(--c-yellow)',
 }

@@ -15,7 +15,7 @@ import { authFetch } from '../lib/authFetch.js'
 
 const FONT = {
   body: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
-  display: "'Instrument Serif', Georgia, serif",
+  display: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
   mono: "'JetBrains Mono', monospace",
 }
 const AMBER = 'var(--c-yellow)'
@@ -112,8 +112,8 @@ export default function RoutinesBoard({ worldId, onClose, onNewRoutine }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 4 }}>
         <h1 style={{
-          margin: 0, fontFamily: FONT.display, fontWeight: 400,
-          fontSize: 34, color: C.text, letterSpacing: '-0.01em',
+          margin: 0, fontFamily: FONT.display, fontWeight: 800,
+          fontSize: 34, color: C.text, letterSpacing: '-0.03em',
         }}>Routines<span style={{ color: AMBER }}>.</span></h1>
         {routines !== null && (
           <span style={{ fontFamily: FONT.mono, fontSize: 11, color: C.muted }}>
@@ -209,7 +209,7 @@ function RoutineCard({ r, system = false, busy, onPause, onResume, onRunNow, onD
           boxShadow: running ? '0 0 0 3px rgba(234,179,8,0.14)' : 'none',
         }} />
         <span style={{
-          fontFamily: FONT.display, fontSize: 18, color: errored ? '#FCA5A5' : C.text,
+          fontFamily: FONT.display, fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', color: errored ? '#FCA5A5' : C.text,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
         }}>{name}</span>
         <span style={{ fontFamily: FONT.mono, fontSize: 9.5, color: C.dim, flexShrink: 0 }}>
