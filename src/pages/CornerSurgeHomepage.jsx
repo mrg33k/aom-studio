@@ -152,8 +152,14 @@ function HeroSection() {
       <div
         className="relative z-10 w-full h-full flex flex-col items-center justify-center px-6"
       >
+        {/* Readability scrim */}
         <div
-          className="text-center max-w-3xl"
+          className="absolute inset-0 bg-black/40"
+          style={{ zIndex: 5 }}
+        />
+
+        <div
+          className="text-center max-w-3xl relative z-20"
         >
           <h1
             className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6"

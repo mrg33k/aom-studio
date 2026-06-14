@@ -155,41 +155,7 @@ function CornerAsciiHeroPoc() {
         ctx.shadowColor = 'transparent'
       })
 
-      // Headline: "Your business just got an upgrade"
-      const headlineY = canvas.height * 0.35
-      const headlineFontSize = canvas.height < 700 ? 24 : 48
-      ctx.font = `bold ${headlineFontSize}px Outfit, sans-serif`
-      ctx.fillStyle = '#fafafa'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.shadowColor = 'rgba(124, 58, 237, 0.4)'
-      ctx.shadowBlur = 24
-      ctx.shadowOffsetX = 0
-      ctx.shadowOffsetY = 0
-      ctx.fillText('Your business just got an upgrade', canvas.width / 2, headlineY)
-      ctx.shadowColor = 'transparent'
-
-      // Wordmark: "corner" with gradient
-      const logoFontSize = canvas.height < 700 ? 18 : 36
-      const logoY = canvas.height * 0.52
-      ctx.font = `bold ${logoFontSize}px Outfit, sans-serif`
-
-      const cornerMetrics = ctx.measureText('corner')
-      const cornerWidth = cornerMetrics.width
-      const cornerCenterX = canvas.width / 2
-      const cornerLeft = cornerCenterX - cornerWidth / 2
-
-      // Gradient for wordmark
-      const textGradient = ctx.createLinearGradient(cornerLeft, logoY, cornerLeft + cornerWidth, logoY)
-      textGradient.addColorStop(0, SURGE_PURPLE)
-      textGradient.addColorStop(0.5, SURGE_CYAN)
-      textGradient.addColorStop(1, SURGE_CYAN)
-
-      ctx.fillStyle = textGradient
-      ctx.shadowColor = 'rgba(6, 182, 212, 0.4)'
-      ctx.shadowBlur = 20
-      ctx.fillText('corner', canvas.width / 2, logoY)
-      ctx.shadowColor = 'transparent'
+      // Canvas renders glyphs only; text is overlaid in React layer above
 
       animationFrameId = requestAnimationFrame(animate)
     }
