@@ -188,6 +188,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/corner/book",
+      "destination": "/index.html"
+    },
+    {
       "source": "/dashboard/agent/:slug",
       "destination": "/index.html"
     },
