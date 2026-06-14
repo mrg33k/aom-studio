@@ -1,10 +1,10 @@
-// SupportDashboard.jsx — M10 Track A. Full-screen Support command center inside Corner.
+// SupportDashboard.jsx - M10 Track A. Full-screen Support command center inside Corner.
 //
 // Opened by the headphones icon (top-right). Takes over the screen (CornerV4 hides
 // both rails while supportMode is on) and shows BOTH inbound streams in one view:
-//   • Support requests — the speak-freely / email wishes (GET /api/support/wishes).
+//   • Support requests - the speak-freely / email wishes (GET /api/support/wishes).
 //     M6 routes inbound support emails into wishes, so this IS the email stream.
-//   • Chat support — Corner Support widget visitor conversations (reuses SupportInbox).
+//   • Chat support - Corner Support widget visitor conversations (reuses SupportInbox).
 // Each stream carries its own unread / needs-you notification count.
 //
 // Mission: corner:support-desk M10. Editorial deep-ink / bone / amber, the AOM system.
@@ -14,20 +14,38 @@ import SupportInbox from './SupportInbox.jsx'
 import { C } from '../lib/cv3Colors.js'
 import { authFetch } from '../lib/authFetch.js'
 
-// Theme-aware: follows Corner's current theme (same tokens SupportInbox uses) so
-// both streams render consistently, light or dark.
-const AMBER = C.accent
-const AMBER_SOFT = C.accentBg
-const INK = C.bg
-const INK_PANEL = C.bg2
-const INK_CARD = C.s1
-const LINE = C.border2
-const BONE = C.text
-const BONE_DIM = C.text2
-const BONE_FAINT = C.muted
-const SERIF = '"Instrument Serif", Georgia, serif'
-const BODY = '"Hanken Grotesk", system-ui, -apple-system, sans-serif'
+// M20-R1: v6 light theme - "Front Desk" design (2026-06-14 Patrik direction)
+// Warm cream background, white cards, emerald accent, Fraunces serif + Instrument Sans body.
+// "Old people can read em, young people love em" - accessible, modern, professional.
+const BG_CREAM = '#F4EFE6'
+const BG_WHITE = '#FFFFFF'
+const ACCENT_EMERALD = '#0E8F66'
+const ACCENT_EMERALD_SOFT = '#E6F5F0'
+const ALERT_WARM = '#B5740C'
+const ALERT_WARM_SOFT = '#FFF4E6'
+const HOLD_BLUE = '#3E6DB5'
+const HOLD_BLUE_SOFT = '#E8EFF7'
+const TEXT_DARK = '#1A1A14'
+const TEXT_DIM = '#5F5C52'
+const TEXT_FAINT = '#9C9890'
+const BORDER_LINE = '#E8E3D8'
+const BORDER_LINE_DIM = '#F0EAE0'
+
+// Typography system: Fraunces (serif, display) + Instrument Sans (body) + JetBrains Mono (labels)
+const SERIF = '"Fraunces", Georgia, serif'
+const BODY = '"Instrument Sans", system-ui, -apple-system, sans-serif'
 const MONO = '"JetBrains Mono", ui-monospace, monospace'
+
+// Backwards compat: map old CV3 references to new v6 palette (some components still use old names)
+const AMBER = ACCENT_EMERALD
+const AMBER_SOFT = ACCENT_EMERALD_SOFT
+const INK = BG_CREAM
+const INK_PANEL = BG_WHITE
+const INK_CARD = BG_WHITE
+const LINE = BORDER_LINE
+const BONE = TEXT_DARK
+const BONE_DIM = TEXT_DIM
+const BONE_FAINT = TEXT_FAINT
 
 const STATUS_LABEL = { heard: 'Heard', working: 'Working', needs_team: 'Needs you', resolved: 'Resolved' }
 
@@ -53,7 +71,7 @@ function splitOriginal(text) {
   return { summary: text.slice(0, i).trim(), original: text.slice(i + ORIGINAL_DELIM.length).trim() }
 }
 
-// M17b: structured summaries — line 1 is the subject (headline), the rest is the ask.
+// M17b: structured summaries - line 1 is the subject (headline), the rest is the ask.
 // Old free-text cards fall through with no headline and render as plain body.
 function parseWishSummary(summary) {
   const lines = (summary || '').split('\n').map((s) => s.trim()).filter(Boolean)
@@ -61,7 +79,7 @@ function parseWishSummary(summary) {
   return { headline: null, ask: (summary || '').trim() }
 }
 
-// M17c: the ask renders as a real bullet list — amber markers, readable desktop type.
+// M17c: the ask renders as a real bullet list - emerald markers, readable desktop type.
 // Plain (non-bulleted, pre-M17c) text falls through as a paragraph.
 function AskList({ ask, size = 15 }) {
   if (!ask) return null
@@ -74,7 +92,7 @@ function AskList({ ask, size = 15 }) {
     <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8 }}>
       {lines.map((l, i) => (
         <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
-          <span style={{ color: AMBER, fontSize: size - 2, lineHeight: 1.6, flexShrink: 0 }}>●</span>
+          <span style={{ color: ACCENT_EMERALD, fontSize: size - 2, lineHeight: 1.6, flexShrink: 0 }}>●</span>
           <span style={{ fontSize: size, color: BONE, lineHeight: 1.6 }}>{l.replace(/^•\s*/, '')}</span>
         </li>
       ))}
@@ -82,13 +100,13 @@ function AskList({ ask, size = 15 }) {
   )
 }
 
-// ── M18: "Chat about this email" — context block the EA chat opens with ──────
+// ── M18: "Chat about this email" - context block the EA chat opens with ──────
 // Mirrors the Mail Room context shape agents already act on (mail-room-send-protocol):
 // who, subject, the original text, the staged draft if one exists. Closing
 // instruction keeps the loop draft-first.
 function buildDiscussText({ who, email, subject, original, ask, staged, accessCode }) {
   const lines = [
-    '[Mail Room context — discuss this support email]',
+    '[Mail Room context - discuss this support email]',
     `From: ${who}${email && email !== who ? ` <${email}>` : ''}`,
     subject ? `Subject: ${subject}` : null,
     accessCode ? `Support card: ${accessCode}` : null,
@@ -98,7 +116,7 @@ function buildDiscussText({ who, email, subject, original, ask, staged, accessCo
     original ? `Original message:\n${original.slice(0, 2500)}\n` : null,
     "Let's talk through how to respond. When we land on a reply, " +
       (staged ? 'update the staged draft' : 'draft the reply threaded on the original email') +
-      " — don't send anything until I say so.",
+      " - don't send anything until I say so.",
   ].filter((l) => l !== null)
   return lines.join('\n')
 }
@@ -108,8 +126,11 @@ function DiscussBtn({ onDiscuss, payload, style }) {
   return (
     <button className="ps-ghost-btn" onClick={(e) => { e.stopPropagation(); onDiscuss(buildDiscussText(payload)) }}
       title="Open a chat with your agent about this email"
-      style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13, color: BONE_DIM, background: 'transparent',
-        border: `1px solid ${LINE}`, borderRadius: 8, padding: '9px 16px', cursor: 'pointer', ...style }}>
+      style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13, color: TEXT_DIM, background: 'transparent',
+        border: `1px solid ${BORDER_LINE}`, borderRadius: 8, padding: '9px 16px', cursor: 'pointer',
+        transition: 'border-color 140ms ease, color 140ms ease', ...style }}
+      onMouseEnter={(e) => { e.target.style.borderColor = ACCENT_EMERALD; e.target.style.color = BONE }}
+      onMouseLeave={(e) => { e.target.style.borderColor = BORDER_LINE; e.target.style.color = TEXT_DIM }}>
       Chat about this
     </button>
   )
@@ -122,12 +143,12 @@ function OriginalBlock({ original }) {
     <div style={{ marginTop: 8 }}>
       <button onClick={(e) => { e.stopPropagation(); setShow((v) => !v) }} style={{ background: 'transparent',
         border: 'none', padding: 0, fontFamily: MONO, fontSize: 10, letterSpacing: '0.08em',
-        textTransform: 'uppercase', color: AMBER, cursor: 'pointer' }}>
+        textTransform: 'uppercase', color: ACCENT_EMERALD, cursor: 'pointer' }}>
         {show ? 'Hide original message' : 'View original message'}
       </button>
       {show && (
-        <p style={{ margin: '6px 0 0', padding: '8px 10px', background: INK_PANEL, borderRadius: 4,
-          border: `1px solid ${LINE}`, fontSize: 12, color: BONE_DIM, lineHeight: 1.5,
+        <p style={{ margin: '6px 0 0', padding: '8px 10px', background: BG_WHITE, borderRadius: 4,
+          border: `1px solid ${BORDER_LINE_DIM}`, fontSize: 12, color: TEXT_DIM, lineHeight: 1.5,
           whiteSpace: 'pre-wrap', maxHeight: 320, overflowY: 'auto' }}>{original}</p>
       )}
     </div>
@@ -140,19 +161,19 @@ function ensurePressSendCss() {
   pressSendCssInjected = true
   const el = document.createElement('style')
   el.textContent = `
-    @keyframes ps-breathe { 0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.0), 0 0 18px rgba(245,158,11,0.10); }
-      50% { box-shadow: 0 0 0 1px rgba(245,158,11,0.22), 0 0 28px rgba(245,158,11,0.22); } }
+    @keyframes ps-breathe { 0%,100% { box-shadow: 0 0 0 0 rgba(14,143,102,0.0), 0 0 18px rgba(14,143,102,0.10); }
+      50% { box-shadow: 0 0 0 1px rgba(14,143,102,0.22), 0 0 28px rgba(14,143,102,0.22); } }
     @keyframes ps-pop { 0% { transform: scale(0.92); opacity: 0.4; } 60% { transform: scale(1.04); } 100% { transform: scale(1); opacity: 1; } }
     @keyframes ps-shimmer { 0% { background-position: -160px 0; } 100% { background-position: 160px 0; } }
     .ps-card { animation: ps-breathe 3.2s ease-in-out infinite; }
     .ps-send-btn { transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease; }
-    .ps-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(245,158,11,0.45); filter: brightness(1.06); }
+    .ps-send-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(14,143,102,0.45); filter: brightness(0.95); }
     .ps-send-btn:active { transform: translateY(0) scale(0.98); }
     .ps-send-btn[disabled] { background-image: linear-gradient(100deg, rgba(255,255,255,0) 30%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0) 70%);
       background-size: 160px 100%; background-repeat: no-repeat; animation: ps-shimmer 1.1s linear infinite; cursor: wait; }
     .ps-sent { animation: ps-pop 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
     .ps-ghost-btn { transition: border-color 140ms ease, color 140ms ease; }
-    .ps-ghost-btn:hover { border-color: rgba(245,158,11,0.7) !important; color: inherit; }
+    .ps-ghost-btn:hover { border-color: rgba(14,143,102,0.7) !important; color: inherit; }
   `
   document.head.appendChild(el)
 }
@@ -264,18 +285,18 @@ function ResolveBtn({ wishId, onDone, style }) {
       if (r.ok && d.ok) { setState('done'); onDone && onDone() } else setState('idle')
     } catch { setState('idle') }
   }
-  if (state === 'done') return <span style={{ fontFamily: MONO, fontSize: 10, color: AMBER, ...style }}>Resolved ✓</span>
+  if (state === 'done') return <span style={{ fontFamily: MONO, fontSize: 10, color: ACCENT_EMERALD, ...style }}>Resolved ✓</span>
   return (
-    <button onClick={go} disabled={state === 'busy'} title="Close this card — handled outside the system"
-      style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: BONE_FAINT,
-        background: 'transparent', border: `1px solid ${LINE}`, borderRadius: 999,
+    <button onClick={go} disabled={state === 'busy'} title="Close this card - handled outside the system"
+      style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.06em', color: TEXT_FAINT,
+        background: 'transparent', border: `1px solid ${BORDER_LINE}`, borderRadius: 999,
         padding: '2px 10px', cursor: 'pointer', ...style }}>
       {state === 'busy' ? '…' : 'Mark resolved ✓'}
     </button>
   )
 }
 
-// ── M13: the press-send card — work is DONE, the human only fires ─────────────
+// ── M13: the press-send card - work is DONE, the human only fires ─────────────
 function PressSendCard({ w, staged, onDiscuss }) {
   ensurePressSendCss()
   const [phase, setPhase] = useState('ready') // ready | sending | sent | error
@@ -283,10 +304,10 @@ function PressSendCard({ w, staged, onDiscuss }) {
   const [changeOpen, setChangeOpen] = useState(false)
   const [note, setNote] = useState('')
   const [noteState, setNoteState] = useState('idle') // idle | sending | done
-  // Long drafts clamp so the Send button never falls below the fold — the card's
+  // Long drafts clamp so the Send button never falls below the fold - the card's
   // whole reason to exist is that button. Full text is one tap away.
   const [fullReply, setFullReply] = useState(false)
-  // The actual outgoing email — fetched so the human reads what really goes out.
+  // The actual outgoing email - fetched so the human reads what really goes out.
   const [preview, setPreview] = useState(null) // {to, subject, text, attachments} | {error}
   useEffect(() => {
     let dead = false
@@ -332,27 +353,28 @@ function PressSendCard({ w, staged, onDiscuss }) {
   const sent = phase === 'sent'
   return (
     <div className={sent ? 'ps-sent' : 'ps-card'} style={{
-      background: `radial-gradient(120% 140% at 0% 0%, ${AMBER_SOFT} 0%, ${INK_CARD} 55%)`,
-      border: `1.5px solid ${sent ? 'rgba(245,158,11,0.25)' : 'rgba(245,158,11,0.55)'}`,
-      borderRadius: 10, padding: '20px 22px 18px', marginBottom: 14 }}>
+      background: BG_WHITE,
+      border: `1.5px solid ${sent ? `rgba(14,143,102,0.15)` : `rgba(14,143,102,0.35)`}`,
+      borderRadius: 18, padding: '20px 22px 18px', marginBottom: 14,
+      boxShadow: '0 2px 8px rgba(26,26,20,0.06)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
         <span style={{ fontFamily: MONO, fontSize: 9.5, fontWeight: 700, letterSpacing: '0.14em',
-          color: '#1A1206', background: AMBER, padding: '3px 10px', borderRadius: 999 }}>
-          {sent ? 'SENT ✓' : '✦ WORK DONE — READY TO SEND'}
+          color: BG_WHITE, background: ACCENT_EMERALD, padding: '4px 12px', borderRadius: 999 }}>
+          {sent ? 'SENT ✓' : '✦ READY TO SEND'}
         </span>
         {(() => {
-          // Gap #7: ready cards age — past an hour the wait turns amber and names itself.
+          // Gap #7: ready cards age - past an hour the wait turns warm-alert and names itself.
           const waitedMs = Date.now() - new Date(w.created_at).getTime()
           const old = !sent && waitedMs > 60 * 60 * 1000
           return (
             <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: old ? 700 : 400,
-              color: old ? AMBER : BONE_FAINT }}>
+              color: old ? ALERT_WARM : TEXT_FAINT }}>
               {old ? `waiting on you · ${timeAgo(w.created_at)}` : timeAgo(w.created_at)}
             </span>
           )
         })()}
       </div>
-      <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: BONE_DIM, margin: '14px 0 0',
+      <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 13.5, color: TEXT_DIM, margin: '14px 0 0',
         letterSpacing: '0.01em' }}>
         {w.name || w.email}
       </div>
@@ -362,7 +384,7 @@ function PressSendCard({ w, staged, onDiscuss }) {
         return (
           <>
             {headline && (
-              <div style={{ fontFamily: SERIF, fontSize: 25, color: BONE, margin: '4px 0 0', lineHeight: 1.2 }}>
+              <div style={{ fontFamily: SERIF, fontSize: 25, color: TEXT_DARK, margin: '4px 0 0', lineHeight: 1.2, fontWeight: 600 }}>
                 {headline}
               </div>
             )}
@@ -372,16 +394,16 @@ function PressSendCard({ w, staged, onDiscuss }) {
               {ask && (
                 <div>
                   <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
-                    color: AMBER, marginBottom: 10 }}>They asked</div>
+                    color: ACCENT_EMERALD, marginBottom: 10, fontWeight: 600 }}>They asked</div>
                   <AskList ask={ask} size={15} />
                 </div>
               )}
               {original && (
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase',
-                    color: BONE_FAINT, marginBottom: 10 }}>Original message</div>
-                  <div style={{ padding: '12px 14px', background: INK_PANEL, borderRadius: 6,
-                    border: `1px solid ${LINE}`, fontSize: 13.5, color: BONE_DIM, lineHeight: 1.6,
+                    color: TEXT_FAINT, marginBottom: 10, fontWeight: 600 }}>Original message</div>
+                  <div style={{ padding: '12px 14px', background: BG_WHITE, borderRadius: 6,
+                    border: `1px solid ${BORDER_LINE_DIM}`, fontSize: 13.5, color: TEXT_DIM, lineHeight: 1.6,
                     whiteSpace: 'pre-wrap', maxHeight: 280, overflowY: 'auto' }}>{original}</div>
                 </div>
               )}
@@ -390,41 +412,42 @@ function PressSendCard({ w, staged, onDiscuss }) {
         )
       })()}
 
-      {/* The reply that actually goes out, verbatim — plus its attachments. */}
-      <div style={{ marginTop: 18, padding: '14px 18px', background: INK_PANEL,
-        borderLeft: `2.5px solid ${AMBER}`, borderRadius: '4px 8px 8px 4px' }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: AMBER }}>
+      {/* The reply that actually goes out, verbatim - plus its attachments. */}
+      <div style={{ marginTop: 18, padding: '14px 18px', background: BG_WHITE,
+        borderLeft: `2.5px solid ${ACCENT_EMERALD}`, borderRadius: '4px 8px 8px 4px',
+        border: `1px solid ${BORDER_LINE_DIM}`, borderLeftWidth: '2.5px' }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: ACCENT_EMERALD, fontWeight: 600 }}>
           Our reply{preview && !preview.error && preview.to ? ` · to ${preview.to}` : ''}
         </div>
         {preview === null && (
-          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: BONE_FAINT, fontStyle: 'italic' }}>Opening the staged reply…</p>
+          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: TEXT_FAINT, fontStyle: 'italic' }}>Opening the staged reply…</p>
         )}
         {preview?.error && (
-          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: BONE_FAINT }}>
-            Couldn't open the reply preview ({preview.error}) — Send still fires the staged draft as-is.
+          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: TEXT_FAINT }}>
+            Couldn't open the reply preview ({preview.error}) - Send still fires the staged draft as-is.
           </p>
         )}
         {preview && !preview.error && (
           <>
             {preview.subject && (
-              <div style={{ margin: '6px 0 0', fontSize: 12, color: BONE_DIM, fontWeight: 600 }}>{preview.subject}</div>
+              <div style={{ margin: '6px 0 0', fontSize: 12, color: TEXT_DIM, fontWeight: 600 }}>{preview.subject}</div>
             )}
-            <p style={{ margin: '8px 0 0', fontSize: 15, color: BONE, lineHeight: 1.65, whiteSpace: 'pre-wrap',
+            <p style={{ margin: '8px 0 0', fontSize: 15, color: TEXT_DARK, lineHeight: 1.65, whiteSpace: 'pre-wrap',
               display: '-webkit-box', WebkitLineClamp: fullReply ? 999 : 8, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
               {preview.text || '(no text body)'}
             </p>
             {(preview.text || '').split('\n').length > 8 && (
               <button onClick={() => setFullReply((v) => !v)} style={{ background: 'transparent', border: 'none',
                 padding: 0, marginTop: 6, fontFamily: MONO, fontSize: 10, letterSpacing: '0.08em',
-                textTransform: 'uppercase', color: AMBER, cursor: 'pointer' }}>
+                textTransform: 'uppercase', color: ACCENT_EMERALD, cursor: 'pointer' }}>
                 {fullReply ? 'Collapse reply' : 'Show full reply'}
               </button>
             )}
             {preview.attachments?.length > 0 && (
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
                 {preview.attachments.map((a, i) => (
-                  <span key={i} style={{ fontFamily: MONO, fontSize: 10.5, color: BONE_DIM,
-                    border: `1px solid ${LINE}`, borderRadius: 999, padding: '3px 10px' }}>
+                  <span key={i} style={{ fontFamily: MONO, fontSize: 10.5, color: TEXT_DIM,
+                    border: `1px solid ${BORDER_LINE}`, borderRadius: 999, padding: '3px 10px' }}>
                     ⎙ {a.name}{a.size ? ` · ${a.size > 1048576 ? (a.size / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(a.size / 1024)) + ' KB'}` : ''}
                   </span>
                 ))}
@@ -436,13 +459,14 @@ function PressSendCard({ w, staged, onDiscuss }) {
       {phase !== 'sent' && (
         <div style={{ display: 'flex', gap: 10, marginTop: 14, alignItems: 'center', flexWrap: 'wrap' }}>
           <button className="ps-send-btn" disabled={phase === 'sending'} onClick={fire} style={{
-            fontFamily: BODY, fontWeight: 700, fontSize: 14, color: '#1A1206', background: AMBER,
+            fontFamily: BODY, fontWeight: 700, fontSize: 14, color: BG_WHITE, background: ACCENT_EMERALD,
             border: 'none', borderRadius: 8, padding: '10px 22px', cursor: 'pointer', letterSpacing: '0.01em' }}>
-            {phase === 'sending' ? 'Sending…' : 'Send it →'}
+            {phase === 'sending' ? 'Sending…' : 'Send it'}
           </button>
           <button className="ps-ghost-btn" onClick={() => setChangeOpen((v) => !v)} style={{
-            fontFamily: BODY, fontWeight: 600, fontSize: 13, color: BONE_DIM, background: 'transparent',
-            border: `1px solid ${LINE}`, borderRadius: 8, padding: '9px 16px', cursor: 'pointer' }}>
+            fontFamily: BODY, fontWeight: 600, fontSize: 13, color: TEXT_DIM, background: 'transparent',
+            border: `1px solid ${BORDER_LINE}`, borderRadius: 8, padding: '9px 16px', cursor: 'pointer',
+            transition: 'border-color 140ms ease, color 140ms ease' }}>
             Ask for a change
           </button>
           {(() => {
@@ -457,22 +481,22 @@ function PressSendCard({ w, staged, onDiscuss }) {
       )}
       {sent && (
         <p style={{ margin: '12px 0 0', fontFamily: MONO, fontSize: 11, color: AMBER }}>
-          Reply is on its way. Card resolves itself — nothing else needed.
+          Reply is on its way. Card resolves itself - nothing else needed.
         </p>
       )}
       {changeOpen && !sent && (
         <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
           {noteState === 'done' ? (
-            <span style={{ fontSize: 12, color: AMBER, fontFamily: MONO }}>Noted — the agent is revising. A fresh card will appear when it's re-staged.</span>
+            <span style={{ fontSize: 12, color: ACCENT_EMERALD, fontFamily: MONO }}>Noted - the agent is revising. A fresh card will appear when it's re-staged.</span>
           ) : (
             <>
               <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="What should change?"
                 onKeyDown={(e) => { if (e.key === 'Enter') sendNote() }}
-                style={{ flex: 1, fontFamily: BODY, fontSize: 13, color: BONE, background: INK_PANEL,
-                  border: `1px solid ${LINE}`, borderRadius: 8, padding: '8px 12px', outline: 'none' }} />
+                style={{ flex: 1, fontFamily: BODY, fontSize: 13, color: TEXT_DARK, background: BG_WHITE,
+                  border: `1px solid ${BORDER_LINE}`, borderRadius: 8, padding: '8px 12px', outline: 'none' }} />
               <button onClick={sendNote} disabled={noteState === 'sending'} style={{
-                fontFamily: BODY, fontWeight: 600, fontSize: 13, color: BONE, background: 'transparent',
-                border: `1px solid rgba(245,158,11,0.55)`, borderRadius: 8, padding: '8px 14px', cursor: 'pointer' }}>
+                fontFamily: BODY, fontWeight: 600, fontSize: 13, color: TEXT_DIM, background: 'transparent',
+                border: `1px solid rgba(14,143,102,0.35)`, borderRadius: 8, padding: '8px 14px', cursor: 'pointer' }}>
                 {noteState === 'sending' ? '…' : 'Send note'}
               </button>
             </>
@@ -508,21 +532,21 @@ function WishRow({ w, dim }) {
   }
 
   return (
-    <div style={{ background: loud ? AMBER_SOFT : INK_CARD,
-      border: `1px solid ${loud ? 'rgba(245,158,11,0.35)' : LINE}`, borderRadius: 6,
+    <div style={{ background: loud ? ACCENT_EMERALD_SOFT : BG_WHITE,
+      border: `1px solid ${loud ? 'rgba(14,143,102,0.35)' : BORDER_LINE}`, borderRadius: 18,
       padding: 12, marginBottom: 8, opacity: dim ? 0.6 : 1 }}>
       <button onClick={toggle} aria-expanded={open} style={{ display: 'block', width: '100%',
-        textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: BONE }}>
+        textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: TEXT_DARK }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
-          <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: BONE }}>{w.name || w.email}</span>
+          <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: TEXT_DARK }}>{w.name || w.email}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {overSla && (
               <span title="Open past the 10-minute target" style={{ fontFamily: MONO, fontSize: 9, fontWeight: 700,
-                color: '#1A1206', background: AMBER, padding: '1px 5px', borderRadius: 8 }}>OVER 10M</span>
+                color: BG_WHITE, background: ALERT_WARM, padding: '1px 5px', borderRadius: 8 }}>OVER 10M</span>
             )}
             <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
-              color: loud ? AMBER : BONE_DIM, background: 'transparent',
-              border: `1px solid ${loud ? AMBER : LINE}`, padding: '1px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
+              color: loud ? ACCENT_EMERALD : TEXT_DIM, background: 'transparent',
+              border: `1px solid ${loud ? ACCENT_EMERALD : BORDER_LINE}`, padding: '1px 7px', borderRadius: 10, whiteSpace: 'nowrap' }}>
               {STATUS_LABEL[w.status] || w.status}
             </span>
           </span>
@@ -532,24 +556,24 @@ function WishRow({ w, dim }) {
           return (
             <>
               {headline && (
-                <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 15, color: BONE,
+                <div style={{ fontFamily: BODY, fontWeight: 600, fontSize: 15, color: TEXT_DARK,
                   margin: '6px 0 0', lineHeight: 1.35 }}>{headline}</div>
               )}
-              <p style={{ margin: headline ? '4px 0 0' : '6px 0 0', fontSize: 14, color: BONE_DIM, lineHeight: 1.5, whiteSpace: 'pre-wrap',
+              <p style={{ margin: headline ? '4px 0 0' : '6px 0 0', fontSize: 14, color: TEXT_DIM, lineHeight: 1.5, whiteSpace: 'pre-wrap',
                 display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{ask}</p>
             </>
           )
         })()}
         {w.latest_response && (
-          <div style={{ marginTop: 7, padding: '6px 9px', background: AMBER_SOFT, borderLeft: `2px solid ${AMBER}`, borderRadius: 3 }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: AMBER }}>We replied</span>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: BONE_DIM, lineHeight: 1.4,
+          <div style={{ marginTop: 7, padding: '6px 9px', background: ACCENT_EMERALD_SOFT, borderLeft: `2px solid ${ACCENT_EMERALD}`, borderRadius: 3 }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: ACCENT_EMERALD }}>We replied</span>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: TEXT_DIM, lineHeight: 1.4,
               display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{w.latest_response.body}</p>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{w.source || 'web'}</span>
-          <span style={{ fontSize: 11, color: BONE_FAINT }}>{open ? 'hide activity' : 'activity'} · {timeAgo(w.created_at)}</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_FAINT }}>{w.source || 'web'}</span>
+          <span style={{ fontSize: 11, color: TEXT_FAINT }}>{open ? 'hide activity' : 'activity'} · {timeAgo(w.created_at)}</span>
         </div>
       </button>
       {w.status !== 'resolved' && (
@@ -558,17 +582,17 @@ function WishRow({ w, dim }) {
         </div>
       )}
       {open && (
-        <div style={{ marginTop: 10, borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
+        <div style={{ marginTop: 10, borderTop: `1px solid ${BORDER_LINE}`, paddingTop: 8 }}>
           <OriginalBlock original={msgParts.original} />
-          {loading && <span style={{ fontSize: 12, color: BONE_FAINT }}>Loading activity…</span>}
-          {updates && updates.length === 0 && <span style={{ fontSize: 12, color: BONE_FAINT }}>No activity yet — heard, awaiting triage.</span>}
+          {loading && <span style={{ fontSize: 12, color: TEXT_FAINT }}>Loading activity…</span>}
+          {updates && updates.length === 0 && <span style={{ fontSize: 12, color: TEXT_FAINT }}>No activity yet - heard, awaiting triage.</span>}
           {updates && updates.map((u) => (
             <div key={u.id} style={{ display: 'flex', gap: 10, padding: '4px 0', alignItems: 'baseline' }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: AMBER, minWidth: 70, textTransform: 'uppercase' }}>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: ACCENT_EMERALD, minWidth: 70, textTransform: 'uppercase' }}>
                 {u.kind === 'status_change' ? (STATUS_LABEL[u.status] || u.status) : u.kind}
               </span>
-              <span style={{ flex: 1, fontSize: 12, color: BONE_DIM, lineHeight: 1.4 }}>{u.body || ''}</span>
-              <span style={{ fontSize: 10, color: BONE_FAINT }}>{timeAgo(u.created_at)}</span>
+              <span style={{ flex: 1, fontSize: 12, color: TEXT_DIM, lineHeight: 1.4 }}>{u.body || ''}</span>
+              <span style={{ fontSize: 10, color: TEXT_FAINT }}>{timeAgo(u.created_at)}</span>
             </div>
           ))}
         </div>
@@ -580,17 +604,17 @@ function WishRow({ w, dim }) {
 function StreamHeader({ title, sub, count, total, onRefresh }) {
   return (
     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
-      padding: '16px 16px 12px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
+      padding: '16px 16px 12px', borderBottom: `1px solid ${BORDER_LINE}`, flexShrink: 0 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 22, margin: 0, color: BONE }}>{title}</h2>
-        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT }}>{sub}</span>
+        <h2 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 22, margin: 0, color: TEXT_DARK }}>{title}</h2>
+        <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEXT_FAINT }}>{sub}</span>
         {count > 0 && (
-          <span style={{ background: AMBER, color: '#1A1206', fontFamily: MONO, fontSize: 11, fontWeight: 700,
+          <span style={{ background: ACCENT_EMERALD, color: BG_WHITE, fontFamily: MONO, fontSize: 11, fontWeight: 700,
             padding: '1px 7px', borderRadius: 10 }}>{count}</span>
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontFamily: MONO, fontSize: 11, color: BONE_FAINT }}>{total ?? ''}</span>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_FAINT }}>{total ?? ''}</span>
         {onRefresh && <button onClick={onRefresh} style={ghostBtn}>Refresh</button>}
       </div>
     </div>
@@ -601,7 +625,7 @@ function StreamHeader({ title, sub, count, total, onRefresh }) {
 // Each correspondent renders as an expandable thread card: collapsed shows who +
 // subject + a preview of the latest message; expanded shows what THEY wrote and
 // what WE replied, with Open-in-Gmail + reply-by-mail links. This is the heart of
-// "show me the support emails we responded to" — our actual reply text, inline.
+// "show me the support emails we responded to" - our actual reply text, inline.
 function InboxThreadCard({ it, loud }) {
   const [open, setOpen] = useState(false)
   const gmailUrl = it.threadId ? `https://mail.google.com/mail/u/0/#all/${it.threadId}` : null
@@ -609,55 +633,55 @@ function InboxThreadCard({ it, loud }) {
   const preview = it.lastReply?.snippet || it.lastInbound?.snippet || ''
   const when = it.lastReply?.date || it.lastInbound?.date || it.date
   return (
-    <div style={{ background: loud ? AMBER_SOFT : INK_CARD,
-      border: `1px solid ${loud ? 'rgba(245,158,11,0.35)' : LINE}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
+    <div style={{ background: loud ? ACCENT_EMERALD_SOFT : BG_WHITE,
+      border: `1px solid ${loud ? 'rgba(14,143,102,0.35)' : BORDER_LINE}`, borderRadius: 18, padding: 12, marginBottom: 8 }}>
       <button onClick={() => setOpen((o) => !o)} aria-expanded={open} style={{ display: 'block', width: '100%',
-        textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: BONE }}>
+        textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: TEXT_DARK }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: loud ? AMBER : BONE_FAINT }} />
-            <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: BONE,
+            <span style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: loud ? ACCENT_EMERALD : TEXT_FAINT }} />
+            <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: TEXT_DARK,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.from}</span>
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: loud ? AMBER : BONE_FAINT, textTransform: 'uppercase', flexShrink: 0 }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: loud ? ACCENT_EMERALD : TEXT_FAINT, textTransform: 'uppercase', flexShrink: 0 }}>
             {loud ? 'Needs reply' : 'Responded'}
           </span>
         </div>
-        <p style={{ margin: '5px 0 0', fontSize: 13, color: BONE_DIM, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</p>
+        <p style={{ margin: '5px 0 0', fontSize: 13, color: TEXT_DIM, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</p>
         {preview && (
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: BONE_FAINT, lineHeight: 1.4, display: '-webkit-box',
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: TEXT_FAINT, lineHeight: 1.4, display: '-webkit-box',
             WebkitLineClamp: open ? 99 : 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-            <span style={{ color: it.lastReply?.snippet ? AMBER : BONE_FAINT }}>{previewWho}:</span> {preview}
+            <span style={{ color: it.lastReply?.snippet ? ACCENT_EMERALD : TEXT_FAINT }}>{previewWho}:</span> {preview}
           </p>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
-          <span style={{ fontSize: 11, color: BONE_FAINT }}>{open ? 'hide thread' : 'view thread'}</span>
-          <span style={{ fontSize: 11, color: BONE_FAINT }}>{timeAgoMs(when)}</span>
+          <span style={{ fontSize: 11, color: TEXT_FAINT }}>{open ? 'hide thread' : 'view thread'}</span>
+          <span style={{ fontSize: 11, color: TEXT_FAINT }}>{timeAgoMs(when)}</span>
         </div>
       </button>
       {open && (
-        <div style={{ marginTop: 10, borderTop: `1px solid ${LINE}`, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ marginTop: 10, borderTop: `1px solid ${BORDER_LINE}`, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div>
-            <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, marginBottom: 4 }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEXT_FAINT, marginBottom: 4 }}>
               They wrote {it.lastInbound?.date ? `· ${timeAgoMs(it.lastInbound.date)}` : ''}
             </div>
-            <p style={{ margin: 0, fontSize: 13, color: BONE_DIM, lineHeight: 1.5 }}>{it.lastInbound?.snippet || '—'}</p>
+            <p style={{ margin: 0, fontSize: 13, color: TEXT_DIM, lineHeight: 1.5 }}>{it.lastInbound?.snippet || '-'}</p>
           </div>
           <div>
             <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase',
-              color: it.lastReply ? AMBER : BONE_FAINT, marginBottom: 4 }}>
+              color: it.lastReply ? ACCENT_EMERALD : TEXT_FAINT, marginBottom: 4 }}>
               We replied {it.lastReply?.date ? `· ${timeAgoMs(it.lastReply.date)}` : ''}
             </div>
-            <p style={{ margin: 0, fontSize: 13, color: it.lastReply ? BONE : BONE_FAINT, lineHeight: 1.5 }}>
+            <p style={{ margin: 0, fontSize: 13, color: it.lastReply ? TEXT_DARK : TEXT_FAINT, lineHeight: 1.5 }}>
               {it.lastReply?.snippet || 'No reply sent yet.'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 16 }}>
             {gmailUrl && (
-              <a href={gmailUrl} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: AMBER, textDecoration: 'none' }}>Open in Gmail →</a>
+              <a href={gmailUrl} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: ACCENT_EMERALD, textDecoration: 'none' }}>Open in Gmail →</a>
             )}
             <a href={`mailto:${it.email}?subject=${encodeURIComponent('Re: ' + (it.subject || ''))}`}
-              style={{ fontFamily: MONO, fontSize: 11, color: BONE_FAINT, textDecoration: 'none' }}>Reply by mail</a>
+              style={{ fontFamily: MONO, fontSize: 11, color: TEXT_FAINT, textDecoration: 'none' }}>Reply by mail</a>
           </div>
         </div>
       )}
@@ -676,7 +700,7 @@ function InboxPanel({ worldId }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   // Open to "All" so the panel shows real content (with bulk mail filtered out)
-  // rather than a barren empty view — Responded is genuinely sparse, so it's one
+  // rather than a barren empty view - Responded is genuinely sparse, so it's one
   // tap away rather than the default. The Responded view is where our inline
   // reply text shows once we've answered support threads.
   const [filter, setFilter] = useState('all') // all | needs | replied
@@ -694,7 +718,7 @@ function InboxPanel({ worldId }) {
       const d = await r.json()
       if (r.status === 401) {
         if (password) { try { sessionStorage.removeItem('support-admin-pw') } catch {} ; setPw(''); setError('Wrong team password.') }
-        else if (isAom) { setError('Could not verify your session — refresh and try again.') }
+        else if (isAom) { setError('Could not verify your session - refresh and try again.') }
         setLoading(false); return
       }
       if (!r.ok || !d.ok) { setError(d.error || 'Could not load the inbox.'); setLoading(false); return }
@@ -710,21 +734,21 @@ function InboxPanel({ worldId }) {
   if (!isAom && !pw && !data) {
     return (
       <div style={{ padding: '32px 24px', maxWidth: 360 }}>
-        <p style={{ fontFamily: SERIF, fontSize: 22, margin: '0 0 6px', color: BONE }}>Unlock the inbox</p>
-        <p style={{ color: BONE_DIM, fontSize: 13, margin: '0 0 14px' }}>Cross-mailbox tracking needs the team password.</p>
+        <p style={{ fontFamily: SERIF, fontSize: 22, margin: '0 0 6px', color: TEXT_DARK }}>Unlock the inbox</p>
+        <p style={{ color: TEXT_DIM, fontSize: 13, margin: '0 0 14px' }}>Cross-mailbox tracking needs the team password.</p>
         <form onSubmit={(e) => { e.preventDefault(); load(input) }}>
           <input type="password" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Team password"
-            style={{ width: '100%', boxSizing: 'border-box', background: 'transparent', border: `1px solid ${LINE}`,
-              borderRadius: 4, color: BONE, fontFamily: BODY, fontSize: 14, padding: '10px 12px', marginBottom: 10, outline: 'none' }} />
-          {error && <p style={{ color: '#F0A07A', fontSize: 12 }}>{error}</p>}
-          <button type="submit" style={{ background: AMBER, color: '#1A1206', border: 'none', fontFamily: BODY,
+            style={{ width: '100%', boxSizing: 'border-box', background: 'transparent', border: `1px solid ${BORDER_LINE}`,
+              borderRadius: 4, color: TEXT_DARK, fontFamily: BODY, fontSize: 14, padding: '10px 12px', marginBottom: 10, outline: 'none' }} />
+          {error && <p style={{ color: ALERT_WARM, fontSize: 12 }}>{error}</p>}
+          <button type="submit" style={{ background: ACCENT_EMERALD, color: BG_WHITE, border: 'none', fontFamily: BODY,
             fontSize: 14, fontWeight: 700, padding: '10px 22px', borderRadius: 3, cursor: 'pointer' }}>Load inbox</button>
         </form>
       </div>
     )
   }
-  if (loading && !data) return <p style={{ padding: 24, color: BONE_DIM }}>Reading the mailboxes…</p>
-  if (error && !data) return <div style={{ padding: 24 }}><p style={{ color: '#F0A07A', marginBottom: 10 }}>{error}</p><button onClick={() => load(pw)} style={ghostBtn}>Retry</button></div>
+  if (loading && !data) return <p style={{ padding: 24, color: TEXT_DIM }}>Reading the mailboxes…</p>
+  if (error && !data) return <div style={{ padding: 24 }}><p style={{ color: ALERT_WARM, marginBottom: 10 }}>{error}</p><button onClick={() => load(pw)} style={ghostBtn}>Retry</button></div>
   if (!data) return null
   const boxes = data.mailboxes || []
   const totalNeeds = boxes.reduce((n, b) => n + (b.needs?.length || 0), 0)
@@ -733,7 +757,7 @@ function InboxPanel({ worldId }) {
   return (
     <div style={{ padding: '20px 24px', overflowY: 'auto', height: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, margin: '0 0 16px' }}>
-        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: BONE_FAINT, margin: 0 }}>
+        <p style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.14em', textTransform: 'uppercase', color: TEXT_FAINT, margin: 0 }}>
           Last {data.days} days · support mailboxes · their message + our reply
         </p>
         <div style={{ display: 'flex', gap: 6 }}>
@@ -742,9 +766,9 @@ function InboxPanel({ worldId }) {
           <FilterPill active={filter === 'replied'} onClick={() => setFilter('replied')} label={`Responded ${totalReplied}`} />
         </div>
       </div>
-      {boxes.length === 0 && <p style={{ color: BONE_DIM }}>No connected mailboxes.</p>}
+      {boxes.length === 0 && <p style={{ color: TEXT_DIM }}>No connected mailboxes.</p>}
       {boxes.length > 0 && shownCount === 0 && (
-        <div style={{ padding: '28px 4px', color: BONE_FAINT, fontSize: 13, lineHeight: 1.5 }}>
+        <div style={{ padding: '28px 4px', color: TEXT_FAINT, fontSize: 13, lineHeight: 1.5 }}>
           {filter === 'replied'
             ? `No support emails responded to in the last ${data.days} days. Replies you send to support threads will show up here, with our reply text.`
             : filter === 'needs'
@@ -756,17 +780,17 @@ function InboxPanel({ worldId }) {
         const needs = filter === 'replied' ? [] : (box.needs || [])
         const replied = filter === 'needs' ? [] : (box.replied || [])
         return (
-          <section key={box.email} style={{ background: INK_PANEL, border: `1px solid ${LINE}`, borderRadius: 8, padding: '14px 16px', marginBottom: 18 }}>
+          <section key={box.email} style={{ background: BG_WHITE, border: `1px solid ${BORDER_LINE}`, borderRadius: 8, padding: '14px 16px', marginBottom: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-              <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 18, margin: 0, color: BONE }}>{box.email}</h3>
+              <h3 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 18, margin: 0, color: TEXT_DARK }}>{box.email}</h3>
               {box.error
-                ? <span style={{ fontFamily: MONO, fontSize: 10, color: '#F0A07A' }}>{box.error}</span>
-                : <span style={{ fontFamily: MONO, fontSize: 10, color: BONE_FAINT }}>{(box.needs?.length || 0)} need reply · {(box.replied?.length || 0)} replied</span>}
+                ? <span style={{ fontFamily: MONO, fontSize: 10, color: ALERT_WARM }}>{box.error}</span>
+                : <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_FAINT }}>{(box.needs?.length || 0)} need reply · {(box.replied?.length || 0)} replied</span>}
             </div>
             {!box.error && needs.map((it) => <InboxThreadCard key={'n' + it.email + it.threadId} it={it} loud />)}
             {!box.error && replied.map((it) => <InboxThreadCard key={'r' + it.email + it.threadId} it={it} />)}
             {!box.error && needs.length === 0 && replied.length === 0 &&
-              <span style={{ fontSize: 12, color: BONE_FAINT }}>
+              <span style={{ fontSize: 12, color: TEXT_FAINT }}>
                 {filter === 'all' ? 'Nothing personal in the window.' : `Nothing ${filter === 'needs' ? 'needs a reply' : 'responded to'} here.`}
               </span>}
           </section>
@@ -778,14 +802,14 @@ function InboxPanel({ worldId }) {
 
 function FilterPill({ active, onClick, label, loud }) {
   return (
-    <button onClick={onClick} style={{ background: active ? (loud ? AMBER : INK_CARD) : 'transparent',
-      color: active ? (loud ? '#1A1206' : BONE) : BONE_FAINT, border: `1px solid ${active ? (loud ? AMBER : LINE) : LINE}`,
+    <button onClick={onClick} style={{ background: active ? (loud ? ACCENT_EMERALD : BG_WHITE) : 'transparent',
+      color: active ? (loud ? BG_WHITE : TEXT_DARK) : TEXT_FAINT, border: `1px solid ${active ? (loud ? ACCENT_EMERALD : BORDER_LINE) : BORDER_LINE}`,
       borderRadius: 12, fontFamily: MONO, fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
       padding: '3px 10px', cursor: 'pointer', fontWeight: active ? 700 : 500 }}>{label}</button>
   )
 }
 
-// ── The focal point — one statement, not four equal tiles ────────────────────
+// ── The focal point - one statement, not four equal tiles ────────────────────
 // The only number that changes what you do next is how many things wait on you,
 // so it is the headline (and a button: tap it, see them). Everything else reads
 // as periphery. Counts render only after the full universe (wishes + mail) has
@@ -793,22 +817,22 @@ function FilterPill({ active, onClick, label, loud }) {
 function FocusStrip({ loaded, needsCount, respondedToday, rate, onNeedsYou }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16,
-      padding: '20px 24px 16px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
+      padding: '20px 24px 16px', borderBottom: `1px solid ${BORDER_LINE}`, flexShrink: 0 }}>
       {!loaded ? (
-        <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: BONE_FAINT }}>·</span>
+        <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: TEXT_FAINT }}>·</span>
       ) : needsCount > 0 ? (
         <button onClick={onNeedsYou} title="Show what's waiting"
           style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
-          <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: BONE }}>
-            <span style={{ color: AMBER }}>{needsCount}</span> waiting on you
+          <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: TEXT_DARK }}>
+            <span style={{ color: ACCENT_EMERALD }}>{needsCount}</span> waiting on you
           </span>
         </button>
       ) : (
-        <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: BONE }}>All quiet.</span>
+        <span style={{ fontFamily: SERIF, fontSize: 30, lineHeight: 1.1, color: TEXT_DARK }}>All quiet.</span>
       )}
       {loaded && (
         <span style={{ fontFamily: MONO, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase',
-          color: BONE_FAINT, paddingBottom: 7, whiteSpace: 'nowrap' }}>
+          color: TEXT_FAINT, paddingBottom: 7, whiteSpace: 'nowrap' }}>
           {respondedToday} responded today{rate == null ? '' : ` · ${rate}%`}
         </span>
       )}
@@ -816,7 +840,7 @@ function FocusStrip({ loaded, needsCount, respondedToday, rate, onNeedsYou }) {
   )
 }
 
-// ── Unified "Support items" — wishes + email threads in one status-chipped list ─
+// ── Unified "Support items" - wishes + email threads in one status-chipped list ─
 // One item per contact regardless of channel. Common status vocabulary so a
 // request and an email read the same: Needs you / Working / Responded / Resolved.
 const UNI_STATUS = {
@@ -827,11 +851,11 @@ const UNI_STATUS = {
 }
 
 function wishToItem(w) {
-  // A staged (ready-to-send) wish IS waiting on you — it used to map to
+  // A staged (ready-to-send) wish IS waiting on you - it used to map to
   // 'working', which silently excluded it from the Needs-you filter.
   const ready = w.status !== 'resolved' && !!parseStaged(w.message)
   const status = w.status === 'resolved' ? 'resolved' : (w.status === 'needs_team' || ready) ? 'needs_you' : 'working'
-  // M17b: structured message — headline as subject, ask as preview, original collapsed.
+  // M17b: structured message - headline as subject, ask as preview, original collapsed.
   const { summary, original } = splitOriginal((w.message || '').replace(STAGED_RE, '').trim())
   const { headline, ask } = parseWishSummary(summary)
   return {
@@ -861,33 +885,33 @@ function SupportItemCard({ it, onDiscuss }) {
     if (staged) return <PressSendCard w={it.wish} staged={staged} onDiscuss={onDiscuss} />
   }
   return (
-    <div style={{ background: st.loud ? AMBER_SOFT : INK_CARD, border: `1px solid ${st.loud ? 'rgba(245,158,11,0.35)' : LINE}`, borderRadius: 6, padding: 12, marginBottom: 8 }}>
-      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: BONE }}>
+    <div style={{ background: st.loud ? ACCENT_EMERALD_SOFT : BG_WHITE, border: `1px solid ${st.loud ? 'rgba(14,143,102,0.35)' : BORDER_LINE}`, borderRadius: 18, padding: 12, marginBottom: 8 }}>
+      <button onClick={() => setOpen((o) => !o)} aria-expanded={open} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', color: TEXT_DARK }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: BONE_FAINT, border: `1px solid ${LINE}`, borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>{it.kind}</span>
-            <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: BONE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.who}</span>
+            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase', color: TEXT_FAINT, border: `1px solid ${BORDER_LINE}`, borderRadius: 4, padding: '1px 5px', flexShrink: 0 }}>{it.kind}</span>
+            <span style={{ fontFamily: BODY, fontWeight: 600, fontSize: 14, color: TEXT_DARK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.who}</span>
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: st.loud ? AMBER : BONE_DIM, border: `1px solid ${st.loud ? AMBER : LINE}`, padding: '1px 7px', borderRadius: 10, whiteSpace: 'nowrap', flexShrink: 0 }}>{st.label}</span>
+          <span style={{ fontFamily: MONO, fontSize: 9, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: st.loud ? ACCENT_EMERALD : TEXT_DIM, border: `1px solid ${st.loud ? ACCENT_EMERALD : BORDER_LINE}`, padding: '1px 7px', borderRadius: 10, whiteSpace: 'nowrap', flexShrink: 0 }}>{st.label}</span>
         </div>
-        {it.subject && <p style={{ margin: '5px 0 0', fontSize: 14.5, fontWeight: 600, color: BONE, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</p>}
-        {it.text && <p style={{ margin: '5px 0 0', fontSize: 13.5, color: BONE_DIM, lineHeight: 1.5, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.text}</p>}
+        {it.subject && <p style={{ margin: '5px 0 0', fontSize: 14.5, fontWeight: 600, color: TEXT_DARK, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</p>}
+        {it.text && <p style={{ margin: '5px 0 0', fontSize: 13.5, color: TEXT_DIM, lineHeight: 1.5, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.text}</p>}
         {it.reply && (
-          <div style={{ marginTop: 7, padding: '6px 9px', background: AMBER_SOFT, borderLeft: `2px solid ${AMBER}`, borderRadius: 3 }}>
-            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: AMBER }}>We replied</span>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: BONE_DIM, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.reply}</p>
+          <div style={{ marginTop: 7, padding: '6px 9px', background: ACCENT_EMERALD_SOFT, borderLeft: `2px solid ${ACCENT_EMERALD}`, borderRadius: 3 }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: ACCENT_EMERALD }}>We replied</span>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: TEXT_DIM, lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: open ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{it.reply}</p>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 7 }}>
-          <span style={{ fontSize: 11, color: BONE_FAINT }}>{it.link ? (open ? 'hide' : 'view thread') : (open ? 'hide' : 'details')}</span>
-          <span style={{ fontSize: 11, color: BONE_FAINT }}>{timeAgoMs(it.date)}</span>
+          <span style={{ fontSize: 11, color: TEXT_FAINT }}>{it.link ? (open ? 'hide' : 'view thread') : (open ? 'hide' : 'details')}</span>
+          <span style={{ fontSize: 11, color: TEXT_FAINT }}>{timeAgoMs(it.date)}</span>
         </div>
       </button>
       {open && (it.link || it.original) && (
-        <div style={{ marginTop: 8, borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>
+        <div style={{ marginTop: 8, borderTop: `1px solid ${BORDER_LINE}`, paddingTop: 8 }}>
           {it.original && <OriginalBlock original={it.original} />}
           {it.link && (
-            <a href={it.link} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: AMBER, textDecoration: 'none' }}>Open in Gmail →</a>
+            <a href={it.link} target="_blank" rel="noreferrer" style={{ fontFamily: MONO, fontSize: 11, color: ACCENT_EMERALD, textDecoration: 'none' }}>Open in Gmail →</a>
           )}
         </div>
       )}
@@ -904,20 +928,20 @@ function SupportItemCard({ it, onDiscuss }) {
   )
 }
 
-// The unified list, purely presentational — data + filter live in the parent so
+// The unified list, purely presentational - data + filter live in the parent so
 // the headline, the chips, and the list can never tell three different stories.
 function ItemsList({ items, loaded, filter, onDiscuss }) {
   const shown = filter === 'all' ? items : items.filter((i) => i.status === filter)
   const firstDoneIdx = filter === 'all' ? shown.findIndex((i) => i.status === 'responded' || i.status === 'resolved') : -1
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '14px 24px 28px' }}>
-      {!loaded && items.length === 0 && <p style={{ color: BONE_DIM, fontSize: 13 }}>Loading…</p>}
+      {!loaded && items.length === 0 && <p style={{ color: TEXT_DIM, fontSize: 13 }}>Loading…</p>}
       {loaded && shown.length === 0 && (
         <div style={{ padding: '72px 0', textAlign: 'center' }}>
-          <p style={{ fontFamily: SERIF, fontSize: 24, color: BONE, margin: 0 }}>
+          <p style={{ fontFamily: SERIF, fontSize: 24, color: TEXT_DARK, margin: 0 }}>
             {filter === 'all' ? 'All quiet.' : 'Nothing here.'}
           </p>
-          <p style={{ fontSize: 13, color: BONE_FAINT, margin: '8px 0 0' }}>
+          <p style={{ fontSize: 13, color: TEXT_FAINT, margin: '8px 0 0' }}>
             {filter === 'all' ? 'New requests land here the moment they arrive.' : 'Items move here as their status changes.'}
           </p>
         </div>
@@ -926,8 +950,8 @@ function ItemsList({ items, loaded, filter, onDiscuss }) {
         <div key={it.key}>
           {i === firstDoneIdx && firstDoneIdx > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 10px' }}>
-              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: BONE_FAINT }}>Done</span>
-              <span style={{ flex: 1, height: 1, background: LINE }} />
+              <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: TEXT_FAINT }}>Done</span>
+              <span style={{ flex: 1, height: 1, background: BORDER_LINE }} />
             </div>
           )}
           <SupportItemCard it={it} onDiscuss={onDiscuss} />
@@ -937,97 +961,254 @@ function ItemsList({ items, loaded, filter, onDiscuss }) {
   )
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// M20 FRONT DESK (v6) - the live redesign. Outcome columns, big tactile cards,
+// human bullet summaries, action options. Reuses all existing wiring below.
+// Locked design: corner/missions/support-desk/research/mockups/2026-06-14-support-redesign-v6-inline.html
+// ════════════════════════════════════════════════════════════════════════════
+
+const ACCENT_EMERALD_DARK = '#0B7355'
+
+let frontDeskCssInjected = false
+function ensureFrontDeskCss() {
+  if (frontDeskCssInjected || typeof document === 'undefined') return
+  frontDeskCssInjected = true
+  const el = document.createElement('style')
+  el.textContent = `
+    .fd-card { transition: transform .16s ease, box-shadow .16s ease; }
+    .fd-card:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(26,26,20,0.05), 0 14px 36px rgba(26,26,20,0.10); }
+    .fd-tab { transition: background .14s ease, border-color .14s ease, color .14s ease; }
+  `
+  document.head.appendChild(el)
+}
+
+// Avatar identity tones (kept inside the v6 palette family).
+const AV_TONES = [
+  { bg: 'rgba(14,143,102,0.14)', fg: '#0E8F66' },
+  { bg: 'rgba(124,91,196,0.14)', fg: '#7C5BC4' },
+  { bg: 'rgba(14,143,138,0.14)', fg: '#0E8F8A' },
+  { bg: 'rgba(177,76,130,0.14)', fg: '#B14C82' },
+  { bg: 'rgba(62,109,181,0.14)', fg: '#3E6DB5' },
+]
+function initialsOf(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+function toneOf(name) {
+  let h = 0
+  for (const c of (name || 'x')) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return AV_TONES[h % AV_TONES.length]
+}
+
+// Round 1: map a wish to one of the three outcomes from its existing status + staged
+// state. A real triage 'outcome' field arrives in a later round.
+function wishOutcome(w) {
+  if (w.status === 'resolved') return 'done'
+  if (parseStaged(w.message) || w.status === 'needs_team') return 'needs'
+  if (w.status === 'working') return 'got'
+  return 'holding'
+}
+
+const OUTCOME_PILL = {
+  got: { label: 'Working on it', fg: ACCENT_EMERALD, bg: ACCENT_EMERALD_SOFT },
+  needs: { label: 'Your decision', fg: ALERT_WARM, bg: ALERT_WARM_SOFT },
+  holding: { label: 'Just arrived', fg: HOLD_BLUE, bg: HOLD_BLUE_SOFT },
+}
+
+function Avatar({ name }) {
+  const t = toneOf(name)
+  return (
+    <span style={{ width: 42, height: 42, borderRadius: 13, flexShrink: 0, background: t.bg, color: t.fg,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontWeight: 600, fontSize: 16 }}>
+      {initialsOf(name)}
+    </span>
+  )
+}
+
+function CardHead({ name, account, channel, when }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+      <Avatar name={name} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600, color: TEXT_DARK, lineHeight: 1.15 }}>{name}</div>
+        <div style={{ fontFamily: BODY, fontSize: 12.5, color: TEXT_DIM, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {account}{channel ? ` · ${channel}` : ''}
+        </div>
+      </div>
+      <span style={{ fontFamily: BODY, fontSize: 11.5, color: TEXT_FAINT, flexShrink: 0, alignSelf: 'flex-start' }}>{when}</span>
+    </div>
+  )
+}
+
+function OutcomePill({ outcome }) {
+  const p = OUTCOME_PILL[outcome] || OUTCOME_PILL.holding
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontFamily: BODY, fontSize: 11, fontWeight: 600,
+      padding: '5px 12px', borderRadius: 999, marginTop: 15, color: p.fg, background: p.bg }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.fg }} />{p.label}
+    </span>
+  )
+}
+
+// A non-staged wish rendered as a v6 front-desk card.
+function FrontDeskCard({ w, outcome, onDiscuss }) {
+  ensureFrontDeskCss()
+  const msgParts = splitOriginal((w.message || '').replace(STAGED_RE, '').trim())
+  const { ask } = parseWishSummary(msgParts.summary)
+  const overSla = outcome === 'holding' && (Date.now() - new Date(w.created_at).getTime()) > 10 * 60 * 1000
+  return (
+    <div className="fd-card" style={{ background: BG_WHITE, border: `1px solid ${BORDER_LINE}`, borderRadius: 18,
+      padding: '20px 20px 16px', boxShadow: '0 1px 2px rgba(26,26,20,0.04), 0 6px 22px rgba(26,26,20,0.05)' }}>
+      <CardHead name={w.name || w.email || 'Someone'}
+        account={w.source === 'email' ? (w.email || 'email') : 'spoke to us'}
+        channel={w.source === 'email' ? 'email' : 'speak-freely'} when={timeAgo(w.created_at)} />
+      <OutcomePill outcome={outcome} />
+      <div style={{ marginTop: 14 }}><AskList ask={ask} size={14.5} /></div>
+      {w.latest_response && (
+        <div style={{ marginTop: 14, padding: '13px 15px', background: ACCENT_EMERALD_SOFT, borderRadius: 13 }}>
+          <div style={{ fontFamily: BODY, fontSize: 11, fontWeight: 600, color: ACCENT_EMERALD }}>We replied</div>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: TEXT_DIM, lineHeight: 1.55, fontStyle: 'italic' }}>{w.latest_response.body}</p>
+        </div>
+      )}
+      {outcome === 'holding' && (
+        <div style={{ marginTop: 13, padding: '11px 14px', background: HOLD_BLUE_SOFT, borderRadius: 12,
+          fontFamily: BODY, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.5 }}>
+          {overSla ? 'Waiting over 10 minutes. A soft note that we have read it goes out shortly.'
+            : 'Just landed. If it is not picked up soon, we let them know we have read it and will follow up.'}
+        </div>
+      )}
+      <OriginalBlock original={msgParts.original} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 15, flexWrap: 'wrap' }}>
+        <DiscussBtn onDiscuss={onDiscuss} payload={{ who: w.name || w.email, email: w.email,
+          subject: null, original: msgParts.original, ask, staged: null, accessCode: w.access_code }} />
+        <ResolveBtn wishId={w.id} style={{ marginLeft: 'auto' }} />
+      </div>
+    </div>
+  )
+}
+
+function OutcomeColumn({ tone, title, sub, count, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '2px 2px 0' }}>
+        <span style={{ width: 10, height: 10, borderRadius: '50%', background: tone, flexShrink: 0 }} />
+        <span style={{ fontFamily: SERIF, fontSize: 18, fontWeight: 600, color: TEXT_DARK }}>{title}</span>
+        <span style={{ marginLeft: 'auto', fontFamily: BODY, fontSize: 12, fontWeight: 600, color: TEXT_DIM,
+          background: BG_CREAM, borderRadius: 8, padding: '2px 9px' }}>{count}</span>
+      </div>
+      <div style={{ fontFamily: BODY, fontSize: 11.5, color: TEXT_FAINT, padding: '0 2px', marginTop: -10 }}>{sub}</div>
+      {count === 0
+        ? <div style={{ fontFamily: BODY, fontSize: 12.5, color: TEXT_FAINT, padding: '22px 4px', textAlign: 'center',
+            border: `1px dashed ${BORDER_LINE}`, borderRadius: 14 }}>Nothing here right now.</div>
+        : children}
+    </div>
+  )
+}
+
+function tabStyle(active) {
+  return { fontFamily: BODY, fontSize: 13, fontWeight: active ? 700 : 500, cursor: 'pointer',
+    color: active ? TEXT_DARK : TEXT_FAINT, background: active ? BG_WHITE : 'transparent',
+    border: `1px solid ${active ? BORDER_LINE : 'transparent'}`, borderRadius: 10, padding: '8px 14px' }
+}
+
 // ── Full dashboard ───────────────────────────────────────────────────────────
 export default function SupportDashboard({ isDesktop = true, onClose, worldId, onDiscuss }) {
-  const [view, setView] = useState('all') // all | streams | chat | inbox (chat = mobile-only pane)
-  const [filter, setFilter] = useState('all') // all | needs_you | responded | resolved
+  const [view, setView] = useState('desk') // desk | inbox | chat
+  const { wishes } = useSupportData(worldId)
+  const loaded = wishes !== null
 
-  // One data spine. The headline, the chips, and the list all read from here.
-  const { wishes, mailboxes } = useSupportData(worldId)
-  const loaded = wishes !== null && mailboxes !== null
-  const items = buildItems(wishes, mailboxes)
-  const counts = {
-    all: items.length,
-    needs_you: items.filter((i) => i.status === 'needs_you').length,
-    responded: items.filter((i) => i.status === 'responded').length,
-    resolved: items.filter((i) => i.status === 'resolved').length,
-  }
+  const open = (wishes || []).filter((w) => w.status !== 'resolved')
+  const got = open.filter((w) => wishOutcome(w) === 'got')
+  const needs = open.filter((w) => wishOutcome(w) === 'needs')
+  const holding = open.filter((w) => wishOutcome(w) === 'holding')
+  const resolved = (wishes || []).filter((w) => w.status === 'resolved')
+
   const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
-  const wishResolvedToday = (wishes || []).filter((w) => w.status === 'resolved' && w.updated_at && new Date(w.updated_at) >= startOfDay).length
-  const emailRepliedToday = (mailboxes || []).reduce((n, b) =>
-    n + (b.replied || []).filter((it) => (it.lastReply?.date || 0) >= startOfDay.getTime()).length, 0)
-  const respondedToday = wishResolvedToday + emailRepliedToday
-  const openCount = counts.needs_you + items.filter((i) => i.status === 'working').length
-  const rate = (openCount + respondedToday) > 0 ? Math.round((respondedToday / (openCount + respondedToday)) * 100) : null
-  const goToNeedsYou = () => { setView('all'); setFilter('needs_you') }
+  const handledToday = resolved.filter((w) => w.updated_at && new Date(w.updated_at) >= startOfDay).length
+
+  const renderWish = (w) => {
+    const staged = parseStaged(w.message)
+    if (staged && w.status !== 'resolved') return <PressSendCard key={w.id} w={w} staged={staged} onDiscuss={onDiscuss} />
+    return <FrontDeskCard key={w.id} w={w} outcome={wishOutcome(w)} onDiscuss={onDiscuss} />
+  }
+
+  const gridCols = isDesktop ? 'repeat(3, 1fr)' : '1fr'
 
   const header = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '18px 24px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
-      <h1 style={{ fontFamily: SERIF, fontWeight: 400, fontSize: 26, margin: 0, color: BONE, letterSpacing: '-0.01em' }}>Support</h1>
-      <button onClick={onClose} style={{ ...ghostBtn, fontSize: 13 }} aria-label="Close support">Close ✕</button>
+      padding: '20px 26px 14px', flexShrink: 0, gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 13 }}>
+        <span style={{ width: 34, height: 34, borderRadius: 11, background: ACCENT_EMERALD, color: BG_WHITE,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: SERIF, fontWeight: 600, fontSize: 18 }}>S</span>
+        <h1 style={{ fontFamily: SERIF, fontWeight: 600, fontSize: 24, margin: 0, color: TEXT_DARK, letterSpacing: '-0.01em' }}>Front desk</h1>
+        <span style={{ fontFamily: BODY, fontSize: 12, color: TEXT_FAINT, paddingTop: 5 }}>Support · today</span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button className="fd-tab" onClick={() => setView('desk')} style={tabStyle(view === 'desk')}>Front desk</button>
+        <button className="fd-tab" onClick={() => setView('inbox')} style={tabStyle(view === 'inbox')}>Inbox</button>
+        <button className="fd-tab" onClick={() => setView('chat')} style={tabStyle(view === 'chat')}>Chat</button>
+        <button onClick={onClose} style={{ ...ghostBtn, borderRadius: 10, fontSize: 13, padding: '8px 14px' }} aria-label="Close support">Close</button>
+      </div>
     </div>
   )
 
-  const chips = view === 'all' && (
-    <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', paddingBottom: 6 }}>
-      <FilterPill active={filter === 'all'} onClick={() => setFilter('all')} label={loaded ? `All ${counts.all}` : 'All'} />
-      <FilterPill active={filter === 'needs_you'} onClick={() => setFilter('needs_you')} label={loaded ? `Needs you ${counts.needs_you}` : 'Needs you'} loud />
-      <FilterPill active={filter === 'responded'} onClick={() => setFilter('responded')} label={loaded ? `Responded ${counts.responded}` : 'Responded'} />
-      {counts.resolved > 0 && <FilterPill active={filter === 'resolved'} onClick={() => setFilter('resolved')} label={`Resolved ${counts.resolved}`} />}
+  const briefing = (
+    <div style={{ fontFamily: SERIF, fontSize: isDesktop ? 20 : 16.5, fontWeight: 500, color: TEXT_DARK,
+      padding: '0 26px 18px', lineHeight: 1.4, letterSpacing: '-0.01em' }}>
+      {!loaded ? 'Reading the desk…' : (
+        <>
+          Today, <b style={{ color: ACCENT_EMERALD_DARK, fontWeight: 600 }}>{handledToday} {handledToday === 1 ? 'request was' : 'requests were'} handled for you</b>.{' '}
+          {needs.length > 0
+            ? <span style={{ color: ALERT_WARM }}>{needs.length} {needs.length === 1 ? 'is' : 'are'} waiting on your call</span>
+            : <span style={{ color: TEXT_FAINT }}>Nothing is waiting on you</span>}
+          {holding.length > 0
+            ? <span style={{ color: TEXT_FAINT }}>, and {holding.length} just arrived.</span>
+            : <span style={{ color: TEXT_FAINT }}>.</span>}
+        </>
+      )}
     </div>
   )
 
-  if (!isDesktop) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
-        {header}
-        <FocusStrip loaded={loaded} needsCount={counts.needs_you} respondedToday={respondedToday} rate={rate} onNeedsYou={goToNeedsYou} />
-        <div style={{ display: 'flex', gap: 4, padding: '8px 24px 0', flexWrap: 'wrap', alignItems: 'center' }}>
-          <TabBtn active={view === 'all'} onClick={() => setView('all')} label="All" />
-          <TabBtn active={view === 'streams'} onClick={() => setView('streams')} label="Requests" />
-          <TabBtn active={view === 'chat'} onClick={() => setView('chat')} label="Chat" />
-          <TabBtn active={view === 'inbox'} onClick={() => setView('inbox')} label="Inbox" />
-          {chips}
-        </div>
-        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          {view === 'all' ? <ItemsList items={items} loaded={loaded} filter={filter} onDiscuss={onDiscuss} />
-            : view === 'streams' ? <RequestsStream />
-              : view === 'chat' ? <SupportInbox isDesktop={false} />
-                : <InboxPanel worldId={worldId} />}
-        </div>
+  const desk = (
+    <div style={{ flex: 1, overflowY: 'auto', padding: '4px 26px 40px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 16, alignItems: 'start' }}>
+        <OutcomeColumn tone={ACCENT_EMERALD} title="We've got this" sub="handled on its own, nothing needed from you" count={got.length}>
+          {got.map(renderWish)}
+        </OutcomeColumn>
+        <OutcomeColumn tone={ALERT_WARM} title="Needs you" sub="your call, a reply is ready" count={needs.length}>
+          {needs.map(renderWish)}
+        </OutcomeColumn>
+        <OutcomeColumn tone={HOLD_BLUE} title="Holding" sub="no one left waiting" count={holding.length}>
+          {holding.map(renderWish)}
+        </OutcomeColumn>
       </div>
-    )
-  }
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: INK }}>
-      {header}
-      <FocusStrip loaded={loaded} needsCount={counts.needs_you} respondedToday={respondedToday} rate={rate} onNeedsYou={goToNeedsYou} />
-      <div style={{ display: 'flex', gap: 4, padding: '6px 24px 0', borderBottom: `1px solid ${LINE}`, alignItems: 'center', flexWrap: 'wrap' }}>
-        <TabBtn active={view === 'all'} onClick={() => setView('all')} label="All support" />
-        <TabBtn active={view === 'streams'} onClick={() => setView('streams')} label="Requests & chat" />
-        <TabBtn active={view === 'inbox'} onClick={() => setView('inbox')} label="Inbox" />
-        {chips}
-      </div>
-      {view === 'all' ? (
-        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <ItemsList items={items} loaded={loaded} filter={filter} onDiscuss={onDiscuss} />
-        </div>
-      ) : view === 'streams' ? (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
-          <div style={{ flex: '1 1 50%', minWidth: 0, borderRight: `1px solid ${LINE}`, overflow: 'hidden' }}>
-            <RequestsStream />
+      {resolved.length > 0 && (
+        <div style={{ marginTop: 30 }}>
+          <div style={{ fontFamily: BODY, fontSize: 11.5, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
+            color: TEXT_FAINT, margin: '0 0 12px' }}>Recently handled</div>
+          <div style={{ display: 'grid', gridTemplateColumns: gridCols, gap: 16, alignItems: 'start', opacity: 0.7 }}>
+            {resolved.slice(0, 9).map((w) => <FrontDeskCard key={w.id} w={w} outcome="got" onDiscuss={onDiscuss} />)}
           </div>
-          <div style={{ flex: '1 1 50%', minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <SupportInbox isDesktop />
-          </div>
-        </div>
-      ) : (
-        <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <InboxPanel worldId={worldId} />
         </div>
       )}
+      <div style={{ marginTop: 28, padding: '15px 20px', background: BG_WHITE, border: `1px solid ${BORDER_LINE}`,
+        borderRadius: 14, fontFamily: BODY, fontSize: 13.5, color: TEXT_DIM, lineHeight: 1.5 }}>
+        Cold outreach and newsletters are filtered out before they reach the desk. Only real client requests show up here.
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: BG_CREAM, fontFamily: BODY }}>
+      {header}
+      {view === 'desk' ? (<>{briefing}{desk}</>)
+        : view === 'inbox' ? (
+          <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}><InboxPanel worldId={worldId} /></div>
+        ) : (
+          <div style={{ flex: 1, overflow: 'hidden', minHeight: 0, display: 'flex', flexDirection: 'column' }}><SupportInbox isDesktop={isDesktop} /></div>
+        )}
     </div>
   )
 }
@@ -1035,12 +1216,12 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId, o
 function TabBtn({ active, onClick, label }) {
   return (
     <button onClick={onClick} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: BODY,
-      padding: '8px 4px', marginRight: 20, color: active ? BONE : BONE_FAINT, fontSize: 15,
-      fontWeight: active ? 700 : 500, borderBottom: `2px solid ${active ? AMBER : 'transparent'}` }}>{label}</button>
+      padding: '8px 4px', marginRight: 20, color: active ? TEXT_DARK : TEXT_FAINT, fontSize: 15,
+      fontWeight: active ? 700 : 500, borderBottom: `2px solid ${active ? ACCENT_EMERALD : 'transparent'}` }}>{label}</button>
   )
 }
 
 const ghostBtn = {
-  background: 'transparent', color: BONE_DIM, border: `1px solid ${LINE}`, borderRadius: 3,
+  background: 'transparent', color: TEXT_DIM, border: `1px solid ${BORDER_LINE}`, borderRadius: 3,
   fontFamily: BODY, fontSize: 12, padding: '6px 12px', cursor: 'pointer',
 }
