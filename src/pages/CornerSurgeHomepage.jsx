@@ -249,6 +249,12 @@ function HeroSection() {
 
 // --- FRAGMENTATION DIAGRAM (scattered icons showing tool overload) ---
 function FragmentationDiagram() {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const icons = [
     { Icon: Users, delay: 0 },
     { Icon: FileText, delay: 0.1 },
@@ -261,21 +267,25 @@ function FragmentationDiagram() {
   return (
     <div className="relative w-full h-64 sm:h-80 md:h-96">
       {/* Scattered icon positions — asymmetric arrangement */}
-      {icons.map((item, i) => (
-        <motion.div
-          key={i}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 0.5, y: 0 }}
-          transition={{ delay: item.delay, duration: 0.6 }}
-          className="absolute"
-          style={{
-            left: `${(i % 2) * 60 + 10}%`,
-            top: `${Math.floor(i / 2) * 30 + 10}%`,
-          }}
-        >
-          <item.Icon size={40} style={{ color: SURGE.charcoal, opacity: 0.5 }} strokeWidth={1.5} />
-        </motion.div>
-      ))}
+      {icons.map((item, i) => {
+        const delay = item.delay
+        const isVisible = mounted
+
+        return (
+          <div
+            key={i}
+            className="absolute"
+            style={{
+              left: `${(i % 2) * 60 + 10}%`,
+              top: `${Math.floor(i / 2) * 30 + 10}%`,
+              opacity: isVisible ? 0.5 : 0,
+              transition: `opacity 0.6s ease-out ${delay}s`,
+            }}
+          >
+            <item.Icon size={40} style={{ color: SURGE.charcoal, opacity: 0.5 }} strokeWidth={1.5} />
+          </div>
+        )
+      })}
 
       {/* Subtle connecting lines to show chaos */}
       <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.15 }}>
@@ -629,89 +639,88 @@ function HowItWorksSection() {
   ]
 
   return (
-    <Section bgColor={SURGE.charcoal} className="py-16 sm:py-32 px-6 relative overflow-hidden">
-      {/* Distinct dark background (different from Promise section) — subtle grid backdrop */}
-      <div className="absolute inset-0 z-0" style={{ opacity: 0.05 }}>
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `radial-gradient(circle at 50% 50%, ${SURGE.purple}, transparent 80%)`,
-          }}
-        />
-      </div>
+    <Section bgColor={SURGE.white} className="py-16 sm:py-32 px-6 relative overflow-hidden">
+      {/* Off-white background — contrast from Promise section dark */}
+      <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: '#e8e8e8' }} />
 
       <div className="max-w-4xl mx-auto relative z-10">
         <h2
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-center"
           style={{
-            background: `linear-gradient(135deg, ${SURGE.white}, ${SURGE.purple})`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            color: SURGE.charcoal,
           }}
         >
-          Three steps to your upgraded business.
+          How it works.
         </h2>
 
         <p
           className="text-lg md:text-xl leading-relaxed mb-16 text-center"
-          style={{ color: '#b0b0b0', maxWidth: '60ch' }}
+          style={{ color: '#666', maxWidth: '60ch' }}
         >
-          Get started in three simple steps. From discovery to execution in days, not months.
+          Three simple steps. From discovery to your agents live and working.
         </p>
 
-        {/* VERTICAL TIMELINE */}
-        <div className="relative">
-          {/* Center connecting line (desktop only) */}
-          <div
-            className="absolute left-1/2 top-0 bottom-0 w-1 hidden md:block"
-            style={{
-              background: `linear-gradient(180deg, ${SURGE.purple}66 0%, ${SURGE.cyan}66 50%, ${SURGE.purple}66 100%)`,
-              transform: 'translateX(-50%)',
-            }}
-          />
+        {/* DARK CARD CONTAINER FOR TIMELINE — centered on light ground */}
+        <div
+          className="max-w-2xl mx-auto rounded-2xl p-12 sm:p-16"
+          style={{
+            backgroundColor: SURGE.charcoal,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          }}
+        >
+          {/* VERTICAL TIMELINE — CENTERED INSIDE DARK CARD */}
+          <div className="relative">
+            {/* Center connecting line (desktop only) */}
+            <div
+              className="absolute left-1/2 top-0 bottom-0 w-1 hidden md:block"
+              style={{
+                background: `linear-gradient(180deg, ${SURGE.purple}66 0%, ${SURGE.cyan}66 50%, ${SURGE.purple}66 100%)`,
+                transform: 'translateX(-50%)',
+              }}
+            />
 
-          {/* Timeline steps */}
-          <div className="space-y-12 md:space-y-20">
-            {steps.map((step, i) => (
-              <div key={i} className="relative">
-                {/* Desktop: alternate left-right layout */}
-                <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 items-center ${i % 2 === 1 ? 'md:grid-cols-2' : ''}`}>
-                  {/* Left side (step number + icon) */}
-                  <div className={`flex flex-col items-center md:items-${i % 2 === 0 ? 'end' : 'start'} gap-4`}>
-                    {/* Step circle with gradient */}
-                    <div
-                      className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl shadow-xl flex-shrink-0"
-                      style={{
-                        background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
-                        color: SURGE.white,
-                        boxShadow: `0 0 40px rgba(124, 58, 237, 0.5)`,
-                      }}
-                    >
-                      {step.num}
+            {/* Timeline steps — CENTERED LAYOUT (not left-right alternating) */}
+            <div className="space-y-12 md:space-y-20">
+              {steps.map((step, i) => (
+                <div key={i} className="relative">
+                  {/* Centered layout on all breakpoints */}
+                  <div className="flex flex-col items-center gap-4 md:gap-8">
+                    {/* Center-aligned: number + icon */}
+                    <div className="flex flex-col items-center gap-4">
+                      {/* Step circle with gradient */}
+                      <div
+                        className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl shadow-xl flex-shrink-0"
+                        style={{
+                          background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
+                          color: SURGE.white,
+                          boxShadow: `0 0 40px rgba(124, 58, 237, 0.5)`,
+                        }}
+                      >
+                        {step.num}
+                      </div>
+
+                      {/* Icon below circle */}
+                      <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.15)' }}>
+                        <step.Icon size={32} style={{ color: SURGE.cyan }} strokeWidth={1.5} />
+                      </div>
                     </div>
 
-                    {/* Icon below circle */}
-                    <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.15)' }}>
-                      <step.Icon size={32} style={{ color: SURGE.cyan }} strokeWidth={1.5} />
+                    {/* Text content — centered below */}
+                    <div className="text-center">
+                      <h3
+                        className="text-2xl md:text-3xl font-bold mb-3"
+                        style={{ color: SURGE.white }}
+                      >
+                        {step.title}
+                      </h3>
+                      <p className="text-base md:text-lg leading-relaxed" style={{ color: '#a8a8a8', maxWidth: '45ch' }}>
+                        {step.body}
+                      </p>
                     </div>
-                  </div>
-
-                  {/* Right side (text content) */}
-                  <div className={`${i % 2 === 0 ? 'md:pl-12' : 'md:pr-12'} text-center md:text-${i % 2 === 0 ? 'left' : 'right'}`}>
-                    <h3
-                      className="text-2xl md:text-3xl font-bold mb-3"
-                      style={{ color: SURGE.white }}
-                    >
-                      {step.title}
-                    </h3>
-                    <p className="text-base md:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>
-                      {step.body}
-                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -722,86 +731,82 @@ function HowItWorksSection() {
 // --- FINAL CTA SECTION (OFF-WHITE CARD) ---
 function FinalCtaSection() {
   return (
-    <Section id="cta" bgColor={SURGE.charcoal} className="py-24 sm:py-40 px-6 relative overflow-hidden">
-      {/* Subtle background accent */}
+    <Section id="cta" bgColor={SURGE.white} className="py-24 sm:py-40 px-6 relative overflow-hidden">
+      {/* Subtle background accent on white ground */}
       <div
         className="absolute inset-0 z-0"
         style={{
-          background: `radial-gradient(ellipse 120% 100% at 50% 100%, ${SURGE.purple}10 0%, transparent 70%)`,
+          background: `radial-gradient(ellipse 120% 100% at 50% 100%, ${SURGE.cyan}08 0%, transparent 70%)`,
           pointerEvents: 'none',
         }}
       />
 
       <div className="max-w-3xl mx-auto relative z-10">
-        {/* OFF-WHITE CARD CONTAINER */}
+        {/* CENTERED CTA CONTAINER ON WHITE BACKGROUND */}
         <div
-          className="rounded-3xl p-12 sm:p-16 md:p-20 text-center"
-          style={{
-            backgroundColor: SURGE.white,
-          }}
+          className="text-center"
         >
-          {/* Bold Stat in Purple */}
-          <div className="mb-8">
-            <div
-              className="text-5xl md:text-6xl font-bold"
-              style={{ color: SURGE.purple }}
-            >
-              3x faster
-            </div>
-            <p style={{ color: '#999', fontSize: '16px', marginTop: '4px' }}>
-              Get more done in less time
-            </p>
+        {/* Bold Stat in Purple */}
+        <div className="mb-8">
+          <div
+            className="text-5xl md:text-6xl font-bold"
+            style={{ color: SURGE.purple }}
+          >
+            3x faster
           </div>
-
-          {/* Headline */}
-          <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6"
-            style={{ color: SURGE.charcoal }}
-          >
-            Ready to operate like a team of ten?
-          </h2>
-
-          {/* Supporting Copy */}
-          <p
-            className="text-base sm:text-lg md:text-xl leading-relaxed mb-12"
-            style={{ color: '#555', maxWidth: '55ch', margin: '0 auto 48px' }}
-          >
-            Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
-          </p>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <a
-              href="/corner/book"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 sm:px-10 py-4 sm:py-5 font-bold text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl hover:-translate-y-1"
-              style={{
-                background: SURGE.gradient,
-              }}
-            >
-              Book your intro call
-              <ArrowUpRight size={20} />
-            </a>
-            <a
-              href="#promise"
-              className="w-full sm:w-auto px-8 py-4 font-bold text-lg rounded-lg transition-all duration-200"
-              style={{
-                color: SURGE.charcoal,
-                borderColor: '#ddd',
-                border: '2px solid',
-              }}
-            >
-              Learn more
-            </a>
-          </div>
-
-          {/* Trust Copy */}
-          <p
-            className="text-xs sm:text-sm"
-            style={{ color: '#999' }}
-          >
-            No credit card. No commitment. Book now.
+          <p style={{ color: '#999', fontSize: '16px', marginTop: '4px' }}>
+            Get more done in less time
           </p>
         </div>
+
+        {/* Headline */}
+        <h2
+          className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6"
+          style={{ color: SURGE.charcoal }}
+        >
+          Ready to operate like a team of ten?
+        </h2>
+
+        {/* Supporting Copy */}
+        <p
+          className="text-base sm:text-lg md:text-xl leading-relaxed mb-12"
+          style={{ color: '#555', maxWidth: '55ch', margin: '0 auto 48px' }}
+        >
+          Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
+        </p>
+
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+          <a
+            href="/corner/book"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 sm:px-10 py-4 sm:py-5 font-bold text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl hover:-translate-y-1"
+            style={{
+              background: SURGE.gradient,
+            }}
+          >
+            Book your intro call
+            <ArrowUpRight size={20} />
+          </a>
+          <a
+            href="#promise"
+            className="w-full sm:w-auto px-8 py-4 font-bold text-lg rounded-lg transition-all duration-200"
+            style={{
+              color: SURGE.charcoal,
+              borderColor: '#ddd',
+              border: '2px solid',
+            }}
+          >
+            Learn more
+          </a>
+        </div>
+
+        {/* Trust Copy */}
+        <p
+          className="text-xs sm:text-sm"
+          style={{ color: '#999' }}
+        >
+          No credit card. No commitment. Book now.
+        </p>
       </div>
     </Section>
   )
