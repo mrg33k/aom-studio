@@ -186,10 +186,14 @@ function HeroSection() {
       <div
         className="relative z-10 w-full h-full flex flex-col items-center justify-center px-6"
       >
-        {/* Readability scrim */}
+        {/* Readability scrim — radial: darker behind the text block, fades out so the ASCII field stays vivid at the edges */}
         <div
-          className="absolute inset-0 bg-black/40"
-          style={{ zIndex: 5 }}
+          className="absolute inset-0"
+          style={{
+            zIndex: 5,
+            background:
+              'radial-gradient(ellipse 62% 52% at 50% 50%, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.5) 42%, rgba(0,0,0,0.12) 100%)',
+          }}
         />
 
         <div
@@ -204,7 +208,7 @@ function HeroSection() {
 
           <p
             className="text-base sm:text-lg md:text-xl leading-relaxed mb-8 sm:mb-10"
-            style={{ color: '#b0b0b0' }}
+            style={{ color: '#e4e4e7' }}
           >
             Managed AI agents that run your business in one organized system.
             You direct. They execute. While you sleep.
@@ -238,7 +242,7 @@ function HeroSection() {
 
           <p
             className="text-xs sm:text-sm mt-4 sm:mt-6"
-            style={{ color: '#808080' }}
+            style={{ color: '#a1a1aa' }}
           >
             30-minute discovery call. No commitment.
           </p>
