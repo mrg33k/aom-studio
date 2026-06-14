@@ -324,17 +324,22 @@ export default function CornerVG() {
     document.documentElement.setAttribute('data-shell', 'cv4')
     // CVG delta: persistent surface badge so it's always obvious this is the
     // Gemini workbench, not the live dashboard.
+    const style = document.createElement('style')
+    style.id = 'cvg-badge-styles'
+    style.textContent = '@keyframes cvg-dot-pulse{0%,100%{opacity:1}50%{opacity:.4}}'
+    document.head.appendChild(style)
     const badge = document.createElement('div')
     badge.id = 'cvg-surface-badge'
-    badge.textContent = 'GEMINI'
+    badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px;animation:cvg-dot-pulse 2s ease-in-out infinite;vertical-align:middle"></span><span>GEMINI 3.5 FLASH</span>'
     badge.style.cssText = 'position:fixed;bottom:10px;right:10px;z-index:99999;' +
       'font:600 10px/1 "JetBrains Mono",monospace;letter-spacing:.12em;' +
-      'color:#0b0f14;background:#f4b942;padding:4px 8px;border-radius:4px;' +
-      'opacity:.92;pointer-events:none;'
+      'color:#0b0f14;background:#f4b942;padding:5px 10px;border-radius:4px;' +
+      'opacity:.92;pointer-events:none;display:flex;align-items:center;'
     document.body.appendChild(badge)
     return () => {
       try { document.documentElement.removeAttribute('data-shell') } catch (_) {}
       try { badge.remove() } catch (_) {}
+      try { style.remove() } catch (_) {}
     }
   }, [])
   const [toast, setToast] = useState({ visible: false, message: '' })
