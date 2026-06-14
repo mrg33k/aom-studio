@@ -456,20 +456,20 @@ function CornerFooter() {
   return (
     <footer className="py-8 sm:py-12 px-6 border-t-2" style={{ backgroundColor: SURGE.charcoal, borderColor: '#333' }}>
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-        <div style={{ color: '#b0b0b0' }} className="text-xs sm:text-sm text-center md:text-left">
+        <div style={{ color: '#b0b0b0' }} className="text-sm md:text-base text-center md:text-left">
           <span style={{ background: SURGE.gradient, backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} className="font-bold">
             corner
           </span>
           {' — '}AI agents for ambitious operators
         </div>
         <div className="flex items-center gap-4 sm:gap-6">
-          <a href="#" style={{ color: '#b0b0b0' }} className="text-xs sm:text-sm hover:text-white transition-colors">
+          <a href="#" style={{ color: '#b0b0b0' }} className="text-sm md:text-base hover:text-white transition-colors">
             Privacy
           </a>
-          <a href="#" style={{ color: '#b0b0b0' }} className="text-xs sm:text-sm hover:text-white transition-colors">
+          <a href="#" style={{ color: '#b0b0b0' }} className="text-sm md:text-base hover:text-white transition-colors">
             Terms
           </a>
-          <a href="#" style={{ color: '#b0b0b0' }} className="text-xs sm:text-sm hover:text-white transition-colors">
+          <a href="#" style={{ color: '#b0b0b0' }} className="text-sm md:text-base hover:text-white transition-colors">
             Contact
           </a>
         </div>
