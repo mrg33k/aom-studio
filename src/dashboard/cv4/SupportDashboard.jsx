@@ -1119,11 +1119,13 @@ export default function SupportDashboard({ isDesktop = true, onClose, worldId, o
   const { wishes } = useSupportData(worldId)
   const loaded = wishes !== null
 
-  const open = (wishes || []).filter((w) => w.status !== 'resolved')
+  // Cleared cards (dismissed test cards / filtered spam) never show on the board.
+  const visible = (wishes || []).filter((w) => w.status !== 'dismissed' && w.status !== 'spam')
+  const open = visible.filter((w) => w.status !== 'resolved')
   const got = open.filter((w) => wishOutcome(w) === 'got')
   const needs = open.filter((w) => wishOutcome(w) === 'needs')
   const holding = open.filter((w) => wishOutcome(w) === 'holding')
-  const resolved = (wishes || []).filter((w) => w.status === 'resolved')
+  const resolved = visible.filter((w) => w.status === 'resolved')
 
   const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0)
   const handledToday = resolved.filter((w) => w.updated_at && new Date(w.updated_at) >= startOfDay).length
