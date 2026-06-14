@@ -38,46 +38,22 @@ const SURGE = {
 }
 
 // --- ANIMATION VARIANTS ---
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: (i = 0) => ({
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.25, 0.46, 0.45, 0.94],
-    },
-  }),
-}
-
-const staggerContainer = {
-  visible: {
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-}
+// Temporarily stripped for debugging
 
 // --- SECTION WRAPPER ---
 function Section({ children, id, className = '', bgColor = SURGE.charcoal }) {
   const ref = useRef(null)
-  const isInView = useInView(ref, { once: true, margin: '-100px' })
 
   return (
     <section
       ref={ref}
       id={id}
       className={className}
-      style={{ backgroundColor: bgColor, display: 'block' }}
+      style={{ backgroundColor: bgColor, display: 'block', width: '100%' }}
     >
-      <motion.div
-        initial={{ opacity: 1 }}
-        animate={{ opacity: 1 }}
-        variants={staggerContainer}
-        style={{ width: '100%', display: 'block', opacity: 1 }}
-      >
+      <div style={{ width: '100%', display: 'block' }}>
         {children}
-      </motion.div>
+      </div>
     </section>
   )
 }
@@ -237,36 +213,24 @@ function ProblemSection() {
   return (
     <Section id="problem" bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6">
       <div className="max-w-5xl mx-auto">
-        <motion.h2
-          custom={0}
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
+        <h2
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
         >
           You're capable. You're just drowning.
-        </motion.h2>
+        </h2>
 
-        <motion.p
-          custom={1}
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
+        <p
           className="text-lg md:text-xl leading-relaxed mb-16"
           style={{ color: '#b0b0b0', maxWidth: '600px' }}
         >
           Corner exists because the best operators in the world are being limited by the time they spend on everything except their actual work.
-        </motion.p>
+        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {problems.map((problem, i) => (
-            <motion.div
+            <div
               key={i}
-              custom={i + 2}
-              initial="hidden"
-              animate="visible"
-              variants={fadeUp}
               className="p-6 sm:p-8 rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl"
               style={{
                 backgroundColor: '#1a1a1a',
@@ -280,7 +244,7 @@ function ProblemSection() {
                 {problem.title}
               </h3>
               <p className="text-sm sm:text-base" style={{ color: '#989898' }}>{problem.body}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -320,27 +284,19 @@ function PromiseSection() {
   return (
     <Section id="promise" bgColor={SURGE.white} className="py-16 sm:py-24 px-6">
       <div className="max-w-5xl mx-auto">
-        <motion.h2
-          custom={0}
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
+        <h2
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.charcoal }}
         >
           One person. The output of ten.
-        </motion.h2>
+        </h2>
 
-        <motion.p
-          custom={1}
-          initial="hidden"
-          animate="visible"
-          variants={fadeUp}
+        <p
           className="text-lg md:text-xl leading-relaxed mb-16"
           style={{ color: '#666', maxWidth: '600px' }}
         >
           Managed agents run your entire business from one system. You open your inbox in the morning. The work is already moving.
-        </motion.p>
+        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((feature, i) => (
@@ -358,7 +314,7 @@ function PromiseSection() {
                 {feature.name}
               </h3>
               <p className="text-sm sm:text-base" style={{ color: '#888' }}>{feature.desc}</p>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -396,7 +352,7 @@ function HowItWorksSection() {
           style={{ color: SURGE.white }}
         >
           Three steps to your upgraded business.
-        </motion.h2>
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((step, i) => (
@@ -432,7 +388,7 @@ function HowItWorksSection() {
                   }}
                 />
               )}
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
@@ -452,7 +408,7 @@ function FinalCtaSection() {
           style={{ color: SURGE.white }}
         >
           Ready to operate like a team of ten?
-        </motion.h2>
+        </h2>
 
         <motion.p
           custom={1}
@@ -461,7 +417,7 @@ function FinalCtaSection() {
           style={{ color: '#b0b0b0' }}
         >
           Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
-        </motion.p>
+        </p>
 
         <motion.a
           custom={2}
@@ -487,7 +443,7 @@ function FinalCtaSection() {
           style={{ color: '#808080' }}
         >
           No credit card. No commitment. Book now.
-        </motion.p>
+        </p>
       </div>
     </Section>
   )
