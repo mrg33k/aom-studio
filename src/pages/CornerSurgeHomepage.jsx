@@ -95,21 +95,43 @@ const containerVariants = {
   },
 }
 
-// --- SECTION WRAPPER ---
+// --- SECTION WRAPPER with scroll animation ---
 function Section({ children, id, className = '', bgColor = SURGE.charcoal }) {
   const ref = useRef(null)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true)
+          observer.unobserve(entry.target)
+        }
+      },
+      { threshold: 0.1 }
+    )
+
+    if (ref.current) {
+      observer.observe(ref.current)
+    }
+
+    return () => observer.disconnect()
+  }, [])
 
   return (
-    <section
+    <motion.section
       ref={ref}
       id={id}
       className={className}
       style={{ backgroundColor: bgColor, display: 'block', width: '100%' }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isVisible ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.6, ease: 'easeOut' }}
     >
       <div style={{ width: '100%', display: 'block' }}>
         {children}
       </div>
-    </section>
+    </motion.section>
   )
 }
 
@@ -290,7 +312,12 @@ function ProblemSection() {
       <div className="max-w-5xl mx-auto relative z-10">
         <h2
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
-          style={{ color: SURGE.white }}
+          style={{
+            background: `linear-gradient(135deg, ${SURGE.white}, ${SURGE.cyan})`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
         >
           You're capable. You're just drowning.
         </h2>
@@ -357,10 +384,10 @@ function ProblemSection() {
 // --- PRODUCT MOCKUP COMPONENT (Reusable) ---
 function ProductMockup() {
   return (
-    <div className="relative mx-auto max-w-4xl mb-20">
-      {/* Glow backdrop — stronger visibility */}
+    <div className="relative mx-auto max-w-5xl mb-20">
+      {/* Glow backdrop — maximum prominence */}
       <div
-        className="absolute inset-0 rounded-3xl blur-3xl opacity-60"
+        className="absolute inset-0 rounded-3xl blur-3xl opacity-80"
         style={{
           background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
           transform: 'translateY(30px)',
@@ -388,8 +415,8 @@ function ProductMockup() {
 
         {/* Dashboard content */}
         <div
-          className="p-8 sm:p-12"
-          style={{ backgroundColor: '#0a0a0a', minHeight: '600px' }}
+          className="p-10 sm:p-16"
+          style={{ backgroundColor: '#0a0a0a', minHeight: '700px' }}
         >
           {/* Header */}
           <div className="mb-12">
@@ -489,9 +516,9 @@ function ProductMockup() {
         </div>
       </div>
 
-      {/* Callout */}
-      <div className="mt-8 text-center">
-        <p style={{ color: '#888', fontSize: '14px' }}>
+      {/* Callout with stronger emphasis */}
+      <div className="mt-10 text-center">
+        <p style={{ color: '#aaa', fontSize: '15px', fontWeight: '500' }}>
           Real-time agent status, active work, and progress tracking. One place. Complete visibility.
         </p>
       </div>
@@ -539,14 +566,19 @@ function PromiseSection() {
       <div className="max-w-6xl mx-auto">
         <h2
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
-          style={{ color: SURGE.white }}
+          style={{
+            background: `linear-gradient(135deg, ${SURGE.white}, ${SURGE.cyan})`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
         >
           One person. The output of ten.
         </h2>
 
         <p
           className="text-lg md:text-xl leading-relaxed mb-20"
-          style={{ color: '#b0b0b0', maxWidth: '600px' }}
+          style={{ color: '#c0c0c0', maxWidth: '600px' }}
         >
           Managed agents run your entire business from one system. You open your inbox in the morning. The work is already moving.
         </p>
@@ -556,10 +588,10 @@ function PromiseSection() {
 
         {/* CAPABILITIES GRID */}
         <h3
-          className="text-2xl md:text-3xl font-bold mb-8"
-          style={{ color: SURGE.white }}
+          className="text-2xl md:text-3xl font-bold mb-12"
+          style={{ color: SURGE.white, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '18px', fontWeight: '700' }}
         >
-          What they handle for you.
+          What they handle for you
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -640,7 +672,12 @@ function HowItWorksSection() {
       <div className="max-w-5xl mx-auto relative z-10">
         <h2
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
-          style={{ color: SURGE.white }}
+          style={{
+            background: `linear-gradient(135deg, ${SURGE.white}, ${SURGE.purple})`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
         >
           Three steps to your upgraded business.
         </h2>
@@ -737,7 +774,12 @@ function FinalCtaSection() {
 
         <h2
           className="text-4xl sm:text-5xl md:text-7xl font-bold leading-tight mb-6"
-          style={{ color: SURGE.white }}
+          style={{
+            background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
         >
           Ready to operate like a team of ten?
         </h2>
