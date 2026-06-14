@@ -8,9 +8,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 import { C } from '../lib/cv3Colors.js'
 
-const AMBER = '#FBBF24'
+const AMBER = 'var(--c-yellow)'
 const FONT = {
   body: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+  display: "'Instrument Serif', Georgia, serif",
   mono: "'JetBrains Mono', monospace",
 }
 
@@ -50,9 +51,9 @@ function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loa
   return (
     <div style={{
       padding: '12px 16px',
-      background: C.dim,
+      background: 'rgba(255,255,255,0.015)',
       border: `1px solid ${C.border}`,
-      borderRadius: 2,
+      borderRadius: 10,
       marginBottom: 24,
       display: 'flex',
       alignItems: 'center',
@@ -64,8 +65,8 @@ function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loa
           width: 9,
           height: 9,
           borderRadius: '50%',
-          background: isStale ? AMBER : (loopRunning ? '#22C55E' : '#EF4444'),
-          boxShadow: `0 0 0 3px ${(isStale ? AMBER : (loopRunning ? '#22C55E' : '#EF4444'))}22`,
+          background: loopRunning ? AMBER : 'rgba(255,255,255,0.18)',
+          boxShadow: loopRunning ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
           flexShrink: 0,
         }} />
         {/* Layer-1 signal: this is the one thing to read instantly, so it carries
@@ -139,10 +140,10 @@ function HardCallCard({ item, index, onMarkDone }) {
 
   return (
     <div style={{
-      padding: 16,
-      background: C.dim,
+      padding: '14px 16px 12px',
+      background: 'rgba(255,255,255,0.015)',
       border: `1px solid ${C.border}`,
-      borderRadius: 2,
+      borderRadius: 10,
       marginBottom: 12,
       fontFamily: FONT.body,
       opacity: item.checked ? 0.6 : 1,
@@ -221,11 +222,11 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
 
   return (
     <div style={{
-      padding: 16,
-      background: C.dim,
+      padding: '14px 16px 12px',
+      background: 'rgba(255,255,255,0.015)',
       border: `1px solid ${C.border}`,
       borderLeft: `2px solid ${answered ? C.border : AMBER}`,
-      borderRadius: 2,
+      borderRadius: 10,
       marginBottom: 12,
       fontFamily: FONT.body,
       opacity: answered ? 0.7 : 1,
@@ -267,33 +268,45 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
               <button
                 onClick={() => setShowInput(true)}
                 style={{
-                  padding: '6px 12px',
-                  background: 'transparent',
-                  border: `1px solid ${AMBER}`,
-                  color: AMBER,
-                  fontSize: 12,
-                  fontWeight: 500,
+                  background: 'none',
+                  border: `1px solid ${C.border}`,
+                  color: C.muted,
+                  fontSize: 9,
+                  fontWeight: 700,
                   cursor: 'pointer',
-                  borderRadius: 2,
+                  borderRadius: 5,
+                  padding: '3px 10px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  fontFamily: FONT.mono,
+                  lineHeight: 1.5,
                   transition: 'all 0.2s',
                 }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
               >
-                Answer ↦
+                Answer
               </button>
               {room.includes(':') && (
                 <button
                   onClick={() => onJumpToRoom(room)}
                   style={{
-                    padding: '6px 12px',
-                    background: 'transparent',
+                    background: 'none',
                     border: `1px solid ${C.border}`,
-                    color: C.text2,
-                    fontSize: 12,
-                    fontWeight: 500,
+                    color: C.muted,
+                    fontSize: 9,
+                    fontWeight: 700,
                     cursor: 'pointer',
-                    borderRadius: 2,
+                    borderRadius: 5,
+                    padding: '3px 10px',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    fontFamily: FONT.mono,
+                    lineHeight: 1.5,
                     transition: 'all 0.2s',
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
                 >
                   Go to room
                 </button>
@@ -324,38 +337,51 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
                   if (e.key === 'Escape') { setShowInput(false); setAnswer('') }
                 }}
               />
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 6 }}>
                 <button
                   onClick={handleSendAnswer}
                   disabled={!answer.trim() || loading}
                   style={{
-                    padding: '6px 12px',
-                    background: AMBER,
-                    color: '#000',
-                    border: 'none',
-                    fontSize: 12,
-                    fontWeight: 500,
+                    background: 'none',
+                    border: `1px solid ${C.border}`,
+                    color: C.muted,
+                    fontSize: 9,
+                    fontWeight: 700,
                     cursor: loading ? 'default' : 'pointer',
-                    borderRadius: 2,
+                    borderRadius: 5,
+                    padding: '3px 10px',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    fontFamily: FONT.mono,
+                    lineHeight: 1.5,
                     opacity: loading ? 0.6 : 1,
-                    transition: 'opacity 0.2s',
+                    transition: 'all 0.2s',
                   }}
+                  onMouseEnter={e => { !loading && (e.currentTarget.style.borderColor = C.muted, e.currentTarget.style.color = C.text) }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border, e.currentTarget.style.color = C.muted }}
                 >
-                  {loading ? 'Saving...' : 'Send'}
+                  {loading ? 'Saving…' : 'Send'}
                 </button>
                 <button
                   onClick={() => { setShowInput(false); setAnswer('') }}
                   disabled={loading}
                   style={{
-                    padding: '6px 12px',
-                    background: 'transparent',
+                    background: 'none',
                     border: `1px solid ${C.border}`,
-                    color: C.text2,
-                    fontSize: 12,
-                    fontWeight: 500,
+                    color: C.muted,
+                    fontSize: 9,
+                    fontWeight: 700,
                     cursor: 'pointer',
-                    borderRadius: 2,
+                    borderRadius: 5,
+                    padding: '3px 10px',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    fontFamily: FONT.mono,
+                    lineHeight: 1.5,
+                    transition: 'all 0.2s',
                   }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
                 >
                   Cancel
                 </button>
@@ -385,10 +411,10 @@ function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpTo
 
   return (
     <div style={{
-      padding: 16,
-      background: C.dim,
+      padding: '14px 16px 12px',
+      background: 'rgba(255,255,255,0.015)',
       border: `1px solid ${C.border}`,
-      borderRadius: 2,
+      borderRadius: 10,
       marginBottom: 12,
       fontFamily: FONT.body,
     }}>
@@ -415,37 +441,48 @@ function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpTo
       <div style={{ fontSize: 11, color: C.muted, marginBottom: 12, fontFamily: FONT.mono }}>
         Last reviewed: {timeLabel}
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ display: 'flex', gap: 6 }}>
         <button
           onClick={() => onJumpToRoom(room)}
           style={{
-            padding: '6px 12px',
-            background: 'transparent',
+            background: 'none',
             border: `1px solid ${C.border}`,
-            color: C.text2,
-            fontSize: 12,
-            fontWeight: 500,
+            color: C.muted,
+            fontSize: 9,
+            fontWeight: 700,
             cursor: 'pointer',
-            borderRadius: 2,
+            borderRadius: 5,
+            padding: '3px 10px',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            fontFamily: FONT.mono,
+            lineHeight: 1.5,
             transition: 'all 0.2s',
           }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
         >
           Go to room
         </button>
         <button
           onClick={onRefreshGoal}
           style={{
-            padding: '6px 12px',
-            background: 'transparent',
+            background: 'none',
             border: `1px solid ${C.border}`,
-            color: C.text2,
-            fontSize: 12,
-            fontWeight: 500,
+            color: C.muted,
+            fontSize: 9,
+            fontWeight: 700,
             cursor: 'pointer',
-            borderRadius: 2,
-            opacity: 0.6,
+            borderRadius: 5,
+            padding: '3px 10px',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            fontFamily: FONT.mono,
+            lineHeight: 1.5,
             transition: 'all 0.2s',
           }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
         >
           Refresh
         </button>
@@ -459,11 +496,10 @@ function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpTo
 function StuckSessionCard({ session, onJumpToRoom }) {
   return (
     <div style={{
-      padding: 16,
-      background: C.dim,
+      padding: '14px 16px 12px',
+      background: 'rgba(255,255,255,0.015)',
       border: `1px solid ${C.border}`,
-      borderColor: `rgba(251, 191, 36, 0.3)`,
-      borderRadius: 2,
+      borderRadius: 10,
       marginBottom: 12,
       fontFamily: FONT.body,
     }}>
@@ -495,18 +531,24 @@ function StuckSessionCard({ session, onJumpToRoom }) {
       <button
         onClick={() => onJumpToRoom(`agents/${session.name}`)}
         style={{
-          padding: '6px 12px',
-          background: AMBER,
-          color: '#000',
-          border: 'none',
-          fontSize: 12,
-          fontWeight: 500,
+          background: 'none',
+          border: `1px solid ${C.border}`,
+          color: C.muted,
+          fontSize: 9,
+          fontWeight: 700,
           cursor: 'pointer',
-          borderRadius: 2,
+          borderRadius: 5,
+          padding: '3px 10px',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          fontFamily: FONT.mono,
+          lineHeight: 1.5,
           transition: 'all 0.2s',
         }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.muted }}
       >
-        Answer now →
+        Answer now
       </button>
     </div>
   )
@@ -644,10 +686,10 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
       {/* Header: title + close (the loop icon in the room header also toggles it) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <h2 style={{
-          margin: 0, fontSize: 18, fontWeight: 700, color: C.text,
-          fontFamily: FONT.heading || FONT.body, letterSpacing: '-0.01em',
+          margin: 0, fontSize: 28, fontWeight: 400, color: C.text,
+          fontFamily: FONT.display, letterSpacing: '-0.01em',
         }}>
-          Command Deck
+          Command Deck<span style={{ color: AMBER }}>.</span>
         </h2>
         {onClose && (
           <button
@@ -692,17 +734,17 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
           {/* Hard Calls (Waiting on You) */}
           {hardCalls.length > 0 && (
             <section style={{ marginBottom: 32 }}>
-              <h3 style={{
-                fontSize: 13,
+              <div style={{
+                fontSize: 10,
                 fontWeight: 700,
-                color: C.text2,
+                color: C.muted,
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.14em',
                 margin: '0 0 16px 0',
-                fontFamily: FONT.body,
+                fontFamily: FONT.mono,
               }}>
                 Waiting on You ({hardCalls.filter((c) => !c.checked).length} open)
-              </h3>
+              </div>
               {hardCalls.filter((c) => !c.checked).length === 0 ? (
                 <div style={{ fontSize: 13, color: C.muted }}>No urgent calls.</div>
               ) : (
@@ -723,17 +765,17 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
           {/* Steering Questions */}
           {steeringQuestions.length > 0 && (
             <section style={{ marginBottom: 32 }}>
-              <h3 style={{
-                fontSize: 13,
+              <div style={{
+                fontSize: 10,
                 fontWeight: 700,
-                color: C.text2,
+                color: C.muted,
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.14em',
                 margin: '0 0 16px 0',
-                fontFamily: FONT.body,
+                fontFamily: FONT.mono,
               }}>
                 Steering Questions ({steeringQuestions.length} open)
-              </h3>
+              </div>
               {steeringQuestions.map((q, i) => (
                 <SteeringQuestionCard
                   key={i}
@@ -750,17 +792,17 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
           {/* Room Status */}
           {Object.keys(roomStatus).length > 0 && (
             <section style={{ marginBottom: 32 }}>
-              <h3 style={{
-                fontSize: 13,
+              <div style={{
+                fontSize: 10,
                 fontWeight: 700,
-                color: C.text2,
+                color: C.muted,
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.14em',
                 margin: '0 0 16px 0',
-                fontFamily: FONT.body,
+                fontFamily: FONT.mono,
               }}>
                 Room Status ({Object.keys(roomStatus).length} rooms)
-              </h3>
+              </div>
               {Object.entries(roomStatus).map(([roomSlug, data]) => (
                 <RoomStatusCard
                   key={roomSlug}
@@ -782,17 +824,17 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
           {/* Stuck Sessions */}
           {stuckSessions.length > 0 && (
             <section>
-              <h3 style={{
-                fontSize: 13,
+              <div style={{
+                fontSize: 10,
                 fontWeight: 700,
-                color: C.text2,
+                color: C.muted,
                 textTransform: 'uppercase',
-                letterSpacing: '0.08em',
+                letterSpacing: '0.14em',
                 margin: '0 0 16px 0',
-                fontFamily: FONT.body,
+                fontFamily: FONT.mono,
               }}>
                 Stuck Sessions ({stuckSessions.length})
-              </h3>
+              </div>
               {stuckSessions.map((sess, i) => (
                 <StuckSessionCard
                   key={i}
