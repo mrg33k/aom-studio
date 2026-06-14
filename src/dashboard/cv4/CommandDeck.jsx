@@ -59,39 +59,48 @@ function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loa
       justifyContent: 'space-between',
       fontFamily: FONT.body,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
         <div style={{
-          width: 8,
-          height: 8,
+          width: 9,
+          height: 9,
           borderRadius: '50%',
           background: isStale ? AMBER : (loopRunning ? '#22C55E' : '#EF4444'),
+          boxShadow: `0 0 0 3px ${(isStale ? AMBER : (loopRunning ? '#22C55E' : '#EF4444'))}22`,
           flexShrink: 0,
         }} />
-        <span style={{ fontSize: 12, color: C.text2, fontWeight: 500 }}>
+        {/* Layer-1 signal: this is the one thing to read instantly, so it carries
+            primary weight, not caption styling. */}
+        <span style={{ fontSize: 13, color: C.text, fontWeight: 600, flexShrink: 0 }}>
           {loopRunning ? 'Loop running' : 'Loop paused'}
         </span>
         {loopRunning && lastCheck && (
-          <span style={{ fontSize: 12, color: C.muted, marginLeft: 12 }}>
-            Last tick: {timeLabel}
+          <span style={{ fontSize: 12, color: C.muted, marginLeft: 10, fontFamily: FONT.mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            checked {timeLabel}
           </span>
         )}
         {isStale && loopRunning && (
-          <span style={{ fontSize: 11, color: AMBER, marginLeft: 8, fontWeight: 500 }}>
-            ⚠ May be stuck
+          <span style={{ fontSize: 12, color: AMBER, marginLeft: 8, fontWeight: 600, flexShrink: 0 }}>
+            ⚠ may be stuck
           </span>
         )}
       </div>
       <button
         onClick={onRefresh}
         disabled={loading}
+        aria-label="Refresh data"
         style={{
+          width: 36,
+          height: 36,
+          flexShrink: 0,
           background: 'transparent',
-          border: 'none',
+          border: `1px solid ${C.border}`,
+          borderRadius: 8,
           cursor: loading ? 'default' : 'pointer',
           color: C.text2,
-          fontSize: 14,
+          fontSize: 16,
           opacity: loading ? 0.5 : 1,
           transition: 'opacity 0.2s',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
         title="Refresh data"
       >
