@@ -180,8 +180,13 @@
 
       if (!response.ok) {
         console.error('Send failed:', response.status, response.statusText);
-        // Rollback the optimistic message
-        appState.messages.pop();
+        // Keep the user's message visible — silently vanishing is worse than an error.
+        // Show a retry nudge so Ethan knows to send again.
+        appState.messages.push({
+          role: 'assistant',
+          text: "Hmm, something went wrong on my end — can you send that again?",
+          timestamp: Date.now(),
+        });
       } else {
         const data = await response.json();
         if (data.day_state) appState.dayState = data.day_state;
@@ -209,7 +214,12 @@
       }
     } catch (e) {
       console.error('Send error:', e);
-      appState.messages.pop();
+      // Keep the user's message visible; show a retry nudge.
+      appState.messages.push({
+        role: 'assistant',
+        text: "Hmm, something went wrong on my end — can you send that again?",
+        timestamp: Date.now(),
+      });
     } finally {
       appState.isLoading = false;
       render();
