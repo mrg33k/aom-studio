@@ -124,7 +124,9 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'mark_call_done') {
-      return await markCallDone(callKey, res);
+      // `answer` (optional) is the decision Patrik tapped; recorded inline so the
+      // loop acts on it. Absent = a plain "handled" with no decision text.
+      return await markCallDone(callKey, answer, res);
     } else if (action === 'answer_question') {
       return await answerQuestion(room, answer, res);
     }
@@ -136,7 +138,7 @@ export default async function handler(req, res) {
 
 // ── Action handlers ────────────────────────────────────────────────────────────
 
-async function markCallDone(callId, res) {
+async function markCallDone(callId, answer, res) {
   if (!callId || typeof callId !== 'string') {
     return res.status(400).json({ error: 'callId required' });
   }
@@ -148,23 +150,24 @@ async function markCallDone(callId, res) {
       return res.status(404).json({ error: 'needs-patrik.md not found' });
     }
 
-    const originalContent = content;
-
-    // Find and flip the checkbox: "- [ ] ..." -> "- [x] ..."
-    // Use callId as a line match key (e.g., a substring of the hard call)
-    const pattern = new RegExp(`^- \\[ \\] (.*)${callId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'm');
-    if (!pattern.test(content)) {
+    // Line-based so we can flip the checkbox AND append the decision at the end
+    // of the same line. callId is the line's leading text (first ~40 chars).
+    const lines = content.split('\n');
+    let found = false;
+    for (let i = 0; i < lines.length; i++) {
+      if (!found && /^- \[ \] /.test(lines[i]) && lines[i].includes(callId)) {
+        lines[i] = lines[i].replace('[ ]', '[x]');
+        if (answer && typeof answer === 'string' && answer.trim()) {
+          lines[i] += `  → Patrik: ${answer.trim()}`;
+        }
+        found = true;
+      }
+    }
+    if (!found) {
       return res.status(404).json({ error: 'Hard call not found' });
     }
 
-    // Replace the first match
-    content = content.replace(pattern, (match) => match.replace('[ ]', '[x]'));
-
-    if (content === originalContent) {
-      return res.status(400).json({ error: 'Failed to mark call done' });
-    }
-
-    const ok = await writeDeliverable('needs-patrik.md', content);
+    const ok = await writeDeliverable('needs-patrik.md', lines.join('\n'));
     if (!ok) return res.status(500).json({ error: 'Failed to write needs-patrik.md' });
 
     return res.status(200).json({

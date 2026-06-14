@@ -69,6 +69,48 @@ function CommandDeckBtn({ children, onClick, disabled = false, primary = false, 
   )
 }
 
+// ── Shared: tap-one option chips ───────────────────────────────────────────
+// The loop's pre-worked-out moves for any card. Tap one and the card's submit
+// handler records it. Used by both hard calls and steering questions so every
+// open item looks and behaves the same.
+
+function OptionChips({ options, picked, loading, onPick }) {
+  if (!Array.isArray(options) || options.length === 0) return null
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {options.map((opt, oi) => (
+        <button
+          key={oi}
+          onClick={() => onPick(opt, oi)}
+          disabled={loading}
+          style={{
+            textAlign: 'left',
+            background: picked === oi ? 'rgba(234,179,8,0.18)' : 'rgba(234,179,8,0.06)',
+            border: `1px solid ${picked === oi ? AMBER : 'rgba(234,179,8,0.32)'}`,
+            color: C.text,
+            fontSize: 13,
+            fontFamily: FONT.body,
+            borderRadius: 8,
+            padding: '10px 12px',
+            cursor: loading ? 'default' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+            opacity: loading && picked !== oi ? 0.5 : 1,
+            transition: 'all 0.15s',
+          }}
+        >
+          <span>{opt.label}</span>
+          <span style={{ color: AMBER, fontWeight: 700, flexShrink: 0 }}>
+            {picked === oi && loading ? '…' : '›'}
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
+
 // ── Component: Loop Health Banner ──────────────────────────────────────────
 
 function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loading }) {
@@ -148,20 +190,31 @@ function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loa
 
 // ── Component: Hard Call Card ──────────────────────────────────────────────
 
-function HardCallCard({ item, index, onMarkDone }) {
+function HardCallCard({ item, index, options = [], onMarkDone }) {
   const [loading, setLoading] = useState(false)
+  const [picked, setPicked] = useState(null)
+  const hasOptions = Array.isArray(options) && options.length > 0
 
-  const handleMarkDone = async () => {
+  // One path for "Mark done" (no decision) and a tapped option (records the
+  // decision inline so the loop acts on it next tick), both flip the call to
+  // handled in needs-patrik.md.
+  const submit = async (answer = null, chipIndex = null) => {
     setLoading(true)
+    if (chipIndex !== null) setPicked(chipIndex)
     try {
       await authFetch('/api/dashboard/command-deck-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'mark_call_done', lineMatch: item.text.slice(0, 40) }),
+        body: JSON.stringify({
+          action: 'mark_call_done',
+          lineMatch: item.text.slice(0, 60),
+          ...(answer ? { answer } : {}),
+        }),
       })
       onMarkDone()
     } catch (err) {
       console.error('Error marking call done:', err)
+      setPicked(null)
     } finally {
       setLoading(false)
     }
@@ -228,16 +281,29 @@ function HardCallCard({ item, index, onMarkDone }) {
       {/* Action footer */}
       <div style={{
         display: 'flex',
-        gap: 6,
+        flexDirection: 'column',
+        gap: 8,
         borderTop: `1px solid ${C.border}`,
         paddingTop: 10,
       }}>
         {item.checked ? (
           <span style={{ fontSize: 11, color: C.muted, fontFamily: FONT.mono, padding: '8px 0' }}>✓ done</span>
         ) : (
-          <CommandDeckBtn onClick={handleMarkDone} disabled={loading} primary>
-            {loading ? 'Saving…' : 'Mark done'}
-          </CommandDeckBtn>
+          <>
+            {hasOptions && (
+              <OptionChips
+                options={options}
+                picked={picked}
+                loading={loading}
+                onPick={(opt, oi) => submit(opt.answer || opt.label, oi)}
+              />
+            )}
+            <div style={{ display: 'flex', gap: 6 }}>
+              <CommandDeckBtn onClick={() => submit(null)} disabled={loading} primary={!hasOptions}>
+                {loading && picked === null ? 'Saving…' : (hasOptions ? 'Mark handled' : 'Mark done')}
+              </CommandDeckBtn>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -353,39 +419,12 @@ function SteeringQuestionCard({ room, question, answered, options = [], onAnswer
               {/* The loop's pre-worked-out moves: tap one and it becomes the
                   room's goal next tick. Free-text "Answer" stays as the escape
                   hatch below. */}
-              {hasOptions && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {options.map((opt, oi) => (
-                    <button
-                      key={oi}
-                      onClick={() => submitAnswer(opt.answer || opt.label, oi)}
-                      disabled={loading}
-                      style={{
-                        textAlign: 'left',
-                        background: picked === oi ? 'rgba(234,179,8,0.18)' : 'rgba(234,179,8,0.06)',
-                        border: `1px solid ${picked === oi ? AMBER : 'rgba(234,179,8,0.32)'}`,
-                        color: C.text,
-                        fontSize: 13,
-                        fontFamily: FONT.body,
-                        borderRadius: 8,
-                        padding: '10px 12px',
-                        cursor: loading ? 'default' : 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 8,
-                        opacity: loading && picked !== oi ? 0.5 : 1,
-                        transition: 'all 0.15s',
-                      }}
-                    >
-                      <span>{opt.label}</span>
-                      <span style={{ color: AMBER, fontWeight: 700, flexShrink: 0 }}>
-                        {picked === oi && loading ? '…' : '›'}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <OptionChips
+                options={options}
+                picked={picked}
+                loading={loading}
+                onPick={(opt, oi) => submitAnswer(opt.answer || opt.label, oi)}
+              />
               <div style={{ display: 'flex', gap: 6 }}>
                 <CommandDeckBtn onClick={() => setShowInput(true)}>
                   {hasOptions ? 'Something else' : 'Answer'}
@@ -650,10 +689,22 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
       const openQuestions = parseMarkdownCheckboxList(qText, 'Open')
       const answeredQuestions = parseMarkdownCheckboxList(qText, 'Answered')
 
-      // 2. Fetch needs-patrik.md
+      // 2. Fetch needs-patrik.md + its tap-one options sidecar.
       const nRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/needs-patrik.md')
       const nText = nRes.ok ? await nRes.text() : ''
-      const openCalls = parseMarkdownCheckboxList(nText, 'Open')
+      const rawCalls = parseMarkdownCheckboxList(nText, 'Open')
+      // Hard-call options live in a sidecar keyed by the first 60 chars of the
+      // line (the same handle mark_call_done matches on; 60 keeps the four
+      // parent-teacher-council items distinct). The loop maintains it.
+      const hcoRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/needs-patrik-options.json')
+      let hardCallOptions = {}
+      if (hcoRes.ok) {
+        try { hardCallOptions = JSON.parse(await hcoRes.text()) } catch { hardCallOptions = {} }
+      }
+      const openCalls = rawCalls.map((c) => {
+        const opts = hardCallOptions[c.text.slice(0, 60)]
+        return { ...c, options: Array.isArray(opts) ? opts.filter((o) => o && o.label) : [] }
+      })
 
       // 3. Fetch room-goals.json
       const gRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/room-goals.json')
@@ -833,6 +884,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
                       key={i}
                       item={item}
                       index={i}
+                      options={item.options}
                       onMarkDone={handleDataChange}
                     />
                   ))
