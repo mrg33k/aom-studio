@@ -18,11 +18,20 @@ const CHAR_WIDTH = 6
 const CHAR_HEIGHT = 12
 
 function interpolateColor(t) {
-  // Purple to Cyan gradient (0 = purple, 1 = cyan)
+  // Purple to Cyan gradient with boosted saturation (0 = purple, 1 = cyan)
+  // Amplify the gradient range for more vivid color separation
   const r = Math.round(124 * (1 - t) + 6 * t)
   const g = Math.round(58 * (1 - t) + 182 * t)
   const b = Math.round(237 * (1 - t) + 212 * t)
   return `rgb(${r}, ${g}, ${b})`
+}
+
+function getFlowVector(x, y, time) {
+  // Generate directional flow patterns based on position and time
+  // Creates a sense of motion/computation across the grid
+  const waveX = Math.sin(x * 0.1 + time * 0.05) * 0.3
+  const waveY = Math.cos(y * 0.1 + time * 0.05) * 0.3
+  return { x: waveX, y: waveY }
 }
 
 function CornerAsciiHeroPoc() {
@@ -45,16 +54,27 @@ function CornerAsciiHeroPoc() {
   useEffect(() => {
     const canvas = canvasRef.current
     const container = containerRef.current
-    if (!canvas || !container) return
+    if (!canvas || !container) {
+      console.warn('Canvas or container not available')
+      return
+    }
 
-    const ctx = canvas.getContext('2d', { alpha: true })
-    if (!ctx) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      console.error('Could not get 2D context')
+      return
+    }
 
     // Set canvas to full container size
     const resizeCanvas = () => {
-      const { width, height } = container.getBoundingClientRect()
-      canvas.width = width
-      canvas.height = height
+      const rect = container.getBoundingClientRect()
+      if (rect.width === 0 || rect.height === 0) {
+        console.warn('Container has zero dimensions')
+        return
+      }
+      canvas.width = rect.width
+      canvas.height = rect.height
+      console.log(`Canvas resized to ${canvas.width}x${canvas.height}`)
     }
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
@@ -93,8 +113,14 @@ function CornerAsciiHeroPoc() {
     initParticles()
 
     // Animation loop
+    let animationFrameId
     const animate = () => {
       timeRef.current++
+
+      if (canvas.width === 0 || canvas.height === 0) {
+        animationFrameId = requestAnimationFrame(animate)
+        return
+      }
 
       // Background: dark charcoal with subtle gradient
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
@@ -104,6 +130,7 @@ function CornerAsciiHeroPoc() {
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
       // Update and draw particles
+      const particles = particlesRef.current
       const { x: mouseX, y: mouseY } = mouseRef.current
       particles.forEach((p) => {
         // Distance to mouse
@@ -114,29 +141,31 @@ function CornerAsciiHeroPoc() {
         const dist = Math.sqrt(dx * dx + dy * dy)
 
         // Mouse proximity increases life (glyphs "activate" near cursor)
-        const proximityInfluence = Math.max(0, 1 - dist * 2)
-        p.targetLife = 0.3 + proximityInfluence * 0.7
+        // Wider activation radius (0-3 units) for more visible effect
+        const proximityInfluence = Math.max(0, 1 - dist * 1.2)
+        p.targetLife = 0.2 + proximityInfluence * 0.8
 
-        // Smooth lerp toward target
-        p.life += (p.targetLife - p.life) * 0.1
+        // Faster lerp for snappier response (0.15 instead of 0.1)
+        p.life += (p.targetLife - p.life) * 0.15
 
-        // Oscillate character and alpha
-        const t = (timeRef.current * 0.02 + p.x * 0.1 + p.y * 0.1) % 1
+        // Faster oscillation: 2x speed for more "computational" feel
+        const t = (timeRef.current * 0.04 + p.x * 0.1 + p.y * 0.1) % 1
         const charIndex = Math.floor(p.life * ASCII_CHARS.length)
         p.char = ASCII_CHARS[Math.max(0, Math.min(charIndex, ASCII_CHARS.length - 1))]
 
-        // Position
-        const screenX = p.x * CHAR_WIDTH
-        const screenY = p.y * CHAR_HEIGHT
+        // Apply directional flow for visual motion
+        const flow = getFlowVector(p.x, p.y, timeRef.current)
+        const screenX = p.x * CHAR_WIDTH + flow.x * 2
+        const screenY = p.y * CHAR_HEIGHT + flow.y * 2
 
         // Color: purple → cyan gradient based on life
         const color = interpolateColor(p.life)
 
-        // Alpha: fade in/out based on life
-        const alpha = p.life * 0.8
+        // Alpha: more vivid (0.9 max instead of 0.8)
+        const alpha = Math.min(1, p.life * 1.2)
 
         // Draw glyph
-        ctx.font = 'bold 10px "Courier New", monospace'
+        ctx.font = 'bold 11px "Courier New", monospace'
         ctx.fillStyle = color
         ctx.globalAlpha = alpha
         ctx.fillText(p.char, screenX, screenY + 8)
@@ -176,12 +205,13 @@ function CornerAsciiHeroPoc() {
       ctx.fillText('corner', canvas.width / 2, logoY)
       ctx.shadowColor = 'transparent'
 
-      requestAnimationFrame(animate)
+      animationFrameId = requestAnimationFrame(animate)
     }
 
-    animate()
+    animationFrameId = requestAnimationFrame(animate)
 
     return () => {
+      cancelAnimationFrame(animationFrameId)
       window.removeEventListener('resize', resizeCanvas)
       container.removeEventListener('mousemove', handleMouseMove)
     }
