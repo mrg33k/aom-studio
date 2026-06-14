@@ -38,7 +38,7 @@ function parseMarkdownCheckboxList(markdown, sectionName) {
 function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loading }) {
   const now = new Date()
   const lastCheck = lastCheckTs ? new Date(lastCheckTs) : null
-  const secondsAgo = lastCheck ? Math.floor((now - lastCheck) / 1000) : null
+  const secondsAgo = lastCheck ? Math.max(0, Math.floor((now - lastCheck) / 1000)) : null
 
   const timeLabel = secondsAgo < 90 ? 'just now' :
     secondsAgo < 3600 ? `${Math.round(secondsAgo / 60)}m ago` :
@@ -342,8 +342,11 @@ function SteeringQuestionCard({ room, question, answered, onAnswer, onJumpToRoom
 function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpToRoom, onRefreshGoal }) {
   const now = new Date()
   const reviewed = new Date(lastReviewed)
-  const secondsAgo = Math.floor((now - reviewed) / 1000)
-  const timeLabel = secondsAgo < 3600 ? `${Math.round(secondsAgo / 60)}m ago` :
+  // Clamp to 0: a last_reviewed stamp can be a touch ahead of the browser clock
+  // (loop clock skew), which would otherwise render "-32m ago".
+  const secondsAgo = Math.max(0, Math.floor((now - reviewed) / 1000))
+  const timeLabel = secondsAgo < 60 ? 'just now' :
+    secondsAgo < 3600 ? `${Math.round(secondsAgo / 60)}m ago` :
     secondsAgo < 86400 ? `${Math.round(secondsAgo / 3600)}h ago` :
     `${Math.round(secondsAgo / 86400)}d ago`
 
