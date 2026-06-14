@@ -139,42 +139,42 @@ function SectionLabel({ children }) {
   );
 }
 
-// --- MOCK TIME SLOTS (Phase 1) ---
+// --- MOCK TIME SLOTS (Phase 1, fallback) ---
 const MOCK_SLOTS = [
   {
     date: new Date(2026, 5, 16),
     dateLabel: 'Monday, Jun 16',
     times: [
-      { time: '09:00 AM', display: '9:00 AM' },
-      { time: '10:30 AM', display: '10:30 AM' },
-      { time: '02:00 PM', display: '2:00 PM' },
+      { time: '09:00', display: '9:00 AM' },
+      { time: '13:00', display: '1:00 PM' },
+      { time: '15:00', display: '3:00 PM' },
     ],
   },
   {
     date: new Date(2026, 5, 17),
     dateLabel: 'Tuesday, Jun 17',
     times: [
-      { time: '10:00 AM', display: '10:00 AM' },
-      { time: '11:30 AM', display: '11:30 AM' },
-      { time: '03:00 PM', display: '3:00 PM' },
+      { time: '09:00', display: '9:00 AM' },
+      { time: '13:00', display: '1:00 PM' },
+      { time: '15:00', display: '3:00 PM' },
     ],
   },
   {
     date: new Date(2026, 5, 18),
     dateLabel: 'Wednesday, Jun 18',
     times: [
-      { time: '09:30 AM', display: '9:30 AM' },
-      { time: '01:00 PM', display: '1:00 PM' },
-      { time: '04:00 PM', display: '4:00 PM' },
+      { time: '09:00', display: '9:00 AM' },
+      { time: '13:00', display: '1:00 PM' },
+      { time: '15:00', display: '3:00 PM' },
     ],
   },
   {
     date: new Date(2026, 5, 19),
     dateLabel: 'Thursday, Jun 19',
     times: [
-      { time: '10:30 AM', display: '10:30 AM' },
-      { time: '02:30 PM', display: '2:30 PM' },
-      { time: '03:30 PM', display: '3:30 PM' },
+      { time: '09:00', display: '9:00 AM' },
+      { time: '13:00', display: '1:00 PM' },
+      { time: '15:00', display: '3:00 PM' },
     ],
   },
 ];
@@ -184,11 +184,40 @@ export default function BookCorner() {
   useCornerPageMeta();
 
   const [step, setStep] = useState(1); // 1: select slot, 2: enter details, 3: confirm
+  const [slots, setSlots] = useState(MOCK_SLOTS); // Will be replaced by real slots if calendar connected
+  const [calendarConnected, setCalendarConnected] = useState(null); // null = loading, true/false = result
   const [selectedSlot, setSelectedSlot] = useState(MOCK_SLOTS[0]);
   const [selectedTime, setSelectedTime] = useState(MOCK_SLOTS[0].times[0]);
   const [formData, setFormData] = useState({ name: '', email: '', company: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
+  const [meetLink, setMeetLink] = useState(null);
+
+  // Fetch real availability on mount
+  React.useEffect(() => {
+    async function fetchAvailability() {
+      try {
+        const res = await fetch('/api/corner/availability');
+        if (!res.ok) {
+          setCalendarConnected(false);
+          return;
+        }
+        const data = await res.json();
+        if (data.connected && data.slots && data.slots.length > 0) {
+          setCalendarConnected(true);
+          setSlots(data.slots);
+          setSelectedSlot(data.slots[0]);
+          setSelectedTime(data.slots[0].times[0]);
+        } else {
+          setCalendarConnected(false);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch availability:', err);
+        setCalendarConnected(false);
+      }
+    }
+    fetchAvailability();
+  }, []);
 
   const handleSlotSelect = (slot, time) => {
     setSelectedSlot(slot);
@@ -206,32 +235,38 @@ export default function BookCorner() {
 
     setIsSubmitting(true);
 
-    // Phase 1: just show success state. Phase 2 will wire Google Calendar.
     const bookingData = {
       name: formData.name,
       email: formData.email,
       company: formData.company,
-      date: selectedSlot.dateLabel,
-      time: selectedTime.display,
+      dateLabel: selectedSlot.dateLabel,
+      time: selectedTime.time,
+      display: selectedTime.display,
       timezone: 'America/Phoenix',
-      type: 'corner-intro-call',
-      submittedAt: new Date().toISOString(),
     };
 
     try {
-      // For phase 1, just log it and show success
-      console.log('Booking submission:', bookingData);
+      const res = await fetch('/api/corner/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingData),
+      });
 
-      // TODO Phase 2: integrate with Google Calendar via calendarClient
-      // TODO Phase 2: send confirmation email
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Booking failed');
+      }
 
+      const result = await res.json();
+      setMeetLink(result.meetLink);
       setSubmitStatus('success');
       setTimeout(() => {
         setFormData({ name: '', email: '', company: '' });
-        setSelectedSlot(null);
-        setSelectedTime(null);
+        setSelectedSlot(slots[0]);
+        setSelectedTime(slots[0].times[0]);
         setStep(1);
         setSubmitStatus(null);
+        setMeetLink(null);
       }, 3000);
     } catch (err) {
       console.error('Booking error:', err);
@@ -655,21 +690,36 @@ export default function BookCorner() {
                     </h2>
 
                     <p className="text-lg mb-6 max-w-md mx-auto leading-relaxed" style={{ color: SURGE.text.secondary }}>
-                      Check your email at <span className="font-semibold" style={{ color: SURGE.charcoal }}>{formData.email}</span> for a confirmation and Zoom link.
+                      Check your email at <span className="font-semibold" style={{ color: SURGE.charcoal }}>{formData.email}</span> for a confirmation{calendarConnected && meetLink ? ' and Google Meet link.' : '.'}
                     </p>
 
                     <p className="text-base mb-10" style={{ color: SURGE.text.tertiary }}>
                       We'll see you on {selectedSlot.dateLabel} at {selectedTime.display}!
                     </p>
 
-                    <a
-                      href="/corner"
-                      className="inline-flex items-center gap-2 px-8 py-4 rounded-lg font-bold transition-all text-white"
-                      style={{ background: SURGE.gradient }}
-                    >
-                      Back to Corner
-                      <ChevronRight size={16} />
-                    </a>
+                    {meetLink && (
+                      <a
+                        href={meetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-8 py-4 rounded-lg font-bold transition-all text-white mb-4"
+                        style={{ background: SURGE.gradient }}
+                      >
+                        Join Google Meet
+                        <ArrowUpRight size={16} />
+                      </a>
+                    )}
+
+                    <div className="mt-6">
+                      <a
+                        href="/corner"
+                        className="inline-flex items-center gap-2 px-8 py-4 rounded-lg font-bold transition-all text-white"
+                        style={{ background: SURGE.gradient }}
+                      >
+                        Back to Corner
+                        <ChevronRight size={16} />
+                      </a>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
