@@ -115,7 +115,8 @@ export default async function handler(req, res) {
   try {
     const patrikUserId = await getPatrikUserId()
     if (!patrikUserId) {
-      return res.status(500).json({ error: 'Could not identify workspace owner' })
+      // No calendar connected yet — clean signal for the frontend to use mock slots.
+      return res.status(200).json({ connected: false })
     }
 
     const calToken = await getCalendarToken(patrikUserId)
