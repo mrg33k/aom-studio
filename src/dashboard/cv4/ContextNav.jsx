@@ -97,8 +97,20 @@ export default function CV4ContextNav({
   }, [worldId, selectedAgent?.slug, conversationTarget?.slug])
   const badgeChatKey = selectedAgent?.slug
     || (conversationTarget?.type === 'project' && conversationTarget?.slug ? `project:${conversationTarget.slug}` : null)
+  // corner:gemini-workers full-experience — on /cvg every send is forced onto a
+  // Gemini model regardless of the room's saved pref (mirrors
+  // useChatSend.cvgModelOverride). The badge must name the brain that ACTUALLY
+  // answers, not the stale saved pref — otherwise /cvg shows "CLAUDE" while it's
+  // running Gemini.
+  let cvgForced = null
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) {
+    try { cvgForced = window.localStorage.getItem('cvgModel') } catch { /* private mode */ }
+    cvgForced = cvgForced || 'gemini-3.5-flash'
+  }
   let effectiveModel = 'default'
-  if (badgeChatKey) {
+  if (cvgForced) {
+    effectiveModel = cvgForced
+  } else if (badgeChatKey) {
     const own = (modelPrefs[badgeChatKey] || '').trim()
     const all = (modelPrefs._all || '').trim()
     effectiveModel = (own && own !== 'default') ? own : ((all && all !== 'default') ? all : 'default')
