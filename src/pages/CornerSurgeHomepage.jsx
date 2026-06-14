@@ -1,6 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react'
+import React, { useRef, useState, useEffect, lazy, Suspense } from 'react'
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
 import { Check, ChevronRight, ArrowUpRight } from 'lucide-react'
+
+const CornerAsciiHeroPoc = lazy(() => import('./CornerAsciiHeroPoc'))
 
 /**
  * Corner SURGE Homepage — Full Customer-First Brand Experience
@@ -138,10 +140,17 @@ function CornerSurgeNav() {
 // --- HERO SECTION (with ASCII component) ---
 function HeroSection() {
   return (
-    <div className="relative" style={{ height: '120vh', backgroundColor: SURGE.charcoal }}>
+    <div className="relative overflow-hidden" style={{ height: '120vh', backgroundColor: SURGE.charcoal }}>
+      {/* ASCII Backdrop */}
+      <Suspense fallback={<div className="w-full h-full" />}>
+        <div className="absolute inset-0 z-0">
+          <CornerAsciiHeroPoc />
+        </div>
+      </Suspense>
+
       {/* Content — centered flex layout */}
       <div
-        className="w-full h-full flex flex-col items-center justify-center px-6"
+        className="relative z-10 w-full h-full flex flex-col items-center justify-center px-6"
       >
         <div
           className="text-center max-w-3xl"
