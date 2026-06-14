@@ -184,8 +184,8 @@ export default function BookCorner() {
   useCornerPageMeta();
 
   const [step, setStep] = useState(1); // 1: select slot, 2: enter details, 3: confirm
-  const [selectedSlot, setSelectedSlot] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(MOCK_SLOTS[0]);
+  const [selectedTime, setSelectedTime] = useState(MOCK_SLOTS[0].times[0]);
   const [formData, setFormData] = useState({ name: '', email: '', company: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
@@ -257,8 +257,8 @@ export default function BookCorner() {
             <motion.h1
               custom={0}
               variants={fadeUp}
-              className="text-[48px] md:text-[64px] font-bold tracking-tight leading-tight mb-6"
-              style={{ fontFamily: "'Outfit', system-ui, sans-serif", color: SURGE.white }}
+              className="text-[48px] md:text-[64px] tracking-tight leading-tight mb-6"
+              style={{ fontFamily: "'Outfit', system-ui, sans-serif", fontWeight: 700, color: SURGE.white }}
             >
               Book Your Intro Call
             </motion.h1>
