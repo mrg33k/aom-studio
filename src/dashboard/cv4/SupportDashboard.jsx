@@ -1080,7 +1080,19 @@ function FrontDeskCard({ w, outcome, onDiscuss }) {
           <p style={{ margin: '6px 0 0', fontSize: 13, color: TEXT_DIM, lineHeight: 1.55, fontStyle: 'italic' }}>{w.latest_response.body}</p>
         </div>
       )}
-      {outcome === 'holding' && (
+      {w.soft_ack_at && !w.latest_response && (
+        <div style={{ marginTop: 13, padding: '11px 14px', background: ACCENT_EMERALD_SOFT, borderRadius: 12 }}>
+          <div style={{ fontFamily: BODY, fontSize: 11, fontWeight: 600, color: ACCENT_EMERALD,
+            display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT_EMERALD }} />
+            Holding note sent · {timeAgo(w.soft_ack_at)}
+          </div>
+          <p style={{ margin: '5px 0 0', fontFamily: BODY, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.5 }}>
+            We let them know we have read it and will follow up. The full reply is still owed.
+          </p>
+        </div>
+      )}
+      {outcome === 'holding' && !w.soft_ack_at && (
         <div style={{ marginTop: 13, padding: '11px 14px', background: HOLD_BLUE_SOFT, borderRadius: 12,
           fontFamily: BODY, fontSize: 12.5, color: TEXT_DIM, lineHeight: 1.5 }}>
           {overSla ? 'Waiting over 10 minutes. A soft note that we have read it goes out shortly.'
