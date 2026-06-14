@@ -162,14 +162,14 @@ function HeroSection() {
           className="text-center max-w-3xl relative z-20"
         >
           <h1
-            className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6"
+            className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4 sm:mb-6"
             style={{ color: SURGE.white }}
           >
             Your business just got an upgrade.
           </h1>
 
           <p
-            className="text-lg md:text-xl leading-relaxed mb-10"
+            className="text-base sm:text-lg md:text-xl leading-relaxed mb-8 sm:mb-10"
             style={{ color: '#b0b0b0' }}
           >
             Managed AI agents that run your business in one organized system.
@@ -177,11 +177,11 @@ function HeroSection() {
           </p>
 
           <div
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4"
           >
             <a
               href="/corner/book"
-              className="px-8 py-4 font-bold text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl flex items-center gap-2"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 font-bold text-base sm:text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl flex items-center justify-center gap-2"
               style={{
                 background: SURGE.gradient,
               }}
@@ -191,7 +191,7 @@ function HeroSection() {
             </a>
             <a
               href="#problem"
-              className="px-8 py-4 font-bold text-lg rounded-lg transition-all duration-200"
+              className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 font-bold text-base sm:text-lg rounded-lg transition-all duration-200"
               style={{
                 color: SURGE.white,
                 borderColor: '#444',
@@ -203,7 +203,7 @@ function HeroSection() {
           </div>
 
           <p
-            className="text-sm mt-6"
+            className="text-xs sm:text-sm mt-4 sm:mt-6"
             style={{ color: '#808080' }}
           >
             30-minute discovery call. No commitment.
@@ -232,7 +232,7 @@ function ProblemSection() {
   ]
 
   return (
-    <Section id="problem" bgColor={SURGE.charcoal} className="py-24 px-6">
+    <Section id="problem" bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6">
       <div className="max-w-5xl mx-auto">
         <motion.h2
           custom={0}
@@ -252,25 +252,25 @@ function ProblemSection() {
           Corner exists because the best operators in the world are being limited by the time they spend on everything except their actual work.
         </motion.p>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {problems.map((problem, i) => (
             <motion.div
               key={i}
               custom={i + 2}
               variants={fadeUp}
-              className="p-8 rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl"
+              className="p-6 sm:p-8 rounded-2xl border-2 transition-all duration-300 hover:shadow-2xl"
               style={{
                 backgroundColor: '#1a1a1a',
                 borderColor: '#444',
               }}
             >
               <h3
-                className="text-xl font-bold mb-3 leading-tight"
+                className="text-lg sm:text-xl font-bold mb-3 leading-tight"
                 style={{ color: SURGE.white }}
               >
                 {problem.title}
               </h3>
-              <p style={{ color: '#989898' }}>{problem.body}</p>
+              <p className="text-sm sm:text-base" style={{ color: '#989898' }}>{problem.body}</p>
             </motion.div>
           ))}
         </div>
@@ -309,7 +309,7 @@ function PromiseSection() {
   ]
 
   return (
-    <Section id="promise" bgColor={SURGE.white} className="py-24 px-6">
+    <Section id="promise" bgColor={SURGE.white} className="py-16 sm:py-24 px-6">
       <div className="max-w-5xl mx-auto">
         <motion.h2
           custom={0}
@@ -329,22 +329,22 @@ function PromiseSection() {
           Managed agents run your entire business from one system. You open your inbox in the morning. The work is already moving.
         </motion.p>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((feature, i) => (
             <motion.div
               key={i}
               custom={i + 2}
               variants={fadeUp}
-              className="p-8 rounded-2xl transition-all duration-300 hover:shadow-lg"
+              className="p-6 sm:p-8 rounded-2xl transition-all duration-300 hover:shadow-lg"
               style={{
                 backgroundColor: '#f5f5f5',
                 border: '2px solid #e5e5e5',
               }}
             >
-              <h3 className="text-lg font-bold mb-2" style={{ color: SURGE.charcoal }}>
+              <h3 className="text-base sm:text-lg font-bold mb-2" style={{ color: SURGE.charcoal }}>
                 {feature.name}
               </h3>
-              <p style={{ color: '#888' }}>{feature.desc}</p>
+              <p className="text-sm sm:text-base" style={{ color: '#888' }}>{feature.desc}</p>
             </motion.div>
           ))}
         </div>
@@ -374,7 +374,7 @@ function HowItWorksSection() {
   ]
 
   return (
-    <Section bgColor={SURGE.charcoal} className="py-24 px-6">
+    <Section bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6">
       <div className="max-w-5xl mx-auto">
         <motion.h2
           custom={0}
@@ -385,7 +385,7 @@ function HowItWorksSection() {
           Three steps to your upgraded business.
         </motion.h2>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((step, i) => (
             <motion.div
               key={i}
@@ -394,18 +394,18 @@ function HowItWorksSection() {
               className="relative"
             >
               <div
-                className="text-6xl font-bold mb-4 opacity-20"
+                className="text-5xl sm:text-6xl font-bold mb-4 opacity-20"
                 style={{ color: SURGE.purple }}
               >
                 {step.num}
               </div>
               <h3
-                className="text-2xl font-bold mb-3"
+                className="text-xl sm:text-2xl font-bold mb-3"
                 style={{ color: SURGE.white }}
               >
                 {step.title}
               </h3>
-              <p style={{ color: '#b0b0b0' }}>{step.body}</p>
+              <p className="text-sm sm:text-base" style={{ color: '#b0b0b0' }}>{step.body}</p>
               {i < steps.length - 1 && (
                 <div
                   className="absolute right-0 top-1/2 hidden md:block"
@@ -428,12 +428,12 @@ function HowItWorksSection() {
 // --- FINAL CTA SECTION ---
 function FinalCtaSection() {
   return (
-    <Section id="cta" bgColor={SURGE.charcoal} className="py-32 px-6">
+    <Section id="cta" bgColor={SURGE.charcoal} className="py-20 sm:py-32 px-6">
       <div className="max-w-3xl mx-auto text-center">
         <motion.h2
           custom={0}
           variants={fadeUp}
-          className="text-4xl md:text-6xl font-bold leading-tight mb-6"
+          className="text-3xl sm:text-4xl md:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
         >
           Ready to operate like a team of ten?
@@ -442,7 +442,7 @@ function FinalCtaSection() {
         <motion.p
           custom={1}
           variants={fadeUp}
-          className="text-lg md:text-xl leading-relaxed mb-12"
+          className="text-base sm:text-lg md:text-xl leading-relaxed mb-8 sm:mb-12"
           style={{ color: '#b0b0b0' }}
         >
           Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
@@ -452,7 +452,7 @@ function FinalCtaSection() {
           custom={2}
           variants={fadeUp}
           href="/corner/book"
-          className="inline-flex items-center gap-2 px-10 py-5 font-bold text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl"
+          className="inline-flex items-center gap-2 px-6 sm:px-10 py-3 sm:py-5 font-bold text-base sm:text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl"
           style={{
             background: SURGE.gradient,
           }}
@@ -464,7 +464,7 @@ function FinalCtaSection() {
         <motion.p
           custom={3}
           variants={fadeUp}
-          className="text-sm mt-8"
+          className="text-xs sm:text-sm mt-6 sm:mt-8"
           style={{ color: '#808080' }}
         >
           No credit card. No commitment. Book now.
@@ -477,22 +477,22 @@ function FinalCtaSection() {
 // --- FOOTER ---
 function CornerFooter() {
   return (
-    <footer className="py-12 px-6 border-t-2" style={{ backgroundColor: SURGE.charcoal, borderColor: '#333' }}>
-      <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between">
-        <div style={{ color: '#b0b0b0' }} className="text-sm mb-6 md:mb-0">
+    <footer className="py-8 sm:py-12 px-6 border-t-2" style={{ backgroundColor: SURGE.charcoal, borderColor: '#333' }}>
+      <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div style={{ color: '#b0b0b0' }} className="text-xs sm:text-sm text-center md:text-left">
           <span style={{ background: SURGE.gradient, backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }} className="font-bold">
             corner
           </span>
           {' — '}AI agents for ambitious operators
         </div>
-        <div className="flex items-center gap-6">
-          <a href="#" style={{ color: '#b0b0b0' }} className="text-sm hover:text-white transition-colors">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <a href="#" style={{ color: '#b0b0b0' }} className="text-xs sm:text-sm hover:text-white transition-colors">
             Privacy
           </a>
-          <a href="#" style={{ color: '#b0b0b0' }} className="text-sm hover:text-white transition-colors">
+          <a href="#" style={{ color: '#b0b0b0' }} className="text-xs sm:text-sm hover:text-white transition-colors">
             Terms
           </a>
-          <a href="#" style={{ color: '#b0b0b0' }} className="text-sm hover:text-white transition-colors">
+          <a href="#" style={{ color: '#b0b0b0' }} className="text-xs sm:text-sm hover:text-white transition-colors">
             Contact
           </a>
         </div>
