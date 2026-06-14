@@ -274,107 +274,91 @@ function HeroSection() {
   )
 }
 
-// --- PROBLEM SECTION ---
-function ProblemSection() {
-  const problems = [
-    {
-      title: "You're drowning in everything except the actual work.",
-      body: 'Scheduling. Follow-ups. Research. Admin. Email. You spend 15–20 hours a week on busywork. Leads fall through. Clients get impatient. This isn\'t scaling—it\'s surviving.',
-      Icon: Clock,
-      accentColor: SURGE.purple,
-    },
-    {
-      title: 'Tools don\'t solve it. They multiply the problem.',
-      body: 'Zapier. ChatGPT. Slack. Airtable. Each tool solves one tiny piece and creates three new ones. More screens to check. More contexts to switch. More things to manage.',
-      Icon: AlertCircle,
-      accentColor: SURGE.cyan,
-    },
-    {
-      title: 'Hiring is a trap you\'re not ready for.',
-      body: 'A part-time office manager is $30–40k a year. You\'re not ready to add a salary, benefits, and management overhead. But you need help now. You\'re stuck.',
-      Icon: Briefcase,
-      accentColor: '#a78bfa',
-    },
+// --- FRAGMENTATION DIAGRAM (scattered icons showing tool overload) ---
+function FragmentationDiagram() {
+  const icons = [
+    { Icon: Users, delay: 0 },
+    { Icon: FileText, delay: 0.1 },
+    { Icon: AlertCircle, delay: 0.2 },
+    { Icon: Settings, delay: 0.3 },
+    { Icon: Database, delay: 0.4 },
+    { Icon: Clock, delay: 0.5 },
   ]
 
   return (
-    <Section id="problem" bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6 relative overflow-hidden">
-      {/* Atmospheric background — stronger visibility */}
-      <div className="absolute inset-0 z-0" style={{ opacity: 0.12 }}>
-        <div
-          className="absolute inset-0"
+    <div className="relative w-full h-64 sm:h-80 md:h-96">
+      {/* Scattered icon positions — asymmetric arrangement */}
+      {icons.map((item, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 0.5, y: 0 }}
+          transition={{ delay: item.delay, duration: 0.6 }}
+          className="absolute"
           style={{
-            background: `radial-gradient(circle at 20% 50%, ${SURGE.purple}, transparent 70%), radial-gradient(circle at 80% 80%, ${SURGE.cyan}, transparent 60%)`,
-          }}
-        />
-      </div>
-
-      <div className="max-w-5xl mx-auto relative z-10">
-        <h2
-          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
-          style={{
-            background: `linear-gradient(135deg, ${SURGE.white}, ${SURGE.cyan})`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            left: `${(i % 2) * 60 + 10}%`,
+            top: `${Math.floor(i / 2) * 30 + 10}%`,
           }}
         >
-          You're capable. You're just drowning.
-        </h2>
+          <item.Icon size={40} style={{ color: SURGE.charcoal, opacity: 0.5 }} strokeWidth={1.5} />
+        </motion.div>
+      ))}
 
-        <p
-          className="text-lg md:text-xl leading-relaxed mb-16"
-          style={{ color: '#b0b0b0', maxWidth: '600px' }}
-        >
-          Corner exists because the best operators in the world are being limited by the time they spend on everything except their actual work.
-        </p>
+      {/* Subtle connecting lines to show chaos */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.15 }}>
+        <line x1="20%" y1="20%" x2="80%" y2="50%" stroke={SURGE.charcoal} strokeWidth="1" />
+        <line x1="30%" y1="60%" x2="70%" y2="30%" stroke={SURGE.charcoal} strokeWidth="1" />
+        <line x1="50%" y1="10%" x2="60%" y2="80%" stroke={SURGE.charcoal} strokeWidth="1" />
+      </svg>
+    </div>
+  )
+}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {problems.map((problem, i) => (
-            <div
-              key={i}
-              className="relative group"
+// --- PROBLEM SECTION (OFF-WHITE BACKGROUND) ---
+function ProblemSection() {
+  return (
+    <Section id="problem" bgColor={SURGE.white} className="py-16 sm:py-32 px-6 relative overflow-hidden">
+      {/* Subtle background divider line */}
+      <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: '#e8e8e8' }} />
+
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          {/* LEFT: Headline + Copy */}
+          <div>
+            <h2
+              className="text-4xl md:text-5xl lg:text-5xl font-bold leading-tight mb-6"
+              style={{ color: SURGE.charcoal }}
             >
-              {/* Gradient background glow on hover */}
-              <div
-                className="absolute inset-0 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{
-                  background: `linear-gradient(135deg, ${problem.accentColor}, transparent)`,
-                }}
-              />
+              You're capable. You're drowning.
+            </h2>
 
-              {/* Card with depth */}
-              <div
-                className="relative p-8 sm:p-10 rounded-2xl overflow-hidden transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-1"
-                style={{
-                  backgroundColor: '#0f0f0f',
-                  borderTop: `2px solid ${problem.accentColor}`,
-                  boxShadow: `0 4px 20px rgba(0, 0, 0, 0.4)`,
-                }}
-              >
-                {/* Gradient accent corner */}
-                <div
-                  className="absolute top-0 right-0 w-20 h-20 opacity-10"
-                  style={{
-                    background: `linear-gradient(135deg, ${problem.accentColor}, transparent)`,
-                  }}
-                />
+            <p
+              className="text-lg md:text-xl leading-relaxed mb-8"
+              style={{ color: '#555', maxWidth: '50ch' }}
+            >
+              The best operators lose 15–20 hours every week to busywork. Scheduling. Follow-ups. Email. Tools promised to solve it. Instead, they multiplied the problem.
+            </p>
 
-                <div className="relative z-10">
-                  <div className="mb-4 p-4 inline-flex rounded-lg" style={{ backgroundColor: `${problem.accentColor}44` }}>
-                    <problem.Icon size={28} style={{ color: problem.accentColor }} strokeWidth={1.5} />
-                  </div>
-                  <h3
-                    className="text-xl sm:text-2xl font-bold mb-4 leading-tight"
-                    style={{ color: SURGE.white }}
-                  >
-                    {problem.title}
-                  </h3>
-                  <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{problem.body}</p>
-                </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <h3 className="font-bold text-lg" style={{ color: SURGE.purple }}>Tools don't solve it</h3>
+                <p style={{ color: '#666', fontSize: '15px', marginTop: '4px' }}>
+                  Zapier. ChatGPT. Slack. Airtable. More screens. More context. More chaos.
+                </p>
+              </div>
+              <div>
+                <h3 className="font-bold text-lg" style={{ color: SURGE.cyan }}>Hiring isn't ready</h3>
+                <p style={{ color: '#666', fontSize: '15px', marginTop: '4px' }}>
+                  $30–40k/year for an office manager. Salary. Benefits. You're not ready. But you need help now.
+                </p>
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* RIGHT: Fragmentation Diagram */}
+          <div>
+            <FragmentationDiagram />
+          </div>
         </div>
       </div>
     </Section>
@@ -526,7 +510,7 @@ function ProductMockup() {
   )
 }
 
-// --- PROMISE SECTION ---
+// --- PROMISE SECTION (with gradient overlay + enlarged mockup) ---
 function PromiseSection() {
   const features = [
     {
@@ -562,71 +546,85 @@ function PromiseSection() {
   ]
 
   return (
-    <Section id="promise" bgColor={SURGE.charcoal} className="py-16 sm:py-32 px-6">
-      <div className="max-w-6xl mx-auto">
-        <h2
-          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
-          style={{
-            background: `linear-gradient(135deg, ${SURGE.white}, ${SURGE.cyan})`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-        >
-          One person. The output of ten.
-        </h2>
+    <Section id="promise" bgColor={SURGE.charcoal} className="py-16 sm:py-32 px-6 relative overflow-hidden">
+      {/* Gradient overlay: purple-to-cyan blend at top, fades to charcoal bottom */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background: `linear-gradient(180deg, rgba(124, 58, 237, 0.15) 0%, rgba(6, 182, 212, 0.1) 30%, rgba(45, 45, 45, 0) 70%)`,
+          pointerEvents: 'none',
+        }}
+      />
 
-        <p
-          className="text-lg md:text-xl leading-relaxed mb-20"
-          style={{ color: '#c0c0c0', maxWidth: '600px' }}
-        >
-          Managed agents run your entire business from one system. You open your inbox in the morning. The work is already moving.
-        </p>
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Headline + Intro Copy (LEFT SIDE, SMALL CONTAINER) */}
+        <div className="mb-12 max-w-2xl">
+          <h2
+            className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
+            style={{
+              background: `linear-gradient(135deg, ${SURGE.white}, ${SURGE.cyan})`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            One person. The output of ten.
+          </h2>
 
-        {/* PRODUCT MOCKUP — THE HERO OF THIS SECTION */}
+          <p
+            className="text-lg md:text-xl leading-relaxed"
+            style={{ color: '#c0c0c0', maxWidth: '45ch' }}
+          >
+            Managed agents run your entire business from one system. You open your inbox in the morning. The work is already moving.
+          </p>
+        </div>
+
+        {/* PRODUCT MOCKUP — ENLARGED TO DOMINATE 60-75% OF SECTION */}
         <ProductMockup />
 
-        {/* CAPABILITIES GRID */}
-        <h3
-          className="text-2xl md:text-3xl font-bold mb-12"
-          style={{ color: SURGE.white, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '18px', fontWeight: '700' }}
-        >
-          What they handle for you
-        </h3>
+        {/* CAPABILITIES GRID (BELOW MOCKUP) */}
+        <div className="mt-24">
+          <h3
+            className="text-2xl md:text-3xl font-bold mb-12"
+            style={{ color: SURGE.white, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '18px', fontWeight: '700' }}
+          >
+            What they handle for you
+          </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, i) => (
-            <div
-              key={i}
-              className="relative group"
-            >
-              {/* Gradient border effect on hover */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {features.map((feature, i) => (
               <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{
-                  background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
-                  padding: '1px',
-                }}
-              />
-
-              {/* Card content */}
-              <div
-                className="relative p-8 sm:p-10 rounded-2xl transition-all duration-300 group-hover:shadow-2xl h-full"
-                style={{
-                  backgroundColor: '#1a1a1a',
-                  border: '1px solid #444',
-                }}
+                key={i}
+                className="relative group"
               >
-                <div className="mb-6 p-4 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.2)' }}>
-                  <feature.Icon size={28} style={{ color: SURGE.purple }} strokeWidth={1.5} />
+                {/* Gradient border effect on hover */}
+                <div
+                  className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
+                    padding: '1px',
+                  }}
+                />
+
+                {/* Card content */}
+                <div
+                  className="relative p-8 sm:p-10 rounded-2xl transition-all duration-300 group-hover:shadow-2xl h-full"
+                  style={{
+                    backgroundColor: '#1a1a1a',
+                    border: '1px solid #444',
+                  }}
+                >
+                  <div className="mb-6 p-4 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.2)' }}>
+                    <feature.Icon size={28} style={{ color: SURGE.purple }} strokeWidth={1.5} />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: SURGE.white }}>
+                    {feature.name}
+                  </h3>
+                  <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{feature.desc}</p>
                 </div>
-                <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: SURGE.white }}>
-                  {feature.name}
-                </h3>
-                <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{feature.desc}</p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </Section>
@@ -634,7 +632,7 @@ function PromiseSection() {
 }
 
 
-// --- HOW IT WORKS SECTION ---
+// --- HOW IT WORKS SECTION (VERTICAL TIMELINE) ---
 function HowItWorksSection() {
   const steps = [
     {
@@ -659,19 +657,19 @@ function HowItWorksSection() {
 
   return (
     <Section bgColor={SURGE.charcoal} className="py-16 sm:py-32 px-6 relative overflow-hidden">
-      {/* Atmospheric glow — stronger visibility */}
-      <div className="absolute inset-0 z-0" style={{ opacity: 0.1 }}>
+      {/* Distinct dark background (different from Promise section) — subtle grid backdrop */}
+      <div className="absolute inset-0 z-0" style={{ opacity: 0.05 }}>
         <div
           className="absolute inset-0"
           style={{
-            background: `radial-gradient(circle at 50% 0%, ${SURGE.purple}, transparent 70%)`,
+            background: `radial-gradient(circle at 50% 50%, ${SURGE.purple}, transparent 80%)`,
           }}
         />
       </div>
 
-      <div className="max-w-5xl mx-auto relative z-10">
+      <div className="max-w-4xl mx-auto relative z-10">
         <h2
-          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
+          className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-center"
           style={{
             background: `linear-gradient(135deg, ${SURGE.white}, ${SURGE.purple})`,
             backgroundClip: 'text',
@@ -683,143 +681,154 @@ function HowItWorksSection() {
         </h2>
 
         <p
-          className="text-lg md:text-xl leading-relaxed mb-16"
-          style={{ color: '#b0b0b0', maxWidth: '600px' }}
+          className="text-lg md:text-xl leading-relaxed mb-16 text-center"
+          style={{ color: '#b0b0b0', maxWidth: '60ch' }}
         >
           Get started in three simple steps. From discovery to execution in days, not months.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-          {/* Connection line behind cards (desktop only) — stronger visibility */}
+        {/* VERTICAL TIMELINE */}
+        <div className="relative">
+          {/* Center connecting line (desktop only) */}
           <div
-            className="absolute top-24 left-0 right-0 h-1 hidden md:block"
+            className="absolute left-1/2 top-0 bottom-0 w-1 hidden md:block"
             style={{
-              background: `linear-gradient(90deg, ${SURGE.purple}88 0%, ${SURGE.cyan}88 50%, ${SURGE.purple}88 100%)`,
+              background: `linear-gradient(180deg, ${SURGE.purple}66 0%, ${SURGE.cyan}66 50%, ${SURGE.purple}66 100%)`,
+              transform: 'translateX(-50%)',
             }}
           />
 
-          {steps.map((step, i) => (
-            <div
-              key={i}
-              className="relative group"
-            >
-              {/* Gradient card border on hover */}
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                style={{
-                  background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
-                  padding: '1px',
-                }}
-              />
+          {/* Timeline steps */}
+          <div className="space-y-12 md:space-y-20">
+            {steps.map((step, i) => (
+              <div key={i} className="relative">
+                {/* Desktop: alternate left-right layout */}
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 items-center ${i % 2 === 1 ? 'md:grid-cols-2' : ''}`}>
+                  {/* Left side (step number + icon) */}
+                  <div className={`flex flex-col items-center md:items-${i % 2 === 0 ? 'end' : 'start'} gap-4`}>
+                    {/* Step circle with gradient */}
+                    <div
+                      className="w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl shadow-xl flex-shrink-0"
+                      style={{
+                        background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
+                        color: SURGE.white,
+                        boxShadow: `0 0 40px rgba(124, 58, 237, 0.5)`,
+                      }}
+                    >
+                      {step.num}
+                    </div>
 
-              {/* Card content */}
-              <div
-                className="relative p-8 sm:p-10 rounded-2xl transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-1 h-full"
-                style={{
-                  backgroundColor: '#0f0f0f',
-                  border: '1px solid #333',
-                }}
-              >
-                {/* Step number circle — larger and more prominent */}
-                <div className="mb-6">
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl shadow-lg"
-                    style={{
-                      background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
-                      color: SURGE.white,
-                      boxShadow: `0 0 30px rgba(124, 58, 237, 0.4)`,
-                    }}
-                  >
-                    {step.num}
+                    {/* Icon below circle */}
+                    <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.15)' }}>
+                      <step.Icon size={32} style={{ color: SURGE.cyan }} strokeWidth={1.5} />
+                    </div>
+                  </div>
+
+                  {/* Right side (text content) */}
+                  <div className={`${i % 2 === 0 ? 'md:pl-12' : 'md:pr-12'} text-center md:text-${i % 2 === 0 ? 'left' : 'right'}`}>
+                    <h3
+                      className="text-2xl md:text-3xl font-bold mb-3"
+                      style={{ color: SURGE.white }}
+                    >
+                      {step.title}
+                    </h3>
+                    <p className="text-base md:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>
+                      {step.body}
+                    </p>
                   </div>
                 </div>
-
-                {/* Icon — larger and more prominent */}
-                <div className="mb-6 p-4 inline-flex rounded-lg" style={{ backgroundColor: 'rgba(124, 58, 237, 0.2)' }}>
-                  <step.Icon size={28} style={{ color: SURGE.purple }} strokeWidth={1.5} />
-                </div>
-
-                <h3
-                  className="text-xl sm:text-2xl font-bold mb-3"
-                  style={{ color: SURGE.white }}
-                >
-                  {step.title}
-                </h3>
-                <p className="text-base sm:text-lg leading-relaxed" style={{ color: '#a8a8a8' }}>{step.body}</p>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </Section>
   )
 }
 
-// --- FINAL CTA SECTION ---
+// --- FINAL CTA SECTION (OFF-WHITE CARD) ---
 function FinalCtaSection() {
   return (
     <Section id="cta" bgColor={SURGE.charcoal} className="py-24 sm:py-40 px-6 relative overflow-hidden">
-      {/* Full-bleed gradient glow */}
+      {/* Subtle background accent */}
       <div
         className="absolute inset-0 z-0"
         style={{
-          background: `radial-gradient(ellipse 120% 100% at 50% 100%, ${SURGE.purple}15 0%, transparent 70%)`,
+          background: `radial-gradient(ellipse 120% 100% at 50% 100%, ${SURGE.purple}10 0%, transparent 70%)`,
+          pointerEvents: 'none',
         }}
       />
 
-      <div className="max-w-3xl mx-auto text-center relative z-10">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)', border: `1px solid ${SURGE.purple}33` }}>
-          <span className="text-sm font-medium" style={{ color: SURGE.cyan }}>Limited availability</span>
-        </div>
-
-        <h2
-          className="text-4xl sm:text-5xl md:text-7xl font-bold leading-tight mb-6"
+      <div className="max-w-3xl mx-auto relative z-10">
+        {/* OFF-WHITE CARD CONTAINER */}
+        <div
+          className="rounded-3xl p-12 sm:p-16 md:p-20 text-center"
           style={{
-            background: `linear-gradient(135deg, ${SURGE.purple}, ${SURGE.cyan})`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
+            backgroundColor: SURGE.white,
           }}
         >
-          Ready to operate like a team of ten?
-        </h2>
+          {/* Bold Stat in Purple */}
+          <div className="mb-8">
+            <div
+              className="text-5xl md:text-6xl font-bold"
+              style={{ color: SURGE.purple }}
+            >
+              3x faster
+            </div>
+            <p style={{ color: '#999', fontSize: '16px', marginTop: '4px' }}>
+              Get more done in less time
+            </p>
+          </div>
 
-        <p
-          className="text-lg sm:text-xl md:text-2xl leading-relaxed mb-10"
-          style={{ color: '#b0b0b0' }}
-        >
-          Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
-        </p>
+          {/* Headline */}
+          <h2
+            className="text-3xl sm:text-4xl md:text-5xl font-bold leading-tight mb-6"
+            style={{ color: SURGE.charcoal }}
+          >
+            Ready to operate like a team of ten?
+          </h2>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-          <a
-            href="/corner/book"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 sm:px-10 py-4 sm:py-5 font-bold text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl hover:-translate-y-1"
-            style={{
-              background: SURGE.gradient,
-            }}
+          {/* Supporting Copy */}
+          <p
+            className="text-base sm:text-lg md:text-xl leading-relaxed mb-12"
+            style={{ color: '#555', maxWidth: '55ch', margin: '0 auto 48px' }}
           >
-            Book your intro call
-            <ArrowUpRight size={20} />
-          </a>
-          <a
-            href="#promise"
-            className="w-full sm:w-auto px-8 py-4 font-bold text-lg rounded-lg transition-all duration-200"
-            style={{
-              color: SURGE.white,
-              border: `2px solid #444`,
-            }}
+            Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
+          </p>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <a
+              href="/corner/book"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 sm:px-10 py-4 sm:py-5 font-bold text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl hover:-translate-y-1"
+              style={{
+                background: SURGE.gradient,
+              }}
+            >
+              Book your intro call
+              <ArrowUpRight size={20} />
+            </a>
+            <a
+              href="#promise"
+              className="w-full sm:w-auto px-8 py-4 font-bold text-lg rounded-lg transition-all duration-200"
+              style={{
+                color: SURGE.charcoal,
+                borderColor: '#ddd',
+                border: '2px solid',
+              }}
+            >
+              Learn more
+            </a>
+          </div>
+
+          {/* Trust Copy */}
+          <p
+            className="text-xs sm:text-sm"
+            style={{ color: '#999' }}
           >
-            Learn more
-          </a>
+            No credit card. No commitment. Book now.
+          </p>
         </div>
-
-        <p
-          className="text-xs sm:text-sm mt-8"
-          style={{ color: '#808080' }}
-        >
-          No credit card. No commitment. Book now.
-        </p>
       </div>
     </Section>
   )
