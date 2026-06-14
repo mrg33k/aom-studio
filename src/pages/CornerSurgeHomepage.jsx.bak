@@ -322,8 +322,10 @@ function PromiseSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {features.map((feature, i) => (
-            <div
+            <motion.div
               key={i}
+              custom={i + 2}
+              variants={fadeUp}
               className="p-6 sm:p-8 rounded-2xl transition-all duration-300 hover:shadow-lg"
               style={{
                 backgroundColor: '#f5f5f5',
@@ -365,7 +367,9 @@ function HowItWorksSection() {
   return (
     <Section bgColor={SURGE.charcoal} className="py-16 sm:py-24 px-6">
       <div className="max-w-5xl mx-auto">
-        <h2
+        <motion.h2
+          custom={0}
+          variants={fadeUp}
           className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-16"
           style={{ color: SURGE.white }}
         >
@@ -374,8 +378,12 @@ function HowItWorksSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {steps.map((step, i) => (
-            <div
+            <motion.div
               key={i}
+              custom={i + 1}
+              initial="hidden"
+              animate="visible"
+              variants={fadeUp}
               className="relative"
             >
               <div
@@ -415,21 +423,29 @@ function FinalCtaSection() {
   return (
     <Section id="cta" bgColor={SURGE.charcoal} className="py-20 sm:py-32 px-6">
       <div className="max-w-3xl mx-auto text-center">
-        <h2
+        <motion.h2
+          custom={0}
+          variants={fadeUp}
           className="text-3xl sm:text-4xl md:text-6xl font-bold leading-tight mb-6"
           style={{ color: SURGE.white }}
         >
           Ready to operate like a team of ten?
         </h2>
 
-        <p
+        <motion.p
+          custom={1}
+          variants={fadeUp}
           className="text-base sm:text-lg md:text-xl leading-relaxed mb-8 sm:mb-12"
           style={{ color: '#b0b0b0' }}
         >
           Book a 30-minute discovery call. We'll map your operations, show you exactly how much time you'll save, and get your agents live.
         </p>
 
-        <a
+        <motion.a
+          custom={2}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
           href="/corner/book"
           className="inline-flex items-center gap-2 px-6 sm:px-10 py-3 sm:py-5 font-bold text-base sm:text-lg rounded-lg transition-all duration-200 text-white hover:shadow-2xl"
           style={{
@@ -438,9 +454,13 @@ function FinalCtaSection() {
         >
           Book your intro call
           <ArrowUpRight size={20} />
-        </a>
+        </motion.a>
 
-        <p
+        <motion.p
+          custom={3}
+          initial="hidden"
+          animate="visible"
+          variants={fadeUp}
           className="text-xs sm:text-sm mt-6 sm:mt-8"
           style={{ color: '#808080' }}
         >
