@@ -60,6 +60,7 @@ const AmbitionPerformanceV2 = lazy(() => import('./pages/AmbitionPerformanceV2.j
 const Corner = lazy(() => import('./pages/Corner.jsx'))
 const CornerSurgeHomepage = lazy(() => import('./pages/CornerSurgeHomepage.jsx'))
 const CornerAsciiHeroPoc = lazy(() => import('./pages/CornerAsciiHeroPoc.jsx'))
+const CornerHomeCage = lazy(() => import('./pages/CornerHomeCage.jsx')) // cage-match B (preview)
 const BookCorner = lazy(() => import('./pages/BookCorner.jsx'))
 const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
@@ -260,6 +261,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Suspense fallback={<div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-[#8A847C] font-body text-sm">Loading...</div>}>
         <Routes>
           <Route path="/" element={<App />} />
+          <Route path="/cage/corner" element={<CornerHomeCage />} />
           <Route path="/about" element={<App />} />
           <Route path="/home-v2" element={<V2Home />} />
           <Route path="/r4" element={<HomeR4Preview />} />
