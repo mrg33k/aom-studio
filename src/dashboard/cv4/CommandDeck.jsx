@@ -344,6 +344,111 @@ function FreeTextAnswer({ label = 'Something else', placeholder = 'Type your ans
   )
 }
 
+// ── Shared: preloaded message that fires on a timer (Command Center Round 4) ─
+// The everyday flow (command-center-vision): the EA loads the single best-guess
+// answer it thinks Patrik would give, shows a countdown, and lets him EDIT before
+// it fires. Do nothing → it sends on the timer and the EA keeps pushing the goal
+// toward finished. Touching the box takes control (pauses the timer); "Send now"
+// fires immediately; "Hold" parks it. The deck-level Auto-send toggle is the
+// master switch — off means nothing fires on its own, every best-guess still sits
+// here pre-written for one-tap send. NOTE: this browser timer is the visible
+// intervention window; the EA's own push when Patrik is away is the loop's job.
+const DEFAULT_FIRE_SECONDS = 120
+
+function PreloadedMessage({ message, seconds = DEFAULT_FIRE_SECONDS, autoSend = true, onFire }) {
+  const [text, setText] = useState(message || '')
+  const [remaining, setRemaining] = useState(seconds)
+  const [held, setHeld] = useState(!autoSend)
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const firedRef = useRef(false)
+
+  useEffect(() => { setText(message || '') }, [message])
+  useEffect(() => { setHeld(!autoSend) }, [autoSend])
+
+  const fire = useCallback(async (override) => {
+    if (firedRef.current || sending) return
+    const t = (override !== undefined ? override : text).trim()
+    if (!t) return
+    firedRef.current = true
+    setSending(true)
+    try {
+      await onFire(t)
+      setSent(true)
+    } catch (err) {
+      console.error('Preloaded send failed:', err)
+      firedRef.current = false
+    } finally {
+      setSending(false)
+    }
+  }, [onFire, text, sending])
+
+  useEffect(() => {
+    if (held || sent || sending) return
+    if (remaining <= 0) { fire(); return }
+    const id = setInterval(() => setRemaining((r) => r - 1), 1000)
+    return () => clearInterval(id)
+  }, [held, sent, sending, remaining, fire])
+
+  if (sent) {
+    return (
+      <div style={{ fontSize: 12, color: AMBER, fontFamily: FONT.mono, fontWeight: 600 }}>
+        ✓ Sent — the EA is pushing this forward.
+      </div>
+    )
+  }
+
+  const safeRem = Math.max(0, remaining)
+  const mmss = `${Math.floor(safeRem / 60)}:${String(safeRem % 60).padStart(2, '0')}`
+  const urgent = !held && safeRem <= 15
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 7,
+      padding: '9px 11px', borderRadius: 9,
+      background: 'rgba(234,179,8,0.05)',
+      border: `1px solid ${held ? C.border : 'rgba(234,179,8,0.30)'}`,
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        fontSize: 10.5, fontFamily: FONT.mono, letterSpacing: '0.04em',
+        textTransform: 'uppercase', color: C.muted,
+      }}>
+        <span>EA's answer{held ? '' : ' — sending'}</span>
+        <span style={{
+          color: held ? C.muted : (urgent ? C.s1 : AMBER), fontWeight: 700,
+          animation: urgent ? 'cmddeck-pulse 1s ease-in-out infinite' : 'none',
+        }}>
+          {held ? 'Held' : `sends in ${mmss}`}
+        </span>
+      </div>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onFocus={() => setHeld(true)}
+        rows={2}
+        style={{
+          width: '100%', padding: '7px 10px', background: C.s1,
+          border: `1px solid ${C.border}`, color: C.text, fontSize: 13,
+          fontFamily: FONT.body, borderRadius: 7, boxSizing: 'border-box', resize: 'vertical',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) fire()
+        }}
+      />
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+        <CommandDeckBtn onClick={() => fire()} disabled={!text.trim() || sending} primary
+          style={{ opacity: !text.trim() || sending ? 0.6 : 1 }}>
+          {sending ? 'Sending…' : 'Send now'}
+        </CommandDeckBtn>
+        <CommandDeckBtn onClick={() => setHeld((h) => !h)}>
+          {held ? 'Resume auto-send' : 'Hold'}
+        </CommandDeckBtn>
+      </div>
+    </div>
+  )
+}
+
 // ── Shared shell: ONE card, ONE action model for every item ────────────────
 // Patrik (2026-06-15): "I was expecting all cards to have the same actions and
 // be robust." So every card type renders through this shell, and the action bar
@@ -363,6 +468,7 @@ function DeckCard({
   dimmed = false,
   doneLabel,
   // decide
+  preload,             // { message, autoSend, onFire } | undefined — the live best-guess
   options = [],
   picked = null,
   loading = false,
@@ -379,7 +485,7 @@ function DeckCard({
   const [dismissing, setDismissing] = useState(false)
   const hasOptions = Array.isArray(options) && options.length > 0
   const hasRoom = !!room
-  const showAct = !!(hasRoom || onDismiss || freeText)
+  const showAct = !!(hasRoom || onDismiss || freeText || preload)
 
   const doDismiss = async () => {
     if (dismissing || !onDismiss) return
@@ -456,6 +562,13 @@ function DeckCard({
           display: 'flex', flexDirection: 'column', gap: 8,
           borderTop: `1px solid ${C.border}`, paddingTop: 10,
         }}>
+          {preload && (
+            <PreloadedMessage
+              message={preload.message}
+              autoSend={preload.autoSend}
+              onFire={preload.onFire}
+            />
+          )}
           {hasOptions && (
             <OptionChips options={options} picked={picked} loading={loading} onPick={onPickOption} />
           )}
@@ -542,7 +655,7 @@ function HardCallCard({ item, options = [], onChanged, onDismiss, onReplyToRoom,
   )
 }
 
-function SteeringQuestionCard({ room, question, options = [], onChanged, onDismiss, onJumpToRoom, onReplyToRoom, nameMap = {} }) {
+function SteeringQuestionCard({ room, question, options = [], onChanged, onDismiss, onJumpToRoom, onReplyToRoom, nameMap = {}, autoSend = true }) {
   const display = roomDisplay(room, nameMap)
   const [loading, setLoading] = useState(false)
   const [picked, setPicked] = useState(null)
@@ -567,13 +680,23 @@ function SteeringQuestionCard({ room, question, options = [], onChanged, onDismi
   }
 
   const hasOptions = options.length > 0
+  // R4: the top option is the EA's single best-guess — it becomes the preloaded,
+  // editable, timer-fired message. The rest stay as alternate one-tap chips.
+  const top = hasOptions ? options[0] : null
+  const preload = top ? {
+    message: top.answer || top.label,
+    autoSend,
+    onFire: (t) => submitAnswer(t),
+  } : null
+  const altOptions = top ? options.slice(1) : options
   return (
     <DeckCard
       tier={1}
       title={display.name}
       tag={display.tag}
       body={humanizeSlugs(question, nameMap)}
-      options={options}
+      preload={preload}
+      options={altOptions}
       picked={picked}
       loading={loading}
       onPickOption={(opt, oi) => submitAnswer(opt.answer || opt.label, oi)}
@@ -1015,6 +1138,19 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
   const [dismissed, setDismissed] = useState(() => new Set())
   // Which focused view is showing (Decisions / Rooms / System).
   const [view, setView] = useState('decisions')
+  // R4 master switch: when on (default), each steering card's best-guess answer
+  // fires on its countdown unless held; off means nothing sends on its own and
+  // every best-guess still sits pre-written for one-tap send. Persisted per device.
+  const [autoSend, setAutoSend] = useState(() => {
+    try { return localStorage.getItem('cmddeck.autosend') !== 'off' } catch { return true }
+  })
+  const toggleAutoSend = useCallback(() => {
+    setAutoSend((v) => {
+      const nv = !v
+      try { localStorage.setItem('cmddeck.autosend', nv ? 'on' : 'off') } catch { /* private mode */ }
+      return nv
+    })
+  }, [])
 
   const load = useCallback(async () => {
     if (!worldId) return
@@ -1227,7 +1363,30 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
           }}>
             Command Deck<span style={{ color: AMBER }}>.</span>
           </h2>
-          {onClose && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* R4 master switch — "do nothing and it sends" on/off, in plain words. */}
+            <button
+              onClick={toggleAutoSend}
+              title={autoSend
+                ? 'Auto-send is on: each answer sends on its timer unless you hold or edit it'
+                : 'Auto-send is off: nothing sends on its own — answers wait for your tap'}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, height: 30, padding: '0 11px',
+                borderRadius: 8, cursor: 'pointer', fontFamily: FONT.mono, fontSize: 11,
+                fontWeight: 700, letterSpacing: '0.03em',
+                background: autoSend ? 'rgba(234,179,8,0.12)' : 'transparent',
+                border: `1px solid ${autoSend ? AMBER : C.border}`,
+                color: autoSend ? AMBER : C.muted,
+              }}
+            >
+              <span style={{
+                width: 7, height: 7, borderRadius: '50%',
+                background: autoSend ? AMBER : C.muted,
+                boxShadow: autoSend ? '0 0 0 3px rgba(234,179,8,0.16)' : 'none',
+              }} />
+              Auto-send {autoSend ? 'on' : 'off'}
+            </button>
+            {onClose && (
             <button
               onClick={onClose}
               aria-label="Close Command Deck"
@@ -1245,6 +1404,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
               </svg>
             </button>
           )}
+          </div>
         </div>
 
         {/* Hero — the dominant top card that earns the daily open */}
@@ -1308,6 +1468,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
                       onJumpToRoom={onJumpToRoom}
                       onReplyToRoom={onReplyToRoom}
                       nameMap={nameMap}
+                      autoSend={autoSend}
                     />
                   ))}
                 </section>
