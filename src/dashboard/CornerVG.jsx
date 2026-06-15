@@ -351,6 +351,27 @@ export default function CornerVG() {
     console.log('CornerV4 mounted')
   }, [])
 
+  // gemini-workers: show month-to-date Gemini spend in the surface badge footer
+  useEffect(() => {
+    if (!worldId) return
+    authFetch(`/api/dashboard/gemini-spend?client_id=${encodeURIComponent(worldId)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return
+        const badge = document.getElementById('cvg-surface-badge')
+        if (!badge) return
+        badge.style.flexDirection = 'column'
+        badge.style.alignItems = 'flex-start'
+        badge.style.gap = '3px'
+        badge.innerHTML =
+          '<div style="display:flex;align-items:center">' +
+          '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px;animation:cvg-dot-pulse 2s ease-in-out infinite"></span>' +
+          '<span>GEMINI 3.5 FLASH</span></div>' +
+          `<div style="font-size:9px;opacity:0.75;padding-left:13px">Gemini $${data.cost_usd.toFixed(2)} this month</div>`
+      })
+      .catch(() => {})
+  }, [worldId])
+
   // ── R7.16 Mobile world reset escape hatch ─────────────────────────────────
   // Visit /cv4?reset_world=1 on mobile to wipe both override stores and reload
   // into a fresh shell that resolves worldId from auth (Patrik → aom). Runs
