@@ -899,6 +899,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
   const [workers, setWorkers] = useState([])
   const [keeperProposals, setKeeperProposals] = useState([])
   const [activity, setActivity] = useState([])
+  const [loopState, setLoopState] = useState(null)
   // Scroll target so the hero card can jump straight to the decisions.
   const decisionsRef = useRef(null)
   // slug -> human title, built from the structure map so cards show real names.
@@ -957,6 +958,14 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
         try { activityFeed = JSON.parse(await aRes.text()) } catch { activityFeed = { entries: [] } }
       }
 
+      // loop-state.json carries the real last-tick time (cycle_n + last_cycle_ts);
+      // room-goals.json does NOT, so the heartbeat must read it from here.
+      const lsRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/loop-state.json')
+      let ls = null
+      if (lsRes.ok) {
+        try { ls = JSON.parse(await lsRes.text()) } catch { ls = null }
+      }
+
       const smRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/structure-map.json')
       const map = {}
       if (smRes.ok) {
@@ -988,6 +997,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
       setActivity(Array.isArray(activityFeed.entries) ? activityFeed.entries.slice(-12).reverse() : [])
       setLoopRunning(masterLoop?.status === 'running')
       setLoopStatusData(goals)
+      setLoopState(ls)
 
       setLoading(false)
     } catch (err) {
@@ -1043,8 +1053,9 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
   const isEmpty = decisionsWaiting === 0 && roomEntries.length === 0 &&
     visibleStuck.length === 0 && visibleKeeper.length === 0
 
-  // Hero + heartbeat figures
-  const lastTs = loopStatusData?.last_cycle_ts
+  // Hero + heartbeat figures. The real tick time lives in loop-state.json
+  // (loopStatusData/room-goals.json has no last_cycle_ts).
+  const lastTs = loopState?.last_cycle_ts || loopStatusData?.last_cycle_ts
   const hbSecs = lastTs ? Math.max(0, Math.floor((Date.now() - new Date(lastTs)) / 1000)) : null
   const heartbeat = hbSecs == null ? 'unknown' :
     hbSecs < 90 ? 'just now' :
