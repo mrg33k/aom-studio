@@ -766,9 +766,9 @@ function SegmentedNav({ view, onView, counts }) {
   ]
   return (
     <div style={{
-      display: 'flex', gap: 4, marginBottom: 22, padding: 4,
-      background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.border}`,
-      borderRadius: 11,
+      display: 'flex', gap: 5, marginBottom: 26, padding: 5,
+      background: 'rgba(255,255,255,0.025)', border: `1px solid ${C.border}`,
+      borderRadius: 12,
     }}>
       {tabs.map((t) => {
         const active = view === t.key
@@ -777,20 +777,20 @@ function SegmentedNav({ view, onView, counts }) {
             key={t.key}
             onClick={() => onView(t.key)}
             style={{
-              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              padding: '9px 10px', borderRadius: 8, cursor: 'pointer',
-              background: active ? 'rgba(234,179,8,0.12)' : 'transparent',
-              border: `1px solid ${active ? 'rgba(234,179,8,0.40)' : 'transparent'}`,
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px 12px', borderRadius: 9, cursor: 'pointer',
+              background: active ? 'rgba(234,179,8,0.13)' : 'transparent',
+              border: `1px solid ${active ? 'rgba(234,179,8,0.45)' : 'transparent'}`,
               color: active ? AMBER : C.text2,
-              fontFamily: FONT.mono, fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'all 0.15s',
+              fontFamily: FONT.mono, fontSize: 12, fontWeight: 700,
+              letterSpacing: '0.09em', textTransform: 'uppercase', transition: 'all 0.15s',
             }}
             onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = C.text }}
             onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = C.text2 }}
           >
             {t.label}
             <span style={{
-              minWidth: 18, padding: '1px 6px', borderRadius: 10, fontSize: 10,
+              minWidth: 20, padding: '2px 7px', borderRadius: 10, fontSize: 10.5,
               background: t.alarm ? AMBER : 'rgba(255,255,255,0.08)',
               color: t.alarm ? C.s1 : (active ? AMBER : C.muted), fontWeight: 800,
             }}>
@@ -1239,7 +1239,11 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
                       nameMap={nameMap}
                     />
                   ))}
-                  {openQuestions.length > 0 && <SectionLabel marginTop={openHardCalls.length > 0 ? 24 : 0}>Steering Questions ({openQuestions.length})</SectionLabel>}
+                  {openQuestions.length > 0 && (
+                    <div style={openHardCalls.length > 0 ? { marginTop: 30, paddingTop: 22, borderTop: `1px solid ${C.border}` } : undefined}>
+                      <SectionLabel>Steering Questions ({openQuestions.length})</SectionLabel>
+                    </div>
+                  )}
                   {openQuestions.map((q, i) => (
                     <SteeringQuestionCard
                       key={`q-${i}`}
