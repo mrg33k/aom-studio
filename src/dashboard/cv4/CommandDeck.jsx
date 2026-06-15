@@ -362,13 +362,27 @@ function PreloadedMessage({ message, seconds = DEFAULT_FIRE_SECONDS, autoSend = 
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const firedRef = useRef(false)
+  // Always send the LATEST edited text, never a value captured when the timer
+  // started — the auto-fire reads this ref, not a closure.
+  const textRef = useRef(text)
+  useEffect(() => { textRef.current = text }, [text])
+  // Never fire while the user can't see the countdown. If the tab is hidden the
+  // timer freezes and resumes when they come back, so a best-guess never sends
+  // unseen behind their back (the browser timer is the visible window only).
+  const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.hidden)
 
   useEffect(() => { setText(message || '') }, [message])
   useEffect(() => { setHeld(!autoSend) }, [autoSend])
 
+  useEffect(() => {
+    const onVis = () => setHidden(document.hidden)
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+
   const fire = useCallback(async (override) => {
     if (firedRef.current || sending) return
-    const t = (override !== undefined ? override : text).trim()
+    const t = (override !== undefined ? override : textRef.current).trim()
     if (!t) return
     firedRef.current = true
     setSending(true)
@@ -381,14 +395,14 @@ function PreloadedMessage({ message, seconds = DEFAULT_FIRE_SECONDS, autoSend = 
     } finally {
       setSending(false)
     }
-  }, [onFire, text, sending])
+  }, [onFire, sending])
 
   useEffect(() => {
-    if (held || sent || sending) return
+    if (held || sent || sending || hidden) return
     if (remaining <= 0) { fire(); return }
     const id = setInterval(() => setRemaining((r) => r - 1), 1000)
     return () => clearInterval(id)
-  }, [held, sent, sending, remaining, fire])
+  }, [held, sent, sending, hidden, remaining, fire])
 
   if (sent) {
     return (
