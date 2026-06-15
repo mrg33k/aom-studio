@@ -477,7 +477,12 @@ export default function ChatPanel() {
   // doubling as a transcript of every mission while still acknowledging
   // "work was being done over there". Click → /cv4/project/<p>?mission=<m>.
   const visibleMessages = useMemo(() => {
-    const arr = msgs.messages || []
+    // Quiet the loop AT Patrik (2026-06-15 direction): the master-loop cycle briefs
+    // are instructions written TO the assistant (role=user, metadata.master_loop),
+    // not messages from Patrik — hide them from his chat. The assistant's real
+    // replies and digests are NOT flagged, so they still show. UI-only: the room
+    // bridge reads Supabase directly, so the loop still gets its briefs.
+    const arr = (msgs.messages || []).filter(m => !(m?.metadata?.master_loop))
     const targetMission = selectedProject?.missionSlug || null
     if (targetMission) {
       return arr.filter(m => {
