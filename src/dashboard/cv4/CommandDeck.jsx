@@ -159,7 +159,7 @@ function OptionChips({ options, picked, loading, onPick }) {
             fontSize: 13,
             fontFamily: FONT.body,
             borderRadius: 8,
-            padding: '10px 12px',
+            padding: '12px 12px',
             cursor: loading ? 'default' : 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -366,6 +366,9 @@ function DeckCard({
       padding: tier === 1 ? '15px 17px 13px' : '12px 15px 11px',
       background: tier === 1 ? 'rgba(255,255,255,0.022)' : 'rgba(255,255,255,0.012)',
       border: `1px solid ${tier === 1 ? C.border : 'rgba(255,255,255,0.05)'}`,
+      // Tier-1 decisions carry a left amber keystone so the eye lands on them
+      // first (Bloomberg-style severity band). Dim it once handled.
+      borderLeft: tier === 1 ? `3px solid ${dimmed ? 'rgba(234,179,8,0.25)' : AMBER}` : undefined,
       borderRadius: 11,
       marginBottom: tier === 1 ? 12 : 9,
       fontFamily: FONT.body,
@@ -385,7 +388,7 @@ function DeckCard({
           fontFamily: FONT.display,
           fontSize: tier === 1 ? 15 : 13.5,
           color: dimmed ? C.muted : C.text,
-          fontWeight: 700,
+          fontWeight: tier === 1 ? 800 : 700,
           letterSpacing: '-0.02em',
           flex: 1,
           overflow: 'hidden',
@@ -718,11 +721,11 @@ function SectionLabel({ children, marginTop = 0 }) {
 
 // ── Hero card: the thing that earns the daily open ─────────────────────────
 // Council (Steffen + Alex): one dominant card at the very top — a big amber
-// count of decisions waiting + a plain-English line — and, when a real source
-// exists, the revenue line underneath. We never fabricate revenue: the line
-// renders only when `revenue` is real data passed in.
+// count of decisions waiting + a promoted plain-English line + the loop
+// heartbeat. No revenue hook here: a blank slot for data that doesn't exist is
+// design debt; when a real revenue source exists it becomes its own section.
 
-function HeroCard({ decisionsWaiting, roomsMoving, heartbeat, loopRunning, stale, revenue, onRefresh, refreshing, onJumpToDecisions }) {
+function HeroCard({ decisionsWaiting, roomsMoving, heartbeat, loopRunning, stale, onRefresh, refreshing, onJumpToDecisions }) {
   const clickable = decisionsWaiting > 0 && onJumpToDecisions
   const sentence = decisionsWaiting > 0
     ? `${decisionsWaiting} ${decisionsWaiting === 1 ? 'decision needs' : 'decisions need'} you. ${roomsMoving} ${roomsMoving === 1 ? 'room is' : 'rooms are'} moving on their own.`
@@ -744,65 +747,54 @@ function HeroCard({ decisionsWaiting, roomsMoving, heartbeat, loopRunning, stale
         overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+      {/* Top row: the big urgency measure + refresh/jump affordances */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <span style={{
           fontFamily: FONT.mono, fontSize: 52, fontWeight: 800, lineHeight: 1,
-          color: decisionsWaiting > 0 ? AMBER : C.text2, letterSpacing: '-0.03em',
+          color: decisionsWaiting > 0 ? AMBER : C.text2, letterSpacing: '-0.03em', flexShrink: 0,
         }}>
           {decisionsWaiting}
         </span>
         <span style={{
-          fontFamily: FONT.display, fontSize: 18, fontWeight: 700, color: C.text,
-          letterSpacing: '-0.02em',
+          fontSize: 11, color: C.muted, fontFamily: FONT.mono, fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '0.12em', lineHeight: 1.3,
         }}>
-          {decisionsWaiting === 1 ? 'decision waiting' : 'decisions waiting'}
+          {decisionsWaiting === 1 ? 'decision' : 'decisions'}<br />waiting
         </span>
+        <span style={{ flex: 1 }} />
         <button
           onClick={(e) => { e.stopPropagation(); onRefresh && onRefresh() }}
           disabled={refreshing}
           aria-label="Refresh data"
           title="Refresh"
           style={{
-            marginLeft: clickable ? 10 : 'auto', width: 32, height: 32, flexShrink: 0,
-            alignSelf: 'center', background: 'transparent', border: `1px solid ${C.border}`,
+            width: 32, height: 32, flexShrink: 0,
+            background: 'transparent', border: `1px solid ${C.border}`,
             borderRadius: 8, color: C.text2, fontSize: 15, cursor: refreshing ? 'default' : 'pointer',
             opacity: refreshing ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >↻</button>
         {clickable && (
-          <span style={{ marginLeft: 6, color: AMBER, fontSize: 20, fontWeight: 700, alignSelf: 'center' }}>›</span>
+          <span style={{ color: AMBER, fontSize: 22, fontWeight: 700, flexShrink: 0 }}>›</span>
         )}
       </div>
 
-      <p style={{ margin: '12px 0 0', fontSize: 14, color: C.text2, lineHeight: 1.5 }}>
+      {/* The plain-English read — the main line, promoted above the count's label */}
+      <p style={{
+        margin: '14px 0 0', fontFamily: FONT.display, fontSize: 16, fontWeight: 700,
+        color: C.text, lineHeight: 1.4, letterSpacing: '-0.01em',
+      }}>
         {sentence}
       </p>
 
-      {/* Revenue line — only when a real number is supplied; never fabricated. */}
-      {revenue && revenue.label && (
-        <div style={{
-          marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}`,
-          display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap',
-        }}>
-          <span style={{ fontFamily: FONT.mono, fontSize: 22, fontWeight: 800, color: C.text }}>
-            {revenue.value}
-          </span>
-          <span style={{ fontSize: 13, color: C.text2 }}>{revenue.label}</span>
-          {revenue.delta && (
-            <span style={{ fontSize: 12, color: AMBER, fontFamily: FONT.mono, marginLeft: 4 }}>
-              {revenue.delta}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Heartbeat: proof the system is alive at a glance. */}
+      {/* Heartbeat footer: proof the system is alive at a glance. */}
       <div style={{
-        marginTop: 14, display: 'flex', alignItems: 'center', gap: 8,
-        fontSize: 11, color: C.muted, fontFamily: FONT.mono,
+        marginTop: 14, paddingTop: 12, borderTop: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'center', gap: 8,
+        fontSize: 10, color: C.muted, fontFamily: FONT.mono,
       }}>
         <span style={{
-          width: 7, height: 7, borderRadius: '50%', display: 'inline-block',
+          width: 7, height: 7, borderRadius: '50%', display: 'inline-block', flexShrink: 0,
           background: loopRunning ? AMBER : 'rgba(255,255,255,0.18)',
           animation: loopRunning && !stale ? 'cmddeck-pulse 2.4s ease-in-out infinite' : 'none',
         }} />
@@ -819,20 +811,26 @@ function HeroCard({ decisionsWaiting, roomsMoving, heartbeat, loopRunning, stale
 // This shows the live workers; blocked/stalled ones read as a loud signal. When
 // the loop is running but nothing is working, we say so plainly (honest calm).
 
-function WorkerPane({ workers, loopRunning }) {
+function WorkerPane({ workers, loopRunning, alarm = false }) {
   const fmtAge = (s) => s == null ? '' :
     s < 90 ? 'just now' :
     s < 3600 ? `${Math.round(s / 60)}m ago` :
     s < 86400 ? `${Math.round(s / 3600)}h ago` : `${Math.round(s / 86400)}d ago`
 
   if (!workers || workers.length === 0) {
+    // False-calm guardrail: if the loop is running and decisions are stacking
+    // up but nothing is executing, that silence is a signal — show it loud.
     return (
       <div style={{
-        border: `1px solid rgba(255,255,255,0.05)`, borderRadius: 10,
-        background: 'rgba(255,255,255,0.012)', padding: '12px 14px',
-        fontSize: 12, color: C.muted, fontFamily: FONT.mono,
+        border: `1px solid ${alarm ? 'rgba(234,179,8,0.32)' : 'rgba(255,255,255,0.05)'}`,
+        borderRadius: 10,
+        background: alarm ? 'rgba(234,179,8,0.06)' : 'rgba(255,255,255,0.012)',
+        padding: '12px 14px',
+        fontSize: 12, fontFamily: FONT.mono,
+        color: alarm ? AMBER : C.muted, fontWeight: alarm ? 600 : 400,
       }}>
-        {loopRunning ? 'No agents working right now — loop is watching.' : 'Loop is paused.'}
+        {alarm ? 'Loop is running but no agents are working. Check for stuck tasks.' :
+          loopRunning ? 'No agents working right now — loop is watching.' : 'Loop is paused.'}
       </div>
     )
   }
@@ -1114,7 +1112,6 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
           heartbeat={heartbeat}
           loopRunning={loopRunning}
           stale={loopStale}
-          revenue={null}
           onRefresh={handleRefresh}
           refreshing={refreshing}
           onJumpToDecisions={scrollToDecisions}
@@ -1163,7 +1160,11 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
             {/* Working now — live worker pane + false-calm guardrail */}
             <section style={{ marginBottom: 28 }}>
               <SectionLabel>Working Now ({workers.length})</SectionLabel>
-              <WorkerPane workers={workers} loopRunning={loopRunning} />
+              <WorkerPane
+                workers={workers}
+                loopRunning={loopRunning}
+                alarm={loopRunning && workers.length === 0 && decisionsWaiting > 0}
+              />
             </section>
 
             {/* Since you last looked — the loop's clean what-changed feed */}
