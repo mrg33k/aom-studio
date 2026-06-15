@@ -54,12 +54,37 @@ function roomDisplay(slug, nameMap = {}) {
 // aom:aheadofmarket.com:brand). Times ("9:45") and "Re:" are excluded by the
 // lowercase-letter start + no-space-after-colon rule.
 const SLUG_TOKEN_RE = /\b[a-z][a-z0-9-]*(?::[a-z0-9][a-z0-9.-]*)+\b/g
+// Slash-style room paths leak the same plumbing a slug does
+// ("corner/missions/support-desk/", "sourcing-directory/space-rising-v2/discovery").
+// Match only multi-segment lowercase paths NOT preceded by "/" or ":" (so URLs
+// like https://x.com/a/b are left alone), then show the human room name.
+const PATH_GENERIC = new Set(['corner', 'users', 'aom', 'projects', 'missions', 'deliverables', 'src', 'dashboard', 'api', 'public', 'data', 'directory'])
+const PATH_ROOTS = new Set(['corner', 'users', 'aom', 'projects'])
+const PATH_TOKEN_RE = /(^|[^/:.\w])((?:[a-z0-9][a-z0-9-]*\/){1,}[a-z0-9][a-z0-9-]*\/?)/g
+function humanizePaths(text, nameMap = {}) {
+  return text.replace(PATH_TOKEN_RE, (full, pre, path) => {
+    const parts = path.replace(/\/+$/, '').split('/').filter(Boolean)
+    if (parts.length < 2) return full
+    const meaningful = parts.filter((p) => !PATH_GENERIC.has(p))
+    const guess = meaningful.length >= 2
+      ? `${meaningful[meaningful.length - 2]}:${meaningful[meaningful.length - 1]}`
+      : null
+    // Only rewrite REAL room paths: a known filesystem root, or a path whose
+    // room is in the structure map. Leaves "yes/no", "16/9", URLs untouched.
+    const isRoomPath = PATH_ROOTS.has(parts[0]) || (guess && nameMap[guess])
+    if (!isRoomPath) return full
+    if (guess && nameMap[guess]) return pre + nameMap[guess]
+    const last = meaningful[meaningful.length - 1] || parts[parts.length - 1]
+    return pre + titleCaseSlug(last)
+  })
+}
 function humanizeSlugs(text, nameMap = {}) {
   if (!text || typeof text !== 'string') return text
-  return text.replace(SLUG_TOKEN_RE, (m) => {
+  const colons = text.replace(SLUG_TOKEN_RE, (m) => {
     const d = roomDisplay(m, nameMap)
     return d.tag ? `${d.name} (${d.tag})` : d.name
   })
+  return humanizePaths(colons, nameMap)
 }
 
 // Small muted chip rendered next to a room name to show where it lives.
@@ -503,6 +528,13 @@ function HardCallCard({ item, options = [], onChanged, onDismiss, onReplyToRoom,
       picked={picked}
       loading={loading}
       onPickOption={(opt, oi) => submit(opt.answer || opt.label, oi)}
+      freeText={{
+        // Every hard call can be decided inline by typing, even when the loop
+        // hasn't pre-worked option chips yet — so no card is just "Mark done".
+        label: hasOptions ? 'Other decision' : 'Decide',
+        placeholder: 'Type your decision…',
+        onSubmit: (t) => submit(t),
+      }}
       onDismiss={onDismiss}
       dismissLabel={hasOptions ? 'Mark handled' : 'Mark done'}
     />
@@ -719,6 +751,57 @@ function SectionLabel({ children, marginTop = 0 }) {
   )
 }
 
+// ── Segmented view switcher ────────────────────────────────────────────────
+// Patrik: "this does not feel organized... it needs way better organizational
+// flow." Instead of one long wall (17 decisions + 14 rooms + system stuff), the
+// deck splits into three focused views. He lands on Decisions (what needs him),
+// and flips to Rooms or System on demand. Counts live on each tab.
+
+function SegmentedNav({ view, onView, counts }) {
+  const tabs = [
+    { key: 'decisions', label: 'Decisions', n: counts.decisions, alarm: counts.decisions > 0 },
+    { key: 'rooms', label: 'Rooms', n: counts.rooms },
+    { key: 'system', label: 'System', n: counts.system },
+  ]
+  return (
+    <div style={{
+      display: 'flex', gap: 4, marginBottom: 22, padding: 4,
+      background: 'rgba(255,255,255,0.02)', border: `1px solid ${C.border}`,
+      borderRadius: 11,
+    }}>
+      {tabs.map((t) => {
+        const active = view === t.key
+        return (
+          <button
+            key={t.key}
+            onClick={() => onView(t.key)}
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+              padding: '9px 10px', borderRadius: 8, cursor: 'pointer',
+              background: active ? 'rgba(234,179,8,0.12)' : 'transparent',
+              border: `1px solid ${active ? 'rgba(234,179,8,0.40)' : 'transparent'}`,
+              color: active ? AMBER : C.text2,
+              fontFamily: FONT.mono, fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.08em', textTransform: 'uppercase', transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = C.text }}
+            onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = C.text2 }}
+          >
+            {t.label}
+            <span style={{
+              minWidth: 18, padding: '1px 6px', borderRadius: 10, fontSize: 10,
+              background: t.alarm ? AMBER : 'rgba(255,255,255,0.08)',
+              color: t.alarm ? C.s1 : (active ? AMBER : C.muted), fontWeight: 800,
+            }}>
+              {t.n}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Hero card: the thing that earns the daily open ─────────────────────────
 // Council (Steffen + Alex): one dominant card at the very top — a big amber
 // count of decisions waiting + a promoted plain-English line + the loop
@@ -906,6 +989,8 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
   // their dismissal so the loop drops them; client-only kinds (room/stuck) just
   // hide for this view and return on a full reload (they're live status).
   const [dismissed, setDismissed] = useState(() => new Set())
+  // Which focused view is showing (Decisions / Rooms / System).
+  const [view, setView] = useState('decisions')
 
   const load = useCallback(async () => {
     if (!worldId) return
@@ -1062,7 +1147,10 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
   const loopStale = hbSecs != null && hbSecs > 300
   const roomsMoving = Object.values(roomStatus).filter((r) => r && r.status === 'active').length
   const scrollToDecisions = () => {
-    if (decisionsRef.current) decisionsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setView('decisions')
+    requestAnimationFrame(() => {
+      if (decisionsRef.current) decisionsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
   }
 
   return (
@@ -1123,59 +1211,117 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
           </div>
         ) : (
           <>
-            {/* ── TIER 1: Waiting on you (decisions) ── */}
-            {(openHardCalls.length > 0 || openQuestions.length > 0) && (
-              <section ref={decisionsRef} style={{ marginBottom: 34, scrollMarginTop: 12 }}>
-                <SectionLabel>Waiting on You ({decisionsWaiting})</SectionLabel>
-                {openHardCalls.map((item, i) => (
-                  <HardCallCard
-                    key={`hc-${i}`}
-                    item={item}
-                    options={item.options}
-                    onChanged={handleDataChange}
-                    onDismiss={() => dismissCard(`hc:${item.text.slice(0, 60)}`, { kind: 'hard_call', callId: item.text.slice(0, 60) })}
-                    onReplyToRoom={onReplyToRoom}
-                    onJumpToRoom={onJumpToRoom}
-                    nameMap={nameMap}
-                  />
-                ))}
-                {openQuestions.map((q, i) => (
-                  <SteeringQuestionCard
-                    key={`q-${i}`}
-                    room={q.room}
-                    question={q.question}
-                    options={q.options}
-                    onChanged={handleDataChange}
-                    onDismiss={() => dismissCard(`q:${q.room}`, { kind: 'question', room: q.room })}
-                    onJumpToRoom={onJumpToRoom}
-                    onReplyToRoom={onReplyToRoom}
-                    nameMap={nameMap}
-                  />
-                ))}
-              </section>
+            <SegmentedNav
+              view={view}
+              onView={setView}
+              counts={{
+                decisions: decisionsWaiting,
+                rooms: roomEntries.length,
+                system: workers.length + activity.length + visibleStuck.length + visibleKeeper.length,
+              }}
+            />
+
+            {/* ── DECISIONS VIEW — what needs Patrik ── */}
+            {view === 'decisions' && (
+              openHardCalls.length > 0 || openQuestions.length > 0 ? (
+                <section ref={decisionsRef} style={{ marginBottom: 16 }}>
+                  {openHardCalls.length > 0 && <SectionLabel>Only You Can Decide ({openHardCalls.length})</SectionLabel>}
+                  {openHardCalls.map((item, i) => (
+                    <HardCallCard
+                      key={`hc-${i}`}
+                      item={item}
+                      options={item.options}
+                      onChanged={handleDataChange}
+                      onDismiss={() => dismissCard(`hc:${item.text.slice(0, 60)}`, { kind: 'hard_call', callId: item.text.slice(0, 60) })}
+                      onReplyToRoom={onReplyToRoom}
+                      onJumpToRoom={onJumpToRoom}
+                      nameMap={nameMap}
+                    />
+                  ))}
+                  {openQuestions.length > 0 && <SectionLabel marginTop={openHardCalls.length > 0 ? 24 : 0}>Steering Questions ({openQuestions.length})</SectionLabel>}
+                  {openQuestions.map((q, i) => (
+                    <SteeringQuestionCard
+                      key={`q-${i}`}
+                      room={q.room}
+                      question={q.question}
+                      options={q.options}
+                      onChanged={handleDataChange}
+                      onDismiss={() => dismissCard(`q:${q.room}`, { kind: 'question', room: q.room })}
+                      onJumpToRoom={onJumpToRoom}
+                      onReplyToRoom={onReplyToRoom}
+                      nameMap={nameMap}
+                    />
+                  ))}
+                </section>
+              ) : (
+                <div style={{ textAlign: 'center', color: C.muted, fontSize: 14, margin: '36px 0' }}>
+                  Nothing needs your call right now.
+                </div>
+              )
             )}
 
-            {/* ── TIER 2: the quieter, secondary surface ── */}
+            {/* ── ROOMS VIEW — every room's goal + status, all actionable ── */}
+            {view === 'rooms' && (
+              roomEntries.length > 0 ? (
+                <section style={{ marginBottom: 16 }}>
+                  {roomEntries.map(([roomSlug, data]) => (
+                    <RoomStatusCard
+                      key={roomSlug}
+                      room={roomSlug}
+                      data={data}
+                      onChanged={handleDataChange}
+                      onDismiss={() => dismissCard(`rs:${roomSlug}`, { kind: 'room', room: roomSlug })}
+                      onJumpToRoom={onJumpToRoom}
+                      onReplyToRoom={onReplyToRoom}
+                      nameMap={nameMap}
+                    />
+                  ))}
+                </section>
+              ) : (
+                <div style={{ textAlign: 'center', color: C.muted, fontSize: 14, margin: '36px 0' }}>
+                  No rooms to show.
+                </div>
+              )
+            )}
 
-            {/* Working now — live worker pane + false-calm guardrail */}
-            <section style={{ marginBottom: 28 }}>
-              <SectionLabel>Working Now ({workers.length})</SectionLabel>
-              <WorkerPane
-                workers={workers}
-                loopRunning={loopRunning}
-                alarm={loopRunning && workers.length === 0 && decisionsWaiting > 0}
-              />
-            </section>
+            {/* ── SYSTEM VIEW — workers, what changed, stuck, housekeeping ── */}
+            {view === 'system' && (
+              <>
+                {/* Working now — live worker pane + false-calm guardrail */}
+                <section style={{ marginBottom: 28 }}>
+                  <SectionLabel>Working Now ({workers.length})</SectionLabel>
+                  <WorkerPane
+                    workers={workers}
+                    loopRunning={loopRunning}
+                    alarm={loopRunning && workers.length === 0 && decisionsWaiting > 0}
+                  />
+                </section>
 
-            {/* Since you last looked — the loop's clean what-changed feed */}
-            {activity.length > 0 && (
-              <section style={{ marginBottom: 28 }}>
-                <SectionLabel>Since you last looked ({activity.length})</SectionLabel>
-                <div style={{
-                  border: `1px solid rgba(255,255,255,0.05)`, borderRadius: 10,
-                  background: 'rgba(255,255,255,0.012)', overflow: 'hidden',
-                }}>
-                  {activity.map((a, i) => {
+                {/* Stuck Sessions (a false-calm signal: surfaced loudly when present) */}
+                {visibleStuck.length > 0 && (
+                  <section style={{ marginBottom: 28 }}>
+                    <SectionLabel>Stuck Sessions ({visibleStuck.length})</SectionLabel>
+                    {visibleStuck.map((sess, i) => (
+                      <StuckSessionCard
+                        key={`ss-${i}`}
+                        session={sess}
+                        onDismiss={() => dismissCard(`ss:${sess.name}`, { kind: 'stuck' })}
+                        onJumpToRoom={onJumpToRoom}
+                        nameMap={nameMap}
+                      />
+                    ))}
+                  </section>
+                )}
+
+                {/* Since you last looked — the loop's clean what-changed feed */}
+                {activity.length > 0 && (
+                  <section style={{ marginBottom: 28 }}>
+                    <SectionLabel>Since you last looked ({activity.length})</SectionLabel>
+                    <div style={{
+                      border: `1px solid rgba(255,255,255,0.05)`, borderRadius: 10,
+                      background: 'rgba(255,255,255,0.012)', overflow: 'hidden',
+                    }}>
+                      {activity.map((a, i) => {
                     const { name, tag } = roomDisplay(a.room || '', nameMap)
                     const canJump = !!(a.room && onJumpToRoom)
                     const secs = a.ts ? Math.max(0, Math.floor((Date.now() - new Date(a.ts)) / 1000)) : null
@@ -1217,55 +1363,22 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
               </section>
             )}
 
-            {/* Stuck Sessions (a false-calm signal: surfaced loudly when present) */}
-            {visibleStuck.length > 0 && (
-              <section style={{ marginBottom: 28 }}>
-                <SectionLabel>Stuck Sessions ({visibleStuck.length})</SectionLabel>
-                {visibleStuck.map((sess, i) => (
-                  <StuckSessionCard
-                    key={`ss-${i}`}
-                    session={sess}
-                    onDismiss={() => dismissCard(`ss:${sess.name}`, { kind: 'stuck' })}
-                    onJumpToRoom={onJumpToRoom}
-                    nameMap={nameMap}
-                  />
-                ))}
-              </section>
-            )}
-
-            {/* Room Status */}
-            {roomEntries.length > 0 && (
-              <section style={{ marginBottom: 28 }}>
-                <SectionLabel>Room Status ({roomEntries.length} rooms)</SectionLabel>
-                {roomEntries.map(([roomSlug, data]) => (
-                  <RoomStatusCard
-                    key={roomSlug}
-                    room={roomSlug}
-                    data={data}
-                    onChanged={handleDataChange}
-                    onDismiss={() => dismissCard(`rs:${roomSlug}`, { kind: 'room', room: roomSlug })}
-                    onJumpToRoom={onJumpToRoom}
-                    onReplyToRoom={onReplyToRoom}
-                    nameMap={nameMap}
-                  />
-                ))}
-              </section>
-            )}
-
-            {/* Housekeeping — the Keeper's tidy-up proposals */}
-            {visibleKeeper.length > 0 && (
-              <section>
-                <SectionLabel>Housekeeping ({visibleKeeper.length})</SectionLabel>
-                {visibleKeeper.map((p) => (
-                  <KeeperCard
-                    key={p.id}
-                    proposal={p}
-                    onChanged={handleDataChange}
-                    onDismiss={() => dismissCard(`kp:${p.id}`, { kind: 'keeper', proposalId: p.id })}
-                    nameMap={nameMap}
-                  />
-                ))}
-              </section>
+                {/* Housekeeping — the Keeper's tidy-up proposals */}
+                {visibleKeeper.length > 0 && (
+                  <section>
+                    <SectionLabel>Housekeeping ({visibleKeeper.length})</SectionLabel>
+                    {visibleKeeper.map((p) => (
+                      <KeeperCard
+                        key={p.id}
+                        proposal={p}
+                        onChanged={handleDataChange}
+                        onDismiss={() => dismissCard(`kp:${p.id}`, { kind: 'keeper', proposalId: p.id })}
+                        nameMap={nameMap}
+                      />
+                    ))}
+                  </section>
+                )}
+              </>
             )}
           </>
         )}
