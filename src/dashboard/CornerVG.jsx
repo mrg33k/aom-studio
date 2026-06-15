@@ -1,29 +1,21 @@
-// CornerVG.jsx — corner:gemini-workers R10. The /cvg GEMINI WORKBENCH.
+// CornerVG.jsx — corner:corner-ui-cv5 R1. The /cvg CV5 SURFACE.
 // Byte-for-byte duplicate of CornerV4.jsx with three deltas:
 //   1. component renamed CornerVG, mounted at /cvg* routes
 //   2. basePath pinned to /cvg so in-app navigation stays on this surface
 //   3. every chat send from /cvg carries a model override (useChatSend.js
 //      cvgModelOverride) so turns run on the Gemini lane regardless of prefs
-// Iterate Gemini UX HERE. The live /dashboard (CornerV4) stays untouched.
-// CornerV4.jsx -- WD-40 redesign playground at /cv4
-// Route: /cv4
+// R1: Type system (Hedvig Letters Serif + Figtree + IBM Plex Mono) applied via [data-cv5].
+// The live /dashboard (CornerV4) stays untouched.
 //
-// R5 reset (2026-05-13): /cv4 went back to a 1:1 mirror of CornerV3.jsx
-// (the a9209e9 baseline), then R5.1 Phases A-H layered targeted CV4-only
-// simplifications on top: slim top bar, second-row ContextNav, killed
-// the third-row ThreadHeader, hoisted Commands out of the pill as a
-// purple sparkles menu, left drawer for projects/agents/account.
+// CV3 stays sacred at /dashboard. All CV5 cuts are gated by the [data-cv5]
+// CSS scope on this root. Shared cv3/ trees are imported verbatim so voice
+// + chain animations stay in lockstep with V3 + V4.
 //
-// CV3 stays sacred at /dashboard. All CV4 cuts are gated by either the
-// [data-shell="cv4"] CSS scope on this root or a path check
-// (window.location.pathname.startsWith('/cv4')) inside shared cv3/
-// components. Shared cv3/ trees are imported verbatim so voice + chain
-// animations stay in lockstep with V3.
-//
-// Mission: corner/users/aom/missions/aom-website/
-// Plan: corner/users/aom/missions/aom-website/research/2026-05-12-cv4-wd40-redesign-plan.md
+// Mission: corner:corner-ui-cv5
+// Plan: corner/missions/corner-ui-cv5/CONTEXT.md
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import './cv5.css'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import skillsData from '../data/skills.json'
 import { supabase } from './lib/supabase.js'
@@ -1421,7 +1413,7 @@ export default function CornerVG() {
       <CornerDataProvider value={dataValue}>
         <CornerNavProvider value={navValue}>
           <LiveCallProvider>
-    <div data-testid="dashboard-home-root" data-cv4 data-shell="cv4" data-theme={theme} style={{
+    <div data-testid="dashboard-home-root" data-cv4 data-cv5 data-shell="cv4" data-theme={theme} style={{
       width: '100%',
       // 100vh fallback; the @supports rule below upgrades to 100svh which
       // tracks the SMALL viewport (URL bar visible). 100dvh was overshooting
