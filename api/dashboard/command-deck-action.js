@@ -95,7 +95,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { action, callId, lineMatch, room, answer, world, proposalId } = req.body || {};
+  const { action, callId, lineMatch, room, answer, world, proposalId, kind, status } = req.body || {};
 
   // ── Verify tenant ──────────────────────────────────────────────────────────
   // The master-loop deliverables live in the 'aom' world; the caller passes its
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
   const callKey = callId || lineMatch;
 
   // ── Validate action ────────────────────────────────────────────────────────
-  if (!action || !['mark_call_done', 'answer_question', 'keeper_decision'].includes(action)) {
+  if (!action || !['mark_call_done', 'answer_question', 'keeper_decision', 'set_room_status', 'dismiss'].includes(action)) {
     return res.status(400).json({ error: 'Invalid action' });
   }
 
@@ -131,6 +131,16 @@ export default async function handler(req, res) {
       return await answerQuestion(room, answer, res);
     } else if (action === 'keeper_decision') {
       return await keeperDecision(proposalId, answer, res);
+    } else if (action === 'set_room_status') {
+      // Room-status cards now carry decide chips ("Looks good" / "Pause it").
+      // This flips a room's status + bumps last_reviewed so the loop sees the
+      // steer next tick. `answer` (optional) records a short note inline.
+      return await setRoomStatus(room, status, answer, res);
+    } else if (action === 'dismiss') {
+      // Generalized "clear it from the deck" across card types. Where a real
+      // server-side state exists (hard call, question, keeper) we persist it so
+      // it never resurfaces; client-only kinds (room/stuck/activity) just hide.
+      return await dismissItem(kind, { callKey, room, proposalId }, res);
     }
   } catch (err) {
     console.error('[command-deck-action] Error:', err);
@@ -268,6 +278,80 @@ async function keeperDecision(proposalId, answer, res) {
     return res.status(200).json({ success: true, action: 'keeper_decision', proposalId });
   } catch (err) {
     console.error('[keeperDecision] Error:', err);
+    throw err;
+  }
+}
+
+// Flips a room's status (and bumps last_reviewed) so the loop reads the steer on
+// its next tick. Used by the room-status card's decide chips. An optional `note`
+// is recorded as last_answer so the loop has the plain-words reason.
+async function setRoomStatus(room, status, note, res) {
+  if (!room || typeof room !== 'string') {
+    return res.status(400).json({ error: 'room required' });
+  }
+  const allowed = ['active', 'parked', 'done'];
+  if (!status || !allowed.includes(status)) {
+    return res.status(400).json({ error: `status must be one of ${allowed.join(', ')}` });
+  }
+  try {
+    let goalsContent = await readDeliverable('room-goals.json');
+    if (goalsContent == null) {
+      return res.status(404).json({ error: 'room-goals.json not found' });
+    }
+    const goals = JSON.parse(goalsContent);
+    if (!goals.rooms) goals.rooms = {};
+    if (!goals.rooms[room]) goals.rooms[room] = {};
+    goals.rooms[room] = {
+      ...goals.rooms[room],
+      status,
+      source: 'patrik',
+      last_reviewed: new Date().toISOString(),
+      ...(note && typeof note === 'string' && note.trim() ? { last_answer: note.trim() } : {}),
+    };
+    const ok = await writeDeliverable('room-goals.json', JSON.stringify(goals, null, 2) + '\n');
+    if (!ok) return res.status(500).json({ error: 'Failed to write room-goals.json' });
+    return res.status(200).json({ success: true, action: 'set_room_status', room, status });
+  } catch (err) {
+    console.error('[setRoomStatus] Error:', err);
+    throw err;
+  }
+}
+
+// Generalized "clear it from the deck". For server-backed items we persist the
+// dismissal so the loop doesn't resurface it; for client-only kinds we return
+// success and the deck hides the card locally.
+async function dismissItem(kind, { callKey, room, proposalId }, res) {
+  try {
+    if (kind === 'hard_call') {
+      // Flip the checkbox to handled (no decision text) — same path as Mark done.
+      return await markCallDone(callKey, null, res);
+    }
+    if (kind === 'question') {
+      // Flip the open-questions.md checkbox without writing a goal answer.
+      if (!room || typeof room !== 'string') {
+        return res.status(400).json({ error: 'room required' });
+      }
+      let openQContent = await readDeliverable('open-questions.md');
+      if (openQContent == null) {
+        return res.status(404).json({ error: 'open-questions.md not found' });
+      }
+      const roomPattern = new RegExp(`^- \\[ \\] ${room.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')} —`, 'm');
+      if (!roomPattern.test(openQContent)) {
+        return res.status(404).json({ error: `Question for room "${room}" not found` });
+      }
+      openQContent = openQContent.replace(roomPattern, (m) => m.replace('[ ]', '[x]'));
+      const ok = await writeDeliverable('open-questions.md', openQContent);
+      if (!ok) return res.status(500).json({ error: 'Failed to write open-questions.md' });
+      return res.status(200).json({ success: true, action: 'dismiss', kind, room });
+    }
+    if (kind === 'keeper') {
+      // Record a skip so the Keeper never re-proposes it.
+      return await keeperDecision(proposalId, 'dismissed', res);
+    }
+    // Client-only kinds (room, stuck, activity): nothing to persist server-side.
+    return res.status(200).json({ success: true, action: 'dismiss', kind: kind || 'local', clientOnly: true });
+  } catch (err) {
+    console.error('[dismissItem] Error:', err);
     throw err;
   }
 }

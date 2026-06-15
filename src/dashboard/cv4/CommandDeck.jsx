@@ -3,6 +3,10 @@
 // Displays: loop health, hard calls (needs-patrik), steering questions, room status, stuck sessions
 // Data sources: open-questions.md, needs-patrik.md, room-goals.json, ~/.claude/jobs, routines table
 // All data is read-only except writes to master-loop deliverables via /api/dashboard/command-deck-action
+//
+// M10 (2026-06-15): every card is built on ONE shared shell (DeckCard) with ONE
+// uniform action bar — decide chips, Reply, Open room, Dismiss — so no card is
+// ever a dead end. Actions that genuinely don't apply are absent cleanly.
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { authFetch } from '../lib/authFetch.js'
@@ -99,7 +103,8 @@ function parseMarkdownCheckboxList(markdown, sectionName) {
 
 // ── Shared button component for CommandDeck (matches RoutineCard CardBtn style)
 
-function CommandDeckBtn({ children, onClick, disabled = false, primary = false, style = {} }) {
+function CommandDeckBtn({ children, onClick, disabled = false, primary = false, danger = false, style = {} }) {
+  const baseColor = danger ? 'rgba(255,255,255,0.55)' : C.text2
   return (
     <button
       onClick={onClick}
@@ -107,7 +112,7 @@ function CommandDeckBtn({ children, onClick, disabled = false, primary = false, 
       style={{
         background: primary ? 'rgba(234,179,8,0.10)' : 'rgba(255,255,255,0.02)',
         border: `1px solid ${primary ? 'rgba(234,179,8,0.45)' : C.border}`,
-        color: primary ? AMBER : C.text2,
+        color: primary ? AMBER : baseColor,
         fontSize: 11,
         fontWeight: 700,
         cursor: disabled ? 'default' : 'pointer',
@@ -125,7 +130,7 @@ function CommandDeckBtn({ children, onClick, disabled = false, primary = false, 
         ...style,
       }}
       onMouseEnter={e => { if (!disabled && !primary) { e.currentTarget.style.borderColor = C.muted; e.currentTarget.style.color = C.text } }}
-      onMouseLeave={e => { if (!primary) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = C.text2 } }}
+      onMouseLeave={e => { if (!primary) { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.color = baseColor } }}
     >
       {children}
     </button>
@@ -133,9 +138,9 @@ function CommandDeckBtn({ children, onClick, disabled = false, primary = false, 
 }
 
 // ── Shared: tap-one option chips ───────────────────────────────────────────
-// The loop's pre-worked-out moves for any card. Tap one and the card's submit
-// handler records it. Used by both hard calls and steering questions so every
-// open item looks and behaves the same.
+// The loop's (or a sensible default) pre-worked-out moves for any card. Tap one
+// and the card's submit handler records it. Used by hard calls, steering
+// questions, room status, and keeper cards so every open item decides the same.
 
 function OptionChips({ options, picked, loading, onPick }) {
   if (!Array.isArray(options) || options.length === 0) return null
@@ -180,7 +185,7 @@ function OptionChips({ options, picked, loading, onPick }) {
 // straight into that room's chat (and the room's assistant picks it up), so he
 // never has to leave the deck. onReply(room, text) returns { ok }.
 
-function ReplyBox({ room, onReply }) {
+function ReplyBox({ room, onReply, label = 'Reply' }) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
@@ -214,7 +219,7 @@ function ReplyBox({ room, onReply }) {
   }
 
   if (!open) {
-    return <CommandDeckBtn onClick={() => setOpen(true)}>Reply</CommandDeckBtn>
+    return <CommandDeckBtn onClick={() => setOpen(true)}>{label}</CommandDeckBtn>
   }
 
   return (
@@ -255,19 +260,214 @@ function ReplyBox({ room, onReply }) {
   )
 }
 
+// ── Shared: free-text answer (steering questions' "Something else") ─────────
+// Records a typed answer through whatever submit the card supplies (for
+// questions that's answer_question, which closes the question + sets the goal).
+
+function FreeTextAnswer({ label = 'Something else', placeholder = 'Type your answer…', onSubmit }) {
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const inputRef = useRef(null)
+  useEffect(() => { if (open && inputRef.current) inputRef.current.focus() }, [open])
+
+  if (!onSubmit) return null
+  if (!open) return <CommandDeckBtn onClick={() => setOpen(true)}>{label}</CommandDeckBtn>
+
+  const submit = async () => {
+    const t = text.trim()
+    if (!t || busy) return
+    setBusy(true)
+    await onSubmit(t)
+    setBusy(false)
+    setText('')
+    setOpen(false)
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+      <input
+        ref={inputRef}
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          padding: '8px 12px',
+          background: C.s1,
+          border: `1px solid ${C.border}`,
+          color: C.text,
+          fontSize: 13,
+          fontFamily: FONT.body,
+          borderRadius: 8,
+          boxSizing: 'border-box',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') submit()
+          if (e.key === 'Escape') { setOpen(false); setText('') }
+        }}
+      />
+      <div style={{ display: 'flex', gap: 6 }}>
+        <CommandDeckBtn onClick={submit} disabled={!text.trim() || busy} primary
+          style={{ opacity: !text.trim() || busy ? 0.6 : 1 }}>
+          {busy ? 'Saving…' : 'Send'}
+        </CommandDeckBtn>
+        <CommandDeckBtn onClick={() => { setOpen(false); setText('') }}>Cancel</CommandDeckBtn>
+      </div>
+    </div>
+  )
+}
+
+// ── Shared shell: ONE card, ONE action model for every item ────────────────
+// Patrik (2026-06-15): "I was expecting all cards to have the same actions and
+// be robust." So every card type renders through this shell, and the action bar
+// is always the same shape + order:
+//   [decide chips]   then   Reply · Open room · Dismiss
+// Anything that doesn't apply to a given card is omitted cleanly — never a dead
+// button. `tier` controls visual weight (1 = dominant "waiting on you", 2 =
+// quiet secondary) for the design pass.
+
+function DeckCard({
+  title,
+  tag,
+  badge,
+  body,
+  metaLine,
+  dotActive = true,
+  dimmed = false,
+  doneLabel,
+  // decide
+  options = [],
+  picked = null,
+  loading = false,
+  onPickOption,
+  freeText,            // { label, placeholder, onSubmit } | undefined
+  // act
+  room,
+  onReply,
+  onJumpToRoom,
+  onDismiss,           // async () => void
+  dismissLabel = 'Dismiss',
+  tier = 1,
+}) {
+  const [dismissing, setDismissing] = useState(false)
+  const hasOptions = Array.isArray(options) && options.length > 0
+  const hasRoom = !!room
+  const showAct = !!(hasRoom || onDismiss || freeText)
+
+  const doDismiss = async () => {
+    if (dismissing || !onDismiss) return
+    setDismissing(true)
+    try { await onDismiss() } finally { setDismissing(false) }
+  }
+
+  return (
+    <div style={{
+      padding: tier === 1 ? '15px 17px 13px' : '12px 15px 11px',
+      background: tier === 1 ? 'rgba(255,255,255,0.022)' : 'rgba(255,255,255,0.012)',
+      border: `1px solid ${tier === 1 ? C.border : 'rgba(255,255,255,0.05)'}`,
+      borderRadius: 11,
+      marginBottom: tier === 1 ? 12 : 9,
+      fontFamily: FONT.body,
+      opacity: dimmed ? 0.6 : 1,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+    }}>
+      {/* Header: status dot + title + (badge or context tag) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+          background: dotActive && !dimmed ? AMBER : 'rgba(255,255,255,0.18)',
+          boxShadow: dotActive && !dimmed ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
+        }} />
+        <span style={{
+          fontFamily: FONT.display,
+          fontSize: tier === 1 ? 15 : 13.5,
+          color: dimmed ? C.muted : C.text,
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          flex: 1,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {title}
+        </span>
+        {badge ? (
+          <span style={{
+            fontSize: 10, color: AMBER, fontFamily: FONT.mono, fontWeight: 700,
+            letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0,
+          }}>
+            {badge}
+          </span>
+        ) : <ContextTag tag={tag} />}
+      </div>
+
+      {/* Body */}
+      {body && (
+        <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.45 }}>
+          {body}
+        </p>
+      )}
+
+      {/* Optional meta line (status / confidence / time) */}
+      {metaLine}
+
+      {/* Action footer — uniform across every card */}
+      {doneLabel ? (
+        <div style={{
+          borderTop: `1px solid ${C.border}`, paddingTop: 8,
+          fontSize: 11, color: C.muted, fontFamily: FONT.mono,
+        }}>
+          {doneLabel}
+        </div>
+      ) : showAct ? (
+        <div style={{
+          display: 'flex', flexDirection: 'column', gap: 8,
+          borderTop: `1px solid ${C.border}`, paddingTop: 10,
+        }}>
+          {hasOptions && (
+            <OptionChips options={options} picked={picked} loading={loading} onPick={onPickOption} />
+          )}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            {freeText && (
+              <FreeTextAnswer
+                label={freeText.label}
+                placeholder={freeText.placeholder}
+                onSubmit={freeText.onSubmit}
+              />
+            )}
+            {hasRoom && onReply && <ReplyBox room={room} onReply={onReply} />}
+            {hasRoom && onJumpToRoom && (
+              <CommandDeckBtn onClick={() => onJumpToRoom(room)}>Open room</CommandDeckBtn>
+            )}
+            {onDismiss && (
+              <CommandDeckBtn onClick={doDismiss} disabled={dismissing} danger>
+                {dismissing ? '…' : dismissLabel}
+              </CommandDeckBtn>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 // ── Component: Loop Health Banner ──────────────────────────────────────────
 
-function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loading }) {
+function LoopHealthBanner({ loopRunning, lastCheckTs, onRefresh, loading }) {
   const now = new Date()
   const lastCheck = lastCheckTs ? new Date(lastCheckTs) : null
   const secondsAgo = lastCheck ? Math.max(0, Math.floor((now - lastCheck) / 1000)) : null
 
-  const timeLabel = secondsAgo < 90 ? 'just now' :
+  const timeLabel = secondsAgo == null ? 'unknown' :
+    secondsAgo < 90 ? 'just now' :
     secondsAgo < 3600 ? `${Math.round(secondsAgo / 60)}m ago` :
     secondsAgo < 86400 ? `${Math.round(secondsAgo / 3600)}h ago` :
     'unknown'
 
-  const isStale = secondsAgo > 300 // > 5 min
+  const isStale = secondsAgo != null && secondsAgo > 300 // > 5 min
 
   return (
     <div style={{
@@ -289,9 +489,8 @@ function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loa
           background: loopRunning ? AMBER : 'rgba(255,255,255,0.18)',
           boxShadow: loopRunning ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
           flexShrink: 0,
+          animation: loopRunning && !isStale ? 'cmddeck-pulse 2.4s ease-in-out infinite' : 'none',
         }} />
-        {/* Layer-1 signal: this is the one thing to read instantly, so it carries
-            primary weight, not caption styling. */}
         <span style={{ fontSize: 13, color: C.text, fontWeight: 600, flexShrink: 0 }}>
           {loopRunning ? 'Loop running' : 'Loop paused'}
         </span>
@@ -332,16 +531,12 @@ function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loa
   )
 }
 
-// ── Component: Hard Call Card ──────────────────────────────────────────────
+// ── Card adapters: each maps its data onto the shared DeckCard shell ────────
 
-function HardCallCard({ item, index, options = [], onMarkDone, nameMap = {} }) {
+function HardCallCard({ item, options = [], onChanged, onDismiss, onReplyToRoom, onJumpToRoom, nameMap = {} }) {
   const [loading, setLoading] = useState(false)
   const [picked, setPicked] = useState(null)
-  const hasOptions = Array.isArray(options) && options.length > 0
 
-  // One path for "Mark done" (no decision) and a tapped option (records the
-  // decision inline so the loop acts on it next tick), both flip the call to
-  // handled in needs-patrik.md.
   const submit = async (answer = null, chipIndex = null) => {
     setLoading(true)
     if (chipIndex !== null) setPicked(chipIndex)
@@ -355,7 +550,7 @@ function HardCallCard({ item, index, options = [], onMarkDone, nameMap = {} }) {
           ...(answer ? { answer } : {}),
         }),
       })
-      onMarkDone()
+      onChanged()
     } catch (err) {
       console.error('Error marking call done:', err)
       setPicked(null)
@@ -364,112 +559,34 @@ function HardCallCard({ item, index, options = [], onMarkDone, nameMap = {} }) {
     }
   }
 
-  // Parse format: YYYY-MM-DD — title · why · where
+  // Hard calls don't carry a room slug in their line, so Reply/Open are absent
+  // (cleanly). The decide chips are the primary move; "Mark handled" is the
+  // no-decision escape.
   const parts = item.text.split(' · ')
   const dateTitle = humanizeSlugs(parts[0] || '', nameMap)
-  const why = humanizeSlugs(parts[1] || '', nameMap)
-  const where = humanizeSlugs(parts[2] || '', nameMap)
+  const why = humanizeSlugs(parts.slice(1).join(' · ') || '', nameMap)
+  const hasOptions = options.length > 0
 
   return (
-    <div style={{
-      padding: '14px 16px 12px',
-      background: 'rgba(255,255,255,0.015)',
-      border: `1px solid ${C.border}`,
-      borderRadius: 10,
-      marginBottom: 12,
-      fontFamily: FONT.body,
-      opacity: item.checked ? 0.6 : 1,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8,
-    }}>
-      {/* Header with dot + title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          flexShrink: 0,
-          background: item.checked ? 'rgba(255,255,255,0.18)' : AMBER,
-          boxShadow: !item.checked ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
-        }} />
-        <span style={{
-          fontFamily: FONT.display,
-          fontSize: 14,
-          color: item.checked ? C.muted : C.text,
-          fontWeight: 700,
-          letterSpacing: '-0.02em',
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
-          {dateTitle}
-        </span>
-      </div>
-
-      {/* Body + details */}
-      {why && (
-        <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-          {why}
-        </p>
-      )}
-
-      {/* where it lives */}
-      {where && (
-        <p style={{ fontSize: 11, color: C.muted, margin: 0, fontFamily: FONT.mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {where}
-        </p>
-      )}
-
-      {/* Action footer */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        borderTop: `1px solid ${C.border}`,
-        paddingTop: 10,
-      }}>
-        {item.checked ? (
-          <span style={{ fontSize: 11, color: C.muted, fontFamily: FONT.mono, padding: '8px 0' }}>✓ done</span>
-        ) : (
-          <>
-            {hasOptions && (
-              <OptionChips
-                options={options}
-                picked={picked}
-                loading={loading}
-                onPick={(opt, oi) => submit(opt.answer || opt.label, oi)}
-              />
-            )}
-            <div style={{ display: 'flex', gap: 6 }}>
-              <CommandDeckBtn onClick={() => submit(null)} disabled={loading} primary={!hasOptions}>
-                {loading && picked === null ? 'Saving…' : (hasOptions ? 'Mark handled' : 'Mark done')}
-              </CommandDeckBtn>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+    <DeckCard
+      tier={1}
+      title={dateTitle}
+      body={why || null}
+      options={options}
+      picked={picked}
+      loading={loading}
+      onPickOption={(opt, oi) => submit(opt.answer || opt.label, oi)}
+      onDismiss={onDismiss}
+      dismissLabel={hasOptions ? 'Mark handled' : 'Mark done'}
+    />
   )
 }
 
-// ── Component: Steering Question Card ──────────────────────────────────────
-
-function SteeringQuestionCard({ room, question, answered, options = [], onAnswer, onJumpToRoom, onReplyToRoom, nameMap = {} }) {
+function SteeringQuestionCard({ room, question, options = [], onChanged, onDismiss, onJumpToRoom, onReplyToRoom, nameMap = {} }) {
   const display = roomDisplay(room, nameMap)
-  const [showInput, setShowInput] = useState(false)
-  const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
   const [picked, setPicked] = useState(null)
-  const inputRef = useRef(null)
 
-  useEffect(() => {
-    if (showInput && inputRef.current) inputRef.current.focus()
-  }, [showInput])
-
-  // One path for both a tapped option chip and a typed answer: record the choice
-  // as this room's goal. The loop reads room-goals.json on its next tick.
   const submitAnswer = async (text, chipIndex = null) => {
     if (!text || !text.trim()) return
     setLoading(true)
@@ -478,15 +595,9 @@ function SteeringQuestionCard({ room, question, answered, options = [], onAnswer
       await authFetch('/api/dashboard/command-deck-action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'answer_question',
-          room,
-          answer: text.trim(),
-        }),
+        body: JSON.stringify({ action: 'answer_question', room, answer: text.trim() }),
       })
-      onAnswer()
-      setShowInput(false)
-      setAnswer('')
+      onChanged()
     } catch (err) {
       console.error('Error submitting answer:', err)
       setPicked(null)
@@ -495,327 +606,140 @@ function SteeringQuestionCard({ room, question, answered, options = [], onAnswer
     }
   }
 
-  const handleSendAnswer = () => submitAnswer(answer)
-  const hasOptions = Array.isArray(options) && options.length > 0
-
+  const hasOptions = options.length > 0
   return (
-    <div style={{
-      padding: '14px 16px 12px',
-      background: 'rgba(255,255,255,0.015)',
-      border: `1px solid ${C.border}`,
-      borderRadius: 10,
-      marginBottom: 12,
-      fontFamily: FONT.body,
-      opacity: answered ? 0.7 : 1,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8,
-    }}>
-      {/* Header with dot + room name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          flexShrink: 0,
-          background: answered ? 'rgba(255,255,255,0.18)' : AMBER,
-          boxShadow: !answered ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
-        }} />
-        <span style={{
-          fontFamily: FONT.display,
-          fontSize: 14,
-          color: answered ? C.muted : C.text,
-          fontWeight: 600,
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
-          {display.name}
-        </span>
-        <ContextTag tag={display.tag} />
-      </div>
-
-      {/* Question body */}
-      <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-        {humanizeSlugs(question, nameMap)}
-      </p>
-
-      {/* Meta footer with divider + actions */}
-      {answered ? (
-        <div style={{
-          borderTop: `1px solid ${C.border}`,
-          paddingTop: 8,
-          fontSize: 11,
-          color: C.muted,
-          fontFamily: FONT.mono,
-        }}>
-          ✓ Answered
-        </div>
-      ) : (
-        <>
-          {!showInput ? (
-            <div style={{
-              borderTop: `1px solid ${C.border}`,
-              paddingTop: 8,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-            }}>
-              {/* The loop's pre-worked-out moves: tap one and it becomes the
-                  room's goal next tick. Free-text "Answer" stays as the escape
-                  hatch below. */}
-              <OptionChips
-                options={options}
-                picked={picked}
-                loading={loading}
-                onPick={(opt, oi) => submitAnswer(opt.answer || opt.label, oi)}
-              />
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                <CommandDeckBtn onClick={() => setShowInput(true)}>
-                  {hasOptions ? 'Something else' : 'Answer'}
-                </CommandDeckBtn>
-                <ReplyBox room={room} onReply={onReplyToRoom} />
-                {onJumpToRoom && (
-                  <CommandDeckBtn onClick={() => onJumpToRoom(room)}>
-                    Go to room
-                  </CommandDeckBtn>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div style={{
-              borderTop: `1px solid ${C.border}`,
-              paddingTop: 8,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-            }}>
-              <input
-                ref={inputRef}
-                type="text"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder="Type your answer..."
-                style={{
-                  padding: '8px 12px',
-                  background: C.s1,
-                  border: `1px solid ${C.border}`,
-                  color: C.text,
-                  fontSize: 13,
-                  fontFamily: FONT.body,
-                  borderRadius: 2,
-                  boxSizing: 'border-box',
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSendAnswer()
-                  if (e.key === 'Escape') { setShowInput(false); setAnswer('') }
-                }}
-              />
-              <div style={{ display: 'flex', gap: 6 }}>
-                <CommandDeckBtn
-                  onClick={handleSendAnswer}
-                  disabled={!answer.trim() || loading}
-                  style={{ opacity: loading || !answer.trim() ? 0.6 : 1 }}
-                >
-                  {loading ? 'Saving…' : 'Send'}
-                </CommandDeckBtn>
-                <CommandDeckBtn onClick={() => { setShowInput(false); setAnswer('') }}>
-                  Cancel
-                </CommandDeckBtn>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    <DeckCard
+      tier={1}
+      title={display.name}
+      tag={display.tag}
+      body={humanizeSlugs(question, nameMap)}
+      options={options}
+      picked={picked}
+      loading={loading}
+      onPickOption={(opt, oi) => submitAnswer(opt.answer || opt.label, oi)}
+      freeText={{
+        label: hasOptions ? 'Something else' : 'Answer',
+        placeholder: 'Type your answer…',
+        onSubmit: (t) => submitAnswer(t),
+      }}
+      room={room}
+      onReply={onReplyToRoom}
+      onJumpToRoom={onJumpToRoom}
+      onDismiss={onDismiss}
+    />
   )
 }
 
-// ── Component: Room Status Card ────────────────────────────────────────────
+// Default decide-moves for a room status card until the loop computes per-room
+// moves. Carry `.status` so the chip handler routes to set_room_status.
+const ROOM_STATUS_DEFAULT_CHIPS = [
+  { label: 'Looks good — keep going', status: 'active', note: 'Looks good, keep going' },
+  { label: 'Pause this room for now', status: 'parked', note: 'Paused from the deck' },
+]
 
-function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpToRoom, onRefreshGoal, onReplyToRoom, nameMap = {} }) {
+function RoomStatusCard({ room, data, onChanged, onDismiss, onJumpToRoom, onReplyToRoom, nameMap = {} }) {
   const display = roomDisplay(room, nameMap)
+  const [loading, setLoading] = useState(false)
+  const [picked, setPicked] = useState(null)
+
+  const { goal = '', status, confidence, last_reviewed: lastReviewed } = data || {}
   const now = new Date()
   const reviewed = new Date(lastReviewed)
-  // Clamp to 0: a last_reviewed stamp can be a touch ahead of the browser clock
-  // (loop clock skew), which would otherwise render "-32m ago".
   const secondsAgo = Math.max(0, Math.floor((now - reviewed) / 1000))
-  const timeLabel = secondsAgo < 60 ? 'just now' :
+  const timeLabel = !lastReviewed || isNaN(reviewed) ? '' :
+    secondsAgo < 60 ? 'just now' :
     secondsAgo < 3600 ? `${Math.round(secondsAgo / 60)}m ago` :
     secondsAgo < 86400 ? `${Math.round(secondsAgo / 3600)}h ago` :
     `${Math.round(secondsAgo / 86400)}d ago`
-
   const isStale = secondsAgo > 14400 // > 4 hours
 
-  return (
+  // The loop may attach per-room decide moves ({label, answer}); else fall back
+  // to the sensible defaults ({label, status}). The handler routes by shape.
+  const loopOptions = Array.isArray(data?.options) ? data.options.filter((o) => o && o.label) : []
+  const options = loopOptions.length > 0 ? loopOptions : ROOM_STATUS_DEFAULT_CHIPS
+
+  const pick = async (opt, oi) => {
+    setLoading(true)
+    setPicked(oi)
+    try {
+      const body = opt.status
+        ? { action: 'set_room_status', room, status: opt.status, answer: opt.note || opt.label }
+        : { action: 'answer_question', room, answer: opt.answer || opt.label }
+      await authFetch('/api/dashboard/command-deck-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      onChanged()
+    } catch (err) {
+      console.error('Error on room-status action:', err)
+      setPicked(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const metaLine = (
     <div style={{
-      padding: '14px 16px 12px',
-      background: 'rgba(255,255,255,0.015)',
-      border: `1px solid ${C.border}`,
-      borderRadius: 10,
-      marginBottom: 12,
-      fontFamily: FONT.body,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8,
+      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+      fontSize: 11, color: C.muted, fontFamily: FONT.mono,
     }}>
-      {/* Header with dot + room name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          flexShrink: 0,
-          background: isStale ? AMBER : 'rgba(255,255,255,0.18)',
-          boxShadow: isStale ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
-        }} />
-        <span style={{
-          fontFamily: FONT.display,
-          fontSize: 14,
-          color: C.text,
-          fontWeight: 600,
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
-          {display.name}
-        </span>
-        <ContextTag tag={display.tag} />
-      </div>
-
-      {/* Goal body */}
-      <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-        {humanizeSlugs(goal.length > 100 ? goal.substring(0, 100) + '…' : goal, nameMap)}
-      </p>
-
-      {/* Meta footer with divider + status + actions */}
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        borderTop: `1px solid ${C.border}`,
-        paddingTop: 8,
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          fontSize: 11,
-          color: C.muted,
-          fontFamily: FONT.mono,
-        }}>
-          <span>Status: <strong>{status}</strong></span>
-          <span>
-            Confidence: <strong>{confidence}</strong>
-            {confidence === 'ambiguous' && ' ⚠'}
-          </span>
-          <span title="Last loop review time">Reviewed {timeLabel}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-          <CommandDeckBtn onClick={() => onJumpToRoom(room)}>
-            Go to room
-          </CommandDeckBtn>
-          <ReplyBox room={room} onReply={onReplyToRoom} />
-          <CommandDeckBtn onClick={onRefreshGoal}>
-            Refresh
-          </CommandDeckBtn>
-        </div>
-      </div>
+      <span>Status: <strong>{status}</strong></span>
+      <span>Confidence: <strong>{confidence}</strong>{confidence === 'ambiguous' && ' ⚠'}</span>
+      {timeLabel && <span title="Last loop review time">Reviewed {timeLabel}</span>}
     </div>
+  )
+
+  return (
+    <DeckCard
+      tier={2}
+      dotActive={isStale}
+      title={display.name}
+      tag={display.tag}
+      body={humanizeSlugs(goal.length > 120 ? goal.substring(0, 120) + '…' : goal, nameMap)}
+      metaLine={metaLine}
+      options={options}
+      picked={picked}
+      loading={loading}
+      onPickOption={pick}
+      room={room}
+      onReply={onReplyToRoom}
+      onJumpToRoom={onJumpToRoom}
+      onDismiss={onDismiss}
+    />
   )
 }
 
-// ── Component: Stuck Session Card ──────────────────────────────────────────
-
-function StuckSessionCard({ session, onJumpToRoom, nameMap = {} }) {
-  return (
-    <div style={{
-      padding: '14px 16px 12px',
-      background: 'rgba(255,255,255,0.015)',
-      border: `1px solid ${C.border}`,
-      borderRadius: 10,
-      marginBottom: 12,
-      fontFamily: FONT.body,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8,
-    }}>
-      {/* Header with dot + session name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          flexShrink: 0,
-          background: AMBER,
-          boxShadow: `0 0 0 3px rgba(234,179,8,0.14)`,
-        }} />
-        <span style={{
-          fontFamily: FONT.display,
-          fontSize: 14,
-          color: C.text,
-          fontWeight: 500,
-          flex: 1,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}>
-          {session.name}
-        </span>
-        <span style={{
-          fontSize: 10,
-          background: 'transparent',
-          color: AMBER,
-          padding: '2px 6px',
-          borderRadius: 2,
-          fontFamily: FONT.mono,
-          fontWeight: 500,
-          flexShrink: 0,
-        }}>
-          {session.state === 'blocked' ? 'Blocked' : 'Stalled'}
-        </span>
-      </div>
-
-      {/* Detail body */}
+function StuckSessionCard({ session, onDismiss, onJumpToRoom, nameMap = {} }) {
+  // Stuck Claude Code sessions have no deck→session reply pipe yet (needs the
+  // session-reply mechanism), so decide chips + Reply are absent cleanly. The
+  // suggested answer is shown; Open jumps to it; Dismiss clears it from view.
+  const body = (
+    <>
       {session.detail && (
-        <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-          {humanizeSlugs(session.detail, nameMap)}
-        </p>
+        <span style={{ display: 'block' }}>{humanizeSlugs(session.detail, nameMap)}</span>
       )}
-
-      {/* Suggested reply highlight */}
       {session.suggestedReply && (
-        <div style={{
-          fontSize: 12,
-          color: C.text2,
-          fontStyle: 'italic',
-          padding: 0,
-          margin: 0,
-        }}>
-          <strong>Suggested:</strong> {humanizeSlugs(session.suggestedReply, nameMap)}
-        </div>
+        <span style={{ display: 'block', marginTop: 6, fontStyle: 'italic', color: C.text2 }}>
+          <strong style={{ fontStyle: 'normal' }}>Suggested:</strong> {humanizeSlugs(session.suggestedReply, nameMap)}
+        </span>
       )}
-
-      {/* Meta footer with divider + action */}
-      <div style={{
-        display: 'flex',
-        gap: 6,
-        borderTop: `1px solid ${C.border}`,
-        paddingTop: 8,
-      }}>
-        <CommandDeckBtn onClick={() => onJumpToRoom(`agents/${session.name}`)}>
-          Answer now
-        </CommandDeckBtn>
-      </div>
-    </div>
+    </>
+  )
+  return (
+    <DeckCard
+      tier={2}
+      title={session.name}
+      badge={session.state === 'blocked' ? 'Blocked' : 'Stalled'}
+      body={body}
+      room={`agents/${session.name}`}
+      onJumpToRoom={onJumpToRoom}
+      onDismiss={onDismiss}
+    />
   )
 }
 
-// ── Component: Keeper Card (housekeeping proposal) ─────────────────────────────
-
-function KeeperCard({ proposal, onDecided, nameMap = {} }) {
+function KeeperCard({ proposal, onChanged, onDismiss, nameMap = {} }) {
   const [loading, setLoading] = useState(false)
   const [picked, setPicked] = useState(null)
 
@@ -832,7 +756,7 @@ function KeeperCard({ proposal, onDecided, nameMap = {} }) {
           answer: opt.answer || opt.label,
         }),
       })
-      onDecided()
+      onChanged()
     } catch (err) {
       console.error('Error recording keeper decision:', err)
       setPicked(null)
@@ -842,42 +766,28 @@ function KeeperCard({ proposal, onDecided, nameMap = {} }) {
   }
 
   return (
+    <DeckCard
+      tier={2}
+      title={humanizeSlugs(proposal.title, nameMap)}
+      body={proposal.detail ? humanizeSlugs(proposal.detail, nameMap) : null}
+      options={Array.isArray(proposal.options) ? proposal.options : []}
+      picked={picked}
+      loading={loading}
+      onPickOption={decide}
+      onDismiss={onDismiss}
+    />
+  )
+}
+
+// ── Section header (eyebrow) ───────────────────────────────────────────────
+
+function SectionLabel({ children, marginTop = 0 }) {
+  return (
     <div style={{
-      padding: '14px 16px 12px',
-      background: 'rgba(255,255,255,0.015)',
-      border: `1px solid ${C.border}`,
-      borderRadius: 10,
-      marginBottom: 12,
-      fontFamily: FONT.body,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 8,
+      fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
+      letterSpacing: '0.14em', margin: `${marginTop}px 0 14px 0`, fontFamily: FONT.mono,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-          background: AMBER, boxShadow: `0 0 0 3px rgba(234,179,8,0.14)`,
-        }} />
-        <span style={{
-          fontFamily: FONT.display, fontSize: 14, color: C.text, fontWeight: 600,
-          flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-        }}>
-          {humanizeSlugs(proposal.title, nameMap)}
-        </span>
-      </div>
-      {proposal.detail && (
-        <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-          {humanizeSlugs(proposal.detail, nameMap)}
-        </p>
-      )}
-      <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
-        <OptionChips
-          options={proposal.options}
-          picked={picked}
-          loading={loading}
-          onPick={decide}
-        />
-      </div>
+      {children}
     </div>
   )
 }
@@ -899,6 +809,10 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
   const [activity, setActivity] = useState([])
   // slug -> human title, built from the structure map so cards show real names.
   const [nameMap, setNameMap] = useState({})
+  // Session-only "cleared from the deck" set. Server-backed kinds also persist
+  // their dismissal so the loop drops them; client-only kinds (room/stuck) just
+  // hide for this view and return on a full reload (they're live status).
+  const [dismissed, setDismissed] = useState(() => new Set())
 
   const load = useCallback(async () => {
     if (!worldId) return
@@ -906,19 +820,14 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
       // raw=1 returns the file bytes directly. Without it project-file wraps
       // the body as { content: "..." }, which broke every list (parsed the
       // envelope, not the file). Fixed 2026-06-14.
-      // 1. Fetch open-questions.md
       const qRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/open-questions.md')
       const qText = qRes.ok ? await qRes.text() : ''
       const openQuestions = parseMarkdownCheckboxList(qText, 'Open')
       const answeredQuestions = parseMarkdownCheckboxList(qText, 'Answered')
 
-      // 2. Fetch needs-patrik.md + its tap-one options sidecar.
       const nRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/needs-patrik.md')
       const nText = nRes.ok ? await nRes.text() : ''
       const rawCalls = parseMarkdownCheckboxList(nText, 'Open')
-      // Hard-call options live in a sidecar keyed by the first 60 chars of the
-      // line (the same handle mark_call_done matches on; 60 keeps the four
-      // parent-teacher-council items distinct). The loop maintains it.
       const hcoRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/needs-patrik-options.json')
       let hardCallOptions = {}
       if (hcoRes.ok) {
@@ -929,38 +838,31 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
         return { ...c, options: Array.isArray(opts) ? opts.filter((o) => o && o.label) : [] }
       })
 
-      // 3. Fetch room-goals.json
       const gRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/room-goals.json')
       let goals = { rooms: {} }
       if (gRes.ok) {
         try { goals = JSON.parse(await gRes.text()) } catch { goals = { rooms: {} } }
       }
 
-      // 4. Fetch stuck sessions
       const sRes = await authFetch('/api/dashboard/claude-sessions')
       const stuckData = sRes.ok ? await sRes.json() : { sessions: [] }
 
-      // 5. Fetch routines to find the master-loop status
       const rRes = await authFetch(`/api/dashboard/routines?client_id=${encodeURIComponent(worldId)}`)
       const routines = rRes.ok ? await rRes.json() : { routines: [] }
       const masterLoop = routines.routines?.find((r) => r.name === 'com.aom-ea.master-loop')
 
-      // 6. Fetch the Keeper's housekeeping proposals (tidy-up cards).
       const kRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/keeper-report.json')
       let keeper = { proposals: [] }
       if (kRes.ok) {
         try { keeper = JSON.parse(await kRes.text()) } catch { keeper = { proposals: [] } }
       }
 
-      // 7. Fetch the "what changed since you last looked" activity feed.
       const aRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/activity.json')
       let activityFeed = { entries: [] }
       if (aRes.ok) {
         try { activityFeed = JSON.parse(await aRes.text()) } catch { activityFeed = { entries: [] } }
       }
 
-      // 8. Fetch the structure map -> slug:title lookup so every card shows a
-      //    human room name instead of a techie slug.
       const smRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/structure-map.json')
       const map = {}
       if (smRes.ok) {
@@ -973,24 +875,14 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
       }
       setNameMap(map)
 
-      // Build steering questions from open-questions + room goals
       const steering = openQuestions
         .filter((q) => !answeredQuestions.some((a) => a.text.includes(q.text.split(' — ')[0])))
         .map((item) => {
           const [room, question] = item.text.split(' — ')
           const slug = room.trim()
-          // The loop pre-computes 2-4 tap-one moves per question and stores them
-          // on the room's goal entry. Each is { label, answer }.
           const g = (goals.rooms || {})[slug] || {}
-          const options = Array.isArray(g.options)
-            ? g.options.filter((o) => o && o.label)
-            : []
-          return {
-            room: slug,
-            question: question.trim(),
-            checked: item.checked,
-            options,
-          }
+          const options = Array.isArray(g.options) ? g.options.filter((o) => o && o.label) : []
+          return { room: slug, question: (question || '').trim(), checked: item.checked, options }
         })
 
       setSteeringQuestions(steering)
@@ -998,7 +890,6 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
       setRoomStatus(goals.rooms || {})
       setStuckSessions(stuckData.sessions || [])
       setKeeperProposals(Array.isArray(keeper.proposals) ? keeper.proposals : [])
-      // newest first; show the most recent moves
       setActivity(Array.isArray(activityFeed.entries) ? activityFeed.entries.slice(-12).reverse() : [])
       setLoopRunning(masterLoop?.status === 'running')
       setLoopStatusData(goals)
@@ -1010,9 +901,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
     }
   }, [worldId])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  useEffect(() => { load() }, [load])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -1020,311 +909,234 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
     setRefreshing(false)
   }
 
-  const handleDataChange = () => {
-    // Reload data after an action
-    load()
-  }
+  const handleDataChange = () => { load() }
+
+  // Generalized "clear it from the deck". Optimistically hides the card, then
+  // tells the backend (server-backed kinds persist; client-only kinds no-op).
+  const dismissCard = useCallback(async (key, payload) => {
+    setDismissed((prev) => { const next = new Set(prev); next.add(key); return next })
+    try {
+      await authFetch('/api/dashboard/command-deck-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'dismiss', ...payload }),
+      })
+    } catch (err) {
+      console.error('Error dismissing card:', err)
+    }
+  }, [])
 
   if (loading) {
     return (
       <div style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: C.s1,
-        color: C.text2,
-        fontFamily: FONT.body,
+        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: C.s1, color: C.text2, fontFamily: FONT.body,
       }}>
         Loading Command Deck...
       </div>
     )
   }
 
-  const isEmpty =
-    hardCalls.every((c) => c.checked) &&
-    steeringQuestions.length === 0 &&
-    Object.keys(roomStatus).length === 0 &&
-    stuckSessions.length === 0 &&
-    keeperProposals.length === 0
+  // Visible (non-dismissed) lists
+  const openHardCalls = hardCalls.filter((c) => !c.checked && !dismissed.has(`hc:${c.text.slice(0, 60)}`))
+  const openQuestions = steeringQuestions.filter((q) => !dismissed.has(`q:${q.room}`))
+  const roomEntries = Object.entries(roomStatus).filter(([slug]) => !dismissed.has(`rs:${slug}`))
+  const visibleStuck = stuckSessions.filter((s) => !dismissed.has(`ss:${s.name}`))
+  const visibleKeeper = keeperProposals.filter((p) => !dismissed.has(`kp:${p.id}`))
+
+  const decisionsWaiting = openHardCalls.length + openQuestions.length
+  const isEmpty = decisionsWaiting === 0 && roomEntries.length === 0 &&
+    visibleStuck.length === 0 && visibleKeeper.length === 0
 
   return (
-    // Solid deep ground so the chat's animated background never bleeds through
-    // (that bleed was the main reason the deck read as broken on mobile).
+    // Solid deep ground so the chat's animated background never bleeds through.
     <div style={{
-      flex: 1,
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      background: C.s1,
-      width: '100%',
-      color: C.text,
-      fontFamily: FONT.body,
-      WebkitOverflowScrolling: 'touch',
+      flex: 1, overflowY: 'auto', overflowX: 'hidden', background: C.s1,
+      width: '100%', color: C.text, fontFamily: FONT.body, WebkitOverflowScrolling: 'touch',
     }}>
+      <style>{`@keyframes cmddeck-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style>
       <div style={{
-        maxWidth: 760,
-        margin: '0 auto',
+        maxWidth: 760, margin: '0 auto',
         padding: 'clamp(14px, 4vw, 24px) clamp(12px, 4vw, 24px) 56px',
         boxSizing: 'border-box',
       }}>
-      {/* Header: title + close (the loop icon in the room header also toggles it) */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <h2 style={{
-          margin: 0, fontSize: 28, fontWeight: 800, color: C.text,
-          fontFamily: FONT.display, letterSpacing: '-0.03em',
-        }}>
-          Command Deck<span style={{ color: AMBER }}>.</span>
-        </h2>
-        {onClose && (
-          <button
-            onClick={onClose}
-            aria-label="Close Command Deck"
-            title="Back to chat"
-            style={{
-              width: 30, height: 30, borderRadius: 8, flexShrink: 0,
-              background: 'transparent', border: `1px solid ${C.border}`,
-              color: C.text2, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        )}
-      </div>
-
-      {/* Loop Health */}
-      <LoopHealthBanner
-        loopRunning={loopRunning}
-        loopStatus={loopStatusData}
-        lastCheckTs={loopStatusData?.last_cycle_ts}
-        onRefresh={handleRefresh}
-        loading={refreshing}
-      />
-
-      {/* Since you last looked — the loop's clean what-changed feed */}
-      {activity.length > 0 && (
-        <section style={{ marginBottom: 28 }}>
-          <div style={{
-            fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
-            letterSpacing: '0.14em', margin: '0 0 12px 0', fontFamily: FONT.mono,
+        {/* Header: title + close (the loop icon in the room header also toggles it) */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <h2 style={{
+            margin: 0, fontSize: 28, fontWeight: 800, color: C.text,
+            fontFamily: FONT.display, letterSpacing: '-0.03em',
           }}>
-            Since you last looked ({activity.length})
-          </div>
-          <div style={{
-            border: `1px solid ${C.border}`, borderRadius: 10,
-            background: 'rgba(255,255,255,0.015)', overflow: 'hidden',
-          }}>
-            {activity.map((a, i) => {
-              const { name, tag } = roomDisplay(a.room || '', nameMap)
-              const canJump = !!(a.room && onJumpToRoom)
-              const secs = a.ts ? Math.max(0, Math.floor((Date.now() - new Date(a.ts)) / 1000)) : null
-              const ago = secs == null ? '' :
-                secs < 90 ? 'just now' :
-                secs < 3600 ? `${Math.round(secs / 60)}m ago` :
-                secs < 86400 ? `${Math.round(secs / 3600)}h ago` :
-                `${Math.round(secs / 86400)}d ago`
-              return (
-                <div
-                  key={i}
-                  onClick={canJump ? () => onJumpToRoom(a.room) : undefined}
-                  role={canJump ? 'button' : undefined}
-                  title={canJump ? 'Open this room' : undefined}
-                  style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 10,
-                    padding: '10px 14px',
-                    borderTop: i === 0 ? 'none' : `1px solid ${C.border}`,
-                    cursor: canJump ? 'pointer' : 'default',
-                    transition: 'background 0.15s',
-                  }}
-                  onMouseEnter={canJump ? (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)' } : undefined}
-                  onMouseLeave={canJump ? (e) => { e.currentTarget.style.background = 'transparent' } : undefined}
-                >
-                  <div style={{
-                    width: 6, height: 6, borderRadius: '50%', background: AMBER,
-                    flexShrink: 0, marginTop: 6,
-                  }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>
-                      <span style={{ fontWeight: 600 }}>{name}</span>
-                      {tag && <span style={{ marginLeft: 6 }}><ContextTag tag={tag} /></span>}
-                      <span style={{ color: C.text2 }}>{'  ·  '}{humanizeSlugs(a.move, nameMap)}</span>
-                    </div>
-                  </div>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginTop: 3 }}>
-                    <span style={{ fontSize: 10, color: C.muted, fontFamily: FONT.mono }}>
-                      {ago}
-                    </span>
-                    {canJump && <span style={{ color: AMBER, fontWeight: 700, fontSize: 13 }}>›</span>}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
-      {isEmpty && !hardCalls.some((c) => !c.checked) ? (
-        <div style={{
-          textAlign: 'center',
-          color: C.muted,
-          fontSize: 14,
-          margin: '40px 0',
-        }}>
-          Everything is flowing. Your loop is working well.
+            Command Deck<span style={{ color: AMBER }}>.</span>
+          </h2>
+          {onClose && (
+            <button
+              onClick={onClose}
+              aria-label="Close Command Deck"
+              title="Back to chat"
+              style={{
+                width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                background: 'transparent', border: `1px solid ${C.border}`,
+                color: C.text2, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          )}
         </div>
-      ) : (
-        <>
-          {/* Hard Calls (Waiting on You) */}
-          {hardCalls.length > 0 && (
-            <section style={{ marginBottom: 32 }}>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: C.muted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-                margin: '0 0 16px 0',
-                fontFamily: FONT.mono,
-              }}>
-                Waiting on You ({hardCalls.filter((c) => !c.checked).length} open)
-              </div>
-              {hardCalls.filter((c) => !c.checked).length === 0 ? (
-                <div style={{ fontSize: 13, color: C.muted }}>No urgent calls.</div>
-              ) : (
-                hardCalls
-                  .filter((c) => !c.checked)
-                  .map((item, i) => (
-                    <HardCallCard
-                      key={i}
-                      item={item}
-                      index={i}
-                      options={item.options}
-                      onMarkDone={handleDataChange}
-                      nameMap={nameMap}
-                    />
-                  ))
-              )}
-            </section>
-          )}
 
-          {/* Steering Questions */}
-          {steeringQuestions.length > 0 && (
-            <section style={{ marginBottom: 32 }}>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: C.muted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-                margin: '0 0 16px 0',
-                fontFamily: FONT.mono,
-              }}>
-                Steering Questions ({steeringQuestions.length} open)
-              </div>
-              {steeringQuestions.map((q, i) => (
-                <SteeringQuestionCard
-                  key={i}
-                  room={q.room}
-                  question={q.question}
-                  answered={q.checked}
-                  options={q.options}
-                  onAnswer={handleDataChange}
-                  onJumpToRoom={onJumpToRoom}
-                  onReplyToRoom={onReplyToRoom}
-                  nameMap={nameMap}
-                />
-              ))}
-            </section>
-          )}
+        <LoopHealthBanner
+          loopRunning={loopRunning}
+          lastCheckTs={loopStatusData?.last_cycle_ts}
+          onRefresh={handleRefresh}
+          loading={refreshing}
+        />
 
-          {/* Room Status */}
-          {Object.keys(roomStatus).length > 0 && (
-            <section style={{ marginBottom: 32 }}>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: C.muted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-                margin: '0 0 16px 0',
-                fontFamily: FONT.mono,
-              }}>
-                Room Status ({Object.keys(roomStatus).length} rooms)
-              </div>
-              {Object.entries(roomStatus).map(([roomSlug, data]) => (
-                <RoomStatusCard
-                  key={roomSlug}
-                  room={roomSlug}
-                  goal={data.goal}
-                  status={data.status}
-                  confidence={data.confidence}
-                  lastReviewed={data.last_reviewed}
-                  onJumpToRoom={onJumpToRoom}
-                  onRefreshGoal={() => {
-                    // For now just refresh all data; full room-only refresh is post-June
-                    handleRefresh()
-                  }}
-                  onReplyToRoom={onReplyToRoom}
-                  nameMap={nameMap}
-                />
-              ))}
-            </section>
-          )}
+        {isEmpty ? (
+          <div style={{ textAlign: 'center', color: C.muted, fontSize: 14, margin: '40px 0' }}>
+            Everything is flowing. Your loop is working well.
+          </div>
+        ) : (
+          <>
+            {/* ── TIER 1: Waiting on you (decisions) ── */}
+            {(openHardCalls.length > 0 || openQuestions.length > 0) && (
+              <section style={{ marginBottom: 34 }}>
+                <SectionLabel>Waiting on You ({decisionsWaiting})</SectionLabel>
+                {openHardCalls.map((item, i) => (
+                  <HardCallCard
+                    key={`hc-${i}`}
+                    item={item}
+                    options={item.options}
+                    onChanged={handleDataChange}
+                    onDismiss={() => dismissCard(`hc:${item.text.slice(0, 60)}`, { kind: 'hard_call', callId: item.text.slice(0, 60) })}
+                    onReplyToRoom={onReplyToRoom}
+                    onJumpToRoom={onJumpToRoom}
+                    nameMap={nameMap}
+                  />
+                ))}
+                {openQuestions.map((q, i) => (
+                  <SteeringQuestionCard
+                    key={`q-${i}`}
+                    room={q.room}
+                    question={q.question}
+                    options={q.options}
+                    onChanged={handleDataChange}
+                    onDismiss={() => dismissCard(`q:${q.room}`, { kind: 'question', room: q.room })}
+                    onJumpToRoom={onJumpToRoom}
+                    onReplyToRoom={onReplyToRoom}
+                    nameMap={nameMap}
+                  />
+                ))}
+              </section>
+            )}
 
-          {/* Stuck Sessions */}
-          {stuckSessions.length > 0 && (
-            <section>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: C.muted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-                margin: '0 0 16px 0',
-                fontFamily: FONT.mono,
-              }}>
-                Stuck Sessions ({stuckSessions.length})
-              </div>
-              {stuckSessions.map((sess, i) => (
-                <StuckSessionCard
-                  key={i}
-                  session={sess}
-                  onJumpToRoom={onJumpToRoom}
-                  nameMap={nameMap}
-                />
-              ))}
-            </section>
-          )}
+            {/* ── TIER 2: the quieter, secondary surface ── */}
 
-          {/* Housekeeping — the Keeper's tidy-up proposals */}
-          {keeperProposals.length > 0 && (
-            <section style={{ marginTop: 32 }}>
-              <div style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: C.muted,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-                margin: '0 0 16px 0',
-                fontFamily: FONT.mono,
-              }}>
-                Housekeeping ({keeperProposals.length})
-              </div>
-              {keeperProposals.map((p) => (
-                <KeeperCard
-                  key={p.id}
-                  proposal={p}
-                  onDecided={handleDataChange}
-                  nameMap={nameMap}
-                />
-              ))}
-            </section>
-          )}
-        </>
-      )}
+            {/* Since you last looked — the loop's clean what-changed feed */}
+            {activity.length > 0 && (
+              <section style={{ marginBottom: 28 }}>
+                <SectionLabel>Since you last looked ({activity.length})</SectionLabel>
+                <div style={{
+                  border: `1px solid rgba(255,255,255,0.05)`, borderRadius: 10,
+                  background: 'rgba(255,255,255,0.012)', overflow: 'hidden',
+                }}>
+                  {activity.map((a, i) => {
+                    const { name, tag } = roomDisplay(a.room || '', nameMap)
+                    const canJump = !!(a.room && onJumpToRoom)
+                    const secs = a.ts ? Math.max(0, Math.floor((Date.now() - new Date(a.ts)) / 1000)) : null
+                    const ago = secs == null ? '' :
+                      secs < 90 ? 'just now' :
+                      secs < 3600 ? `${Math.round(secs / 60)}m ago` :
+                      secs < 86400 ? `${Math.round(secs / 3600)}h ago` :
+                      `${Math.round(secs / 86400)}d ago`
+                    return (
+                      <div
+                        key={i}
+                        onClick={canJump ? () => onJumpToRoom(a.room) : undefined}
+                        role={canJump ? 'button' : undefined}
+                        title={canJump ? 'Open this room' : undefined}
+                        style={{
+                          display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px',
+                          borderTop: i === 0 ? 'none' : `1px solid rgba(255,255,255,0.05)`,
+                          cursor: canJump ? 'pointer' : 'default', transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={canJump ? (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)' } : undefined}
+                        onMouseLeave={canJump ? (e) => { e.currentTarget.style.background = 'transparent' } : undefined}
+                      >
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: AMBER, flexShrink: 0, marginTop: 6 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                            <span style={{ fontWeight: 600 }}>{name}</span>
+                            {tag && <span style={{ marginLeft: 6 }}><ContextTag tag={tag} /></span>}
+                            <span style={{ color: C.text2 }}>{'  ·  '}{humanizeSlugs(a.move, nameMap)}</span>
+                          </div>
+                        </div>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginTop: 3 }}>
+                          <span style={{ fontSize: 10, color: C.muted, fontFamily: FONT.mono }}>{ago}</span>
+                          {canJump && <span style={{ color: AMBER, fontWeight: 700, fontSize: 13 }}>›</span>}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Stuck Sessions (a false-calm signal: surfaced loudly when present) */}
+            {visibleStuck.length > 0 && (
+              <section style={{ marginBottom: 28 }}>
+                <SectionLabel>Stuck Sessions ({visibleStuck.length})</SectionLabel>
+                {visibleStuck.map((sess, i) => (
+                  <StuckSessionCard
+                    key={`ss-${i}`}
+                    session={sess}
+                    onDismiss={() => dismissCard(`ss:${sess.name}`, { kind: 'stuck' })}
+                    onJumpToRoom={onJumpToRoom}
+                    nameMap={nameMap}
+                  />
+                ))}
+              </section>
+            )}
+
+            {/* Room Status */}
+            {roomEntries.length > 0 && (
+              <section style={{ marginBottom: 28 }}>
+                <SectionLabel>Room Status ({roomEntries.length} rooms)</SectionLabel>
+                {roomEntries.map(([roomSlug, data]) => (
+                  <RoomStatusCard
+                    key={roomSlug}
+                    room={roomSlug}
+                    data={data}
+                    onChanged={handleDataChange}
+                    onDismiss={() => dismissCard(`rs:${roomSlug}`, { kind: 'room', room: roomSlug })}
+                    onJumpToRoom={onJumpToRoom}
+                    onReplyToRoom={onReplyToRoom}
+                    nameMap={nameMap}
+                  />
+                ))}
+              </section>
+            )}
+
+            {/* Housekeeping — the Keeper's tidy-up proposals */}
+            {visibleKeeper.length > 0 && (
+              <section>
+                <SectionLabel>Housekeeping ({visibleKeeper.length})</SectionLabel>
+                {visibleKeeper.map((p) => (
+                  <KeeperCard
+                    key={p.id}
+                    proposal={p}
+                    onChanged={handleDataChange}
+                    onDismiss={() => dismissCard(`kp:${p.id}`, { kind: 'keeper', proposalId: p.id })}
+                    nameMap={nameMap}
+                  />
+                ))}
+              </section>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
