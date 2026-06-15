@@ -972,7 +972,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>
                       <span style={{ fontWeight: 600 }}>{room}</span>
-                      <span style={{ color: C.text2 }}>{': '}{a.move}</span>
+                      <span style={{ color: C.text2 }}>{': '}{(a.move || '').replace(/\s*[—–]\s*/g, ', ')}</span>
                     </div>
                   </div>
                   <span style={{ fontSize: 10, color: C.muted, fontFamily: FONT.mono, flexShrink: 0, marginTop: 3 }}>
