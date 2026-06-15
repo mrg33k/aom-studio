@@ -602,16 +602,30 @@ function RoomStatusCard({ room, data, onChanged, onDismiss, onJumpToRoom, onRepl
   const [loading, setLoading] = useState(false)
   const [picked, setPicked] = useState(null)
 
-  const { goal = '', status, confidence, last_reviewed: lastReviewed } = data || {}
+  const {
+    goal = '', status, confidence, last_reviewed: lastReviewed,
+    last_touched: lastTouched, last_touched_by: touchedBy, sessions = [],
+  } = data || {}
+  // Freshness truth comes from the ledger's last_touched (the newest REAL activity
+  // by literal timecode); fall back to the loop's last_reviewed when the ledger has
+  // nothing. This is the staleness fix made visible — the card shows when work
+  // actually moved, not just when the loop last looked.
+  const freshTs = lastTouched || lastReviewed
   const now = new Date()
-  const reviewed = new Date(lastReviewed)
-  const secondsAgo = Math.max(0, Math.floor((now - reviewed) / 1000))
-  const timeLabel = !lastReviewed || isNaN(reviewed) ? '' :
+  const moved = new Date(freshTs)
+  const secondsAgo = Math.max(0, Math.floor((now - moved) / 1000))
+  const timeLabel = !freshTs || isNaN(moved) ? '' :
     secondsAgo < 60 ? 'just now' :
     secondsAgo < 3600 ? `${Math.round(secondsAgo / 60)}m ago` :
     secondsAgo < 86400 ? `${Math.round(secondsAgo / 3600)}h ago` :
     `${Math.round(secondsAgo / 86400)}d ago`
   const isStale = secondsAgo > 14400 // > 4 hours
+  // What moved it last — the ledger's stream winner, in plain words.
+  const movedByLabel = {
+    session: 'a terminal session', commit: 'a commit',
+    git: 'a code change', file: 'a file update', loop: 'the loop',
+  }[touchedBy] || (lastTouched ? '' : 'the loop')
+  const liveSessions = (Array.isArray(sessions) ? sessions : []).filter((s) => s && !s.terminal)
 
   // The loop may attach per-room decide moves ({label, answer}); else fall back
   // to the sensible defaults ({label, status}). The handler routes by shape.
@@ -646,7 +660,16 @@ function RoomStatusCard({ room, data, onChanged, onDismiss, onJumpToRoom, onRepl
     }}>
       <span>Status: <strong>{status}</strong></span>
       <span>Confidence: <strong>{confidence}</strong>{confidence === 'ambiguous' && ' ⚠'}</span>
-      {timeLabel && <span title="Last loop review time">Reviewed {timeLabel}</span>}
+      {timeLabel && (
+        <span title={lastTouched ? 'Newest real activity on this goal' : 'Last loop review time'}>
+          Moved {timeLabel}{movedByLabel && <> · by {movedByLabel}</>}
+        </span>
+      )}
+      {liveSessions.length > 0 && (
+        <span title="Live terminal session(s) attached to this goal" style={{ color: AMBER }}>
+          ● {liveSessions.length} live session{liveSessions.length > 1 ? 's' : ''}
+        </span>
+      )}
     </div>
   )
 
@@ -1021,6 +1044,36 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
       let goals = { rooms: {} }
       if (gRes.ok) {
         try { goals = JSON.parse(await gRes.text()) } catch { goals = { rooms: {} } }
+      }
+
+      // The goal LEDGER is the source of truth under the deck (Command Center
+      // Round 3). room-goals.json holds the editable goal + options + the loop's
+      // last-review time; the ledger adds the FRESHNESS TRUTH — last_touched (the
+      // newest real activity by literal timecode) and last_touched_by (what moved
+      // it: a terminal session, a commit, a file, or just the loop). Merge the
+      // ledger fields onto each room so a card shows what ACTUALLY moved and when,
+      // not just when the loop last looked (the staleness symptom). room-goals.json
+      // stays the write target; the ledger is read-only.
+      const lgRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/goal-ledger.json')
+      if (lgRes.ok) {
+        try {
+          const ledger = JSON.parse(await lgRes.text())
+          const ledgerGoals = {}
+          Object.values(ledger.users || {}).forEach((u) => {
+            Object.entries(u.goals || {}).forEach(([slug, g]) => { ledgerGoals[slug] = g })
+          })
+          goals.rooms = goals.rooms || {}
+          Object.entries(ledgerGoals).forEach(([slug, lg]) => {
+            const base = goals.rooms[slug] || {}
+            goals.rooms[slug] = {
+              ...base,
+              last_touched: lg.last_touched || base.last_touched || null,
+              last_touched_by: lg.last_touched_by || null,
+              last_touched_label: lg.last_touched_label || null,
+              sessions: Array.isArray(lg.sessions) ? lg.sessions : [],
+            }
+          })
+        } catch { /* ledger optional; cards fall back to last_reviewed */ }
       }
 
       const sRes = await authFetch('/api/dashboard/claude-sessions')
