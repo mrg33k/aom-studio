@@ -47,6 +47,7 @@ import { HomeIcon, TasksIcon, ChatIcon } from './components/cv3/icons.jsx'
 import UserAvatar from './components/cv3/UserAvatar.jsx'
 import TasksPanel from './components/cv3/TasksPanel.jsx'
 import ChatPanel from './components/cv3/ChatPanel.jsx'
+import { surfaceModel } from './components/cv3/chat/chatConstants.js'
 import HomeView from './cv4/HomeView.jsx'
 import { useDefaultView } from './hooks/useDefaultView.js'
 import WorldSelector from './components/WorldSelector.jsx'
@@ -1023,7 +1024,16 @@ export default function CornerVG() {
         user_name: currentUser?.email || null,
       }
       if (notif._project) body.project = notif._project
-      if (notif._missionSlug) body.metadata = { mission_slug: notif._missionSlug }
+      // corner:gemini-workers step 6 — carry the /cvg Gemini surface model so a
+      // catch-up reply sent from /cvg runs on Gemini (the listener reads
+      // metadata.model). Empty off /cvg -> room's Claude pref stands.
+      const _sm = surfaceModel()
+      if (notif._missionSlug || _sm) {
+        body.metadata = {
+          ...(notif._missionSlug ? { mission_slug: notif._missionSlug } : {}),
+          ...(_sm ? { model: _sm } : {}),
+        }
+      }
       await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1244,6 +1254,9 @@ export default function CornerVG() {
         body: JSON.stringify({
           agent: target.slug, text, role: 'user', source: 'corner-dashboard',
           client_id: worldId, ...parentUserIdentity,
+          // corner:gemini-workers step 6 — run the support "discuss" turn on the
+          // /cvg Gemini surface (listener reads metadata.model). Empty off /cvg.
+          ...(surfaceModel() ? { metadata: { model: surfaceModel() } } : {}),
         }),
       }).catch(() => null)
     } catch (e) { /* message lands via realtime when it persists */ }

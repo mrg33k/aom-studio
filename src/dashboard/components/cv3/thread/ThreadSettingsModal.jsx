@@ -255,10 +255,10 @@ export default function ThreadSettingsModal() {
               </div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => selectGlobalModel(currentModel === 'default' ? 'gemini-3.5-flash' : currentModel)}
+                  onClick={() => selectGlobalModel(currentModel === 'default' ? 'sonnet' : currentModel)}
                   style={{ padding: '7px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: "'Inter', sans-serif", color: '#60A5FA', background: 'rgba(96,165,250,0.12)', border: '1px solid rgba(96,165,250,0.35)' }}
                 >
-                  Use {(MODEL_OPTIONS.find(m => m.id === (currentModel === 'default' ? 'gemini-3.5-flash' : currentModel)) || {}).label || 'this model'} everywhere
+                  Use {(MODEL_OPTIONS.find(m => m.id === (currentModel === 'default' ? 'sonnet' : currentModel)) || {}).label || 'this model'} everywhere
                 </button>
                 {globalModel !== 'default' && (
                   <button

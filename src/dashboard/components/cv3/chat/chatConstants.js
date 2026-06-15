@@ -46,16 +46,28 @@ export const VOICE_OPTIONS = [
   { id: 'sulafat',       label: 'Sulafat',       desc: 'Warm' },
 ]
 
-// Per-chat model selection (corner:gemini-workers R3). The bridge daemon
-// reads this preference per message and routes the turn: claude aliases ride
-// the normal warm pool; gemini ids run the whole turn on the Gemini CLI lane.
-// New model arrives → add a row here (and a lane in the daemon if it's a new
-// provider). ids must match what scripts/bridge-daemon.py understands.
+// Per-chat model selection (corner:gemini-workers R3). The per-room picker on
+// the normal dashboard offers CLAUDE models only — model is now a function of
+// the SURFACE (Patrik 2026-06-15, "lock per surface"): the normal dashboard is
+// Claude, /cvg is Gemini. The Gemini rows were removed so a room can no longer
+// be flipped to Gemini on the live dashboard; /cvg picks Gemini via its own
+// per-surface control (localStorage 'cvgModel'), not this list.
 export const MODEL_OPTIONS = [
   { id: 'default',          label: 'Auto (Claude Sonnet)', desc: 'System default' },
   { id: 'opus',             label: 'Claude Opus',          desc: 'Deepest reasoning' },
   { id: 'sonnet',           label: 'Claude Sonnet',        desc: 'Fast + capable' },
   { id: 'haiku',            label: 'Claude Haiku',         desc: 'Fastest, light' },
-  { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash',     desc: 'Low cost, full tools' },
-  { id: 'gemini-3.1-pro',   label: 'Gemini 3.1 Pro',       desc: 'Gemini deep reasoning' },
 ]
+
+// Per-surface model (corner:gemini-workers step 6). Model is decided by which
+// door you came in: /cvg -> Gemini (its 'cvgModel' pick or flash), every other
+// surface -> '' (no override, so the room's Claude pref / system default stands).
+// Used to stamp the supabase-messages send paths (catch-up reply, support
+// "discuss") so those /cvg actions run Gemini like the rest of /cvg, instead of
+// silently falling to the room's Claude pref. The bridge + listener honor it.
+export function surfaceModel() {
+  if (typeof window === 'undefined') return ''
+  if (!window.location.pathname.startsWith('/cvg')) return ''
+  try { return window.localStorage.getItem('cvgModel') || 'gemini-3.5-flash' }
+  catch { return 'gemini-3.5-flash' }
+}
