@@ -1229,12 +1229,12 @@ function AgentRow({ agent, active, onClick }) {
 // Blanket model switch (corner:gemini-workers R4). Lives in the Account
 // section: one tap moves EVERY chat to the picked model via the '_all' key in
 // user_preferences/agent_models. Per-chat picks (chat settings → Model) win
-// over this. Options list mirrors MODEL_OPTIONS in cv3 chatConstants — keep
-// the two in sync when a new model arrives.
+// over this. Claude options only (Patrik 2026-06-15, "lock per surface"): model
+// is a function of the SURFACE, so the normal dashboard can't be flipped to
+// Gemini here either; /cvg picks Gemini via its own per-surface control.
+// Mirrors MODEL_OPTIONS in cv3 chatConstants — keep the two in sync.
 const GLOBAL_MODEL_CHOICES = [
   { id: 'default',          label: 'Claude (default)' },
-  { id: 'gemini-3.5-flash', label: 'Gemini 3.5 Flash' },
-  { id: 'gemini-3.1-pro',   label: 'Gemini 3.1 Pro' },
   { id: 'opus',             label: 'Claude Opus' },
   { id: 'haiku',            label: 'Claude Haiku' },
 ]
