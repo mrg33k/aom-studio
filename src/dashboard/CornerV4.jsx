@@ -27,6 +27,7 @@ import {
   getUserWorld,
 } from './lib/clientConfig.js'
 import { authFetch } from './lib/authFetch.js'
+import { getProjectEA } from './data/project-ea.js'
 import { OVERLAY } from './cv4/lib/uiKit.jsx'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -1015,6 +1016,65 @@ export default function CornerV4() {
     const key = notif._roomKey || notif._agent
     if (key) setNotifReadAt(prev => ({ ...prev, [key]: new Date().toISOString() }))
   }, [worldId, currentUser, authFetch])
+
+  // command:deck — reply to a room straight from the Command Deck card.
+  // Mirrors the in-room project/mission send (useChatSend.sendProjectText):
+  // posts through chat-bridge with room=project:<slug>, the mission tag, and
+  // metadata.mission_slug so Patrik's words land in the exact room he sees AND
+  // the room's assistant picks them up and acts. Returns {ok} so the card can
+  // show success/failure instead of pretending it worked.
+  const postReplyToRoom = useCallback(async (roomSlug, text) => {
+    const t = (text || '').trim()
+    if (!roomSlug || !t) return { ok: false }
+    try {
+      const parts = roomSlug.split(':')
+      if (parts.length > 1) {
+        // project:mission (or user:project:mission) — mission is the last
+        // segment, project the one before it (same rule as Go-to-room).
+        const mission = parts[parts.length - 1]
+        const projSlug = parts[parts.length - 2]
+        const projectObj = (projectRooms || []).find(p => p?.slug === projSlug) || { slug: projSlug }
+        const agentKey = getProjectEA(projectObj, agents) || 'elon'
+        const clientId = projectObj.isShared ? `shared:${projSlug}` : worldId
+        const res = await authFetch('/api/dashboard/chat-bridge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: agentKey,
+            message: t,
+            room: `project:${projSlug}`,
+            project: projSlug,
+            mission,
+            client_id: clientId,
+            user_id: currentUser?.id || null,
+            user_name: currentUser?.email || null,
+            metadata: { mission_slug: mission, command_deck_reply: true },
+          }),
+        })
+        return { ok: res.ok }
+      }
+      // agent room (no colon, e.g. "elon") — plain agent chat.
+      const res = await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: roomSlug,
+          text: t,
+          role: 'user',
+          source: 'command-deck',
+          client_id: worldId,
+          world_id: worldId,
+          user_id: currentUser?.id || null,
+          user_name: currentUser?.email || null,
+          metadata: { command_deck_reply: true },
+        }),
+      })
+      return { ok: res.ok }
+    } catch (err) {
+      console.error('[CommandDeck] reply failed', err)
+      return { ok: false }
+    }
+  }, [agents, projectRooms, worldId, currentUser])
 
   // corner:notifications-catchup R2 — skip handler: just mark read
   const handleCatchupSkip = useCallback((notif) => {
@@ -2775,13 +2835,20 @@ export default function CornerV4() {
                   worldId={worldId}
                   basePath={`/cv4/project`}
                   onClose={() => setDeckTab('chat')}
+                  onReplyToRoom={postReplyToRoom}
                   onJumpToRoom={(room) => {
-                    // room format: "project:mission" or "agent-slug"
+                    // Loop room slugs come in three shapes:
+                    //   "project:mission"            (e.g. corner:gemini-workers)
+                    //   "user:project:mission"       (e.g. aom:agent-hooks:design-hook)
+                    //   "agent-slug"                 (e.g. elon)
+                    // The mission is always the LAST segment; the project is the
+                    // segment right before it. Splitting on the FIRST colon (old
+                    // bug) dropped the real mission on 3-part slugs and landed on
+                    // the marketing page.
                     if (room.includes(':')) {
-                      const [proj, mission] = room.split(':');
-                      // Mission rooms open via the ?mission= query param (matches
-                      // the app's real route — the old /proj/mission path bounced
-                      // to the marketing page).
+                      const parts = room.split(':');
+                      const mission = parts.pop();
+                      const proj = parts[parts.length - 1];
                       navigate(`/cv4/project/${proj}?mission=${encodeURIComponent(mission)}`);
                     } else {
                       // Navigate to agent

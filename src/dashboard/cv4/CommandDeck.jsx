@@ -15,6 +15,55 @@ const FONT = {
   mono: "'JetBrains Mono', monospace",
 }
 
+// ── Helper: human room names (no techie slugs in the UI) ───────────────────
+// Patrik: "the naming of the chats is very computer techie it's not very
+// intuitive." A loop room slug like "corner:gemini-workers" or the 3-part
+// "aom:agent-hooks:design-hook" must never show as-is. We turn it into a
+// readable name plus a small context tag (the project it lives under).
+
+function titleCaseSlug(s) {
+  return (s || '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .trim()
+}
+
+// nameMap is { slug: "Human Title" } built from structure-map.json. Returns
+// { name, tag }: name is what to show, tag is the parent context ("" if none).
+function roomDisplay(slug, nameMap = {}) {
+  if (!slug) return { name: '', tag: '' }
+  // Agent rooms (no colon) are just the agent's name.
+  if (!slug.includes(':')) return { name: titleCaseSlug(slug), tag: '' }
+  const parts = slug.split(':')
+  const mission = parts[parts.length - 1]
+  const project = parts[parts.length - 2] || ''
+  // Prefer the room's real title from its CONTEXT.md (via the structure map).
+  // Fall back to a tidied mission segment. Never let a raw slug through.
+  let name = nameMap[slug]
+  if (!name || name.includes(':')) name = titleCaseSlug(mission)
+  return { name, tag: project ? titleCaseSlug(project) : '' }
+}
+
+// Small muted chip rendered next to a room name to show where it lives.
+function ContextTag({ tag }) {
+  if (!tag) return null
+  return (
+    <span style={{
+      fontSize: 10,
+      fontFamily: "'JetBrains Mono', monospace",
+      color: 'var(--c-muted, #8a8a8a)',
+      border: '1px solid rgba(255,255,255,0.10)',
+      borderRadius: 5,
+      padding: '1px 6px',
+      flexShrink: 0,
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
+    }}>
+      {tag}
+    </span>
+  )
+}
+
 // ── Helper: parse markdown checkbox lists ──────────────────────────────────
 
 function parseMarkdownCheckboxList(markdown, sectionName) {
@@ -107,6 +156,87 @@ function OptionChips({ options, picked, loading, onPick }) {
           </span>
         </button>
       ))}
+    </div>
+  )
+}
+
+// ── Shared: inline reply box ───────────────────────────────────────────────
+// Patrik: "I should have a chat box option for each where I can type in what I
+// do want to reply." Reply button reveals an input; sending posts the message
+// straight into that room's chat (and the room's assistant picks it up), so he
+// never has to leave the deck. onReply(room, text) returns { ok }.
+
+function ReplyBox({ room, onReply }) {
+  const [open, setOpen] = useState(false)
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => { if (open && inputRef.current) inputRef.current.focus() }, [open])
+
+  if (!room || !onReply) return null
+
+  const send = async () => {
+    const t = text.trim()
+    if (!t || sending) return
+    setSending(true)
+    const res = await onReply(room, t)
+    setSending(false)
+    if (res && res.ok) {
+      setText('')
+      setOpen(false)
+      setSent(true)
+      setTimeout(() => setSent(false), 4000)
+    }
+  }
+
+  if (sent) {
+    return (
+      <span style={{ fontSize: 11, color: AMBER, fontFamily: FONT.mono, fontWeight: 600 }}>
+        ✓ Sent to room
+      </span>
+    )
+  }
+
+  if (!open) {
+    return <CommandDeckBtn onClick={() => setOpen(true)}>Reply</CommandDeckBtn>
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+      <textarea
+        ref={inputRef}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="Type your reply to this room…"
+        rows={2}
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          background: C.s1,
+          border: `1px solid ${C.border}`,
+          color: C.text,
+          fontSize: 13,
+          fontFamily: FONT.body,
+          borderRadius: 8,
+          boxSizing: 'border-box',
+          resize: 'vertical',
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) send()
+          if (e.key === 'Escape') { setOpen(false); setText('') }
+        }}
+      />
+      <div style={{ display: 'flex', gap: 6 }}>
+        <CommandDeckBtn onClick={send} disabled={!text.trim() || sending} primary
+          style={{ opacity: !text.trim() || sending ? 0.6 : 1 }}>
+          {sending ? 'Sending…' : 'Send to room'}
+        </CommandDeckBtn>
+        <CommandDeckBtn onClick={() => { setOpen(false); setText('') }}>
+          Cancel
+        </CommandDeckBtn>
+      </div>
     </div>
   )
 }
@@ -312,7 +442,8 @@ function HardCallCard({ item, index, options = [], onMarkDone }) {
 
 // ── Component: Steering Question Card ──────────────────────────────────────
 
-function SteeringQuestionCard({ room, question, answered, options = [], onAnswer, onJumpToRoom }) {
+function SteeringQuestionCard({ room, question, answered, options = [], onAnswer, onJumpToRoom, onReplyToRoom, nameMap = {} }) {
+  const display = roomDisplay(room, nameMap)
   const [showInput, setShowInput] = useState(false)
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
@@ -380,14 +511,15 @@ function SteeringQuestionCard({ room, question, answered, options = [], onAnswer
           fontFamily: FONT.display,
           fontSize: 14,
           color: answered ? C.muted : C.text,
-          fontWeight: 500,
+          fontWeight: 600,
           flex: 1,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
         }}>
-          {room}
+          {display.name}
         </span>
+        <ContextTag tag={display.tag} />
       </div>
 
       {/* Question body */}
@@ -425,11 +557,12 @@ function SteeringQuestionCard({ room, question, answered, options = [], onAnswer
                 loading={loading}
                 onPick={(opt, oi) => submitAnswer(opt.answer || opt.label, oi)}
               />
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                 <CommandDeckBtn onClick={() => setShowInput(true)}>
                   {hasOptions ? 'Something else' : 'Answer'}
                 </CommandDeckBtn>
-                {room.includes(':') && (
+                <ReplyBox room={room} onReply={onReplyToRoom} />
+                {onJumpToRoom && (
                   <CommandDeckBtn onClick={() => onJumpToRoom(room)}>
                     Go to room
                   </CommandDeckBtn>
@@ -487,7 +620,8 @@ function SteeringQuestionCard({ room, question, answered, options = [], onAnswer
 
 // ── Component: Room Status Card ────────────────────────────────────────────
 
-function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpToRoom, onRefreshGoal }) {
+function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpToRoom, onRefreshGoal, onReplyToRoom, nameMap = {} }) {
+  const display = roomDisplay(room, nameMap)
   const now = new Date()
   const reviewed = new Date(lastReviewed)
   // Clamp to 0: a last_reviewed stamp can be a touch ahead of the browser clock
@@ -526,14 +660,15 @@ function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpTo
           fontFamily: FONT.display,
           fontSize: 14,
           color: C.text,
-          fontWeight: 500,
+          fontWeight: 600,
           flex: 1,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
         }}>
-          {room}
+          {display.name}
         </span>
+        <ContextTag tag={display.tag} />
       </div>
 
       {/* Goal body */}
@@ -564,10 +699,11 @@ function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpTo
           </span>
           <span title="Last loop review time">Reviewed {timeLabel}</span>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
           <CommandDeckBtn onClick={() => onJumpToRoom(room)}>
             Go to room
           </CommandDeckBtn>
+          <ReplyBox room={room} onReply={onReplyToRoom} />
           <CommandDeckBtn onClick={onRefreshGoal}>
             Refresh
           </CommandDeckBtn>
@@ -734,7 +870,7 @@ function KeeperCard({ proposal, onDecided }) {
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
-export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }) {
+export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, onReplyToRoom }) {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -747,6 +883,8 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
   const [stuckSessions, setStuckSessions] = useState([])
   const [keeperProposals, setKeeperProposals] = useState([])
   const [activity, setActivity] = useState([])
+  // slug -> human title, built from the structure map so cards show real names.
+  const [nameMap, setNameMap] = useState({})
 
   const load = useCallback(async () => {
     if (!worldId) return
@@ -806,6 +944,20 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
       if (aRes.ok) {
         try { activityFeed = JSON.parse(await aRes.text()) } catch { activityFeed = { entries: [] } }
       }
+
+      // 8. Fetch the structure map -> slug:title lookup so every card shows a
+      //    human room name instead of a techie slug.
+      const smRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/structure-map.json')
+      const map = {}
+      if (smRes.ok) {
+        try {
+          const sm = JSON.parse(await smRes.text())
+          ;(sm.rooms || []).forEach((r) => {
+            if (r && r.slug && r.title) map[r.slug] = r.title
+          })
+        } catch { /* keep empty; cards fall back to tidied slugs */ }
+      }
+      setNameMap(map)
 
       // Build steering questions from open-questions + room goals
       const steering = openQuestions
@@ -952,7 +1104,8 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
             background: 'rgba(255,255,255,0.015)', overflow: 'hidden',
           }}>
             {activity.map((a, i) => {
-              const room = (a.room || '').split(':').slice(-1)[0]
+              const { name, tag } = roomDisplay(a.room || '', nameMap)
+              const canJump = !!(a.room && onJumpToRoom)
               const secs = a.ts ? Math.max(0, Math.floor((Date.now() - new Date(a.ts)) / 1000)) : null
               const ago = secs == null ? '' :
                 secs < 90 ? 'just now' :
@@ -960,23 +1113,37 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
                 secs < 86400 ? `${Math.round(secs / 3600)}h ago` :
                 `${Math.round(secs / 86400)}d ago`
               return (
-                <div key={i} style={{
-                  display: 'flex', alignItems: 'flex-start', gap: 10,
-                  padding: '10px 14px',
-                  borderTop: i === 0 ? 'none' : `1px solid ${C.border}`,
-                }}>
+                <div
+                  key={i}
+                  onClick={canJump ? () => onJumpToRoom(a.room) : undefined}
+                  role={canJump ? 'button' : undefined}
+                  title={canJump ? 'Open this room' : undefined}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 10,
+                    padding: '10px 14px',
+                    borderTop: i === 0 ? 'none' : `1px solid ${C.border}`,
+                    cursor: canJump ? 'pointer' : 'default',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={canJump ? (e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)' } : undefined}
+                  onMouseLeave={canJump ? (e) => { e.currentTarget.style.background = 'transparent' } : undefined}
+                >
                   <div style={{
                     width: 6, height: 6, borderRadius: '50%', background: AMBER,
                     flexShrink: 0, marginTop: 6,
                   }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>
-                      <span style={{ fontWeight: 600 }}>{room}</span>
-                      <span style={{ color: C.text2 }}>{': '}{a.move}</span>
+                      <span style={{ fontWeight: 600 }}>{name}</span>
+                      {tag && <span style={{ marginLeft: 6 }}><ContextTag tag={tag} /></span>}
+                      <span style={{ color: C.text2 }}>{'  ·  '}{a.move}</span>
                     </div>
                   </div>
-                  <span style={{ fontSize: 10, color: C.muted, fontFamily: FONT.mono, flexShrink: 0, marginTop: 3 }}>
-                    {ago}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginTop: 3 }}>
+                    <span style={{ fontSize: 10, color: C.muted, fontFamily: FONT.mono }}>
+                      {ago}
+                    </span>
+                    {canJump && <span style={{ color: AMBER, fontWeight: 700, fontSize: 13 }}>›</span>}
                   </span>
                 </div>
               )
@@ -1051,6 +1218,8 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
                   options={q.options}
                   onAnswer={handleDataChange}
                   onJumpToRoom={onJumpToRoom}
+                  onReplyToRoom={onReplyToRoom}
+                  nameMap={nameMap}
                 />
               ))}
             </section>
@@ -1083,6 +1252,8 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
                     // For now just refresh all data; full room-only refresh is post-June
                     handleRefresh()
                   }}
+                  onReplyToRoom={onReplyToRoom}
+                  nameMap={nameMap}
                 />
               ))}
             </section>
