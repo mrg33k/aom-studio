@@ -663,6 +663,75 @@ function StuckSessionCard({ session, onJumpToRoom }) {
   )
 }
 
+// ── Component: Keeper Card (housekeeping proposal) ─────────────────────────────
+
+function KeeperCard({ proposal, onDecided }) {
+  const [loading, setLoading] = useState(false)
+  const [picked, setPicked] = useState(null)
+
+  const decide = async (opt, oi) => {
+    setLoading(true)
+    setPicked(oi)
+    try {
+      await authFetch('/api/dashboard/command-deck-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'keeper_decision',
+          proposalId: proposal.id,
+          answer: opt.answer || opt.label,
+        }),
+      })
+      onDecided()
+    } catch (err) {
+      console.error('Error recording keeper decision:', err)
+      setPicked(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div style={{
+      padding: '14px 16px 12px',
+      background: 'rgba(255,255,255,0.015)',
+      border: `1px solid ${C.border}`,
+      borderRadius: 10,
+      marginBottom: 12,
+      fontFamily: FONT.body,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+          background: AMBER, boxShadow: `0 0 0 3px rgba(234,179,8,0.14)`,
+        }} />
+        <span style={{
+          fontFamily: FONT.display, fontSize: 14, color: C.text, fontWeight: 600,
+          flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {proposal.title}
+        </span>
+      </div>
+      {proposal.detail && (
+        <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
+          {proposal.detail}
+        </p>
+      )}
+      <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
+        <OptionChips
+          options={proposal.options}
+          picked={picked}
+          loading={loading}
+          onPick={decide}
+        />
+      </div>
+    </div>
+  )
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────
 
 export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }) {
@@ -676,6 +745,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
   const [steeringQuestions, setSteeringQuestions] = useState([])
   const [roomStatus, setRoomStatus] = useState({})
   const [stuckSessions, setStuckSessions] = useState([])
+  const [keeperProposals, setKeeperProposals] = useState([])
 
   const load = useCallback(async () => {
     if (!worldId) return
@@ -722,6 +792,13 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
       const routines = rRes.ok ? await rRes.json() : { routines: [] }
       const masterLoop = routines.routines?.find((r) => r.name === 'com.aom-ea.master-loop')
 
+      // 6. Fetch the Keeper's housekeeping proposals (tidy-up cards).
+      const kRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/keeper-report.json')
+      let keeper = { proposals: [] }
+      if (kRes.ok) {
+        try { keeper = JSON.parse(await kRes.text()) } catch { keeper = { proposals: [] } }
+      }
+
       // Build steering questions from open-questions + room goals
       const steering = openQuestions
         .filter((q) => !answeredQuestions.some((a) => a.text.includes(q.text.split(' — ')[0])))
@@ -746,6 +823,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
       setHardCalls(openCalls)
       setRoomStatus(goals.rooms || {})
       setStuckSessions(stuckData.sessions || [])
+      setKeeperProposals(Array.isArray(keeper.proposals) ? keeper.proposals : [])
       setLoopRunning(masterLoop?.status === 'running')
       setLoopStatusData(goals)
 
@@ -791,7 +869,8 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
     hardCalls.every((c) => c.checked) &&
     steeringQuestions.length === 0 &&
     Object.keys(roomStatus).length === 0 &&
-    stuckSessions.length === 0
+    stuckSessions.length === 0 &&
+    keeperProposals.length === 0
 
   return (
     // Solid deep ground so the chat's animated background never bleeds through
@@ -971,6 +1050,30 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
                   key={i}
                   session={sess}
                   onJumpToRoom={onJumpToRoom}
+                />
+              ))}
+            </section>
+          )}
+
+          {/* Housekeeping — the Keeper's tidy-up proposals */}
+          {keeperProposals.length > 0 && (
+            <section style={{ marginTop: 32 }}>
+              <div style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: C.muted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.14em',
+                margin: '0 0 16px 0',
+                fontFamily: FONT.mono,
+              }}>
+                Housekeeping ({keeperProposals.length})
+              </div>
+              {keeperProposals.map((p) => (
+                <KeeperCard
+                  key={p.id}
+                  proposal={p}
+                  onDecided={handleDataChange}
                 />
               ))}
             </section>

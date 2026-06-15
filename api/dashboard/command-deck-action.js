@@ -95,7 +95,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { action, callId, lineMatch, room, answer, world } = req.body || {};
+  const { action, callId, lineMatch, room, answer, world, proposalId } = req.body || {};
 
   // ── Verify tenant ──────────────────────────────────────────────────────────
   // The master-loop deliverables live in the 'aom' world; the caller passes its
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
   const callKey = callId || lineMatch;
 
   // ── Validate action ────────────────────────────────────────────────────────
-  if (!action || !['mark_call_done', 'answer_question'].includes(action)) {
+  if (!action || !['mark_call_done', 'answer_question', 'keeper_decision'].includes(action)) {
     return res.status(400).json({ error: 'Invalid action' });
   }
 
@@ -129,6 +129,8 @@ export default async function handler(req, res) {
       return await markCallDone(callKey, answer, res);
     } else if (action === 'answer_question') {
       return await answerQuestion(room, answer, res);
+    } else if (action === 'keeper_decision') {
+      return await keeperDecision(proposalId, answer, res);
     }
   } catch (err) {
     console.error('[command-deck-action] Error:', err);
@@ -240,6 +242,32 @@ async function answerQuestion(room, answer, res) {
     });
   } catch (err) {
     console.error('[answerQuestion] Error:', err);
+    throw err;
+  }
+}
+
+// Records a Keeper proposal decision into keeper-decisions.json. The Keeper skips
+// any proposal id present here, so a resolved tidy-up never resurfaces. We record
+// the choice; acting on it (archive / merge) is a separate, careful step.
+async function keeperDecision(proposalId, answer, res) {
+  if (!proposalId || typeof proposalId !== 'string') {
+    return res.status(400).json({ error: 'proposalId required' });
+  }
+  if (!answer || typeof answer !== 'string') {
+    return res.status(400).json({ error: 'answer required' });
+  }
+  try {
+    let decisions = {};
+    const raw = await readDeliverable('keeper-decisions.json');
+    if (raw) {
+      try { decisions = JSON.parse(raw) || {}; } catch { decisions = {}; }
+    }
+    decisions[proposalId] = { answer: answer.trim(), ts: new Date().toISOString() };
+    const ok = await writeDeliverable('keeper-decisions.json', JSON.stringify(decisions, null, 2) + '\n');
+    if (!ok) return res.status(500).json({ error: 'Failed to write keeper-decisions.json' });
+    return res.status(200).json({ success: true, action: 'keeper_decision', proposalId });
+  } catch (err) {
+    console.error('[keeperDecision] Error:', err);
     throw err;
   }
 }
