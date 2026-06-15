@@ -103,8 +103,8 @@ img{display:block;max-width:100%}
 .hero::before{
   content:"";position:absolute;inset:0;z-index:2;
   background:
-    linear-gradient(0deg, rgba(8,8,8,.97) 0%, rgba(8,8,8,.82) 20%, rgba(8,8,8,.4) 46%, rgba(8,8,8,.12) 66%, rgba(8,8,8,.5) 100%),
-    linear-gradient(90deg, rgba(8,8,8,.72) 0%, rgba(8,8,8,.28) 42%, transparent 72%);
+    linear-gradient(0deg, rgba(8,8,8,.94) 0%, rgba(8,8,8,.5) 24%, rgba(8,8,8,.08) 52%, transparent 78%),
+    linear-gradient(90deg, rgba(8,8,8,.6) 0%, rgba(8,8,8,.15) 48%, transparent 75%);
 }
 .hero-inner{position:relative;z-index:3;width:100%;max-width:var(--maxw);margin:0 auto;padding:0 48px 0}
 .hero-content{padding-bottom:72px;max-width:760px}
@@ -136,40 +136,42 @@ img{display:block;max-width:100%}
 }
 .cta-primary:hover{background:var(--amber-bright);transform:translateY(-2px)}
 
-/* hero stats bar */
-.hero-stats{
-  position:relative;z-index:3;
-  border-top:1px solid rgba(255,255,255,.1);
-  background:linear-gradient(180deg, rgba(8,8,8,.2), rgba(8,8,8,.85));
-  backdrop-filter:blur(3px);
+/* ============================================================
+   STAT BAND — its own breathing room, calm and dark
+   ============================================================ */
+.statband{
+  background:var(--ink);
+  border-bottom:1px solid var(--line);
+  padding:84px 0;
 }
-.hero-stats-inner{
-  max-width:var(--maxw);margin:0 auto;padding:26px 48px;
+.statband-inner{
+  max-width:var(--maxw);margin:0 auto;padding:0 48px;
   display:grid;grid-template-columns:repeat(4,1fr);gap:0;
 }
-.stat-block{display:flex;flex-direction:column;gap:8px;padding:0 28px;position:relative}
+.stat-block{display:flex;flex-direction:column;gap:12px;padding:0 40px;position:relative}
 .stat-block:first-child{padding-left:0}
-.stat-block + .stat-block::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:1px;background:rgba(255,255,255,.1)}
+.stat-block + .stat-block::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:1px;background:var(--line)}
 .stat-num{
   font-family:var(--head);font-weight:700;
-  font-size:clamp(30px,3.6vw,46px);line-height:1;color:var(--bone);letter-spacing:-.01em;
+  font-size:clamp(40px,5vw,72px);line-height:1;color:var(--bone);letter-spacing:-.015em;
 }
-.stat-num sup{color:var(--amber);font-size:.5em;top:-.55em}
+.stat-num sup{color:var(--amber);font-size:.45em;top:-.6em}
 .stat-label{
-  font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);line-height:1.3;
+  font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);line-height:1.4;
 }
 @media(max-width:720px){
-  .hero-stats-inner{grid-template-columns:repeat(2,1fr);gap:24px 0;padding:24px}
-  .stat-block{padding:0 18px}
+  .statband{padding:56px 0}
+  .statband-inner{grid-template-columns:repeat(2,1fr);gap:40px 0;padding:0 24px}
+  .stat-block{padding:0 24px}
   .stat-block:nth-child(odd){padding-left:0}
   .stat-block:nth-child(odd)::before{display:none}
 }
 @media(max-width:600px){
   .hero-inner{padding:0 24px 0}
-  .hero-content{padding-bottom:48px}
-  .hero-headline{font-size:32px;line-height:1.0;letter-spacing:-.01em}
+  .hero-content{padding-bottom:56px;max-width:none}
+  .hero-headline{font-size:34px;line-height:1.02;letter-spacing:-.01em}
   .hero-sub{margin-top:20px}
-  .cta-primary{margin-top:26px;padding:15px 30px}
+  .cta-primary{margin-top:28px;padding:15px 30px}
 }
 
 /* ============================================================
