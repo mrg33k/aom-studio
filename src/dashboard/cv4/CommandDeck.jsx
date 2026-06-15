@@ -746,6 +746,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
   const [roomStatus, setRoomStatus] = useState({})
   const [stuckSessions, setStuckSessions] = useState([])
   const [keeperProposals, setKeeperProposals] = useState([])
+  const [activity, setActivity] = useState([])
 
   const load = useCallback(async () => {
     if (!worldId) return
@@ -799,6 +800,13 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
         try { keeper = JSON.parse(await kRes.text()) } catch { keeper = { proposals: [] } }
       }
 
+      // 7. Fetch the "what changed since you last looked" activity feed.
+      const aRes = await authFetch('/api/dashboard/project-file?raw=1&path=corner/users/aom/missions/master-loop/deliverables/activity.json')
+      let activityFeed = { entries: [] }
+      if (aRes.ok) {
+        try { activityFeed = JSON.parse(await aRes.text()) } catch { activityFeed = { entries: [] } }
+      }
+
       // Build steering questions from open-questions + room goals
       const steering = openQuestions
         .filter((q) => !answeredQuestions.some((a) => a.text.includes(q.text.split(' — ')[0])))
@@ -824,6 +832,8 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
       setRoomStatus(goals.rooms || {})
       setStuckSessions(stuckData.sessions || [])
       setKeeperProposals(Array.isArray(keeper.proposals) ? keeper.proposals : [])
+      // newest first; show the most recent moves
+      setActivity(Array.isArray(activityFeed.entries) ? activityFeed.entries.slice(-12).reverse() : [])
       setLoopRunning(masterLoop?.status === 'running')
       setLoopStatusData(goals)
 
@@ -927,6 +937,53 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose }
         onRefresh={handleRefresh}
         loading={refreshing}
       />
+
+      {/* Since you last looked — the loop's clean what-changed feed */}
+      {activity.length > 0 && (
+        <section style={{ marginBottom: 28 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, color: C.muted, textTransform: 'uppercase',
+            letterSpacing: '0.14em', margin: '0 0 12px 0', fontFamily: FONT.mono,
+          }}>
+            Since you last looked ({activity.length})
+          </div>
+          <div style={{
+            border: `1px solid ${C.border}`, borderRadius: 10,
+            background: 'rgba(255,255,255,0.015)', overflow: 'hidden',
+          }}>
+            {activity.map((a, i) => {
+              const room = (a.room || '').split(':').slice(-1)[0]
+              const secs = a.ts ? Math.max(0, Math.floor((Date.now() - new Date(a.ts)) / 1000)) : null
+              const ago = secs == null ? '' :
+                secs < 90 ? 'just now' :
+                secs < 3600 ? `${Math.round(secs / 60)}m ago` :
+                secs < 86400 ? `${Math.round(secs / 3600)}h ago` :
+                `${Math.round(secs / 86400)}d ago`
+              return (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 10,
+                  padding: '10px 14px',
+                  borderTop: i === 0 ? 'none' : `1px solid ${C.border}`,
+                }}>
+                  <div style={{
+                    width: 6, height: 6, borderRadius: '50%', background: AMBER,
+                    flexShrink: 0, marginTop: 6,
+                  }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>
+                      <span style={{ fontWeight: 600 }}>{room}</span>
+                      <span style={{ color: C.text2 }}>{': '}{a.move}</span>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 10, color: C.muted, fontFamily: FONT.mono, flexShrink: 0, marginTop: 3 }}>
+                    {ago}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {isEmpty && !hardCalls.some((c) => !c.checked) ? (
         <div style={{
