@@ -44,6 +44,20 @@ function roomDisplay(slug, nameMap = {}) {
   return { name, tag: project ? titleCaseSlug(project) : '' }
 }
 
+// Swap any techie slug token inside free-text (hard-call titles, steering
+// questions, keeper details) for its human name. A slug token is 2+ colon-
+// joined lowercase segments starting with a letter (corner:drive-mirror,
+// aom:aheadofmarket.com:brand). Times ("9:45") and "Re:" are excluded by the
+// lowercase-letter start + no-space-after-colon rule.
+const SLUG_TOKEN_RE = /\b[a-z][a-z0-9-]*(?::[a-z0-9][a-z0-9.-]*)+\b/g
+function humanizeSlugs(text, nameMap = {}) {
+  if (!text || typeof text !== 'string') return text
+  return text.replace(SLUG_TOKEN_RE, (m) => {
+    const d = roomDisplay(m, nameMap)
+    return d.tag ? `${d.name} (${d.tag})` : d.name
+  })
+}
+
 // Small muted chip rendered next to a room name to show where it lives.
 function ContextTag({ tag }) {
   if (!tag) return null
@@ -320,7 +334,7 @@ function LoopHealthBanner({ loopRunning, loopStatus, lastCheckTs, onRefresh, loa
 
 // ── Component: Hard Call Card ──────────────────────────────────────────────
 
-function HardCallCard({ item, index, options = [], onMarkDone }) {
+function HardCallCard({ item, index, options = [], onMarkDone, nameMap = {} }) {
   const [loading, setLoading] = useState(false)
   const [picked, setPicked] = useState(null)
   const hasOptions = Array.isArray(options) && options.length > 0
@@ -352,9 +366,9 @@ function HardCallCard({ item, index, options = [], onMarkDone }) {
 
   // Parse format: YYYY-MM-DD — title · why · where
   const parts = item.text.split(' · ')
-  const dateTitle = parts[0] || ''
-  const why = parts[1] || ''
-  const where = parts[2] || ''
+  const dateTitle = humanizeSlugs(parts[0] || '', nameMap)
+  const why = humanizeSlugs(parts[1] || '', nameMap)
+  const where = humanizeSlugs(parts[2] || '', nameMap)
 
   return (
     <div style={{
@@ -524,7 +538,7 @@ function SteeringQuestionCard({ room, question, answered, options = [], onAnswer
 
       {/* Question body */}
       <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-        {question}
+        {humanizeSlugs(question, nameMap)}
       </p>
 
       {/* Meta footer with divider + actions */}
@@ -801,7 +815,7 @@ function StuckSessionCard({ session, onJumpToRoom }) {
 
 // ── Component: Keeper Card (housekeeping proposal) ─────────────────────────────
 
-function KeeperCard({ proposal, onDecided }) {
+function KeeperCard({ proposal, onDecided, nameMap = {} }) {
   const [loading, setLoading] = useState(false)
   const [picked, setPicked] = useState(null)
 
@@ -848,12 +862,12 @@ function KeeperCard({ proposal, onDecided }) {
           fontFamily: FONT.display, fontSize: 14, color: C.text, fontWeight: 600,
           flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>
-          {proposal.title}
+          {humanizeSlugs(proposal.title, nameMap)}
         </span>
       </div>
       {proposal.detail && (
         <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-          {proposal.detail}
+          {humanizeSlugs(proposal.detail, nameMap)}
         </p>
       )}
       <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 8 }}>
@@ -1136,7 +1150,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
                     <div style={{ fontSize: 13, color: C.text, lineHeight: 1.4 }}>
                       <span style={{ fontWeight: 600 }}>{name}</span>
                       {tag && <span style={{ marginLeft: 6 }}><ContextTag tag={tag} /></span>}
-                      <span style={{ color: C.text2 }}>{'  ·  '}{a.move}</span>
+                      <span style={{ color: C.text2 }}>{'  ·  '}{humanizeSlugs(a.move, nameMap)}</span>
                     </div>
                   </div>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, marginTop: 3 }}>
@@ -1189,6 +1203,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
                       index={i}
                       options={item.options}
                       onMarkDone={handleDataChange}
+                      nameMap={nameMap}
                     />
                   ))
               )}
@@ -1302,6 +1317,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
                   key={p.id}
                   proposal={p}
                   onDecided={handleDataChange}
+                  nameMap={nameMap}
                 />
               ))}
             </section>
