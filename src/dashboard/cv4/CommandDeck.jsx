@@ -454,82 +454,6 @@ function DeckCard({
   )
 }
 
-// ── Component: Loop Health Banner ──────────────────────────────────────────
-
-function LoopHealthBanner({ loopRunning, lastCheckTs, onRefresh, loading }) {
-  const now = new Date()
-  const lastCheck = lastCheckTs ? new Date(lastCheckTs) : null
-  const secondsAgo = lastCheck ? Math.max(0, Math.floor((now - lastCheck) / 1000)) : null
-
-  const timeLabel = secondsAgo == null ? 'unknown' :
-    secondsAgo < 90 ? 'just now' :
-    secondsAgo < 3600 ? `${Math.round(secondsAgo / 60)}m ago` :
-    secondsAgo < 86400 ? `${Math.round(secondsAgo / 3600)}h ago` :
-    'unknown'
-
-  const isStale = secondsAgo != null && secondsAgo > 300 // > 5 min
-
-  return (
-    <div style={{
-      padding: '12px 16px',
-      background: 'rgba(255,255,255,0.015)',
-      border: `1px solid ${C.border}`,
-      borderRadius: 10,
-      marginBottom: 24,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      fontFamily: FONT.body,
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
-        <div style={{
-          width: 9,
-          height: 9,
-          borderRadius: '50%',
-          background: loopRunning ? AMBER : 'rgba(255,255,255,0.18)',
-          boxShadow: loopRunning ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
-          flexShrink: 0,
-          animation: loopRunning && !isStale ? 'cmddeck-pulse 2.4s ease-in-out infinite' : 'none',
-        }} />
-        <span style={{ fontSize: 13, color: C.text, fontWeight: 600, flexShrink: 0 }}>
-          {loopRunning ? 'Loop running' : 'Loop paused'}
-        </span>
-        {loopRunning && lastCheck && (
-          <span style={{ fontSize: 12, color: C.muted, marginLeft: 10, fontFamily: FONT.mono, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            checked {timeLabel}
-          </span>
-        )}
-        {isStale && loopRunning && (
-          <span style={{ fontSize: 12, color: AMBER, marginLeft: 8, fontWeight: 600, flexShrink: 0 }}>
-            ⚠ may be stuck
-          </span>
-        )}
-      </div>
-      <button
-        onClick={onRefresh}
-        disabled={loading}
-        aria-label="Refresh data"
-        style={{
-          width: 36,
-          height: 36,
-          flexShrink: 0,
-          background: 'transparent',
-          border: `1px solid ${C.border}`,
-          borderRadius: 8,
-          cursor: loading ? 'default' : 'pointer',
-          color: C.text2,
-          fontSize: 16,
-          opacity: loading ? 0.5 : 1,
-          transition: 'opacity 0.2s',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
-        title="Refresh data"
-      >
-        ↻
-      </button>
-    </div>
-  )
-}
 
 // ── Card adapters: each maps its data onto the shared DeckCard shell ────────
 
@@ -792,6 +716,173 @@ function SectionLabel({ children, marginTop = 0 }) {
   )
 }
 
+// ── Hero card: the thing that earns the daily open ─────────────────────────
+// Council (Steffen + Alex): one dominant card at the very top — a big amber
+// count of decisions waiting + a plain-English line — and, when a real source
+// exists, the revenue line underneath. We never fabricate revenue: the line
+// renders only when `revenue` is real data passed in.
+
+function HeroCard({ decisionsWaiting, roomsMoving, heartbeat, loopRunning, stale, revenue, onRefresh, refreshing, onJumpToDecisions }) {
+  const clickable = decisionsWaiting > 0 && onJumpToDecisions
+  const sentence = decisionsWaiting > 0
+    ? `${decisionsWaiting} ${decisionsWaiting === 1 ? 'decision needs' : 'decisions need'} you. ${roomsMoving} ${roomsMoving === 1 ? 'room is' : 'rooms are'} moving on their own.`
+    : `Nothing needs you right now. ${roomsMoving} ${roomsMoving === 1 ? 'room is' : 'rooms are'} moving on their own.`
+
+  return (
+    <div
+      onClick={clickable ? onJumpToDecisions : undefined}
+      role={clickable ? 'button' : undefined}
+      title={clickable ? 'Jump to your decisions' : undefined}
+      style={{
+        position: 'relative',
+        padding: '20px 22px',
+        marginBottom: 20,
+        borderRadius: 14,
+        background: 'linear-gradient(160deg, rgba(234,179,8,0.08) 0%, rgba(255,255,255,0.02) 46%, rgba(255,255,255,0.015) 100%)',
+        border: `1px solid ${decisionsWaiting > 0 ? 'rgba(234,179,8,0.32)' : C.border}`,
+        cursor: clickable ? 'pointer' : 'default',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+        <span style={{
+          fontFamily: FONT.mono, fontSize: 52, fontWeight: 800, lineHeight: 1,
+          color: decisionsWaiting > 0 ? AMBER : C.text2, letterSpacing: '-0.03em',
+        }}>
+          {decisionsWaiting}
+        </span>
+        <span style={{
+          fontFamily: FONT.display, fontSize: 18, fontWeight: 700, color: C.text,
+          letterSpacing: '-0.02em',
+        }}>
+          {decisionsWaiting === 1 ? 'decision waiting' : 'decisions waiting'}
+        </span>
+        <button
+          onClick={(e) => { e.stopPropagation(); onRefresh && onRefresh() }}
+          disabled={refreshing}
+          aria-label="Refresh data"
+          title="Refresh"
+          style={{
+            marginLeft: clickable ? 10 : 'auto', width: 32, height: 32, flexShrink: 0,
+            alignSelf: 'center', background: 'transparent', border: `1px solid ${C.border}`,
+            borderRadius: 8, color: C.text2, fontSize: 15, cursor: refreshing ? 'default' : 'pointer',
+            opacity: refreshing ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >↻</button>
+        {clickable && (
+          <span style={{ marginLeft: 6, color: AMBER, fontSize: 20, fontWeight: 700, alignSelf: 'center' }}>›</span>
+        )}
+      </div>
+
+      <p style={{ margin: '12px 0 0', fontSize: 14, color: C.text2, lineHeight: 1.5 }}>
+        {sentence}
+      </p>
+
+      {/* Revenue line — only when a real number is supplied; never fabricated. */}
+      {revenue && revenue.label && (
+        <div style={{
+          marginTop: 14, paddingTop: 14, borderTop: `1px solid ${C.border}`,
+          display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap',
+        }}>
+          <span style={{ fontFamily: FONT.mono, fontSize: 22, fontWeight: 800, color: C.text }}>
+            {revenue.value}
+          </span>
+          <span style={{ fontSize: 13, color: C.text2 }}>{revenue.label}</span>
+          {revenue.delta && (
+            <span style={{ fontSize: 12, color: AMBER, fontFamily: FONT.mono, marginLeft: 4 }}>
+              {revenue.delta}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Heartbeat: proof the system is alive at a glance. */}
+      <div style={{
+        marginTop: 14, display: 'flex', alignItems: 'center', gap: 8,
+        fontSize: 11, color: C.muted, fontFamily: FONT.mono,
+      }}>
+        <span style={{
+          width: 7, height: 7, borderRadius: '50%', display: 'inline-block',
+          background: loopRunning ? AMBER : 'rgba(255,255,255,0.18)',
+          animation: loopRunning && !stale ? 'cmddeck-pulse 2.4s ease-in-out infinite' : 'none',
+        }} />
+        {!loopRunning ? 'Loop paused' :
+          stale ? <span style={{ color: AMBER, fontWeight: 600 }}>{`Loop may be stuck · last checked ${heartbeat}`}</span> :
+          `Loop alive · checked ${heartbeat}`}
+      </div>
+    </div>
+  )
+}
+
+// ── Worker pane: what each agent is doing right now (trust layer) ──────────
+// Steve: a stuck or silently-failed worker is invisible until a room goes quiet.
+// This shows the live workers; blocked/stalled ones read as a loud signal. When
+// the loop is running but nothing is working, we say so plainly (honest calm).
+
+function WorkerPane({ workers, loopRunning }) {
+  const fmtAge = (s) => s == null ? '' :
+    s < 90 ? 'just now' :
+    s < 3600 ? `${Math.round(s / 60)}m ago` :
+    s < 86400 ? `${Math.round(s / 3600)}h ago` : `${Math.round(s / 86400)}d ago`
+
+  if (!workers || workers.length === 0) {
+    return (
+      <div style={{
+        border: `1px solid rgba(255,255,255,0.05)`, borderRadius: 10,
+        background: 'rgba(255,255,255,0.012)', padding: '12px 14px',
+        fontSize: 12, color: C.muted, fontFamily: FONT.mono,
+      }}>
+        {loopRunning ? 'No agents working right now — loop is watching.' : 'Loop is paused.'}
+      </div>
+    )
+  }
+
+  return (
+    <div style={{
+      border: `1px solid rgba(255,255,255,0.05)`, borderRadius: 10,
+      background: 'rgba(255,255,255,0.012)', overflow: 'hidden',
+    }}>
+      {workers.map((w, i) => {
+        const stuck = w.state === 'blocked' || w.state === 'stalled'
+        return (
+          <div key={i} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px',
+            borderTop: i === 0 ? 'none' : `1px solid rgba(255,255,255,0.05)`,
+          }}>
+            <span style={{
+              width: 7, height: 7, borderRadius: '50%', flexShrink: 0, marginTop: 5,
+              background: AMBER,
+              animation: w.state === 'working' ? 'cmddeck-pulse 2.4s ease-in-out infinite' : 'none',
+              boxShadow: stuck ? `0 0 0 3px rgba(234,179,8,0.14)` : 'none',
+            }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: C.text, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {w.name}
+              </div>
+              {w.intent && (
+                <div style={{ fontSize: 12, color: C.text2, lineHeight: 1.4, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {w.intent}
+                </div>
+              )}
+            </div>
+            <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0, gap: 2 }}>
+              <span style={{
+                fontSize: 9.5, color: stuck ? AMBER : C.muted, fontFamily: FONT.mono,
+                fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+              }}>
+                {stuck ? w.state : 'working'}
+              </span>
+              <span style={{ fontSize: 10, color: C.muted, fontFamily: FONT.mono }}>
+                {fmtAge(w.ageSeconds)}
+              </span>
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────
 
 export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, onReplyToRoom }) {
@@ -805,8 +896,11 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
   const [steeringQuestions, setSteeringQuestions] = useState([])
   const [roomStatus, setRoomStatus] = useState({})
   const [stuckSessions, setStuckSessions] = useState([])
+  const [workers, setWorkers] = useState([])
   const [keeperProposals, setKeeperProposals] = useState([])
   const [activity, setActivity] = useState([])
+  // Scroll target so the hero card can jump straight to the decisions.
+  const decisionsRef = useRef(null)
   // slug -> human title, built from the structure map so cards show real names.
   const [nameMap, setNameMap] = useState({})
   // Session-only "cleared from the deck" set. Server-backed kinds also persist
@@ -889,6 +983,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
       setHardCalls(openCalls)
       setRoomStatus(goals.rooms || {})
       setStuckSessions(stuckData.sessions || [])
+      setWorkers(stuckData.workers || [])
       setKeeperProposals(Array.isArray(keeper.proposals) ? keeper.proposals : [])
       setActivity(Array.isArray(activityFeed.entries) ? activityFeed.entries.slice(-12).reverse() : [])
       setLoopRunning(masterLoop?.status === 'running')
@@ -948,6 +1043,19 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
   const isEmpty = decisionsWaiting === 0 && roomEntries.length === 0 &&
     visibleStuck.length === 0 && visibleKeeper.length === 0
 
+  // Hero + heartbeat figures
+  const lastTs = loopStatusData?.last_cycle_ts
+  const hbSecs = lastTs ? Math.max(0, Math.floor((Date.now() - new Date(lastTs)) / 1000)) : null
+  const heartbeat = hbSecs == null ? 'unknown' :
+    hbSecs < 90 ? 'just now' :
+    hbSecs < 3600 ? `${Math.round(hbSecs / 60)}m ago` :
+    hbSecs < 86400 ? `${Math.round(hbSecs / 3600)}h ago` : 'a while ago'
+  const loopStale = hbSecs != null && hbSecs > 300
+  const roomsMoving = Object.values(roomStatus).filter((r) => r && r.status === 'active').length
+  const scrollToDecisions = () => {
+    if (decisionsRef.current) decisionsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     // Solid deep ground so the chat's animated background never bleeds through.
     <div style={{
@@ -988,11 +1096,17 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
           )}
         </div>
 
-        <LoopHealthBanner
+        {/* Hero — the dominant top card that earns the daily open */}
+        <HeroCard
+          decisionsWaiting={decisionsWaiting}
+          roomsMoving={roomsMoving}
+          heartbeat={heartbeat}
           loopRunning={loopRunning}
-          lastCheckTs={loopStatusData?.last_cycle_ts}
+          stale={loopStale}
+          revenue={null}
           onRefresh={handleRefresh}
-          loading={refreshing}
+          refreshing={refreshing}
+          onJumpToDecisions={scrollToDecisions}
         />
 
         {isEmpty ? (
@@ -1003,7 +1117,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
           <>
             {/* ── TIER 1: Waiting on you (decisions) ── */}
             {(openHardCalls.length > 0 || openQuestions.length > 0) && (
-              <section style={{ marginBottom: 34 }}>
+              <section ref={decisionsRef} style={{ marginBottom: 34, scrollMarginTop: 12 }}>
                 <SectionLabel>Waiting on You ({decisionsWaiting})</SectionLabel>
                 {openHardCalls.map((item, i) => (
                   <HardCallCard
@@ -1034,6 +1148,12 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
             )}
 
             {/* ── TIER 2: the quieter, secondary surface ── */}
+
+            {/* Working now — live worker pane + false-calm guardrail */}
+            <section style={{ marginBottom: 28 }}>
+              <SectionLabel>Working Now ({workers.length})</SectionLabel>
+              <WorkerPane workers={workers} loopRunning={loopRunning} />
+            </section>
 
             {/* Since you last looked — the loop's clean what-changed feed */}
             {activity.length > 0 && (

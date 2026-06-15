@@ -57,7 +57,10 @@ export default async function handler(req, res) {
     });
     if (ragRes.ok) {
       const data = await ragRes.json();
-      return res.status(200).json({ sessions: Array.isArray(data?.sessions) ? data.sessions : [] });
+      return res.status(200).json({
+        sessions: Array.isArray(data?.sessions) ? data.sessions : [],
+        workers: Array.isArray(data?.workers) ? data.workers : [],
+      });
     }
   } catch (err) {
     // network error -> local fallback
