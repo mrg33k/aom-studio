@@ -166,12 +166,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const name = form.querySelector('input[placeholder="Your Name"]')?.value || 'there';
             const email = form.querySelector('input[placeholder="Your Email"]')?.value;
-            const phone = form.querySelector('input[placeholder="Your Phone"]')?.value;
 
-            // For now, just show a success message
-            alert(`Thanks ${name}! We'll be in touch at ${email} within 24 hours.`);
-            closeScopingTool();
-            form.reset();
+            // Inline success message (no blocking dialog)
+            const success = document.getElementById('scopeSuccess');
+            if (success) {
+                success.textContent = `Thanks ${name}. We'll be in touch at ${email} within 24 hours.`;
+                success.style.display = 'block';
+                success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         });
     }
 
