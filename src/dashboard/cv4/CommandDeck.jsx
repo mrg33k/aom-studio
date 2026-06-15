@@ -69,9 +69,10 @@ function humanizePaths(text, nameMap = {}) {
     const guess = meaningful.length >= 2
       ? `${meaningful[meaningful.length - 2]}:${meaningful[meaningful.length - 1]}`
       : null
-    // Only rewrite REAL room paths: a known filesystem root, or a path whose
-    // room is in the structure map. Leaves "yes/no", "16/9", URLs untouched.
-    const isRoomPath = PATH_ROOTS.has(parts[0]) || (guess && nameMap[guess])
+    // Only rewrite REAL room paths: a known filesystem root, a hyphenated room
+    // slug (support-desk, space-rising-v2), or a path whose room is in the
+    // structure map. Leaves "yes/no", "16/9", "his/her", URLs untouched.
+    const isRoomPath = PATH_ROOTS.has(parts[0]) || parts.some((p) => p.includes('-')) || (guess && nameMap[guess])
     if (!isRoomPath) return full
     if (guess && nameMap[guess]) return pre + nameMap[guess]
     const last = meaningful[meaningful.length - 1] || parts[parts.length - 1]
