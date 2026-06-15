@@ -687,7 +687,7 @@ function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpTo
 
       {/* Goal body */}
       <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-        {goal.length > 100 ? goal.substring(0, 100) + '…' : goal}
+        {humanizeSlugs(goal.length > 100 ? goal.substring(0, 100) + '…' : goal, nameMap)}
       </p>
 
       {/* Meta footer with divider + status + actions */}
@@ -729,7 +729,7 @@ function RoomStatusCard({ room, goal, status, confidence, lastReviewed, onJumpTo
 
 // ── Component: Stuck Session Card ──────────────────────────────────────────
 
-function StuckSessionCard({ session, onJumpToRoom }) {
+function StuckSessionCard({ session, onJumpToRoom, nameMap = {} }) {
   return (
     <div style={{
       padding: '14px 16px 12px',
@@ -781,7 +781,7 @@ function StuckSessionCard({ session, onJumpToRoom }) {
       {/* Detail body */}
       {session.detail && (
         <p style={{ fontSize: 13, color: C.text2, margin: 0, lineHeight: 1.4 }}>
-          {session.detail}
+          {humanizeSlugs(session.detail, nameMap)}
         </p>
       )}
 
@@ -794,7 +794,7 @@ function StuckSessionCard({ session, onJumpToRoom }) {
           padding: 0,
           margin: 0,
         }}>
-          <strong>Suggested:</strong> {session.suggestedReply}
+          <strong>Suggested:</strong> {humanizeSlugs(session.suggestedReply, nameMap)}
         </div>
       )}
 
@@ -1293,6 +1293,7 @@ export default function CommandDeck({ worldId, basePath, onJumpToRoom, onClose, 
                   key={i}
                   session={sess}
                   onJumpToRoom={onJumpToRoom}
+                  nameMap={nameMap}
                 />
               ))}
             </section>
