@@ -750,6 +750,41 @@ export default function HomeView({
             <span className="hm-search-hint">⌘K</span>
           </div>
 
+          {/* R9: ACTIONABLE STATS — items you can act on, not vanity numbers */}
+          {(needsYou && needsYou.length > 0) && (
+            <div className="hm-section" style={{ gridColumn: '1 / -1' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                {needsYou.map((n, idx) => (
+                  <button
+                    key={n.key}
+                    onClick={() => n.onOpen && n.onOpen()}
+                    style={{
+                      display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px',
+                      background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+                      borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                      textAlign: 'left', fontFamily: 'inherit', borderLeft: '3px solid var(--cv6-accent-warn)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                      e.currentTarget.style.borderColor = 'var(--cv6-accent-warn)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'var(--cv6-surface)'
+                      e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-warn)', flexShrink: 0, animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{n.label}</div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginLeft: '14px' }}>{n.detail}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* R9: ACTIVE WORK — cap at 3 visible, rest scroll internally, no left/right/bottom borders */}
           {allMissionsForCV6.length > 0 && (
             <div className="hm-section">
@@ -819,41 +854,6 @@ export default function HomeView({
                   +{allMissionsForCV6.length - 3} more (scroll to see)
                 </div>
               )}
-            </div>
-          )}
-
-          {/* R9: ACTIONABLE STATS — items you can act on, not vanity numbers */}
-          {(needsYou && needsYou.length > 0) && (
-            <div className="hm-section" style={{ gridColumn: '1 / -1' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-                {needsYou.map((n, idx) => (
-                  <button
-                    key={n.key}
-                    onClick={() => n.onOpen && n.onOpen()}
-                    style={{
-                      display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px',
-                      background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
-                      borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                      textAlign: 'left', fontFamily: 'inherit', borderLeft: '3px solid var(--cv6-accent-warn)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                      e.currentTarget.style.borderColor = 'var(--cv6-accent-warn)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--cv6-surface)'
-                      e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-warn)', flexShrink: 0, animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{n.label}</div>
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginLeft: '14px' }}>{n.detail}</div>
-                  </button>
-                ))}
-              </div>
             </div>
           )}
 
