@@ -374,10 +374,15 @@
 </div>
 
 <script>
-  // nav solidify on scroll
+  // nav solidify on scroll + reveal the proof drawer only after the hero
   (function(){
     var nav=document.getElementById('nav');
-    function onScroll(){ if(window.scrollY>40){nav.classList.add('scrolled')}else{nav.classList.remove('scrolled')} }
+    var drawer=document.querySelector('.report-card-drawer');
+    function onScroll(){
+      var y=window.scrollY;
+      if(y>40){nav.classList.add('scrolled')}else{nav.classList.remove('scrolled')}
+      if(drawer){ if(y>window.innerHeight*0.85){drawer.classList.add('revealed')}else{drawer.classList.remove('revealed')} }
+    }
     window.addEventListener('scroll',onScroll,{passive:true}); onScroll();
   })();
   // count-up stats (mobile-safe: HTML already shows final value; this only enhances)
