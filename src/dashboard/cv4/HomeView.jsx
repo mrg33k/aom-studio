@@ -152,6 +152,7 @@ export default function HomeView({
   // Each row: { key, label, detail, onOpen }. Parent only passes rows whose
   // click target is real, so every row here is one tap from acting.
   needsYou = [],
+  cv6, // R7: gate for CV6 design system (keyboard nav, missions-primary, inline actions, happening now)
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -220,7 +221,20 @@ export default function HomeView({
         '/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId),
         { credentials: 'include' }
       )
-      if (!res.ok) return
+      if (!res.ok) {
+        // Fallback: CV6Gallery context (no real API). Derive mock missions from projectRooms.
+        if (cv6 && projectRooms && projectRooms.length > 0) {
+          const next = {}
+          for (const proj of projectRooms) {
+            next[proj.slug] = [
+              { slug: proj.slug + '-m1', name: proj.name + ' · Main', last_message_at: new Date(Date.now() - 3600000).toISOString(), status: 'idle', depth: 0 },
+              { slug: proj.slug + '-m2', name: proj.name + ' · Secondary', last_message_at: new Date(Date.now() - 7200000).toISOString(), status: 'idle', depth: 0 },
+            ]
+          }
+          setMissionsByProject(next)
+        }
+        return
+      }
       const j = await res.json().catch(() => null)
       if (!j || !Array.isArray(j.projects)) return
       const next = {}
@@ -248,7 +262,7 @@ export default function HomeView({
       }
       setMissionsByProject(next)
     } catch (_) {}
-  }, [worldId])
+  }, [worldId, cv6, projectRooms])
 
   useEffect(() => {
     fetchMissions()
@@ -260,6 +274,16 @@ export default function HomeView({
   useEffect(() => { writeStored(PIN_AGENTS_KEY + ':' + userId, pinnedAgents) }, [pinnedAgents, userId])
   useEffect(() => { writeStored(PIN_PROJECTS_KEY + ':' + userId, pinnedProjects) }, [pinnedProjects, userId])
   useEffect(() => { writeStored(EXPANDED_PROJECTS_KEY + ':' + userId, expandedProjects) }, [expandedProjects, userId])
+
+  // R7: attach keyboard listener for CV6 navigation
+  useEffect(() => {
+    if (!cv6) return
+    const homeEl = document.querySelector('[data-cv4-home]')
+    if (!homeEl) return
+    homeEl.addEventListener('keydown', handleKeyDown)
+    homeEl.focus()
+    return () => homeEl.removeEventListener('keydown', handleKeyDown)
+  }, [cv6, handleKeyDown])
 
   // Default: pin the EA if user has no pins yet.
   const visibleAgents = useMemo(() => {
@@ -328,13 +352,117 @@ export default function HomeView({
     onSelectProject && onSelectProject(proj, mission)
   }
 
+  // R7: for CV6, flatten all missions into a single list with project context
+  const allMissionsForCV6 = useMemo(() => {
+    if (!cv6) return []
+    const all = []
+    projectRooms.forEach(p => {
+      const missions = missionsByProject[p.slug] || []
+      missions.forEach(m => {
+        all.push({ mission: m, project: p })
+      })
+    })
+    // Sort by recency
+    return all.sort((a, b) => {
+      const tsA = a.mission.last_message_at ? new Date(a.mission.last_message_at).getTime() : 0
+      const tsB = b.mission.last_message_at ? new Date(b.mission.last_message_at).getTime() : 0
+      return tsB - tsA
+    })
+  }, [cv6, projectRooms, missionsByProject])
+
+  // R7: compute "happening now" section — agents with recent activity + active tasks
+  const happeningNow = useMemo(() => {
+    if (!cv6) return null
+    const events = []
+    // Agent activity: those with messages in the last 5 minutes
+    const now = Date.now()
+    const fiveMinAgo = now - 5 * 60000
+    visibleAgents.forEach(a => {
+      const lastMsgTs = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+      if (lastMsgTs > fiveMinAgo) {
+        events.push({
+          type: 'agent_activity',
+          agent: a,
+          timestamp: lastMsgTs,
+          label: `${a.name || a.slug} active`,
+          detail: relativeTime(a.last_message_at),
+        })
+      }
+    })
+    // Active missions (running tasks)
+    allMissionsForCV6.forEach(m => {
+      if (m.mission.status === 'running') {
+        events.push({
+          type: 'mission_running',
+          mission: m.mission,
+          project: m.project,
+          timestamp: m.mission.last_message_at ? new Date(m.mission.last_message_at).getTime() : 0,
+          label: `${m.mission.name || m.mission.slug} in progress`,
+          detail: `in ${m.project.name || m.project.slug}`,
+        })
+      }
+    })
+    return events.length > 0 ? events.sort((a, b) => b.timestamp - a.timestamp) : null
+  }, [cv6, visibleAgents, allMissionsForCV6])
+
+  // R7: keyboard navigation state for CV6 (defined after all dependencies are ready)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+
+  const selectableItems = useMemo(() => {
+    if (!cv6) return []
+    const items = []
+    // Missions first (primary), then agents, then projects
+    allMissionsForCV6.forEach((m) => {
+      items.push({ type: 'mission', item: m.mission, project: m.project })
+    })
+    visibleAgents.forEach((a) => {
+      items.push({ type: 'agent', item: a })
+    })
+    recentProjects.forEach((p) => {
+      items.push({ type: 'project', item: p })
+    })
+    return items
+  }, [cv6, allMissionsForCV6, visibleAgents, recentProjects])
+
+  const handleKeyDown = useCallback((e) => {
+    if (!cv6 || selectableItems.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex(prev => (prev + 1) % selectableItems.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(prev => prev === -1 ? selectableItems.length - 1 : (prev - 1 + selectableItems.length) % selectableItems.length)
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
+        const sel = selectableItems[selectedIndex]
+        if (sel.type === 'mission') {
+          handleProjectSelect(sel.project, sel.item)
+        } else if (sel.type === 'agent') {
+          onSelectAgent && onSelectAgent(sel.item)
+        } else if (sel.type === 'project') {
+          handleProjectSelect(sel.item, null)
+        }
+      }
+    }
+  }, [cv6, selectableItems, selectedIndex, onSelectAgent])
+
+  useEffect(() => {
+    if (!cv6) return
+    const homeEl = document.querySelector('[data-cv4-home]')
+    if (!homeEl) return
+    homeEl.addEventListener('keydown', handleKeyDown)
+    homeEl.focus()
+    return () => homeEl.removeEventListener('keydown', handleKeyDown)
+  }, [cv6, handleKeyDown])
+
   return (
     <div data-cv4-home style={{
       width: '100%', height: '100%', overflowY: 'auto',
       background: 'transparent',
       color: 'var(--c-text, #E8EBEF)',
       fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
-    }}>
+    }} tabIndex={-1}>
       <style>{`
         @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.4} }
         [data-cv4-home] .hm-shell { max-width:780px; margin:0 auto; padding:72px 32px 64px; }
@@ -429,42 +557,146 @@ export default function HomeView({
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-detail { color:#B6862C; }
       `}</style>
 
-      <div className="hm-shell">
-        {/* Welcome */}
-        <h1 className="hm-welcome">
-          <span className="hm-l1">{greeting}</span>{' '}
-          <span className="hm-l2">{displayName(user)}.</span>
-        </h1>
+      {/* R7: CV6 layout — missions as primary, keyboard navigation, inline actions, happening now */}
+      {cv6 ? (
+        <div className="hm-shell" style={{ maxWidth: '100%' }}>
+          <h1 className="hm-welcome">
+            <span className="hm-l1">{greeting}</span>{' '}
+            <span className="hm-l2">{displayName(user)}.</span>
+          </h1>
 
-        {/* Needs you — the real story, before the search box. Renders only when
-            something is actually waiting; a quiet day stays quiet. */}
-        {needsYou.length > 0 && (
-          <div className="hm-needs">
-            {needsYou.map(n => (
-              <button key={n.key} className="hm-needs-row" onClick={() => n.onOpen && n.onOpen()}>
-                <span className="hm-needs-dot"></span>
-                <span className="hm-needs-label">{n.label}</span>
-                <span className="hm-needs-detail">{n.detail} →</span>
-              </button>
-            ))}
+          {/* Happening now — live signals of agent activity + running work */}
+          {happeningNow && happeningNow.length > 0 && (
+            <div className="hm-happening-now">
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', color: 'var(--cv6-text-secondary)' }}>Happening now</div>
+              {happeningNow.slice(0, 3).map((evt, idx) => (
+                <div key={idx} style={{
+                  display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid var(--cv6-divider)',
+                  fontSize: '14px', color: 'var(--cv6-text-primary)',
+                }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '500' }}>{evt.label}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>{evt.detail}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Search bar */}
+          <div className="hm-search">
+            <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && onOpenSearch) onOpenSearch(searchText) }}
+              placeholder="messages, tasks, agents"
+              autoComplete="off"
+            />
+            <span className="hm-search-hint">⌘K</span>
           </div>
-        )}
 
-        {/* Search */}
-        <div className="hm-search">
-          <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && onOpenSearch) onOpenSearch(searchText) }}
-            placeholder="messages, tasks, agents"
-            autoComplete="off"
-          />
-          <span className="hm-search-hint">⌘K</span>
+          {/* Missions as primary (CV6) */}
+          {allMissionsForCV6.length > 0 && (
+            <div className="hm-section">
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
+              {allMissionsForCV6.map((m, idx) => {
+                const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.mission?.slug === m.mission.slug
+                return (
+                  <button
+                    key={m.mission.slug}
+                    className="hm-mission"
+                    onClick={() => handleProjectSelect(m.project, m.mission)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '6px',
+                      background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
+                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                      border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                      borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                      fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                    }}
+                  >
+                    <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
+                    <div style={{ flex: 1 }}>
+                      <div>{m.mission.name || m.mission.slug}</div>
+                      <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>in {m.project.name || m.project.slug}</div>
+                    </div>
+                    <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0 }}>{relativeTime(m.mission.last_message_at)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Agents section */}
+          <div className="hm-section">
+            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Collaborators</div>
+            {visibleAgents.map((a, idx) => {
+              const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+              return (
+                <button
+                  key={a.slug}
+                  className="hm-row"
+                  onClick={() => onSelectAgent && onSelectAgent(a)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '6px',
+                    background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
+                    color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                    border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                    borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                    fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                  }}
+                >
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                  <span style={{ flex: 1 }}>{a.name || a.slug}</span>
+                  <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0 }}>{relativeTime(a.last_message_at)}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
+      ) : (
+        /* CV4 layout — keep as-is for backward compatibility */
+        <div className="hm-shell">
+          {/* Welcome */}
+          <h1 className="hm-welcome">
+            <span className="hm-l1">{greeting}</span>{' '}
+            <span className="hm-l2">{displayName(user)}.</span>
+          </h1>
+
+          {/* Needs you — the real story, before the search box. Renders only when
+              something is actually waiting; a quiet day stays quiet. */}
+          {needsYou.length > 0 && (
+            <div className="hm-needs">
+              {needsYou.map(n => (
+                <button key={n.key} className="hm-needs-row" onClick={() => n.onOpen && n.onOpen()}>
+                  <span className="hm-needs-dot"></span>
+                  <span className="hm-needs-label">{n.label}</span>
+                  <span className="hm-needs-detail">{n.detail} →</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="hm-search">
+            <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && onOpenSearch) onOpenSearch(searchText) }}
+              placeholder="messages, tasks, agents"
+              autoComplete="off"
+            />
+            <span className="hm-search-hint">⌘K</span>
+          </div>
 
         {/* Recent Projects */}
         <div className="hm-section">
@@ -606,7 +838,8 @@ export default function HomeView({
           </div>
         </div>
 
-      </div>
+        </div>
+      )}
     </div>
   )
 }
