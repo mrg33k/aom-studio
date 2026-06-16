@@ -551,7 +551,7 @@
   // Ethan! Yesterday you crushed those math problems…"). The trigger message
   // is never added to appState.messages — Ethan only sees the Wizard's reply.
   // The day_state in the reply seeds the Today's Quests panel immediately.
-  async function requestWizardGreeting() {
+  async function requestWizardGreeting(isRetry) {
     appState.isLoading = true;
     render();
     try {
@@ -567,7 +567,7 @@
           after_school: isAfterSchoolNow(),
         }),
       });
-      if (!response.ok) return;
+      if (!response.ok) throw new Error('greeting http ' + response.status);
       const data = await response.json();
       if (data.day_state) appState.dayState = data.day_state;
       if (Array.isArray(data.essay)) appState.essay = data.essay;
@@ -587,12 +587,31 @@
           timestamp: Date.now(),
           id: data.reply.id,
         });
+      } else {
+        throw new Error('greeting empty');
       }
     } catch (e) {
       console.warn('[wizard] Session greeting request failed:', e);
+      // One quick retry before giving up — a transient hiccup shouldn't leave
+      // Ethan on a blank screen.
+      if (!isRetry) {
+        appState.isLoading = false;
+        return requestWizardGreeting(true);
+      }
+      // Final safety net: never a dead-end blank chat. If nothing landed, show a
+      // friendly fallback so he can say hello and the normal flow takes over.
+      const hasWizardMsg = appState.messages.some((m) => m.role === 'assistant' && (m.text || '').trim());
+      if (!hasWizardMsg) {
+        appState.messages.push({
+          role: 'assistant',
+          text: "Hi Ethan! Give me one second to get set up. Say hello and we'll jump into today.",
+          timestamp: Date.now(),
+        });
+      }
     } finally {
       appState.isLoading = false;
     }
+    render();
   }
 
   // Send a message to the Wizard. opts.essayMode marks it as a Writing Desk
