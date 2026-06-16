@@ -962,14 +962,23 @@
     // loadHistory is scoped to today so it returns all of today's messages.
     // It also fetches today's day_state + essay + progress base.
     const hadHistory = await loadHistory();
+    // Is he returning to a day already in progress? The server-loaded day ledger
+    // is the signal (set by loadHistory even when the literal message thread
+    // doesn't replay). Capture it BEFORE any greeting so a brand-new day — where
+    // the greeting is what first creates the ledger — doesn't falsely flag it.
+    const returningMidDay = !!currentSubject();
     if (!hadHistory) {
-      // No history for today — ask the server for a personalized greeting.
-      // The Wizard uses the day ledger + cross-day memory (yesterday's ledger)
-      // to craft the opener. No hardcoded fallback message.
+      // No thread to replay — ask the server for a personalized greeting. The
+      // Wizard uses the day ledger + cross-day memory (yesterday's ledger) to
+      // craft the opener (a contextual "welcome back" when mid-day). No
+      // hardcoded fallback message.
       await requestWizardGreeting();
-    } else {
-      // Returning to an in-progress day (a refresh) — show where he left off so
-      // he never has to guess. Pure UI from the loaded ledger; nothing resets.
+    }
+    // Show the "Welcome back, you're on X" marker whenever he's returning to an
+    // in-progress day, so he never has to guess where he left off — even on the
+    // refreshes where the literal thread didn't replay (R8 slice 6 fix). Pure UI
+    // from the loaded ledger; nothing resets.
+    if (returningMidDay) {
       appState.resumeBanner = currentSubject();
     }
     if (appState.doneCount == null) appState.doneCount = countDoneNow();
