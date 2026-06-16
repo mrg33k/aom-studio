@@ -494,7 +494,7 @@ export default function HomeView({
       fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
     }} tabIndex={-1}>
       <style>{`
-        @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.4} }
+        @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.3} }
         [data-cv4-home] .hm-shell { max-width:1040px; margin:0 auto; padding:72px 40px 100px; }
         [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(40px,6vw,64px); line-height:1.02; letter-spacing:-.03em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
         [data-cv4-home] .hm-welcome .hm-l1 { color:#E8EBEF; }
@@ -970,8 +970,9 @@ export default function HomeView({
               )}
             </div>
 
-            {/* R12: RIGHT COLUMN — COLLABORATORS */}
+            {/* R13: RIGHT COLUMN — COLLABORATORS (with CREW · LIVE label + live status indicators) */}
             <div className="hm-section" style={{ marginBottom: '0' }}>
+              <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px', color: 'var(--cv6-text-tertiary)' }}>Crew · Live</div>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Collaborators</div>
               {visibleAgents.map((a, idx) => {
                 const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
@@ -985,17 +986,27 @@ export default function HomeView({
                       document.querySelector('[data-cv4-home]')?.focus()
                     }}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '6px',
+                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', marginBottom: '6px',
                       background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
                       color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
                       border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                       borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                      fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                      fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500', width: '100%',
                     }}
                   >
-                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
-                    <span style={{ flex: 1 }}>{a.name || a.slug}</span>
-                    <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0 }}>{relativeTime(a.last_message_at)}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                      <span style={{ flex: 1 }}>{a.name || a.slug}</span>
+                      <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.75)' : 'var(--cv6-text-secondary)', paddingLeft: '20px', fontWeight: '400' }}>
+                      {a.slug === 'bobby' && 'building components'}
+                      {a.slug === 'steffen' && 'refining brand'}
+                      {a.slug === 'cleo' && 'editing video'}
+                      {a.slug === 'tony' && 'scheduling posts'}
+                      {a.slug === 'elon' && 'routing work'}
+                      {!['bobby', 'steffen', 'cleo', 'tony', 'elon'].includes(a.slug) && 'idle'}
+                    </div>
                   </button>
                 )
               })}
