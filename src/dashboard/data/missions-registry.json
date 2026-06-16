@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-15T00:37:23.627Z",
+  "generated_at": "2026-06-16T04:38:39.571Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -180,8 +180,36 @@
       "name": "Corner Ui Cv4",
       "status": "in-progress",
       "is_done": false,
-      "last_updated": "2026-05-13",
+      "last_updated": "2026-06-15",
       "path": "corner/missions/corner-ui-cv4"
+    },
+    {
+      "slug": "corner:corner-ui-cv5",
+      "raw_slug": "corner-ui-cv5",
+      "folder_name": "corner-ui-cv5",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Corner Ui Cv5",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/corner-ui-cv5"
+    },
+    {
+      "slug": "corner:corner-ui-cv6",
+      "raw_slug": "corner-ui-cv6",
+      "folder_name": "corner-ui-cv6",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Corner Ui Cv6",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/corner-ui-cv6"
     },
     {
       "slug": "corner:dashboard-speed",
@@ -364,6 +392,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/integrations"
+    },
+    {
+      "slug": "corner:lab-rooms",
+      "raw_slug": "lab-rooms",
+      "folder_name": "lab-rooms",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Lab Rooms",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/lab-rooms"
     },
     {
       "slug": "corner:left-menu",
@@ -840,6 +882,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/tenant-isolation"
+    },
+    {
+      "slug": "corner:test-dashboard",
+      "raw_slug": "test-dashboard",
+      "folder_name": "test-dashboard",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Test Dashboard",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/test-dashboard"
     },
     {
       "slug": "corner:theme-and-density",
@@ -3250,6 +3306,20 @@
       "path": "corner/users/aom/projects/space-rising/missions/directory-promo"
     },
     {
+      "slug": "space-rising:discovery-page",
+      "raw_slug": "discovery-page",
+      "folder_name": "discovery-page",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Discovery Page",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/discovery-page"
+    },
+    {
       "slug": "space-rising:events-page",
       "raw_slug": "events-page",
       "folder_name": "events-page",
@@ -3519,8 +3589,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 66,
-      "in_flight": 66,
+      "total": 70,
+      "in_flight": 70,
       "done": 0
     },
     {
@@ -3639,8 +3709,8 @@
     },
     {
       "slug": "space-rising",
-      "total": 27,
-      "in_flight": 27,
+      "total": 28,
+      "in_flight": 28,
       "done": 0
     },
     {

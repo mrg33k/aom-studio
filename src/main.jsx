@@ -65,6 +65,9 @@ const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
 // corner:gemini-workers R10 — /cvg Gemini workbench (CornerV4 duplicate).
 const CornerVG = lazy(() => import('./dashboard/CornerVG.jsx'))
+// corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
+// components on one page as the design surface for the CV6 redesign.
+const CV6Gallery = lazy(() => import('./dashboard/CV6Gallery.jsx'))
 const MissionRoom = lazy(() => import('./dashboard/MissionRoom.jsx'))
 const MissionsIndex = lazy(() => import('./dashboard/MissionsIndex.jsx'))
 const CleoWorkspacesIndex = lazy(() => import('./dashboard/components/cv3/CleoWorkspacesIndex.jsx'))
@@ -515,6 +518,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/cvg/project/:projectId" element={<AuthGuard><CornerVG /></AuthGuard>} />
           <Route path="/cvg/projects/:projectId" element={<AuthGuard><CornerVG /></AuthGuard>} />
           <Route path="/cvg/projects/:projectId/chat" element={<AuthGuard><CornerVG /></AuthGuard>} />
+          {/* corner:corner-ui-cv6 — /cv6 component gallery. Public (no user
+              data) so it renders frictionlessly for design review. */}
+          <Route path="/cv6" element={<CV6Gallery />} />
           {/* CV3 escape hatch — rollback path during R7.21 transition. */}
           <Route path="/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/cv3/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
