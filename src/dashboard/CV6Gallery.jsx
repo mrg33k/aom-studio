@@ -9,6 +9,10 @@
 // Each rendered state is wrapped in an ErrorBoundary so one piece that throws
 // degrades to a small note instead of taking down the whole page.
 //
+// Feedback: every piece has a notes box (saved to localStorage) + a "Copy my
+// feedback" button that bundles all notes into one block to paste back. The
+// page is responsive — sidebar collapses to a top picker under 720px.
+//
 // Adding a piece = append an entry to REGISTRY. Nothing else changes.
 // Data-driven views (chat list, files, tasks, mail room) fetch on mount and
 // need a fixture / mock-provider mode — that is the next batch, tracked in
@@ -247,9 +251,36 @@ const idFromHash = () => {
   return REGISTRY.some((c) => c.id === h) ? h : REGISTRY[0].id
 }
 
+// ── Feedback: per-piece notes, saved locally, copied out as one block ──
+const FB_KEY = 'cv6-feedback-v1'
+const loadFeedback = () => {
+  if (typeof window === 'undefined') return {}
+  try {
+    return JSON.parse(window.localStorage.getItem(FB_KEY) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 720px)').matches
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 720px)')
+    const on = () => setMobile(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return mobile
+}
+
 export default function CV6Gallery() {
   const [activeId, setActiveId] = useState(idFromHash)
   const active = REGISTRY.find((c) => c.id === activeId) || REGISTRY[0]
+  const isMobile = useIsMobile()
+  const [feedback, setFeedback] = useState(loadFeedback)
+  const [copied, setCopied] = useState(false)
 
   // Hash deep-linking: each piece is shareable (/cv6#mail-chip) and the
   // back/forward buttons move between pieces.
@@ -262,20 +293,295 @@ export default function CV6Gallery() {
   const select = (id) => {
     if (typeof window !== 'undefined') window.location.hash = id
     setActiveId(id)
+    if (isMobile && typeof window !== 'undefined') window.scrollTo({ top: 0 })
   }
 
+  const saveNote = (id, text) => {
+    setFeedback((prev) => {
+      const next = { ...prev, [id]: text }
+      try {
+        window.localStorage.setItem(FB_KEY, JSON.stringify(next))
+      } catch {
+        /* private mode / quota — notes stay in memory for this session */
+      }
+      return next
+    })
+  }
+
+  const notedCount = REGISTRY.filter((c) => (feedback[c.id] || '').trim()).length
+
+  const copyAll = () => {
+    const blocks = REGISTRY.filter((c) => (feedback[c.id] || '').trim()).map(
+      (c) => `## ${c.name}\n${feedback[c.id].trim()}`
+    )
+    const text = blocks.length
+      ? `CV6 gallery feedback\n\n${blocks.join('\n\n')}`
+      : 'No notes yet — type some under a piece first.'
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1600)
+      })
+    }
+  }
+
+  // ── Shared bits ──
+  const copyButton = (
+    <button
+      type="button"
+      onClick={copyAll}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '8px 13px',
+        borderRadius: 9,
+        border: `1px solid ${copied ? 'rgba(16,185,129,0.5)' : SHELL.line}`,
+        background: copied ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)',
+        color: copied ? SHELL.accent : SHELL.text2,
+        fontFamily: SHELL.sans,
+        fontSize: 12.5,
+        fontWeight: 600,
+        cursor: 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {copied ? 'Copied — paste it to me' : `Copy my feedback${notedCount ? ` (${notedCount})` : ''}`}
+    </button>
+  )
+
+  const nav = (
+    <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {REGISTRY.map((c) => {
+        const on = c.id === activeId
+        const hasNote = (feedback[c.id] || '').trim().length > 0
+        return (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => select(c.id)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              textAlign: 'left',
+              padding: '9px 12px',
+              borderRadius: 8,
+              border: '1px solid transparent',
+              background: on ? 'rgba(16,185,129,0.10)' : 'transparent',
+              borderColor: on ? 'rgba(16,185,129,0.30)' : 'transparent',
+              color: on ? SHELL.text : SHELL.text2,
+              fontSize: 13,
+              fontWeight: on ? 600 : 500,
+              cursor: 'pointer',
+              fontFamily: SHELL.sans,
+            }}
+          >
+            <span>{c.name}</span>
+            {hasNote && (
+              <span
+                title="You left a note"
+                style={{ width: 6, height: 6, borderRadius: '50%', background: SHELL.accent, flexShrink: 0 }}
+              />
+            )}
+          </button>
+        )
+      })}
+    </nav>
+  )
+
+  const stage = (
+    <main
+      style={{
+        flex: 1,
+        padding: isMobile ? '20px 16px 64px' : '40px 48px',
+        maxWidth: isMobile ? '100%' : 1100,
+        width: '100%',
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ marginBottom: isMobile ? 20 : 28 }}>
+        <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 6px' }}>
+          {active.name}
+        </h1>
+        <p style={{ fontSize: 14, color: SHELL.text2, margin: 0, maxWidth: 620 }}>{active.purpose}</p>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {active.states.map((s) => (
+          <div
+            key={s.label}
+            style={{
+              border: `1px solid ${SHELL.line}`,
+              borderRadius: 14,
+              overflow: 'hidden',
+              background: SHELL.panel,
+            }}
+          >
+            <div
+              style={{
+                padding: '10px 16px',
+                borderBottom: `1px solid ${SHELL.line}`,
+                fontSize: 11,
+                fontFamily: SHELL.mono,
+                letterSpacing: '0.06em',
+                textTransform: 'uppercase',
+                color: SHELL.text3,
+              }}
+            >
+              {s.label}
+            </div>
+            <div style={{ padding: isMobile ? 12 : 18, display: 'flex', justifyContent: 'center' }}>
+              {/* Defined canvas plate: the component sits on a tightly-sized,
+                  centered stage (its home dark surface) that hugs the piece. */}
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: isMobile ? '100%' : active.stageWidth || 560,
+                  background: active.canvasBg || 'rgba(255,255,255,0.02)',
+                  borderRadius: 12,
+                  padding: isMobile ? '22px 16px' : '28px 32px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  maxHeight: active.maxHeight || 'none',
+                  overflow: active.maxHeight ? 'auto' : 'visible',
+                }}
+              >
+                <div style={{ width: '100%', maxWidth: isMobile ? '100%' : active.frame || 'none' }}>
+                  <StateBoundary>{s.render()}</StateBoundary>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Per-piece feedback ── */}
+      <div
+        style={{
+          marginTop: 22,
+          border: `1px solid ${SHELL.line}`,
+          borderRadius: 14,
+          background: 'rgba(255,255,255,0.015)',
+          padding: 16,
+        }}
+      >
+        <label
+          htmlFor="cv6-note"
+          style={{
+            display: 'block',
+            fontSize: 11,
+            fontFamily: SHELL.mono,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: SHELL.text3,
+            marginBottom: 10,
+          }}
+        >
+          Your notes on {active.name}
+        </label>
+        <textarea
+          id="cv6-note"
+          value={feedback[active.id] || ''}
+          onChange={(e) => saveNote(active.id, e.target.value)}
+          placeholder="What should change here? Be as rough as you like — it saves as you type."
+          rows={4}
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            resize: 'vertical',
+            background: '#0B1117',
+            border: `1px solid ${SHELL.line}`,
+            borderRadius: 10,
+            color: SHELL.text,
+            fontFamily: SHELL.sans,
+            fontSize: 14,
+            lineHeight: 1.5,
+            padding: '12px 14px',
+            outline: 'none',
+          }}
+        />
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            marginTop: 12,
+            flexWrap: 'wrap',
+          }}
+        >
+          <span style={{ fontSize: 12, color: SHELL.text3, fontFamily: SHELL.sans }}>
+            Saves automatically. {notedCount ? `${notedCount} piece${notedCount > 1 ? 's' : ''} noted.` : 'No notes yet.'}
+          </span>
+          {copyButton}
+        </div>
+      </div>
+    </main>
+  )
+
+  // ── Mobile: top picker bar instead of the side rail ──
+  if (isMobile) {
+    return (
+      <div data-cv6 style={{ minHeight: '100vh', background: SHELL.bg, color: SHELL.text, fontFamily: SHELL.sans }}>
+        <header
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            background: 'rgba(10,15,20,0.92)',
+            backdropFilter: 'blur(8px)',
+            borderBottom: `1px solid ${SHELL.line}`,
+            padding: '12px 16px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: SHELL.accent }} />
+              <span style={{ fontSize: 14, fontWeight: 700 }}>CV6 Gallery</span>
+              <span style={{ fontSize: 11, color: SHELL.text3, fontFamily: SHELL.mono }}>{REGISTRY.length} pieces</span>
+            </div>
+            {copyButton}
+          </div>
+          <select
+            value={activeId}
+            onChange={(e) => select(e.target.value)}
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              background: '#0B1117',
+              border: `1px solid ${SHELL.line}`,
+              borderRadius: 10,
+              color: SHELL.text,
+              fontFamily: SHELL.sans,
+              fontSize: 15,
+              fontWeight: 600,
+              padding: '11px 12px',
+              appearance: 'none',
+              outline: 'none',
+            }}
+          >
+            {REGISTRY.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {(feedback[c.id] || '').trim() ? '  •' : ''}
+              </option>
+            ))}
+          </select>
+        </header>
+        {stage}
+      </div>
+    )
+  }
+
+  // ── Desktop: side rail + stage ──
   return (
     <div
       data-cv6
-      style={{
-        minHeight: '100vh',
-        background: SHELL.bg,
-        color: SHELL.text,
-        fontFamily: SHELL.sans,
-        display: 'flex',
-      }}
+      style={{ minHeight: '100vh', background: SHELL.bg, color: SHELL.text, fontFamily: SHELL.sans, display: 'flex' }}
     >
-      {/* ── Left nav: every piece in the app ── */}
       <aside
         style={{
           width: 248,
@@ -305,95 +611,10 @@ export default function CV6Gallery() {
         >
           {REGISTRY.length} pieces
         </div>
-
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {REGISTRY.map((c) => {
-            const on = c.id === activeId
-            return (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => select(c.id)}
-                style={{
-                  textAlign: 'left',
-                  padding: '9px 12px',
-                  borderRadius: 8,
-                  border: '1px solid transparent',
-                  background: on ? 'rgba(16,185,129,0.10)' : 'transparent',
-                  borderColor: on ? 'rgba(16,185,129,0.30)' : 'transparent',
-                  color: on ? SHELL.text : SHELL.text2,
-                  fontSize: 13,
-                  fontWeight: on ? 600 : 500,
-                  cursor: 'pointer',
-                  fontFamily: SHELL.sans,
-                }}
-              >
-                {c.name}
-              </button>
-            )
-          })}
-        </nav>
+        {nav}
+        <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${SHELL.line}` }}>{copyButton}</div>
       </aside>
-
-      {/* ── Main stage: the selected piece in all its states ── */}
-      <main style={{ flex: 1, padding: '40px 48px', maxWidth: 1100 }}>
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 6px' }}>
-            {active.name}
-          </h1>
-          <p style={{ fontSize: 14, color: SHELL.text2, margin: 0, maxWidth: 620 }}>{active.purpose}</p>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {active.states.map((s) => (
-            <div
-              key={s.label}
-              style={{
-                border: `1px solid ${SHELL.line}`,
-                borderRadius: 14,
-                overflow: 'hidden',
-                background: SHELL.panel,
-              }}
-            >
-              <div
-                style={{
-                  padding: '10px 16px',
-                  borderBottom: `1px solid ${SHELL.line}`,
-                  fontSize: 11,
-                  fontFamily: SHELL.mono,
-                  letterSpacing: '0.06em',
-                  textTransform: 'uppercase',
-                  color: SHELL.text3,
-                }}
-              >
-                {s.label}
-              </div>
-              <div style={{ padding: 18, display: 'flex', justifyContent: 'center' }}>
-                {/* Defined canvas plate: the component sits on a tightly-sized,
-                    centered stage (its home dark surface) that hugs the piece. */}
-                <div
-                  style={{
-                    width: '100%',
-                    maxWidth: active.stageWidth || 560,
-                    background: active.canvasBg || 'rgba(255,255,255,0.02)',
-                    borderRadius: 12,
-                    padding: '28px 32px',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    maxHeight: active.maxHeight || 'none',
-                    overflow: active.maxHeight ? 'auto' : 'visible',
-                  }}
-                >
-                  <div style={{ width: '100%', maxWidth: active.frame || 'none' }}>
-                    <StateBoundary>{s.render()}</StateBoundary>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </main>
+      {stage}
     </div>
   )
 }
