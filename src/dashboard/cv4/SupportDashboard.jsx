@@ -547,7 +547,7 @@ function ReplyComposer({ wish, onSent }) {
     if (!text.trim() || sending) return
     setSending(true); setErr(null)
     try {
-      const r = await fetch('/api/support/reply', {
+      const r = await authFetch('/api/support/reply', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ access_code: wish.access_code, text }),
       })
