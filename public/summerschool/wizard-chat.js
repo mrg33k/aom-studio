@@ -251,6 +251,22 @@
       return mins >= (14 * 60 + 10) && mins < (21 * 60); // 2:10pm - 9pm
     } catch (e) { return false; }
   }
+  // Time-aware header (Build R8 slice 5) — the greeting matched his real clock.
+  // Saying "Morning, Ethan" at 8pm is exactly the HUD-vs-reality mismatch that
+  // pulls his focus, so the title + subtitle track the Phoenix time of day.
+  function headerGreeting() {
+    let mins = 9 * 60; // safe default = morning
+    try {
+      const s = new Date().toLocaleString('en-US', { timeZone: 'America/Phoenix', hour12: false, hour: '2-digit', minute: '2-digit' });
+      const m = s.match(/(\d{1,2}):(\d{2})/);
+      if (m) mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+    } catch (e) {}
+    if (isAfterSchoolNow()) return { title: 'Afternoon, Ethan', sub: 'School&rsquo;s out &mdash; let&rsquo;s wrap up today' };
+    if (mins < 12 * 60) return { title: 'Morning, Ethan', sub: 'The Wizard awaits &mdash; today&rsquo;s lessons are ready' };
+    if (mins < 17 * 60) return { title: 'Afternoon, Ethan', sub: 'The Wizard awaits &mdash; let&rsquo;s keep today going' };
+    return { title: 'Evening, Ethan', sub: 'Winding down &mdash; a little more and you&rsquo;re set' };
+  }
+
   function renderAfterSchoolChip() {
     if (!isAfterSchoolNow()) return '';
     return `<div class="afterschool-chip">
@@ -761,8 +777,8 @@
       <div class="wizard-chat-container">
         ${celebrateHtml}
         <div class="chat-header">
-          <h1><span class="header-ornament-inline">&#10022;</span> Morning, Ethan <span class="header-ornament-inline">&#10022;</span></h1>
-          <p>The Wizard awaits &mdash; today's lessons are ready</p>
+          <h1><span class="header-ornament-inline">&#10022;</span> ${headerGreeting().title} <span class="header-ornament-inline">&#10022;</span></h1>
+          <p>${headerGreeting().sub}</p>
           <div class="theme-selector" title="Choose Light or Dark Theme">
             <button class="theme-btn light ${appState.theme === 'light' ? 'active' : ''}" onclick="window.__wizardChat.setTheme('light')" title="Light Theme">
               <span class="theme-icon">&#9728;</span>
