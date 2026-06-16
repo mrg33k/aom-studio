@@ -478,14 +478,15 @@ html.dark-theme .hud-prize-label { color: var(--color-text); }
 }
 
 .essay-paragraph {
-  font-size: 14.5px;
-  line-height: 1.7;
+  font-size: 15px;
+  line-height: 1.75;
   color: var(--color-text);
   background: rgba(253, 248, 236, 0.7);
   border: 1px solid rgba(205, 189, 157, 0.6);
   border-radius: 8px;
-  padding: 12px 14px;
-  max-height: 32vh;
+  padding: 14px 16px;
+  min-height: 84px;
+  max-height: 40vh;
   overflow-y: auto;
 }
 
@@ -525,16 +526,20 @@ html.dark-theme .hud-prize-label { color: var(--color-text); }
 
 .essay-input-row {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 .essay-input {
-  flex: 1;
-  min-width: 0;
-  padding: 11px 13px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 84px;
+  resize: vertical;
+  padding: 12px 14px;
   border: 1.5px solid rgba(212, 175, 55, 0.55);
   border-radius: 8px;
   font-size: 16px;
+  line-height: 1.5;
   font-family: inherit;
   background-color: #fffdf7;
   color: var(--color-text);
@@ -549,16 +554,17 @@ html.dark-theme .hud-prize-label { color: var(--color-text); }
 .essay-input:disabled { background-color: #f0ead9; color: #999; }
 
 .essay-add-btn {
-  padding: 10px 16px;
+  width: 100%;
+  padding: 12px 16px;
   background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
   color: #322a55;
   border: 1px solid #b08f25;
   border-radius: 8px;
   font-family: var(--font-display);
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   white-space: nowrap;
   box-shadow: 0 2px 6px rgba(176, 143, 37, 0.4);
 }

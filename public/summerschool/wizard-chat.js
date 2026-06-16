@@ -212,21 +212,20 @@
         <div class="action-title">&#9998; My Writing Desk</div>
         ${bodyHtml}
         <div class="essay-input-row">
-          <input
-            type="text"
+          <textarea
             class="essay-input"
-            placeholder="Write your next sentence..."
-            value="${escapeHtml(appState.essayInput || '')}"
+            rows="3"
+            placeholder="Write your next sentence here..."
             ${appState.isLoading ? 'disabled' : ''}
-            onkeyup="if (event.key === 'Enter') window.__wizardChat.addSentence(this.value)"
-          />
+            onkeydown="if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); window.__wizardChat.addSentence(this.value); }"
+          >${escapeHtml(appState.essayInput || '')}</textarea>
           <button
             class="essay-add-btn"
             ${appState.isLoading ? 'disabled' : ''}
             onclick="window.__wizardChat.addSentence(document.querySelector('.essay-input').value)"
-          >Add</button>
+          >Add my sentence</button>
         </div>
-        <div class="essay-hint">Type your sentence, then Add it. Talking it through doesn&rsquo;t count &mdash; writing it does.</div>
+        <div class="essay-hint">Type your sentence, then add it. Press Enter or tap the button. Talking it through doesn&rsquo;t count &mdash; writing it does.</div>
       </div>`;
   }
 

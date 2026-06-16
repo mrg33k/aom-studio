@@ -330,8 +330,12 @@ function mergeDayStates(newStateStr, priorStateStr) {
   // Start with prior subjects (preserves order)
   const merged = new Map(priorParsed.subjects)
 
-  // Status advancement order
-  const STATUS_ORDER = ['not-started', 'in-progress', 'done', 'next']
+  // Status advancement order. "next" is a PRE-START marker (the subject the
+  // Wizard lines up to do soon) — it must rank BELOW in-progress/done, or a
+  // subject pre-marked "next" can never advance and freezes there. (Live bug
+  // 2026-06-16: Reading sat at "next" all session and the Wizard kept
+  // re-anchoring on yesterday's lesson because the board never moved forward.)
+  const STATUS_ORDER = ['not-started', 'next', 'in-progress', 'done']
   const statusRank = (status) => STATUS_ORDER.indexOf(status.toLowerCase())
 
   // Merge in new subjects: only advance or keep, never downgrade
