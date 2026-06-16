@@ -147,6 +147,12 @@ the conversation every single turn, or he loses focus):
   moved to it (no jumping ahead), and mark a subject "done" the same turn you
   finish it and move on (no lagging behind). A board one step ahead of or behind
   the chat is exactly the mismatch that loses him.
+- The Communication opener is a REAL lesson, not a throwaway: keep it
+  in-progress (and do NOT mark it done or start Reading) for as long as your
+  messages are still giving communication feedback or asking another
+  communication question. Only when your message itself says you're moving to
+  Reading does Communication become done and Reading become in-progress — in
+  that same turn, not before.
 IMPORTANT: the "step:" text appears on Ethan's quest board — write it as the
 kid-facing task ("find 2 more brave moments"), never as teacher observations.
 The "now=" field is your save point — write it like a note to a substitute
@@ -343,31 +349,23 @@ function mergeDayStates(newStateStr, priorStateStr) {
   // Start with prior subjects (preserves order)
   const merged = new Map(priorParsed.subjects)
 
-  // Status advancement order. "next" is a PRE-START marker (the subject the
-  // Wizard lines up to do soon) — it must rank BELOW in-progress/done, or a
-  // subject pre-marked "next" can never advance and freezes there. (Live bug
-  // 2026-06-16: Reading sat at "next" all session and the Wizard kept
-  // re-anchoring on yesterday's lesson because the board never moved forward.)
-  const STATUS_ORDER = ['not-started', 'next', 'in-progress', 'done']
-  const statusRank = (status) => STATUS_ORDER.indexOf(status.toLowerCase())
-
-  // Merge in new subjects: only advance or keep, never downgrade
+  // Merge rule: "done" is STICKY (a completed subject never un-completes — the
+  // R11 "why did you restart me" guarantee). For everything else, trust the
+  // model's current-turn status so the board tracks the conversation live and
+  // can self-correct. The old forward-only rank ordering froze any subject the
+  // Wizard pre-marked "next" AND locked in a premature "in-progress" (turn-early
+  // lead) so it could never be walked back — both showed on Ethan's board as a
+  // mismatch with the actual chat (2026-06-16). Subjects in prior but absent
+  // from the new ledger are preserved (merged is seeded from prior), so the
+  // model dropping a subject mid-turn never wipes it.
   for (const [name, newData] of newParsed.subjects) {
     const priorData = merged.get(name)
-    if (!priorData) {
-      // New subject — add it
-      merged.set(name, newData)
+    if (priorData && priorData.status.toLowerCase() === 'done') {
+      // Completed work is locked — keep it done regardless of the new ledger.
+      merged.set(name, priorData)
     } else {
-      // Existing subject — take the advance (or keep if new is lower rank)
-      const newRank = statusRank(newData.status)
-      const priorRank = statusRank(priorData.status)
-      if (newRank >= priorRank) {
-        // New state is same or advanced — use it (new detail may be fresher)
-        merged.set(name, newData)
-      } else {
-        // New state would downgrade — keep prior
-        merged.set(name, priorData)
-      }
+      // Not yet done: take the model's current view (fresher status + detail).
+      merged.set(name, newData)
     }
   }
 
