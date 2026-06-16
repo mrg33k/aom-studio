@@ -149,6 +149,26 @@ function getMissionIcon(slug) {
   return MISSION_ICON_SET[idx]
 }
 
+// R26: What-Needs-You type icon — a distinct icon per recurring task type
+// (deploy / review / approval / request), rendered in the room's color by the caller.
+function getNeedsTypeIcon(item) {
+  const hay = `${item?.label || ''} ${item?.key || ''} ${item?.detail || ''}`.toLowerCase()
+  const p = { viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+  if (hay.includes('deploy')) {
+    return <svg {...p}><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>
+  }
+  if (hay.includes('review')) {
+    return <svg {...p}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+  }
+  if (hay.includes('approv')) {
+    return <svg {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  }
+  if (hay.includes('request') || hay.includes('support')) {
+    return <svg {...p}><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+  }
+  return <svg {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+}
+
 // Chevron SVG — rotates 90° when section is collapsed
 function Chevron({ collapsed }) {
   return (
@@ -214,7 +234,7 @@ export default function HomeView({
   }
 
   // R21: Tools box state — which tool is open in full-screen mode
-  const [selectedTool, setSelectedTool] = useState(null)
+  const [selectedTool, setSelectedTool] = useState('home') // R26: Home tool selected by default when Home screen is active
 
   // Record a visit — called right before routing away from home.
   // Accepts a project slug and an optional mission slug.
@@ -546,24 +566,28 @@ export default function HomeView({
         }
       }
     } else if (e.key === 'ArrowRight') {
-      // R17: ArrowRight two-press behavior
-      // First press: focus reply input (if not already focused)
-      // Second press: open the room
+      // R26: ArrowRight two-press behavior (Patrik's model)
+      // First press: pull the conversation into quick view (no navigation)
+      // Second press (same item already in quick view): open the room
       e.preventDefault()
-      if (replyInputRef.current === document.activeElement) {
-        // Reply input is focused: second press = open the room
-        if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
-          const sel = selectableItems[selectedIndex]
-          if (sel.type === 'mission') {
-            handleProjectSelect(sel.project, sel.item)
-          } else if (sel.type === 'project') {
-            handleProjectSelect(sel.item, null)
+      if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
+        const sel = selectableItems[selectedIndex]
+        if (sel.type === 'mission') {
+          const inQuickView = selectedRoom && selectedRoom.mission && selectedRoom.mission.slug === sel.item.slug
+          if (!inQuickView) {
+            recordVisit(sel.project.slug, sel.item.slug)
+            setSelectedRoom({ project: sel.project, mission: sel.item })
+          } else {
+            onSelectProject && onSelectProject(sel.project, sel.item)
           }
-        }
-      } else {
-        // Reply input not focused: first press = focus it
-        if (replyInputRef.current) {
-          replyInputRef.current.focus()
+        } else if (sel.type === 'project') {
+          const inQuickView = selectedRoom && !selectedRoom.mission && selectedRoom.project?.slug === sel.item.slug
+          if (!inQuickView) {
+            recordVisit(sel.item.slug, null)
+            setSelectedRoom({ project: sel.item, mission: null })
+          } else {
+            onSelectProject && onSelectProject(sel.item, null)
+          }
         }
       }
     } else if (e.key === 'ArrowLeft') {
@@ -574,7 +598,7 @@ export default function HomeView({
       // For now, Home is already visible; this prep allows room view to wire back
       // Handler will be: onBackToHome?.()
     }
-  }, [cv6, selectableItems, selectedIndex, onSelectAgent])
+  }, [cv6, selectableItems, selectedIndex, onSelectAgent, selectedRoom, onSelectProject])
 
   useEffect(() => {
     if (!cv6) return
@@ -928,7 +952,8 @@ export default function HomeView({
           ) : null}
 
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
-          <div style={{ marginBottom: '32px' }}>
+          {/* R26: tighter gap to greeting (marginTop) + smaller tiles */}
+          <div style={{ marginTop: '-16px', marginBottom: '28px' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               {/* Home tool */}
@@ -937,11 +962,11 @@ export default function HomeView({
                 title="Home"
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '12px', borderRadius: '6px', border: selectedTool === 'home' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  padding: '8px', borderRadius: '6px', border: selectedTool === 'home' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                   background: selectedTool === 'home' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                   color: selectedTool === 'home' ? '#ffffff' : 'var(--cv6-text-primary)',
                   cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  width: '72px', minHeight: '72px',
+                  width: '52px', minHeight: '52px',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedTool !== 'home') {
@@ -968,11 +993,11 @@ export default function HomeView({
                 title="Support"
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '12px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  padding: '8px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                   background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                   color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
                   cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  width: '72px', minHeight: '72px',
+                  width: '52px', minHeight: '52px',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedTool !== 'support') {
@@ -999,11 +1024,11 @@ export default function HomeView({
                 title="Command"
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '12px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  padding: '8px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                   background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                   color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
                   cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  width: '72px', minHeight: '72px',
+                  width: '52px', minHeight: '52px',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedTool !== 'command') {
@@ -1045,7 +1070,7 @@ export default function HomeView({
                   {selectedTool === 'command' && 'Command Deck'}
                 </div>
                 <button
-                  onClick={() => setSelectedTool(null)}
+                  onClick={() => setSelectedTool('home')}
                   title="Close"
                   style={{
                     width: '32px', height: '32px', borderRadius: '6px', border: 'none',
@@ -1191,7 +1216,7 @@ export default function HomeView({
                         homeRef.current?.focus()
                       }}
                       style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '14px 16px', marginBottom: '14px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '14px 16px', marginBottom: '22px',
                         background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
                         color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
                         border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
@@ -1561,7 +1586,7 @@ export default function HomeView({
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSelected ? '#ffffff' : roomColorHash, flexShrink: 0, marginTop: '4px', animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
+                        <span style={{ color: isSelected ? '#ffffff' : roomColorHash, flexShrink: 0, marginTop: '1px', display: 'inline-flex' }}>{getNeedsTypeIcon(n)}</span>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '14px', fontWeight: '600' }}>{n.label}</div>
                           <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--cv6-text-secondary)', marginTop: '4px' }}>{n.detail}</div>
