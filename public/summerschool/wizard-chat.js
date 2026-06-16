@@ -749,6 +749,19 @@
     const liveEssay = document.querySelector('.essay-input');
     if (liveEssay) appState.essayInput = liveEssay.value;
 
+    // Preserve his scroll position across re-renders (the 1.5s poll re-renders).
+    // Only follow new messages to the bottom if he's already near it — if he
+    // scrolled up to re-read his thread, keep him where he was instead of yanking
+    // him down every poll (matters now that the real thread replays).
+    const prevContainer = document.querySelector('.messages-container');
+    let stickToBottom = true;
+    let prevScrollTop = 0;
+    if (prevContainer) {
+      prevScrollTop = prevContainer.scrollTop;
+      const distanceFromBottom = prevContainer.scrollHeight - prevContainer.scrollTop - prevContainer.clientHeight;
+      stickToBottom = distanceFromBottom < 80;
+    }
+
     const messagesHtml = appState.messages
       .filter((msg) => msg.text && msg.text.trim())
       .map((msg, idx) => {
@@ -841,10 +854,13 @@
 
     APP_HOST.innerHTML = html;
 
-    // Auto-scroll to bottom
+    // Follow new messages to the bottom only if he was already there; otherwise
+    // restore where he had scrolled to so re-reading isn't interrupted.
     const messagesContainer = document.querySelector('.messages-container');
     if (messagesContainer) {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      messagesContainer.scrollTop = stickToBottom
+        ? messagesContainer.scrollHeight
+        : prevScrollTop;
     }
   }
 
