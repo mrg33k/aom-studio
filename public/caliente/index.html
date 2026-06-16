@@ -240,36 +240,72 @@
 <div class="report-card-drawer">
     <div class="drawer-header" onclick="toggleDrawer()">
         <span class="drawer-icon">+</span>
-        <span class="drawer-label">Why your new site performs better</span>
+        <span class="drawer-label">See your site scorecard</span>
+        <span class="drawer-hint">Today <strong>54</strong> <em>&rarr;</em> Redesigned <strong>98</strong></span>
     </div>
     <div class="drawer-content" id="drawerContent" style="display: none;">
-        <div class="report-card-grid">
-            <div class="report-card">
-                <h3>4,220 Projects, Now Visible</h3>
-                <p>Your current site mentions 4,220 projects but shows zero project imagery. This version leads with cinematic work.</p>
+        <div class="scorecard">
+            <div class="sc-head">
+                <span class="section-kicker">Site audit</span>
+                <h3 class="sc-title">We graded caliente.com against what a modern commercial GC site should do.</h3>
             </div>
-            <div class="report-card">
-                <h3>Fresh &amp; Current</h3>
-                <p>An old copyright date signals "abandoned." This is built for 2026, with modern standards and performance.</p>
+            <div class="sc-scores">
+                <div class="sc-gauge">
+                    <svg viewBox="0 0 128 128" aria-hidden="true">
+                        <circle class="sc-track" cx="64" cy="64" r="54"></circle>
+                        <circle class="sc-arc sc-arc--low" cx="64" cy="64" r="54"></circle>
+                    </svg>
+                    <span class="sc-num sc-num--low">54</span>
+                    <span class="sc-cap">caliente.com today</span>
+                </div>
+                <span class="sc-jump" aria-hidden="true">&rarr;</span>
+                <div class="sc-gauge">
+                    <svg viewBox="0 0 128 128" aria-hidden="true">
+                        <circle class="sc-track" cx="64" cy="64" r="54"></circle>
+                        <circle class="sc-arc sc-arc--high" cx="64" cy="64" r="54"></circle>
+                    </svg>
+                    <span class="sc-num sc-num--high">98</span>
+                    <span class="sc-cap">your redesign</span>
+                </div>
+                <div class="sc-verdict">
+                    <span class="sc-verdict-jump">+44</span>
+                    <p>A 44-point lift, with the same brand and the same business model. A site that finally matches the work you do.</p>
+                </div>
             </div>
-            <div class="report-card">
-                <h3>Services Explained</h3>
-                <p>Six service lines are just names on your current site. Here each has a clear, one-line business case.</p>
-            </div>
-            <div class="report-card">
-                <h3>Team Visibility</h3>
-                <p>You mention 90+ team members but no faces. Building confidence means showing the people behind the work.</p>
-            </div>
-            <div class="report-card">
-                <h3>Clear Call-to-Action</h3>
-                <p>No inquiry path on the current site. This one includes a scoping tool that qualifies leads instantly.</p>
-            </div>
-            <div class="report-card">
-                <h3>Mobile-First Design</h3>
-                <p>Current site is desktop-only. 60% of commercial inquiries come from mobile. This works everywhere.</p>
+            <div class="sc-rows">
+                <div class="sc-row">
+                    <span class="sc-crit">Project visibility</span>
+                    <span class="sc-grades"><span class="g g-before">D</span><em>&rarr;</em><span class="g g-after">A</span></span>
+                    <span class="sc-why">4,220 projects named, zero shown. The redesign opens on the work itself.</span>
+                </div>
+                <div class="sc-row">
+                    <span class="sc-crit">Trust &amp; currency</span>
+                    <span class="sc-grades"><span class="g g-before">C&minus;</span><em>&rarr;</em><span class="g g-after">A</span></span>
+                    <span class="sc-why">An aging site reads "abandoned." This one is built fresh for 2026.</span>
+                </div>
+                <div class="sc-row">
+                    <span class="sc-crit">Services clarity</span>
+                    <span class="sc-grades"><span class="g g-before">C</span><em>&rarr;</em><span class="g g-after">A</span></span>
+                    <span class="sc-why">Six service lines are just names today. Each now earns the click.</span>
+                </div>
+                <div class="sc-row">
+                    <span class="sc-crit">Team &amp; people</span>
+                    <span class="sc-grades"><span class="g g-before">D</span><em>&rarr;</em><span class="g g-after">A</span></span>
+                    <span class="sc-why">90+ on the team, no faces. Confidence means showing them.</span>
+                </div>
+                <div class="sc-row">
+                    <span class="sc-crit">Lead capture</span>
+                    <span class="sc-grades"><span class="g g-before">F</span><em>&rarr;</em><span class="g g-after">A</span></span>
+                    <span class="sc-why">No inquiry path today. A scoping tool qualifies leads on the spot.</span>
+                </div>
+                <div class="sc-row">
+                    <span class="sc-crit">Mobile experience</span>
+                    <span class="sc-grades"><span class="g g-before">D</span><em>&rarr;</em><span class="g g-after">A</span></span>
+                    <span class="sc-why">Desktop-only today. 60% of commercial inquiries come from a phone.</span>
+                </div>
             </div>
         </div>
-        <button class="drawer-continue" onclick="showReveal()">See the before &amp; after</button>
+        <button class="drawer-continue" onclick="showReveal()">See the before and after</button>
     </div>
 </div>
 
