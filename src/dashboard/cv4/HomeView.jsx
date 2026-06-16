@@ -1304,7 +1304,7 @@ export default function HomeView({
                         homeRef.current?.focus()
                       }}
                       style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '14px 16px', marginBottom: '22px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px', padding: '12px 14px', marginBottom: '16px', minHeight: '56px', justifyContent: 'center',
                         background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
                         color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
                         border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
@@ -1531,28 +1531,30 @@ export default function HomeView({
                         ))}
                       </div>
                     )}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-                      {/* R23: Command menu button (left) — crystal-ball icon */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+                      {/* R30: Command button (left) — purple gradient + crystal-ball icon, height matches input */}
                       <button
                         onClick={() => console.log('Command menu (placeholder)')}
                         style={{
-                          width: '36px', height: '36px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                          background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)',
+                          width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', border: 'none',
+                          background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#ffffff',
                           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'all 120ms ease',
+                          transition: 'all 120ms ease', boxShadow: '0 2px 8px rgba(124,58,237,0.28)',
                           padding: 0, fontFamily: 'inherit',
                         }}
                         title="Command menu"
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                          e.currentTarget.style.color = 'var(--cv6-accent-primary)'
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #6D28D9 0%, #9333EA 100%)'
+                          e.currentTarget.style.transform = 'translateY(-1px)'
+                          e.currentTarget.style.boxShadow = '0 4px 14px rgba(124,58,237,0.42)'
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'var(--cv6-surface)'
-                          e.currentTarget.style.color = 'var(--cv6-text-secondary)'
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)'
+                          e.currentTarget.style.transform = 'translateY(0)'
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(124,58,237,0.28)'
                         }}
                       >
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9.5" r="6.5"/><path d="M6.5 19h11"/><path d="M9.5 19l1-3M14.5 19l-1-3"/><path d="M9.4 7.6a3 3 0 0 1 2.6-1.6"/></svg>
                       </button>
 
                       {/* Text input (flex) */}
@@ -1576,7 +1578,7 @@ export default function HomeView({
                           }
                         }}
                         style={{
-                          flex: 1, padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                          flex: 1, height: '40px', boxSizing: 'border-box', padding: '0 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
                           background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '14px',
                           fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
                         }}
@@ -1599,7 +1601,7 @@ export default function HomeView({
                           }
                         }}
                         style={{
-                          width: '36px', height: '36px', borderRadius: '6px', background: '#10B981', color: '#ffffff',
+                          width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', background: '#10B981', color: '#ffffff',
                           border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                           transition: 'all 120ms ease', opacity: replyText.trim() ? 1 : 0.5,
                           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
