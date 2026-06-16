@@ -281,38 +281,46 @@ function SupportCard({ item, accentColor }) {
     <button
       onClick={() => setIsExpanded(!isExpanded)}
       style={{
-        display: 'block', width: '100%', textAlign: 'left',
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', width: '100%', textAlign: 'left',
         background: 'var(--cv6-surface)', border: `1px solid ${isExpanded ? accentColor : 'var(--cv6-divider)'}`,
-        borderRadius: '6px', padding: '12px', cursor: 'pointer',
-        transition: 'all 120ms ease', fontFamily: 'inherit',
+        borderRadius: '6px', padding: '12px 14px', minHeight: '56px', justifyContent: 'center',
+        cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit',
       }}
       onMouseEnter={(e) => {
-        if (!isExpanded) e.currentTarget.style.borderColor = accentColor
+        if (!isExpanded) {
+          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+          e.currentTarget.style.borderColor = accentColor
+        }
       }}
       onMouseLeave={(e) => {
-        if (!isExpanded) e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+        if (!isExpanded) {
+          e.currentTarget.style.background = 'var(--cv6-surface)'
+          e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+        }
       }}
     >
-      {/* Card Header: Who + Status Badge */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {item.who}
-        </span>
-        {item.ready && (
-          <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, flexShrink: 0 }}>
-            Ready
-          </span>
-        )}
+      {/* Card Header: Who + Status Badge (matching Active Work card design) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item.who}
+            </span>
+            {item.ready && (
+              <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, flexShrink: 0 }}>
+                Ready
+              </span>
+            )}
+          </div>
+          {item.subject && (
+            <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item.subject}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Subject (if present) */}
-      {item.subject && (
-        <p style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {item.subject}
-        </p>
-      )}
-
-      {/* Preview Text */}
+      {/* Preview Text (collapsed to 2 lines, expanded to many) */}
       {item.text && (
         <p style={{
           margin: '0', fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4',
@@ -325,7 +333,7 @@ function SupportCard({ item, accentColor }) {
 
       {/* Actions (if expanded) */}
       {isExpanded && (
-        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--cv6-divider)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--cv6-divider)', display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
           {item.wish && item.status === 'needs_you' && (
             <button
               onClick={handleResolve}
@@ -748,6 +756,7 @@ export default function HomeView({
       // R26: ArrowRight two-press behavior (Patrik's model)
       // First press: pull the conversation into quick view (no navigation)
       // Second press (same item already in quick view): open the room
+      // R30b: Extended to support agent type
       e.preventDefault()
       if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
         const sel = selectableItems[selectedIndex]
@@ -766,6 +775,15 @@ export default function HomeView({
             setSelectedRoom({ project: sel.item, mission: null })
           } else {
             onSelectProject && onSelectProject(sel.item, null)
+          }
+        } else if (sel.type === 'agent') {
+          const inQuickView = selectedRoom && selectedRoom.agent && selectedRoom.agent.slug === sel.item.slug
+          if (!inQuickView) {
+            // First press: pull agent conversation into quick view
+            setSelectedRoom({ agent: sel.item, project: null, mission: null })
+          } else {
+            // Second press: open the agent
+            onSelectAgent && onSelectAgent(sel.item)
           }
         }
       }
@@ -1333,12 +1351,13 @@ export default function HomeView({
             </div>
 
             {/* R14: MIDDLE COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
+            {/* R30b: Combined missions AND projects list, ordered by recency */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
               {/* R23: Search input for Active Work filtering */}
               <input
                 type="text"
-                placeholder="Search missions..."
+                placeholder="Search missions & projects..."
                 value={activeworkSearchText || ''}
                 onChange={(e) => setActiveworkSearchText(e.target.value)}
                 style={{
@@ -1349,106 +1368,208 @@ export default function HomeView({
                 onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
                 onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
               />
-              {allMissionsForCV6.length > 0 ? (
+              {allMissionsForCV6.length > 0 || (recentProjects && recentProjects.length > 0) ? (
                 <>
-                  {/* Scrollable container: shows 5 visible missions with internal scroll */}
+                  {/* Scrollable container: shows 5 visible items with internal scroll */}
                   <div style={{
                     display: 'flex', flexDirection: 'column', gap: '8px',
                     flex: 1, // Grow to fill column
                     overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
                     scrollBehavior: 'smooth',
                     // R20: grey container removed — cards fall clean against the page (Patrik 2026-06-16)
-                    maxHeight: '328px', // R18: Cap at 5 visible missions (56px each + 8px gaps + 16px padding)
+                    maxHeight: '328px', // R18: Cap at 5 visible items (56px each + 8px gaps + 16px padding)
                   }}>
-                    {/* R23: Filter missions by search text */}
-                    {allMissionsForCV6.filter(m => {
-                      if (!activeworkSearchText.trim()) return true
-                      const searchLower = activeworkSearchText.toLowerCase()
-                      const missionName = (m.mission.name || m.mission.slug).toLowerCase()
-                      const projectName = (m.project.name || m.project.slug).toLowerCase()
-                      return missionName.includes(searchLower) || projectName.includes(searchLower)
-                    }).map((m, idx) => {
-                      const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
-                      return (
-                        <button
-                          key={m.mission.slug}
-                          className="hm-mission"
-                          onClick={() => {
-                            handleProjectSelect(m.project, m.mission)
-                            homeRef.current?.focus()
-                          }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
-                            background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                            color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                            border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
-                            borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                            fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                            flex: '0 0 auto', minHeight: '56px',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                              e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = 'var(--cv6-surface)'
-                              e.currentTarget.style.borderColor = 'transparent'
-                            }
-                          }}
-                        >
-                          {/* R18: Per-item icon from stable set */}
-                          <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}>
-                            {getMissionIcon(m.mission.slug).svg}
-                          </span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {m.mission.name || m.mission.slug}
-                              {/* R18: Subtle room color dot */}
-                              <span style={{
-                                width: '6px', height: '6px', borderRadius: '50%',
-                                background: isSelected ? 'rgba(255,255,255,0.5)' : `hsl(${(m.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
-                                flexShrink: 0,
-                              }}/>
-                            </div>
-                            <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
-                          </div>
-                          <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
-                        </button>
-                      )
-                    })}
+                    {/* R30b: Combined missions + projects list, sorted by recency */}
+                    {(() => {
+                      // Build combined list: missions + projects
+                      const combined = []
+                      // Add missions
+                      if (Array.isArray(allMissionsForCV6)) {
+                        allMissionsForCV6.forEach(m => {
+                          combined.push({ type: 'mission', mission: m.mission, project: m.project, timestamp: m.mission.last_message_at })
+                        })
+                      }
+                      // Add projects
+                      if (Array.isArray(recentProjects)) {
+                        recentProjects.forEach(p => {
+                          combined.push({ type: 'project', project: p, timestamp: p.last_message_at })
+                        })
+                      }
+                      // Sort by recency (most recent first)
+                      combined.sort((a, b) => {
+                        const aTime = new Date(a.timestamp || 0).getTime()
+                        const bTime = new Date(b.timestamp || 0).getTime()
+                        return bTime - aTime
+                      })
+                      // Filter by search text
+                      return combined.filter(item => {
+                        if (!activeworkSearchText.trim()) return true
+                        const searchLower = activeworkSearchText.toLowerCase()
+                        if (item.type === 'mission') {
+                          const missionName = (item.mission.name || item.mission.slug).toLowerCase()
+                          const projectName = (item.project.name || item.project.slug).toLowerCase()
+                          return missionName.includes(searchLower) || projectName.includes(searchLower)
+                        } else if (item.type === 'project') {
+                          const projectName = (item.project.name || item.project.slug).toLowerCase()
+                          return projectName.includes(searchLower)
+                        }
+                        return true
+                      }).map((item, idx) => {
+                        if (item.type === 'mission') {
+                          const m = item
+                          const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
+                          return (
+                            <button
+                              key={`mission-${m.mission.slug}`}
+                              className="hm-mission"
+                              onClick={() => {
+                                handleProjectSelect(m.project, m.mission)
+                                homeRef.current?.focus()
+                              }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
+                                background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                                color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                                border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
+                                borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                                fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                                flex: '0 0 auto', minHeight: '56px',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = 'var(--cv6-surface)'
+                                  e.currentTarget.style.borderColor = 'transparent'
+                                }
+                              }}
+                            >
+                              {/* R18: Per-item icon from stable set */}
+                              <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}>
+                                {getMissionIcon(m.mission.slug).svg}
+                              </span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {m.mission.name || m.mission.slug}
+                                  {/* R18: Subtle room color dot */}
+                                  <span style={{
+                                    width: '6px', height: '6px', borderRadius: '50%',
+                                    background: isSelected ? 'rgba(255,255,255,0.5)' : `hsl(${(m.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                                    flexShrink: 0,
+                                  }}/>
+                                </div>
+                                <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
+                              </div>
+                              <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
+                            </button>
+                          )
+                        } else if (item.type === 'project') {
+                          const p = item.project
+                          const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'project' && selectableItems[selectedIndex]?.item?.slug === p.slug
+                          return (
+                            <button
+                              key={`project-${p.slug}`}
+                              className="hm-mission"
+                              onClick={() => {
+                                handleProjectSelect(p, null)
+                                homeRef.current?.focus()
+                              }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
+                                background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                                color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                                border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
+                                borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                                fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                                flex: '0 0 auto', minHeight: '56px',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = 'var(--cv6-surface)'
+                                  e.currentTarget.style.borderColor = 'transparent'
+                                }
+                              }}
+                            >
+                              {/* Project folder icon */}
+                              <span style={{ color: isSelected ? '#ffffff' : '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                </svg>
+                              </span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {p.name || p.slug}
+                                  {/* R18: Subtle room color dot */}
+                                  <span style={{
+                                    width: '6px', height: '6px', borderRadius: '50%',
+                                    background: isSelected ? 'rgba(255,255,255,0.5)' : `hsl(${(p.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                                    flexShrink: 0,
+                                  }}/>
+                                </div>
+                                <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>Project</div>
+                              </div>
+                              <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(p.last_message_at)}</span>
+                            </button>
+                          )
+                        }
+                      })
+                    })()}
                   </div>
-                  {allMissionsForCV6.length > 5 && (
+                  {(allMissionsForCV6.length + (recentProjects?.length || 0) > 5) && (
                     <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--cv6-divider)', textAlign: 'center' }}>
-                      ↓ +{allMissionsForCV6.length - 5} more (scroll within)
+                      ↓ +{(allMissionsForCV6.length + (recentProjects?.length || 0)) - 5} more (scroll within)
                     </div>
                   )}
                 </>
               ) : (
-                <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', padding: '16px', textAlign: 'center' }}>No active missions</div>
+                <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', padding: '16px', textAlign: 'center' }}>No active work</div>
               )}
             </div>
 
             {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
               {/* R19: Room identifier header with color tinting */}
+              {/* R30b: Support agent rooms in addition to project/mission rooms */}
               <div style={{
                 fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: '12px', paddingBottom: '12px',
-                borderBottom: selectedRoom ? `2px solid hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)` : '1px solid var(--cv6-divider)',
+                borderBottom: selectedRoom ? (selectedRoom.agent
+                  ? `2px solid hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`
+                  : `2px solid hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`)
+                  : '1px solid var(--cv6-divider)',
                 color: 'var(--cv6-text-secondary)',
                 transition: 'border-color 200ms ease',
               }}>
                 {selectedRoom ? (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{
-                      width: '8px', height: '8px', borderRadius: '50%',
-                      background: `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
-                    }}/>
-                    {selectedRoom.project.name || selectedRoom.project.slug} • {selectedRoom.mission?.name || 'Select a mission'}
-                  </span>
+                  selectedRoom.agent ? (
+                    // Agent room header
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        background: `hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                      }}/>
+                      {selectedRoom.agent.name || selectedRoom.agent.slug}
+                    </span>
+                  ) : (
+                    // Project/mission room header
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        background: `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                      }}/>
+                      {selectedRoom.project.name || selectedRoom.project.slug} • {selectedRoom.mission?.name || 'Select a mission'}
+                    </span>
+                  )
                 ) : (
                   'Conversation'
                 )}
