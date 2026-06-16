@@ -371,6 +371,8 @@ export default function HomeView({
   // so that mission lists re-sort with the most recently visited mission at the top.
   function handleProjectSelect(proj, mission) {
     recordVisit(proj.slug, mission?.slug || null)
+    // R19: Quick-view wire — set selectedRoom in Conversation column
+    setSelectedRoom({ project: proj, mission: mission || null })
     onSelectProject && onSelectProject(proj, mission)
   }
 
@@ -446,6 +448,11 @@ export default function HomeView({
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const replyInputRef = useRef(null)
 
+  // R19: Conversation column state + quick-view wiring
+  const [selectedRoom, setSelectedRoom] = useState(null) // { project, mission } or null
+  const [replyText, setReplyText] = useState('')
+  const [conversationMessages, setConversationMessages] = useState([])
+
   // Sample conversation thread for CV6 gallery demo
   const sampleConversation = [
     { id: 1, sender: 'user', text: 'Can we schedule the design review for next Tuesday?' },
@@ -454,6 +461,22 @@ export default function HomeView({
     { id: 4, sender: 'agent', text: 'Done. I\'ve sent the CV6 design spec to the team. They have it now.' },
     { id: 5, sender: 'user', text: 'Perfect. What else needs attention this week?' },
     { id: 6, sender: 'agent', text: 'The Corner refactor is on schedule. One code review pending on Bobby\'s PR. I\'ll chase it today.' },
+  ]
+
+  // R19: Initialize conversation thread when a room is selected (quick-view wire)
+  useEffect(() => {
+    if (selectedRoom) {
+      // In production, this would fetch real messages from the room.
+      // For CV6 gallery, use sample conversation as placeholder.
+      setConversationMessages(sampleConversation)
+    }
+  }, [selectedRoom])
+
+  // R19: Suggested replies based on context (placeholder)
+  const suggestedReplies = [
+    { text: 'Got it' },
+    { text: 'On it' },
+    { text: 'Updates?' },
   ]
 
   const selectableItems = useMemo(() => {
@@ -562,6 +585,8 @@ export default function HomeView({
     }} tabIndex={-1}>
       <style>{`
         @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.3} }
+        @keyframes cv6-msg-float-in { 0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)} }
+        @keyframes cv6-msg-fade-in { 0%{opacity:0}100%{opacity:1} }
         [data-cv4-home] .hm-shell { max-width:1040px; margin:0 auto; padding:72px 40px 100px; }
         [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(40px,6vw,64px); line-height:1.02; letter-spacing:-.03em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
         [data-cv4-home] .hm-welcome .hm-l1 { color:#E8EBEF; }
@@ -983,91 +1008,206 @@ export default function HomeView({
               )}
             </div>
 
-            {/* R14: RIGHT COLUMN — CONVERSATION + QUICK REPLY */}
+            {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Conversation</div>
-
-              {/* Conversation thread — scrollable area with sample messages */}
+              {/* R19: Room identifier header with color tinting */}
               <div style={{
-                flex: 1,
-                overflowY: 'auto',
-                paddingRight: '4px',
-                marginBottom: '12px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                borderRadius: '6px',
-                border: '1px solid var(--cv6-divider)',
-                padding: '12px',
-                background: 'var(--cv6-hover)',
+                fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em',
+                marginBottom: '12px', paddingBottom: '12px',
+                borderBottom: selectedRoom ? `2px solid hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)` : '1px solid var(--cv6-divider)',
+                color: 'var(--cv6-text-secondary)',
+                transition: 'border-color 200ms ease',
               }}>
-                {/* Sample conversation thread for demo — in production, this will show real messages from selected mission */}
-                {sampleConversation.map((msg) => (
-                  <div
-                    key={msg.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        maxWidth: '75%',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        lineHeight: '1.4',
-                        background: msg.sender === 'user' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                        color: msg.sender === 'user' ? '#ffffff' : 'var(--cv6-text-primary)',
-                        wordWrap: 'break-word',
-                      }}
-                    >
-                      {msg.text}
+                {selectedRoom ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      background: `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                    }}/>
+                    {selectedRoom.project.name || selectedRoom.project.slug} • {selectedRoom.mission?.name || 'Select a mission'}
+                  </span>
+                ) : (
+                  'Conversation'
+                )}
+              </div>
+
+              {selectedRoom && conversationMessages.length > 0 ? (
+                <>
+                  {/* R19: Conversation thread — scrollable area with messages */}
+                  <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    paddingRight: '4px',
+                    marginBottom: '12px',
+                    display: 'flex',
+                    flexDirection: 'column-reverse', // R19: Messages flow upward (newest at bottom, user messages float to top)
+                    gap: '12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--cv6-divider)',
+                    padding: '12px',
+                    background: 'var(--cv6-hover)',
+                  }}>
+                    {conversationMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                          animation: msg.sender === 'user' ? 'cv6-msg-float-in 300ms ease-out' : 'cv6-msg-fade-in 300ms ease-out',
+                        }}
+                      >
+                        <div
+                          style={{
+                            maxWidth: '75%',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            lineHeight: '1.4',
+                            wordWrap: 'break-word',
+                            // R19: Color-coded bubbles
+                            background: msg.sender === 'user'
+                              ? `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`  // Room color for user messages
+                              : 'var(--cv6-surface)',  // Gray for agent messages
+                            color: msg.sender === 'user' ? '#ffffff' : 'var(--cv6-text-primary)',
+                          }}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* R19: Suggested replies section */}
+                  {suggestedReplies.length > 0 && (
+                    <div style={{ marginBottom: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {suggestedReplies.map((reply, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setReplyText(reply.text)
+                            replyInputRef.current?.focus()
+                          }}
+                          style={{
+                            padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
+                            background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)',
+                            fontSize: '12px', fontFamily: 'inherit', cursor: 'pointer',
+                            transition: 'all 120ms ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                            e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                            e.currentTarget.style.color = 'var(--cv6-accent-primary)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'var(--cv6-surface)'
+                            e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                            e.currentTarget.style.color = 'var(--cv6-text-secondary)'
+                          }}
+                        >
+                          {reply.text}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* R19: Conversation input with command menu + Send */}
+                  <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                      {/* Command menu button (left) */}
+                      <button
+                        onClick={() => console.log('Command menu (placeholder)')}
+                        style={{
+                          width: '36px', height: '36px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                          background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 120ms ease',
+                          padding: 0, fontFamily: 'inherit',
+                        }}
+                        title="Command menu"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                          e.currentTarget.style.color = 'var(--cv6-accent-primary)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'var(--cv6-surface)'
+                          e.currentTarget.style.color = 'var(--cv6-text-secondary)'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                      </button>
+
+                      {/* Text input (flex) */}
+                      <input
+                        ref={replyInputRef}
+                        type="text"
+                        placeholder="Reply..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && replyText.trim()) {
+                            // R19: Add user message, animate to top, clear input
+                            const newMsg = { id: Math.max(...conversationMessages.map(m => m.id), 0) + 1, sender: 'user', text: replyText }
+                            setConversationMessages([newMsg, ...conversationMessages])
+                            setReplyText('')
+                            // Simulate agent reply
+                            setTimeout(() => {
+                              const agentMsg = { id: newMsg.id + 1, sender: 'agent', text: 'Got it. Working on it.' }
+                              setConversationMessages(prev => [agentMsg, ...prev])
+                            }, 800)
+                          }
+                        }}
+                        style={{
+                          flex: 1, padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                          background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '14px',
+                          fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
+                        }}
+                        onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
+                        onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
+                      />
+
+                      {/* Send button (right) — R19: Green (#10B981) */}
+                      <button
+                        onClick={() => {
+                          if (replyText.trim()) {
+                            const newMsg = { id: Math.max(...conversationMessages.map(m => m.id), 0) + 1, sender: 'user', text: replyText }
+                            setConversationMessages([newMsg, ...conversationMessages])
+                            setReplyText('')
+                            // Simulate agent reply
+                            setTimeout(() => {
+                              const agentMsg = { id: newMsg.id + 1, sender: 'agent', text: 'Got it. Working on it.' }
+                              setConversationMessages(prev => [agentMsg, ...prev])
+                            }, 800)
+                          }
+                        }}
+                        style={{
+                          padding: '10px 16px', borderRadius: '6px', background: '#10B981', color: '#ffffff',
+                          border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit',
+                          transition: 'all 120ms ease', opacity: replyText.trim() ? 1 : 0.5,
+                        }}
+                        disabled={!replyText.trim()}
+                        onMouseEnter={(e) => {
+                          if (replyText.trim()) {
+                            e.currentTarget.style.background = '#0d9b6e'
+                            e.currentTarget.style.transform = 'translateY(-2px)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#10B981'
+                          e.currentTarget.style.transform = 'translateY(0)'
+                          e.currentTarget.style.boxShadow = 'none'
+                        }}
+                      >
+                        Send
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              {/* Quick Reply input at bottom of right column */}
-              <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-                  <input
-                    ref={replyInputRef}
-                    type="text"
-                    placeholder="Reply..."
-                    style={{
-                      flex: 1, padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                      background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '14px',
-                      fontFamily: 'inherit', outline: 'none',
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
-                  />
-                  <button
-                    onClick={() => {
-                      // Placeholder for reply action
-                    }}
-                    style={{
-                      padding: '10px 20px', borderRadius: '6px', background: 'var(--cv6-accent-primary)', color: '#ffffff',
-                      border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit',
-                      transition: 'all 120ms ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--cv6-accent-hover)'
-                      e.currentTarget.style.transform = 'translateY(-2px)'
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.2)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--cv6-accent-primary)'
-                      e.currentTarget.style.transform = 'translateY(0)'
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
-                  >
-                    Send
-                  </button>
+                </>
+              ) : (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-secondary)', fontSize: '14px' }}>
+                  Select a mission to view conversation
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
