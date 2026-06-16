@@ -260,16 +260,22 @@
   function renderProjects() {
     const items = appState.projects || [];
     if (!items.length) return '';
-    const rows = items.map((p) => {
+    const rows = items.map((p, i) => {
       const done = (p.status || '').toLowerCase() === 'done';
-      return `<div class="project-row ${done ? 'project-done' : ''}">
+      // Tap a project to open it — the Wizard becomes Ethan's teammate on it.
+      return `<button type="button" class="project-row ${done ? 'project-done' : ''}"
+          ${appState.isLoading ? 'disabled' : ''}
+          onclick="window.__wizardChat.openProject(${i})"
+          title="Open this project with the Wizard">
           <span class="project-icon">${done ? '&#9733;' : '&#9671;'}</span>
           <span class="project-text">${escapeHtml(p.name)}</span>
-        </div>`;
+          <span class="project-open">&#10148;</span>
+        </button>`;
     }).join('');
     return `<div class="project-panel">
         <div class="action-title">&#9670; My Projects</div>
         <div class="project-list">${rows}</div>
+        <div class="project-hint">Tap a project to work on it with the Wizard.</div>
       </div>`;
   }
 
@@ -512,6 +518,7 @@
       };
       if (opts.essayMode) payload.essay_mode = true;
       if (isAfterSchoolNow()) payload.after_school = true;
+      if (opts.projectFocus) payload.project_focus = opts.projectFocus;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -768,6 +775,14 @@
     dismissResume: () => {
       appState.resumeBanner = null;
       render();
+    },
+    openProject: (i) => {
+      const items = appState.projects || [];
+      const p = items[i];
+      if (!p || appState.isLoading) return;
+      // Opening a project is Ethan's move — send it as his message, and tell the
+      // Wizard (via project_focus) to be his teammate on it right now.
+      sendMessage(`Let’s work on my project: ${p.name}`, { projectFocus: p.name });
     },
     addSentence: (text) => {
       const t = (text || '').trim();

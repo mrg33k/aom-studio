@@ -382,27 +382,52 @@ html.dark-theme .assign-row.assign-done .assign-text { color: #a89f8d; }
   flex-direction: column;
   gap: 8px;
 }
+/* Project rows are tappable (Build R8) — open one to work on it with the
+   Wizard. Styled as a full-width button that still reads like a card. */
 .project-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
+  width: 100%;
+  text-align: left;
   padding: 10px 12px;
   background: rgba(253, 248, 236, 0.85);
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-indigo);
   border-radius: 8px;
+  font-family: inherit;
   font-size: 13.5px;
   line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.06s ease, box-shadow 0.15s ease;
 }
-.project-icon { color: var(--color-indigo); flex: none; font-size: 13px; margin-top: 1px; }
-.project-text { color: var(--color-text); }
+.project-row:hover {
+  background: rgba(68, 58, 114, 0.12);
+  box-shadow: 0 2px 8px rgba(50, 42, 85, 0.12);
+}
+.project-row:active { transform: translateY(1px); }
+.project-row:disabled { cursor: default; opacity: 0.6; box-shadow: none; }
+.project-icon { color: var(--color-indigo); flex: none; font-size: 13px; }
+.project-text { color: var(--color-text); flex: 1 1 auto; }
+.project-open { color: var(--color-indigo); flex: none; font-size: 12px; opacity: 0.5; transition: opacity 0.15s ease, transform 0.15s ease; }
+.project-row:hover .project-open { opacity: 1; transform: translateX(2px); }
 .project-row.project-done { background: rgba(68, 58, 114, 0.10); }
 .project-row.project-done .project-icon { color: var(--color-gold); }
 .project-row.project-done .project-text { color: #8a7c5e; }
+.project-hint {
+  margin-top: 9px;
+  font-size: 11px;
+  font-style: italic;
+  letter-spacing: 0.2px;
+  color: #8a7c5e;
+}
 html.dark-theme .project-row { background: rgba(26, 24, 20, 0.85); border-left-color: #6b5fa8; }
+html.dark-theme .project-row:hover { background: rgba(106, 95, 168, 0.18); }
 html.dark-theme .project-icon { color: #9a8fd0; }
+html.dark-theme .project-open { color: #9a8fd0; }
 html.dark-theme .project-row.project-done .project-icon { color: var(--color-gold); }
 html.dark-theme .project-row.project-done .project-text { color: #a89f8d; }
+html.dark-theme .project-hint { color: #a89f8d; }
 
 /* ===== Resume bar (Build R8) — "welcome back, you're on X" after a refresh,
    so Ethan never loses his place. Sticky at the top of the chat. ===== */

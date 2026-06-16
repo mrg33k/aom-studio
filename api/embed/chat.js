@@ -645,6 +645,11 @@ export default async function handler(req, res) {
   // Behavior-only — flips the Wizard into end-of-day wrap-up mode. Never touches
   // his session, ledger, or saved data, so it can't lose his place.
   const afterSchool = !!body.after_school
+  // Open-a-project (Build R8): when Ethan taps one of his own projects, the
+  // widget sends project_focus=<name> so the Wizard becomes his teammate on it
+  // right now. Behavior-only — a focus hint on top of the normal prompt; no
+  // session/data change, so it can't lose his place.
+  const projectFocus = typeof body.project_focus === 'string' ? body.project_focus.slice(0, 120).trim() : ''
 
   if (!embed_id || !content) {
     return res.status(400).json({ error: 'embed_id and content required' })
@@ -763,6 +768,9 @@ export default async function handler(req, res) {
         systemPrompt += `\n\n=== CURRENT TIME ===\nIt is now ${phoenixNow()} (Arizona). Use this for any question about time, the day, or how much is left.`
         if (afterSchool) {
           systemPrompt += `\n${AFTER_SCHOOL_CHECKIN_PROTOCOL}`
+        }
+        if (projectFocus) {
+          systemPrompt += `\n\n=== ETHAN JUST OPENED HIS PROJECT: "${projectFocus}" ===\nHe tapped this project to work on it with you right now. Be his teammate, not his teacher: get genuinely excited about it, ask what he wants to do next on it, and help him take ONE concrete next step today. If a quick skill fits naturally (writing a bit of it, the math his build needs, planning the next part), weave it in — but follow his lead. This is HIS thing.`
         }
         if (dayState?.payload?.state) {
           systemPrompt += `\n\n=== DAY STATE (your ledger from earlier today) ===\n${dayState.payload.state}`
