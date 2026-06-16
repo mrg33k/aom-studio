@@ -257,44 +257,106 @@ function AuthGuard({ children }) {
 // ─── TEST MODE BANNER ────────────────────────────────────────────────────────
 // Renders a fixed top strip when VITE_DASHBOARD_MODE=test (set on the lab
 // Vercel project only). Patrik always knows which surface he's on.
-// corner:test-dashboard R1
+// corner:test-dashboard R1 (design v2: pulsing dot, LAB pill, tight copy)
 function TestModeBanner() {
   if (import.meta.env.VITE_DASHBOARD_MODE !== 'test') return null
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: '28px',
-      zIndex: 99999,
-      background: 'linear-gradient(90deg, #FF4F00 0%, #CC3F00 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '12px',
-      boxShadow: '0 2px 12px rgba(255,79,0,0.4)',
-    }}>
-      <span style={{
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: '11px',
-        fontWeight: 700,
-        letterSpacing: '0.15em',
-        textTransform: 'uppercase',
-        color: '#fff',
+    <>
+      <style>{`
+        @keyframes _tb_pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.85); }
+        }
+        @keyframes _tb_ring {
+          0% { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(2.2); opacity: 0; }
+        }
+      `}</style>
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '32px',
+        zIndex: 99999,
+        background: '#0A0D1A',
+        borderBottom: '1px solid rgba(255,79,0,0.35)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 16px',
+        boxShadow: '0 1px 0 rgba(255,79,0,0.15), 0 2px 16px rgba(0,0,0,0.4)',
       }}>
-        ⚠ TEST DASHBOARD
-      </span>
-      <span style={{
-        fontFamily: "'JetBrains Mono', monospace",
-        fontSize: '10px',
-        fontWeight: 400,
-        letterSpacing: '0.08em',
-        color: 'rgba(255,255,255,0.7)',
-      }}>
-        lab.aheadofmarket.com — prod is safe at aheadofmarket.com/dashboard
-      </span>
-    </div>
+        {/* Left: live dot + LAB pill */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Pulsing live dot */}
+          <div style={{ position: 'relative', width: '8px', height: '8px', flexShrink: 0 }}>
+            <div style={{
+              position: 'absolute', inset: 0, borderRadius: '50%',
+              background: '#FF4F00',
+              animation: '_tb_pulse 2s ease-in-out infinite',
+            }} />
+            <div style={{
+              position: 'absolute', inset: 0, borderRadius: '50%',
+              background: '#FF4F00',
+              animation: '_tb_ring 2s ease-out infinite',
+            }} />
+          </div>
+          {/* LAB pill */}
+          <span style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '10px',
+            fontWeight: 700,
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color: '#FF4F00',
+            background: 'rgba(255,79,0,0.12)',
+            border: '1px solid rgba(255,79,0,0.3)',
+            borderRadius: '3px',
+            padding: '1px 6px',
+            lineHeight: 1,
+          }}>
+            LAB
+          </span>
+        </div>
+
+        {/* Center: TEST DASHBOARD label */}
+        <span style={{
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: '11px',
+          fontWeight: 700,
+          letterSpacing: '0.2em',
+          textTransform: 'uppercase',
+          color: '#fff',
+          whiteSpace: 'nowrap',
+        }}>
+          TEST DASHBOARD
+        </span>
+
+        {/* Right: prod link */}
+        <a
+          href="https://aheadofmarket.com/dashboard"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: '10px',
+            fontWeight: 400,
+            letterSpacing: '0.06em',
+            color: 'rgba(255,255,255,0.4)',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+        >
+          → prod
+        </a>
+      </div>
+    </>
   )
 }
 
