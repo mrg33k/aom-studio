@@ -94,7 +94,7 @@ function scopeSubmitForm(){
     if (!email){ if (emailEl){ emailEl.focus(); emailEl.style.borderColor = '#C2502E'; } return; }
     const success = document.getElementById('scopeSuccess');
     if (success){
-        success.textContent = `Thanks ${name}. Your scope is on its way — we'll be in touch at ${email} within one business day.`;
+        success.textContent = `Thanks ${name}. Your scope is on its way. We'll be in touch at ${email} within one business day.`;
         success.style.display = 'block';
         success.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
