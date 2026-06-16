@@ -250,7 +250,7 @@
     return `<div class="afterschool-chip">
       <span class="afterschool-icon">&#9790;</span>
       <div class="afterschool-body">
-        <div class="afterschool-title">After-school check-in</div>
+        <div class="afterschool-title">After-school check&#8209;in</div>
         <div class="afterschool-sub">Let&rsquo;s wrap up today and set up tomorrow.</div>
       </div>
     </div>`;
