@@ -370,7 +370,7 @@
         </div>`
       : '';
     const shelfHtml = finished.length
-      ? `<div class="book-shelf">&#10004; ${finished.length} on your shelf: ${finished.map((b) => escapeHtml(b.title)).join(', ')}</div>`
+      ? `<div class="book-shelf">&#10004; ${finished.length} on your shelf: <span class="book-shelf-titles">${finished.map((b) => escapeHtml(b.title)).join(', ')}</span></div>`
       : '';
     if (!currentHtml && !shelfHtml) return '';
     return `<div class="book-panel">
