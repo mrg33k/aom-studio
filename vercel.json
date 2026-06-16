@@ -5,6 +5,7 @@
   "git": {
     "deploymentEnabled": {
       "main": true,
+      "lab": true,
       "worktree-*": false,
       "agent-*": false,
       "embed-*": false
