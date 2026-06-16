@@ -470,6 +470,51 @@ html.dark-theme .remind-icon { color: var(--color-gold); }
 .world-card--remind:hover { box-shadow: none; transform: none; }
 html.dark-theme .world-card--remind .world-card-icon { color: var(--color-gold); }
 
+/* Spellbook (Build R10) — spelling + vocab word bank, his #1 academic gap.
+   Words read as a bank of chips that stack across the week. Learning words are
+   tappable gold-outlined pills; mastered words stay visible, filled + checked,
+   so he watches his progress build. */
+.spell-panel { margin-top: 18px; }
+.spell-count {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-gold-soft);
+  margin-left: 8px;
+}
+.spell-words { display: flex; flex-wrap: wrap; gap: 7px; }
+.spell-word {
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.2;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--color-gold-soft);
+  background: rgba(253, 248, 236, 0.85);
+  color: var(--color-text);
+}
+.spell-word--learning {
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.spell-word--learning:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.28);
+  background: rgba(212, 175, 55, 0.14);
+}
+.spell-word--learning:active { transform: translateY(0); }
+.spell-word--mastered {
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.22), rgba(201, 164, 48, 0.16));
+  border-color: var(--color-gold);
+  color: var(--color-gold-soft);
+  font-weight: 600;
+}
+html.dark-theme .spell-word { background: rgba(26, 24, 20, 0.85); color: var(--color-text); }
+html.dark-theme .spell-word--learning:hover { background: rgba(212, 175, 55, 0.18); }
+html.dark-theme .spell-word--mastered {
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.26), rgba(201, 164, 48, 0.14));
+  color: var(--color-gold);
+}
+
 /* ===== My World overview (Build R8 slice 2) — Ethan's own Corner home.
    Additive overlay; the chat stays the default surface (never lose his place). */
 .world-btn {

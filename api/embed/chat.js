@@ -575,6 +575,96 @@ async function saveReminders(embedId, visitorId, items) {
   } catch (_) { /* non-fatal */ }
 }
 
+// --- Spellbook (Build R10) — spelling + vocabulary, Ethan's #1 academic gap ---
+// Reading and spelling are where Ethan is behind. Instead of "sneaking it in"
+// and losing it, the day's spelling + vocab words get a real home: a Spellbook
+// (wizard-themed — the words he's learning to "spell/cast") that stacks across
+// the week so he revisits and masters them. Persisted per visitor (not
+// date-keyed, so the bank carries across days). Emitted as
+// <<SPELL: word=learning|mastered; ...>>, stripped like the other markers.
+const SPELLBOOK_PROTOCOL = `
+SPELLBOOK (spelling + vocabulary — Ethan is behind on reading and spelling, so
+this is a real priority, not decoration). When a word comes up that he misspells,
+trips on, or a strong/new vocabulary word from his reading, add it to his
+Spellbook. Make him actually engage it: spell it out loud, or use it in a real
+sentence — only then is it learned. Each day, naturally re-test 1-2 words still
+in "learning" from earlier in the week (a quick "spell 'necessary' for me" or
+"use 'reluctant' in a sentence"); mark a word mastered ONLY when he spells AND
+uses it correctly. Keep words single + lowercase. Add or update with ONE line
+placed JUST BEFORE the <<REMIND:>>/<<PROJECT:>>/<<ASSIGN:>>/<<DAY:>> lines (the
+DAY line stays the very last line), machine-only, never shown:
+<<SPELL: rhythm=learning; necessary=mastered>>
+Do not flood it — a few real words a day. Never invent words he never met.`
+
+// Strip ALL <<SPELL: ...>> markers anywhere; returns { text, spell }.
+function extractSpellbook(replyText) {
+  const m = replyText.match(/<<SPELL:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<SPELL:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, spell: m ? m[1].trim() : null }
+}
+
+// Parse "word=learning|mastered; ..." into [{ word, status }].
+function parseSpellbook(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(mastered|learning)\s*$/i)
+    if (m) out.push({ word: m[1].trim().toLowerCase(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Merge new words with prior. Mastered is sticky; new words appended; cap 12.
+function mergeSpellbook(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const w of priorList) {
+    const k = (w.word || '').toLowerCase()
+    if (k && !byKey.has(k)) { byKey.set(k, { word: w.word, status: w.status }); order.push(k) }
+  }
+  for (const w of newList) {
+    const k = (w.word || '').toLowerCase()
+    if (!k) continue
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { word: w.word, status: w.status }); order.push(k) }
+    else if (w.status === 'mastered') ex.status = 'mastered' // can master; never un-master
+  }
+  return order.map((k) => byKey.get(k)).slice(-12)
+}
+
+async function fetchSpellbook(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_spellbook')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveSpellbook(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-spellbook',
+        event_type: 'wizard_spellbook',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
 // Parse a day-state string into a structured object: { subjects, note, now }
 // Example input: "Reading=done (done); Math=in-progress (step: fraction doubling); note=..."
 // Returns: { subjects: Map<name, {status, detail}>, note, now }
@@ -776,6 +866,12 @@ export default async function handler(req, res) {
       await saveAssignments(embed_id, visitor_id || null, updated)
       return res.status(200).json({ ok: true, assignments: updated })
     }
+    if (kind === 'spell') {
+      const list = await fetchSpellbook(embed_id, visitor_id || null)
+      const updated = list.map((w) => (w.word.toLowerCase() === text ? { ...w, status: 'mastered' } : w))
+      await saveSpellbook(embed_id, visitor_id || null, updated)
+      return res.status(200).json({ ok: true, spellbook: updated })
+    }
     return res.status(400).json({ error: 'unknown complete.kind' })
   }
 
@@ -853,9 +949,10 @@ export default async function handler(req, res) {
     let latestAssignments = null
     let latestProjects = null
     let latestReminders = null
+    let latestSpellbook = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
@@ -863,6 +960,7 @@ export default async function handler(req, res) {
           fetchAssignments(embed_id, visitor_id || null),
           fetchProjects(embed_id, visitor_id || null),
           fetchReminders(embed_id, visitor_id || null),
+          fetchSpellbook(embed_id, visitor_id || null),
         ])
 
         // Writing Desk: if this turn is a typed essay sentence, append it to
@@ -925,6 +1023,13 @@ export default async function handler(req, res) {
             priorReminderList.map((r) => `- ${r.text} [${r.status}]`).join('\n')
         }
         systemPrompt += `\n${REMINDERS_PROTOCOL}`
+        // Inject Ethan's Spellbook so the Wizard re-tests words he's still learning.
+        const priorSpellList = Array.isArray(priorSpellbook) ? priorSpellbook : []
+        if (priorSpellList.length) {
+          systemPrompt += `\n\n=== ETHAN'S SPELLBOOK (spelling + vocab he's working on — re-test the "learning" ones) ===\n` +
+            priorSpellList.map((w) => `- ${w.word} [${w.status}]`).join('\n')
+        }
+        systemPrompt += `\n${SPELLBOOK_PROTOCOL}`
         // Open-a-project focus goes LAST so it outranks the lesson-flow protocols
         // above — when Ethan taps a project, working on it IS this turn.
         if (projectFocus) {
@@ -941,7 +1046,8 @@ export default async function handler(req, res) {
         const assignExtract = extractAssignments(rawReply || '')
         const projectExtract = extractProjects(assignExtract.text)
         const reminderExtract = extractReminders(projectExtract.text)
-        const dayExtract = extractDayState(reminderExtract.text)
+        const spellExtract = extractSpellbook(reminderExtract.text)
+        const dayExtract = extractDayState(spellExtract.text)
         const newDayState = dayExtract.state
         const replyText = dayExtract.text.replace(/<<[A-Z]+:[\s\S]*?>>/g, '').trim()
 
@@ -978,6 +1084,14 @@ export default async function handler(req, res) {
           await saveReminders(embed_id, visitor_id || null, canonicalReminders)
         }
         latestReminders = canonicalReminders
+
+        // Merge + persist Ethan's Spellbook if the Wizard added/mastered words.
+        let canonicalSpellbook = priorSpellList
+        if (spellExtract.spell) {
+          canonicalSpellbook = mergeSpellbook(parseSpellbook(spellExtract.spell), priorSpellList)
+          await saveSpellbook(embed_id, visitor_id || null, canonicalSpellbook)
+        }
+        latestSpellbook = canonicalSpellbook
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
@@ -1042,6 +1156,8 @@ export default async function handler(req, res) {
       projects: latestProjects,
       // Ethan's reminders (his EA holds these) so his world can show them.
       reminders: latestReminders,
+      // Ethan's Spellbook (spelling + vocab he's mastering) for his board.
+      spellbook: latestSpellbook,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {

@@ -29,6 +29,7 @@
     assignments: null, // [{text, status}] the Wizard tracks + follows up on
     projects: null, // [{name, status}] Ethan's own projects, for fun (Build R6)
     reminders: null, // [{text, status}] his own to-dos the Wizard holds as his EA (Build R8 slice 3)
+    spellbook: null, // [{word, status}] spelling + vocab he's mastering (Build R10)
     progress: null, // { totalDone, todayDone, streak, activeDays } base from page load
     baseDone: 0, // all-time subjects done BEFORE today (today is tracked live)
     doneCount: null, // today's completed-subject count (live; null until baseline set)
@@ -329,6 +330,28 @@
       </div>`;
   }
 
+  // --- Spellbook (Build R10) — spelling + vocab, Ethan's #1 academic gap -----
+  // The day's spelling + vocabulary words live here and stack across the week so
+  // he revisits and masters them. Learning words are tappable (mark mastered
+  // once he's practiced); mastered words STAY visible with a check so he sees his
+  // progress build up. Loaded on page load + every chat turn, so a refresh keeps
+  // his place.
+  function renderSpellbook() {
+    const items = appState.spellbook || [];
+    if (!items.length) return '';
+    const mastered = items.filter((w) => (w.status || '').toLowerCase() === 'mastered').length;
+    const words = items.map((w, i) => {
+      const isMast = (w.status || '').toLowerCase() === 'mastered';
+      return isMast
+        ? `<span class="spell-word spell-word--mastered" title="Mastered">&#10004; ${escapeHtml(w.word)}</span>`
+        : `<button type="button" class="spell-word spell-word--learning" title="Tap when you've got it" onclick="window.__wizardChat.completeItem('spell', ${i})">${escapeHtml(w.word)}</button>`;
+    }).join('');
+    return `<div class="spell-panel">
+        <div class="action-title">&#128214; Spellbook <span class="spell-count">${mastered}/${items.length} mastered</span></div>
+        <div class="spell-words">${words}</div>
+      </div>`;
+  }
+
   // --- My World overview (Build R8 slice 2) — Ethan's own Corner home --------
   // A tap-in overview of his areas: his School (the Wizard class) + his own
   // Projects. Additive overlay — the chat stays his default surface, so a
@@ -520,6 +543,7 @@
       if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
       if (Array.isArray(data.projects)) appState.projects = data.projects;
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
+      if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       applyProgress(data.progress);
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
       let hadVisible = false;
@@ -574,6 +598,7 @@
       if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
       if (Array.isArray(data.projects)) appState.projects = data.projects;
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
+      if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (appState.doneCount == null) appState.doneCount = countDoneNow();
       // Advance sinceTs so the poll picks up from after the greeting was inserted.
       if (data.since_ts && data.since_ts > appState.sinceTs) {
@@ -666,6 +691,7 @@
       if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
       if (Array.isArray(data.projects)) appState.projects = data.projects;
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
+      if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
         checkCompletion();
         // Use the server's since_ts so we poll from after the user message
         if (data.since_ts) {
@@ -877,6 +903,7 @@
           <div class="action-title">&#10022; Today's Quests</div>
           ${renderQuestsPanel()}
           ${renderAssignments()}
+          ${renderSpellbook()}
           ${renderProjects()}
           ${renderReminders()}
         </div>
@@ -933,10 +960,17 @@
       sendMessage(`Let’s work on my project: ${p.name}`, { projectFocus: p.name });
     },
     completeItem: (kind, i) => {
-      const list = kind === 'reminder' ? appState.reminders : appState.assignments;
+      // spellbook items key on .word and finish as 'mastered'; the rest key on
+      // .text and finish as 'done'.
+      const list = kind === 'reminder' ? appState.reminders
+        : kind === 'spell' ? appState.spellbook
+        : appState.assignments;
       const item = list && list[i];
-      if (!item || (item.status || '').toLowerCase() === 'done') return;
-      item.status = 'done'; // optimistic — server confirms below
+      if (!item) return;
+      const doneStatus = kind === 'spell' ? 'mastered' : 'done';
+      const label = kind === 'spell' ? item.word : item.text;
+      if ((item.status || '').toLowerCase() === doneStatus) return;
+      item.status = doneStatus; // optimistic — server confirms below
       render();
       fetch('/api/embed/chat', {
         method: 'POST',
@@ -946,12 +980,13 @@
           content: '<<complete>>',
           visitor_id: 'ethan-' + appState.sessionId,
           host_origin: window.location.origin,
-          complete: { kind, text: item.text },
+          complete: { kind, text: label },
         }),
       }).then((r) => r.ok ? r.json() : null).then((data) => {
         if (!data) return;
         if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
         if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
+        if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
         render();
       }).catch(() => {});
     },
