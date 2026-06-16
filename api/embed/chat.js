@@ -210,6 +210,100 @@ function extractDayState(replyText) {
   return { text: replyText.slice(0, m.index).trim(), state: m[1].trim() }
 }
 
+// Parse a day-state string into a structured object: { subjects, note, now }
+// Example input: "Reading=done (done); Math=in-progress (step: fraction doubling); note=..."
+// Returns: { subjects: Map<name, {status, detail}>, note, now }
+function parseDayState(stateStr) {
+  if (!stateStr || typeof stateStr !== 'string') {
+    return { subjects: new Map(), note: '', now: '' }
+  }
+
+  const subjects = new Map()
+  let note = ''
+  let now = ''
+
+  // Split on ';' but not inside parens
+  for (const part of stateStr.split(/;(?![^(]*\))/)) {
+    const match = part.match(/^\s*([^=]+?)\s*=\s*(.+?)\s*$/)
+    if (!match) continue
+
+    const key = match[1].trim()
+    const val = match[2].trim()
+
+    // Extract special subject names: Specials1(Music) → Music
+    const specialMatch = key.match(/^Specials?\d*\s*\(([^)]+)\)$/i)
+    const subjectName = specialMatch ? specialMatch[1].trim() : key
+
+    if (/^note$/i.test(key)) {
+      note = val
+    } else if (/^now$/i.test(key)) {
+      now = val
+    } else {
+      // Extract status (first token before space/paren) and optional detail
+      const statusMatch = val.match(/^([^(\s]+)\s*(?:\(([^)]*)\))?/)
+      const status = statusMatch ? statusMatch[1].toLowerCase().trim() : 'not-started'
+      const detail = statusMatch && statusMatch[2] ? statusMatch[2].trim() : ''
+
+      subjects.set(subjectName, { status, detail })
+    }
+  }
+
+  return { subjects, note, now }
+}
+
+// Merge a new day state (from model) with prior state (from DB).
+// Rules:
+// - Subjects can only move forward: not-started → in-progress → done
+// - If prior state had a subject done, new state cannot downgrade it
+// - Subject order follows the prior state; new subjects are appended in order seen
+// Returns a canonical merged state string
+function mergeDayStates(newStateStr, priorStateStr) {
+  const newParsed = parseDayState(newStateStr)
+  const priorParsed = parseDayState(priorStateStr)
+
+  // Start with prior subjects (preserves order)
+  const merged = new Map(priorParsed.subjects)
+
+  // Status advancement order
+  const STATUS_ORDER = ['not-started', 'in-progress', 'done', 'next']
+  const statusRank = (status) => STATUS_ORDER.indexOf(status.toLowerCase())
+
+  // Merge in new subjects: only advance or keep, never downgrade
+  for (const [name, newData] of newParsed.subjects) {
+    const priorData = merged.get(name)
+    if (!priorData) {
+      // New subject — add it
+      merged.set(name, newData)
+    } else {
+      // Existing subject — take the advance (or keep if new is lower rank)
+      const newRank = statusRank(newData.status)
+      const priorRank = statusRank(priorData.status)
+      if (newRank >= priorRank) {
+        // New state is same or advanced — use it (new detail may be fresher)
+        merged.set(name, newData)
+      } else {
+        // New state would downgrade — keep prior
+        merged.set(name, priorData)
+      }
+    }
+  }
+
+  // Use newer note/now if provided, else fall back to prior
+  const finalNote = newParsed.note || priorParsed.note
+  const finalNow = newParsed.now || priorParsed.now
+
+  // Serialize back to the standard format
+  const lines = []
+  for (const [name, data] of merged) {
+    const detail = data.detail ? ` (${data.detail})` : ''
+    lines.push(`${name}=${data.status}${detail}`)
+  }
+  if (finalNote) lines.push(`note=${finalNote}`)
+  if (finalNow) lines.push(`now=${finalNow}`)
+
+  return lines.join('; ')
+}
+
 // Call Gemini with silent retries — Ethan must never see or feel a hiccup.
 // Up to 3 attempts with short backoff before the error surfaces at all.
 async function callGeminiWithRetry(systemPrompt, history, userMessage, model) {
@@ -388,10 +482,16 @@ export default async function handler(req, res) {
           cfg.ai.model || 'gemini-2.5-flash'
         )
         const { text: replyText, state: newDayState } = extractDayState(rawReply || '')
-        latestDayState = newDayState || dayState?.payload?.state || null
+
+        // Merge the new state with prior state deterministically.
+        // This prevents the model's free-text ledger from drifting.
+        let canonicalDayState = dayState?.payload?.state || null
         if (newDayState) {
-          await saveDayState(embed_id, visitor_id || null, newDayState)
+          // Merge: new state can only advance subjects, never downgrade
+          canonicalDayState = mergeDayStates(newDayState, canonicalDayState || '')
+          await saveDayState(embed_id, visitor_id || null, canonicalDayState)
         }
+        latestDayState = canonicalDayState
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
