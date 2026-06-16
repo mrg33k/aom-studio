@@ -415,22 +415,33 @@
     const onProject = appState.projectActive || null;
     const schoolActive = !onProject;
     const allMissions = appState.missions || [];
-    // Tolerant project<->mission match: the Wizard sometimes tags a mission with
-    // a looser project phrase than the canonical project name, so match exact OR
-    // one name containing the other (length-guarded) so missions never orphan.
-    const projMatch = (a, b) => {
-      a = (a || '').toLowerCase().trim(); b = (b || '').toLowerCase().trim();
-      if (!a || !b) return false;
-      if (a === b) return true;
-      const [s, l] = a.length <= b.length ? [a, b] : [b, a];
-      return s.length >= 4 && l.includes(s);
+    const norm = (s) => (s || '').toLowerCase().trim();
+    const projNames = projects.map((p) => norm(p.name));
+    // Assign each mission to exactly ONE project: an exact name match if one
+    // exists, otherwise a length-guarded containment match (so a looser project
+    // phrase from the Wizard still nests, but missions never duplicate across
+    // two similar projects).
+    const missionProjectIdx = (m) => {
+      const mp = norm(m.project);
+      if (!mp) return -1;
+      const exact = projNames.indexOf(mp);
+      if (exact !== -1) return exact;
+      let best = -1, bestLen = 0;
+      projNames.forEach((pn, idx) => {
+        if (!pn) return;
+        const [s, l] = mp.length <= pn.length ? [mp, pn] : [pn, mp];
+        if (s.length >= 4 && l.includes(s) && s.length > bestLen) { best = idx; bestLen = s.length; }
+      });
+      return best;
     };
+    const missionsByProject = projects.map(() => []);
+    allMissions.forEach((m) => { const idx = missionProjectIdx(m); if (idx !== -1) missionsByProject[idx].push(m); });
     const projectItems = projects.length
       ? projects.map((p, i) => {
           const done = (p.status || '').toLowerCase() === 'done';
-          const active = onProject && projMatch(onProject, p.name);
+          const active = onProject && norm(onProject) === norm(p.name);
           // Missions belonging to this project (Build R13b), nested under it.
-          const mine = allMissions.filter((m) => projMatch(m.project, p.name));
+          const mine = missionsByProject[i];
           const missionRows = mine.map((m) => {
             const mdone = (m.status || '').toLowerCase() === 'done';
             const safeName = escapeHtml(m.name).replace(/'/g, "\\'");

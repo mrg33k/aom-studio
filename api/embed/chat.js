@@ -290,9 +290,14 @@ async function saveAiError(embedId, visitorId, error) {
 
 // Strip the trailing <<DAY: ...>> marker; returns { text, state }.
 function extractDayState(replyText) {
-  const m = replyText.match(/<<DAY:([\s\S]*?)>>\s*$/)
+  // Normal case: a properly closed <<DAY: ... >> at the end.
+  let m = replyText.match(/<<DAY:([\s\S]*?)>>\s*$/)
+  // Fallback: the model sometimes DROPS the closing >> on the trailing ledger,
+  // which would leak the whole ledger into Ethan's chat. Capture an unclosed
+  // <<DAY: that runs to the end of the text too.
+  if (!m) m = replyText.match(/<<DAY:([\s\S]*)$/)
   if (!m) return { text: replyText, state: null }
-  return { text: replyText.slice(0, m.index).trim(), state: m[1].trim() }
+  return { text: replyText.slice(0, m.index).trim(), state: m[1].replace(/>>\s*$/, '').trim() }
 }
 
 // --- Daily assignments (Build R5) -------------------------------------------
@@ -1258,7 +1263,10 @@ export default async function handler(req, res) {
         const missionExtract = extractMissions(readExtract.text)
         const dayExtract = extractDayState(missionExtract.text)
         const newDayState = dayExtract.state
-        const replyText = dayExtract.text.replace(/<<[A-Z]+:[\s\S]*?>>/g, '').trim()
+        const replyText = dayExtract.text
+          .replace(/<<[A-Z]+:[\s\S]*?>>/g, '') // closed machine markers, anywhere
+          .replace(/<<[A-Z]+:[\s\S]*$/, '')     // safety net: an UNCLOSED marker through end of text (model dropped the >>)
+          .trim()
 
         // Merge the new state with prior state deterministically.
         // This prevents the model's free-text ledger from drifting.
