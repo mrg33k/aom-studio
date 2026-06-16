@@ -485,35 +485,35 @@ html.dark-theme .world-card--remind .world-card-icon { color: var(--color-gold);
 .spell-word {
   font-family: inherit;
   font-size: 13px;
+  font-weight: 600;
   line-height: 1.2;
-  padding: 6px 11px;
+  padding: 6px 12px;
   border-radius: 999px;
-  border: 1px solid var(--color-gold-soft);
-  background: rgba(253, 248, 236, 0.85);
-  color: var(--color-text);
 }
+/* Learning = still working it: punchy 2px gold outline so it reads from across
+   the room, like the quest cards. */
 .spell-word--learning {
   cursor: pointer;
+  border: 2px solid var(--color-gold);
+  background: rgba(212, 175, 55, 0.10);
+  color: var(--color-gold);
   transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 .spell-word--learning:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.28);
-  background: rgba(212, 175, 55, 0.14);
+  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.35);
+  background: rgba(212, 175, 55, 0.20);
 }
 .spell-word--learning:active { transform: translateY(0); }
+/* Mastered = earned: full gold fill + dark indigo text, exactly like the "NOW"
+   pill, so it lights up as an achievement. */
 .spell-word--mastered {
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.22), rgba(201, 164, 48, 0.16));
-  border-color: var(--color-gold);
-  color: var(--color-gold-soft);
-  font-weight: 600;
+  border: 1px solid #b08f25;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  color: #322a55;
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.30);
 }
-html.dark-theme .spell-word { background: rgba(26, 24, 20, 0.85); color: var(--color-text); }
-html.dark-theme .spell-word--learning:hover { background: rgba(212, 175, 55, 0.18); }
-html.dark-theme .spell-word--mastered {
-  background: linear-gradient(180deg, rgba(212, 175, 55, 0.26), rgba(201, 164, 48, 0.14));
-  color: var(--color-gold);
-}
+html.dark-theme .spell-word--learning { color: var(--color-gold); }
 
 /* ===== My World overview (Build R8 slice 2) — Ethan's own Corner home.
    Additive overlay; the chat stays the default surface (never lose his place). */
