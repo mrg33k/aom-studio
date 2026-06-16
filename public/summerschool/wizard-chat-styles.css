@@ -559,7 +559,7 @@ html.dark-theme .book-shelf { color: var(--color-gold); }
   margin-top: 18px;
   padding: 9px 12px;
   background: none;
-  border: 1px dashed rgba(212, 175, 55, 0.40);
+  border: 1px solid var(--color-gold-soft);
   border-radius: 8px;
   cursor: pointer;
   color: var(--color-gold-soft);
