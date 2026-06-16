@@ -11,14 +11,26 @@
   const POLL_INTERVAL_MS = 1500; // Poll for new messages every 1.5s
   const VIDEO_EMBEDS_ENABLED = false; // Off until the curated-video layer is approved (council decision #2)
 
+  // Game-progress tuning (design values, honest — driven by real completions).
+  const XP_PER_SUBJECT = 10; // each subject the Wizard marks "done" in the ledger
+  const XP_PER_LEVEL = 50; // 5 completed subjects per level
+  const SUMMER_WIN_XP = 1200; // ~120 subjects across the summer = "win summer school"
+
   // App state
   let appState = {
     messages: [],
     inputValue: '',
+    essayInput: '', // draft text in the Writing Desk box (preserved across renders)
     isLoading: false,
     sinceTs: null, // ISO timestamp — poll for messages newer than this
     sessionId: null,
     dayState: null, // Wizard's day ledger string — drives Today's Quests
+    essay: null, // array of sentences Ethan typed into the Writing Desk today
+    progress: null, // { totalDone, todayDone, streak, activeDays } base from page load
+    baseDone: 0, // all-time subjects done BEFORE today (today is tracked live)
+    doneCount: null, // today's completed-subject count (live; null until baseline set)
+    hudReady: false, // suppresses the win-burst during the initial load
+    celebrateMsg: null, // transient win-burst banner text
     theme: localStorage.getItem('wizard-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   };
 
@@ -88,6 +100,136 @@
     return `<div class="quest-list">${rows}</div>`;
   }
 
+  // --- Game progress (Build R6) ----------------------------------------------
+  // Honest: every number traces to subjects the Wizard marked "done" in the
+  // real ledger. Today's count is live (from day_state each turn); the all-time
+  // base + streak are fetched once on page load.
+
+  function countDoneNow() {
+    const parsed = parseDayState(appState.dayState);
+    return parsed ? parsed.quests.filter((q) => q.status === 'done').length : 0;
+  }
+
+  function levelTitle(level) {
+    if (level >= 20) return 'Archmage';
+    if (level >= 14) return 'Sage';
+    if (level >= 9) return 'Mage';
+    if (level >= 6) return 'Adept';
+    if (level >= 4) return 'Scribe';
+    if (level >= 2) return 'Scholar';
+    return 'Apprentice';
+  }
+
+  function gameStats() {
+    const today = appState.doneCount || 0;
+    const totalDone = (appState.baseDone || 0) + today;
+    const xp = totalDone * XP_PER_SUBJECT;
+    const level = Math.floor(xp / XP_PER_LEVEL) + 1;
+    const levelPct = Math.round(((xp % XP_PER_LEVEL) / XP_PER_LEVEL) * 100);
+    const winPct = Math.min(100, Math.round((xp / SUMMER_WIN_XP) * 100));
+    const streak = (appState.progress && appState.progress.streak) || 0;
+    const parsed = parseDayState(appState.dayState);
+    const todayTotal = parsed ? parsed.quests.length : 0;
+    return { xp, level, title: levelTitle(level), levelPct, winPct, streak, todayDone: today, todayTotal };
+  }
+
+  // After a ledger update, see whether a new subject just completed and fire
+  // the win-burst. Silent during the initial load (hudReady=false).
+  function checkCompletion() {
+    const live = countDoneNow();
+    if (appState.doneCount == null) {
+      appState.doneCount = live;
+      return;
+    }
+    if (appState.hudReady && live > appState.doneCount) {
+      const gained = live - appState.doneCount;
+      triggerCelebration('Quest complete!  +' + gained * XP_PER_SUBJECT + ' XP');
+    }
+    appState.doneCount = live;
+  }
+
+  let celebrateTimer = null;
+  function triggerCelebration(msg) {
+    appState.celebrateMsg = msg;
+    render();
+    if (celebrateTimer) clearTimeout(celebrateTimer);
+    celebrateTimer = setTimeout(() => {
+      appState.celebrateMsg = null;
+      render();
+    }, 2600);
+  }
+
+  function renderGameHud() {
+    const s = gameStats();
+    const streakHtml = s.streak > 1
+      ? `<div class="hud-streak"><span class="hud-streak-icon">&#9650;</span>${s.streak}-day streak</div>`
+      : '';
+    const todayHtml = s.todayTotal
+      ? `${s.todayDone}/${s.todayTotal} quests today`
+      : 'Begin your climb';
+    return `
+      <div class="game-hud">
+        <div class="hud-top">
+          <div class="hud-level">
+            <span class="hud-level-num">Lv ${s.level}</span>
+            <span class="hud-level-title">${s.title}</span>
+          </div>
+          ${streakHtml}
+        </div>
+        <div class="hud-xpbar"><div class="hud-xpbar-fill" style="width:${s.levelPct}%"></div></div>
+        <div class="hud-xp-label">${s.xp} XP &middot; ${todayHtml}</div>
+        <div class="hud-prize">
+          <div class="hud-prize-label">Road to winning Summer School</div>
+          <div class="hud-prizebar"><div class="hud-prizebar-fill" style="width:${s.winPct}%"></div></div>
+          <div class="hud-prize-sub">${s.winPct}% &middot; a reward waits at the finish</div>
+        </div>
+      </div>`;
+  }
+
+  // --- Writing Desk (Build R6) -----------------------------------------------
+  // A real surface where Ethan TYPES his essay one sentence at a time. Opens
+  // when the Wizard marks Writing in-progress, or once the essay has content.
+
+  function isWritingActive() {
+    const parsed = parseDayState(appState.dayState);
+    if (parsed) {
+      const w = parsed.quests.find((q) => /writ/i.test(q.name));
+      if (w && w.status === 'in-progress') return true;
+    }
+    return !!(appState.essay && appState.essay.length);
+  }
+
+  function renderWritingDesk() {
+    const sentences = appState.essay || [];
+    const bodyHtml = sentences.length
+      ? `<div class="essay-paragraph">${sentences
+          .map((sn, i) => `<span class="essay-sentence${i === sentences.length - 1 ? ' essay-sentence--new' : ''}">${escapeHtml(sn)}</span>`)
+          .join(' ')}</div>
+         <div class="essay-count">${sentences.length} sentence${sentences.length === 1 ? '' : 's'} written</div>`
+      : `<div class="essay-empty">Your essay starts here. Type your first sentence below &mdash; one at a time, and watch it grow into a whole paragraph.</div>`;
+    return `
+      <div class="writing-desk">
+        <div class="action-title">&#9998; My Writing Desk</div>
+        ${bodyHtml}
+        <div class="essay-input-row">
+          <input
+            type="text"
+            class="essay-input"
+            placeholder="Write your next sentence..."
+            value="${escapeHtml(appState.essayInput || '')}"
+            ${appState.isLoading ? 'disabled' : ''}
+            onkeyup="if (event.key === 'Enter') window.__wizardChat.addSentence(this.value)"
+          />
+          <button
+            class="essay-add-btn"
+            ${appState.isLoading ? 'disabled' : ''}
+            onclick="window.__wizardChat.addSentence(document.querySelector('.essay-input').value)"
+          >Add</button>
+        </div>
+        <div class="essay-hint">Type your sentence, then Add it. Talking it through doesn&rsquo;t count &mdash; writing it does.</div>
+      </div>`;
+  }
+
   // Derive today's day name for curriculum context
   function getTodayDay() {
     const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -117,6 +259,16 @@
     appState.sessionId = sid;
   }
 
+  // Apply the game-progress base returned by the load path.
+  function applyProgress(progress) {
+    if (!progress) return;
+    appState.progress = progress;
+    const total = progress.totalDone || 0;
+    const today = progress.todayDone || 0;
+    appState.baseDone = Math.max(0, total - today);
+    appState.doneCount = today;
+  }
+
   // Load this visitor's conversation for TODAY from the server (survives
   // refresh, new tab, device sleep — the server is the source of truth).
   // Scoped to today's Phoenix midnight so we get ALL of today's messages
@@ -140,6 +292,8 @@
       if (!response.ok) return false;
       const data = await response.json();
       if (data.day_state) appState.dayState = data.day_state;
+      if (Array.isArray(data.essay)) appState.essay = data.essay;
+      applyProgress(data.progress);
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
       let hadVisible = false;
       for (const msg of data.messages) {
@@ -187,6 +341,8 @@
       if (!response.ok) return;
       const data = await response.json();
       if (data.day_state) appState.dayState = data.day_state;
+      if (Array.isArray(data.essay)) appState.essay = data.essay;
+      if (appState.doneCount == null) appState.doneCount = countDoneNow();
       // Advance sinceTs so the poll picks up from after the greeting was inserted.
       if (data.since_ts && data.since_ts > appState.sinceTs) {
         appState.sinceTs = data.since_ts;
@@ -207,8 +363,11 @@
     }
   }
 
-  // Send a message to the Wizard
-  async function sendMessage(text) {
+  // Send a message to the Wizard. opts.essayMode marks it as a Writing Desk
+  // sentence — the server appends it to today's essay and tells the Wizard to
+  // react to it, while it also flows through chat as a normal turn.
+  async function sendMessage(text, opts) {
+    opts = opts || {};
     if (!text.trim()) return;
 
     // Optimistically add user message to UI
@@ -224,15 +383,17 @@
     // Send to embed API
     try {
       appState.isLoading = true;
+      const payload = {
+        embed_id: EMBED_ID,
+        content: text,
+        visitor_id: 'ethan-' + appState.sessionId,
+        host_origin: window.location.origin,
+      };
+      if (opts.essayMode) payload.essay_mode = true;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          embed_id: EMBED_ID,
-          content: text,
-          visitor_id: 'ethan-' + appState.sessionId,
-          host_origin: window.location.origin,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -247,6 +408,8 @@
       } else {
         const data = await response.json();
         if (data.day_state) appState.dayState = data.day_state;
+        if (Array.isArray(data.essay)) appState.essay = data.essay;
+        checkCompletion();
         // Use the server's since_ts so we poll from after the user message
         if (data.since_ts) {
           appState.sinceTs = appState.sinceTs || data.since_ts;
@@ -264,7 +427,7 @@
           console.error('Wizard reply error:', data.ai_error);
           appState.messages.push({
             role: 'assistant',
-            text: "Hmm, my crystal ball flickered — try sending that again in a moment!",
+            text: "Hmm, something flickered on my end — try sending that again in a moment.",
             timestamp: Date.now(),
           });
         }
@@ -357,6 +520,8 @@
     // Preserve anything the user has typed across re-renders (polls)
     const liveInput = document.querySelector('.chat-input');
     if (liveInput) appState.inputValue = liveInput.value;
+    const liveEssay = document.querySelector('.essay-input');
+    if (liveEssay) appState.essayInput = liveEssay.value;
 
     const messagesHtml = appState.messages
       .filter((msg) => msg.text && msg.text.trim())
@@ -373,13 +538,18 @@
 
     const loadingIndicator = appState.isLoading
       ? `<div class="message wizard-message typing-indicator">
-           <span class="typing-label">The Wizard is conjuring a reply</span>
+           <span class="typing-label">The Wizard is thinking</span>
            <span class="typing-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>
          </div>`
       : '';
 
+    const celebrateHtml = appState.celebrateMsg
+      ? `<div class="celebrate-burst">${escapeHtml(appState.celebrateMsg)}</div>`
+      : '';
+
     const html = `
       <div class="wizard-chat-container">
+        ${celebrateHtml}
         <div class="chat-header">
           <h1><span class="header-ornament-inline">&#10022;</span> Morning, Ethan <span class="header-ornament-inline">&#10022;</span></h1>
           <p>The Wizard awaits &mdash; today's lessons are ready</p>
@@ -422,6 +592,8 @@
         </div>
 
         <div class="action-panel">
+          ${renderGameHud()}
+          ${isWritingActive() ? renderWritingDesk() : ''}
           <div class="action-title">&#10022; Today's Quests</div>
           ${renderQuestsPanel()}
         </div>
@@ -461,6 +633,15 @@
         sendMessage(text);
       }
     },
+    addSentence: (text) => {
+      const t = (text || '').trim();
+      if (!t || appState.isLoading) return;
+      appState.essayInput = '';
+      // Optimistically grow the Desk; the server response replaces it with the
+      // authoritative essay so there's never a double-count.
+      appState.essay = [...(appState.essay || []), t];
+      sendMessage(t, { essayMode: true });
+    },
     toggleTheme: () => {
       appState.theme = appState.theme === 'light' ? 'dark' : 'light';
       localStorage.setItem('wizard-theme', appState.theme);
@@ -496,7 +677,7 @@
 
     // Pull the existing conversation back — refresh must not lose the thread.
     // loadHistory is scoped to today so it returns all of today's messages.
-    // It also fetches today's day_state so the Quests panel renders immediately.
+    // It also fetches today's day_state + essay + progress base.
     const hadHistory = await loadHistory();
     if (!hadHistory) {
       // No history for today — ask the server for a personalized greeting.
@@ -504,6 +685,8 @@
       // to craft the opener. No hardcoded fallback message.
       await requestWizardGreeting();
     }
+    if (appState.doneCount == null) appState.doneCount = countDoneNow();
+    appState.hudReady = true; // win-bursts only fire on completions from here on
     render();
 
     // Start polling for new messages

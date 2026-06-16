@@ -148,6 +148,72 @@ Update the ledger every turn. The line is stripped before Ethan sees your
 message — never reference it, never explain it. When asked what's left today
 or what's next, answer FROM the ledger and the current time.`
 
+// Writing Desk protocol: Ethan drafts his essay one sentence at a time in a
+// dedicated writing surface beside the chat. Each sentence he TYPES there is
+// appended to a per-visitor, per-day essay (wizard_essay event) and injected
+// back here so the Wizard always sees the real draft and can react to it.
+// This is always present so the mechanic survives a deploy; the per-week
+// teaching emphasis lives in the council note (no deploy).
+const WRITING_DESK_PROTOCOL = `
+WRITING DESK (Ethan's essay surface — real, on his screen):
+Next to your chat, Ethan has a Writing Desk where his essay is built one
+sentence at a time. Only sentences he TYPES into the Desk count — talking
+about a sentence, or you writing it for him, does NOT go into his essay.
+When you run the Writing lesson:
+- Mark Writing=in-progress in the ledger the moment writing begins — that is
+  what opens his Desk on screen.
+- Ask for exactly ONE sentence at a time. Tell him plainly to type it into his
+  Writing Desk (not just say it). Model an example for him to react to, then
+  have him write his own version.
+- React to the sentence he actually typed (shown below as "essay so far"),
+  then guide the very next single sentence. Keep going sentence by sentence
+  until he has a real paragraph he wrote himself.
+- Never paste the whole essay back at him and never count talk as writing.`
+
+// Latest essay snapshot for this visitor on the given Phoenix day.
+async function fetchEssay(embedId, visitorId, daysAgo = 0) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload,timestamp')
+  params.set('event_type', 'eq.wizard_essay')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('payload->>date', `eq.${phoenixDate(daysAgo)}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return null
+    const rows = await r.json()
+    const sentences = rows?.[0]?.payload?.sentences
+    return Array.isArray(sentences) ? sentences : null
+  } catch (_) {
+    return null
+  }
+}
+
+async function saveEssay(embedId, visitorId, sentences) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-essay',
+        event_type: 'wizard_essay',
+        payload: {
+          embed_id: embedId,
+          visitor_id: visitorId || '',
+          date: phoenixDate(),
+          sentences,
+        },
+      }),
+    })
+  } catch (_) {
+    /* non-fatal — the Desk re-syncs on the next turn / reload */
+  }
+}
+
 async function fetchDayState(embedId, visitorId, daysAgo = 0) {
   const params = new URLSearchParams()
   params.set('select', 'payload,timestamp')
@@ -362,6 +428,10 @@ export default async function handler(req, res) {
 
   const body = req.body || {}
   const { embed_id, visitor_id, host_origin, content } = body
+  // Writing Desk: when essay_mode is set, `content` is a sentence Ethan typed
+  // into his essay surface — it appends to his stored essay AND flows through
+  // chat as a normal turn so the Wizard reacts to it.
+  const essayMode = !!body.essay_mode
 
   if (!embed_id || !content) {
     return res.status(400).json({ error: 'embed_id and content required' })
@@ -450,13 +520,25 @@ export default async function handler(req, res) {
     let aiReply = null
     let aiError = null
     let latestDayState = null
+    let latestEssay = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
+          fetchEssay(embed_id, visitor_id || null),
         ])
+
+        // Writing Desk: if this turn is a typed essay sentence, append it to
+        // today's essay and persist before we call Gemini, so the injected
+        // draft already includes what he just wrote.
+        let essaySentences = Array.isArray(priorEssay) ? priorEssay.slice() : []
+        if (essayMode && visitorText) {
+          essaySentences.push(visitorText)
+          await saveEssay(embed_id, visitor_id || null, essaySentences)
+        }
+        latestEssay = essaySentences
         let systemPrompt = cfg.ai.system_prompt
         if (councilNotes) {
           systemPrompt += `\n\n=== COUNCIL NOTES (current plan — follow these) ===\n${councilNotes}`
@@ -475,6 +557,15 @@ export default async function handler(req, res) {
           }
         }
         systemPrompt += `\n${DAY_STATE_PROTOCOL}`
+        // Inject the live essay so the Wizard sees exactly what Ethan has typed
+        // into his Writing Desk (survives the 10-message history window).
+        if (essaySentences.length) {
+          systemPrompt += `\n\n=== ETHAN'S ESSAY SO FAR (what he has typed into his Writing Desk today) ===\n"${essaySentences.join(' ')}"`
+          if (essayMode) {
+            systemPrompt += `\nThe LAST sentence above is the one he just typed this turn — react to it specifically, then guide his next single sentence.`
+          }
+        }
+        systemPrompt += `\n${WRITING_DESK_PROTOCOL}`
         const rawReply = await callGeminiWithRetry(
           systemPrompt,
           history,
@@ -548,6 +639,8 @@ export default async function handler(req, res) {
       // Latest day ledger (the Wizard's own subject-by-subject state) so the
       // widget can keep the Today's Quests panel in sync without extra polls.
       day_state: latestDayState,
+      // Today's essay sentences so the Writing Desk renders the real draft.
+      essay: latestEssay,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {
