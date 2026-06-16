@@ -1303,9 +1303,11 @@ html.dark-theme .theme-selector {
    the theme toggle. Drop the ornaments and size the title to read cleanly. */
 @media (max-width: 520px) {
   .chat-header { padding: 16px 14px 12px; }
-  .chat-header h1 { font-size: 21px; letter-spacing: 1px; }
+  .chat-header h1 { font-size: 18px; letter-spacing: 0.5px; }
   .header-ornament-inline { display: none; }
-  .world-btn { top: 12px; left: 12px; padding: 5px 10px; font-size: 11px; }
+  /* Icon-only My World button on mobile so the centered title clears it. */
+  .world-btn { top: 12px; left: 12px; padding: 6px 9px; font-size: 0; gap: 0; }
+  .world-btn-icon { font-size: 15px; }
 }
 
 html.dark-theme .typing-label {
