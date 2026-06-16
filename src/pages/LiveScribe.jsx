@@ -180,6 +180,7 @@ export default function LiveScribe() {
   const DISPLAY = { fontFamily: "'Syne', system-ui, sans-serif" };
   const hasBrief = Boolean(brief.summary || brief.talkingPoints.length || brief.research.length || brief.questions.length);
   const showActions = Boolean(finalText) || hasBrief;
+  const transcriptActive = recording || Boolean(finalText);
 
   return (
     <div style={{ minHeight: '100vh', background: PAPER, color: INK, ...F }}>
@@ -194,32 +195,42 @@ export default function LiveScribe() {
         .ls-fade { animation:lsfade .3s ease; }
         @keyframes lsfade { from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
         a.ls-src { color:#A66A00; text-decoration:none; border-bottom:1px solid rgba(166,106,0,.3); }
+        .ls-start-pulse { animation:lsbtnpulse 2.2s infinite; }
+        @keyframes lsbtnpulse { 0%{box-shadow:0 0 0 0 rgba(234,179,8,.45)} 70%{box-shadow:0 0 0 14px rgba(234,179,8,0)} 100%{box-shadow:0 0 0 0 rgba(234,179,8,0)} }
+        .ls-eq { display:flex; gap:5px; align-items:flex-end; height:34px; }
+        .ls-eq span { width:5px; border-radius:3px; background:#C9A227; animation:lseq 1.1s ease-in-out infinite; }
+        .ls-eq span:nth-child(2){ animation-delay:.18s } .ls-eq span:nth-child(3){ animation-delay:.36s } .ls-eq span:nth-child(4){ animation-delay:.54s } .ls-eq span:nth-child(5){ animation-delay:.72s }
+        @keyframes lseq { 0%,100%{height:7px; opacity:.55} 50%{height:30px; opacity:1} }
       `}</style>
 
       {/* Header */}
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px 8px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <div style={{ ...DISPLAY, fontWeight: 800, fontSize: 30, letterSpacing: '-0.01em' }}>
+            <div style={{ ...DISPLAY, fontWeight: 800, fontSize: 46, letterSpacing: '-0.02em', lineHeight: 1 }}>
               Live Scribe
             </div>
-            <div style={{ opacity: 0.6, fontSize: 14, marginTop: 2 }}>
+            <div style={{ opacity: 0.6, fontSize: 15, marginTop: 8, maxWidth: 460 }}>
               Put the call on speaker. I write it down, look things up, and build your notes as you talk.
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {recording && <span className="ls-rec-dot" />}
-            <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 18, fontVariantNumeric: 'tabular-nums', opacity: recording || elapsed ? 1 : 0.4 }}>
-              {fmtTime(elapsed)}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            {(recording || elapsed > 0) && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {recording && <span className="ls-rec-dot" />}
+                <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 18, fontVariantNumeric: 'tabular-nums', opacity: recording ? 1 : 0.45 }}>
+                  {fmtTime(elapsed)}
+                </span>
+              </span>
+            )}
             {!recording ? (
-              <button className="ls-btn" onClick={start}
-                style={{ background: INK, color: PAPER, padding: '10px 22px', fontSize: 15 }}>
-                {finalText ? 'Resume' : 'Start'}
+              <button className={`ls-btn${!finalText ? ' ls-start-pulse' : ''}`} onClick={start}
+                style={{ background: GOLD, color: INK, borderColor: '#C9A227', padding: '15px 34px', fontSize: 17, fontWeight: 700 }}>
+                {finalText ? 'Resume' : 'Start listening'}
               </button>
             ) : (
               <button className="ls-btn" onClick={stop}
-                style={{ background: 'transparent', color: INK, padding: '10px 22px', fontSize: 15 }}>
+                style={{ background: 'transparent', color: INK, padding: '15px 30px', fontSize: 17, fontWeight: 700 }}>
                 Stop
               </button>
             )}
@@ -227,13 +238,14 @@ export default function LiveScribe() {
         </div>
 
         {/* context + actions */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             value={context}
             onChange={(e) => setContext(e.target.value)}
-            placeholder="Who's this call with? Optional context (e.g. Acme Corp, exploring a partnership)"
-            style={{ ...F, flex: 1, minWidth: 240, padding: '10px 14px', borderRadius: 10, border: `1px solid ${LINE}`, background: CARD, color: INK, fontSize: 14, outline: 'none' }}
+            placeholder="Optional: who's this call with? (e.g. Acme Corp, partnership)"
+            style={{ ...F, flex: '0 1 440px', minWidth: 220, padding: '9px 13px', borderRadius: 10, border: `1px solid ${LINE}`, background: 'transparent', color: INK, fontSize: 13.5, outline: 'none' }}
           />
+          <span style={{ marginLeft: 'auto' }} />
           {showActions && (
             <>
               <button className="ls-btn" onClick={copyBrief} style={{ background: CARD, color: INK, padding: '9px 16px', fontSize: 13, borderColor: LINE }}>Copy brief</button>
@@ -254,17 +266,23 @@ export default function LiveScribe() {
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px 48px' }}>
         <div className="ls-grid">
           {/* Transcript */}
-          <div className="ls-card" style={{ display: 'flex', flexDirection: 'column', height: 'min(70vh, 640px)' }}>
+          <div className="ls-card" style={{ display: 'flex', flexDirection: 'column', height: transcriptActive ? 'min(70vh, 640px)' : 320 }}>
             <div style={{ padding: '14px 18px', borderBottom: `1px solid ${LINE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7 }}>Transcript</span>
-              <span style={{ fontSize: 12, opacity: 0.45 }}>{finalText ? `${finalText.split(/\s+/).filter(Boolean).length} words` : 'waiting…'}</span>
+              <span style={{ fontSize: 12, opacity: 0.45 }}>{finalText ? `${finalText.split(/\s+/).filter(Boolean).length} words` : (recording ? 'listening…' : 'ready')}</span>
             </div>
             <div ref={transcriptScroll} style={{ padding: '18px', overflowY: 'auto', flex: 1, fontSize: 16, lineHeight: 1.7 }}>
-              {!finalText && !interim && (
-                <div style={{ opacity: 0.4, fontStyle: 'italic' }}>Press Start and begin the call. Words show up here as they are spoken.</div>
+              {!finalText && !interim ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+                  <div className="ls-eq" aria-hidden="true"><span /><span /><span /><span /><span /></div>
+                  <div style={{ ...DISPLAY, fontWeight: 700, fontSize: 15, opacity: 0.55 }}>
+                    {recording ? 'Listening…' : 'Ready to listen'}
+                  </div>
+                  {!recording && <div style={{ fontSize: 13, opacity: 0.4 }}>Press Start listening and begin the call.</div>}
+                </div>
+              ) : (
+                <><span>{finalText}</span>{' '}<span style={{ opacity: 0.45 }}>{interim}</span></>
               )}
-              <span>{finalText}</span>{' '}
-              <span style={{ opacity: 0.45 }}>{interim}</span>
             </div>
           </div>
 
