@@ -379,6 +379,27 @@ async function saveAssignments(embedId, visitorId, items) {
   } catch (_) { /* non-fatal */ }
 }
 
+// --- After-school check-in (Build R7) ---------------------------------------
+// When Ethan opens the app (or sends a message) after ~2:10pm Phoenix — when
+// school lets out at Kenilworth — the Wizard shifts from new-lesson mode into a
+// warm end-of-day wrap-up: how did the day go, follow up on today's assignments,
+// name a win, preview tomorrow with math front and center. This is the daily
+// check-in habit; once Ethan is at Kenilworth it grows to include his real
+// grades. Behavior-only, injected on top of the normal prompt.
+const AFTER_SCHOOL_CHECKIN_PROTOCOL = `
+AFTER-SCHOOL CHECK-IN MODE (it is now past 2:10pm — the daily wind-down):
+School's out for today. Don't launch a brand-new lesson — do a short, warm
+end-of-day check-in, like a mentor who genuinely cares how his day went:
+1. Ask how the rest of his day went.
+2. Go through today's assignments with him. For each one still pending, ask if he
+   got to it; mark it done (in your <<ASSIGN: ...=done>> line) ONLY when he says he did.
+3. Name one real thing he did well today (pull it from your ledger), and one
+   thing to pick back up tomorrow.
+4. Preview tomorrow in a single line, keeping math front and center (we're
+   getting ready for Kenilworth).
+Keep it brief and encouraging — this is the wrap-up, not a new lesson. If he
+clearly wants to keep working on a subject or his own project, follow his lead.`
+
 // --- Ethan's own projects (Build R6) ----------------------------------------
 // Like dad's Corner projects: things Ethan WANTS to build/do for fun. When he
 // says he wants to make something, the Wizard adds it as HIS project, remembers
@@ -619,6 +640,11 @@ export default async function handler(req, res) {
   // into his essay surface — it appends to his stored essay AND flows through
   // chat as a normal turn so the Wizard reacts to it.
   const essayMode = !!body.essay_mode
+  // After-school check-in (Build R7): the widget sends after_school=true when
+  // Ethan's Phoenix clock is past ~2:10pm (when school lets out at Kenilworth).
+  // Behavior-only — flips the Wizard into end-of-day wrap-up mode. Never touches
+  // his session, ledger, or saved data, so it can't lose his place.
+  const afterSchool = !!body.after_school
 
   if (!embed_id || !content) {
     return res.status(400).json({ error: 'embed_id and content required' })
@@ -735,6 +761,9 @@ export default async function handler(req, res) {
           systemPrompt += `\n\n=== COUNCIL NOTES (current plan — follow these) ===\n${councilNotes}`
         }
         systemPrompt += `\n\n=== CURRENT TIME ===\nIt is now ${phoenixNow()} (Arizona). Use this for any question about time, the day, or how much is left.`
+        if (afterSchool) {
+          systemPrompt += `\n${AFTER_SCHOOL_CHECKIN_PROTOCOL}`
+        }
         if (dayState?.payload?.state) {
           systemPrompt += `\n\n=== DAY STATE (your ledger from earlier today) ===\n${dayState.payload.state}`
         } else {

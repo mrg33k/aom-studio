@@ -230,6 +230,29 @@
       </div>`;
   }
 
+  // --- After-school check-in (Build R7) --------------------------------------
+  // True when Ethan's Phoenix clock is in the after-school window (2:10pm-9pm) —
+  // when school lets out at Kenilworth. Drives the check-in chip + the
+  // after_school flag on chat sends (so the Wizard wraps up the day). A
+  // ?afterschool=1 URL param forces it on for testing/screenshots only.
+  function isAfterSchoolNow() {
+    try {
+      if (/[?&]afterschool=1\b/.test(window.location.search)) return true;
+      const s = new Date().toLocaleString('en-US', { timeZone: 'America/Phoenix', hour12: false, hour: '2-digit', minute: '2-digit' });
+      const m = s.match(/(\d{1,2}):(\d{2})/);
+      if (!m) return false;
+      const mins = parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      return mins >= (14 * 60 + 10) && mins < (21 * 60); // 2:10pm - 9pm
+    } catch (e) { return false; }
+  }
+  function renderAfterSchoolChip() {
+    if (!isAfterSchoolNow()) return '';
+    return `<div class="afterschool-chip">
+      <span class="afterschool-icon">&#9790;</span>
+      <span class="afterschool-text">After-school check-in &mdash; let&rsquo;s see how today went and set up tomorrow.</span>
+    </div>`;
+  }
+
   // --- Ethan's projects (Build R6) — his own ideas, for fun ------------------
   function renderProjects() {
     const items = appState.projects || [];
@@ -426,6 +449,8 @@
           content: '<<session-start>>',
           visitor_id: 'ethan-' + appState.sessionId,
           host_origin: window.location.origin,
+          // After 2:10pm the opening greeting becomes the after-school check-in.
+          after_school: isAfterSchoolNow(),
         }),
       });
       if (!response.ok) return;
@@ -483,6 +508,7 @@
         host_origin: window.location.origin,
       };
       if (opts.essayMode) payload.essay_mode = true;
+      if (isAfterSchoolNow()) payload.after_school = true;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -691,6 +717,7 @@
         </div>
 
         <div class="action-panel">
+          ${renderAfterSchoolChip()}
           ${renderCountdown()}
           ${renderGameHud()}
           ${isWritingActive() ? renderWritingDesk() : ''}
