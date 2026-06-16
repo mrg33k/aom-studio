@@ -1149,6 +1149,24 @@ function FrontDeskCard({ w, outcome, onDiscuss }) {
   const msgParts = splitOriginal((w.message || '').replace(STAGED_RE, '').trim())
   const { ask } = parseWishSummary(msgParts.summary)
   const overSla = outcome === 'holding' && (Date.now() - new Date(w.created_at).getTime()) > 10 * 60 * 1000
+  // Conversation + reply: load this card's full back-and-forth (their messages + every note WE sent)
+  // so Patrik can SEE what was said and reply into the same email thread.
+  const [convoOpen, setConvoOpen] = useState(false)
+  const [updates, setUpdates] = useState(null)
+  const [loadingConvo, setLoadingConvo] = useState(false)
+  async function toggleConvo() {
+    const next = !convoOpen
+    setConvoOpen(next)
+    if (next && updates === null) {
+      setLoadingConvo(true)
+      try {
+        const r = await fetch(`/api/support/wishes?access_code=${encodeURIComponent(w.access_code)}`)
+        const d = await r.json()
+        setUpdates(d?.updates || [])
+      } catch { setUpdates([]) }
+      finally { setLoadingConvo(false) }
+    }
+  }
   return (
     <div className="fd-card" style={{ background: BG_WHITE, border: `1px solid ${BORDER_LINE}`, borderRadius: 18,
       padding: '20px 20px 16px', boxShadow: '0 1px 2px rgba(26,26,20,0.04), 0 6px 22px rgba(26,26,20,0.05)' }}>
@@ -1183,9 +1201,31 @@ function FrontDeskCard({ w, outcome, onDiscuss }) {
         </div>
       )}
       <OriginalBlock original={msgParts.original} />
+      {/* See the whole conversation (what we actually said) + reply into the same email thread. */}
+      {convoOpen && (
+        <div style={{ marginTop: 12, borderTop: `1px solid ${BORDER_LINE}`, paddingTop: 12 }}>
+          {loadingConvo && <span style={{ fontFamily: BODY, fontSize: 12, color: TEXT_FAINT }}>Loading conversation…</span>}
+          {updates && <ConversationThread updates={updates} wish={w} />}
+          {updates && updates.filter((u) => ['client_message', 'soft_ack', 'response'].includes(u.kind)).length === 0 && !loadingConvo && (
+            <span style={{ fontFamily: BODY, fontSize: 12, color: TEXT_FAINT }}>Nothing sent to them yet. Write the first reply below.</span>
+          )}
+          {w.status !== 'resolved' && updates !== null && (
+            <ReplyComposer wish={w} onSent={(t) => setUpdates((prev) => [...(prev || []), {
+              id: `local-${Date.now()}`, kind: 'response', body: t, author: 'patrik',
+              visible_to_client: true, created_at: new Date().toISOString(),
+            }])} />
+          )}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 15, flexWrap: 'wrap' }}>
         <DiscussBtn onDiscuss={onDiscuss} payload={{ who: w.name || w.email, email: w.email,
           subject: null, original: msgParts.original, ask, staged: null, accessCode: w.access_code }} />
+        <button onClick={toggleConvo} className="fd-tab" style={{ fontFamily: BODY, fontSize: 13, fontWeight: 600,
+          color: convoOpen ? TEXT_DARK : ACCENT_EMERALD, background: 'transparent',
+          border: `1px solid ${convoOpen ? BORDER_LINE : 'rgba(14,143,102,0.35)'}`, borderRadius: 10,
+          padding: '7px 14px', cursor: 'pointer' }}>
+          {convoOpen ? 'Hide conversation' : 'See conversation & reply'}
+        </button>
         <ResolveBtn wishId={w.id} style={{ marginLeft: 'auto' }} />
       </div>
     </div>
