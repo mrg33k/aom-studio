@@ -39,6 +39,9 @@
     celebrateBig: false, // true = full-day-complete win (bigger burst)
     resumeBanner: null, // "welcome back, you're on X" after a refresh (never lose his place)
     worldOpen: false, // My World overview overlay (Build R8 slice 2) — additive, never the default surface
+    projectActive: null, // name of the project currently open via the left bar (Build R13); null = School
+    addingProject: false, // left-bar "add a project" inline input open (Build R13)
+    addProjectValue: '', // text in the add-project input
     theme: localStorage.getItem('wizard-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   };
 
@@ -385,17 +388,56 @@
   // World (his Corner). A subtle tap-line points there so they're never lost —
   // only shown when he actually has some.
   function renderWorldHint() {
-    const projects = (appState.projects || []).length;
+    // Projects now live in the left bar (Build R13); only point to reminders,
+    // which still live in My World.
     const reminders = (appState.reminders || []).filter((r) => (r.status || '').toLowerCase() !== 'done').length;
-    if (!projects && !reminders) return '';
-    const bits = [];
-    if (projects) bits.push(`${projects} project${projects === 1 ? '' : 's'}`);
-    if (reminders) bits.push(`${reminders} reminder${reminders === 1 ? '' : 's'}`);
+    if (!reminders) return '';
     return `<button type="button" class="world-hint" onclick="window.__wizardChat.openWorld()">
         <span class="world-hint-icon">&#10022;</span>
-        <span class="world-hint-text">Your ${bits.join(' and ')} are in My World</span>
+        <span class="world-hint-text">Your ${reminders} reminder${reminders === 1 ? '' : 's'} ${reminders === 1 ? 'is' : 'are'} in My World</span>
         <span class="world-hint-go">&#10148;</span>
       </button>`;
+  }
+
+  // --- Side nav (Build R13) — Corner-style left bar -------------------------
+  // Patrik: "just like in corner, instead of a modal his projects + ability to
+  // add projects and missions/select them should appear in the left bar." His
+  // Corner home lives in the left column: School (the Wizard class) + his own
+  // Projects, each select-to-open, plus add a project inline. Replaces the My
+  // World modal as the projects home. Additive to the existing left column —
+  // no session/ledger change, so a refresh still resumes his place.
+  function renderSideNav() {
+    const projects = appState.projects || [];
+    const subj = currentSubject();
+    const onProject = appState.projectActive || null;
+    const schoolActive = !onProject;
+    const projectItems = projects.length
+      ? projects.map((p, i) => {
+          const done = (p.status || '').toLowerCase() === 'done';
+          const active = onProject && onProject.toLowerCase() === (p.name || '').toLowerCase();
+          return `<button type="button" class="nav-item nav-item--project ${active ? 'is-active' : ''}" onclick="window.__wizardChat.openProject(${i})">
+              <span class="nav-item-icon">${done ? '&#9733;' : '&#9671;'}</span>
+              <span class="nav-item-label">${escapeHtml(p.name)}</span>
+            </button>`;
+        }).join('')
+      : `<div class="nav-empty">Nothing yet. Add something you want to build for fun.</div>`;
+    const addBlock = appState.addingProject
+      ? `<form class="nav-add-form" onsubmit="window.__wizardChat.submitAddProject(document.getElementById('nav-add-input').value); return false;">
+          <input id="nav-add-input" class="nav-add-input" type="text" placeholder="What do you want to build?" value="${escapeHtml(appState.addProjectValue || '')}" />
+          <button type="submit" class="nav-add-go" title="Add">&#10148;</button>
+        </form>`
+      : `<button type="button" class="nav-add-btn" onclick="window.__wizardChat.startAddProject()">+ Add a project</button>`;
+    return `<nav class="side-nav" aria-label="Ethan's Corner">
+        <div class="nav-eyebrow">&#10022; Ethan&rsquo;s Corner</div>
+        <div class="nav-section-label">School</div>
+        <button type="button" class="nav-item nav-item--school ${schoolActive ? 'is-active' : ''}" onclick="window.__wizardChat.selectSchool()">
+          <span class="nav-item-icon">&#9876;</span>
+          <span class="nav-item-label">Summer School${subj ? ` <span class="nav-item-sub">on ${escapeHtml(subj)}</span>` : ''}</span>
+        </button>
+        <div class="nav-section-label">My Projects</div>
+        <div class="nav-list">${projectItems}</div>
+        ${addBlock}
+      </nav>`;
   }
 
   // --- My World overview (Build R8 slice 2) — Ethan's own Corner home --------
@@ -913,8 +955,11 @@
         ${renderWorld()}
 
         <div class="wizard-rail">
-          <img class="wizard-figure" src="/summerschool/wizard.png?v=20260611a" alt="The Wizard" />
-          <div class="wizard-nameplate">The Wizard</div>
+          ${renderSideNav()}
+          <div class="wizard-figure-wrap">
+            <img class="wizard-figure" src="/summerschool/wizard.png?v=20260611a" alt="The Wizard" />
+            <div class="wizard-nameplate">The Wizard</div>
+          </div>
         </div>
 
         <div class="messages-container${appState.messages.length === 0 && appState.isLoading ? ' messages-container--init' : ''}">
@@ -1004,9 +1049,28 @@
       const p = items[i];
       if (!p || appState.isLoading) return;
       appState.worldOpen = false; // if opened from My World, drop back into the chat
+      appState.projectActive = p.name; // highlight it in the left bar
       // Opening a project is Ethan's move — send it as his message, and tell the
       // Wizard (via project_focus) to be his teammate on it right now.
       sendMessage(`Let’s work on my project: ${p.name}`, { projectFocus: p.name });
+    },
+    // Left bar: tap School to come back to the Wizard class from a project.
+    selectSchool: () => {
+      if (appState.isLoading) return;
+      const wasOnProject = !!appState.projectActive;
+      appState.projectActive = null;
+      appState.worldOpen = false;
+      render();
+      if (wasOnProject) sendMessage(`Let's get back to school.`);
+    },
+    // Left bar: add a project inline (Corner-style), no modal.
+    startAddProject: () => { appState.addingProject = true; appState.addProjectValue = ''; render();
+      const el = document.getElementById('nav-add-input'); if (el) el.focus(); },
+    submitAddProject: (val) => {
+      const name = (val || '').trim();
+      appState.addingProject = false; appState.addProjectValue = '';
+      render();
+      if (name) sendMessage(`I want to start a new project: ${name}`);
     },
     completeItem: (kind, i) => {
       // spellbook items key on .word and finish as 'mastered'; the rest key on
