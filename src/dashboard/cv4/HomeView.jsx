@@ -495,8 +495,8 @@ export default function HomeView({
     }} tabIndex={-1}>
       <style>{`
         @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.4} }
-        [data-cv4-home] .hm-shell { max-width:780px; margin:0 auto; padding:72px 32px 64px; }
-        [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(34px,5vw,54px); line-height:1.05; letter-spacing:-.025em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
+        [data-cv4-home] .hm-shell { max-width:1040px; margin:0 auto; padding:72px 40px 100px; }
+        [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(40px,6vw,64px); line-height:1.02; letter-spacing:-.03em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
         [data-cv4-home] .hm-welcome .hm-l1 { color:#E8EBEF; }
         [data-cv4-home] .hm-welcome .hm-l2 { color:#A7B5C8; margin-left:0.32em; }
         [data-cv4-home] .hm-search { position:relative; margin-bottom:52px; }
@@ -590,145 +590,182 @@ export default function HomeView({
       {/* R7: CV6 layout — missions as primary, keyboard navigation, inline actions, happening now */}
       {cv6 ? (
         <div className="hm-shell" style={{ maxWidth: '100%' }}>
-          {/* R9: Top nav bar — global icons above the greeting, left-grouped */}
+          {/* R11: PUNCH-LIST #5 — CREW STATUS BANNER (5-COMPANY TEST: emphasize AI crew is ALIVE working for you RIGHT NOW) */}
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+            padding: '12px 16px', marginBottom: '24px',
+            background: 'linear-gradient(135deg, var(--cv6-accent-primary) 0%, rgba(0,102,255,0.8) 100%)',
+            color: '#ffffff', borderRadius: '8px',
+            fontSize: '13px', fontWeight: '600', letterSpacing: '0.05em',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{
+                display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%',
+                background: '#ffffff', animation: 'hm-breathe 1.2s ease-in-out infinite',
+              }}></span>
+              <span>Your crew is live • {visibleAgents?.length || 0} collaborators working</span>
+            </div>
+            <span style={{ fontSize: '11px', opacity: 0.8, fontWeight: 500 }}>Active now</span>
+          </div>
+
+          {/* R11: Top nav bar — global icons (PUNCH-LIST #1) — primary (left) + secondary (right) with divider, 24px icons, strong hover */}
           {cv6 && (
             <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px',
-              marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
+              marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--cv6-divider)',
             }}>
-              {/* Explorer (left menu) */}
-              <button
-                title="Open Explorer"
-                onClick={() => onOpenDrawer?.('explorer')}
-                style={{
-                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
-                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 120ms ease', padding: 0,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-              </button>
+              {/* Primary group (left): Explorer, Files, Home, Theme */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Explorer */}
+                <button
+                  title="Open Explorer"
+                  onClick={() => onOpenDrawer?.('explorer')}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
+                </button>
 
-              {/* Files (right menu) */}
-              <button
-                title="Open Files"
-                onClick={() => onOpenDrawer?.('files')}
-                style={{
-                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
-                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 120ms ease', padding: 0,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-                </svg>
-              </button>
+                {/* Files */}
+                <button
+                  title="Open Files"
+                  onClick={() => onOpenDrawer?.('files')}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
+                  </svg>
+                </button>
 
-              {/* Back to Home */}
-              <button
-                title="Back to Home"
-                onClick={() => window.location.href = '/dashboard'}
-                style={{
-                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
-                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 120ms ease', padding: 0,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-              </button>
+                {/* Home */}
+                <button
+                  title="Back to Home"
+                  onClick={() => window.location.href = '/dashboard'}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                  </svg>
+                </button>
 
-              {/* Theme toggle (light/dark) */}
-              <button
-                title="Toggle theme"
-                onClick={() => {
-                  const shell = document.querySelector('[data-shell="cv4"]')
-                  const isDark = shell?.getAttribute('data-theme') === 'dark'
-                  shell?.setAttribute('data-theme', isDark ? 'light' : 'dark')
-                }}
-                style={{
-                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
-                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 120ms ease', padding: 0,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-              </button>
+                {/* Theme toggle */}
+                <button
+                  title="Toggle theme"
+                  onClick={() => {
+                    const shell = document.querySelector('[data-shell="cv4"]')
+                    const isDark = shell?.getAttribute('data-theme') === 'dark'
+                    shell?.setAttribute('data-theme', isDark ? 'light' : 'dark')
+                  }}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                  </svg>
+                </button>
+              </div>
 
-              {/* Support */}
-              <button
-                title="Go to Support"
-                onClick={() => window.location.href = '/dashboard?view=support'}
-                style={{
-                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
-                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 120ms ease', padding: 0,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-              >
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
-                </svg>
-              </button>
+              {/* Divider */}
+              <div style={{ flex: 1 }}></div>
 
-              {/* User settings / Avatar */}
-              <button
-                title="User settings"
-                onClick={() => window.location.href = '/dashboard?view=settings'}
-                style={{
-                  width: '36px', height: '36px', borderRadius: '50%', border: '2px solid var(--cv6-divider)',
-                  background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 120ms ease', padding: 0,
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.color = 'var(--cv6-accent-primary)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                </svg>
-              </button>
+              {/* Secondary group (right): Support, Avatar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Support */}
+                <button
+                  title="Go to Support"
+                  onClick={() => window.location.href = '/dashboard?view=support'}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                  </svg>
+                </button>
+
+                {/* Avatar */}
+                <button
+                  title="User settings"
+                  onClick={() => window.location.href = '/dashboard?view=settings'}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--cv6-divider)',
+                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.color = 'var(--cv6-accent-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 
-          <h1 className="hm-welcome">
+          <h1 className="hm-welcome" style={{ marginBottom: '32px' }}>
             <span className="hm-l1">{greeting}</span>{' '}
             <span className="hm-l2">{displayName(user) || 'there'}.</span>
           </h1>
 
-          {/* PUNCH-LIST #6: Happening now — dense and alive, not sparse */}
+          {/* R11: PUNCH-LIST #6 — HAPPENING NOW (density + alive, 6-item grid, breathing room) */}
           {happeningNow && happeningNow.length > 0 && (
-            <div className="hm-happening-now" style={{ marginBottom: '36px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What's happening now</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+            <div className="hm-happening-now" style={{ marginBottom: '48px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '18px', paddingBottom: '14px', borderBottom: '2px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What's happening now</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
                 {happeningNow.slice(0, 6).map((evt, idx) => (
                   <div key={idx} style={{
-                    display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px',
+                    display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
                     background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
-                    borderRadius: '6px', fontSize: '13px', color: 'var(--cv6-text-primary)',
-                    transition: 'all 120ms ease',
+                    borderRadius: '8px', fontSize: '13px', color: 'var(--cv6-text-primary)',
+                    transition: 'all 120ms ease', cursor: 'pointer',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--cv6-surface-hover)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--cv6-surface)'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.12)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                    e.currentTarget.style.boxShadow = 'none'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
@@ -757,11 +794,11 @@ export default function HomeView({
             <span className="hm-search-hint">⌘K</span>
           </div>
 
-          {/* R9: ACTIONABLE STATS — items you can act on, not vanity numbers */}
+          {/* R11: PUNCH-LIST #2 — ACTIONABLE STATS with clear affordances (whole card clickable, arrow indicator) */}
           {(needsYou && needsYou.length > 0) && (
-            <div className="hm-section" style={{ gridColumn: '1 / -1' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+            <div className="hm-section" style={{ gridColumn: '1 / -1', marginBottom: '32px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
                 {needsYou.map((n, idx) => {
                   const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
                   return (
@@ -769,33 +806,39 @@ export default function HomeView({
                     key={n.key}
                     onClick={() => n.onOpen && n.onOpen()}
                     style={{
-                      display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px',
-                      background: isSelected ? 'var(--cv6-surface-active)' : 'var(--cv6-surface)',
+                      display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
+                      background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
                       border: isSelected ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                      borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                      textAlign: 'left', fontFamily: 'inherit',
-                      borderLeft: isSelected ? '4px solid var(--cv6-accent-primary)' : '3px solid var(--cv6-accent-warn)',
-                      outline: isSelected ? `2px solid var(--cv6-accent-primary)` : 'none',
-                      outlineOffset: isSelected ? '2px' : '0',
+                      borderRadius: '8px', cursor: 'pointer', transition: 'all 120ms ease',
+                      textAlign: 'left', fontFamily: 'inherit', fontWeight: '500',
+                      boxShadow: isSelected ? '0 0 0 3px rgba(0,102,255,0.1)' : 'none',
                     }}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
                         e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                        e.currentTarget.style.borderColor = 'var(--cv6-accent-warn)'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isSelected) {
                         e.currentTarget.style.background = 'var(--cv6-surface)'
-                        e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                        e.currentTarget.style.boxShadow = 'none'
                       }
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-warn)', flexShrink: 0, animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
-                      <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{n.label}</div>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0, marginTop: '4px', animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '14px', fontWeight: '600' }}>{n.label}</div>
+                          <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--cv6-text-secondary)', marginTop: '4px' }}>{n.detail}</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '16px', color: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0 }}>→</span>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginLeft: '14px' }}>{n.detail}</div>
                   </button>
                 )
                 })}
@@ -803,18 +846,91 @@ export default function HomeView({
             </div>
           )}
 
-          {/* R9: ACTIVE WORK — cap at 3 visible, rest scroll internally, no left/right/bottom borders */}
+          {/* R11: PUNCH-LIST #4 — QUICK ACTION / INLINE REPLY (act without leaving) */}
+          <div className="hm-section" style={{ marginBottom: '32px', gridColumn: '1 / -1' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Quick reply</div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                type="text"
+                placeholder="Type a quick reply or command..."
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                    onQuickReply && onQuickReply(e.currentTarget.value)
+                    e.currentTarget.value = ''
+                  }
+                }}
+                style={{
+                  flex: 1,
+                  padding: '12px 14px',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  background: 'var(--cv6-surface)',
+                  color: 'var(--cv6-text-primary)',
+                  border: '1px solid var(--cv6-divider)',
+                  borderRadius: '6px',
+                  transition: 'all 120ms ease',
+                  outline: 'none',
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,102,255,0.1)'
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              />
+              <button
+                onClick={(e) => {
+                  const input = e.currentTarget.previousElementSibling
+                  if (input && input.value.trim()) {
+                    onQuickReply && onQuickReply(input.value)
+                    input.value = ''
+                    input.focus()
+                  }
+                }}
+                style={{
+                  padding: '12px 20px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  fontFamily: 'inherit',
+                  background: 'var(--cv6-accent-primary)',
+                  color: '#ffffff',
+                  border: '1px solid var(--cv6-accent-primary)',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  transition: 'all 120ms ease',
+                  flexShrink: 0,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--cv6-accent-primary-hover)'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.2)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'var(--cv6-accent-primary)'
+                  e.currentTarget.style.transform = 'translateY(0)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+
+          {/* R11: PUNCH-LIST #3 — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
           {allMissionsForCV6.length > 0 && (
-            <div className="hm-section">
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
+            <div className="hm-section" style={{ marginBottom: '32px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
               {/* Scrollable container: cap at 3 visible, internal scroll for the rest */}
               <div style={{
-                display: 'flex', flexDirection: 'column', gap: '6px',
-                maxHeight: '186px', // 56px per item * 3 + 6px gaps * 2 = 180px, rounded to 186px to cap at exactly 3 items
-                overflow: 'hidden', overflowY: 'auto', paddingRight: '8px',
-                // Remove left/right/bottom borders: use open-ended container
-                borderLeft: 'none', borderRight: 'none', borderBottom: 'none',
+                display: 'flex', flexDirection: 'column', gap: '8px',
+                maxHeight: '190px', // 56px per item * 3 + 8px gaps * 2 = 184px, rounded to 190px
+                overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
                 scrollBehavior: 'smooth',
+                borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                padding: '8px 8px 8px 8px',
+                background: 'var(--cv6-hover)',
               }}>
                 {allMissionsForCV6.map((m, idx) => {
                   const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
@@ -827,13 +943,25 @@ export default function HomeView({
                         document.querySelector('[data-cv4-home]')?.focus()
                       }}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '0',
-                        background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
+                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
+                        background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                         color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
                         borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
                         fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                        flex: '0 0 auto', minHeight: '56px', // Fixed height items for predictable scrolling
+                        flex: '0 0 auto', minHeight: '56px',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                          e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.background = 'var(--cv6-surface)'
+                          e.currentTarget.style.borderColor = 'transparent'
+                        }
                       }}
                     >
                       <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
@@ -841,35 +969,14 @@ export default function HomeView({
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.mission.name || m.mission.slug}</div>
                         <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
                       </div>
-                      {/* R9: Quick action button — act without leaving (inline reply) */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          // Quick action: open inline reply or task creation for this mission
-                          // For now, show a simple action — can be expanded to inline reply UI
-                          handleProjectSelect(m.project, m.mission)
-                        }}
-                        title="Quick action"
-                        style={{
-                          width: '28px', height: '28px', padding: 0, background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--cv6-hover)',
-                          border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          color: isSelected ? '#ffffff' : 'var(--cv6-text-secondary)', transition: 'all 120ms ease', flexShrink: 0,
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = isSelected ? 'rgba(255,255,255,0.3)' : 'var(--cv6-surface-hover)' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = isSelected ? 'rgba(255,255,255,0.2)' : 'var(--cv6-hover)' }}
-                      >
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                      </button>
                       <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
                     </button>
                   )
                 })}
               </div>
               {allMissionsForCV6.length > 3 && (
-                <div style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', marginTop: '6px', paddingTop: '8px', borderTop: '1px solid var(--cv6-divider)' }}>
-                  +{allMissionsForCV6.length - 3} more (scroll to see)
+                <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--cv6-divider)', textAlign: 'center' }}>
+                  ↓ +{allMissionsForCV6.length - 3} more (scroll within)
                 </div>
               )}
             </div>
