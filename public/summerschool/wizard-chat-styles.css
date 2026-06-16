@@ -481,24 +481,35 @@ html.dark-theme .project-row.project-done .project-text { color: #a89f8d; }
 .afterschool-chip {
   display: flex;
   align-items: center;
-  gap: 11px;
-  margin-bottom: 16px;
-  padding: 11px 14px;
+  gap: 13px;
+  /* Clear gap from the gold countdown chip below — these are two distinct
+     moments (today's wind-down vs days-to-school), not one stacked block. */
+  margin-bottom: 26px;
+  padding: 13px 15px;
   border: 1px solid var(--color-border);
   border-left: 3px solid var(--color-indigo);
   border-radius: 10px;
   background:
-    linear-gradient(180deg, rgba(68, 58, 114, 0.12), transparent 70%),
+    linear-gradient(180deg, rgba(68, 58, 114, 0.16), transparent 75%),
     rgba(253, 248, 236, 0.92);
   box-shadow: 0 2px 8px rgba(50, 42, 85, 0.10);
 }
 .afterschool-icon {
-  font-size: 20px;
+  font-size: 26px;
   line-height: 1;
   color: var(--color-indigo);
   flex: none;
 }
-.afterschool-text {
+.afterschool-body { min-width: 0; }
+.afterschool-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--color-indigo);
+  margin-bottom: 2px;
+}
+.afterschool-sub {
   font-size: 12px;
   line-height: 1.35;
   letter-spacing: 0.3px;
@@ -506,12 +517,13 @@ html.dark-theme .project-row.project-done .project-text { color: #a89f8d; }
 }
 html.dark-theme .afterschool-chip {
   background:
-    linear-gradient(180deg, rgba(106, 95, 168, 0.18), transparent 70%),
+    linear-gradient(180deg, rgba(106, 95, 168, 0.22), transparent 75%),
     rgba(34, 32, 27, 0.92);
   border-left-color: #6b5fa8;
 }
-html.dark-theme .afterschool-icon { color: #9a8fd0; }
-html.dark-theme .afterschool-text { color: #a89f8d; }
+html.dark-theme .afterschool-icon { color: #b3a8e0; }
+html.dark-theme .afterschool-title { color: #c3b9ea; }
+html.dark-theme .afterschool-sub { color: #a89f8d; }
 
 /* ===== Game HUD (Build R6) — XP / level / streak / prize meter ===== */
 .game-hud {

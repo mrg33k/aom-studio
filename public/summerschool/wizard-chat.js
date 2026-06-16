@@ -249,7 +249,10 @@
     if (!isAfterSchoolNow()) return '';
     return `<div class="afterschool-chip">
       <span class="afterschool-icon">&#9790;</span>
-      <span class="afterschool-text">After-school check-in &mdash; let&rsquo;s see how today went and set up tomorrow.</span>
+      <div class="afterschool-body">
+        <div class="afterschool-title">After-school check-in</div>
+        <div class="afterschool-sub">Let&rsquo;s wrap up today and set up tomorrow.</div>
+      </div>
     </div>`;
   }
 
