@@ -429,6 +429,159 @@ html.dark-theme .project-row.project-done .project-icon { color: var(--color-gol
 html.dark-theme .project-row.project-done .project-text { color: #a89f8d; }
 html.dark-theme .project-hint { color: #a89f8d; }
 
+/* ===== My World overview (Build R8 slice 2) — Ethan's own Corner home.
+   Additive overlay; the chat stays the default surface (never lose his place). */
+.world-btn {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-indigo);
+  background: rgba(253, 248, 236, 0.9);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+}
+.world-btn:hover { background: #fff; box-shadow: 0 2px 8px rgba(50, 42, 85, 0.14); }
+.world-btn:active { transform: translateY(1px); }
+.world-btn-icon { font-size: 13px; }
+html.dark-theme .world-btn {
+  color: #c3b9ea;
+  background: rgba(34, 32, 27, 0.92);
+  border-color: rgba(106, 95, 168, 0.5);
+}
+html.dark-theme .world-btn:hover { background: rgba(44, 41, 35, 0.95); }
+
+.world-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 28px 16px;
+  overflow-y: auto;
+  background: rgba(24, 20, 36, 0.55);
+  backdrop-filter: blur(3px);
+}
+.world-panel {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 26px 22px 24px;
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-gold);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.08), transparent 22%),
+    #f8f2e2;
+  box-shadow: 0 18px 50px rgba(24, 20, 36, 0.45);
+}
+.world-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-indigo);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.world-close:hover { background: rgba(68, 58, 114, 0.10); }
+.world-head { margin-bottom: 18px; text-align: center; }
+.world-eyebrow {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--color-gold-soft);
+  margin-bottom: 4px;
+}
+.world-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-indigo);
+}
+.world-section-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--color-indigo);
+  border-bottom: 2px solid var(--color-gold);
+  padding-bottom: 6px;
+  margin: 18px 0 12px;
+}
+.world-card-list { display: flex; flex-direction: column; gap: 10px; }
+.world-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+}
+.world-card:hover { box-shadow: 0 4px 14px rgba(50, 42, 85, 0.14); transform: translateY(-1px); }
+.world-card:active { transform: translateY(0); }
+.world-card--school { border-left: 4px solid var(--color-gold); }
+.world-card--project { border-left: 4px solid var(--color-indigo); }
+.world-card--project.is-done { background: rgba(68, 58, 114, 0.08); }
+.world-card-icon { flex: none; font-size: 22px; color: var(--color-indigo); }
+.world-card--school .world-card-icon { color: var(--color-gold-soft); }
+.world-card-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.world-card-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.world-card-sub { font-size: 12px; color: #6f6049; line-height: 1.3; }
+.world-card-go { flex: none; color: var(--color-indigo); opacity: 0.5; transition: opacity 0.15s ease, transform 0.15s ease; }
+.world-card:hover .world-card-go { opacity: 1; transform: translateX(2px); }
+.world-empty {
+  font-size: 12.5px;
+  font-style: italic;
+  color: #8a7c5e;
+  line-height: 1.5;
+  padding: 6px 2px;
+}
+html.dark-theme .world-panel {
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.06), transparent 22%),
+    #221f1b;
+  border-color: rgba(106, 95, 168, 0.35);
+}
+html.dark-theme .world-title { color: #c3b9ea; }
+html.dark-theme .world-section-label { color: #c3b9ea; }
+html.dark-theme .world-close { color: #c3b9ea; }
+html.dark-theme .world-card { background: rgba(26, 24, 20, 0.85); }
+html.dark-theme .world-card--project { border-left-color: #6b5fa8; }
+html.dark-theme .world-card-icon { color: #9a8fd0; }
+html.dark-theme .world-card-sub { color: #a89f8d; }
+html.dark-theme .world-card-go { color: #9a8fd0; }
+html.dark-theme .world-empty { color: #a89f8d; }
+
 /* ===== Resume bar (Build R8) — "welcome back, you're on X" after a refresh,
    so Ethan never loses his place. Sticky at the top of the chat. ===== */
 .resume-banner {

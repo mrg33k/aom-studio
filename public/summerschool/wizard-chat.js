@@ -34,6 +34,7 @@
     hudReady: false, // suppresses the win-burst during the initial load
     celebrateMsg: null, // transient win-burst banner text
     resumeBanner: null, // "welcome back, you're on X" after a refresh (never lose his place)
+    worldOpen: false, // My World overview overlay (Build R8 slice 2) — additive, never the default surface
     theme: localStorage.getItem('wizard-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   };
 
@@ -276,6 +277,51 @@
         <div class="action-title">&#9670; My Projects</div>
         <div class="project-list">${rows}</div>
         <div class="project-hint">Tap a project to work on it with the Wizard.</div>
+      </div>`;
+  }
+
+  // --- My World overview (Build R8 slice 2) — Ethan's own Corner home --------
+  // A tap-in overview of his areas: his School (the Wizard class) + his own
+  // Projects. Additive overlay — the chat stays his default surface, so a
+  // refresh always lands him back in his place. Tapping an area takes him in.
+  function renderWorld() {
+    if (!appState.worldOpen) return '';
+    const g = gameStats();
+    const subj = currentSubject();
+    const projects = appState.projects || [];
+    const projectCards = projects.length
+      ? projects.map((p, i) => {
+          const done = (p.status || '').toLowerCase() === 'done';
+          return `<button type="button" class="world-card world-card--project ${done ? 'is-done' : ''}"
+              onclick="window.__wizardChat.openProject(${i})">
+              <span class="world-card-icon">${done ? '&#9733;' : '&#9671;'}</span>
+              <span class="world-card-body">
+                <span class="world-card-title">${escapeHtml(p.name)}</span>
+                <span class="world-card-sub">${done ? 'Finished &mdash; open to revisit' : 'Open to work on it with the Wizard'}</span>
+              </span>
+              <span class="world-card-go">&#10148;</span>
+            </button>`;
+        }).join('')
+      : `<div class="world-empty">No projects yet. Tell the Wizard something you want to build for fun and it will show up here.</div>`;
+    return `<div class="world-overlay" onclick="if(event.target===this)window.__wizardChat.closeWorld()">
+        <div class="world-panel" role="dialog" aria-label="Ethan's Corner">
+          <button class="world-close" title="Back to the Wizard" onclick="window.__wizardChat.closeWorld()">&times;</button>
+          <div class="world-head">
+            <div class="world-eyebrow">&#10022; Ethan&rsquo;s Corner</div>
+            <h2 class="world-title">My World</h2>
+          </div>
+          <div class="world-section-label">School</div>
+          <button type="button" class="world-card world-card--school" onclick="window.__wizardChat.closeWorld()">
+            <span class="world-card-icon">&#9876;</span>
+            <span class="world-card-body">
+              <span class="world-card-title">Summer School with the Wizard</span>
+              <span class="world-card-sub">Level ${g.level} ${escapeHtml(g.title)} &middot; ${g.todayDone}/${g.todayTotal || 6} done today${subj ? ` &middot; on ${escapeHtml(subj)}` : ''}</span>
+            </span>
+            <span class="world-card-go">&#10148;</span>
+          </button>
+          <div class="world-section-label">My Projects</div>
+          <div class="world-card-list">${projectCards}</div>
+        </div>
       </div>`;
   }
 
@@ -692,7 +738,11 @@
               <span class="theme-icon">&#9790;</span>
             </button>
           </div>
+          <button class="world-btn" title="My World" onclick="window.__wizardChat.openWorld()">
+            <span class="world-btn-icon">&#9636;</span> My World
+          </button>
         </div>
+        ${renderWorld()}
 
         <div class="wizard-rail">
           <img class="wizard-figure" src="/summerschool/wizard.png?v=20260611a" alt="The Wizard" />
@@ -780,9 +830,18 @@
       const items = appState.projects || [];
       const p = items[i];
       if (!p || appState.isLoading) return;
+      appState.worldOpen = false; // if opened from My World, drop back into the chat
       // Opening a project is Ethan's move — send it as his message, and tell the
       // Wizard (via project_focus) to be his teammate on it right now.
       sendMessage(`Let’s work on my project: ${p.name}`, { projectFocus: p.name });
+    },
+    openWorld: () => {
+      appState.worldOpen = true;
+      render();
+    },
+    closeWorld: () => {
+      appState.worldOpen = false;
+      render();
     },
     addSentence: (text) => {
       const t = (text || '').trim();
