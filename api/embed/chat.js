@@ -131,9 +131,22 @@ function phoenixDate(daysAgo = 0) {
 const DAY_STATE_PROTOCOL = `
 DAY LEDGER PROTOCOL (machine bookkeeping — invisible to Ethan):
 End EVERY reply with one final line in exactly this form:
-<<DAY: Reading=done|in-progress|next|not-started (convo done|pending, challenge assigned|done|pending, step: short detail); Writing=...; Math=...; Specials1(name)=...; Specials2(name)=...; now=the exact moment you are in right now, specific enough to resume from cold; note=anything that didn't land, to revisit>>
+<<DAY: Communication=done|in-progress|next|not-started (convo done|pending, challenge assigned|done|pending, step: short detail); Reading=...; Writing=...; Math=...; Specials1(name)=...; Specials2(name)=...; now=the exact moment you are in right now, specific enough to resume from cold; note=anything that didn't land, to revisit>>
 The parenthetical is your per-subject checklist: track the conversation, the
 challenge, and the current step (e.g. "step: brave moments 1/3 found").
+BOARD SYNC (Ethan watches this board on screen WHILE you talk — it must match
+the conversation every single turn, or he loses focus):
+- List EVERY subject of today from the very first turn — the Communication
+  opener PLUS Reading, Writing, Math, and the two Specials. Never leave one off
+  the line and never drop one you already listed.
+- The subject your CURRENT message is teaching is "in-progress" THIS turn — the
+  opener included. The instant you start a subject it is in-progress; never
+  leave it "next" or "not-started" while you are talking about it.
+- Exactly ONE subject is in-progress at a time: the one you are on right now.
+  Do NOT flip the next subject to in-progress before your message has actually
+  moved to it (no jumping ahead), and mark a subject "done" the same turn you
+  finish it and move on (no lagging behind). A board one step ahead of or behind
+  the chat is exactly the mismatch that loses him.
 IMPORTANT: the "step:" text appears on Ethan's quest board — write it as the
 kid-facing task ("find 2 more brave moments"), never as teacher observations.
 The "now=" field is your save point — write it like a note to a substitute
