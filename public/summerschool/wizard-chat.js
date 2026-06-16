@@ -116,14 +116,22 @@
     appState.sessionId = sid;
   }
 
-  // Load this visitor's recent conversation from the server (survives
+  // Load this visitor's conversation for TODAY from the server (survives
   // refresh, new tab, device sleep — the server is the source of truth).
+  // Scoped to today's Phoenix midnight so we get ALL of today's messages
+  // without hitting the 200-row cap on 7-day history.
   async function loadHistory() {
     try {
+      // Full-day history: scope to today in Phoenix timezone.
+      // Arizona (Phoenix) stays on MST = UTC-7 year-round (no DST).
+      const todayPhoenix = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' });
+      const sinceTodayMidnight = new Date(todayPhoenix + 'T00:00:00-07:00').toISOString();
+
       const params = new URLSearchParams({
         embed_id: EMBED_ID,
         history: '1',
         visitor_id: 'ethan-' + appState.sessionId,
+        since: sinceTodayMidnight,
       });
       const response = await fetch(`/api/embed/messages?${params.toString()}`, {
         headers: { 'Accept': 'application/json' },
@@ -132,7 +140,12 @@
       const data = await response.json();
       if (data.day_state) appState.dayState = data.day_state;
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
+      let hadVisible = false;
       for (const msg of data.messages) {
+        // Skip hidden session-start triggers (sent by requestWizardGreeting on
+        // a fresh day — they're internal scaffolding, not part of Ethan's convo).
+        if (msg.role === 'user' && (msg.text || '').trim() === '<<session-start>>') continue;
+        hadVisible = true;
         appState.messages.push({
           role: msg.role || 'wizard',
           text: msg.text || '',
@@ -143,10 +156,53 @@
           appState.sinceTs = msg.timestamp;
         }
       }
-      return true;
+      return hadVisible;
     } catch (e) {
       console.warn('History load error:', e);
       return false;
+    }
+  }
+
+  // Request a server-generated opening greeting for a fresh session.
+  // Posts a hidden <<session-start>> trigger — the Wizard uses the day
+  // ledger + cross-day memory to craft a personalized opener (e.g. "Morning,
+  // Ethan! Yesterday you crushed those math problems…"). The trigger message
+  // is never added to appState.messages — Ethan only sees the Wizard's reply.
+  // The day_state in the reply seeds the Today's Quests panel immediately.
+  async function requestWizardGreeting() {
+    appState.isLoading = true;
+    render();
+    try {
+      const response = await fetch('/api/embed/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embed_id: EMBED_ID,
+          content: '<<session-start>>',
+          visitor_id: 'ethan-' + appState.sessionId,
+          host_origin: window.location.origin,
+        }),
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.day_state) appState.dayState = data.day_state;
+      // Advance sinceTs so the poll picks up from after the greeting was inserted.
+      if (data.since_ts && data.since_ts > appState.sinceTs) {
+        appState.sinceTs = data.since_ts;
+      }
+      // Show the Wizard's greeting reply immediately (no poll wait).
+      if (data.reply && data.reply.text) {
+        appState.messages.push({
+          role: 'assistant',
+          text: data.reply.text,
+          timestamp: Date.now(),
+          id: data.reply.id,
+        });
+      }
+    } catch (e) {
+      console.warn('[wizard] Session greeting request failed:', e);
+    } finally {
+      appState.isLoading = false;
     }
   }
 
@@ -433,18 +489,19 @@
     initSessionId();
     applyTheme();
 
-    // Start the poll window from now; loadHistory advances it if needed
+    // Start the poll window from now; loadHistory or greeting will advance it
     appState.sinceTs = new Date().toISOString();
     render();
 
-    // Pull the existing conversation back — refresh must not lose the thread
+    // Pull the existing conversation back — refresh must not lose the thread.
+    // loadHistory is scoped to today so it returns all of today's messages.
+    // It also fetches today's day_state so the Quests panel renders immediately.
     const hadHistory = await loadHistory();
     if (!hadHistory) {
-      appState.messages.push({
-        role: 'wizard',
-        text: 'Morning, Ethan! Good to see you. Before we open the books, I have a real question for you — when you don\'t understand something, what do you usually do: ask for help, or go quiet and try to figure it out alone?',
-        timestamp: Date.now(),
-      });
+      // No history for today — ask the server for a personalized greeting.
+      // The Wizard uses the day ledger + cross-day memory (yesterday's ledger)
+      // to craft the opener. No hardcoded fallback message.
+      await requestWizardGreeting();
     }
     render();
 
