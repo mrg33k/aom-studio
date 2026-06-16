@@ -1,0 +1,26 @@
+# corner:test-dashboard R1 — auto-deploy lab branch to aom-studio-lab Vercel project
+# Pushes to `lab` branch trigger a production deploy on the lab project.
+# This bypasses the Vercel productionBranch=main limitation (API doesn't expose this field).
+
+name: Deploy Lab to Production
+
+on:
+  push:
+    branches:
+      - lab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Deploy to aom-studio-lab (production)
+        run: |
+          vercel --prod --yes \
+            --token ${{ secrets.VERCEL_TOKEN }} \
+            --scope aheads-projects-d2a4c70f \
+            --project aom-studio-lab
