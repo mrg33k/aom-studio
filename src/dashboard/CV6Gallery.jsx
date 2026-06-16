@@ -30,7 +30,7 @@ import ProjectFileReader from './cv4/ProjectFileReader.jsx'
 import MailAccountSwitcher from './cv4/MailAccountSwitcher.jsx'
 
 // ── Real full screens (rendered live so Steffen restyles them in place) ──
-import HomeView from './cv4/HomeView.jsx'
+import HomeView, { SupportToolOverlay } from './cv4/HomeView.jsx'
 import SupportDashboard from './cv4/SupportDashboard.jsx'
 
 const SHELL = {
@@ -362,14 +362,16 @@ const SCREENS = [
   {
     id: 'screen-support',
     name: 'Support',
-    purpose: 'Front desk — what was handled, what needs your call, what is holding. Dark only today.',
+    purpose: 'Clean 3-column layout (Needs You | In Progress | Handled) with real support data and Resolve + Open Gmail actions.',
     wide: true,
     states: [
       {
         label: 'Default',
         render: () => (
-          <ScreenFrame theme="dark" label="Support · Front desk">
-            <SupportDashboard isDesktop={true} worldId="aom" onClose={() => {}} onDiscuss={() => {}} />
+          <ScreenFrame theme="dark" label="Support · CV6">
+            <div style={{ padding: '16px 20px', height: '100%' }}>
+              <SupportToolOverlay worldId="aom" />
+            </div>
           </ScreenFrame>
         ),
       },

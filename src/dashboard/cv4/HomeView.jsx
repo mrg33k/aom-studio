@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
-import SupportDashboard from './SupportDashboard.jsx'
+import { useSupportData, buildItems } from './SupportDashboard.jsx'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
@@ -191,6 +191,184 @@ function Chevron({ collapsed }) {
     </svg>
   )
 }
+
+// ── CV6 Support Tool Overlay ─ 3-column clean layout with real data ──────────────
+function SupportToolOverlay({ worldId }) {
+  const { wishes, mailboxes } = useSupportData(worldId)
+  const items = buildItems(wishes, mailboxes)
+
+  // Map items to 3 columns: Needs You (amber) | In Progress (green) | Handled (blue)
+  const needsYou = items.filter(it => it.status === 'needs_you' || it.ready)
+  const inProgress = items.filter(it => it.status === 'working' || it.status === 'heard')
+  const handled = items.filter(it => it.status === 'resolved')
+
+  return (
+    <div data-cv6="true" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', height: '100%', flex: 1 }}>
+      {/* NEEDS YOU Column — Amber (#F59E0B) */}
+      <SupportColumn title="Needs You" status="needs_you" items={needsYou} accentColor="#F59E0B" />
+
+      {/* IN PROGRESS Column — Green (#10B981) */}
+      <SupportColumn title="In Progress" status="working" items={inProgress} accentColor="#10B981" />
+
+      {/* HANDLED Column — Blue (#0066FF) */}
+      <SupportColumn title="Handled" status="resolved" items={handled} accentColor="#0066FF" />
+    </div>
+  )
+}
+
+// ── Support Column Component ────────────────────────────────────────────────────
+function SupportColumn({ title, status, items, accentColor }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      {/* Column Header */}
+      <div style={{
+        fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em',
+        color: 'var(--cv6-text-secondary)', marginBottom: '12px', paddingBottom: '12px',
+        borderBottom: `2px solid ${accentColor}`,
+      }}>
+        {title}
+      </div>
+
+      {/* Cards List */}
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {items.length === 0 ? (
+          <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '16px 0', marginTop: '8px' }}>
+            —
+          </div>
+        ) : (
+          items.map(item => (
+            <SupportCard key={item.key} item={item} accentColor={accentColor} />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Support Card Component ──────────────────────────────────────────────────────
+function SupportCard({ item, accentColor }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [resolving, setResolving] = useState(false)
+
+  const handleResolve = async (e) => {
+    e.stopPropagation()
+    if (!item.wish) return
+    setResolving(true)
+    try {
+      const r = await authFetch('/api/support/send-staged', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resolve', wish_id: item.wish.id }),
+      })
+      const d = await r.json()
+      if (r.ok && d.ok) {
+        // Item resolved; parent component will re-fetch
+      }
+    } catch (e) {
+      console.error('Resolve failed:', e)
+    } finally {
+      setResolving(false)
+    }
+  }
+
+  const handleOpenMail = () => {
+    if (item.link) {
+      window.open(item.link, '_blank')
+    }
+  }
+
+  return (
+    <button
+      onClick={() => setIsExpanded(!isExpanded)}
+      style={{
+        display: 'block', width: '100%', textAlign: 'left',
+        background: 'var(--cv6-surface)', border: `1px solid ${isExpanded ? accentColor : 'var(--cv6-divider)'}`,
+        borderRadius: '6px', padding: '12px', cursor: 'pointer',
+        transition: 'all 120ms ease', fontFamily: 'inherit',
+      }}
+      onMouseEnter={(e) => {
+        if (!isExpanded) e.currentTarget.style.borderColor = accentColor
+      }}
+      onMouseLeave={(e) => {
+        if (!isExpanded) e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+      }}
+    >
+      {/* Card Header: Who + Status Badge */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.who}
+        </span>
+        {item.ready && (
+          <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, flexShrink: 0 }}>
+            Ready
+          </span>
+        )}
+      </div>
+
+      {/* Subject (if present) */}
+      {item.subject && (
+        <p style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.subject}
+        </p>
+      )}
+
+      {/* Preview Text */}
+      {item.text && (
+        <p style={{
+          margin: '0', fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4',
+          display: '-webkit-box', WebkitLineClamp: isExpanded ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          whiteSpace: 'pre-wrap',
+        }}>
+          {item.text}
+        </p>
+      )}
+
+      {/* Actions (if expanded) */}
+      {isExpanded && (
+        <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--cv6-divider)', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {item.wish && item.status === 'needs_you' && (
+            <button
+              onClick={handleResolve}
+              disabled={resolving}
+              style={{
+                fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
+                padding: '6px 12px', borderRadius: '4px',
+                background: accentColor, color: '#ffffff', border: 'none', cursor: resolving ? 'default' : 'pointer',
+                opacity: resolving ? 0.6 : 1, transition: 'opacity 120ms ease',
+              }}
+            >
+              {resolving ? '…' : 'Resolve'}
+            </button>
+          )}
+          {item.link && (
+            <button
+              onClick={handleOpenMail}
+              style={{
+                fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
+                padding: '6px 12px', borderRadius: '4px',
+                background: 'transparent', color: accentColor, border: `1px solid ${accentColor}`,
+                cursor: 'pointer', transition: 'all 120ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = accentColor
+                e.currentTarget.style.color = '#ffffff'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = accentColor
+              }}
+            >
+              Open in Gmail
+            </button>
+          )}
+        </div>
+      )}
+    </button>
+  )
+}
+
+// Export SupportToolOverlay for use in CV6Gallery
+export { SupportToolOverlay }
 
 export default function HomeView({
   user,
@@ -1097,9 +1275,7 @@ export default function HomeView({
               {/* Tool content */}
               <div style={{ padding: '16px 20px', maxHeight: '500px', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {selectedTool === 'support' && (
-                  <div data-cv6="true" style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
-                    <SupportDashboard worldId={worldId || 'aom'} cv6Mode={true} />
-                  </div>
+                  <SupportToolOverlay worldId={worldId || 'aom'} />
                 )}
 
                 {selectedTool === 'command' && (
