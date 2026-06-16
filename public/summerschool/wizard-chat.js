@@ -57,6 +57,10 @@
       // Specials1(Communication) → Communication; plain keys pass through
       const special = key.match(/^Specials?\d*\s*\(([^)]+)\)$/i);
       const name = special ? special[1].trim() : key;
+      // Skip unnamed-special placeholders the model sometimes copies from the
+      // ledger template ("Specials1(name)" / "none") — a junk "NAME" row on the
+      // board just confuses him.
+      if (!name || /^(name|none|\(none\))$/i.test(name)) continue;
       // Status is the first token; optional "(convo done, step: ...)" detail follows
       const detailMatch = val.match(/^([^(\s]+)\s*(?:\(([^)]*)\))?/);
       const status = (detailMatch ? detailMatch[1] : val).toLowerCase().replace(/\s+/g, '-');
