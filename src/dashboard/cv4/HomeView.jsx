@@ -580,7 +580,7 @@ export default function HomeView({
   }, [cv6, handleKeyDown])
 
   return (
-    <div data-cv4-home style={{
+    <div data-cv4-home data-cv6={cv6 ? 'true' : undefined} style={{
       width: '100%', height: '100%', overflowY: 'auto',
       background: 'transparent',
       color: 'var(--c-text, #E8EBEF)',
@@ -1383,28 +1383,29 @@ export default function HomeView({
                 onClick={() => setSelectedTool('support')}
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                  background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  padding: '14px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid rgba(255, 255, 255, 0.15)',
+                  background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'rgba(255, 255, 255, 0.05)',
                   color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
                   cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  minHeight: '80px',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedTool !== 'support') {
-                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (selectedTool !== 'support') {
-                    e.currentTarget.style.background = 'var(--cv6-surface)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
                   }
                 }}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
-                <span style={{ fontSize: '11px' }}>Support</span>
+                <span style={{ fontSize: '11px', fontWeight: '500' }}>Support</span>
               </button>
 
               {/* Command Deck */}
@@ -1412,21 +1413,22 @@ export default function HomeView({
                 onClick={() => setSelectedTool('command')}
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                  background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  padding: '14px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid rgba(255, 255, 255, 0.15)',
+                  background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'rgba(255, 255, 255, 0.05)',
                   color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
                   cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  minHeight: '80px',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedTool !== 'command') {
-                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (selectedTool !== 'command') {
-                    e.currentTarget.style.background = 'var(--cv6-surface)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
                   }
                 }}
               >
@@ -1435,7 +1437,7 @@ export default function HomeView({
                   <polyline points="12 9 15 9 15 20 12 20"/>
                   <polyline points="20 9 23 9 23 20 20 20"/>
                 </svg>
-                <span style={{ fontSize: '11px' }}>Command</span>
+                <span style={{ fontSize: '11px', fontWeight: '500' }}>Command</span>
               </button>
             </div>
           </div>
