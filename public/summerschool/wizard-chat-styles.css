@@ -703,14 +703,49 @@ html.dark-theme .hud-prize-label { color: var(--color-text); }
   text-decoration-color: rgba(212, 175, 55, 0.6);
 }
 
+/* The current subject is the hero of the board: gold accent, warm glow, a hair
+   larger, name in full color (not muted) so it reads as "do this now". */
 .quest-row.quest-active {
-  border-left-color: var(--color-indigo);
-  border-color: var(--color-indigo);
-  background: rgba(68, 58, 114, 0.07);
-  box-shadow: 0 1px 4px rgba(68, 58, 114, 0.12);
+  border-left: 4px solid var(--color-gold);
+  border-color: var(--color-gold);
+  background: rgba(212, 175, 55, 0.12);
+  box-shadow: 0 2px 12px rgba(212, 175, 55, 0.25);
+  padding: 12px 12px;
 }
-.quest-row.quest-active .quest-icon,
-.quest-row.quest-active .quest-status { color: var(--color-indigo); }
+.quest-row.quest-active .quest-icon { color: var(--color-gold-soft); }
+.quest-row.quest-active .quest-name {
+  color: var(--color-text);
+  font-size: 14.5px;
+}
+
+/* NOW badge — gold pill with a live pulsing dot */
+.quest-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #322a55;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  border: 1px solid #b08f25;
+  border-radius: 10px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.quest-now-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #322a55;
+  animation: now-pulse 1.4s ease-in-out infinite;
+}
+@keyframes now-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.6); }
+}
 
 .quest-row.quest-next .quest-icon { color: var(--color-gold-soft); }
 

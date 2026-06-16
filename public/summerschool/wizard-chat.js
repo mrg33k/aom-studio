@@ -86,13 +86,19 @@
     const rows = parsed.quests
       .map((q) => {
         const meta = questStatusMeta(q.status);
-        const stepHtml = q.step && q.status === 'in-progress'
+        const isNow = q.status === 'in-progress';
+        const stepHtml = q.step && isNow
           ? `<div class="quest-step">${escapeHtml(q.step)}</div>`
           : '';
+        // The subject he's on RIGHT NOW is the hero of the board — a gold NOW
+        // badge with a live dot, so he always knows the one thing to do now.
+        const statusHtml = isNow
+          ? `<span class="quest-now"><span class="quest-now-dot"></span>NOW</span>`
+          : `<span class="quest-status">${meta.label}</span>`;
         return `<div class="quest-row ${meta.cls}">
             <span class="quest-icon">${meta.icon}</span>
             <span class="quest-name">${escapeHtml(q.name)}${stepHtml}</span>
-            <span class="quest-status">${meta.label}</span>
+            ${statusHtml}
           </div>`;
       })
       .join('');
