@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-16T04:38:39.571Z",
+  "generated_at": "2026-06-16T21:15:22.208Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -2956,6 +2956,20 @@
       "path": "corner/users/aom/projects/holistic-balance/missions/marketing"
     },
     {
+      "slug": "included-health:batch02-culture-videos",
+      "raw_slug": "batch02-culture-videos",
+      "folder_name": "batch02-culture-videos",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "included-health",
+      "workstream": null,
+      "name": "Batch02 Culture Videos",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/included-health/missions/batch02-culture-videos"
+    },
+    {
       "slug": "included-health:client-summit-video",
       "raw_slug": "client-summit-video",
       "folder_name": "client-summit-video",
@@ -3661,8 +3675,8 @@
     },
     {
       "slug": "included-health",
-      "total": 2,
-      "in_flight": 2,
+      "total": 3,
+      "in_flight": 3,
       "done": 0
     },
     {

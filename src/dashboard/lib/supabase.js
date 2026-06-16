@@ -17,10 +17,11 @@ const USE_FIXTURES = import.meta.env.VITE_USE_FIXTURES === '1'
 let _supabase = null
 
 if (USE_FIXTURES) {
-  const { fixtureClient, fixtureSummary } = await import('./fixtureClient.js')
-  _supabase = fixtureClient
-  // eslint-disable-next-line no-console
-  console.log('[supabase] FIXTURE MODE — using local JSON snapshot:', fixtureSummary())
+  import('./fixtureClient.js').then(({ fixtureClient, fixtureSummary }) => {
+    _supabase = fixtureClient
+    // eslint-disable-next-line no-console
+    console.log('[supabase] FIXTURE MODE — using local JSON snapshot:', fixtureSummary())
+  })
 } else if (SUPABASE_URL && SUPABASE_ANON_KEY) {
   _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 }
