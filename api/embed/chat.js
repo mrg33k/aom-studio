@@ -769,9 +769,6 @@ export default async function handler(req, res) {
         if (afterSchool) {
           systemPrompt += `\n${AFTER_SCHOOL_CHECKIN_PROTOCOL}`
         }
-        if (projectFocus) {
-          systemPrompt += `\n\n=== ETHAN JUST OPENED HIS PROJECT: "${projectFocus}" ===\nHe tapped this project to work on it with you RIGHT NOW. For THIS reply, the project is the activity — do not redirect him to a lesson or a warm-up question. Be his teammate, not his teacher: get genuinely excited, ask what he wants to do next on it, and help him take ONE concrete next step on the project today. If a quick skill fits the project naturally (writing a piece of it, the math his build needs, planning the next part), weave it in there — but the project leads. This is HIS thing. Save any lesson for after he's done working on it.`
-        }
         if (dayState?.payload?.state) {
           systemPrompt += `\n\n=== DAY STATE (your ledger from earlier today) ===\n${dayState.payload.state}`
         } else {
@@ -808,6 +805,11 @@ export default async function handler(req, res) {
             priorProjectList.map((p) => `- ${p.name} [${p.status}]`).join('\n')
         }
         systemPrompt += `\n${PROJECTS_PROTOCOL}`
+        // Open-a-project focus goes LAST so it outranks the lesson-flow protocols
+        // above — when Ethan taps a project, working on it IS this turn.
+        if (projectFocus) {
+          systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN JUST OPENED HIS PROJECT: "${projectFocus}" ===\nHe tapped this project to work on it with you RIGHT NOW. This overrides the lesson flow for THIS reply. Do NOT continue or restart any subject, warm-up, or communication question — even if one was mid-way. Set the lesson aside; you can return to it later. Be his teammate, not his teacher: get genuinely excited about "${projectFocus}", ask what he wants to do next on it, and help him take ONE concrete next step on the project today. If a quick skill fits the project naturally (writing a piece of it, the math his build needs, planning the next part), weave it in there. The project leads. This is HIS thing.`
+        }
         const rawReply = await callGeminiWithRetry(
           systemPrompt,
           history,
