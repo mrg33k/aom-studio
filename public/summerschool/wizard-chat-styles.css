@@ -1019,6 +1019,9 @@ html.dark-theme .game-hud {
     rgba(34, 32, 27, 0.92);
 }
 html.dark-theme .hud-level-title { color: var(--color-text); }
+/* Section headers (ASSIGNMENTS / WRITING DESK): deep indigo goes muddy on the
+   dark ground, so lift to gold to match the underline + the quest names. */
+html.dark-theme .action-title { color: var(--color-gold); }
 html.dark-theme .hud-xp-label,
 html.dark-theme .hud-prize-sub { color: #a89f8d; }
 html.dark-theme .hud-prize-label { color: var(--color-text); }
