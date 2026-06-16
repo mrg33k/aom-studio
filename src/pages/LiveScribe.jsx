@@ -17,8 +17,9 @@ const INK = '#1A1714';
 const PAPER = '#FAF7F0';
 const CARD = '#FFFFFF';
 const LINE = '#E7E0D2';
-// Speaker palette — distinct, on warm paper, deliberately NOT gold (accent) or red (REC).
-const SPEAKER_COLORS = ['#2F8E84', '#5B6CC4', '#B5654A', '#8A5A8C', '#6F7D3A', '#3F7CAC'];
+// Speaker palette — maximally separated on warm paper (green/orange/blue/purple first,
+// since 4 voices is the common case), deliberately NOT gold (accent) or red (REC).
+const SPEAKER_COLORS = ['#2F8E84', '#B5654A', '#3F7CAC', '#8E4B6E', '#6F7D3A', '#46588A'];
 const LIVE_SPEAKER = 'S1'; // browser mic has no diarization; everything lands on one live voice
 
 const SAMPLE = [
@@ -274,6 +275,8 @@ export default function LiveScribe() {
         @keyframes lseq { 0%,100%{height:7px; opacity:.55} 50%{height:30px; opacity:1} }
         .ls-chip { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; background:#FBF9F4; border:1px solid ${LINE}; }
         .ls-chip:hover { border-color:#C9BFA9; }
+        .ls-chip-hint { animation:lschiphint 1.7s ease 3; }
+        @keyframes lschiphint { 0%{box-shadow:0 0 0 0 rgba(26,23,20,.22)} 70%{box-shadow:0 0 0 7px rgba(26,23,20,0)} 100%{box-shadow:0 0 0 0 rgba(26,23,20,0)} }
       `}</style>
 
       {/* Header */}
@@ -348,7 +351,7 @@ export default function LiveScribe() {
             {/* Speaker chips — tap to name */}
             {speakerIds.length > 0 && (
               <div style={{ padding: '10px 16px', borderBottom: `1px solid ${LINE}`, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                {speakerIds.map((id) => (
+                {speakerIds.map((id, idx) => (
                   editingSpeaker === id ? (
                     <input
                       key={id}
@@ -359,13 +362,13 @@ export default function LiveScribe() {
                       style={{ ...F, fontSize: 13, fontWeight: 600, padding: '4px 10px', borderRadius: 999, border: `1px solid ${speakers[id].color}`, outline: 'none', width: 130, color: INK }}
                     />
                   ) : (
-                    <button key={id} className="ls-chip" onClick={() => setEditingSpeaker(id)} title="Tap to name this voice">
+                    <button key={id} className={`ls-chip${idx === 0 ? ' ls-chip-hint' : ''}`} onClick={() => setEditingSpeaker(id)} title="Tap to name this voice">
                       <span style={{ width: 9, height: 9, borderRadius: '50%', background: speakers[id].color }} />
                       <span>{speakers[id].name}</span>
                     </button>
                   )
                 ))}
-                <span style={{ fontSize: 11.5, opacity: 0.4, marginLeft: 2 }}>tap a voice to name it</span>
+                <span style={{ fontSize: 12, opacity: 0.5, marginLeft: 4 }}>tap a voice to name it</span>
               </div>
             )}
 
@@ -396,13 +399,13 @@ export default function LiveScribe() {
                         {showLabel && sp && (
                           <div
                             onClick={() => setEditingSpeaker(s.speakerId)}
-                            style={{ ...DISPLAY, color: sp.color, fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 3, cursor: 'pointer' }}
+                            style={{ ...DISPLAY, color: sp.color, fontWeight: 600, fontSize: 11, letterSpacing: '0.03em', textTransform: 'uppercase', marginBottom: 3, cursor: 'pointer', opacity: 0.92 }}
                             title="Tap to name this voice"
                           >
                             {sp.name}
                           </div>
                         )}
-                        <div style={{ borderLeft: sp ? `2px solid ${sp.color}33` : 'none', paddingLeft: sp ? 12 : 0 }}>{s.text}</div>
+                        <div style={{ borderLeft: sp ? `3px solid ${sp.color}99` : 'none', paddingLeft: sp ? 13 : 0 }}>{s.text}</div>
                       </div>
                     );
                   })}
