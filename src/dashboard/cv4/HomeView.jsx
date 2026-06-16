@@ -18,7 +18,7 @@
 //   - Project row dropdown → expands inline mission list
 //   - Pin toggle → updates localStorage and resorts list
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
 
@@ -413,6 +413,17 @@ export default function HomeView({
 
   // R7: keyboard navigation state for CV6 (defined after all dependencies are ready)
   const [selectedIndex, setSelectedIndex] = useState(-1)
+  const replyInputRef = useRef(null)
+
+  // Sample conversation thread for CV6 gallery demo
+  const sampleConversation = [
+    { id: 1, sender: 'user', text: 'Can we schedule the design review for next Tuesday?' },
+    { id: 2, sender: 'agent', text: 'I\'ve checked your calendar. Tuesday 2-3 PM works and I\'ve blocked it. The team is invited.' },
+    { id: 3, sender: 'user', text: 'Great. Make sure we review the CV6 specs before the meeting.' },
+    { id: 4, sender: 'agent', text: 'Done. I\'ve sent the CV6 design spec to the team. They have it now.' },
+    { id: 5, sender: 'user', text: 'Perfect. What else needs attention this week?' },
+    { id: 6, sender: 'agent', text: 'The Corner refactor is on schedule. One code review pending on Bobby\'s PR. I\'ll chase it today.' },
+  ]
 
   const selectableItems = useMemo(() => {
     if (!cv6) return []
@@ -453,8 +464,8 @@ export default function HomeView({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setSelectedIndex(prev => prev === -1 ? selectableItems.length - 1 : (prev - 1 + selectableItems.length) % selectableItems.length)
-    } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
-      // PUNCH-LIST #1: ArrowRight opens, same as Enter
+    } else if (e.key === 'Enter') {
+      // Enter opens the selected item
       e.preventDefault()
       if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
         const sel = selectableItems[selectedIndex]
@@ -466,6 +477,27 @@ export default function HomeView({
           handleProjectSelect(sel.item, null)
         } else if (sel.type === 'needsyou') {
           sel.item.onOpen && sel.item.onOpen()
+        }
+      }
+    } else if (e.key === 'ArrowRight') {
+      // R17: ArrowRight two-press behavior
+      // First press: focus reply input (if not already focused)
+      // Second press: open the room
+      e.preventDefault()
+      if (replyInputRef.current === document.activeElement) {
+        // Reply input is focused: second press = open the room
+        if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
+          const sel = selectableItems[selectedIndex]
+          if (sel.type === 'mission') {
+            handleProjectSelect(sel.project, sel.item)
+          } else if (sel.type === 'project') {
+            handleProjectSelect(sel.item, null)
+          }
+        }
+      } else {
+        // Reply input not focused: first press = focus it
+        if (replyInputRef.current) {
+          replyInputRef.current.focus()
         }
       }
     } else if (e.key === 'ArrowLeft') {
@@ -942,15 +974,38 @@ export default function HomeView({
                 background: 'var(--cv6-hover)',
               }}>
                 {/* Sample conversation thread for demo — in production, this will show real messages from selected mission */}
-                <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', textAlign: 'center', padding: '24px 12px' }}>
-                  Select a mission to view conversation
-                </div>
+                {sampleConversation.map((msg) => (
+                  <div
+                    key={msg.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                      marginBottom: '4px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        maxWidth: '75%',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        lineHeight: '1.4',
+                        background: msg.sender === 'user' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                        color: msg.sender === 'user' ? '#ffffff' : 'var(--cv6-text-primary)',
+                        wordWrap: 'break-word',
+                      }}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Quick Reply input at bottom of right column */}
               <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
                   <input
+                    ref={replyInputRef}
                     type="text"
                     placeholder="Reply..."
                     style={{
