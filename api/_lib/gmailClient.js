@@ -29,8 +29,12 @@ export async function getUserIdFromRequest(req) {
 }
 
 async function loadRow(userId) {
+  // A user can hold more than one Gmail (e.g. a support inbox + a personal one). When no specific
+  // connection is requested we must pick DETERMINISTICALLY, otherwise the same user sees a different
+  // inbox call to call and one account looks "not connected". Prefer the canonical (pinned) inbox,
+  // then most-recently-updated. The real per-account path is getGmailTokenByConnection.
   const r = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.gmail&select=config,connected_at,updated_at&limit=1`,
+    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=eq.${userId}&integration_slug=eq.gmail&select=config,connected_at,updated_at&order=config->>canonical.desc.nullslast,updated_at.desc&limit=1`,
     { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } },
   )
   if (!r.ok) return null
@@ -236,9 +240,22 @@ export async function resolveConnectionIdByEmail(accountEmail) {
   const emailEnc = encodeURIComponent(accountEmail)
   const svcHeaders = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
 
-  // Prefer workspace-owned rows — canonical for shared/terminal use
+  // FIRST: the pinned canonical row for this inbox, if one exists. This is the live link the daily
+  // reconcile keeps honest. Without this, a stale DUPLICATE (left over from a past re-auth) could win
+  // and get handed out as a dead connection — the root cause of the recurring "not connected" issue.
+  const canonR = await fetch(
+    `${SUPABASE_URL}/rest/v1/account_integrations?integration_slug=eq.gmail&config->>canonical=eq.true&config->>account_email=eq.${emailEnc}&select=id&order=updated_at.desc&limit=1`,
+    { headers: svcHeaders },
+  )
+  if (canonR.ok) {
+    const rows = await canonR.json()
+    if (Array.isArray(rows) && rows.length) return rows[0].id
+  }
+
+  // Then workspace-owned, then user-owned. Canonical-first ordering in each so a pinned row always
+  // beats an unpinned stray sharing the same email.
   const wsR = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=not.is.null&integration_slug=eq.gmail&config->>account_email=eq.${emailEnc}&select=id&order=updated_at.desc&limit=1`,
+    `${SUPABASE_URL}/rest/v1/account_integrations?workspace_id=not.is.null&integration_slug=eq.gmail&config->>account_email=eq.${emailEnc}&select=id&order=config->>canonical.desc.nullslast,updated_at.desc&limit=1`,
     { headers: svcHeaders },
   )
   if (wsR.ok) {
@@ -246,9 +263,8 @@ export async function resolveConnectionIdByEmail(accountEmail) {
     if (Array.isArray(rows) && rows.length) return rows[0].id
   }
 
-  // Fall back to user-owned — most recently updated wins
   const userR = await fetch(
-    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=not.is.null&integration_slug=eq.gmail&config->>account_email=eq.${emailEnc}&select=id&order=updated_at.desc&limit=1`,
+    `${SUPABASE_URL}/rest/v1/account_integrations?user_id=not.is.null&integration_slug=eq.gmail&config->>account_email=eq.${emailEnc}&select=id&order=config->>canonical.desc.nullslast,updated_at.desc&limit=1`,
     { headers: svcHeaders },
   )
   if (userR.ok) {
