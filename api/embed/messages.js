@@ -309,6 +309,34 @@ export default async function handler(req, res) {
       return res.status(r.status).json({ error: t })
     }
     const rows = await r.json()
+    // TEMP DIAGNOSTIC (R8 slice 7) — isolate why embed history returns 0. Probes
+    // the base query with no timestamp filter to test the null-timestamp theory.
+    if (q.debug === '1') {
+      const probe = new URLSearchParams()
+      probe.set('select', 'id,role,timestamp,metadata')
+      probe.set('agent', `eq.${cfg.routing.agent}`)
+      probe.set('project', `eq.${cfg.routing.project}`)
+      probe.set('client_id', `eq.${cfg.routing.client_id}`)
+      probe.set('order', 'id.desc')
+      probe.set('limit', '20')
+      let probeRows = []
+      try {
+        const pr = await fetch(`${SUPABASE_URL}/rest/v1/messages?${probe.toString()}`, { headers: sbHeaders() })
+        if (pr.ok) probeRows = await pr.json()
+      } catch (_) {}
+      const mine = probeRows.filter((x) => (x.metadata || {}).embed_visitor_id === visitorId)
+      return res.status(200).json({
+        _debug: true,
+        since,
+        wantAgent: cfg.routing.agent,
+        wantProject: cfg.routing.project,
+        wantClient: cfg.routing.client_id,
+        timestampFilteredCount: rows.length,
+        probeNoTimeCount: probeRows.length,
+        probeMineCount: mine.length,
+        mineSample: mine.slice(0, 5).map((x) => ({ role: x.role, timestamp: x.timestamp, vis: (x.metadata || {}).embed_visitor_id, src: (x.metadata || {}).embed_source })),
+      })
+    }
     // Filter to rows tagged for this mission. Other project messages might
     // share the same agent+project pair if multiple missions are in flight.
     // The bridge normalizes mission slugs to the short form (R16), so a
