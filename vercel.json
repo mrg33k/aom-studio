@@ -77,6 +77,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/cv6",
+      "destination": "/index.html"
+    },
+    {
       "source": "/cv4-static",
       "destination": "/cv4-static/views/home.html"
     },
