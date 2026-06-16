@@ -39,7 +39,7 @@ export default function LiveScribe() {
   const [finalText, setFinalText] = useState('');
   const [interim, setInterim] = useState('');
   const [context, setContext] = useState('');
-  const [brief, setBrief] = useState({ summary: '', talkingPoints: [], research: [], questions: [] });
+  const [brief, setBrief] = useState({ summary: '', talkingPoints: [], quotes: [], research: [], questions: [] });
   const [analyzing, setAnalyzing] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [err, setErr] = useState('');
@@ -83,6 +83,7 @@ export default function LiveScribe() {
         setBrief({
           summary: data.summary || '',
           talkingPoints: data.talkingPoints || [],
+          quotes: data.quotes || [],
           research: data.research || [],
           questions: data.questions || [],
         });
@@ -170,6 +171,7 @@ export default function LiveScribe() {
     if (context.trim()) lines.push(`Call: ${context.trim()}`, '');
     if (brief.summary) lines.push('SUMMARY', brief.summary, '');
     if (brief.talkingPoints.length) { lines.push('TALKING POINTS'); brief.talkingPoints.forEach(p => lines.push(`- ${p}`)); lines.push(''); }
+    if (brief.quotes.length) { lines.push('QUOTES'); brief.quotes.forEach(q => lines.push(`"${q}"`)); lines.push(''); }
     if (brief.research.length) { lines.push('RESEARCH'); brief.research.forEach(r => lines.push(`- ${r.topic}: ${r.finding}${r.source ? ` (${r.source})` : ''}`)); lines.push(''); }
     if (brief.questions.length) { lines.push('QUESTIONS TO ASK'); brief.questions.forEach(q => lines.push(`- ${q}`)); lines.push(''); }
     lines.push('FULL TRANSCRIPT', finalText);
@@ -178,7 +180,7 @@ export default function LiveScribe() {
 
   const F = { fontFamily: "'Space Grotesk', system-ui, sans-serif" };
   const DISPLAY = { fontFamily: "'Syne', system-ui, sans-serif" };
-  const hasBrief = Boolean(brief.summary || brief.talkingPoints.length || brief.research.length || brief.questions.length);
+  const hasBrief = Boolean(brief.summary || brief.talkingPoints.length || brief.quotes.length || brief.research.length || brief.questions.length);
   const showActions = Boolean(finalText) || hasBrief;
   const transcriptActive = recording || Boolean(finalText);
 
@@ -304,6 +306,7 @@ export default function LiveScribe() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
                   ['Talking points', 'The key points raised, newest first.'],
+                  ['Quotes', 'Memorable lines, captured word for word.'],
                   ['Live research', 'Things said get looked up on the web, with sources.'],
                   ['Questions to ask', 'Smart follow-ups, based on where the call is going.'],
                 ].map(([title, hint]) => (
@@ -321,6 +324,20 @@ export default function LiveScribe() {
                 <ul style={{ margin: 0, paddingLeft: 18, fontSize: 14.5, lineHeight: 1.6 }}>
                   {brief.talkingPoints.map((p, i) => <li key={i} style={{ marginBottom: 4 }}>{p}</li>)}
                 </ul>
+              </div>
+            )}
+
+            {brief.quotes.length > 0 && (
+              <div className="ls-card ls-fade" style={{ padding: '16px 18px' }}>
+                <div style={{ ...DISPLAY, fontWeight: 700, fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 10 }}>Quotes</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {brief.quotes.map((q, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 10 }}>
+                      <span style={{ ...DISPLAY, color: GOLD, fontSize: 30, lineHeight: 0.9, fontWeight: 800 }}>&ldquo;</span>
+                      <span style={{ fontSize: 15, lineHeight: 1.55, fontWeight: 500 }}>{q}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

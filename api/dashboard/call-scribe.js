@@ -15,16 +15,18 @@ const SYSTEM_PROMPT = `You are a live scribe sitting in on a phone/video call, l
 You are given the running transcript so far (it grows each time you are called).
 Your job is to turn it into a clean, useful, building brief — the kind of notes a sharp chief of staff would hand back after the call.
 
-Do FOUR things:
+Do FIVE things:
 1. summary — a tight 2-4 sentence running summary of what the call is about and where it stands right now.
 2. talkingPoints — the key points raised so far, as short bullets. Most important first. Max 8.
-3. research — pick the 1-3 most useful things SAID on the call that are worth looking up to add richness (a company, product, claim, price, person, "do they offer X?", a market stat). Use web search to find the real, current answer. For each: a short topic, a 1-2 sentence finding, and a source URL if you have one. Only include genuinely useful lookups; if nothing is worth researching yet, return an empty array. Never invent facts — if search gives nothing solid, leave it out.
-4. questions — 2-4 smart questions the caller could ask next, based on gaps or openings in the conversation.
+3. quotes — pull the most memorable VERBATIM lines actually said on the call, word for word, exactly as in the transcript (you may trim filler at the very start/end but do not paraphrase or rewrite). Pick lines worth lifting: a strong claim, a number, a commitment, a vivid phrase. Max 4. If nothing stands out yet, return an empty array. Never fabricate a quote.
+4. research — pick the 1-3 most useful things SAID on the call that are worth looking up to add richness (a company, product, claim, price, person, "do they offer X?", a market stat). Use web search to find the real, current answer. For each: a short topic, a 1-2 sentence finding, and a source URL if you have one. Only include genuinely useful lookups; if nothing is worth researching yet, return an empty array. Never invent facts — if search gives nothing solid, leave it out.
+5. questions — 2-4 smart questions the caller could ask next, based on gaps or openings in the conversation.
 
 Return ONLY a JSON object, no markdown, no commentary:
 {
   "summary": "string",
   "talkingPoints": ["string", ...],
+  "quotes": ["verbatim string", ...],
   "research": [{ "topic": "string", "finding": "string", "source": "https://..." }],
   "questions": ["string", ...]
 }`;
@@ -86,17 +88,18 @@ export default async function handler(req, res) {
 
   const { transcript, context } = req.body || {};
   if (!transcript || typeof transcript !== 'string' || transcript.trim().length < 12) {
-    return res.status(200).json({ summary: '', talkingPoints: [], research: [], questions: [] });
+    return res.status(200).json({ summary: '', talkingPoints: [], quotes: [], research: [], questions: [] });
   }
 
   try {
     const brief = await callGemini(transcript, context);
     if (!brief) {
-      return res.status(200).json({ summary: '', talkingPoints: [], research: [], questions: [], note: 'no_parse' });
+      return res.status(200).json({ summary: '', talkingPoints: [], quotes: [], research: [], questions: [], note: 'no_parse' });
     }
     return res.status(200).json({
       summary: brief.summary || '',
       talkingPoints: Array.isArray(brief.talkingPoints) ? brief.talkingPoints.slice(0, 8) : [],
+      quotes: Array.isArray(brief.quotes) ? brief.quotes.slice(0, 4) : [],
       research: Array.isArray(brief.research) ? brief.research.slice(0, 3) : [],
       questions: Array.isArray(brief.questions) ? brief.questions.slice(0, 4) : [],
     });
