@@ -23,8 +23,11 @@ const REGISTRY = [
     id: 'skills-badge',
     name: 'Skills button',
     purpose: 'Left-rail button that opens the Skills shelf. Lives on the dark drawer.',
-    panelBg: '#0E1621',
-    maxWidth: 240,
+    canvasBg: '#0E1621',
+    // stageWidth = how wide the canvas plate is. frame = the component's real
+    // width in the app (the rail is ~264), so it renders believably, not tiny.
+    stageWidth: 520,
+    frame: 264,
     states: [
       { label: 'Resting', render: () => <SkillsBadge open={false} onToggle={() => {}} /> },
       { label: 'Open', render: () => <SkillsBadge open={true} onToggle={() => {}} /> },
@@ -173,14 +176,30 @@ export default function CV6Gallery() {
               </div>
               <div
                 style={{
-                  padding: 32,
-                  background: active.panelBg || 'transparent',
+                  padding: 24,
                   display: 'flex',
                   justifyContent: 'center',
                 }}
               >
-                <div style={{ width: '100%', maxWidth: active.maxWidth || 'none' }}>
-                  {s.render()}
+                {/* Defined canvas plate: the component sits on a tightly-sized,
+                    centered stage (its home dark surface) rather than swimming
+                    in the full panel width. */}
+                <div
+                  style={{
+                    width: '100%',
+                    maxWidth: active.stageWidth || 560,
+                    background: active.canvasBg || 'rgba(255,255,255,0.02)',
+                    borderRadius: 12,
+                    padding: '40px 32px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    minHeight: 120,
+                    alignItems: 'center',
+                  }}
+                >
+                  <div style={{ width: '100%', maxWidth: active.frame || 'none' }}>
+                    {s.render()}
+                  </div>
                 </div>
               </div>
             </div>
