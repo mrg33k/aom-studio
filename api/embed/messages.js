@@ -300,6 +300,10 @@ export default async function handler(req, res) {
       Date.now() - (historyMode ? 7 * 24 * 60 * 60 * 1000 : 5 * 60 * 1000)
     ).toISOString()
   const visitorId = q.visitor_id || ''
+  // Conversation room (Build R19): the widget asks for one room's thread at a
+  // time — 'school' or 'project:<slug>'. Untagged legacy rows count as School so
+  // his existing thread never moves. Empty = no room filter (back-compat).
+  const room = typeof q.room === 'string' && q.room.trim() ? q.room.trim() : ''
 
   const cfg = await getEmbed(embedId)
   if (!cfg) return res.status(404).json({ error: 'unknown embed_id' })
@@ -400,6 +404,11 @@ export default async function handler(req, res) {
       const rowSlug = m.mission_slug || m.mission || ''
       const rowShort = rowSlug.includes(':') ? rowSlug.split(':').pop() : rowSlug
       if (rowSlug && rowShort !== wantShort) return false
+      // Room scoping: only return this room's thread (untagged = School).
+      if (room) {
+        const rowRoom = m.embed_room || 'school'
+        if (rowRoom !== room) return false
+      }
       // User rows only ever belong to their own visitor — in history mode a
       // user row without a matching visitor tag is someone else's (operator).
       if (row.role === 'user' && (m.embed_visitor_id || '') !== visitorId) {

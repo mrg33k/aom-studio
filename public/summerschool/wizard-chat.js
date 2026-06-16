@@ -40,6 +40,8 @@
     resumeBanner: null, // "welcome back, you're on X" after a refresh (never lose his place)
     worldOpen: false, // My World overview overlay (Build R8 slice 2) — additive, never the default surface
     projectActive: null, // name of the project currently open via the left bar (Build R13); null = School
+    activeRoom: 'school', // which conversation room is open (Build R19): 'school' or 'project:<slug>'. Set in init from localStorage.
+    roomCache: {}, // per-room thread snapshots { [roomKey]: { messages, sinceTs, loaded } } so switching rooms never loses his place
     addingProject: false, // left-bar "add a project" inline input open (Build R13)
     addProjectValue: '', // text in the add-project input
     missions: null, // [{project, name, status}] parts of his projects (Build R13b)
@@ -386,6 +388,42 @@
       </div>`;
   }
 
+  // --- Project rail (Build R19) — the right panel inside a project room ------
+  // In a project room the school quest board is hidden (it's school's). The rail
+  // instead focuses on the open project: its parts (missions) to work on,
+  // mirroring the left-bar nesting. Tap a part to jump to it with the Wizard, or
+  // its circle to mark it done. Keeps project and school visually separate.
+  function renderProjectRail() {
+    const name = appState.projectActive;
+    if (!name) return '';
+    const norm = (s) => (s || '').toLowerCase().trim();
+    const pn = norm(name);
+    const mine = (appState.missions || []).filter((m) => {
+      const mp = norm(m.project);
+      if (!mp) return false;
+      if (mp === pn) return true;
+      const [s, l] = mp.length <= pn.length ? [mp, pn] : [pn, mp];
+      return s.length >= 4 && l.includes(s);
+    });
+    const doneN = mine.filter((m) => norm(m.status) === 'done').length;
+    const rows = mine.map((m) => {
+      const mdone = norm(m.status) === 'done';
+      const safeName = escapeHtml(m.name).replace(/'/g, "\\'");
+      const safeProj = escapeHtml(name).replace(/'/g, "\\'");
+      return `<div class="nav-mission ${mdone ? 'is-done' : ''}">
+          <button type="button" class="nav-mission-check" title="${mdone ? 'Done' : 'Mark done'}" ${mdone ? 'disabled' : `onclick="window.__wizardChat.completeMission('${safeProj}','${safeName}')"`}>${mdone ? '&#10003;' : '&#9675;'}</button>
+          <button type="button" class="nav-mission-label" onclick="window.__wizardChat.openMission('${safeProj}','${safeName}')">${escapeHtml(m.name)}</button>
+        </div>`;
+    }).join('');
+    const body = mine.length
+      ? `<div class="nav-mission-list proj-rail-list">${rows}</div>`
+      : `<div class="proj-rail-empty">This is your project space. Tell the Wizard what you want to build next, or add a part in the left bar.</div>`;
+    return `<div class="proj-rail">
+        <div class="action-title">&#9671; ${escapeHtml(name)}${mine.length ? ` <span class="spell-count">${doneN}/${mine.length} parts</span>` : ''}</div>
+        ${body}
+      </div>`;
+  }
+
   // --- World hint (Build R12) — board declutter -----------------------------
   // His own fun projects + life reminders moved off the school board into My
   // World (his Corner). A subtle tap-line points there so they're never lost —
@@ -669,6 +707,7 @@
         history: '1',
         visitor_id: 'ethan-' + appState.sessionId,
         since: sinceTodayMidnight,
+        room: appState.activeRoom, // only this room's thread
       });
       const response = await fetch(`/api/embed/messages?${params.toString()}`, {
         headers: { 'Accept': 'application/json' },
@@ -726,6 +765,7 @@
           content: '<<session-start>>',
           visitor_id: 'ethan-' + appState.sessionId,
           host_origin: window.location.origin,
+          room: 'school', // the opening greeting is always the School day
           // After 2:10pm the opening greeting becomes the after-school check-in.
           after_school: isAfterSchoolNow(),
         }),
@@ -780,6 +820,65 @@
     render();
   }
 
+  // ----- Conversation rooms (Build R19) -----
+  // Ethan's chat is split into rooms — a School room (lessons) and one room per
+  // project — so project talk never blends into school. Each room is its own
+  // thread; we cache threads client-side and tag every API call with the active
+  // room so switching (and refresh) always resumes the exact place.
+  function slugifyRoom(name) {
+    return String(name || '').toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+  }
+  function projectRoomKey(name) { return 'project:' + slugifyRoom(name); }
+  // Map a project room key back to the human project name (for the left-bar
+  // highlight + resume banner). Falls back to the raw slug if not yet in the list.
+  function roomProjectName(key) {
+    if (!key || !key.startsWith('project:')) return null;
+    const slug = key.slice('project:'.length);
+    const match = (appState.projects || []).find((p) => slugifyRoom(p.name) === slug);
+    return match ? match.name : slug.replace(/-/g, ' ');
+  }
+
+  // Switch the visible thread to another room. Saves the current room's thread
+  // into the cache, restores (or freshly loads) the target room's thread, and
+  // persists the choice so a refresh comes back to the same room. Returns true
+  // if the target room came back empty (caller may seed an opening message).
+  async function switchRoom(newKey, opts) {
+    opts = opts || {};
+    if (newKey === appState.activeRoom) return false;
+    // Snapshot the room we're leaving so coming back is instant + intact.
+    appState.roomCache[appState.activeRoom] = {
+      messages: appState.messages,
+      sinceTs: appState.sinceTs,
+      loaded: true,
+    };
+    appState.activeRoom = newKey;
+    try { localStorage.setItem('wizard-active-room', newKey); } catch (_) {}
+    appState.projectActive = newKey === 'school' ? null : roomProjectName(newKey);
+
+    const cached = appState.roomCache[newKey];
+    if (cached && cached.loaded) {
+      appState.messages = cached.messages;
+      appState.sinceTs = cached.sinceTs;
+      appState.resumeBanner = opts.label || null;
+      render();
+      return appState.messages.length === 0;
+    }
+    // First visit to this room this session — load just its thread.
+    appState.messages = [];
+    appState.sinceTs = new Date().toISOString();
+    render();
+    await loadHistory();
+    appState.roomCache[newKey] = {
+      messages: appState.messages,
+      sinceTs: appState.sinceTs,
+      loaded: true,
+    };
+    if (appState.messages.length > 0) appState.resumeBanner = opts.label || null;
+    render();
+    return appState.messages.length === 0;
+  }
+
   // Send a message to the Wizard. opts.essayMode marks it as a Writing Desk
   // sentence — the server appends it to today's essay and tells the Wizard to
   // react to it, while it also flows through chat as a normal turn.
@@ -806,6 +905,7 @@
         content: text,
         visitor_id: 'ethan-' + appState.sessionId,
         host_origin: window.location.origin,
+        room: appState.activeRoom, // keep this turn in the open room's thread
       };
       if (opts.essayMode) payload.essay_mode = true;
       if (isAfterSchoolNow()) payload.after_school = true;
@@ -880,6 +980,7 @@
         embed_id: EMBED_ID,
         since: appState.sinceTs,
         visitor_id: 'ethan-' + appState.sessionId,
+        room: appState.activeRoom, // only poll the open room's thread
       });
       const response = await fetch(`/api/embed/messages?${params.toString()}`, {
         headers: { 'Accept': 'application/json' },
@@ -1042,15 +1143,20 @@
         </div>
 
         <div class="action-panel">
-          ${renderAfterSchoolChip()}
-          ${renderCountdown()}
-          ${renderGameHud()}
-          ${isWritingActive() ? renderWritingDesk() : ''}
-          <div class="action-title">&#10022; Today's Quests</div>
-          ${renderQuestsPanel()}
-          ${renderAssignments()}
-          ${renderBookshelf()}
-          ${renderSpellbook()}
+          ${appState.activeRoom === 'school' ? `
+            ${renderAfterSchoolChip()}
+            ${renderCountdown()}
+            ${renderGameHud()}
+            ${isWritingActive() ? renderWritingDesk() : ''}
+            <div class="action-title">&#10022; Today's Quests</div>
+            ${renderQuestsPanel()}
+            ${renderAssignments()}
+            ${renderBookshelf()}
+            ${renderSpellbook()}
+          ` : `
+            ${renderGameHud()}
+            ${renderProjectRail()}
+          `}
           ${renderWorldHint()}
         </div>
       </div>
@@ -1096,39 +1202,45 @@
       appState.resumeBanner = null;
       render();
     },
-    openProject: (i) => {
+    openProject: async (i) => {
       const items = appState.projects || [];
       const p = items[i];
       if (!p || appState.isLoading) return;
       appState.worldOpen = false; // if opened from My World, drop back into the chat
-      appState.projectActive = p.name; // highlight it in the left bar
-      // Opening a project is Ethan's move — send it as his message, and tell the
-      // Wizard (via project_focus) to be his teammate on it right now.
-      sendMessage(`Let’s work on my project: ${p.name}`, { projectFocus: p.name });
+      // Open THIS project's own room (its own thread) — never blends with school.
+      // First visit (empty room) → seed the opening message so the Wizard greets
+      // him on the project; a return visit just resumes the thread where it was.
+      const empty = await switchRoom(projectRoomKey(p.name), { label: p.name });
+      if (empty) sendMessage(`Let’s work on my project: ${p.name}`, { projectFocus: p.name });
     },
-    // Left bar: tap School to come back to the Wizard class from a project.
-    selectSchool: () => {
+    // Left bar: tap School to come back to the Wizard class from a project. With
+    // separate rooms this just restores his school thread — no extra "back to
+    // school" turn, he picks up exactly where his lesson left off.
+    selectSchool: async () => {
       if (appState.isLoading) return;
-      const wasOnProject = !!appState.projectActive;
-      appState.projectActive = null;
       appState.worldOpen = false;
-      render();
-      if (wasOnProject) sendMessage(`Let's get back to school.`);
+      await switchRoom('school', { label: 'Summer School' });
     },
     // Left bar: add a project inline (Corner-style), no modal.
     startAddProject: () => { appState.addingProject = true; appState.addProjectValue = ''; render();
       const el = document.getElementById('nav-add-input'); if (el) el.focus(); },
-    submitAddProject: (val) => {
+    submitAddProject: async (val) => {
       const name = (val || '').trim();
       appState.addingProject = false; appState.addProjectValue = '';
       render();
-      if (name) sendMessage(`I want to start a new project: ${name}`);
+      if (!name) return;
+      // A new project gets its own room from the very first message, so its
+      // conversation never starts inside school.
+      await switchRoom(projectRoomKey(name), { label: name });
+      sendMessage(`I want to start a new project: ${name}`, { projectFocus: name });
     },
     // Left bar: open a mission (a part of the open project) to work on it.
-    openMission: (project, name) => {
+    openMission: async (project, name) => {
       if (appState.isLoading) return;
-      appState.projectActive = project;
       appState.worldOpen = false;
+      // Missions live inside their project's room — open the room, then focus
+      // this part so the Wizard zooms straight to it.
+      await switchRoom(projectRoomKey(project), { label: project });
       sendMessage(`Let's work on the "${name}" part of my project ${project}.`, { projectFocus: project });
     },
     // Left bar: tap a mission's circle to mark that part done.
@@ -1232,33 +1344,56 @@
     initSessionId();
     applyTheme();
 
+    // Restore which room he was last in — a refresh must come back to the SAME
+    // room (School or a specific project), never always-School (never lose his
+    // place). Default is School for a brand-new session.
+    try {
+      const savedRoom = localStorage.getItem('wizard-active-room');
+      if (savedRoom) appState.activeRoom = savedRoom;
+    } catch (_) {}
+
     // Start the poll window from now; loadHistory or greeting will advance it
     appState.sinceTs = new Date().toISOString();
     render();
 
-    // Pull the existing conversation back — refresh must not lose the thread.
-    // loadHistory is scoped to today so it returns all of today's messages.
-    // It also fetches today's day_state + essay + progress base.
+    // Pull the active room's thread back — refresh must not lose it. loadHistory
+    // is scoped to today + the active room; it also fetches the GLOBAL day_state
+    // + essay + projects + missions + progress base (panels are shared).
     const hadHistory = await loadHistory();
-    // Is he returning to a day already in progress? The server-loaded day ledger
-    // is the signal (set by loadHistory even when the literal message thread
-    // doesn't replay). Capture it BEFORE any greeting so a brand-new day — where
-    // the greeting is what first creates the ledger — doesn't falsely flag it.
-    const returningMidDay = !!currentSubject();
-    // Show the "Welcome back, you're on X" marker IMMEDIATELY when he's returning
-    // to an in-progress day — before the (slower) greeting call — so the instant
-    // reassurance is there even on refreshes where the literal thread didn't
-    // replay (R8 slice 6 fix). Pure UI from the loaded ledger; nothing resets.
-    if (returningMidDay) {
-      appState.resumeBanner = currentSubject();
+    appState.roomCache[appState.activeRoom] = {
+      messages: appState.messages, sinceTs: appState.sinceTs, loaded: true,
+    };
+
+    if (appState.activeRoom === 'school') {
+      // Is he returning to a day already in progress? The server-loaded day
+      // ledger is the signal (set even when the literal thread doesn't replay).
+      const returningMidDay = !!currentSubject();
+      if (returningMidDay) {
+        appState.resumeBanner = currentSubject();
+        render();
+      }
+      if (!hadHistory) {
+        // No thread to replay — ask the server for a personalized greeting (uses
+        // the day ledger + yesterday's ledger). No hardcoded fallback message.
+        await requestWizardGreeting();
+      }
+    } else if (hadHistory) {
+      // Back in a project room — resume its thread and highlight it in the bar.
+      appState.projectActive = roomProjectName(appState.activeRoom);
+      appState.resumeBanner = appState.projectActive;
       render();
-    }
-    if (!hadHistory) {
-      // No thread to replay — ask the server for a personalized greeting. The
-      // Wizard uses the day ledger + cross-day memory (yesterday's ledger) to
-      // craft the opener (a contextual "welcome back" when mid-day). No
-      // hardcoded fallback message.
-      await requestWizardGreeting();
+    } else {
+      // Project room came back empty (e.g. cleared data) — never leave him on a
+      // blank screen. Fall back to School and bootstrap the day there.
+      appState.activeRoom = 'school';
+      appState.projectActive = null;
+      try { localStorage.setItem('wizard-active-room', 'school'); } catch (_) {}
+      const reload = await loadHistory();
+      appState.roomCache['school'] = {
+        messages: appState.messages, sinceTs: appState.sinceTs, loaded: true,
+      };
+      if (currentSubject()) appState.resumeBanner = currentSubject();
+      if (!reload) await requestWizardGreeting();
     }
     if (appState.doneCount == null) appState.doneCount = countDoneNow();
     appState.hudReady = true; // win-bursts only fire on completions from here on

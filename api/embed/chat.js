@@ -48,7 +48,7 @@ function sbHeaders() {
 }
 
 // Fetch recent conversation history for the embed session so Gemini has context
-async function fetchHistory(cfg, visitorId, limit = 10) {
+async function fetchHistory(cfg, visitorId, limit = 10, room = null) {
   const params = new URLSearchParams()
   params.set('select', 'role,text,timestamp,metadata')
   params.set('agent', `eq.${cfg.routing.agent}`)
@@ -60,25 +60,35 @@ async function fetchHistory(cfg, visitorId, limit = 10) {
   // bleed into Ethan's session). Caught by the 2026-06-12 restart drill.
   if (visitorId) params.set('metadata->>embed_visitor_id', `eq.${visitorId}`)
   params.set('order', 'timestamp.desc')
-  params.set('limit', String(limit))
+  // When filtering by conversation room, fetch a wider window then trim — school
+  // and project turns interleave in the visitor's stream, so a tight limit=10
+  // could come back all-one-room and starve the other room of context.
+  const fetchLimit = room ? Math.max(limit * 6, 60) : limit
+  params.set('limit', String(fetchLimit))
   const url = `${SUPABASE_URL}/rest/v1/messages?${params.toString()}`
   try {
     const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } })
     if (!r.ok) return []
     const rows = await r.json()
-    // Filter to this visitor/mission, reverse to chronological order
-    return rows
+    // Filter to this visitor/mission/room, reverse to chronological order.
+    const chrono = rows
       .filter((m) => {
         const meta = m.metadata || {}
         if (meta.mission_slug && meta.mission_slug !== cfg.routing.mission_slug) return false
         if (visitorId && meta.embed_visitor_id && meta.embed_visitor_id !== visitorId) return false
+        // Room scoping: untagged legacy rows belong to School, so his existing
+        // thread keeps showing up in the School room and never moves.
+        if (room) {
+          const mr = meta.embed_room || 'school'
+          if (mr !== room) return false
+        }
         return true
       })
       .reverse()
-      .map((m) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }],
-      }))
+    return (room ? chrono.slice(-limit) : chrono).map((m) => ({
+      role: m.role === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }],
+    }))
   } catch (_) {
     return []
   }
@@ -122,6 +132,18 @@ function phoenixDate(daysAgo = 0) {
     'en-CA',
     { timeZone: 'America/Phoenix' }
   )
+}
+
+// Conversation rooms (Build R19): Ethan's chat is split into rooms — the School
+// room (lessons) and one room per project — so project talk never blends into
+// school. The room slug is the stable key for a project (its name normalized).
+function slugifyRoom(name) {
+  return String(name || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
 }
 
 // Day-state protocol: the Wizard maintains its own lesson ledger. Every reply
@@ -1013,6 +1035,13 @@ export default async function handler(req, res) {
   // right now. Behavior-only — a focus hint on top of the normal prompt; no
   // session/data change, so it can't lose his place.
   const projectFocus = typeof body.project_focus === 'string' ? body.project_focus.slice(0, 120).trim() : ''
+  // Which conversation room this turn belongs to (Build R19). The widget sends
+  // an explicit `room` ('school' or 'project:<slug>'); if absent, derive it from
+  // project_focus so older clients still land project turns in the project room.
+  // Default = school. Stored on the message + used to scope the history window.
+  const room = (typeof body.room === 'string' && body.room.trim())
+    ? body.room.trim().slice(0, 80)
+    : (projectFocus ? 'project:' + slugifyRoom(projectFocus) : 'school')
 
   if (!embed_id || !content) {
     return res.status(400).json({ error: 'embed_id and content required' })
@@ -1109,6 +1138,7 @@ export default async function handler(req, res) {
       embed_id: embed_id,
       embed_source: 'embed-widget',
       embed_visitor_id: visitor_id || null,
+      embed_room: room,
       embed_origin: host_origin || origin || null,
       embed_overlay:
         (cfg.placement && cfg.placement.overlay) || ALWAYS_ON_OVERLAY,
@@ -1149,7 +1179,7 @@ export default async function handler(req, res) {
     if (aiServed) {
       try {
         const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading, priorMissions] = await Promise.all([
-          fetchHistory(cfg, visitor_id || null),
+          fetchHistory(cfg, visitor_id || null, 10, room),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
           fetchEssay(embed_id, visitor_id || null),
@@ -1344,6 +1374,7 @@ export default async function handler(req, res) {
               embed_id: embed_id,
               embed_source: 'embed-ai',
               embed_visitor_id: visitor_id || null,
+              embed_room: room,
             },
           }
           // MUST await: on Vercel the lambda freezes the moment the response

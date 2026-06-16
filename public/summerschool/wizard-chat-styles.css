@@ -290,6 +290,18 @@ html.dark-theme .nav-add-input { background: rgba(26, 24, 20, 0.9); color: var(-
 .nav-add-form--mission { margin: 2px 0 4px 22px; }
 html.dark-theme .nav-mission-label { color: var(--color-text); }
 
+/* Project rail (Build R19) — the right panel inside a project room */
+.proj-rail { margin-top: 4px; }
+.proj-rail-list { margin-left: 0; }
+.proj-rail-list .nav-mission-label { font-size: 13px; }
+.proj-rail-empty {
+  color: var(--color-gold-soft);
+  opacity: 0.85;
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 4px 2px 2px;
+}
+
 /* Messages */
 .messages-container {
   grid-column: 2;
