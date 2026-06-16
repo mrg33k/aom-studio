@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { C } from '../../../lib/cv3Colors.js'
 import { TYPE, LH, LS } from '../../../lib/typeScale.js'
 import { RESETTABLE_AGENTS } from './threadConstants.js'
 import { MODEL_OPTIONS } from '../chat/chatConstants.js'
+import { SUPER_ADMIN_USER_ID } from '../../../lib/clientConfig.js'
+import { authFetch } from '../../../lib/authFetch.js'
 import {
   useChatCore,
   useChatSettingsCtx,
@@ -16,7 +19,7 @@ import useThreadResetAgent from './useThreadResetAgent.js'
 // the header so there's always a visible escape path from a 390px
 // iPhone webapp.
 export default function ThreadSettingsModal() {
-  const { selectedAgent, selectedProject, worldId, VOICE_OPTIONS, isMobile } = useChatCore()
+  const { selectedAgent, selectedProject, worldId, VOICE_OPTIONS, isMobile, currentUser } = useChatCore()
   const {
     settingsTab, setSettingsTab, setSettingsOpen,
     chatNameInput, setChatNameInput, saveRoomName,
@@ -33,9 +36,12 @@ export default function ThreadSettingsModal() {
   const { resetState, handleResetAgent } = useThreadResetAgent(selectedAgent)
 
   const isResettable = RESETTABLE_AGENTS.has(selectedAgent?.slug)
-  const settingsTabs = isResettable
+  // Owner-only: Patrik can invite new users straight from settings.
+  const isOwner = currentUser?.id === SUPER_ADMIN_USER_ID
+  const baseTabs = isResettable
     ? ['General', 'Model', 'Voice', 'Google', 'Keys', 'Control']
     : ['General', 'Model', 'Voice', 'Google', 'Keys']
+  const settingsTabs = isOwner ? [...baseTabs, 'Members'] : baseTabs
 
   return (
     <div
@@ -177,6 +183,10 @@ export default function ThreadSettingsModal() {
               }}
             />
           </div>
+          )}
+          {/* Members — owner-only: invite a brand-new Corner user */}
+          {settingsTab === 'Members' && isOwner && (
+            <InviteMembersPanel isMobile={isMobile} />
           )}
           {/* Voice selection */}
           {settingsTab === 'Voice' && (
@@ -529,6 +539,88 @@ export default function ThreadSettingsModal() {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Members tab: owner invites a brand-new Corner user ────────────────────────
+// name + email -> POST /api/dashboard/invite-user (owner-gated server-side) ->
+// shows the new user's login + a copy-ready invite message. No email is sent;
+// the owner forwards the credentials however they like.
+function InviteMembersPanel() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [result, setResult] = useState(null)   // { credentials, invite_text, world }
+  const [copied, setCopied] = useState(false)
+
+  const label = { fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }
+  const input = { width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px', color: C.text, fontSize: 13, fontFamily: "'Inter', sans-serif", outline: 'none', marginBottom: 14 }
+
+  const submit = async () => {
+    if (!name.trim() || !email.trim() || loading) return
+    setLoading(true); setError(null); setResult(null)
+    try {
+      const res = await authFetch('/api/dashboard/invite-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim(), email: email.trim() }),
+      })
+      const data = await res.json()
+      if (data.ok) { setResult(data); setName(''); setEmail('') }
+      else setError(data.error || 'Could not create the user.')
+    } catch {
+      setError('Network error — try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const copyInvite = () => {
+    if (!result?.invite_text) return
+    navigator.clipboard?.writeText(result.invite_text)
+    setCopied(true); setTimeout(() => setCopied(false), 1600)
+  }
+
+  if (result) {
+    return (
+      <div>
+        <div style={label}>New user is live</div>
+        <div style={{ fontSize: 13, color: C.text, fontFamily: "'Inter', sans-serif", lineHeight: 1.5, marginBottom: 14 }}>
+          <b>{result.world}</b> is ready. Their assistant is waiting in the room.
+        </div>
+        <div style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: 12, fontSize: 13, fontFamily: "'JetBrains Mono', monospace", color: C.text, lineHeight: 1.7, marginBottom: 14, wordBreak: 'break-all' }}>
+          <div>login: {result.credentials.login_url}</div>
+          <div>email: {result.credentials.email}</div>
+          <div>pass:&nbsp; {result.credentials.password}</div>
+        </div>
+        <button onClick={copyInvite} style={{ padding: '9px 16px', fontSize: 13, fontWeight: 600, color: '#fff', background: C.accent, border: 'none', borderRadius: 8, cursor: 'pointer', fontFamily: "'Inter', sans-serif", marginRight: 10 }}>
+          {copied ? 'Copied' : 'Copy invite message'}
+        </button>
+        <button onClick={() => setResult(null)} style={{ padding: '9px 16px', fontSize: 13, fontWeight: 600, color: C.text2, background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, cursor: 'pointer', fontFamily: "'Inter', sans-serif" }}>
+          Invite another
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div style={label}>Invite a new user</div>
+      <div style={{ fontSize: 12.5, color: C.text2, fontFamily: "'Inter', sans-serif", lineHeight: 1.5, marginBottom: 16 }}>
+        Creates a fresh Corner workspace with its own assistant. You'll get a login + invite message to send.
+      </div>
+      <div style={label}>Name</div>
+      <input value={name} onChange={e => { setName(e.target.value); setError(null) }} placeholder="e.g. Wexler & Associates" style={input} />
+      <div style={label}>Email</div>
+      <input type="email" value={email} onChange={e => { setEmail(e.target.value); setError(null) }} onKeyDown={e => { if (e.key === 'Enter') submit() }} placeholder="owner@theircompany.com" style={input} />
+      <button onClick={submit} disabled={loading || !name.trim() || !email.trim()} style={{ padding: '9px 18px', fontSize: 13, fontWeight: 600, color: '#fff', background: (loading || !name.trim() || !email.trim()) ? C.muted : C.accent, border: 'none', borderRadius: 8, cursor: (loading || !name.trim() || !email.trim()) ? 'default' : 'pointer', fontFamily: "'Inter', sans-serif" }}>
+        {loading ? 'Creating…' : 'Create user'}
+      </button>
+      {error && (
+        <div style={{ marginTop: 12, fontSize: 12.5, color: '#F87171', fontFamily: "'Inter', sans-serif" }}>{error}</div>
+      )}
     </div>
   )
 }
