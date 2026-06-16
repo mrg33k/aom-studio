@@ -1298,6 +1298,16 @@ html.dark-theme .theme-selector {
   }
 }
 
+/* Mobile header tidy — on a phone the big title wrapped to two lines and left a
+   decorative star stranded on its own line, crowded between the My World pill and
+   the theme toggle. Drop the ornaments and size the title to read cleanly. */
+@media (max-width: 520px) {
+  .chat-header { padding: 16px 14px 12px; }
+  .chat-header h1 { font-size: 21px; letter-spacing: 1px; }
+  .header-ornament-inline { display: none; }
+  .world-btn { top: 12px; left: 12px; padding: 5px 10px; font-size: 11px; }
+}
+
 html.dark-theme .typing-label {
   color: #a89f8d;
 }
