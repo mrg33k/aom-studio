@@ -583,6 +583,126 @@ export default function HomeView({
       {/* R7: CV6 layout — missions as primary, keyboard navigation, inline actions, happening now */}
       {cv6 ? (
         <div className="hm-shell" style={{ maxWidth: '100%' }}>
+          {/* R9: Top nav bar — global icons above the greeting, left-grouped */}
+          {cv6 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '16px',
+              marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)',
+            }}>
+              {/* Explorer (left menu) */}
+              <button
+                title="Open Explorer"
+                onClick={() => onOpenDrawer?.('explorer')}
+                style={{
+                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
+                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 120ms ease', padding: 0,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </button>
+
+              {/* Files (right menu) */}
+              <button
+                title="Open Files"
+                onClick={() => onOpenDrawer?.('files')}
+                style={{
+                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
+                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 120ms ease', padding: 0,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
+                </svg>
+              </button>
+
+              {/* Back to Home */}
+              <button
+                title="Back to Home"
+                onClick={() => window.location.href = '/dashboard'}
+                style={{
+                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
+                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 120ms ease', padding: 0,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+              </button>
+
+              {/* Theme toggle (light/dark) */}
+              <button
+                title="Toggle theme"
+                onClick={() => {
+                  const shell = document.querySelector('[data-shell="cv4"]')
+                  const isDark = shell?.getAttribute('data-theme') === 'dark'
+                  shell?.setAttribute('data-theme', isDark ? 'light' : 'dark')
+                }}
+                style={{
+                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
+                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 120ms ease', padding: 0,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+              </button>
+
+              {/* Support */}
+              <button
+                title="Go to Support"
+                onClick={() => window.location.href = '/dashboard?view=support'}
+                style={{
+                  width: '36px', height: '36px', borderRadius: '6px', border: 'none',
+                  background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 120ms ease', padding: 0,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+              >
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                </svg>
+              </button>
+
+              {/* User settings / Avatar */}
+              <button
+                title="User settings"
+                onClick={() => window.location.href = '/dashboard?view=settings'}
+                style={{
+                  width: '36px', height: '36px', borderRadius: '50%', border: '2px solid var(--cv6-divider)',
+                  background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 120ms ease', padding: 0,
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.color = 'var(--cv6-accent-primary)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </button>
+            </div>
+          )}
+
           <h1 className="hm-welcome">
             <span className="hm-l1">{greeting}</span>{' '}
             <span className="hm-l2">{displayName(user) || 'there'}.</span>
@@ -630,40 +750,110 @@ export default function HomeView({
             <span className="hm-search-hint">⌘K</span>
           </div>
 
-          {/* Missions as primary (CV6) */}
+          {/* R9: ACTIVE WORK — cap at 3 visible, rest scroll internally, no left/right/bottom borders */}
           {allMissionsForCV6.length > 0 && (
             <div className="hm-section">
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
-              {allMissionsForCV6.map((m, idx) => {
-                // PUNCH-LIST #3: Fix inconsistent shape check. Use item?.slug + type check (matches agent/project pattern)
-                const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
-                return (
+              {/* Scrollable container: cap at 3 visible, internal scroll for the rest */}
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: '6px',
+                maxHeight: '3.5em * 3 + 12px * 2', // ~130px for 3 items + gaps
+                overflow: 'hidden', overflowY: 'auto', paddingRight: '8px',
+                // Remove left/right/bottom borders: use open-ended container
+                borderLeft: 'none', borderRight: 'none', borderBottom: 'none',
+                scrollBehavior: 'smooth',
+              }}>
+                {allMissionsForCV6.map((m, idx) => {
+                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
+                  return (
+                    <button
+                      key={m.mission.slug}
+                      className="hm-mission"
+                      onClick={() => {
+                        handleProjectSelect(m.project, m.mission)
+                        document.querySelector('[data-cv4-home]')?.focus()
+                      }}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '0',
+                        background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
+                        color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                        borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                        fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                        flex: '0 0 auto', minHeight: '56px', // Fixed height items for predictable scrolling
+                      }}
+                    >
+                      <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.mission.name || m.mission.slug}</div>
+                        <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
+                      </div>
+                      {/* R9: Quick action button — act without leaving (inline reply) */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          // Quick action: open inline reply or task creation for this mission
+                          // For now, show a simple action — can be expanded to inline reply UI
+                          handleProjectSelect(m.project, m.mission)
+                        }}
+                        title="Quick action"
+                        style={{
+                          width: '28px', height: '28px', padding: 0, background: isSelected ? 'rgba(255,255,255,0.2)' : 'var(--cv6-hover)',
+                          border: 'none', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: isSelected ? '#ffffff' : 'var(--cv6-text-secondary)', transition: 'all 120ms ease', flexShrink: 0,
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = isSelected ? 'rgba(255,255,255,0.3)' : 'var(--cv6-surface-hover)' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = isSelected ? 'rgba(255,255,255,0.2)' : 'var(--cv6-hover)' }}
+                      >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                      </button>
+                      <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {allMissionsForCV6.length > 3 && (
+                <div style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', marginTop: '6px', paddingTop: '8px', borderTop: '1px solid var(--cv6-divider)' }}>
+                  +{allMissionsForCV6.length - 3} more (scroll to see)
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* R9: ACTIONABLE STATS — items you can act on, not vanity numbers */}
+          {(needsYou && needsYou.length > 0) && (
+            <div className="hm-section" style={{ gridColumn: '1 / -1' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                {needsYou.map((n, idx) => (
                   <button
-                    key={m.mission.slug}
-                    className="hm-mission"
-                    onClick={() => {
-                      handleProjectSelect(m.project, m.mission)
-                      // PUNCH-LIST #4: Refocus the home container after click so arrow nav continues
-                      document.querySelector('[data-cv4-home]')?.focus()
-                    }}
+                    key={n.key}
+                    onClick={() => n.onOpen && n.onOpen()}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '6px',
-                      background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
-                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                      border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                      display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px',
+                      background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
                       borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                      fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                      textAlign: 'left', fontFamily: 'inherit', borderLeft: '3px solid var(--cv6-accent-warn)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                      e.currentTarget.style.borderColor = 'var(--cv6-accent-warn)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'var(--cv6-surface)'
+                      e.currentTarget.style.borderColor = 'var(--cv6-divider)'
                     }}
                   >
-                    <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
-                    <div style={{ flex: 1 }}>
-                      <div>{m.mission.name || m.mission.slug}</div>
-                      <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>in {m.project.name || m.project.slug}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-warn)', flexShrink: 0, animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
+                      <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{n.label}</div>
                     </div>
-                    <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0 }}>{relativeTime(m.mission.last_message_at)}</span>
+                    <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginLeft: '14px' }}>{n.detail}</div>
                   </button>
-                )
-              })}
+                ))}
+              </div>
             </div>
           )}
 
