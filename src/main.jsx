@@ -463,5 +463,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </React.StrictMode>,
 )
-// ISOLATION TEST BREAK - 2026-06-15
-this_is_broken_syntax{{{{
