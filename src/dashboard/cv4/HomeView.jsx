@@ -939,9 +939,7 @@ export default function HomeView({
                     flex: 1, // Grow to fill column
                     overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
                     scrollBehavior: 'smooth',
-                    borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                    padding: '8px 8px 8px 8px',
-                    background: 'var(--cv6-hover)',
+                    // R20: grey container removed — cards fall clean against the page (Patrik 2026-06-16)
                     maxHeight: '328px', // R18: Cap at 5 visible missions (56px each + 8px gaps + 16px padding)
                   }}>
                     {allMissionsForCV6.map((m, idx) => {
@@ -1042,10 +1040,7 @@ export default function HomeView({
                     display: 'flex',
                     flexDirection: 'column-reverse', // R19: Messages flow upward (newest at bottom, user messages float to top)
                     gap: '12px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--cv6-divider)',
-                    padding: '12px',
-                    background: 'var(--cv6-hover)',
+                    // R20: grey container removed — conversation falls clean against the page (Patrik 2026-06-16)
                   }}>
                     {conversationMessages.map((msg) => (
                       <div
