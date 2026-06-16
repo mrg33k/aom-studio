@@ -41,6 +41,10 @@ import TasksPanel from './components/cv3/TasksPanel.jsx'
 import ChatPanel from './components/cv3/ChatPanel.jsx'
 import { surfaceModel } from './components/cv3/chat/chatConstants.js'
 import HomeView from './cv4/HomeView.jsx'
+// corner:corner-ui-cv5 R2 — CV5 "Command Deck" home. Same props as HomeView,
+// new visual language. Rendered ONLY on this /cvg surface; /dashboard (CornerV4)
+// keeps its own HomeView import and stays byte-identical.
+import CommandDeckHome from './cv5/CommandDeckHome.jsx'
 import { useDefaultView } from './hooks/useDefaultView.js'
 import WorldSelector from './components/WorldSelector.jsx'
 import {
@@ -1352,7 +1356,7 @@ export default function CornerVG() {
   // ConversationsView whenever there's no selectedAgent + no projectId.
   // Kills the "old home view flashes / leaks under mail" regression.
   const cv4HomeView = useMemo(() => (
-    <HomeView
+    <CommandDeckHome
       user={currentUser}
       worldId={worldId}
       agents={agents}
@@ -1369,6 +1373,7 @@ export default function CornerVG() {
           handleSelectProject(proj)
         }
       }}
+      onOpenSearch={() => setShowCommandsModal(true)}
     />
   ), [currentUser, agents, projectRooms, handleSelectMission, handleSelectProject, worldId, homeNeedsYou])
 
@@ -2794,12 +2799,13 @@ export default function CornerVG() {
             ) : selectedMail ? (
               <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
             ) : isHomeMode ? (
-              <HomeView
+              <CommandDeckHome
                 user={currentUser}
                 worldId={worldId}
                 agents={agents}
                 projectRooms={projectRooms}
                 needsYou={homeNeedsYou}
+                onOpenSearch={() => setShowCommandsModal(true)}
                 onSelectAgent={(agent) => {
                   setSelectedAgent(agent)
                   setConversationTarget({ name: agent.name, type: 'agent' })
