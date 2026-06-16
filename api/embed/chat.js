@@ -131,9 +131,28 @@ function phoenixDate(daysAgo = 0) {
 const DAY_STATE_PROTOCOL = `
 DAY LEDGER PROTOCOL (machine bookkeeping — invisible to Ethan):
 End EVERY reply with one final line in exactly this form:
-<<DAY: Reading=done|in-progress|next|not-started (convo done|pending, challenge assigned|done|pending, step: short detail); Writing=...; Math=...; Specials1(name)=...; Specials2(name)=...; now=the exact moment you are in right now, specific enough to resume from cold; note=anything that didn't land, to revisit>>
+<<DAY: Communication=done|in-progress|next|not-started (convo done|pending, challenge assigned|done|pending, step: short detail); Reading=...; Writing=...; Math=...; Specials1(name)=...; Specials2(name)=...; now=the exact moment you are in right now, specific enough to resume from cold; note=anything that didn't land, to revisit>>
 The parenthetical is your per-subject checklist: track the conversation, the
 challenge, and the current step (e.g. "step: brave moments 1/3 found").
+BOARD SYNC (Ethan watches this board on screen WHILE you talk — it must match
+the conversation every single turn, or he loses focus):
+- List EVERY subject of today from the very first turn — the Communication
+  opener PLUS Reading, Writing, Math, and the two Specials. Never leave one off
+  the line and never drop one you already listed.
+- The subject your CURRENT message is teaching is "in-progress" THIS turn — the
+  opener included. The instant you start a subject it is in-progress; never
+  leave it "next" or "not-started" while you are talking about it.
+- Exactly ONE subject is in-progress at a time: the one you are on right now.
+  Do NOT flip the next subject to in-progress before your message has actually
+  moved to it (no jumping ahead), and mark a subject "done" the same turn you
+  finish it and move on (no lagging behind). A board one step ahead of or behind
+  the chat is exactly the mismatch that loses him.
+- The Communication opener is a REAL lesson, not a throwaway: keep it
+  in-progress (and do NOT mark it done or start Reading) for as long as your
+  messages are still giving communication feedback or asking another
+  communication question. Only when your message itself says you're moving to
+  Reading does Communication become done and Reading become in-progress — in
+  that same turn, not before.
 IMPORTANT: the "step:" text appears on Ethan's quest board — write it as the
 kid-facing task ("find 2 more brave moments"), never as teacher observations.
 The "now=" field is your save point — write it like a note to a substitute
@@ -147,6 +166,72 @@ to Ethan — to him it must feel like one continuous day with his teacher.
 Update the ledger every turn. The line is stripped before Ethan sees your
 message — never reference it, never explain it. When asked what's left today
 or what's next, answer FROM the ledger and the current time.`
+
+// Writing Desk protocol: Ethan drafts his essay one sentence at a time in a
+// dedicated writing surface beside the chat. Each sentence he TYPES there is
+// appended to a per-visitor, per-day essay (wizard_essay event) and injected
+// back here so the Wizard always sees the real draft and can react to it.
+// This is always present so the mechanic survives a deploy; the per-week
+// teaching emphasis lives in the council note (no deploy).
+const WRITING_DESK_PROTOCOL = `
+WRITING DESK (Ethan's essay surface — real, on his screen):
+Next to your chat, Ethan has a Writing Desk where his essay is built one
+sentence at a time. Only sentences he TYPES into the Desk count — talking
+about a sentence, or you writing it for him, does NOT go into his essay.
+When you run the Writing lesson:
+- Mark Writing=in-progress in the ledger the moment writing begins — that is
+  what opens his Desk on screen.
+- Ask for exactly ONE sentence at a time. Tell him plainly to type it into his
+  Writing Desk (not just say it). Model an example for him to react to, then
+  have him write his own version.
+- React to the sentence he actually typed (shown below as "essay so far"),
+  then guide the very next single sentence. Keep going sentence by sentence
+  until he has a real paragraph he wrote himself.
+- Never paste the whole essay back at him and never count talk as writing.`
+
+// Latest essay snapshot for this visitor on the given Phoenix day.
+async function fetchEssay(embedId, visitorId, daysAgo = 0) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload,timestamp')
+  params.set('event_type', 'eq.wizard_essay')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('payload->>date', `eq.${phoenixDate(daysAgo)}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return null
+    const rows = await r.json()
+    const sentences = rows?.[0]?.payload?.sentences
+    return Array.isArray(sentences) ? sentences : null
+  } catch (_) {
+    return null
+  }
+}
+
+async function saveEssay(embedId, visitorId, sentences) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-essay',
+        event_type: 'wizard_essay',
+        payload: {
+          embed_id: embedId,
+          visitor_id: visitorId || '',
+          date: phoenixDate(),
+          sentences,
+        },
+      }),
+    })
+  } catch (_) {
+    /* non-fatal — the Desk re-syncs on the next turn / reload */
+  }
+}
 
 async function fetchDayState(embedId, visitorId, daysAgo = 0) {
   const params = new URLSearchParams()
@@ -210,6 +295,468 @@ function extractDayState(replyText) {
   return { text: replyText.slice(0, m.index).trim(), state: m[1].trim() }
 }
 
+// --- Daily assignments (Build R5) -------------------------------------------
+// The Wizard sets short concrete assignments and follows up on the pending
+// ones. Persisted per visitor (not date-keyed — pending carry across days).
+// The Wizard emits an optional <<ASSIGN: text=pending|done; ...>> line,
+// stripped before Ethan sees it (like the day ledger).
+const ASSIGNMENTS_PROTOCOL = `
+ASSIGNMENTS (things for Ethan to do or practice — you track these and follow up):
+Keep 1-3 active, concrete and realistic ("read 10 pages tonight", "finish your
+essay intro"). When you give a NEW one or mark one DONE, add ONE line JUST
+BEFORE your final <<DAY:>> line (the DAY line must stay the very last line),
+machine-only, never shown, never mentioned:
+<<ASSIGN: read 10 pages tonight=pending; finish essay intro=done>>
+Mark an assignment done ONLY when Ethan confirms he did it. At the START of a
+session, check in on any pending assignment in the list below ("Last time I
+asked you to ___ — did you?") before the day's lessons. A couple of meaningful
+things he actually does beats a long list.`
+
+function parseAssignments(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(done|pending)\s*$/i)
+    if (m) out.push({ text: m[1].trim(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Strip ALL <<ASSIGN: ...>> markers anywhere; returns { text, assign }.
+function extractAssignments(replyText) {
+  const m = replyText.match(/<<ASSIGN:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<ASSIGN:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, assign: m ? m[1].trim() : null }
+}
+
+// Merge new assignment statuses with prior. Done is sticky; new items appended.
+function mergeAssignments(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const a of priorList) {
+    const k = a.text.toLowerCase()
+    if (!byKey.has(k)) { byKey.set(k, { text: a.text, status: a.status }); order.push(k) }
+  }
+  for (const a of newList) {
+    const k = a.text.toLowerCase()
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { text: a.text, status: a.status }); order.push(k) }
+    else if (a.status === 'done') ex.status = 'done' // can complete; never un-complete
+  }
+  return order.map((k) => byKey.get(k)).slice(-6)
+}
+
+async function fetchAssignments(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_assignments')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveAssignments(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-assignments',
+        event_type: 'wizard_assignments',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
+// --- After-school check-in (Build R7) ---------------------------------------
+// When Ethan opens the app (or sends a message) after ~2:10pm Phoenix — when
+// school lets out at Kenilworth — the Wizard shifts from new-lesson mode into a
+// warm end-of-day wrap-up: how did the day go, follow up on today's assignments,
+// name a win, preview tomorrow with math front and center. This is the daily
+// check-in habit; once Ethan is at Kenilworth it grows to include his real
+// grades. Behavior-only, injected on top of the normal prompt.
+const AFTER_SCHOOL_CHECKIN_PROTOCOL = `
+AFTER-SCHOOL CHECK-IN MODE (it is now past 2:10pm — the daily wind-down):
+School's out for today. Don't launch a brand-new lesson — do a short, warm
+end-of-day check-in, like a mentor who genuinely cares how his day went:
+1. Ask how the rest of his day went.
+2. Go through today's assignments with him. For each one still pending, ask if he
+   got to it; mark it done (in your <<ASSIGN: ...=done>> line) ONLY when he says he did.
+3. Name one real thing he did well today (pull it from your ledger), and one
+   thing to pick back up tomorrow.
+4. Preview tomorrow in a single line, keeping math front and center (we're
+   getting ready for Kenilworth).
+Keep it brief and encouraging — this is the wrap-up, not a new lesson. If he
+clearly wants to keep working on a subject or his own project, follow his lead.`
+
+// --- Ethan's own projects (Build R6) ----------------------------------------
+// Like dad's Corner projects: things Ethan WANTS to build/do for fun. When he
+// says he wants to make something, the Wizard adds it as HIS project, remembers
+// it across days, and helps him chip away at it. Persisted per visitor (not
+// date-keyed). Emitted as <<PROJECT: name=active|done; ...>>, stripped like the
+// other machine markers so Ethan never sees it.
+const PROJECTS_PROTOCOL = `
+ETHAN'S PROJECTS (his own ideas, for fun — like dad's projects, but his):
+When Ethan says he wants to make, build, write, design, or work on something of
+his own (a comic, a Minecraft world, a song, a skateboard design, a story —
+anything HE is excited about), treat it as HIS project. Add or update it with
+ONE line placed JUST BEFORE the <<ASSIGN:>>/<<DAY:>> lines (the DAY line stays
+the very last line), machine-only, never shown, never mentioned:
+<<PROJECT: comic book about a dragon=active; minecraft castle=done>>
+Use a short clear name in his words. Mark a project done ONLY when he says he
+finished it. These are HIS to drive — be his teammate: get genuinely excited,
+ask what he wants to do next on it, and you can weave a lesson into his project
+when it fits (write about it, do the math his build needs). Never invent a
+project he didn't ask for.`
+
+// Strip ALL <<PROJECT: ...>> markers anywhere; returns { text, project }.
+function extractProjects(replyText) {
+  const m = replyText.match(/<<PROJECT:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<PROJECT:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, project: m ? m[1].trim() : null }
+}
+
+// Parse "name=active|done; ..." into [{ name, status }]. Mirrors parseAssignments.
+function parseProjects(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(done|active)\s*$/i)
+    if (m) out.push({ name: m[1].trim(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Merge new projects with prior. Done is sticky; new items appended; cap 8.
+function mergeProjects(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const p of priorList) {
+    const k = p.name.toLowerCase()
+    if (!byKey.has(k)) { byKey.set(k, { name: p.name, status: p.status }); order.push(k) }
+  }
+  for (const p of newList) {
+    const k = p.name.toLowerCase()
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { name: p.name, status: p.status }); order.push(k) }
+    else if (p.status === 'done') ex.status = 'done' // can finish; never un-finish
+  }
+  return order.map((k) => byKey.get(k)).slice(-8)
+}
+
+async function fetchProjects(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_projects')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveProjects(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-projects',
+        event_type: 'wizard_projects',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
+// --- Reminders (Build R8 slice 3) — the Wizard as Ethan's real EA -----------
+// Not school. When Ethan asks the Wizard to remember or remind him of his OWN
+// stuff (bring cleats Thursday, practice piano tonight, ask mom about the trip),
+// the Wizard keeps it and brings it up at the right time — the way dad's EA
+// holds his to-dos. Persisted per visitor (not date-keyed). Emitted as
+// <<REMIND: text=open|done; ...>>, stripped like the other machine markers.
+const REMINDERS_PROTOCOL = `
+REMINDERS (Ethan's OWN to-dos and things to remember — you are his assistant for
+these, not his teacher). When he asks you to remember something, remind him of
+something, or mentions something he needs to do that ISN'T schoolwork (bring his
+cleats Thursday, practice piano tonight, ask mom about the weekend), keep it for
+him. Add or update it with ONE line placed JUST BEFORE the <<PROJECT:>>/<<ASSIGN:>>/<<DAY:>>
+lines (the DAY line stays the very last line), machine-only, never shown:
+<<REMIND: bring cleats thursday=open; ask mom about the trip=done>>
+Keep the wording short and in his words. Mark one done ONLY when he says it's
+handled. Bring up an open reminder naturally when the moment fits (greeting, the
+right time of day), like a good assistant would. Never invent reminders he didn't
+ask for. These are HIS life, not schoolwork — keep school separate.`
+
+// Strip ALL <<REMIND: ...>> markers anywhere; returns { text, remind }.
+function extractReminders(replyText) {
+  const m = replyText.match(/<<REMIND:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<REMIND:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, remind: m ? m[1].trim() : null }
+}
+
+// Parse "text=open|done; ..." into [{ text, status }]. Mirrors parseAssignments.
+function parseReminders(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(done|open)\s*$/i)
+    if (m) out.push({ text: m[1].trim(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Merge new reminders with prior. Done is sticky; new items appended; cap 8.
+function mergeReminders(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const r of priorList) {
+    const k = r.text.toLowerCase()
+    if (!byKey.has(k)) { byKey.set(k, { text: r.text, status: r.status }); order.push(k) }
+  }
+  for (const r of newList) {
+    const k = r.text.toLowerCase()
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { text: r.text, status: r.status }); order.push(k) }
+    else if (r.status === 'done') ex.status = 'done' // can finish; never un-finish
+  }
+  return order.map((k) => byKey.get(k)).slice(-8)
+}
+
+async function fetchReminders(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_reminders')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveReminders(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-reminders',
+        event_type: 'wizard_reminders',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
+// --- Spellbook (Build R10) — spelling + vocabulary, Ethan's #1 academic gap ---
+// Reading and spelling are where Ethan is behind. Instead of "sneaking it in"
+// and losing it, the day's spelling + vocab words get a real home: a Spellbook
+// (wizard-themed — the words he's learning to "spell/cast") that stacks across
+// the week so he revisits and masters them. Persisted per visitor (not
+// date-keyed, so the bank carries across days). Emitted as
+// <<SPELL: word=learning|mastered; ...>>, stripped like the other markers.
+const SPELLBOOK_PROTOCOL = `
+SPELLBOOK (spelling + vocabulary — Ethan is behind on reading and spelling, so
+this is a real priority, not decoration). When a word comes up that he misspells,
+trips on, or a strong/new vocabulary word from his reading, add it to his
+Spellbook. Make him actually engage it: spell it out loud, or use it in a real
+sentence — only then is it learned. Each day, naturally re-test 1-2 words still
+in "learning" from earlier in the week (a quick "spell 'necessary' for me" or
+"use 'reluctant' in a sentence"); mark a word mastered ONLY when he spells AND
+uses it correctly. Keep words single + lowercase. Add or update with ONE line
+placed JUST BEFORE the <<REMIND:>>/<<PROJECT:>>/<<ASSIGN:>>/<<DAY:>> lines (the
+DAY line stays the very last line), machine-only, never shown:
+<<SPELL: rhythm=learning; necessary=mastered>>
+Do not flood it — a few real words a day. Never invent words he never met.`
+
+// Strip ALL <<SPELL: ...>> markers anywhere; returns { text, spell }.
+function extractSpellbook(replyText) {
+  const m = replyText.match(/<<SPELL:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<SPELL:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, spell: m ? m[1].trim() : null }
+}
+
+// Parse "word=learning|mastered; ..." into [{ word, status }].
+function parseSpellbook(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(mastered|learning)\s*$/i)
+    if (m) out.push({ word: m[1].trim().toLowerCase(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Merge new words with prior. Mastered is sticky; new words appended; cap 12.
+function mergeSpellbook(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const w of priorList) {
+    const k = (w.word || '').toLowerCase()
+    if (k && !byKey.has(k)) { byKey.set(k, { word: w.word, status: w.status }); order.push(k) }
+  }
+  for (const w of newList) {
+    const k = (w.word || '').toLowerCase()
+    if (!k) continue
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { word: w.word, status: w.status }); order.push(k) }
+    else if (w.status === 'mastered') ex.status = 'mastered' // can master; never un-master
+  }
+  return order.map((k) => byKey.get(k)).slice(-12)
+}
+
+async function fetchSpellbook(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_spellbook')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveSpellbook(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-spellbook',
+        event_type: 'wizard_spellbook',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
+// --- Bookshelf (Build R11) — reading continuity, Ethan's other #1 gap --------
+// Reading is the other gap (with spelling). His book and where he is now carry
+// across the whole week so the Wizard can pick the thread back up ("yesterday
+// you predicted the locked gate — were you right?") instead of the per-day
+// ledger forgetting the book. Finished books stack on his shelf as a growing
+// achievement. Persisted per visitor (not date-keyed). Emitted as
+// <<READ: title=reading|finished (where he is); ...>>, stripped server-side.
+const READING_PROTOCOL = `
+BOOKSHELF (his reading — reading is a make-or-break gap, treat it as real). Track
+the book Ethan is actually reading and where he is in it, so you can pick it back
+up across days. When he tells you (or you assign) what he's reading, or he makes
+progress, update it. Put the book title + where he is (a chapter, a scene, what
+just happened) so tomorrow you can reference the exact spot. Mark a book finished
+ONLY when he actually finishes it — then it goes on his shelf and you start the
+next one. Add or update with ONE line placed JUST BEFORE the
+<<SPELL:>>/<<REMIND:>>/<<PROJECT:>>/<<ASSIGN:>>/<<DAY:>> lines (the DAY line stays
+the very last line), machine-only, never shown:
+<<READ: the cave kids=reading (chapter 3, found the locked gate)>>
+Keep ONE book "reading" at a time. Never invent a book he isn't reading.`
+
+// Strip ALL <<READ: ...>> markers anywhere; returns { text, read }.
+function extractReading(replyText) {
+  const m = replyText.match(/<<READ:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<READ:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, read: m ? m[1].trim() : null }
+}
+
+// Parse "title=reading|finished (spot); ..." into [{ title, status, spot }].
+function parseReading(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(reading|finished)\s*(?:\(([^)]*)\))?\s*$/i)
+    if (m) out.push({ title: m[1].trim(), status: m[2].toLowerCase(), spot: (m[3] || '').trim() })
+  }
+  return out
+}
+
+// Merge new books with prior. Finished is sticky; spot updates; new appended; cap 10.
+function mergeReading(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const b of priorList) {
+    const k = (b.title || '').toLowerCase()
+    if (k && !byKey.has(k)) { byKey.set(k, { title: b.title, status: b.status, spot: b.spot || '' }); order.push(k) }
+  }
+  for (const b of newList) {
+    const k = (b.title || '').toLowerCase()
+    if (!k) continue
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { title: b.title, status: b.status, spot: b.spot || '' }); order.push(k) }
+    else {
+      if (b.status === 'finished') ex.status = 'finished' // can finish; never un-finish
+      if (b.spot) ex.spot = b.spot // keep the latest spot
+    }
+  }
+  return order.map((k) => byKey.get(k)).slice(-10)
+}
+
+async function fetchReading(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_reading')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveReading(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-reading',
+        event_type: 'wizard_reading',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
 // Parse a day-state string into a structured object: { subjects, note, now }
 // Example input: "Reading=done (done); Math=in-progress (step: fraction doubling); note=..."
 // Returns: { subjects: Map<name, {status, detail}>, note, now }
@@ -264,27 +811,23 @@ function mergeDayStates(newStateStr, priorStateStr) {
   // Start with prior subjects (preserves order)
   const merged = new Map(priorParsed.subjects)
 
-  // Status advancement order
-  const STATUS_ORDER = ['not-started', 'in-progress', 'done', 'next']
-  const statusRank = (status) => STATUS_ORDER.indexOf(status.toLowerCase())
-
-  // Merge in new subjects: only advance or keep, never downgrade
+  // Merge rule: "done" is STICKY (a completed subject never un-completes — the
+  // R11 "why did you restart me" guarantee). For everything else, trust the
+  // model's current-turn status so the board tracks the conversation live and
+  // can self-correct. The old forward-only rank ordering froze any subject the
+  // Wizard pre-marked "next" AND locked in a premature "in-progress" (turn-early
+  // lead) so it could never be walked back — both showed on Ethan's board as a
+  // mismatch with the actual chat (2026-06-16). Subjects in prior but absent
+  // from the new ledger are preserved (merged is seeded from prior), so the
+  // model dropping a subject mid-turn never wipes it.
   for (const [name, newData] of newParsed.subjects) {
     const priorData = merged.get(name)
-    if (!priorData) {
-      // New subject — add it
-      merged.set(name, newData)
+    if (priorData && priorData.status.toLowerCase() === 'done') {
+      // Completed work is locked — keep it done regardless of the new ledger.
+      merged.set(name, priorData)
     } else {
-      // Existing subject — take the advance (or keep if new is lower rank)
-      const newRank = statusRank(newData.status)
-      const priorRank = statusRank(priorData.status)
-      if (newRank >= priorRank) {
-        // New state is same or advanced — use it (new detail may be fresher)
-        merged.set(name, newData)
-      } else {
-        // New state would downgrade — keep prior
-        merged.set(name, priorData)
-      }
+      // Not yet done: take the model's current view (fresher status + detail).
+      merged.set(name, newData)
     }
   }
 
@@ -362,6 +905,20 @@ export default async function handler(req, res) {
 
   const body = req.body || {}
   const { embed_id, visitor_id, host_origin, content } = body
+  // Writing Desk: when essay_mode is set, `content` is a sentence Ethan typed
+  // into his essay surface — it appends to his stored essay AND flows through
+  // chat as a normal turn so the Wizard reacts to it.
+  const essayMode = !!body.essay_mode
+  // After-school check-in (Build R7): the widget sends after_school=true when
+  // Ethan's Phoenix clock is past ~2:10pm (when school lets out at Kenilworth).
+  // Behavior-only — flips the Wizard into end-of-day wrap-up mode. Never touches
+  // his session, ledger, or saved data, so it can't lose his place.
+  const afterSchool = !!body.after_school
+  // Open-a-project (Build R8): when Ethan taps one of his own projects, the
+  // widget sends project_focus=<name> so the Wizard becomes his teammate on it
+  // right now. Behavior-only — a focus hint on top of the normal prompt; no
+  // session/data change, so it can't lose his place.
+  const projectFocus = typeof body.project_focus === 'string' ? body.project_focus.slice(0, 120).trim() : ''
 
   if (!embed_id || !content) {
     return res.status(400).json({ error: 'embed_id and content required' })
@@ -379,6 +936,36 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'host_origin not on allowlist' })
   }
   res.setHeader('Access-Control-Allow-Origin', origin || '*')
+
+  // Tap-to-complete (Build R8 slice 4): Ethan checks off his own reminder or
+  // assignment. Deterministic and fully isolated — marks the item done in the
+  // event store and returns the updated list. Short-circuits BEFORE any message
+  // write or AI call, so it never touches his thread or session (can't lose his
+  // place). The Wizard's injected lists are done-sticky, so it stays done.
+  if (body.complete && typeof body.complete === 'object') {
+    const kind = body.complete.kind
+    const text = String(body.complete.text || '').trim().toLowerCase()
+    if (!text) return res.status(400).json({ error: 'complete.text required' })
+    if (kind === 'reminder') {
+      const list = await fetchReminders(embed_id, visitor_id || null)
+      const updated = list.map((r) => (r.text.toLowerCase() === text ? { ...r, status: 'done' } : r))
+      await saveReminders(embed_id, visitor_id || null, updated)
+      return res.status(200).json({ ok: true, reminders: updated })
+    }
+    if (kind === 'assignment') {
+      const list = await fetchAssignments(embed_id, visitor_id || null)
+      const updated = list.map((a) => (a.text.toLowerCase() === text ? { ...a, status: 'done' } : a))
+      await saveAssignments(embed_id, visitor_id || null, updated)
+      return res.status(200).json({ ok: true, assignments: updated })
+    }
+    if (kind === 'spell') {
+      const list = await fetchSpellbook(embed_id, visitor_id || null)
+      const updated = list.map((w) => (w.word.toLowerCase() === text ? { ...w, status: 'mastered' } : w))
+      await saveSpellbook(embed_id, visitor_id || null, updated)
+      return res.status(200).json({ ok: true, spellbook: updated })
+    }
+    return res.status(400).json({ error: 'unknown complete.kind' })
+  }
 
   // Mirror the dashboard's project-chat send. The local SSE bridge reads
   // metadata.mission_slug to load the mission's CONTEXT/VISION/BUILD as the
@@ -450,18 +1037,43 @@ export default async function handler(req, res) {
     let aiReply = null
     let aiError = null
     let latestDayState = null
+    let latestEssay = null
+    let latestAssignments = null
+    let latestProjects = null
+    let latestReminders = null
+    let latestSpellbook = null
+    let latestReading = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
+          fetchEssay(embed_id, visitor_id || null),
+          fetchAssignments(embed_id, visitor_id || null),
+          fetchProjects(embed_id, visitor_id || null),
+          fetchReminders(embed_id, visitor_id || null),
+          fetchSpellbook(embed_id, visitor_id || null),
+          fetchReading(embed_id, visitor_id || null),
         ])
+
+        // Writing Desk: if this turn is a typed essay sentence, append it to
+        // today's essay and persist before we call Gemini, so the injected
+        // draft already includes what he just wrote.
+        let essaySentences = Array.isArray(priorEssay) ? priorEssay.slice() : []
+        if (essayMode && visitorText) {
+          essaySentences.push(visitorText)
+          await saveEssay(embed_id, visitor_id || null, essaySentences)
+        }
+        latestEssay = essaySentences
         let systemPrompt = cfg.ai.system_prompt
         if (councilNotes) {
           systemPrompt += `\n\n=== COUNCIL NOTES (current plan — follow these) ===\n${councilNotes}`
         }
         systemPrompt += `\n\n=== CURRENT TIME ===\nIt is now ${phoenixNow()} (Arizona). Use this for any question about time, the day, or how much is left.`
+        if (afterSchool) {
+          systemPrompt += `\n${AFTER_SCHOOL_CHECKIN_PROTOCOL}`
+        }
         if (dayState?.payload?.state) {
           systemPrompt += `\n\n=== DAY STATE (your ledger from earlier today) ===\n${dayState.payload.state}`
         } else {
@@ -475,13 +1087,71 @@ export default async function handler(req, res) {
           }
         }
         systemPrompt += `\n${DAY_STATE_PROTOCOL}`
+        // Inject the live essay so the Wizard sees exactly what Ethan has typed
+        // into his Writing Desk (survives the 10-message history window).
+        if (essaySentences.length) {
+          systemPrompt += `\n\n=== ETHAN'S ESSAY SO FAR (what he has typed into his Writing Desk today) ===\n"${essaySentences.join(' ')}"`
+          if (essayMode) {
+            systemPrompt += `\nThe LAST sentence above is the one he just typed this turn — react to it specifically, then guide his next single sentence.`
+          }
+        }
+        systemPrompt += `\n${WRITING_DESK_PROTOCOL}`
+        // Inject the running assignments list so the Wizard can follow up.
+        const priorAssignList = Array.isArray(priorAssignments) ? priorAssignments : []
+        if (priorAssignList.length) {
+          systemPrompt += `\n\n=== ETHAN'S ASSIGNMENTS (yours to follow up on) ===\n` +
+            priorAssignList.map((a) => `- ${a.text} [${a.status}]`).join('\n')
+        }
+        systemPrompt += `\n${ASSIGNMENTS_PROTOCOL}`
+        // Inject Ethan's own projects so the Wizard remembers and helps with them.
+        const priorProjectList = Array.isArray(priorProjects) ? priorProjects : []
+        if (priorProjectList.length) {
+          systemPrompt += `\n\n=== ETHAN'S PROJECTS (his own, for fun — be his teammate) ===\n` +
+            priorProjectList.map((p) => `- ${p.name} [${p.status}]`).join('\n')
+        }
+        systemPrompt += `\n${PROJECTS_PROTOCOL}`
+        // Inject Ethan's reminders so the Wizard, as his EA, can bring them up.
+        const priorReminderList = Array.isArray(priorReminders) ? priorReminders : []
+        if (priorReminderList.length) {
+          systemPrompt += `\n\n=== ETHAN'S REMINDERS (his own to-dos — you hold these for him) ===\n` +
+            priorReminderList.map((r) => `- ${r.text} [${r.status}]`).join('\n')
+        }
+        systemPrompt += `\n${REMINDERS_PROTOCOL}`
+        // Inject Ethan's Spellbook so the Wizard re-tests words he's still learning.
+        const priorSpellList = Array.isArray(priorSpellbook) ? priorSpellbook : []
+        if (priorSpellList.length) {
+          systemPrompt += `\n\n=== ETHAN'S SPELLBOOK (spelling + vocab he's working on — re-test the "learning" ones) ===\n` +
+            priorSpellList.map((w) => `- ${w.word} [${w.status}]`).join('\n')
+        }
+        systemPrompt += `\n${SPELLBOOK_PROTOCOL}`
+        // Inject Ethan's Bookshelf so the Wizard picks his book back up across days.
+        const priorReadingList = Array.isArray(priorReading) ? priorReading : []
+        if (priorReadingList.length) {
+          systemPrompt += `\n\n=== ETHAN'S BOOKSHELF (his reading — pick the current book back up at his spot) ===\n` +
+            priorReadingList.map((b) => `- ${b.title} [${b.status}]${b.spot ? ` — ${b.spot}` : ''}`).join('\n')
+        }
+        systemPrompt += `\n${READING_PROTOCOL}`
+        // Open-a-project focus goes LAST so it outranks the lesson-flow protocols
+        // above — when Ethan taps a project, working on it IS this turn.
+        if (projectFocus) {
+          systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN JUST OPENED HIS PROJECT: "${projectFocus}" ===\nHe tapped this project to work on it with you RIGHT NOW. This overrides the lesson flow for THIS reply. Do NOT continue or restart any subject, warm-up, or communication question — even if one was mid-way. Set the lesson aside; you can return to it later. Be his teammate, not his teacher: get genuinely excited about "${projectFocus}", ask what he wants to do next on it, and help him take ONE concrete next step on the project today. If a quick skill fits the project naturally (writing a piece of it, the math his build needs, planning the next part), weave it in there. The project leads. This is HIS thing.`
+        }
         const rawReply = await callGeminiWithRetry(
           systemPrompt,
           history,
           visitorText,
           cfg.ai.model || 'gemini-2.5-flash'
         )
-        const { text: replyText, state: newDayState } = extractDayState(rawReply || '')
+        // Strip ASSIGN first (anywhere), then DAY (which must end the text), then
+        // a final scrub so no machine marker can ever leak onto Ethan's screen.
+        const assignExtract = extractAssignments(rawReply || '')
+        const projectExtract = extractProjects(assignExtract.text)
+        const reminderExtract = extractReminders(projectExtract.text)
+        const spellExtract = extractSpellbook(reminderExtract.text)
+        const readExtract = extractReading(spellExtract.text)
+        const dayExtract = extractDayState(readExtract.text)
+        const newDayState = dayExtract.state
+        const replyText = dayExtract.text.replace(/<<[A-Z]+:[\s\S]*?>>/g, '').trim()
 
         // Merge the new state with prior state deterministically.
         // This prevents the model's free-text ledger from drifting.
@@ -492,6 +1162,46 @@ export default async function handler(req, res) {
           await saveDayState(embed_id, visitor_id || null, canonicalDayState)
         }
         latestDayState = canonicalDayState
+
+        // Merge + persist assignments if the Wizard set/updated any this turn.
+        let canonicalAssignments = priorAssignList
+        if (assignExtract.assign) {
+          canonicalAssignments = mergeAssignments(parseAssignments(assignExtract.assign), priorAssignList)
+          await saveAssignments(embed_id, visitor_id || null, canonicalAssignments)
+        }
+        latestAssignments = canonicalAssignments
+
+        // Merge + persist Ethan's projects if he started/finished one this turn.
+        let canonicalProjects = priorProjectList
+        if (projectExtract.project) {
+          canonicalProjects = mergeProjects(parseProjects(projectExtract.project), priorProjectList)
+          await saveProjects(embed_id, visitor_id || null, canonicalProjects)
+        }
+        latestProjects = canonicalProjects
+
+        // Merge + persist Ethan's reminders if the Wizard set/updated any.
+        let canonicalReminders = priorReminderList
+        if (reminderExtract.remind) {
+          canonicalReminders = mergeReminders(parseReminders(reminderExtract.remind), priorReminderList)
+          await saveReminders(embed_id, visitor_id || null, canonicalReminders)
+        }
+        latestReminders = canonicalReminders
+
+        // Merge + persist Ethan's Spellbook if the Wizard added/mastered words.
+        let canonicalSpellbook = priorSpellList
+        if (spellExtract.spell) {
+          canonicalSpellbook = mergeSpellbook(parseSpellbook(spellExtract.spell), priorSpellList)
+          await saveSpellbook(embed_id, visitor_id || null, canonicalSpellbook)
+        }
+        latestSpellbook = canonicalSpellbook
+
+        // Merge + persist Ethan's Bookshelf if the Wizard updated his reading.
+        let canonicalReading = priorReadingList
+        if (readExtract.read) {
+          canonicalReading = mergeReading(parseReading(readExtract.read), priorReadingList)
+          await saveReading(embed_id, visitor_id || null, canonicalReading)
+        }
+        latestReading = canonicalReading
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
@@ -548,6 +1258,18 @@ export default async function handler(req, res) {
       // Latest day ledger (the Wizard's own subject-by-subject state) so the
       // widget can keep the Today's Quests panel in sync without extra polls.
       day_state: latestDayState,
+      // Today's essay sentences so the Writing Desk renders the real draft.
+      essay: latestEssay,
+      // Running assignments so the board can show what the Wizard set.
+      assignments: latestAssignments,
+      // Ethan's own projects so the board can show what he's building for fun.
+      projects: latestProjects,
+      // Ethan's reminders (his EA holds these) so his world can show them.
+      reminders: latestReminders,
+      // Ethan's Spellbook (spelling + vocab he's mastering) for his board.
+      spellbook: latestSpellbook,
+      // Ethan's Bookshelf (his book + where he is) so his board shows his reading.
+      reading: latestReading,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {

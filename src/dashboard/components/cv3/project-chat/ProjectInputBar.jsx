@@ -26,6 +26,7 @@ import useProjectChatPrefill from './useProjectChatPrefill.js'
 export default function ProjectInputBar() {
   const {
     selectedProject,
+    setInlineProject, onBack,
     chatInputFocused, setChatInputFocused,
     prefillMessage, setPrefillMessage,
     worldId, currentUser,
@@ -200,6 +201,12 @@ export default function ProjectInputBar() {
             value={input}
             onChange={e => { setInput(e.target.value); updateCaret(e) }}
             onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft' && !input) {
+                e.preventDefault()
+                setInlineProject(null)
+                onBack?.()
+                return
+              }
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
                 if ((!input.trim() && !pasteChips?.length) || sending) return

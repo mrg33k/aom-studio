@@ -18,9 +18,10 @@
 //   - Project row dropdown → expands inline mission list
 //   - Pin toggle → updates localStorage and resorts list
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
+import { useSupportData, buildItems } from './SupportDashboard.jsx'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
@@ -118,6 +119,57 @@ function relativeTime(iso) {
   } catch (_) { return '' }
 }
 
+// Icon set for missions — stable assignment via slug hash
+// Reuses the top-nav icon vocabulary (compass, folder, etc.)
+const MISSION_ICON_SET = [
+  // Compass
+  { name: 'compass', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
+  // Folder
+  { name: 'folder', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> },
+  // Star
+  { name: 'star', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
+  // Zap (lightning)
+  { name: 'zap', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+  // Trello-like square grid
+  { name: 'grid', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
+  // Briefcase
+  { name: 'briefcase', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7v-2a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> },
+  // Code
+  { name: 'code', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> },
+]
+
+// Stable icon assignment: hash the slug to pick an icon
+function getMissionIcon(slug) {
+  if (!slug) return MISSION_ICON_SET[0]
+  let hash = 0
+  for (let i = 0; i < slug.length; i++) {
+    hash = ((hash << 5) - hash) + slug.charCodeAt(i)
+    hash = hash & hash // Convert to 32-bit int
+  }
+  const idx = Math.abs(hash) % MISSION_ICON_SET.length
+  return MISSION_ICON_SET[idx]
+}
+
+// R26: What-Needs-You type icon — a distinct icon per recurring task type
+// (deploy / review / approval / request), rendered in the room's color by the caller.
+function getNeedsTypeIcon(item) {
+  const hay = `${item?.label || ''} ${item?.key || ''} ${item?.detail || ''}`.toLowerCase()
+  const p = { viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+  if (hay.includes('deploy')) {
+    return <svg {...p}><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>
+  }
+  if (hay.includes('review')) {
+    return <svg {...p}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+  }
+  if (hay.includes('approv')) {
+    return <svg {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+  }
+  if (hay.includes('request') || hay.includes('support')) {
+    return <svg {...p}><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+  }
+  return <svg {...p}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+}
+
 // Chevron SVG — rotates 90° when section is collapsed
 function Chevron({ collapsed }) {
   return (
@@ -140,6 +192,192 @@ function Chevron({ collapsed }) {
   )
 }
 
+// ── CV6 Support Tool Overlay ─ 3-column clean layout with real data ──────────────
+function SupportToolOverlay({ worldId }) {
+  const { wishes, mailboxes } = useSupportData(worldId)
+  const items = buildItems(wishes, mailboxes)
+
+  // Map items to 3 columns: Needs You (amber) | In Progress (green) | Handled (blue)
+  const needsYou = items.filter(it => it.status === 'needs_you' || it.ready)
+  const inProgress = items.filter(it => it.status === 'working' || it.status === 'heard')
+  const handled = items.filter(it => it.status === 'resolved')
+
+  return (
+    <div data-cv6="true" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', height: '100%', flex: 1 }}>
+      {/* NEEDS YOU Column — Amber (#F59E0B) */}
+      <SupportColumn title="Needs You" status="needs_you" items={needsYou} accentColor="#F59E0B" />
+
+      {/* IN PROGRESS Column — Green (#10B981) */}
+      <SupportColumn title="In Progress" status="working" items={inProgress} accentColor="#10B981" />
+
+      {/* HANDLED Column — Blue (#0066FF) */}
+      <SupportColumn title="Handled" status="resolved" items={handled} accentColor="#0066FF" />
+    </div>
+  )
+}
+
+// ── Support Column Component ────────────────────────────────────────────────────
+function SupportColumn({ title, status, items, accentColor }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      {/* Column Header */}
+      <div style={{
+        fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em',
+        color: 'var(--cv6-text-secondary)', marginBottom: '12px', paddingBottom: '12px',
+        borderBottom: `2px solid ${accentColor}`,
+      }}>
+        {title}
+      </div>
+
+      {/* Cards List */}
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {items.length === 0 ? (
+          <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '16px 0', marginTop: '8px' }}>
+            —
+          </div>
+        ) : (
+          items.map(item => (
+            <SupportCard key={item.key} item={item} accentColor={accentColor} />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Support Card Component ──────────────────────────────────────────────────────
+function SupportCard({ item, accentColor }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [resolving, setResolving] = useState(false)
+
+  const handleResolve = async (e) => {
+    e.stopPropagation()
+    if (!item.wish) return
+    setResolving(true)
+    try {
+      const r = await authFetch('/api/support/send-staged', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'resolve', wish_id: item.wish.id }),
+      })
+      const d = await r.json()
+      if (r.ok && d.ok) {
+        // Item resolved; parent component will re-fetch
+      }
+    } catch (e) {
+      console.error('Resolve failed:', e)
+    } finally {
+      setResolving(false)
+    }
+  }
+
+  const handleOpenMail = () => {
+    if (item.link) {
+      window.open(item.link, '_blank')
+    }
+  }
+
+  return (
+    <button
+      onClick={() => setIsExpanded(!isExpanded)}
+      style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', width: '100%', textAlign: 'left',
+        background: 'var(--cv6-surface)', border: `1px solid ${isExpanded ? accentColor : 'var(--cv6-divider)'}`,
+        borderRadius: '6px', padding: '12px 14px', minHeight: '56px', justifyContent: 'center',
+        cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit',
+      }}
+      onMouseEnter={(e) => {
+        if (!isExpanded) {
+          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+          e.currentTarget.style.borderColor = accentColor
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isExpanded) {
+          e.currentTarget.style.background = 'var(--cv6-surface)'
+          e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+        }
+      }}
+    >
+      {/* Card Header: Who + Status Badge (matching Active Work card design) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item.who}
+            </span>
+            {item.ready && (
+              <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, flexShrink: 0 }}>
+                Ready
+              </span>
+            )}
+          </div>
+          {item.subject && (
+            <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {item.subject}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Preview Text (collapsed to 2 lines, expanded to many) */}
+      {item.text && (
+        <p style={{
+          margin: '0', fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4',
+          display: '-webkit-box', WebkitLineClamp: isExpanded ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+          whiteSpace: 'pre-wrap',
+        }}>
+          {item.text}
+        </p>
+      )}
+
+      {/* Actions (if expanded) */}
+      {isExpanded && (
+        <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--cv6-divider)', display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
+          {item.wish && item.status === 'needs_you' && (
+            <button
+              onClick={handleResolve}
+              disabled={resolving}
+              style={{
+                fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
+                padding: '6px 12px', borderRadius: '4px',
+                background: accentColor, color: '#ffffff', border: 'none', cursor: resolving ? 'default' : 'pointer',
+                opacity: resolving ? 0.6 : 1, transition: 'opacity 120ms ease',
+              }}
+            >
+              {resolving ? '…' : 'Resolve'}
+            </button>
+          )}
+          {item.link && (
+            <button
+              onClick={handleOpenMail}
+              style={{
+                fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
+                padding: '6px 12px', borderRadius: '4px',
+                background: 'transparent', color: accentColor, border: `1px solid ${accentColor}`,
+                cursor: 'pointer', transition: 'all 120ms ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = accentColor
+                e.currentTarget.style.color = '#ffffff'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent'
+                e.currentTarget.style.color = accentColor
+              }}
+            >
+              Open in Gmail
+            </button>
+          )}
+        </div>
+      )}
+    </button>
+  )
+}
+
+// Export SupportToolOverlay for use in CV6Gallery
+export { SupportToolOverlay }
+
 export default function HomeView({
   user,
   worldId,
@@ -152,6 +390,7 @@ export default function HomeView({
   // Each row: { key, label, detail, onOpen }. Parent only passes rows whose
   // click target is real, so every row here is one tap from acting.
   needsYou = [],
+  cv6, // R7: gate for CV6 design system (keyboard nav, missions-primary, inline actions, happening now)
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -159,6 +398,7 @@ export default function HomeView({
   const [pinnedProjects, setPinnedProjects] = useState(() => readStored(PIN_PROJECTS_KEY + ':' + userId, []))
   const [expandedProjects, setExpandedProjects] = useState(() => readStored(EXPANDED_PROJECTS_KEY + ':' + userId, {}))
   const [searchText, setSearchText] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
   const greeting = useMemo(() => pickGreeting(), [])
 
   // Live recents: track the last time the user visited each project room.
@@ -179,6 +419,9 @@ export default function HomeView({
       return next
     })
   }
+
+  // R21: Tools box state — which tool is open in full-screen mode
+  const [selectedTool, setSelectedTool] = useState('home') // R26: Home tool selected by default when Home screen is active
 
   // Record a visit — called right before routing away from home.
   // Accepts a project slug and an optional mission slug.
@@ -220,7 +463,20 @@ export default function HomeView({
         '/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId),
         { credentials: 'include' }
       )
-      if (!res.ok) return
+      if (!res.ok) {
+        // Fallback: CV6Gallery context (no real API). Derive mock missions from projectRooms.
+        if (cv6 && projectRooms && projectRooms.length > 0) {
+          const next = {}
+          for (const proj of projectRooms) {
+            next[proj.slug] = [
+              { slug: proj.slug + '-m1', name: proj.name + ' · Main', last_message_at: new Date(Date.now() - 3600000).toISOString(), status: 'idle', depth: 0 },
+              { slug: proj.slug + '-m2', name: proj.name + ' · Secondary', last_message_at: new Date(Date.now() - 7200000).toISOString(), status: 'idle', depth: 0 },
+            ]
+          }
+          setMissionsByProject(next)
+        }
+        return
+      }
       const j = await res.json().catch(() => null)
       if (!j || !Array.isArray(j.projects)) return
       const next = {}
@@ -248,7 +504,7 @@ export default function HomeView({
       }
       setMissionsByProject(next)
     } catch (_) {}
-  }, [worldId])
+  }, [worldId, cv6, projectRooms])
 
   useEffect(() => {
     fetchMissions()
@@ -325,20 +581,255 @@ export default function HomeView({
   // so that mission lists re-sort with the most recently visited mission at the top.
   function handleProjectSelect(proj, mission) {
     recordVisit(proj.slug, mission?.slug || null)
+    // R19: Quick-view wire — set selectedRoom in Conversation column
+    setSelectedRoom({ project: proj, mission: mission || null })
     onSelectProject && onSelectProject(proj, mission)
   }
 
+  // R7: for CV6, flatten all missions into a single list with project context
+  const allMissionsForCV6 = useMemo(() => {
+    if (!cv6 || !projectRooms) return []
+    const all = []
+    try {
+      projectRooms.forEach(p => {
+        if (!p || !p.slug) return
+        const missions = missionsByProject[p.slug] || []
+        if (!Array.isArray(missions)) return
+        missions.forEach(m => {
+          if (m && m.slug) all.push({ mission: m, project: p })
+        })
+      })
+      // Sort by recency
+      return all.sort((a, b) => {
+        const tsA = a.mission?.last_message_at ? new Date(a.mission.last_message_at).getTime() : 0
+        const tsB = b.mission?.last_message_at ? new Date(b.mission.last_message_at).getTime() : 0
+        return tsB - tsA
+      })
+    } catch (_) {
+      return []
+    }
+  }, [cv6, projectRooms, missionsByProject])
+
+  // R7: compute "happening now" section — agents with recent activity + active tasks
+  const happeningNow = useMemo(() => {
+    if (!cv6) return null
+    try {
+      const events = []
+      // Agent activity: those with messages in the last 5 minutes
+      const now = Date.now()
+      const fiveMinAgo = now - 5 * 60000
+      if (Array.isArray(visibleAgents)) {
+        visibleAgents.forEach(a => {
+          if (!a || !a.slug) return
+          const lastMsgTs = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+          if (lastMsgTs > fiveMinAgo) {
+            events.push({
+              type: 'agent_activity',
+              agent: a,
+              timestamp: lastMsgTs,
+              label: `${a.name || a.slug} active`,
+              detail: relativeTime(a.last_message_at),
+            })
+          }
+        })
+      }
+      // Active missions (running tasks)
+      if (Array.isArray(allMissionsForCV6)) {
+        allMissionsForCV6.forEach(m => {
+          if (m?.mission?.status === 'running') {
+            events.push({
+              type: 'mission_running',
+              mission: m.mission,
+              project: m.project,
+              timestamp: m.mission.last_message_at ? new Date(m.mission.last_message_at).getTime() : 0,
+              label: `${m.mission.name || m.mission.slug} in progress`,
+              detail: `in ${m.project.name || m.project.slug}`,
+            })
+          }
+        })
+      }
+      return events.length > 0 ? events.sort((a, b) => b.timestamp - a.timestamp) : null
+    } catch (_) {
+      return null
+    }
+  }, [cv6, visibleAgents, allMissionsForCV6])
+
+  // R7: keyboard navigation state for CV6 (defined after all dependencies are ready)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
+  const replyInputRef = useRef(null)
+  // R22: per-instance ref for the Home region so keyboard nav wires to THIS instance
+  // (the gallery renders Home twice; document.querySelector grabbed only the first).
+  const homeRef = useRef(null)
+
+  // R19: Conversation column state + quick-view wiring
+  const [selectedRoom, setSelectedRoom] = useState(null) // { project, mission } or null
+  const [replyText, setReplyText] = useState('')
+  const [conversationMessages, setConversationMessages] = useState([])
+
+  // R23: Active Work search filtering
+  const [activeworkSearchText, setActiveworkSearchText] = useState('')
+
+  // Sample conversation thread for CV6 gallery demo
+  const sampleConversation = [
+    { id: 1, sender: 'user', text: 'Can we schedule the design review for next Tuesday?' },
+    { id: 2, sender: 'agent', text: 'I\'ve checked your calendar. Tuesday 2-3 PM works and I\'ve blocked it. The team is invited.' },
+    { id: 3, sender: 'user', text: 'Great. Make sure we review the CV6 specs before the meeting.' },
+    { id: 4, sender: 'agent', text: 'Done. I\'ve sent the CV6 design spec to the team. They have it now.' },
+    { id: 5, sender: 'user', text: 'Perfect. What else needs attention this week?' },
+    { id: 6, sender: 'agent', text: 'The Corner refactor is on schedule. One code review pending on Bobby\'s PR. I\'ll chase it today.' },
+  ]
+
+  // R19: Initialize conversation thread when a room is selected (quick-view wire)
+  useEffect(() => {
+    if (selectedRoom) {
+      // In production, this would fetch real messages from the room.
+      // For CV6 gallery, use sample conversation as placeholder.
+      setConversationMessages(sampleConversation)
+    }
+  }, [selectedRoom])
+
+  // R19: Suggested replies based on context (placeholder)
+  const suggestedReplies = [
+    { text: 'Got it' },
+    { text: 'On it' },
+    { text: 'Updates?' },
+  ]
+
+  const selectableItems = useMemo(() => {
+    if (!cv6) return []
+    try {
+      const items = []
+      // R18: Keyboard nav starts with Agents (top left), then cascades down
+      if (Array.isArray(visibleAgents)) {
+        visibleAgents.forEach((a) => {
+          if (a?.slug) items.push({ type: 'agent', item: a })
+        })
+      }
+      // Then Active Work (missions)
+      if (Array.isArray(allMissionsForCV6)) {
+        allMissionsForCV6.forEach((m) => {
+          if (m?.mission) items.push({ type: 'mission', item: m.mission, project: m.project })
+        })
+      }
+      // Then actionable stats
+      if (Array.isArray(needsYou)) {
+        needsYou.forEach((n) => {
+          if (n?.key) items.push({ type: 'needsyou', item: n })
+        })
+      }
+      // Projects last
+      if (Array.isArray(recentProjects)) {
+        recentProjects.forEach((p) => {
+          if (p?.slug) items.push({ type: 'project', item: p })
+        })
+      }
+      return items
+    } catch (_) {
+      return []
+    }
+  }, [cv6, needsYou, allMissionsForCV6, visibleAgents, recentProjects])
+
+  const handleKeyDown = useCallback((e) => {
+    if (!cv6 || selectableItems.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setSelectedIndex(prev => (prev + 1) % selectableItems.length)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setSelectedIndex(prev => prev === -1 ? selectableItems.length - 1 : (prev - 1 + selectableItems.length) % selectableItems.length)
+    } else if (e.key === 'Enter') {
+      // Enter opens the selected item
+      e.preventDefault()
+      if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
+        const sel = selectableItems[selectedIndex]
+        if (sel.type === 'mission') {
+          handleProjectSelect(sel.project, sel.item)
+        } else if (sel.type === 'agent') {
+          onSelectAgent && onSelectAgent(sel.item)
+        } else if (sel.type === 'project') {
+          handleProjectSelect(sel.item, null)
+        } else if (sel.type === 'needsyou') {
+          sel.item.onOpen && sel.item.onOpen()
+        }
+      }
+    } else if (e.key === 'ArrowRight') {
+      // R26: ArrowRight two-press behavior (Patrik's model)
+      // First press: pull the conversation into quick view (no navigation)
+      // Second press (same item already in quick view): open the room
+      // R30b: Extended to support agent type
+      e.preventDefault()
+      if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
+        const sel = selectableItems[selectedIndex]
+        if (sel.type === 'mission') {
+          const inQuickView = selectedRoom && selectedRoom.mission && selectedRoom.mission.slug === sel.item.slug
+          if (!inQuickView) {
+            recordVisit(sel.project.slug, sel.item.slug)
+            setSelectedRoom({ project: sel.project, mission: sel.item })
+          } else {
+            onSelectProject && onSelectProject(sel.project, sel.item)
+          }
+        } else if (sel.type === 'project') {
+          const inQuickView = selectedRoom && !selectedRoom.mission && selectedRoom.project?.slug === sel.item.slug
+          if (!inQuickView) {
+            recordVisit(sel.item.slug, null)
+            setSelectedRoom({ project: sel.item, mission: null })
+          } else {
+            onSelectProject && onSelectProject(sel.item, null)
+          }
+        } else if (sel.type === 'agent') {
+          const inQuickView = selectedRoom && selectedRoom.agent && selectedRoom.agent.slug === sel.item.slug
+          if (!inQuickView) {
+            // First press: pull agent conversation into quick view
+            setSelectedRoom({ agent: sel.item, project: null, mission: null })
+          } else {
+            // Second press: open the agent
+            onSelectAgent && onSelectAgent(sel.item)
+          }
+        }
+      }
+    } else if (e.key === 'ArrowLeft') {
+      // PUNCH-LIST #2: ArrowLeft back-to-home hook (room-side implementation pending)
+      // This is the Home-side wiring. Room view will call onBackToHome to return here.
+      // Documented hook: onBackToHome prop must be connected by room view.
+      e.preventDefault()
+      // For now, Home is already visible; this prep allows room view to wire back
+      // Handler will be: onBackToHome?.()
+    }
+  }, [cv6, selectableItems, selectedIndex, onSelectAgent, selectedRoom, onSelectProject])
+
+  useEffect(() => {
+    if (!cv6) return
+    const homeEl = homeRef.current
+    if (!homeEl) return
+    homeEl.addEventListener('keydown', handleKeyDown)
+    homeEl.focus()
+    return () => homeEl.removeEventListener('keydown', handleKeyDown)
+  }, [cv6, handleKeyDown])
+
+  // R22: reclaim focus when the user clicks a neutral area inside Home, so arrow
+  // keys keep responding after any interaction. Clicks on inputs/buttons keep
+  // their own focus (so typing still works).
+  const handleHomeMouseDown = useCallback((e) => {
+    if (!cv6 || !homeRef.current) return
+    const t = e.target
+    if (t.closest('input, textarea, button, a, select, [contenteditable="true"]')) return
+    homeRef.current.focus()
+  }, [cv6])
+
   return (
-    <div data-cv4-home style={{
+    <div data-cv4-home data-cv6={cv6 ? 'true' : undefined} ref={homeRef} onMouseDown={cv6 ? handleHomeMouseDown : undefined} style={{
       width: '100%', height: '100%', overflowY: 'auto',
       background: 'transparent',
       color: 'var(--c-text, #E8EBEF)',
       fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
-    }}>
+      outline: 'none',
+    }} tabIndex={cv6 ? 0 : -1}>
       <style>{`
-        @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.4} }
-        [data-cv4-home] .hm-shell { max-width:780px; margin:0 auto; padding:72px 32px 64px; }
-        [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(34px,5vw,54px); line-height:1.05; letter-spacing:-.025em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
+        @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.3} }
+        @keyframes cv6-msg-float-in { 0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)} }
+        @keyframes cv6-msg-fade-in { 0%{opacity:0}100%{opacity:1} }
+        [data-cv4-home] .hm-shell { max-width:1040px; margin:0 auto; padding:72px 40px 100px; }
+        [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(40px,6vw,64px); line-height:1.02; letter-spacing:-.03em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
         [data-cv4-home] .hm-welcome .hm-l1 { color:#E8EBEF; }
         [data-cv4-home] .hm-welcome .hm-l2 { color:#A7B5C8; margin-left:0.32em; }
         [data-cv4-home] .hm-search { position:relative; margin-bottom:52px; }
@@ -427,44 +918,938 @@ export default function HomeView({
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-dot { background:#B6862C; }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-label { color:#2A2620; }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-detail { color:#B6862C; }
+        /* R21: Mobile responsive — stack 3-column grid to single column on mobile (390px) */
+        @media (max-width: 768px) {
+          [data-cv4-home] .hm-three-column-grid { grid-template-columns: 1fr; }
+          [data-cv4-home] .hm-shell { padding: 48px 20px 80px; }
+        }
       `}</style>
 
-      <div className="hm-shell">
-        {/* Welcome */}
-        <h1 className="hm-welcome">
-          <span className="hm-l1">{greeting}</span>{' '}
-          <span className="hm-l2">{displayName(user)}.</span>
-        </h1>
+      {/* R7: CV6 layout — missions as primary, keyboard navigation, inline actions, happening now */}
+      {cv6 ? (
+        <div className="hm-shell" style={{ maxWidth: '100%' }}>
+          {/* R12: Top nav bar — global icons — primary (left) + secondary (right) with divider, 24px icons, strong hover */}
+          {cv6 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
+              marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--cv6-divider)',
+            }}>
+              {/* Primary group (left): Explorer, Files, Home, Theme */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Explorer — R23: folder-tree/sidebar icon (clearer "explore/browse" intent) */}
+                <button
+                  title="Open Explorer"
+                  onClick={() => onOpenDrawer?.('explorer')}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M15 3H9a6 6 0 0 0-6 6v6a6 6 0 0 0 6 6h6a6 6 0 0 0 6-6V9a6 6 0 0 0-6-6z"/><path d="M9 10h2"/><path d="M9 14h2"/><path d="M13 10h2"/><path d="M13 14h2"/>
+                  </svg>
+                </button>
 
-        {/* Needs you — the real story, before the search box. Renders only when
-            something is actually waiting; a quiet day stays quiet. */}
-        {needsYou.length > 0 && (
-          <div className="hm-needs">
-            {needsYou.map(n => (
-              <button key={n.key} className="hm-needs-row" onClick={() => n.onOpen && n.onOpen()}>
-                <span className="hm-needs-dot"></span>
-                <span className="hm-needs-label">{n.label}</span>
-                <span className="hm-needs-detail">{n.detail} →</span>
-              </button>
-            ))}
+                {/* Files */}
+                <button
+                  title="Open Files"
+                  onClick={() => onOpenDrawer?.('files')}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
+                  </svg>
+                </button>
+
+                {/* R23: Home icon — return to home view */}
+                <button
+                  title="Home"
+                  onClick={() => window.location.href = '/dashboard?view=home'}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
+                </button>
+
+                {/* Theme toggle */}
+                <button
+                  title="Toggle theme"
+                  onClick={() => {
+                    const shell = document.querySelector('[data-shell="cv4"]')
+                    const isDark = shell?.getAttribute('data-theme') === 'dark'
+                    shell?.setAttribute('data-theme', isDark ? 'light' : 'dark')
+                  }}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div style={{ flex: 1 }}></div>
+
+              {/* Secondary group (right): Support, Avatar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Support */}
+                <button
+                  title="Go to Support"
+                  onClick={() => window.location.href = '/dashboard?view=support'}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                  </svg>
+                </button>
+
+                {/* Avatar */}
+                <button
+                  title="User settings"
+                  onClick={() => window.location.href = '/dashboard?view=settings'}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--cv6-divider)',
+                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.color = 'var(--cv6-accent-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+            <h1 className="hm-welcome" style={{ margin: 0 }}>
+              <span className="hm-l1">{greeting}</span>{' '}
+              <span className="hm-l2">{displayName(user) || 'there'}.</span>
+            </h1>
+            {/* R14: Search icon button (collapse to icon only) */}
+            <button
+              onClick={() => setShowSearch(true)}
+              style={{
+                width: '40px', height: '40px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                transition: 'all 120ms ease', fontFamily: 'inherit',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--cv6-surface)'
+                e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
           </div>
-        )}
 
-        {/* Search */}
-        <div className="hm-search">
-          <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            value={searchText}
-            onChange={e => setSearchText(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && onOpenSearch) onOpenSearch(searchText) }}
-            placeholder="messages, tasks, agents"
-            autoComplete="off"
-          />
-          <span className="hm-search-hint">⌘K</span>
+
+          {/* R11: PUNCH-LIST #6 — HAPPENING NOW (density + alive, 6-item grid, breathing room) */}
+          {happeningNow && happeningNow.length > 0 && (
+            <div className="hm-happening-now" style={{ marginBottom: '48px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '18px', paddingBottom: '14px', borderBottom: '2px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What's happening now</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
+                {happeningNow.slice(0, 6).map((evt, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
+                    background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+                    borderRadius: '8px', fontSize: '13px', color: 'var(--cv6-text-primary)',
+                    transition: 'all 120ms ease', cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.12)'
+                    e.currentTarget.style.transform = 'translateY(-2px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                    e.currentTarget.style.boxShadow = 'none'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                      <div style={{ fontWeight: '600', fontSize: '13px' }}>{evt.label}</div>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', marginLeft: '14px' }}>{evt.detail}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* R14: Search bar — icon-only (collapsed) when hidden, expands on click next to greeting */}
+          {showSearch ? (
+            <div className="hm-search" style={{ marginBottom: '16px' }}>
+              <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && onOpenSearch) {
+                    onOpenSearch(searchText)
+                    setShowSearch(false)
+                  }
+                  if (e.key === 'Escape') setShowSearch(false)
+                }}
+                placeholder="messages, tasks, agents"
+                autoComplete="off"
+                autoFocus
+              />
+              <span className="hm-search-hint">⌘K</span>
+            </div>
+          ) : null}
+
+          {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
+          {/* R26: tighter gap to greeting (marginTop) + smaller tiles */}
+          <div style={{ marginTop: '-16px', marginBottom: '28px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              {/* Home tool */}
+              <button
+                onClick={() => setSelectedTool('home')}
+                title="Home"
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '8px', borderRadius: '6px', border: selectedTool === 'home' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'home' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'home' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  width: '52px', minHeight: '52px',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'home') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'home') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Home</span>
+              </button>
+
+              {/* Support tool */}
+              <button
+                onClick={() => setSelectedTool('support')}
+                title="Support"
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '8px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  width: '52px', minHeight: '52px',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'support') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'support') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Support</span>
+              </button>
+
+              {/* Command tool */}
+              <button
+                onClick={() => setSelectedTool('command')}
+                title="Command"
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '8px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  width: '52px', minHeight: '52px',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'command') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'command') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                  <polyline points="4 9 7 9 7 20 4 20"/>
+                  <polyline points="12 9 15 9 15 20 12 20"/>
+                  <polyline points="20 9 23 9 23 20 20 20"/>
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Command</span>
+              </button>
+            </div>
+          </div>
+
+          {/* R23: Full-screen tool app container — rolls in above the 3-column band, above What Needs You */}
+          {selectedTool && selectedTool !== 'home' && (
+            <div style={{
+              animation: 'cv6-tool-roll-in 300ms ease-out',
+              marginBottom: '24px', borderRadius: '8px', border: '1px solid var(--cv6-divider)',
+              background: 'var(--cv6-surface)', overflow: 'hidden', minHeight: '280px',
+            }}>
+              {/* Tool header with close control */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '16px 20px', borderBottom: '1px solid var(--cv6-divider)',
+              }}>
+                <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', textTransform: 'capitalize' }}>
+                  {selectedTool === 'support' && 'Support'}
+                  {selectedTool === 'command' && 'Command Deck'}
+                </div>
+                <button
+                  onClick={() => setSelectedTool('home')}
+                  title="Close"
+                  style={{
+                    width: '32px', height: '32px', borderRadius: '6px', border: 'none',
+                    background: 'transparent', color: 'var(--cv6-text-secondary)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.color = 'var(--cv6-text-primary)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent'
+                    e.currentTarget.style.color = 'var(--cv6-text-secondary)'
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '18px', height: '18px' }}>
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Tool content */}
+              <div style={{ padding: '16px 20px', maxHeight: '500px', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                {selectedTool === 'support' && (
+                  <SupportToolOverlay worldId={worldId || 'aom'} />
+                )}
+
+                {selectedTool === 'command' && (
+                  <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
+                    Command Deck coming soon
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
+          <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '32px', minHeight: '400px' }}>
+            {/* R14: LEFT COLUMN — COLLABORATORS */}
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
+              <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '16px' }}>
+                {visibleAgents.map((a, idx) => {
+                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+                  return (
+                    <button
+                      key={a.slug}
+                      className="hm-row"
+                      onClick={() => {
+                        onSelectAgent && onSelectAgent(a)
+                        homeRef.current?.focus()
+                      }}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px', padding: '12px 14px', marginBottom: '16px', minHeight: '56px', justifyContent: 'center',
+                        background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
+                        color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                        borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                        fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500', width: '100%',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                        <span style={{ flex: 1 }}>{a.name || a.slug}</span>
+                        <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
+                      </div>
+                      <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.75)' : 'var(--cv6-text-secondary)', paddingLeft: '20px', fontWeight: '400' }}>
+                        {a.slug === 'bobby' && 'building components'}
+                        {a.slug === 'steffen' && 'refining brand'}
+                        {a.slug === 'cleo' && 'editing video'}
+                        {a.slug === 'tony' && 'scheduling posts'}
+                        {a.slug === 'elon' && 'routing work'}
+                        {!['bobby', 'steffen', 'cleo', 'tony', 'elon'].includes(a.slug) && 'Ready'}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+            </div>
+
+            {/* R14: MIDDLE COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
+            {/* R30b: Combined missions AND projects list, ordered by recency */}
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
+              {/* R23: Search input for Active Work filtering */}
+              <input
+                type="text"
+                placeholder="Search missions & projects..."
+                value={activeworkSearchText || ''}
+                onChange={(e) => setActiveworkSearchText(e.target.value)}
+                style={{
+                  marginBottom: '12px', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
+                  background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '13px',
+                  fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
+              />
+              {allMissionsForCV6.length > 0 || (recentProjects && recentProjects.length > 0) ? (
+                <>
+                  {/* Scrollable container: shows 5 visible items with internal scroll */}
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', gap: '8px',
+                    flex: 1, // Grow to fill column
+                    overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
+                    scrollBehavior: 'smooth',
+                    // R20: grey container removed — cards fall clean against the page (Patrik 2026-06-16)
+                    maxHeight: '328px', // R18: Cap at 5 visible items (56px each + 8px gaps + 16px padding)
+                  }}>
+                    {/* R30b: Combined missions + projects list, sorted by recency */}
+                    {(() => {
+                      // Build combined list: missions + projects
+                      const combined = []
+                      // Add missions
+                      if (Array.isArray(allMissionsForCV6)) {
+                        allMissionsForCV6.forEach(m => {
+                          combined.push({ type: 'mission', mission: m.mission, project: m.project, timestamp: m.mission.last_message_at })
+                        })
+                      }
+                      // Add projects
+                      if (Array.isArray(recentProjects)) {
+                        recentProjects.forEach(p => {
+                          combined.push({ type: 'project', project: p, timestamp: p.last_message_at })
+                        })
+                      }
+                      // Sort by recency (most recent first)
+                      combined.sort((a, b) => {
+                        const aTime = new Date(a.timestamp || 0).getTime()
+                        const bTime = new Date(b.timestamp || 0).getTime()
+                        return bTime - aTime
+                      })
+                      // Filter by search text
+                      return combined.filter(item => {
+                        if (!activeworkSearchText.trim()) return true
+                        const searchLower = activeworkSearchText.toLowerCase()
+                        if (item.type === 'mission') {
+                          const missionName = (item.mission.name || item.mission.slug).toLowerCase()
+                          const projectName = (item.project.name || item.project.slug).toLowerCase()
+                          return missionName.includes(searchLower) || projectName.includes(searchLower)
+                        } else if (item.type === 'project') {
+                          const projectName = (item.project.name || item.project.slug).toLowerCase()
+                          return projectName.includes(searchLower)
+                        }
+                        return true
+                      }).map((item, idx) => {
+                        if (item.type === 'mission') {
+                          const m = item
+                          const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
+                          return (
+                            <button
+                              key={`mission-${m.mission.slug}`}
+                              className="hm-mission"
+                              onClick={() => {
+                                handleProjectSelect(m.project, m.mission)
+                                homeRef.current?.focus()
+                              }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
+                                background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                                color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                                border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
+                                borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                                fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                                flex: '0 0 auto', minHeight: '56px',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = 'var(--cv6-surface)'
+                                  e.currentTarget.style.borderColor = 'transparent'
+                                }
+                              }}
+                            >
+                              {/* R18: Per-item icon from stable set */}
+                              <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}>
+                                {getMissionIcon(m.mission.slug).svg}
+                              </span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {m.mission.name || m.mission.slug}
+                                  {/* R18: Subtle room color dot */}
+                                  <span style={{
+                                    width: '6px', height: '6px', borderRadius: '50%',
+                                    background: isSelected ? 'rgba(255,255,255,0.5)' : `hsl(${(m.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                                    flexShrink: 0,
+                                  }}/>
+                                </div>
+                                <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
+                              </div>
+                              <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
+                            </button>
+                          )
+                        } else if (item.type === 'project') {
+                          const p = item.project
+                          const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'project' && selectableItems[selectedIndex]?.item?.slug === p.slug
+                          return (
+                            <button
+                              key={`project-${p.slug}`}
+                              className="hm-mission"
+                              onClick={() => {
+                                handleProjectSelect(p, null)
+                                homeRef.current?.focus()
+                              }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
+                                background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                                color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                                border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
+                                borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                                fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                                flex: '0 0 auto', minHeight: '56px',
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) {
+                                  e.currentTarget.style.background = 'var(--cv6-surface)'
+                                  e.currentTarget.style.borderColor = 'transparent'
+                                }
+                              }}
+                            >
+                              {/* Project folder icon */}
+                              <span style={{ color: isSelected ? '#ffffff' : '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
+                                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                </svg>
+                              </span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {p.name || p.slug}
+                                  {/* R18: Subtle room color dot */}
+                                  <span style={{
+                                    width: '6px', height: '6px', borderRadius: '50%',
+                                    background: isSelected ? 'rgba(255,255,255,0.5)' : `hsl(${(p.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                                    flexShrink: 0,
+                                  }}/>
+                                </div>
+                                <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>Project</div>
+                              </div>
+                              <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(p.last_message_at)}</span>
+                            </button>
+                          )
+                        }
+                      })
+                    })()}
+                  </div>
+                  {(allMissionsForCV6.length + (recentProjects?.length || 0) > 5) && (
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--cv6-divider)', textAlign: 'center' }}>
+                      ↓ +{(allMissionsForCV6.length + (recentProjects?.length || 0)) - 5} more (scroll within)
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', padding: '16px', textAlign: 'center' }}>No active work</div>
+              )}
+            </div>
+
+            {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity */}
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+              {/* R19: Room identifier header with color tinting */}
+              {/* R30b: Support agent rooms in addition to project/mission rooms */}
+              <div style={{
+                fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em',
+                marginBottom: '12px', paddingBottom: '12px',
+                borderBottom: selectedRoom ? (selectedRoom.agent
+                  ? `2px solid hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`
+                  : `2px solid hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`)
+                  : '1px solid var(--cv6-divider)',
+                color: 'var(--cv6-text-secondary)',
+                transition: 'border-color 200ms ease',
+              }}>
+                {selectedRoom ? (
+                  selectedRoom.agent ? (
+                    // Agent room header
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        background: `hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                      }}/>
+                      {selectedRoom.agent.name || selectedRoom.agent.slug}
+                    </span>
+                  ) : (
+                    // Project/mission room header
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{
+                        width: '8px', height: '8px', borderRadius: '50%',
+                        background: `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                      }}/>
+                      {selectedRoom.project.name || selectedRoom.project.slug} • {selectedRoom.mission?.name || 'Select a mission'}
+                    </span>
+                  )
+                ) : (
+                  'Conversation'
+                )}
+              </div>
+
+              {selectedRoom && conversationMessages.length > 0 ? (
+                <>
+                  {/* R19: Conversation thread — scrollable area with messages */}
+                  <div style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    paddingRight: '4px',
+                    marginBottom: '12px',
+                    display: 'flex',
+                    flexDirection: 'column-reverse', // R19: Messages flow upward (newest at bottom, user messages float to top)
+                    gap: '12px',
+                    // R20: grey container removed — conversation falls clean against the page (Patrik 2026-06-16)
+                  }}>
+                    {conversationMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                          animation: msg.sender === 'user' ? 'cv6-msg-float-in 300ms ease-out' : 'cv6-msg-fade-in 300ms ease-out',
+                        }}
+                      >
+                        <div
+                          style={{
+                            maxWidth: '75%',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            lineHeight: '1.4',
+                            wordWrap: 'break-word',
+                            // R19: Color-coded bubbles
+                            background: msg.sender === 'user'
+                              ? `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`  // Room color for user messages
+                              : 'var(--cv6-surface)',  // Gray for agent messages
+                            color: msg.sender === 'user' ? '#ffffff' : 'var(--cv6-text-primary)',
+                          }}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* R24: Conversation input — divider line, then suggested replies, then input row (Patrik: chips below the grey line, above where you type) */}
+                  <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
+                    {/* Suggested replies — below the divider line, ABOVE the input row */}
+                    {suggestedReplies.length > 0 && (
+                      <div style={{ marginBottom: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {suggestedReplies.map((reply, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setReplyText(reply.text)
+                              replyInputRef.current?.focus()
+                            }}
+                            style={{
+                              padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
+                              background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)',
+                              fontSize: '12px', fontFamily: 'inherit', cursor: 'pointer',
+                              transition: 'all 120ms ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                              e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                              e.currentTarget.style.color = 'var(--cv6-accent-primary)'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'var(--cv6-surface)'
+                              e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                              e.currentTarget.style.color = 'var(--cv6-text-secondary)'
+                            }}
+                          >
+                            {reply.text}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+                      {/* R30: Command button (left) — purple gradient + crystal-ball icon, height matches input */}
+                      <button
+                        onClick={() => console.log('Command menu (placeholder)')}
+                        style={{
+                          width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', border: 'none',
+                          background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#ffffff',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 120ms ease', boxShadow: '0 2px 8px rgba(124,58,237,0.28)',
+                          padding: 0, fontFamily: 'inherit',
+                        }}
+                        title="Command menu"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #6D28D9 0%, #9333EA 100%)'
+                          e.currentTarget.style.transform = 'translateY(-1px)'
+                          e.currentTarget.style.boxShadow = '0 4px 14px rgba(124,58,237,0.42)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)'
+                          e.currentTarget.style.transform = 'translateY(0)'
+                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(124,58,237,0.28)'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9.5" r="6.5"/><path d="M6.5 19h11"/><path d="M9.5 19l1-3M14.5 19l-1-3"/><path d="M9.4 7.6a3 3 0 0 1 2.6-1.6"/></svg>
+                      </button>
+
+                      {/* Text input (flex) */}
+                      <input
+                        ref={replyInputRef}
+                        type="text"
+                        placeholder="Reply..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && replyText.trim()) {
+                            // R19: Add user message, animate to top, clear input
+                            const newMsg = { id: Math.max(...conversationMessages.map(m => m.id), 0) + 1, sender: 'user', text: replyText }
+                            setConversationMessages([newMsg, ...conversationMessages])
+                            setReplyText('')
+                            // Simulate agent reply
+                            setTimeout(() => {
+                              const agentMsg = { id: newMsg.id + 1, sender: 'agent', text: 'Got it. Working on it.' }
+                              setConversationMessages(prev => [agentMsg, ...prev])
+                            }, 800)
+                          }
+                        }}
+                        style={{
+                          flex: 1, height: '40px', boxSizing: 'border-box', padding: '0 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                          background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '14px',
+                          fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
+                        }}
+                        onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
+                        onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
+                      />
+
+                      {/* R23: Send button (right) — icon only, green (#10B981) */}
+                      <button
+                        onClick={() => {
+                          if (replyText.trim()) {
+                            const newMsg = { id: Math.max(...conversationMessages.map(m => m.id), 0) + 1, sender: 'user', text: replyText }
+                            setConversationMessages([newMsg, ...conversationMessages])
+                            setReplyText('')
+                            // Simulate agent reply
+                            setTimeout(() => {
+                              const agentMsg = { id: newMsg.id + 1, sender: 'agent', text: 'Got it. Working on it.' }
+                              setConversationMessages(prev => [agentMsg, ...prev])
+                            }, 800)
+                          }
+                        }}
+                        style={{
+                          width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', background: '#10B981', color: '#ffffff',
+                          border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                          transition: 'all 120ms ease', opacity: replyText.trim() ? 1 : 0.5,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                        }}
+                        disabled={!replyText.trim()}
+                        title="Send"
+                        onMouseEnter={(e) => {
+                          if (replyText.trim()) {
+                            e.currentTarget.style.background = '#0d9b6e'
+                            e.currentTarget.style.transform = 'translateY(-2px)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)'
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = '#10B981'
+                          e.currentTarget.style.transform = 'translateY(0)'
+                          e.currentTarget.style.boxShadow = 'none'
+                        }}
+                      >
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                </>
+              ) : (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-secondary)', fontSize: '14px' }}>
+                  Select a mission to view conversation
+                </div>
+              )}
+            </div>
+          </div>
+
+
+          {/* R14: WHAT NEEDS YOU — moved below the 3-column layout */}
+          {(needsYou && needsYou.length > 0) && (
+            <div className="hm-section" style={{ marginBottom: '32px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+                {needsYou.map((n, idx) => {
+                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
+                  const roomColorHash = n.roomSlug ? `hsl(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 60%)` : 'var(--cv6-accent-warn)'
+                  return (
+                  <button
+                    key={n.key}
+                    onClick={() => n.onOpen && n.onOpen()}
+                    style={{
+                      display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
+                      background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                      border: isSelected ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                      borderRadius: '8px', cursor: 'pointer', transition: 'all 120ms ease',
+                      textAlign: 'left', fontFamily: 'inherit', fontWeight: '500',
+                      boxShadow: isSelected ? '0 0 0 3px rgba(0,102,255,0.1)' : 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'var(--cv6-surface)'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                        e.currentTarget.style.boxShadow = 'none'
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
+                        <span style={{ color: isSelected ? '#ffffff' : roomColorHash, flexShrink: 0, marginTop: '1px', display: 'inline-flex' }}>{getNeedsTypeIcon(n)}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '14px', fontWeight: '600' }}>{n.label}</div>
+                          <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--cv6-text-secondary)', marginTop: '4px' }}>{n.detail}</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '16px', color: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0 }}>→</span>
+                    </div>
+                  </button>
+                )
+                })}
+              </div>
+            </div>
+          )}
         </div>
+      ) : (
+        /* CV4 layout — keep as-is for backward compatibility */
+        <div className="hm-shell">
+          {/* Welcome */}
+          <h1 className="hm-welcome">
+            <span className="hm-l1">{greeting}</span>{' '}
+            <span className="hm-l2">{displayName(user)}.</span>
+          </h1>
+
+          {/* Needs you — the real story, before the search box. Renders only when
+              something is actually waiting; a quiet day stays quiet. */}
+          {needsYou.length > 0 && (
+            <div className="hm-needs">
+              {needsYou.map(n => (
+                <button key={n.key} className="hm-needs-row" onClick={() => n.onOpen && n.onOpen()}>
+                  <span className="hm-needs-dot"></span>
+                  <span className="hm-needs-label">{n.label}</span>
+                  <span className="hm-needs-detail">{n.detail} →</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="hm-search">
+            <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              value={searchText}
+              onChange={e => setSearchText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && onOpenSearch) onOpenSearch(searchText) }}
+              placeholder="messages, tasks, agents"
+              autoComplete="off"
+            />
+            <span className="hm-search-hint">⌘K</span>
+          </div>
 
         {/* Recent Projects */}
         <div className="hm-section">
@@ -606,7 +1991,8 @@ export default function HomeView({
           </div>
         </div>
 
-      </div>
+        </div>
+      )}
     </div>
   )
 }

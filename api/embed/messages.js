@@ -24,6 +24,211 @@ function phoenixDate() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' })
 }
 
+// Count how many subjects are marked done in a day-ledger string.
+// "Reading=done; Writing=in-progress; Math=done; note=..." → 2
+function countDone(stateStr) {
+  if (!stateStr || typeof stateStr !== 'string') return 0
+  let n = 0
+  for (const part of stateStr.split(/;(?![^(]*\))/)) {
+    const m = part.match(/^\s*([^=]+?)\s*=\s*(.+?)\s*$/)
+    if (!m) continue
+    const key = m[1].trim()
+    if (/^(note|now)$/i.test(key)) continue
+    const status = (m[2].match(/^([^(\s]+)/) || [])[1]
+    if ((status || '').toLowerCase() === 'done') n++
+  }
+  return n
+}
+
+// Running assignments for this visitor (Wizard-tracked, carry across days).
+async function fetchAssignments(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_assignments')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+// Ethan's own projects for this visitor (his ideas, carry across days).
+async function fetchProjects(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_projects')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+// Ethan's reminders for this visitor (his EA holds these, carry across days).
+async function fetchReminders(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_reminders')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+// Ethan's Spellbook for this visitor (spelling + vocab, carries across days).
+async function fetchSpellbook(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_spellbook')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+// Ethan's Bookshelf for this visitor (his reading, carries across days).
+async function fetchReading(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_reading')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+// Latest essay snapshot for this visitor today (Writing Desk draft).
+async function fetchEssay(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_essay')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('payload->>date', `eq.${phoenixDate()}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return null
+    const rows = await r.json()
+    const sentences = rows?.[0]?.payload?.sentences
+    return Array.isArray(sentences) ? sentences : null
+  } catch (_) {
+    return null
+  }
+}
+
+// Game-progress base: from this visitor's day ledgers, compute all-time
+// subjects completed, today's completed (so the widget can tick live without
+// re-querying), and the current daily streak. One bounded query (latest-per-
+// day reduced in JS) — runs only on page load, never per chat message.
+async function fetchProgress(embedId, visitorId) {
+  const empty = { totalDone: 0, todayDone: 0, streak: 0, activeDays: 0 }
+  const since = new Date(Date.now() - 70 * 24 * 60 * 60 * 1000).toISOString()
+  const params = new URLSearchParams()
+  params.set('select', 'payload,timestamp')
+  params.set('event_type', 'eq.wizard_day_state')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('timestamp', `gt.${since}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '800')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return empty
+    const rows = await r.json()
+    // Reduce to the latest ledger per Phoenix date (rows are newest-first).
+    const latestByDate = new Map()
+    for (const row of rows) {
+      const d = row?.payload?.date
+      const s = row?.payload?.state
+      if (!d || !s || latestByDate.has(d)) continue
+      latestByDate.set(d, s)
+    }
+    const today = phoenixDate()
+    let totalDone = 0
+    let todayDone = 0
+    const doneDates = []
+    for (const [date, state] of latestByDate) {
+      const done = countDone(state)
+      totalDone += done
+      if (date === today) todayDone = done
+      if (done > 0) doneDates.push(date)
+    }
+    // Streak: consecutive days (ending today or yesterday) with any completion.
+    doneDates.sort((a, b) => (a < b ? 1 : -1)) // newest first
+    let streak = 0
+    if (doneDates.length) {
+      const dayMs = 24 * 60 * 60 * 1000
+      // Anchor to today if active today, else yesterday (today not over yet).
+      let cursor = doneDates[0] === today ? today : null
+      if (!cursor) {
+        const y = new Date(Date.now() - dayMs).toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' })
+        cursor = doneDates[0] === y ? y : null
+      }
+      if (cursor) {
+        const set = new Set(doneDates)
+        let probe = cursor
+        while (set.has(probe)) {
+          streak++
+          probe = new Date(new Date(probe + 'T00:00:00-07:00').getTime() - dayMs)
+            .toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' })
+        }
+      }
+    }
+    return { totalDone, todayDone, streak, activeDays: doneDates.length }
+  } catch (_) {
+    return empty
+  }
+}
+
 // Latest day ledger for this visitor today (written by api/embed/chat.js).
 // Drives the widget's Today's Quests panel on page load.
 async function fetchDayState(embedId, visitorId) {
@@ -133,6 +338,14 @@ export default async function handler(req, res) {
     historyMode ? 'in.(user,assistant,agent)' : 'in.(assistant,agent)'
   )
   params.set('timestamp', `gt.${since}`)
+  // Scope to THIS visitor's rows at the query level for embeds that tag every
+  // row with embed_visitor_id (the embed-ai path, e.g. summerschool). Without
+  // this, on a busy shared agent+project (elon / aheadofmarket.com) the asc+200
+  // window returns the oldest 200 messages in the room — never the visitor's own
+  // recent ones — so his thread came back empty on refresh (R8 slice 7 fix).
+  if (cfg.ai && cfg.ai.system_prompt && visitorId) {
+    params.set('metadata->>embed_visitor_id', `eq.${visitorId}`)
+  }
   params.set('order', 'timestamp.asc')
   params.set('limit', historyMode ? '200' : '20')
 
@@ -195,11 +408,29 @@ export default async function handler(req, res) {
     })
     // History mode = page load: include today's day ledger so the quests
     // panel renders the real state immediately (chat POSTs keep it fresh).
-    const dayState = historyMode
-      ? await fetchDayState(embedId, visitorId)
-      : null
+    // Also seed the Writing Desk (today's essay) and the Game HUD base
+    // (all-time/today completions + streak) — both only on page load.
+    const [dayState, essay, progress, assignments, projects, reminders, spellbook, reading] = historyMode
+      ? await Promise.all([
+          fetchDayState(embedId, visitorId),
+          fetchEssay(embedId, visitorId),
+          fetchProgress(embedId, visitorId),
+          fetchAssignments(embedId, visitorId),
+          fetchProjects(embedId, visitorId),
+          fetchReminders(embedId, visitorId),
+          fetchSpellbook(embedId, visitorId),
+          fetchReading(embedId, visitorId),
+        ])
+      : [null, null, null, null, null, null, null, null]
     return res.status(200).json({
       day_state: dayState,
+      essay,
+      progress,
+      assignments,
+      projects,
+      reminders,
+      spellbook,
+      reading,
       messages: filtered.map((row) => ({
         id: row.id,
         role: row.role,

@@ -507,6 +507,78 @@ function PressSendCard({ w, staged, onDiscuss }) {
   )
 }
 
+// The conversation on a card: who said what, in order, with the actual text. This is "show me what
+// we said to the person" — the holding note, our replies, and their messages, all readable.
+function ConversationThread({ updates, wish }) {
+  const convo = (updates || []).filter((u) => ['client_message', 'soft_ack', 'response'].includes(u.kind))
+  if (!convo.length) return null
+  const META = {
+    client_message: { who: wish.name || wish.email || 'Them', out: false },
+    soft_ack: { who: 'We sent a holding note', out: true },
+    response: { who: 'We replied', out: true },
+  }
+  return (
+    <div style={{ margin: '4px 0 2px' }}>
+      {convo.map((u) => {
+        const m = META[u.kind]
+        return (
+          <div key={u.id} style={{ display: 'flex', justifyContent: m.out ? 'flex-end' : 'flex-start', marginBottom: 6 }}>
+            <div style={{ maxWidth: '88%', background: m.out ? ACCENT_EMERALD_SOFT : BG_WHITE,
+              border: `1px solid ${m.out ? 'rgba(14,143,102,0.30)' : BORDER_LINE}`, borderRadius: 12, padding: '7px 10px' }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: m.out ? ACCENT_EMERALD : TEXT_FAINT, marginBottom: 2 }}>
+                {m.who} · {timeAgo(u.created_at)}
+              </div>
+              <div style={{ fontFamily: BODY, fontSize: 13, color: TEXT_DARK, lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>{u.body || ''}</div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// Reply to the chain, in-thread, from the board. Posts to /api/support/reply.
+function ReplyComposer({ wish, onSent }) {
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const [err, setErr] = useState(null)
+  async function send() {
+    if (!text.trim() || sending) return
+    setSending(true); setErr(null)
+    try {
+      const r = await authFetch('/api/support/reply', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_code: wish.access_code, text }),
+      })
+      const d = await r.json().catch(() => ({}))
+      if (!r.ok || !d.ok) { setErr(d.error === 'send-failed' ? 'could not send the email' : (d.error || 'could not send')); return }
+      onSent && onSent(text)
+      setText('')
+    } catch { setErr('could not send') }
+    finally { setSending(false) }
+  }
+  return (
+    <div style={{ marginTop: 8 }}>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3}
+        placeholder="Reply to this person, in their email thread…"
+        style={{ width: '100%', boxSizing: 'border-box', fontFamily: BODY, fontSize: 13, color: TEXT_DARK,
+          border: `1px solid ${BORDER_LINE}`, borderRadius: 12, padding: '8px 10px', resize: 'vertical', background: BG_WHITE }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+        <span style={{ fontSize: 11, color: err ? ALERT_WARM : TEXT_FAINT }}>
+          {err ? err : 'Sends from the inbox it arrived in, in the same thread.'}
+        </span>
+        <button onClick={send} disabled={!text.trim() || sending}
+          style={{ fontFamily: BODY, fontSize: 13, fontWeight: 600, color: BG_WHITE,
+            background: text.trim() && !sending ? ACCENT_EMERALD : TEXT_FAINT, border: 'none',
+            borderRadius: 10, padding: '7px 16px', cursor: text.trim() && !sending ? 'pointer' : 'default' }}>
+          {sending ? 'Sending…' : 'Send reply'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function WishRow({ w, dim }) {
   const staged = parseStaged(w.message)
   if (staged && w.status !== 'resolved') return <PressSendCard w={w} staged={staged} />
@@ -592,17 +664,27 @@ function WishRow({ w, dim }) {
       {open && (
         <div style={{ marginTop: 10, borderTop: `1px solid ${BORDER_LINE}`, paddingTop: 8 }}>
           <OriginalBlock original={msgParts.original} />
-          {loading && <span style={{ fontSize: 12, color: TEXT_FAINT }}>Loading activity…</span>}
+          {loading && <span style={{ fontSize: 12, color: TEXT_FAINT }}>Loading conversation…</span>}
           {updates && updates.length === 0 && <span style={{ fontSize: 12, color: TEXT_FAINT }}>No activity yet - heard, awaiting triage.</span>}
-          {updates && updates.map((u) => (
-            <div key={u.id} style={{ display: 'flex', gap: 10, padding: '4px 0', alignItems: 'baseline' }}>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: ACCENT_EMERALD, minWidth: 70, textTransform: 'uppercase' }}>
-                {u.kind === 'status_change' ? (STATUS_LABEL[u.status] || u.status) : u.kind === 'soft_ack' ? 'holding note' : u.kind}
+          {/* The actual conversation: what they sent, what WE sent back (holding note + replies). */}
+          <ConversationThread updates={updates} wish={w} />
+          {/* Internal status moves, kept faint and out of the way. */}
+          {updates && updates.filter((u) => u.kind === 'status_change').map((u) => (
+            <div key={u.id} style={{ display: 'flex', gap: 8, padding: '2px 0', alignItems: 'baseline' }}>
+              <span style={{ fontFamily: MONO, fontSize: 9, color: TEXT_FAINT, textTransform: 'uppercase', minWidth: 64 }}>
+                {STATUS_LABEL[u.status] || u.status || 'note'}
               </span>
-              <span style={{ flex: 1, fontSize: 12, color: TEXT_DIM, lineHeight: 1.4 }}>{u.body || ''}</span>
-              <span style={{ fontSize: 10, color: TEXT_FAINT }}>{timeAgo(u.created_at)}</span>
+              <span style={{ flex: 1, fontSize: 11, color: TEXT_FAINT, lineHeight: 1.4 }}>{u.body || ''}</span>
+              <span style={{ fontSize: 9, color: TEXT_FAINT }}>{timeAgo(u.created_at)}</span>
             </div>
           ))}
+          {/* Reply to the chain yourself — in-thread, from the inbox it arrived in. */}
+          {w.status !== 'resolved' && updates !== null && (
+            <ReplyComposer wish={w} onSent={(t) => setUpdates((prev) => [...(prev || []), {
+              id: `local-${Date.now()}`, kind: 'response', body: t, author: 'patrik',
+              visible_to_client: true, created_at: new Date().toISOString(),
+            }])} />
+          )}
         </div>
       )}
     </div>
@@ -1067,6 +1149,24 @@ function FrontDeskCard({ w, outcome, onDiscuss }) {
   const msgParts = splitOriginal((w.message || '').replace(STAGED_RE, '').trim())
   const { ask } = parseWishSummary(msgParts.summary)
   const overSla = outcome === 'holding' && (Date.now() - new Date(w.created_at).getTime()) > 10 * 60 * 1000
+  // Conversation + reply: load this card's full back-and-forth (their messages + every note WE sent)
+  // so Patrik can SEE what was said and reply into the same email thread.
+  const [convoOpen, setConvoOpen] = useState(false)
+  const [updates, setUpdates] = useState(null)
+  const [loadingConvo, setLoadingConvo] = useState(false)
+  async function toggleConvo() {
+    const next = !convoOpen
+    setConvoOpen(next)
+    if (next && updates === null) {
+      setLoadingConvo(true)
+      try {
+        const r = await fetch(`/api/support/wishes?access_code=${encodeURIComponent(w.access_code)}`)
+        const d = await r.json()
+        setUpdates(d?.updates || [])
+      } catch { setUpdates([]) }
+      finally { setLoadingConvo(false) }
+    }
+  }
   return (
     <div className="fd-card" style={{ background: BG_WHITE, border: `1px solid ${BORDER_LINE}`, borderRadius: 18,
       padding: '20px 20px 16px', boxShadow: '0 1px 2px rgba(26,26,20,0.04), 0 6px 22px rgba(26,26,20,0.05)' }}>
@@ -1101,9 +1201,31 @@ function FrontDeskCard({ w, outcome, onDiscuss }) {
         </div>
       )}
       <OriginalBlock original={msgParts.original} />
+      {/* See the whole conversation (what we actually said) + reply into the same email thread. */}
+      {convoOpen && (
+        <div style={{ marginTop: 12, borderTop: `1px solid ${BORDER_LINE}`, paddingTop: 12 }}>
+          {loadingConvo && <span style={{ fontFamily: BODY, fontSize: 12, color: TEXT_FAINT }}>Loading conversation…</span>}
+          {updates && <ConversationThread updates={updates} wish={w} />}
+          {updates && updates.filter((u) => ['client_message', 'soft_ack', 'response'].includes(u.kind)).length === 0 && !loadingConvo && (
+            <span style={{ fontFamily: BODY, fontSize: 12, color: TEXT_FAINT }}>Nothing sent to them yet. Write the first reply below.</span>
+          )}
+          {w.status !== 'resolved' && updates !== null && (
+            <ReplyComposer wish={w} onSent={(t) => setUpdates((prev) => [...(prev || []), {
+              id: `local-${Date.now()}`, kind: 'response', body: t, author: 'patrik',
+              visible_to_client: true, created_at: new Date().toISOString(),
+            }])} />
+          )}
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 15, flexWrap: 'wrap' }}>
         <DiscussBtn onDiscuss={onDiscuss} payload={{ who: w.name || w.email, email: w.email,
           subject: null, original: msgParts.original, ask, staged: null, accessCode: w.access_code }} />
+        <button onClick={toggleConvo} className="fd-tab" style={{ fontFamily: BODY, fontSize: 13, fontWeight: 600,
+          color: convoOpen ? TEXT_DARK : ACCENT_EMERALD, background: 'transparent',
+          border: `1px solid ${convoOpen ? BORDER_LINE : 'rgba(14,143,102,0.35)'}`, borderRadius: 10,
+          padding: '7px 14px', cursor: 'pointer' }}>
+          {convoOpen ? 'Hide conversation' : 'See conversation & reply'}
+        </button>
         <ResolveBtn wishId={w.id} style={{ marginLeft: 'auto' }} />
       </div>
     </div>

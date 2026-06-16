@@ -79,10 +79,11 @@ body {
   grid-row: 2 / 4;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 12px 8px 0;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 12px 10px 0;
   border-right: 1px solid var(--color-border);
+  overflow-y: auto;
   /* Ground glow: gold light pool at the wizard's feet + indigo vignette from top */
   background:
     radial-gradient(ellipse at 50% 95%, rgba(212, 175, 55, 0.35), transparent 55%),
@@ -106,8 +107,8 @@ body {
 
 .wizard-figure {
   width: 100%;
-  max-width: 96%;
-  max-height: 70vh;
+  max-width: 80%;
+  max-height: 34vh;
   object-fit: contain;
   height: auto;
   display: block;
@@ -138,6 +139,105 @@ body {
   margin: 10px 0 14px;
   box-shadow: 0 2px 6px rgba(50, 42, 85, 0.18);
 }
+
+/* Side nav (Build R13) — Corner-style left bar: School + his Projects + add. */
+.side-nav { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; }
+.nav-eyebrow {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--color-gold);
+  padding: 2px 4px 8px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 8px;
+}
+.nav-section-label {
+  font-size: 10.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--color-gold-soft);
+  opacity: 0.85;
+  margin: 12px 4px 4px;
+}
+.nav-list { display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  text-align: left;
+  padding: 9px 11px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(253, 248, 236, 0.55);
+  color: var(--color-text);
+  cursor: pointer;
+  font-size: 13.5px;
+  font-family: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.nav-item:hover { background: rgba(212, 175, 55, 0.12); transform: translateX(2px); }
+.nav-item.is-active {
+  border-color: var(--color-gold);
+  background: rgba(212, 175, 55, 0.16);
+  box-shadow: inset 3px 0 0 var(--color-gold);
+}
+.nav-item-icon { flex: none; color: var(--color-gold-soft); font-size: 13px; }
+.nav-item-label { flex: 1; line-height: 1.25; }
+/* Model stores project names casual/lowercase; read them as titles. */
+.nav-item--project .nav-item-label { text-transform: capitalize; }
+.nav-item-sub { display: block; font-size: 11px; opacity: 0.7; }
+.nav-empty { font-size: 12px; color: var(--color-text); opacity: 0.6; padding: 6px 11px; line-height: 1.4; }
+/* Secondary action — reads one level below the project items above it. */
+.nav-add-btn {
+  width: 100%;
+  text-align: left;
+  margin-top: 7px;
+  padding: 7px 11px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
+  border-radius: 8px;
+  background: none;
+  color: var(--color-text);
+  opacity: 0.72;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, color 0.15s ease;
+}
+.nav-add-btn:hover { background: rgba(212, 175, 55, 0.08); border-color: var(--color-gold-soft); color: var(--color-gold); opacity: 1; }
+.nav-add-form { display: flex; gap: 6px; margin-top: 6px; }
+.nav-add-input {
+  flex: 1; min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-gold);
+  border-radius: 8px;
+  background: rgba(253, 248, 236, 0.9);
+  color: var(--color-indigo);
+  font-size: 12.5px;
+  font-family: inherit;
+}
+.nav-add-go {
+  flex: none;
+  padding: 0 12px;
+  border: 1px solid var(--color-gold);
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  color: #322a55;
+  cursor: pointer;
+}
+/* Wizard figure sits at the BOTTOM of the left bar, below the nav. */
+.wizard-figure-wrap {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 14px;
+}
+html.dark-theme .nav-item { background: rgba(26, 24, 20, 0.7); color: var(--color-text); }
+html.dark-theme .nav-item:hover { background: rgba(212, 175, 55, 0.16); }
+html.dark-theme .nav-item-icon { color: var(--color-gold); }
+html.dark-theme .nav-add-input { background: rgba(26, 24, 20, 0.9); color: var(--color-text); }
 
 /* Messages */
 .messages-container {
@@ -342,6 +442,792 @@ body {
   font-style: normal;
 }
 
+/* ===== Assignments (Build R5) — what the Wizard set for Ethan to do ===== */
+.assign-panel { margin-top: 18px; }
+.assign-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.assign-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(253, 248, 236, 0.85);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold-soft);
+  border-radius: 8px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.assign-icon { color: #8a7c5e; flex: none; font-size: 13px; margin-top: 1px; }
+.assign-text { color: var(--color-text); }
+.assign-row.assign-done { background: rgba(212, 175, 55, 0.10); }
+.assign-row.assign-done .assign-icon { color: var(--color-gold-soft); }
+.assign-row.assign-done .assign-text {
+  color: #8a7c5e;
+  text-decoration: line-through;
+  text-decoration-color: rgba(212, 175, 55, 0.6);
+}
+html.dark-theme .assign-row { background: rgba(26, 24, 20, 0.85); }
+html.dark-theme .assign-icon { color: #a89f8d; }
+html.dark-theme .assign-row.assign-done .assign-text { color: #a89f8d; }
+
+/* ===== My Projects (Build R6) — Ethan's own ideas, for fun. Indigo accent
+   sets them apart from the gold homework: these are HIS, not assigned. ===== */
+.project-panel { margin-top: 18px; }
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* Project rows are tappable (Build R8) — open one to work on it with the
+   Wizard. Styled as a full-width button that still reads like a card. */
+.project-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: rgba(253, 248, 236, 0.85);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-indigo);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.06s ease, box-shadow 0.15s ease;
+}
+.project-row:hover {
+  background: rgba(68, 58, 114, 0.12);
+  box-shadow: 0 2px 8px rgba(50, 42, 85, 0.12);
+}
+.project-row:active { transform: translateY(1px); }
+.project-row:disabled { cursor: default; opacity: 0.6; box-shadow: none; }
+.project-icon { color: var(--color-indigo); flex: none; font-size: 13px; }
+.project-text { color: var(--color-text); flex: 1 1 auto; }
+.project-open { color: var(--color-indigo); flex: none; font-size: 12px; opacity: 0.5; transition: opacity 0.15s ease, transform 0.15s ease; }
+.project-row:hover .project-open { opacity: 1; transform: translateX(2px); }
+.project-row.project-done { background: rgba(68, 58, 114, 0.10); }
+.project-row.project-done .project-icon { color: var(--color-gold); }
+.project-row.project-done .project-text { color: #8a7c5e; }
+.project-hint {
+  margin-top: 9px;
+  font-size: 11px;
+  font-style: italic;
+  letter-spacing: 0.2px;
+  color: #8a7c5e;
+}
+html.dark-theme .project-row { background: rgba(26, 24, 20, 0.85); border-left-color: #6b5fa8; }
+html.dark-theme .project-row:hover { background: rgba(106, 95, 168, 0.18); }
+html.dark-theme .project-icon { color: #9a8fd0; }
+html.dark-theme .project-open { color: #9a8fd0; }
+html.dark-theme .project-row.project-done .project-icon { color: var(--color-gold); }
+html.dark-theme .project-row.project-done .project-text { color: #a89f8d; }
+html.dark-theme .project-hint { color: #a89f8d; }
+
+/* ===== Reminders (Build R8 slice 3) — his own to-dos the Wizard holds as EA.
+   Soft gold sun mark; sits below his projects in the rail. ===== */
+.remind-panel { margin-top: 18px; }
+.remind-list { display: flex; flex-direction: column; gap: 8px; }
+.remind-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(253, 248, 236, 0.85);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold-soft);
+  border-radius: 8px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.remind-icon { color: var(--color-gold-soft); flex: none; font-size: 13px; margin-top: 1px; }
+/* Tappable check (Build R8 slice 4) — Ethan marks his own items done. */
+.check-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  line-height: inherit;
+  transition: transform 0.1s ease, color 0.15s ease;
+}
+.check-btn:hover { transform: scale(1.25); color: var(--color-gold); }
+.check-btn:active { transform: scale(0.95); }
+.remind-text { color: var(--color-text); }
+/* The model stores reminders in his casual words ("bring cleats thursday");
+   lift just the first letter so the card reads finished, not sloppy. */
+.remind-text::first-letter { text-transform: uppercase; }
+.world-card--remind .world-card-title::first-letter { text-transform: uppercase; }
+html.dark-theme .remind-row { background: rgba(26, 24, 20, 0.85); }
+html.dark-theme .remind-icon { color: var(--color-gold); }
+.world-card--remind { border-left: 4px solid var(--color-gold-soft); cursor: default; }
+.world-card--remind .world-card-icon { color: var(--color-gold-soft); }
+.world-card--remind:hover { box-shadow: none; transform: none; }
+html.dark-theme .world-card--remind .world-card-icon { color: var(--color-gold); }
+
+/* Spellbook (Build R10) — spelling + vocab word bank, his #1 academic gap.
+   Words read as a bank of chips that stack across the week. Learning words are
+   tappable gold-outlined pills; mastered words stay visible, filled + checked,
+   so he watches his progress build. */
+.spell-panel { margin-top: 18px; }
+.spell-count {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-gold-soft);
+  margin-left: 8px;
+}
+.spell-words { display: flex; flex-wrap: wrap; gap: 7px; }
+.spell-word {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+/* Learning = still working it: punchy 2px gold outline so it reads from across
+   the room, like the quest cards. */
+.spell-word--learning {
+  cursor: pointer;
+  border: 2px solid var(--color-gold);
+  background: rgba(212, 175, 55, 0.10);
+  color: var(--color-gold);
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.spell-word--learning:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.35);
+  background: rgba(212, 175, 55, 0.20);
+}
+.spell-word--learning:active { transform: translateY(0); }
+/* Mastered = earned: full gold fill + dark indigo text, exactly like the "NOW"
+   pill, so it lights up as an achievement. */
+.spell-word--mastered {
+  border: 1px solid #b08f25;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  color: #322a55;
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.30);
+}
+html.dark-theme .spell-word--learning { color: var(--color-gold); }
+
+/* Bookshelf (Build R11) — his reading, carried across the week. Compact: the
+   current book (title + where he is) as a gold-accent card, plus a small shelf
+   line of finished books that grows as an achievement. */
+.book-panel { margin-top: 18px; }
+.book-current {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: rgba(253, 248, 236, 0.85);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold);
+  border-radius: 8px;
+}
+.book-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--color-gold-soft);
+  letter-spacing: 0.02em;
+  text-transform: capitalize; /* model stores titles lowercase; read them as titles */
+}
+.book-spot { font-size: 12.5px; line-height: 1.35; color: var(--color-text); opacity: 0.85; }
+.book-spot::first-letter { text-transform: uppercase; }
+.book-shelf {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-gold-soft);
+}
+.book-shelf-titles { text-transform: capitalize; }
+html.dark-theme .book-current { background: rgba(26, 24, 20, 0.85); }
+html.dark-theme .book-title { color: var(--color-gold); }
+html.dark-theme .book-shelf { color: var(--color-gold); }
+
+/* World hint (Build R12) — subtle pointer to My World for his projects +
+   reminders after the board declutter. A quiet tap-line, not a panel. */
+.world-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 9px 12px;
+  background: none;
+  border: 1px solid var(--color-gold-soft);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-gold-soft);
+  font-size: 12.5px;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.world-hint:hover { background: rgba(212, 175, 55, 0.08); border-color: var(--color-gold); }
+.world-hint-icon { flex: none; font-size: 12px; }
+.world-hint-text { flex: 1; }
+.world-hint-go { flex: none; opacity: 0.8; }
+html.dark-theme .world-hint { color: var(--color-gold); }
+
+/* ===== My World overview (Build R8 slice 2) — Ethan's own Corner home.
+   Additive overlay; the chat stays the default surface (never lose his place). */
+.world-btn {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-indigo);
+  background: rgba(253, 248, 236, 0.9);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+}
+.world-btn:hover { background: #fff; box-shadow: 0 2px 8px rgba(50, 42, 85, 0.14); }
+.world-btn:active { transform: translateY(1px); }
+.world-btn-icon { font-size: 13px; }
+html.dark-theme .world-btn {
+  color: #c3b9ea;
+  background: rgba(34, 32, 27, 0.92);
+  border-color: rgba(106, 95, 168, 0.5);
+}
+html.dark-theme .world-btn:hover { background: rgba(44, 41, 35, 0.95); }
+
+.world-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 28px 16px;
+  overflow-y: auto;
+  background: rgba(24, 20, 36, 0.55);
+  backdrop-filter: blur(3px);
+}
+.world-panel {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 26px 22px 24px;
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-gold);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.08), transparent 22%),
+    #f8f2e2;
+  box-shadow: 0 18px 50px rgba(24, 20, 36, 0.45);
+}
+.world-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--color-indigo);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.world-close:hover { background: rgba(68, 58, 114, 0.10); }
+.world-head { margin-bottom: 18px; text-align: center; }
+.world-eyebrow {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--color-gold-soft);
+  margin-bottom: 4px;
+}
+.world-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-indigo);
+}
+.world-section-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--color-indigo);
+  border-bottom: 2px solid var(--color-gold);
+  padding-bottom: 6px;
+  margin: 18px 0 12px;
+}
+.world-card-list { display: flex; flex-direction: column; gap: 10px; }
+.world-card {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+}
+.world-card:hover { box-shadow: 0 4px 14px rgba(50, 42, 85, 0.14); transform: translateY(-1px); }
+.world-card:active { transform: translateY(0); }
+.world-card--school { border-left: 4px solid var(--color-gold); }
+.world-card--project { border-left: 4px solid var(--color-indigo); }
+.world-card--project.is-done { background: rgba(68, 58, 114, 0.08); }
+.world-card-icon { flex: none; font-size: 22px; color: var(--color-indigo); }
+.world-card--school .world-card-icon { color: var(--color-gold-soft); }
+.world-card-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.world-card-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.world-card-sub { font-size: 12px; color: #6f6049; line-height: 1.3; }
+.world-card-go { flex: none; color: var(--color-indigo); opacity: 0.5; transition: opacity 0.15s ease, transform 0.15s ease; }
+.world-card:hover .world-card-go { opacity: 1; transform: translateX(2px); }
+.world-empty {
+  font-size: 12.5px;
+  font-style: italic;
+  color: #8a7c5e;
+  line-height: 1.5;
+  padding: 6px 2px;
+}
+html.dark-theme .world-panel {
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.06), transparent 22%),
+    #221f1b;
+  border-color: rgba(106, 95, 168, 0.35);
+}
+html.dark-theme .world-title { color: #c3b9ea; }
+html.dark-theme .world-section-label { color: #c3b9ea; }
+html.dark-theme .world-close { color: #c3b9ea; }
+html.dark-theme .world-card { background: rgba(26, 24, 20, 0.85); }
+html.dark-theme .world-card--project { border-left-color: #6b5fa8; }
+html.dark-theme .world-card-icon { color: #9a8fd0; }
+html.dark-theme .world-card-sub { color: #a89f8d; }
+html.dark-theme .world-card-go { color: #9a8fd0; }
+html.dark-theme .world-empty { color: #a89f8d; }
+
+/* ===== Resume bar (Build R8) — "welcome back, you're on X" after a refresh,
+   so Ethan never loses his place. Sticky at the top of the chat. ===== */
+.resume-banner {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 6px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, var(--color-indigo), var(--color-indigo-deep));
+  border: 1px solid var(--color-indigo-deep);
+  border-left: 3px solid var(--color-gold);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(50, 42, 85, 0.28);
+}
+.resume-text {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #f3ead9;
+}
+.resume-text strong {
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  letter-spacing: 0.4px;
+}
+.resume-dismiss {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  background: rgba(212, 175, 55, 0.14);
+  color: #f3ead9;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.resume-dismiss:hover { background: rgba(212, 175, 55, 0.28); }
+
+/* ===== Countdown to school (Build R4) — days until 7th grade at Kenilworth ===== */
+.countdown-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.10), transparent 65%),
+    rgba(253, 248, 236, 0.92);
+  box-shadow: 0 2px 8px rgba(50, 42, 85, 0.10);
+}
+.countdown-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-gold-soft);
+  flex: none;
+}
+.countdown-label {
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: 0.3px;
+  color: #6f6049;
+}
+
+/* ===== After-school check-in chip (Build R7) — the daily 2:10pm wind-down.
+   Indigo/evening tone sets it apart from the gold countdown above it. ===== */
+.afterschool-chip {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  /* Clear gap from the gold countdown chip below — these are two distinct
+     moments (today's wind-down vs days-to-school), not one stacked block. */
+  margin-bottom: 26px;
+  padding: 13px 15px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-indigo);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(68, 58, 114, 0.16), transparent 75%),
+    rgba(253, 248, 236, 0.92);
+  box-shadow: 0 2px 8px rgba(50, 42, 85, 0.10);
+}
+.afterschool-icon {
+  font-size: 26px;
+  line-height: 1;
+  color: var(--color-indigo);
+  flex: none;
+}
+.afterschool-body { min-width: 0; }
+.afterschool-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--color-indigo);
+  margin-bottom: 2px;
+}
+.afterschool-sub {
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: 0.3px;
+  color: #6f6049;
+}
+html.dark-theme .afterschool-chip {
+  background:
+    linear-gradient(180deg, rgba(106, 95, 168, 0.22), transparent 75%),
+    rgba(34, 32, 27, 0.92);
+  border-left-color: #6b5fa8;
+}
+html.dark-theme .afterschool-icon { color: #b3a8e0; }
+html.dark-theme .afterschool-title { color: #c3b9ea; }
+html.dark-theme .afterschool-sub { color: #a89f8d; }
+
+/* ===== Game HUD (Build R6) — XP / level / streak / prize meter ===== */
+.game-hud {
+  margin-bottom: 18px;
+  padding: 14px 14px 12px;
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-gold);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.10), transparent 60%),
+    rgba(253, 248, 236, 0.92);
+  box-shadow: 0 2px 8px rgba(50, 42, 85, 0.10);
+}
+
+.hud-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hud-level {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.hud-level-num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: #322a55;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  border: 1px solid #b08f25;
+  border-radius: 6px;
+  padding: 2px 9px;
+  letter-spacing: 0.5px;
+  box-shadow: 0 1px 4px rgba(176, 143, 37, 0.4);
+}
+
+.hud-level-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-indigo);
+}
+
+.hud-streak {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--color-gold-soft);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.hud-streak-icon { font-size: 9px; }
+
+.hud-xpbar {
+  height: 9px;
+  border-radius: 5px;
+  background: rgba(68, 58, 114, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.40);
+  box-shadow: inset 0 1px 2px rgba(50, 42, 85, 0.20);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.hud-xpbar-fill {
+  height: 100%;
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--color-gold-soft), var(--color-gold));
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.hud-xp-label {
+  margin-top: 5px;
+  font-size: 11.5px;
+  letter-spacing: 0.3px;
+  color: #8a7c5e;
+}
+
+.hud-prize {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-border);
+}
+.hud-prize-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--color-indigo);
+  margin-bottom: 6px;
+}
+.hud-prize-orn { color: var(--color-gold-soft); margin-right: 2px; }
+html.dark-theme .hud-prize-label { color: var(--color-text); }
+.hud-prizebar {
+  height: 11px;
+  border-radius: 6px;
+  background: rgba(68, 58, 114, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  box-shadow: inset 0 1px 2px rgba(50, 42, 85, 0.20);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.hud-prizebar-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--color-indigo), var(--color-gold));
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hud-prize-sub {
+  margin-top: 5px;
+  font-size: 11px;
+  font-style: italic;
+  color: #8a7c5e;
+}
+
+/* ===== Writing Desk (Build R6) — Ethan builds his essay sentence by sentence ===== */
+.writing-desk {
+  margin-bottom: 18px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold);
+  border-radius: 10px;
+  background: rgba(255, 253, 247, 0.95);
+  box-shadow: 0 2px 8px rgba(50, 42, 85, 0.10);
+}
+
+.writing-desk .action-title {
+  margin-bottom: 10px;
+}
+
+.essay-paragraph {
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--color-text);
+  background: rgba(253, 248, 236, 0.7);
+  border: 1px solid rgba(205, 189, 157, 0.6);
+  border-radius: 8px;
+  padding: 14px 16px;
+  min-height: 84px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* Newest sentence: a clean gold underline that wraps per-line (no ragged
+   highlight boxes), text stays fully readable. Fades in on add. */
+.essay-sentence--new {
+  text-decoration: underline;
+  text-decoration-color: var(--color-gold);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  animation: essay-pop 0.55s ease;
+}
+@keyframes essay-pop {
+  from { opacity: 0.3; }
+  to { opacity: 1; }
+}
+
+.essay-count {
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 0.4px;
+  color: var(--color-gold-soft);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.essay-empty {
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.6;
+  color: #8a7c5e;
+  background: rgba(253, 248, 236, 0.6);
+  border: 1px dashed rgba(212, 175, 55, 0.45);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.essay-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.essay-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 84px;
+  resize: vertical;
+  padding: 12px 14px;
+  border: 1.5px solid rgba(212, 175, 55, 0.55);
+  border-radius: 8px;
+  font-size: 16px;
+  line-height: 1.5;
+  font-family: inherit;
+  background-color: #fffdf7;
+  color: var(--color-text);
+  box-shadow: inset 0 1px 3px rgba(50, 42, 85, 0.10);
+}
+.essay-input::placeholder { color: #a99a7c; }
+.essay-input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.28), inset 0 1px 3px rgba(50, 42, 85, 0.10);
+}
+.essay-input:disabled { background-color: #f0ead9; color: #999; }
+
+.essay-add-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  color: #322a55;
+  border: 1px solid #b08f25;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(176, 143, 37, 0.4);
+}
+.essay-add-btn:hover { filter: brightness(1.07); box-shadow: 0 0 12px rgba(212, 175, 55, 0.5); }
+.essay-add-btn:active { transform: translateY(1px); filter: brightness(0.96); }
+.essay-add-btn:disabled { background: #ccc; border-color: #bbb; color: #888; cursor: not-allowed; box-shadow: none; }
+
+.essay-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  font-style: italic;
+  line-height: 1.5;
+  color: #8a7c5e;
+}
+
+/* ===== Win-burst (Build R6) — fires when a subject completes ===== */
+.celebrate-burst {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: #322a55;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  border: 1px solid #b08f25;
+  border-radius: 24px;
+  padding: 10px 24px;
+  box-shadow: 0 6px 24px rgba(176, 143, 37, 0.55), 0 0 0 4px rgba(212, 175, 55, 0.18);
+  animation: celebrate-pop 2.6s ease forwards;
+  pointer-events: none;
+}
+@keyframes celebrate-pop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.85); }
+  12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.05); }
+  22% { transform: translateX(-50%) translateY(0) scale(1); }
+  82% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.96); }
+}
+/* Full-day-complete win — bigger, lingers longer, doubled gold halo. */
+.celebrate-burst--big {
+  font-size: 19px;
+  padding: 13px 30px;
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(176, 143, 37, 0.65), 0 0 0 6px rgba(212, 175, 55, 0.22);
+  animation: celebrate-pop-big 4.2s ease forwards;
+}
+@keyframes celebrate-pop-big {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(0.8); }
+  9% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  16% { transform: translateX(-50%) translateY(0) scale(1); }
+  88% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.97); }
+}
+
 /* Quest list — driven by the Wizard's day ledger */
 .quest-list {
   display: flex;
@@ -395,14 +1281,49 @@ body {
   text-decoration-color: rgba(212, 175, 55, 0.6);
 }
 
+/* The current subject is the hero of the board: gold accent, warm glow, a hair
+   larger, name in full color (not muted) so it reads as "do this now". */
 .quest-row.quest-active {
-  border-left-color: var(--color-indigo);
-  border-color: var(--color-indigo);
-  background: rgba(68, 58, 114, 0.07);
-  box-shadow: 0 1px 4px rgba(68, 58, 114, 0.12);
+  border-left: 4px solid var(--color-gold);
+  border-color: var(--color-gold);
+  background: rgba(212, 175, 55, 0.12);
+  box-shadow: 0 2px 12px rgba(212, 175, 55, 0.25);
+  padding: 12px 12px;
 }
-.quest-row.quest-active .quest-icon,
-.quest-row.quest-active .quest-status { color: var(--color-indigo); }
+.quest-row.quest-active .quest-icon { color: var(--color-gold-soft); }
+.quest-row.quest-active .quest-name {
+  color: var(--color-text);
+  font-size: 14.5px;
+}
+
+/* NOW badge — gold pill with a live pulsing dot */
+.quest-now {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #322a55;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  border: 1px solid #b08f25;
+  border-radius: 10px;
+  padding: 3px 9px;
+  white-space: nowrap;
+}
+.quest-now-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #322a55;
+  animation: now-pulse 1.4s ease-in-out infinite;
+}
+@keyframes now-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.6); }
+}
 
 .quest-row.quest-next .quest-icon { color: var(--color-gold-soft); }
 
@@ -580,6 +1501,18 @@ html.dark-theme .theme-selector {
   }
 }
 
+/* Mobile header tidy — on a phone the big title wrapped to two lines and left a
+   decorative star stranded on its own line, crowded between the My World pill and
+   the theme toggle. Drop the ornaments and size the title to read cleanly. */
+@media (max-width: 520px) {
+  .chat-header { padding: 16px 14px 12px; }
+  .chat-header h1 { font-size: 18px; letter-spacing: 0.5px; }
+  .header-ornament-inline { display: none; }
+  /* Icon-only My World button on mobile so the centered title clears it. */
+  .world-btn { top: 12px; left: 12px; padding: 6px 9px; font-size: 0; gap: 0; }
+  .world-btn-icon { font-size: 15px; }
+}
+
 html.dark-theme .typing-label {
   color: #a89f8d;
 }
@@ -597,4 +1530,61 @@ html.dark-theme .send-button:disabled {
 
 html.dark-theme .quest-note {
   color: #a89f8d;
+}
+
+/* Dark theme — countdown chip */
+html.dark-theme .countdown-chip {
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.06), transparent 65%),
+    rgba(34, 32, 27, 0.92);
+}
+html.dark-theme .countdown-label { color: #a89f8d; }
+
+/* Dark theme — Game HUD + Writing Desk (Build R6) */
+html.dark-theme .game-hud {
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.06), transparent 60%),
+    rgba(34, 32, 27, 0.92);
+}
+html.dark-theme .hud-level-title { color: var(--color-text); }
+/* Section headers (ASSIGNMENTS / WRITING DESK): deep indigo goes muddy on the
+   dark ground, so lift to gold to match the underline + the quest names. */
+html.dark-theme .action-title { color: var(--color-gold); }
+html.dark-theme .hud-xp-label,
+html.dark-theme .hud-prize-sub { color: #a89f8d; }
+html.dark-theme .hud-prize-label { color: var(--color-text); }
+html.dark-theme .hud-xpbar,
+html.dark-theme .hud-prizebar { background: rgba(232, 223, 200, 0.12); }
+
+html.dark-theme .writing-desk {
+  background: rgba(34, 32, 27, 0.95);
+}
+html.dark-theme .essay-paragraph {
+  background: rgba(26, 24, 20, 0.7);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+html.dark-theme .essay-empty {
+  background: rgba(26, 24, 20, 0.6);
+  color: #a89f8d;
+}
+html.dark-theme .essay-input {
+  background-color: #131210;
+  border-color: rgba(212, 175, 55, 0.5);
+}
+html.dark-theme .essay-input::placeholder { color: #8a7f6b; }
+html.dark-theme .essay-input:disabled { background-color: #2a2520; color: #666; }
+html.dark-theme .essay-hint { color: #a89f8d; }
+html.dark-theme .essay-add-btn:disabled { background: #3d352b; border-color: #2a2520; color: #666; }
+html.dark-theme .essay-sentence--new {
+  text-decoration-color: var(--color-gold);
+}
+
+/* Mobile — the chat with the Wizard is primary; the panel scrolls internally
+   so HUD + Writing Desk + Quests never crowd the conversation off-screen. */
+@media (max-width: 900px) {
+  .messages-container { min-height: 30vh; }
+  .action-panel { max-height: 40vh; }
+  .essay-paragraph { max-height: 22vh; }
+  .celebrate-burst { top: 64px; font-size: 14px; padding: 8px 18px; }
 }

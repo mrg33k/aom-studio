@@ -123,8 +123,17 @@ img{display:block;max-width:100%}
 }
 .hero-headline em{color:var(--amber);font-style:normal}
 .hero-sub{
-  margin-top:28px;max-width:500px;
-  font-size:clamp(15px,1.5vw,17px);color:var(--bone-dim);line-height:1.75;font-weight:400;
+  position:relative;margin-top:30px;max-width:520px;padding-top:22px;
+  font-size:clamp(16px,1.6vw,19px);color:var(--bone-dim);line-height:1.6;font-weight:400;
+  letter-spacing:.005em;
+}
+.hero-sub::before{
+  content:"";position:absolute;left:0;top:0;width:54px;height:2px;
+  background:linear-gradient(90deg,var(--amber),rgba(229,148,42,0));
+}
+.hero-sub strong{
+  display:block;margin-bottom:6px;font-weight:600;
+  color:var(--bone);letter-spacing:.002em;
 }
 .cta-primary{
   margin-top:36px;

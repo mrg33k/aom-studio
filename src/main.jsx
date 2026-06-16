@@ -28,6 +28,7 @@ const AmbitionBrandGuidelines = lazy(() => import('./pages/AmbitionBrandGuidelin
 const AmbitionBrandGuidelinesV2 = lazy(() => import('./pages/AmbitionBrandGuidelinesV2.jsx'))
 const Social = lazy(() => import('./pages/Social.jsx'))
 const ResearchHVAC = lazy(() => import('./pages/ResearchHVAC.jsx'))
+const LiveScribe = lazy(() => import('./pages/LiveScribe.jsx'))
 const BrandGuidelinesV4 = lazy(() => import('./pages/BrandGuidelinesV4.jsx'))
 const BriefsHub = lazy(() => import('./pages/BriefsHub.jsx'))
 const BriefAIAdvisory = lazy(() => import('./pages/BriefAIAdvisory.jsx'))
@@ -373,6 +374,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/about" element={<App />} />
           <Route path="/home-v2" element={<V2Home />} />
           <Route path="/r4" element={<HomeR4Preview />} />
+          <Route path="/scribe" element={<LiveScribe />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandRedirect />} />
           <Route path="/brand/v5" element={<BrandGuidelinesV4 />} />
