@@ -415,12 +415,22 @@
     const onProject = appState.projectActive || null;
     const schoolActive = !onProject;
     const allMissions = appState.missions || [];
+    // Tolerant project<->mission match: the Wizard sometimes tags a mission with
+    // a looser project phrase than the canonical project name, so match exact OR
+    // one name containing the other (length-guarded) so missions never orphan.
+    const projMatch = (a, b) => {
+      a = (a || '').toLowerCase().trim(); b = (b || '').toLowerCase().trim();
+      if (!a || !b) return false;
+      if (a === b) return true;
+      const [s, l] = a.length <= b.length ? [a, b] : [b, a];
+      return s.length >= 4 && l.includes(s);
+    };
     const projectItems = projects.length
       ? projects.map((p, i) => {
           const done = (p.status || '').toLowerCase() === 'done';
-          const active = onProject && onProject.toLowerCase() === (p.name || '').toLowerCase();
+          const active = onProject && projMatch(onProject, p.name);
           // Missions belonging to this project (Build R13b), nested under it.
-          const mine = allMissions.filter((m) => (m.project || '').toLowerCase() === (p.name || '').toLowerCase());
+          const mine = allMissions.filter((m) => projMatch(m.project, p.name));
           const missionRows = mine.map((m) => {
             const mdone = (m.status || '').toLowerCase() === 'done';
             const safeName = escapeHtml(m.name).replace(/'/g, "\\'");
