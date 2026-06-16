@@ -118,6 +118,37 @@ function relativeTime(iso) {
   } catch (_) { return '' }
 }
 
+// Icon set for missions — stable assignment via slug hash
+// Reuses the top-nav icon vocabulary (compass, folder, etc.)
+const MISSION_ICON_SET = [
+  // Compass
+  { name: 'compass', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
+  // Folder
+  { name: 'folder', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg> },
+  // Star
+  { name: 'star', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> },
+  // Zap (lightning)
+  { name: 'zap', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> },
+  // Trello-like square grid
+  { name: 'grid', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
+  // Briefcase
+  { name: 'briefcase', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 7v-2a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg> },
+  // Code
+  { name: 'code', svg: <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> },
+]
+
+// Stable icon assignment: hash the slug to pick an icon
+function getMissionIcon(slug) {
+  if (!slug) return MISSION_ICON_SET[0]
+  let hash = 0
+  for (let i = 0; i < slug.length; i++) {
+    hash = ((hash << 5) - hash) + slug.charCodeAt(i)
+    hash = hash & hash // Convert to 32-bit int
+  }
+  const idx = Math.abs(hash) % MISSION_ICON_SET.length
+  return MISSION_ICON_SET[idx]
+}
+
 // Chevron SVG — rotates 90° when section is collapsed
 function Chevron({ collapsed }) {
   return (
@@ -429,22 +460,25 @@ export default function HomeView({
     if (!cv6) return []
     try {
       const items = []
-      // Actionable stats first (highest priority — things that need you NOW), then missions, agents, projects
-      if (Array.isArray(needsYou)) {
-        needsYou.forEach((n) => {
-          if (n?.key) items.push({ type: 'needsyou', item: n })
-        })
-      }
-      if (Array.isArray(allMissionsForCV6)) {
-        allMissionsForCV6.forEach((m) => {
-          if (m?.mission) items.push({ type: 'mission', item: m.mission, project: m.project })
-        })
-      }
+      // R18: Keyboard nav starts with Agents (top left), then cascades down
       if (Array.isArray(visibleAgents)) {
         visibleAgents.forEach((a) => {
           if (a?.slug) items.push({ type: 'agent', item: a })
         })
       }
+      // Then Active Work (missions)
+      if (Array.isArray(allMissionsForCV6)) {
+        allMissionsForCV6.forEach((m) => {
+          if (m?.mission) items.push({ type: 'mission', item: m.mission, project: m.project })
+        })
+      }
+      // Then actionable stats
+      if (Array.isArray(needsYou)) {
+        needsYou.forEach((n) => {
+          if (n?.key) items.push({ type: 'needsyou', item: n })
+        })
+      }
+      // Projects last
       if (Array.isArray(recentProjects)) {
         recentProjects.forEach((p) => {
           if (p?.slug) items.push({ type: 'project', item: p })
@@ -631,7 +665,7 @@ export default function HomeView({
             }}>
               {/* Primary group (left): Explorer, Files, Home, Theme */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* Explorer */}
+                {/* Explorer — R18: compass icon */}
                 <button
                   title="Open Explorer"
                   onClick={() => onOpenDrawer?.('explorer')}
@@ -645,7 +679,7 @@ export default function HomeView({
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
                 >
                   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                    <circle cx="12" cy="12" r="10"/><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                   </svg>
                 </button>
 
@@ -667,23 +701,6 @@ export default function HomeView({
                   </svg>
                 </button>
 
-                {/* Home */}
-                <button
-                  title="Back to Home"
-                  onClick={() => window.location.href = '/dashboard'}
-                  style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
-                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                  </svg>
-                </button>
 
                 {/* Theme toggle */}
                 <button
@@ -891,7 +908,7 @@ export default function HomeView({
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
               {allMissionsForCV6.length > 0 ? (
                 <>
-                  {/* Scrollable container: shows all missions with internal scroll */}
+                  {/* Scrollable container: shows 5 visible missions with internal scroll */}
                   <div style={{
                     display: 'flex', flexDirection: 'column', gap: '8px',
                     flex: 1, // Grow to fill column
@@ -900,7 +917,7 @@ export default function HomeView({
                     borderRadius: '6px', border: '1px solid var(--cv6-divider)',
                     padding: '8px 8px 8px 8px',
                     background: 'var(--cv6-hover)',
-                    maxHeight: '200px', // Cap at ~3 missions (56px each + 8px gaps + padding)
+                    maxHeight: '328px', // R18: Cap at 5 visible missions (56px each + 8px gaps + 16px padding)
                   }}>
                     {allMissionsForCV6.map((m, idx) => {
                       const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
@@ -934,9 +951,20 @@ export default function HomeView({
                             }
                           }}
                         >
-                          <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
+                          {/* R18: Per-item icon from stable set */}
+                          <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}>
+                            {getMissionIcon(m.mission.slug).svg}
+                          </span>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.mission.name || m.mission.slug}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {m.mission.name || m.mission.slug}
+                              {/* R18: Subtle room color dot */}
+                              <span style={{
+                                width: '6px', height: '6px', borderRadius: '50%',
+                                background: isSelected ? 'rgba(255,255,255,0.5)' : `hsl(${(m.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                                flexShrink: 0,
+                              }}/>
+                            </div>
                             <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
                           </div>
                           <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
@@ -944,9 +972,9 @@ export default function HomeView({
                       )
                     })}
                   </div>
-                  {allMissionsForCV6.length > 3 && (
+                  {allMissionsForCV6.length > 5 && (
                     <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--cv6-divider)', textAlign: 'center' }}>
-                      ↓ +{allMissionsForCV6.length - 3} more (scroll within)
+                      ↓ +{allMissionsForCV6.length - 5} more (scroll within)
                     </div>
                   )}
                 </>
