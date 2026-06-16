@@ -384,6 +384,36 @@ body {
 }
 .resume-dismiss:hover { background: rgba(212, 175, 55, 0.28); }
 
+/* ===== Countdown to school (Build R4) — days until 7th grade at Kenilworth ===== */
+.countdown-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 11px 14px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.10), transparent 65%),
+    rgba(253, 248, 236, 0.92);
+  box-shadow: 0 2px 8px rgba(50, 42, 85, 0.10);
+}
+.countdown-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-gold-soft);
+  flex: none;
+}
+.countdown-label {
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: 0.3px;
+  color: #6f6049;
+}
+
 /* ===== Game HUD (Build R6) — XP / level / streak / prize meter ===== */
 .game-hud {
   margin-bottom: 18px;
@@ -941,6 +971,14 @@ html.dark-theme .send-button:disabled {
 html.dark-theme .quest-note {
   color: #a89f8d;
 }
+
+/* Dark theme — countdown chip */
+html.dark-theme .countdown-chip {
+  background:
+    linear-gradient(180deg, rgba(212, 175, 55, 0.06), transparent 65%),
+    rgba(34, 32, 27, 0.92);
+}
+html.dark-theme .countdown-label { color: #a89f8d; }
 
 /* Dark theme — Game HUD + Writing Desk (Build R6) */
 html.dark-theme .game-hud {

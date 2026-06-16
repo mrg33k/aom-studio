@@ -211,6 +211,34 @@
       </div>`;
   }
 
+  // --- Countdown to school (Build R8 R4) -------------------------------------
+  // Frames the summer as prep: days until 7th grade at Kenilworth. Date is our
+  // canon (CONTEXT.md "August 3rd, 7th grade starts"); confirm with Patrik and
+  // change SCHOOL_START if Kenilworth's actual first day differs.
+  const SCHOOL_START = '2026-08-03';
+  function daysUntilSchool() {
+    try {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' });
+      const now = new Date(today + 'T00:00:00-07:00');
+      const start = new Date(SCHOOL_START + 'T00:00:00-07:00');
+      return Math.round((start - now) / 86400000);
+    } catch (e) { return null; }
+  }
+  function renderCountdown() {
+    const d = daysUntilSchool();
+    if (d == null || d < 0) return '';
+    if (d === 0) {
+      return `<div class="countdown-chip">
+        <span class="countdown-num">0</span>
+        <span class="countdown-label">First day of 7th grade at Kenilworth. You&rsquo;re ready.</span>
+      </div>`;
+    }
+    return `<div class="countdown-chip">
+      <span class="countdown-num">${d}</span>
+      <span class="countdown-label">day${d === 1 ? '' : 's'} until 7th grade at Kenilworth.<br>Let&rsquo;s be ready.</span>
+    </div>`;
+  }
+
   // --- Writing Desk (Build R6) -----------------------------------------------
   // A real surface where Ethan TYPES his essay one sentence at a time. Opens
   // when the Wizard marks Writing in-progress, or once the essay has content.
@@ -621,6 +649,7 @@
         </div>
 
         <div class="action-panel">
+          ${renderCountdown()}
           ${renderGameHud()}
           ${isWritingActive() ? renderWritingDesk() : ''}
           <div class="action-title">&#10022; Today's Quests</div>
