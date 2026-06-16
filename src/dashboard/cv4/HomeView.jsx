@@ -680,6 +680,11 @@ export default function HomeView({
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-dot { background:#B6862C; }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-label { color:#2A2620; }
         [data-shell="cv4"][data-theme="light"] [data-cv4-home] .hm-needs-detail { color:#B6862C; }
+        /* R21: Mobile responsive — stack 3-column grid to single column on mobile (390px) */
+        @media (max-width: 768px) {
+          [data-cv4-home] .hm-three-column-grid { grid-template-columns: 1fr; }
+          [data-cv4-home] .hm-shell { padding: 48px 20px 80px; }
+        }
       `}</style>
 
       {/* R7: CV6 layout — missions as primary, keyboard navigation, inline actions, happening now */}
@@ -1047,7 +1052,7 @@ export default function HomeView({
           )}
 
           {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '32px', minHeight: '400px' }}>
+          <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '32px', minHeight: '400px' }}>
             {/* R14: LEFT COLUMN — COLLABORATORS */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
@@ -1089,71 +1094,6 @@ export default function HomeView({
                 })}
               </div>
 
-              {/* R21: Tools box under Agents — square icon tiles with labels */}
-              <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', color: 'var(--cv6-text-secondary)' }}>Tools</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {/* Support */}
-                  <button
-                    onClick={() => setSelectedTool('support')}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                      padding: '14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                      background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                      color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
-                      cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedTool !== 'support') {
-                        e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                        e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedTool !== 'support') {
-                        e.currentTarget.style.background = 'var(--cv6-surface)'
-                        e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                      }
-                    }}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                    </svg>
-                    <span style={{ fontSize: '11px' }}>Support</span>
-                  </button>
-
-                  {/* Command Deck */}
-                  <button
-                    onClick={() => setSelectedTool('command')}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                      padding: '14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                      background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                      color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
-                      cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (selectedTool !== 'command') {
-                        e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                        e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (selectedTool !== 'command') {
-                        e.currentTarget.style.background = 'var(--cv6-surface)'
-                        e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                      }
-                    }}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                      <polyline points="4 9 7 9 7 20 4 20"/>
-                      <polyline points="12 9 15 9 15 20 12 20"/>
-                      <polyline points="20 9 23 9 23 20 20 20"/>
-                    </svg>
-                    <span style={{ fontSize: '11px' }}>Command</span>
-                  </button>
-                </div>
-              </div>
             </div>
 
             {/* R14: MIDDLE COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
@@ -1431,6 +1371,72 @@ export default function HomeView({
                   Select a mission to view conversation
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* R21: Tools box — positioned below the 3-column grid; appears below Agents on desktop, below Active Work on mobile when stacked */}
+          <div className="hm-tools-box" style={{ marginBottom: '32px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', color: 'var(--cv6-text-secondary)' }}>Tools</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              {/* Support */}
+              <button
+                onClick={() => setSelectedTool('support')}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'support') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'support') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span style={{ fontSize: '11px' }}>Support</span>
+              </button>
+
+              {/* Command Deck */}
+              <button
+                onClick={() => setSelectedTool('command')}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'command') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'command') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                  <polyline points="4 9 7 9 7 20 4 20"/>
+                  <polyline points="12 9 15 9 15 20 12 20"/>
+                  <polyline points="20 9 23 9 23 20 20 20"/>
+                </svg>
+                <span style={{ fontSize: '11px' }}>Command</span>
+              </button>
             </div>
           </div>
 
