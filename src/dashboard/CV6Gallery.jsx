@@ -265,7 +265,26 @@ const SCREEN_PROPS = {
   worldId: 'aom',
   agents: MOCK_AGENTS,
   projectRooms: MOCK_PROJECTS,
-  needsYou: [],
+  needsYou: [
+    {
+      key: 'support-1',
+      label: '3 support requests',
+      detail: 'Waiting for your reply',
+      onOpen: () => console.log('navigate to support'),
+    },
+    {
+      key: 'command-1',
+      label: 'Corner • Deploy',
+      detail: 'Ready for approval',
+      onOpen: () => console.log('navigate to corner deploy command'),
+    },
+    {
+      key: 'command-2',
+      label: 'Space Rising • Review',
+      detail: 'Design gates pending',
+      onOpen: () => console.log('navigate to space rising review command'),
+    },
+  ],
   onSelectAgent: () => {},
   onSelectProject: () => {},
   onOpenSearch: () => {},
