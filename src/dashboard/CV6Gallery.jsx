@@ -30,7 +30,6 @@ import MailAccountSwitcher from './cv4/MailAccountSwitcher.jsx'
 
 // ── Real full screens (rendered live so Steffen restyles them in place) ──
 import HomeView from './cv4/HomeView.jsx'
-import CommandDeckHome from './cv5/CommandDeckHome.jsx'
 import SupportDashboard from './cv4/SupportDashboard.jsx'
 
 const SHELL = {
@@ -337,16 +336,8 @@ const SCREENS = [
       { label: 'Light', render: () => <ScreenFrame theme="light" label="Home · Light"><HomeView {...SCREEN_PROPS} /></ScreenFrame> },
     ],
   },
-  {
-    id: 'screen-command-deck',
-    name: 'Command Deck',
-    purpose: 'The command surface — your rooms, your crew, and what needs you.',
-    wide: true,
-    states: [
-      { label: 'Dark', render: () => <ScreenFrame theme="dark" cv5 label="Command Deck · Dark"><CommandDeckHome {...SCREEN_PROPS} /></ScreenFrame> },
-      { label: 'Light', render: () => <ScreenFrame theme="light" cv5 label="Command Deck · Light"><CommandDeckHome {...SCREEN_PROPS} /></ScreenFrame> },
-    ],
-  },
+  // Command Deck removed 2026-06-16 (Patrik): it was an unapproved attempt at
+  // the home screen, not a real surface. Out of the CV6 redesign scope.
   {
     id: 'screen-support',
     name: 'Support',
