@@ -770,7 +770,7 @@ export default async function handler(req, res) {
           systemPrompt += `\n${AFTER_SCHOOL_CHECKIN_PROTOCOL}`
         }
         if (projectFocus) {
-          systemPrompt += `\n\n=== ETHAN JUST OPENED HIS PROJECT: "${projectFocus}" ===\nHe tapped this project to work on it with you right now. Be his teammate, not his teacher: get genuinely excited about it, ask what he wants to do next on it, and help him take ONE concrete next step today. If a quick skill fits naturally (writing a bit of it, the math his build needs, planning the next part), weave it in — but follow his lead. This is HIS thing.`
+          systemPrompt += `\n\n=== ETHAN JUST OPENED HIS PROJECT: "${projectFocus}" ===\nHe tapped this project to work on it with you RIGHT NOW. For THIS reply, the project is the activity — do not redirect him to a lesson or a warm-up question. Be his teammate, not his teacher: get genuinely excited, ask what he wants to do next on it, and help him take ONE concrete next step on the project today. If a quick skill fits the project naturally (writing a piece of it, the math his build needs, planning the next part), weave it in there — but the project leads. This is HIS thing. Save any lesson for after he's done working on it.`
         }
         if (dayState?.payload?.state) {
           systemPrompt += `\n\n=== DAY STATE (your ledger from earlier today) ===\n${dayState.payload.state}`
