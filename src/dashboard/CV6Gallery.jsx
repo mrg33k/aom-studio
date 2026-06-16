@@ -6,34 +6,24 @@
 // inherits it, because the gallery imports the live component — it does not
 // copy it.
 //
-// Step one (2026-06-16): the page itself + one real piece (the Skills button)
-// so we have a live surface to look at. Adding the rest = appending entries to
-// REGISTRY below. Nothing else changes.
+// Each rendered state is wrapped in an ErrorBoundary so one piece that throws
+// degrades to a small note instead of taking down the whole page.
+//
+// Adding a piece = append an entry to REGISTRY. Nothing else changes.
+// Data-driven views (chat list, files, tasks, mail room) fetch on mount and
+// need a fixture / mock-provider mode — that is the next batch, tracked in
+// cv4/COMPONENT-MANIFEST.md (NEEDS-PROVIDERS).
 
-import { useState } from 'react'
+import { Component, useState } from 'react'
 
 // ── Real CV4 components (the same files the live app renders) ──
 import SkillsBadge from './cv4/SkillsBadge.jsx'
-
-// ── The component registry. One entry per real piece. ──
-// Each entry: an id, a display name, what it's for, and the states to show.
-// A "state" is just the real component rendered with a given set of props.
-const REGISTRY = [
-  {
-    id: 'skills-badge',
-    name: 'Skills button',
-    purpose: 'Left-rail button that opens the Skills shelf. Lives on the dark drawer.',
-    canvasBg: '#0E1621',
-    // stageWidth = how wide the canvas plate is. frame = the component's real
-    // width in the app (the rail is ~264), so it renders believably, not tiny.
-    stageWidth: 520,
-    frame: 264,
-    states: [
-      { label: 'Resting', render: () => <SkillsBadge open={false} onToggle={() => {}} /> },
-      { label: 'Open', render: () => <SkillsBadge open={true} onToggle={() => {}} /> },
-    ],
-  },
-]
+import MissionChip from './cv4/MissionChip.jsx'
+import MailChip from './cv4/MailChip.jsx'
+import BucketSection from './cv4/BucketSection.jsx'
+import ProjectFileReader from './cv4/ProjectFileReader.jsx'
+import MailAccountSwitcher from './cv4/MailAccountSwitcher.jsx'
+import ChatWaveBackground from './cv4/ChatWaveBackground.jsx'
 
 const SHELL = {
   bg: '#0A0F14',
@@ -46,6 +36,221 @@ const SHELL = {
   mono: "'JetBrains Mono', ui-monospace, monospace",
   sans: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
 }
+
+// ── Crash isolation: one broken piece must not white-screen the gallery ──
+class StateBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { failed: false, msg: '' }
+  }
+  static getDerivedStateFromError(err) {
+    return { failed: true, msg: (err && err.message) || 'render error' }
+  }
+  render() {
+    if (this.state.failed) {
+      return (
+        <div
+          style={{
+            fontFamily: SHELL.mono,
+            fontSize: 12,
+            color: '#F59E9E',
+            border: '1px solid rgba(245,158,158,0.3)',
+            background: 'rgba(245,158,158,0.06)',
+            borderRadius: 8,
+            padding: '10px 14px',
+          }}
+        >
+          couldn’t render this state · {this.state.msg}
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+// Sample rows for the BucketSection expanded state.
+const bucketRows = (
+  <div style={{ padding: '4px 0' }}>
+    {['Elon', 'Studio', 'Gary'].map((n) => (
+      <div
+        key={n}
+        style={{ padding: '8px 14px', fontSize: 13, color: '#C7CDD6', fontFamily: SHELL.sans }}
+      >
+        {n}
+      </div>
+    ))}
+  </div>
+)
+
+// Realistic markdown for the file reader.
+const CANON_MD = `# corner:integrations
+
+**Status:** IN PROGRESS
+
+Build real-time Slack sync into the room so a message in Slack lands in the
+matching Corner room within seconds.
+
+## Pillars
+1. Two-way sync, not a one-way mirror.
+2. The room is the source of truth.
+3. No bytes through Supabase Storage.`
+
+const TAPE_MD = `Session 2026-06-16: framed the Skills button on a defined canvas
+plate after Steffen's send-back. Tightened the state-card rhythm. Next: pull
+the rest of the safe pieces onto /cv6 behind an error boundary.`
+
+// ── The component registry. One entry per real piece. ──
+const REGISTRY = [
+  {
+    id: 'skills-badge',
+    name: 'Skills button',
+    purpose: 'Left-rail button that opens the Skills shelf. Lives on the dark drawer.',
+    canvasBg: '#0E1621',
+    stageWidth: 520,
+    frame: 264,
+    states: [
+      { label: 'Resting', render: () => <SkillsBadge open={false} onToggle={() => {}} /> },
+      { label: 'Open', render: () => <SkillsBadge open={true} onToggle={() => {}} /> },
+    ],
+  },
+  {
+    id: 'mission-chip',
+    name: 'Mission chip',
+    purpose: 'Sits above the composer when a mission is attached, scoping the next message to that room.',
+    canvasBg: '#0B0F14',
+    stageWidth: 680,
+    frame: 612,
+    states: [
+      {
+        label: 'Attached',
+        render: () => (
+          <MissionChip mission={{ name: 'Slack real-time sync', path: 'corner:integrations' }} onClear={() => {}} />
+        ),
+      },
+      {
+        label: 'Long name (truncation)',
+        render: () => (
+          <MissionChip
+            mission={{ name: 'Brandon Wiley documentary — LBX launch film cut review', path: 'corner:brandon-wiley:lbx' }}
+            onClear={() => {}}
+          />
+        ),
+      },
+    ],
+  },
+  {
+    id: 'mail-chip',
+    name: 'Mail chip',
+    purpose: 'Sits above the composer when an email is attached, so the reply gets the thread as context.',
+    canvasBg: '#0B0F14',
+    stageWidth: 680,
+    frame: 612,
+    states: [
+      {
+        label: 'Named sender',
+        render: () => (
+          <MailChip email={{ from: { name: 'Alice Chen' }, subject: 'Re: Q3 partnership deck' }} onClear={() => {}} />
+        ),
+      },
+      {
+        label: 'No name (falls back to address)',
+        render: () => (
+          <MailChip email={{ from: { email: 'billing@acme.com' }, subject: 'Invoice #2231 is ready' }} onClear={() => {}} />
+        ),
+      },
+    ],
+  },
+  {
+    id: 'bucket-section',
+    name: 'Bucket section',
+    purpose: 'Collapsible group header in the left rail (agents, projects). Shows a count and folds its contents.',
+    canvasBg: '#0E1621',
+    stageWidth: 440,
+    frame: 320,
+    states: [
+      {
+        label: 'Collapsed',
+        render: () => <BucketSection slug="agents" label="PINNED AGENTS" count={3} open={false} onToggle={() => {}} />,
+      },
+      {
+        label: 'Expanded',
+        render: () => (
+          <BucketSection slug="agents" label="PINNED AGENTS" count={3} open={true} onToggle={() => {}}>
+            {bucketRows}
+          </BucketSection>
+        ),
+      },
+      {
+        label: 'Empty (disabled)',
+        render: () => <BucketSection slug="projects" label="PROJECTS" count={0} open={false} onToggle={() => {}} />,
+      },
+    ],
+  },
+  {
+    id: 'file-reader',
+    name: 'File reader',
+    purpose: "Article-style reader for a room's canon docs (VISION/BUILD) and the agent's tape.",
+    canvasBg: '#0A0E13',
+    stageWidth: 760,
+    frame: 720,
+    maxHeight: 420,
+    states: [
+      {
+        label: 'Canon doc',
+        render: () => (
+          <ProjectFileReader content={CANON_MD} kind="canon" name="VISION.md" lastModified="2026-06-16T14:32:00Z" />
+        ),
+      },
+      {
+        label: 'Tape (agent notes)',
+        render: () => (
+          <ProjectFileReader content={TAPE_MD} kind="tape" name="last-conversation.md" lastModified="2 hours ago" />
+        ),
+      },
+    ],
+  },
+  {
+    id: 'mail-switcher',
+    name: 'Mail account switcher',
+    purpose: 'Switches the active connected email account in the Mail Room.',
+    canvasBg: '#0E1621',
+    stageWidth: 460,
+    frame: 360,
+    states: [
+      {
+        label: 'Resting',
+        render: () => (
+          <MailAccountSwitcher
+            connections={[
+              { id: 'c1', account_email: 'patrik@aheadofmarket.com', scope: 'personal' },
+              { id: 'c2', account_email: 'team@aom.com', scope: 'shared' },
+            ]}
+            active={{ id: 'c1', account_email: 'patrik@aheadofmarket.com', scope: 'personal' }}
+            onChange={() => {}}
+          />
+        ),
+      },
+    ],
+  },
+  {
+    id: 'chat-wave',
+    name: 'Chat wave background',
+    purpose: 'The ambient animated backdrop behind a chat room. Hue shifts per room.',
+    canvasBg: 'transparent',
+    stageWidth: 720,
+    frame: 'none',
+    states: [
+      {
+        label: 'Dark theme',
+        render: () => (
+          <div style={{ position: 'relative', width: '100%', height: 220, borderRadius: 10, overflow: 'hidden' }}>
+            <ChatWaveBackground chatKey="corner:integrations" theme="dark" />
+          </div>
+        ),
+      },
+    ],
+  },
+]
 
 export default function CV6Gallery() {
   const [activeId, setActiveId] = useState(REGISTRY[0].id)
@@ -76,18 +281,8 @@ export default function CV6Gallery() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: SHELL.accent,
-              display: 'inline-block',
-            }}
-          />
-          <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>
-            CV6 Gallery
-          </span>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: SHELL.accent, display: 'inline-block' }} />
+          <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>CV6 Gallery</span>
         </div>
         <div
           style={{
@@ -100,7 +295,7 @@ export default function CV6Gallery() {
             paddingLeft: 16,
           }}
         >
-          {REGISTRY.length} {REGISTRY.length === 1 ? 'piece' : 'pieces'}
+          {REGISTRY.length} pieces
         </div>
 
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -135,19 +330,10 @@ export default function CV6Gallery() {
       {/* ── Main stage: the selected piece in all its states ── */}
       <main style={{ flex: 1, padding: '40px 48px', maxWidth: 1100 }}>
         <div style={{ marginBottom: 28 }}>
-          <h1
-            style={{
-              fontSize: 28,
-              fontWeight: 700,
-              letterSpacing: '-0.02em',
-              margin: '0 0 6px',
-            }}
-          >
+          <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', margin: '0 0 6px' }}>
             {active.name}
           </h1>
-          <p style={{ fontSize: 14, color: SHELL.text2, margin: 0, maxWidth: 620 }}>
-            {active.purpose}
-          </p>
+          <p style={{ fontSize: 14, color: SHELL.text2, margin: 0, maxWidth: 620 }}>{active.purpose}</p>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -174,16 +360,9 @@ export default function CV6Gallery() {
               >
                 {s.label}
               </div>
-              <div
-                style={{
-                  padding: 18,
-                  display: 'flex',
-                  justifyContent: 'center',
-                }}
-              >
+              <div style={{ padding: 18, display: 'flex', justifyContent: 'center' }}>
                 {/* Defined canvas plate: the component sits on a tightly-sized,
-                    centered stage (its home dark surface) that hugs the piece
-                    rather than swimming in the full panel width. */}
+                    centered stage (its home dark surface) that hugs the piece. */}
                 <div
                   style={{
                     width: '100%',
@@ -194,10 +373,12 @@ export default function CV6Gallery() {
                     display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
+                    maxHeight: active.maxHeight || 'none',
+                    overflow: active.maxHeight ? 'auto' : 'visible',
                   }}
                 >
                   <div style={{ width: '100%', maxWidth: active.frame || 'none' }}>
-                    {s.render()}
+                    <StateBoundary>{s.render()}</StateBoundary>
                   </div>
                 </div>
               </div>
