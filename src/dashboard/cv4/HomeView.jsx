@@ -450,6 +450,9 @@ export default function HomeView({
   // R7: keyboard navigation state for CV6 (defined after all dependencies are ready)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const replyInputRef = useRef(null)
+  // R22: per-instance ref for the Home region so keyboard nav wires to THIS instance
+  // (the gallery renders Home twice; document.querySelector grabbed only the first).
+  const homeRef = useRef(null)
 
   // R19: Conversation column state + quick-view wiring
   const [selectedRoom, setSelectedRoom] = useState(null) // { project, mission } or null
@@ -572,20 +575,31 @@ export default function HomeView({
 
   useEffect(() => {
     if (!cv6) return
-    const homeEl = document.querySelector('[data-cv4-home]')
+    const homeEl = homeRef.current
     if (!homeEl) return
     homeEl.addEventListener('keydown', handleKeyDown)
     homeEl.focus()
     return () => homeEl.removeEventListener('keydown', handleKeyDown)
   }, [cv6, handleKeyDown])
 
+  // R22: reclaim focus when the user clicks a neutral area inside Home, so arrow
+  // keys keep responding after any interaction. Clicks on inputs/buttons keep
+  // their own focus (so typing still works).
+  const handleHomeMouseDown = useCallback((e) => {
+    if (!cv6 || !homeRef.current) return
+    const t = e.target
+    if (t.closest('input, textarea, button, a, select, [contenteditable="true"]')) return
+    homeRef.current.focus()
+  }, [cv6])
+
   return (
-    <div data-cv4-home data-cv6={cv6 ? 'true' : undefined} style={{
+    <div data-cv4-home data-cv6={cv6 ? 'true' : undefined} ref={homeRef} onMouseDown={cv6 ? handleHomeMouseDown : undefined} style={{
       width: '100%', height: '100%', overflowY: 'auto',
       background: 'transparent',
       color: 'var(--c-text, #E8EBEF)',
       fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
-    }} tabIndex={-1}>
+      outline: 'none',
+    }} tabIndex={cv6 ? 0 : -1}>
       <style>{`
         @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.3} }
         @keyframes cv6-msg-float-in { 0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)} }
@@ -1065,7 +1079,7 @@ export default function HomeView({
                       className="hm-row"
                       onClick={() => {
                         onSelectAgent && onSelectAgent(a)
-                        document.querySelector('[data-cv4-home]')?.focus()
+                        homeRef.current?.focus()
                       }}
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', marginBottom: '6px',
@@ -1118,7 +1132,7 @@ export default function HomeView({
                           className="hm-mission"
                           onClick={() => {
                             handleProjectSelect(m.project, m.mission)
-                            document.querySelector('[data-cv4-home]')?.focus()
+                            homeRef.current?.focus()
                           }}
                           style={{
                             display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
