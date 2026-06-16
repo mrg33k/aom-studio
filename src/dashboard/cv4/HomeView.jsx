@@ -275,16 +275,6 @@ export default function HomeView({
   useEffect(() => { writeStored(PIN_PROJECTS_KEY + ':' + userId, pinnedProjects) }, [pinnedProjects, userId])
   useEffect(() => { writeStored(EXPANDED_PROJECTS_KEY + ':' + userId, expandedProjects) }, [expandedProjects, userId])
 
-  // R7: attach keyboard listener for CV6 navigation
-  useEffect(() => {
-    if (!cv6) return
-    const homeEl = document.querySelector('[data-cv4-home]')
-    if (!homeEl) return
-    homeEl.addEventListener('keydown', handleKeyDown)
-    homeEl.focus()
-    return () => homeEl.removeEventListener('keydown', handleKeyDown)
-  }, [cv6, handleKeyDown])
-
   // Default: pin the EA if user has no pins yet.
   const visibleAgents = useMemo(() => {
     if (!agents || agents.length === 0) return []
