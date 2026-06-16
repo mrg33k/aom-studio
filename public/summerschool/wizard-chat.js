@@ -66,7 +66,8 @@
     const parsed = parseDayState(appState.dayState);
     if (!parsed) {
       return `<div class="action-placeholder">
-            The Wizard will reveal your quests here when you're ready.
+            <span class="action-placeholder-icon">&#10022;</span>
+            Your quests for today are being prepared by the Wizard &mdash; they&rsquo;ll appear here when your morning session begins.
           </div>`;
     }
     const rows = parsed.quests
@@ -384,10 +385,10 @@
           <p>The Wizard awaits &mdash; today's lessons are ready</p>
           <div class="theme-selector" title="Choose Light or Dark Theme">
             <button class="theme-btn light ${appState.theme === 'light' ? 'active' : ''}" onclick="window.__wizardChat.setTheme('light')" title="Light Theme">
-              <span class="theme-icon">&#9728;</span><span class="theme-btn-text"> Light</span>
+              <span class="theme-icon">&#9728;</span>
             </button>
             <button class="theme-btn dark ${appState.theme === 'dark' ? 'active' : ''}" onclick="window.__wizardChat.setTheme('dark')" title="Dark Theme">
-              <span class="theme-icon">&#9790;</span><span class="theme-btn-text"> Dark</span>
+              <span class="theme-icon">&#9790;</span>
             </button>
           </div>
         </div>
@@ -397,7 +398,7 @@
           <div class="wizard-nameplate">The Wizard</div>
         </div>
 
-        <div class="messages-container">
+        <div class="messages-container${appState.messages.length === 0 && appState.isLoading ? ' messages-container--init' : ''}">
           ${messagesHtml}
           ${loadingIndicator}
         </div>
