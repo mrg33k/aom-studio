@@ -488,6 +488,93 @@ async function saveProjects(embedId, visitorId, items) {
   } catch (_) { /* non-fatal */ }
 }
 
+// --- Reminders (Build R8 slice 3) — the Wizard as Ethan's real EA -----------
+// Not school. When Ethan asks the Wizard to remember or remind him of his OWN
+// stuff (bring cleats Thursday, practice piano tonight, ask mom about the trip),
+// the Wizard keeps it and brings it up at the right time — the way dad's EA
+// holds his to-dos. Persisted per visitor (not date-keyed). Emitted as
+// <<REMIND: text=open|done; ...>>, stripped like the other machine markers.
+const REMINDERS_PROTOCOL = `
+REMINDERS (Ethan's OWN to-dos and things to remember — you are his assistant for
+these, not his teacher). When he asks you to remember something, remind him of
+something, or mentions something he needs to do that ISN'T schoolwork (bring his
+cleats Thursday, practice piano tonight, ask mom about the weekend), keep it for
+him. Add or update it with ONE line placed JUST BEFORE the <<PROJECT:>>/<<ASSIGN:>>/<<DAY:>>
+lines (the DAY line stays the very last line), machine-only, never shown:
+<<REMIND: bring cleats thursday=open; ask mom about the trip=done>>
+Keep the wording short and in his words. Mark one done ONLY when he says it's
+handled. Bring up an open reminder naturally when the moment fits (greeting, the
+right time of day), like a good assistant would. Never invent reminders he didn't
+ask for. These are HIS life, not schoolwork — keep school separate.`
+
+// Strip ALL <<REMIND: ...>> markers anywhere; returns { text, remind }.
+function extractReminders(replyText) {
+  const m = replyText.match(/<<REMIND:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<REMIND:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, remind: m ? m[1].trim() : null }
+}
+
+// Parse "text=open|done; ..." into [{ text, status }]. Mirrors parseAssignments.
+function parseReminders(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(done|open)\s*$/i)
+    if (m) out.push({ text: m[1].trim(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Merge new reminders with prior. Done is sticky; new items appended; cap 8.
+function mergeReminders(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const r of priorList) {
+    const k = r.text.toLowerCase()
+    if (!byKey.has(k)) { byKey.set(k, { text: r.text, status: r.status }); order.push(k) }
+  }
+  for (const r of newList) {
+    const k = r.text.toLowerCase()
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { text: r.text, status: r.status }); order.push(k) }
+    else if (r.status === 'done') ex.status = 'done' // can finish; never un-finish
+  }
+  return order.map((k) => byKey.get(k)).slice(-8)
+}
+
+async function fetchReminders(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_reminders')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveReminders(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-reminders',
+        event_type: 'wizard_reminders',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
 // Parse a day-state string into a structured object: { subjects, note, now }
 // Example input: "Reading=done (done); Math=in-progress (step: fraction doubling); note=..."
 // Returns: { subjects: Map<name, {status, detail}>, note, now }
@@ -741,15 +828,17 @@ export default async function handler(req, res) {
     let latestEssay = null
     let latestAssignments = null
     let latestProjects = null
+    let latestReminders = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
           fetchEssay(embed_id, visitor_id || null),
           fetchAssignments(embed_id, visitor_id || null),
           fetchProjects(embed_id, visitor_id || null),
+          fetchReminders(embed_id, visitor_id || null),
         ])
 
         // Writing Desk: if this turn is a typed essay sentence, append it to
@@ -805,6 +894,13 @@ export default async function handler(req, res) {
             priorProjectList.map((p) => `- ${p.name} [${p.status}]`).join('\n')
         }
         systemPrompt += `\n${PROJECTS_PROTOCOL}`
+        // Inject Ethan's reminders so the Wizard, as his EA, can bring them up.
+        const priorReminderList = Array.isArray(priorReminders) ? priorReminders : []
+        if (priorReminderList.length) {
+          systemPrompt += `\n\n=== ETHAN'S REMINDERS (his own to-dos — you hold these for him) ===\n` +
+            priorReminderList.map((r) => `- ${r.text} [${r.status}]`).join('\n')
+        }
+        systemPrompt += `\n${REMINDERS_PROTOCOL}`
         // Open-a-project focus goes LAST so it outranks the lesson-flow protocols
         // above — when Ethan taps a project, working on it IS this turn.
         if (projectFocus) {
@@ -820,7 +916,8 @@ export default async function handler(req, res) {
         // a final scrub so no machine marker can ever leak onto Ethan's screen.
         const assignExtract = extractAssignments(rawReply || '')
         const projectExtract = extractProjects(assignExtract.text)
-        const dayExtract = extractDayState(projectExtract.text)
+        const reminderExtract = extractReminders(projectExtract.text)
+        const dayExtract = extractDayState(reminderExtract.text)
         const newDayState = dayExtract.state
         const replyText = dayExtract.text.replace(/<<[A-Z]+:[\s\S]*?>>/g, '').trim()
 
@@ -849,6 +946,14 @@ export default async function handler(req, res) {
           await saveProjects(embed_id, visitor_id || null, canonicalProjects)
         }
         latestProjects = canonicalProjects
+
+        // Merge + persist Ethan's reminders if the Wizard set/updated any.
+        let canonicalReminders = priorReminderList
+        if (reminderExtract.remind) {
+          canonicalReminders = mergeReminders(parseReminders(reminderExtract.remind), priorReminderList)
+          await saveReminders(embed_id, visitor_id || null, canonicalReminders)
+        }
+        latestReminders = canonicalReminders
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
@@ -911,6 +1016,8 @@ export default async function handler(req, res) {
       assignments: latestAssignments,
       // Ethan's own projects so the board can show what he's building for fun.
       projects: latestProjects,
+      // Ethan's reminders (his EA holds these) so his world can show them.
+      reminders: latestReminders,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {

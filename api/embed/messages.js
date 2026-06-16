@@ -80,6 +80,26 @@ async function fetchProjects(embedId, visitorId) {
   } catch (_) { return [] }
 }
 
+// Ethan's reminders for this visitor (his EA holds these, carry across days).
+async function fetchReminders(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_reminders')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
 // Latest essay snapshot for this visitor today (Writing Desk draft).
 async function fetchEssay(embedId, visitorId) {
   const params = new URLSearchParams()
@@ -342,21 +362,23 @@ export default async function handler(req, res) {
     // panel renders the real state immediately (chat POSTs keep it fresh).
     // Also seed the Writing Desk (today's essay) and the Game HUD base
     // (all-time/today completions + streak) — both only on page load.
-    const [dayState, essay, progress, assignments, projects] = historyMode
+    const [dayState, essay, progress, assignments, projects, reminders] = historyMode
       ? await Promise.all([
           fetchDayState(embedId, visitorId),
           fetchEssay(embedId, visitorId),
           fetchProgress(embedId, visitorId),
           fetchAssignments(embedId, visitorId),
           fetchProjects(embedId, visitorId),
+          fetchReminders(embedId, visitorId),
         ])
-      : [null, null, null, null, null]
+      : [null, null, null, null, null, null]
     return res.status(200).json({
       day_state: dayState,
       essay,
       progress,
       assignments,
       projects,
+      reminders,
       messages: filtered.map((row) => ({
         id: row.id,
         role: row.role,

@@ -28,6 +28,7 @@
     essay: null, // array of sentences Ethan typed into the Writing Desk today
     assignments: null, // [{text, status}] the Wizard tracks + follows up on
     projects: null, // [{name, status}] Ethan's own projects, for fun (Build R6)
+    reminders: null, // [{text, status}] his own to-dos the Wizard holds as his EA (Build R8 slice 3)
     progress: null, // { totalDone, todayDone, streak, activeDays } base from page load
     baseDone: 0, // all-time subjects done BEFORE today (today is tracked live)
     doneCount: null, // today's completed-subject count (live; null until baseline set)
@@ -280,6 +281,21 @@
       </div>`;
   }
 
+  // --- Reminders (Build R8 slice 3) — the Wizard as Ethan's EA ---------------
+  // His own to-dos (not school). The Wizard holds them and brings them up.
+  function renderReminders() {
+    const items = (appState.reminders || []).filter((r) => (r.status || '').toLowerCase() !== 'done');
+    if (!items.length) return '';
+    const rows = items.map((r) => `<div class="remind-row">
+          <span class="remind-icon">&#9788;</span>
+          <span class="remind-text">${escapeHtml(r.text)}</span>
+        </div>`).join('');
+    return `<div class="remind-panel">
+        <div class="action-title">&#9788; Wizard Is Remembering</div>
+        <div class="remind-list">${rows}</div>
+      </div>`;
+  }
+
   // --- My World overview (Build R8 slice 2) — Ethan's own Corner home --------
   // A tap-in overview of his areas: his School (the Wizard class) + his own
   // Projects. Additive overlay — the chat stays his default surface, so a
@@ -303,6 +319,14 @@
             </button>`;
         }).join('')
       : `<div class="world-empty">No projects yet. Tell the Wizard something you want to build for fun and it will show up here.</div>`;
+    const openReminders = (appState.reminders || []).filter((r) => (r.status || '').toLowerCase() !== 'done');
+    const worldReminders = openReminders.length
+      ? `<div class="world-section-label">The Wizard Is Remembering</div>
+         <div class="world-card-list">${openReminders.map((r) => `<div class="world-card world-card--remind">
+            <span class="world-card-icon">&#9788;</span>
+            <span class="world-card-body"><span class="world-card-title">${escapeHtml(r.text)}</span></span>
+          </div>`).join('')}</div>`
+      : '';
     return `<div class="world-overlay" onclick="if(event.target===this)window.__wizardChat.closeWorld()">
         <div class="world-panel" role="dialog" aria-label="Ethan's Corner">
           <button class="world-close" title="Back to the Wizard" onclick="window.__wizardChat.closeWorld()">&times;</button>
@@ -321,6 +345,7 @@
           </button>
           <div class="world-section-label">My Projects</div>
           <div class="world-card-list">${projectCards}</div>
+          ${worldReminders}
         </div>
       </div>`;
   }
@@ -461,6 +486,7 @@
       if (Array.isArray(data.essay)) appState.essay = data.essay;
       if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
       if (Array.isArray(data.projects)) appState.projects = data.projects;
+      if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       applyProgress(data.progress);
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
       let hadVisible = false;
@@ -514,6 +540,7 @@
       if (Array.isArray(data.essay)) appState.essay = data.essay;
       if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
       if (Array.isArray(data.projects)) appState.projects = data.projects;
+      if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (appState.doneCount == null) appState.doneCount = countDoneNow();
       // Advance sinceTs so the poll picks up from after the greeting was inserted.
       if (data.since_ts && data.since_ts > appState.sinceTs) {
@@ -586,6 +613,7 @@
         if (Array.isArray(data.essay)) appState.essay = data.essay;
       if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
       if (Array.isArray(data.projects)) appState.projects = data.projects;
+      if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
         checkCompletion();
         // Use the server's since_ts so we poll from after the user message
         if (data.since_ts) {
@@ -785,6 +813,7 @@
           ${renderQuestsPanel()}
           ${renderAssignments()}
           ${renderProjects()}
+          ${renderReminders()}
         </div>
       </div>
     `;
