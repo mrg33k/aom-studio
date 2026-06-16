@@ -69,6 +69,7 @@ export default function LiveScribe() {
   const finalRef = useRef('');
   const lastAnalyzedLen = useRef(0);
   const transcriptScroll = useRef(null);
+  const fileInputRef = useRef(null);
 
   const transcriptText = segments.map((s) => s.text).join(' ');
 
@@ -210,16 +211,43 @@ export default function LiveScribe() {
     finalRef.current = '';
   }, []);
 
-  const loadSample = useCallback(() => {
-    const ids = [...new Set(SAMPLE.map(([id]) => id))];
+  // Load a finished, multi-voice transcript (sample, or a processed recording).
+  // rows: [{ speakerId, text }] in spoken order. Assigns each new voice the next
+  // color, so the transcript comes in already color-coded and ready to name.
+  const loadResult = useCallback((rows, names) => {
+    const clean = rows.filter((r) => r && r.text && r.text.trim()).map((r) => ({ speakerId: r.speakerId || 'S1', text: r.text.trim() }));
+    const ids = [...new Set(clean.map((r) => r.speakerId))];
     const sp = {};
-    ids.forEach((id, i) => { sp[id] = { name: `Speaker ${i + 1}`, color: SPEAKER_COLORS[i % SPEAKER_COLORS.length] }; });
+    ids.forEach((id, i) => { sp[id] = { name: (names && names[id]) || `Speaker ${i + 1}`, color: SPEAKER_COLORS[i % SPEAKER_COLORS.length] }; });
     setSpeakers(sp);
-    setSegments(SAMPLE.map(([speakerId, text]) => ({ speakerId, text })));
-    finalRef.current = SAMPLE.map(([, t]) => t).join(' ');
+    setSegments(clean);
+    setBrief({ summary: '', talkingPoints: [], quotes: [], research: [], questions: [] });
+    setInterim(''); setElapsed(0); setEditingSpeaker(null); setErr('');
+    finalRef.current = clean.map((s) => s.text).join(' ');
     lastAnalyzedLen.current = 0;
     setTimeout(analyze, 50);
   }, [analyze]);
+
+  const loadSample = useCallback(() => {
+    loadResult(SAMPLE.map(([speakerId, text]) => ({ speakerId, text })));
+  }, [loadResult]);
+
+  // Import a recording that was processed on our own machine. The processor
+  // (engine/scribe-process.py) emits { segments:[{speakerId,text}], speakerNames }.
+  const onImportFile = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    if (e.target) e.target.value = '';
+    if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      const rows = Array.isArray(data) ? data : (data.segments || []);
+      const names = Array.isArray(data) ? null : (data.speakerNames || null);
+      if (!rows.length) { setErr('That file had no transcript lines in it.'); return; }
+      loadResult(rows, names);
+    } catch {
+      setErr('Could not read that file. Pick a processed transcript saved as .json.');
+    }
+  }, [loadResult]);
 
   // Optional /scribe?demo=1 — auto-load the sample so the color/name view is
   // visible without interaction (shareable demo link; also used for verification).
@@ -278,6 +306,8 @@ export default function LiveScribe() {
         .ls-chip-hint { animation:lschiphint 1.7s ease 3; }
         @keyframes lschiphint { 0%{box-shadow:0 0 0 0 rgba(26,23,20,.22)} 70%{box-shadow:0 0 0 7px rgba(26,23,20,0)} 100%{box-shadow:0 0 0 0 rgba(26,23,20,0)} }
       `}</style>
+
+      <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={onImportFile} style={{ display: 'none' }} />
 
       {/* Header */}
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px 8px' }}>
@@ -381,10 +411,18 @@ export default function LiveScribe() {
                   </div>
                   {!recording && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                      <div style={{ fontSize: 13, opacity: 0.4 }}>Press Start listening and begin the call.</div>
-                      <button className="ls-btn" onClick={loadSample} style={{ background: 'transparent', color: INK, padding: '7px 14px', fontSize: 12.5, borderColor: LINE }}>
-                        Load sample conversation
-                      </button>
+                      <div style={{ fontSize: 13, opacity: 0.4 }}>Press Start listening, or bring in a recording.</div>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button className="ls-btn" onClick={() => fileInputRef.current?.click()} style={{ background: 'transparent', color: INK, padding: '7px 14px', fontSize: 12.5, borderColor: LINE }}>
+                          Import a recording
+                        </button>
+                        <button className="ls-btn" onClick={loadSample} style={{ background: 'transparent', color: INK, padding: '7px 14px', fontSize: 12.5, borderColor: LINE }}>
+                          Load sample conversation
+                        </button>
+                      </div>
+                      <div style={{ fontSize: 11.5, opacity: 0.35, maxWidth: 320, textAlign: 'center' }}>
+                        Recordings get their voices separated on our own machine, then come in here color-coded and ready to name.
+                      </div>
                     </div>
                   )}
                 </div>
