@@ -1135,7 +1135,7 @@ export default function HomeView({
                         homeRef.current?.focus()
                       }}
                       style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', marginBottom: '6px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '14px 16px', marginBottom: '14px',
                         background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
                         color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
                         border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
@@ -1328,8 +1328,40 @@ export default function HomeView({
                     ))}
                   </div>
 
-                  {/* R23: Conversation input with command menu + Send — divider ABOVE input row */}
+                  {/* R24: Conversation input — divider line, then suggested replies, then input row (Patrik: chips below the grey line, above where you type) */}
                   <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
+                    {/* Suggested replies — below the divider line, ABOVE the input row */}
+                    {suggestedReplies.length > 0 && (
+                      <div style={{ marginBottom: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {suggestedReplies.map((reply, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setReplyText(reply.text)
+                              replyInputRef.current?.focus()
+                            }}
+                            style={{
+                              padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
+                              background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)',
+                              fontSize: '12px', fontFamily: 'inherit', cursor: 'pointer',
+                              transition: 'all 120ms ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                              e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                              e.currentTarget.style.color = 'var(--cv6-accent-primary)'
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'var(--cv6-surface)'
+                              e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                              e.currentTarget.style.color = 'var(--cv6-text-secondary)'
+                            }}
+                          >
+                            {reply.text}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
                       {/* R23: Command menu button (left) — crystal-ball icon */}
                       <button
@@ -1425,38 +1457,6 @@ export default function HomeView({
                     </div>
                   </div>
 
-                  {/* R23: Suggested replies section — moved BELOW the input row */}
-                  {suggestedReplies.length > 0 && (
-                    <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {suggestedReplies.map((reply, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setReplyText(reply.text)
-                            replyInputRef.current?.focus()
-                          }}
-                          style={{
-                            padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
-                            background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)',
-                            fontSize: '12px', fontFamily: 'inherit', cursor: 'pointer',
-                            transition: 'all 120ms ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                            e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                            e.currentTarget.style.color = 'var(--cv6-accent-primary)'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'var(--cv6-surface)'
-                            e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                            e.currentTarget.style.color = 'var(--cv6-text-secondary)'
-                          }}
-                        >
-                          {reply.text}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </>
               ) : (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-secondary)', fontSize: '14px' }}>
