@@ -967,19 +967,20 @@
     // doesn't replay). Capture it BEFORE any greeting so a brand-new day — where
     // the greeting is what first creates the ledger — doesn't falsely flag it.
     const returningMidDay = !!currentSubject();
+    // Show the "Welcome back, you're on X" marker IMMEDIATELY when he's returning
+    // to an in-progress day — before the (slower) greeting call — so the instant
+    // reassurance is there even on refreshes where the literal thread didn't
+    // replay (R8 slice 6 fix). Pure UI from the loaded ledger; nothing resets.
+    if (returningMidDay) {
+      appState.resumeBanner = currentSubject();
+      render();
+    }
     if (!hadHistory) {
       // No thread to replay — ask the server for a personalized greeting. The
       // Wizard uses the day ledger + cross-day memory (yesterday's ledger) to
       // craft the opener (a contextual "welcome back" when mid-day). No
       // hardcoded fallback message.
       await requestWizardGreeting();
-    }
-    // Show the "Welcome back, you're on X" marker whenever he's returning to an
-    // in-progress day, so he never has to guess where he left off — even on the
-    // refreshes where the literal thread didn't replay (R8 slice 6 fix). Pure UI
-    // from the loaded ledger; nothing resets.
-    if (returningMidDay) {
-      appState.resumeBanner = currentSubject();
     }
     if (appState.doneCount == null) appState.doneCount = countDoneNow();
     appState.hudReady = true; // win-bursts only fire on completions from here on
