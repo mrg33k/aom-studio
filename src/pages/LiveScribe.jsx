@@ -178,7 +178,8 @@ export default function LiveScribe() {
 
   const F = { fontFamily: "'Space Grotesk', system-ui, sans-serif" };
   const DISPLAY = { fontFamily: "'Syne', system-ui, sans-serif" };
-  const hasBrief = brief.summary || brief.talkingPoints.length || brief.research.length || brief.questions.length;
+  const hasBrief = Boolean(brief.summary || brief.talkingPoints.length || brief.research.length || brief.questions.length);
+  const showActions = Boolean(finalText) || hasBrief;
 
   return (
     <div style={{ minHeight: '100vh', background: PAPER, color: INK, ...F }}>
@@ -233,7 +234,7 @@ export default function LiveScribe() {
             placeholder="Who's this call with? Optional context (e.g. Acme Corp, exploring a partnership)"
             style={{ ...F, flex: 1, minWidth: 240, padding: '10px 14px', borderRadius: 10, border: `1px solid ${LINE}`, background: CARD, color: INK, fontSize: 14, outline: 'none' }}
           />
-          {(finalText || hasBrief) && (
+          {showActions && (
             <>
               <button className="ls-btn" onClick={copyBrief} style={{ background: CARD, color: INK, padding: '9px 16px', fontSize: 13, borderColor: LINE }}>Copy brief</button>
               <button className="ls-btn" onClick={reset} style={{ background: CARD, color: '#9A4A4A', padding: '9px 16px', fontSize: 13, borderColor: LINE }}>Clear</button>
@@ -280,6 +281,21 @@ export default function LiveScribe() {
                   : <span style={{ opacity: 0.4 }}>A running summary builds here after the first ~20 seconds of talking.</span>}
               </div>
             </div>
+
+            {!hasBrief && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {[
+                  ['Talking points', 'The key points raised, newest first.'],
+                  ['Live research', 'Things said get looked up on the web, with sources.'],
+                  ['Questions to ask', 'Smart follow-ups, based on where the call is going.'],
+                ].map(([title, hint]) => (
+                  <div key={title} className="ls-card" style={{ padding: '16px 18px', borderStyle: 'dashed', opacity: 0.7 }}>
+                    <div style={{ ...DISPLAY, fontWeight: 700, fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.55, marginBottom: 6 }}>{title}</div>
+                    <div style={{ fontSize: 13.5, opacity: 0.4 }}>{hint}</div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {brief.talkingPoints.length > 0 && (
               <div className="ls-card ls-fade" style={{ padding: '16px 18px' }}>
