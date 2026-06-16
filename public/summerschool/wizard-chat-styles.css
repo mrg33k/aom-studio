@@ -402,9 +402,12 @@ body {
 .hud-streak-icon { font-size: 9px; }
 
 .hud-xpbar {
-  height: 7px;
+  height: 9px;
   border-radius: 5px;
-  background: rgba(68, 58, 114, 0.14);
+  background: rgba(68, 58, 114, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.40);
+  box-shadow: inset 0 1px 2px rgba(50, 42, 85, 0.20);
+  box-sizing: border-box;
   overflow: hidden;
 }
 .hud-xpbar-fill {
@@ -435,10 +438,15 @@ body {
   color: var(--color-indigo);
   margin-bottom: 6px;
 }
+.hud-prize-orn { color: var(--color-gold-soft); margin-right: 2px; }
+html.dark-theme .hud-prize-label { color: var(--color-text); }
 .hud-prizebar {
-  height: 9px;
+  height: 11px;
   border-radius: 6px;
-  background: rgba(68, 58, 114, 0.14);
+  background: rgba(68, 58, 114, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  box-shadow: inset 0 1px 2px rgba(50, 42, 85, 0.20);
+  box-sizing: border-box;
   overflow: hidden;
 }
 .hud-prizebar-fill {
@@ -523,18 +531,20 @@ body {
 .essay-input {
   flex: 1;
   min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--color-border);
+  padding: 11px 13px;
+  border: 1.5px solid rgba(212, 175, 55, 0.55);
   border-radius: 8px;
   font-size: 16px;
   font-family: inherit;
   background-color: #fffdf7;
   color: var(--color-text);
+  box-shadow: inset 0 1px 3px rgba(50, 42, 85, 0.10);
 }
+.essay-input::placeholder { color: #a99a7c; }
 .essay-input:focus {
   outline: none;
   border-color: var(--color-gold);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.20);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.28), inset 0 1px 3px rgba(50, 42, 85, 0.10);
 }
 .essay-input:disabled { background-color: #f0ead9; color: #999; }
 
@@ -553,6 +563,7 @@ body {
   box-shadow: 0 2px 6px rgba(176, 143, 37, 0.4);
 }
 .essay-add-btn:hover { filter: brightness(1.07); box-shadow: 0 0 12px rgba(212, 175, 55, 0.5); }
+.essay-add-btn:active { transform: translateY(1px); filter: brightness(0.96); }
 .essay-add-btn:disabled { background: #ccc; border-color: #bbb; color: #888; cursor: not-allowed; box-shadow: none; }
 
 .essay-hint {
@@ -873,7 +884,11 @@ html.dark-theme .essay-empty {
   background: rgba(26, 24, 20, 0.6);
   color: #a89f8d;
 }
-html.dark-theme .essay-input { background-color: #22201b; }
+html.dark-theme .essay-input {
+  background-color: #131210;
+  border-color: rgba(212, 175, 55, 0.5);
+}
+html.dark-theme .essay-input::placeholder { color: #8a7f6b; }
 html.dark-theme .essay-input:disabled { background-color: #2a2520; color: #666; }
 html.dark-theme .essay-hint { color: #a89f8d; }
 html.dark-theme .essay-add-btn:disabled { background: #3d352b; border-color: #2a2520; color: #666; }

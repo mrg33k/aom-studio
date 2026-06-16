@@ -179,7 +179,7 @@
         <div class="hud-xpbar"><div class="hud-xpbar-fill" style="width:${s.levelPct}%"></div></div>
         <div class="hud-xp-label">${s.xp} XP &middot; ${todayHtml}</div>
         <div class="hud-prize">
-          <div class="hud-prize-label">Road to winning Summer School</div>
+          <div class="hud-prize-label"><span class="hud-prize-orn">&#10022;</span> Road to winning Summer School</div>
           <div class="hud-prizebar"><div class="hud-prizebar-fill" style="width:${s.winPct}%"></div></div>
           <div class="hud-prize-sub">${s.winPct}% &middot; a reward waits at the finish</div>
         </div>
