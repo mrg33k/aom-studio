@@ -333,7 +333,7 @@ export default function LiveScribe() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {brief.quotes.map((q, i) => (
                     <div key={i} style={{ display: 'flex', gap: 10 }}>
-                      <span style={{ ...DISPLAY, color: GOLD, fontSize: 30, lineHeight: 0.9, fontWeight: 800 }}>&ldquo;</span>
+                      <span style={{ ...DISPLAY, color: '#C7BBA2', fontSize: 30, lineHeight: 0.9, fontWeight: 800 }}>&ldquo;</span>
                       <span style={{ fontSize: 15, lineHeight: 1.55, fontWeight: 500 }}>{q}</span>
                     </div>
                   ))}
