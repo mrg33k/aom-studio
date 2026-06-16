@@ -14,7 +14,7 @@
 // need a fixture / mock-provider mode — that is the next batch, tracked in
 // cv4/COMPONENT-MANIFEST.md (NEEDS-PROVIDERS).
 
-import { Component, useState } from 'react'
+import { Component, useEffect, useState } from 'react'
 
 // ── Real CV4 components (the same files the live app renders) ──
 import SkillsBadge from './cv4/SkillsBadge.jsx'
@@ -252,9 +252,28 @@ const REGISTRY = [
   },
 ]
 
+const idFromHash = () => {
+  if (typeof window === 'undefined') return REGISTRY[0].id
+  const h = window.location.hash.replace(/^#/, '')
+  return REGISTRY.some((c) => c.id === h) ? h : REGISTRY[0].id
+}
+
 export default function CV6Gallery() {
-  const [activeId, setActiveId] = useState(REGISTRY[0].id)
+  const [activeId, setActiveId] = useState(idFromHash)
   const active = REGISTRY.find((c) => c.id === activeId) || REGISTRY[0]
+
+  // Hash deep-linking: each piece is shareable (/cv6#mail-chip) and the
+  // back/forward buttons move between pieces.
+  useEffect(() => {
+    const onHash = () => setActiveId(idFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  const select = (id) => {
+    if (typeof window !== 'undefined') window.location.hash = id
+    setActiveId(id)
+  }
 
   return (
     <div
@@ -305,7 +324,7 @@ export default function CV6Gallery() {
               <button
                 key={c.id}
                 type="button"
-                onClick={() => setActiveId(c.id)}
+                onClick={() => select(c.id)}
                 style={{
                   textAlign: 'left',
                   padding: '9px 12px',
