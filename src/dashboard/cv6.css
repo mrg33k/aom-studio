@@ -463,6 +463,17 @@
   50% { opacity: 0.5; }
 }
 
+@keyframes cv6-tool-roll-in {
+  0% {
+    opacity: 0;
+    transform: scaleY(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+}
+
 [data-cv6] [data-cv4-home] .hm-agent-name {
   flex: 1;
   font-size: 14px !important;
