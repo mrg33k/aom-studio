@@ -254,6 +254,10 @@ const REGISTRY = [
 
 const idFromHash = () => {
   if (typeof window === 'undefined') return REGISTRY[0].id
+  // Query param (?piece=mail-chip) is the robust deep-link — survives tools and
+  // shares that mangle URL fragments. Hash (#mail-chip) is the in-app shortcut.
+  const q = new URLSearchParams(window.location.search).get('piece')
+  if (q && REGISTRY.some((c) => c.id === q)) return q
   const h = window.location.hash.replace(/^#/, '')
   return REGISTRY.some((c) => c.id === h) ? h : REGISTRY[0].id
 }
