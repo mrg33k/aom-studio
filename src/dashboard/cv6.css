@@ -798,6 +798,32 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   R7: Happening now section + keyboard navigation styles
+   ───────────────────────────────────────────────────────────────── */
+
+[data-cv6] [data-cv4-home] .hm-happening-now {
+  padding: 16px 0 24px 0;
+  border-bottom: 1px solid var(--cv6-divider);
+  margin-bottom: 24px;
+}
+
+[data-cv6] [data-cv4-home] .hm-happening-now > div:last-child {
+  border-bottom: none;
+}
+
+/* Keyboard selection highlight: applied via inline styles in R7 CV6 branch */
+[data-cv6] [data-cv4-home] button[style*="background: var(--cv6-accent-primary)"] {
+  background: var(--cv6-accent-primary) !important;
+  color: #ffffff !important;
+  border: 1px solid var(--cv6-accent-primary) !important;
+  box-shadow: 0 0 0 2px rgba(0, 102, 255, 0.15);
+}
+
+[data-cv6][data-theme="dark"] [data-cv4-home] button[style*="background: var(--cv6-accent-primary)"] {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+/* ─────────────────────────────────────────────────────────────────
    Reduced Motion support (accessibility)
    ───────────────────────────────────────────────────────────────── */
 

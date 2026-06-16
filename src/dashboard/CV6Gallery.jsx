@@ -269,6 +269,7 @@ const SCREEN_PROPS = {
   onSelectAgent: () => {},
   onSelectProject: () => {},
   onOpenSearch: () => {},
+  cv6: true, // R7: enable CV6 layout (keyboard nav, missions-primary, happening now)
 }
 
 // Themed device frame: an app-window preview (browser chrome + bordered,
