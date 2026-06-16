@@ -665,6 +665,98 @@ async function saveSpellbook(embedId, visitorId, items) {
   } catch (_) { /* non-fatal */ }
 }
 
+// --- Bookshelf (Build R11) — reading continuity, Ethan's other #1 gap --------
+// Reading is the other gap (with spelling). His book and where he is now carry
+// across the whole week so the Wizard can pick the thread back up ("yesterday
+// you predicted the locked gate — were you right?") instead of the per-day
+// ledger forgetting the book. Finished books stack on his shelf as a growing
+// achievement. Persisted per visitor (not date-keyed). Emitted as
+// <<READ: title=reading|finished (where he is); ...>>, stripped server-side.
+const READING_PROTOCOL = `
+BOOKSHELF (his reading — reading is a make-or-break gap, treat it as real). Track
+the book Ethan is actually reading and where he is in it, so you can pick it back
+up across days. When he tells you (or you assign) what he's reading, or he makes
+progress, update it. Put the book title + where he is (a chapter, a scene, what
+just happened) so tomorrow you can reference the exact spot. Mark a book finished
+ONLY when he actually finishes it — then it goes on his shelf and you start the
+next one. Add or update with ONE line placed JUST BEFORE the
+<<SPELL:>>/<<REMIND:>>/<<PROJECT:>>/<<ASSIGN:>>/<<DAY:>> lines (the DAY line stays
+the very last line), machine-only, never shown:
+<<READ: the cave kids=reading (chapter 3, found the locked gate)>>
+Keep ONE book "reading" at a time. Never invent a book he isn't reading.`
+
+// Strip ALL <<READ: ...>> markers anywhere; returns { text, read }.
+function extractReading(replyText) {
+  const m = replyText.match(/<<READ:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<READ:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, read: m ? m[1].trim() : null }
+}
+
+// Parse "title=reading|finished (spot); ..." into [{ title, status, spot }].
+function parseReading(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(reading|finished)\s*(?:\(([^)]*)\))?\s*$/i)
+    if (m) out.push({ title: m[1].trim(), status: m[2].toLowerCase(), spot: (m[3] || '').trim() })
+  }
+  return out
+}
+
+// Merge new books with prior. Finished is sticky; spot updates; new appended; cap 10.
+function mergeReading(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const b of priorList) {
+    const k = (b.title || '').toLowerCase()
+    if (k && !byKey.has(k)) { byKey.set(k, { title: b.title, status: b.status, spot: b.spot || '' }); order.push(k) }
+  }
+  for (const b of newList) {
+    const k = (b.title || '').toLowerCase()
+    if (!k) continue
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { title: b.title, status: b.status, spot: b.spot || '' }); order.push(k) }
+    else {
+      if (b.status === 'finished') ex.status = 'finished' // can finish; never un-finish
+      if (b.spot) ex.spot = b.spot // keep the latest spot
+    }
+  }
+  return order.map((k) => byKey.get(k)).slice(-10)
+}
+
+async function fetchReading(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_reading')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveReading(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-reading',
+        event_type: 'wizard_reading',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
 // Parse a day-state string into a structured object: { subjects, note, now }
 // Example input: "Reading=done (done); Math=in-progress (step: fraction doubling); note=..."
 // Returns: { subjects: Map<name, {status, detail}>, note, now }
@@ -950,9 +1042,10 @@ export default async function handler(req, res) {
     let latestProjects = null
     let latestReminders = null
     let latestSpellbook = null
+    let latestReading = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
@@ -961,6 +1054,7 @@ export default async function handler(req, res) {
           fetchProjects(embed_id, visitor_id || null),
           fetchReminders(embed_id, visitor_id || null),
           fetchSpellbook(embed_id, visitor_id || null),
+          fetchReading(embed_id, visitor_id || null),
         ])
 
         // Writing Desk: if this turn is a typed essay sentence, append it to
@@ -1030,6 +1124,13 @@ export default async function handler(req, res) {
             priorSpellList.map((w) => `- ${w.word} [${w.status}]`).join('\n')
         }
         systemPrompt += `\n${SPELLBOOK_PROTOCOL}`
+        // Inject Ethan's Bookshelf so the Wizard picks his book back up across days.
+        const priorReadingList = Array.isArray(priorReading) ? priorReading : []
+        if (priorReadingList.length) {
+          systemPrompt += `\n\n=== ETHAN'S BOOKSHELF (his reading — pick the current book back up at his spot) ===\n` +
+            priorReadingList.map((b) => `- ${b.title} [${b.status}]${b.spot ? ` — ${b.spot}` : ''}`).join('\n')
+        }
+        systemPrompt += `\n${READING_PROTOCOL}`
         // Open-a-project focus goes LAST so it outranks the lesson-flow protocols
         // above — when Ethan taps a project, working on it IS this turn.
         if (projectFocus) {
@@ -1047,7 +1148,8 @@ export default async function handler(req, res) {
         const projectExtract = extractProjects(assignExtract.text)
         const reminderExtract = extractReminders(projectExtract.text)
         const spellExtract = extractSpellbook(reminderExtract.text)
-        const dayExtract = extractDayState(spellExtract.text)
+        const readExtract = extractReading(spellExtract.text)
+        const dayExtract = extractDayState(readExtract.text)
         const newDayState = dayExtract.state
         const replyText = dayExtract.text.replace(/<<[A-Z]+:[\s\S]*?>>/g, '').trim()
 
@@ -1092,6 +1194,14 @@ export default async function handler(req, res) {
           await saveSpellbook(embed_id, visitor_id || null, canonicalSpellbook)
         }
         latestSpellbook = canonicalSpellbook
+
+        // Merge + persist Ethan's Bookshelf if the Wizard updated his reading.
+        let canonicalReading = priorReadingList
+        if (readExtract.read) {
+          canonicalReading = mergeReading(parseReading(readExtract.read), priorReadingList)
+          await saveReading(embed_id, visitor_id || null, canonicalReading)
+        }
+        latestReading = canonicalReading
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
@@ -1158,6 +1268,8 @@ export default async function handler(req, res) {
       reminders: latestReminders,
       // Ethan's Spellbook (spelling + vocab he's mastering) for his board.
       spellbook: latestSpellbook,
+      // Ethan's Bookshelf (his book + where he is) so his board shows his reading.
+      reading: latestReading,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {

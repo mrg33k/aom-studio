@@ -30,6 +30,7 @@
     projects: null, // [{name, status}] Ethan's own projects, for fun (Build R6)
     reminders: null, // [{text, status}] his own to-dos the Wizard holds as his EA (Build R8 slice 3)
     spellbook: null, // [{word, status}] spelling + vocab he's mastering (Build R10)
+    reading: null, // [{title, status, spot}] his book + where he is (Build R11)
     progress: null, // { totalDone, todayDone, streak, activeDays } base from page load
     baseDone: 0, // all-time subjects done BEFORE today (today is tracked live)
     doneCount: null, // today's completed-subject count (live; null until baseline set)
@@ -352,6 +353,33 @@
       </div>`;
   }
 
+  // --- Bookshelf (Build R11) — his reading, carried across the week ----------
+  // Reading is Ethan's other core gap. The book he's on + where he is shows here
+  // and carries day to day so he picks the thread back up; finished books stack
+  // on his shelf as a growing achievement. Compact: current book + a shelf count.
+  function renderBookshelf() {
+    const items = appState.reading || [];
+    if (!items.length) return '';
+    const reading = items.filter((b) => (b.status || '').toLowerCase() !== 'finished');
+    const finished = items.filter((b) => (b.status || '').toLowerCase() === 'finished');
+    const current = reading.length ? reading[reading.length - 1] : null;
+    const currentHtml = current
+      ? `<div class="book-current">
+          <span class="book-title">${escapeHtml(current.title)}</span>
+          ${current.spot ? `<span class="book-spot">${escapeHtml(current.spot)}</span>` : ''}
+        </div>`
+      : '';
+    const shelfHtml = finished.length
+      ? `<div class="book-shelf">&#10004; ${finished.length} on your shelf: ${finished.map((b) => escapeHtml(b.title)).join(', ')}</div>`
+      : '';
+    if (!currentHtml && !shelfHtml) return '';
+    return `<div class="book-panel">
+        <div class="action-title">&#128218; Bookshelf</div>
+        ${currentHtml}
+        ${shelfHtml}
+      </div>`;
+  }
+
   // --- My World overview (Build R8 slice 2) — Ethan's own Corner home --------
   // A tap-in overview of his areas: his School (the Wizard class) + his own
   // Projects. Additive overlay — the chat stays his default surface, so a
@@ -544,6 +572,7 @@
       if (Array.isArray(data.projects)) appState.projects = data.projects;
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
+      if (Array.isArray(data.reading)) appState.reading = data.reading;
       applyProgress(data.progress);
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
       let hadVisible = false;
@@ -599,6 +628,7 @@
       if (Array.isArray(data.projects)) appState.projects = data.projects;
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
+      if (Array.isArray(data.reading)) appState.reading = data.reading;
       if (appState.doneCount == null) appState.doneCount = countDoneNow();
       // Advance sinceTs so the poll picks up from after the greeting was inserted.
       if (data.since_ts && data.since_ts > appState.sinceTs) {
@@ -692,6 +722,7 @@
       if (Array.isArray(data.projects)) appState.projects = data.projects;
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
+      if (Array.isArray(data.reading)) appState.reading = data.reading;
         checkCompletion();
         // Use the server's since_ts so we poll from after the user message
         if (data.since_ts) {
@@ -903,6 +934,7 @@
           <div class="action-title">&#10022; Today's Quests</div>
           ${renderQuestsPanel()}
           ${renderAssignments()}
+          ${renderBookshelf()}
           ${renderSpellbook()}
           ${renderProjects()}
           ${renderReminders()}

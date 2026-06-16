@@ -515,6 +515,37 @@ html.dark-theme .world-card--remind .world-card-icon { color: var(--color-gold);
 }
 html.dark-theme .spell-word--learning { color: var(--color-gold); }
 
+/* Bookshelf (Build R11) — his reading, carried across the week. Compact: the
+   current book (title + where he is) as a gold-accent card, plus a small shelf
+   line of finished books that grows as an achievement. */
+.book-panel { margin-top: 18px; }
+.book-current {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: rgba(253, 248, 236, 0.85);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-gold);
+  border-radius: 8px;
+}
+.book-title {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--color-gold-soft);
+  letter-spacing: 0.02em;
+}
+.book-spot { font-size: 12.5px; line-height: 1.35; color: var(--color-text); opacity: 0.85; }
+.book-shelf {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-gold-soft);
+}
+html.dark-theme .book-current { background: rgba(26, 24, 20, 0.85); }
+html.dark-theme .book-title { color: var(--color-gold); }
+html.dark-theme .book-shelf { color: var(--color-gold); }
+
 /* ===== My World overview (Build R8 slice 2) — Ethan's own Corner home.
    Additive overlay; the chat stays the default surface (never lose his place). */
 .world-btn {
