@@ -254,9 +254,54 @@ function AuthGuard({ children }) {
   return authed ? children : null
 }
 
+// ─── TEST MODE BANNER ────────────────────────────────────────────────────────
+// Renders a fixed top strip when VITE_DASHBOARD_MODE=test (set on the lab
+// Vercel project only). Patrik always knows which surface he's on.
+// corner:test-dashboard R1
+function TestModeBanner() {
+  if (import.meta.env.VITE_DASHBOARD_MODE !== 'test') return null
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '28px',
+      zIndex: 99999,
+      background: 'linear-gradient(90deg, #FF4F00 0%, #CC3F00 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '12px',
+      boxShadow: '0 2px 12px rgba(255,79,0,0.4)',
+    }}>
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '11px',
+        fontWeight: 700,
+        letterSpacing: '0.15em',
+        textTransform: 'uppercase',
+        color: '#fff',
+      }}>
+        ⚠ TEST DASHBOARD
+      </span>
+      <span style={{
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: '10px',
+        fontWeight: 400,
+        letterSpacing: '0.08em',
+        color: 'rgba(255,255,255,0.7)',
+      }}>
+        lab.aheadofmarket.com — prod is safe at aheadofmarket.com/dashboard
+      </span>
+    </div>
+  )
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
+      <TestModeBanner />
       <Suspense fallback={<div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-[#8A847C] font-body text-sm">Loading...</div>}>
         <Routes>
           <Route path="/" element={<App />} />
