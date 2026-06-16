@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
+import SupportDashboard from './SupportDashboard.jsx'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
@@ -1094,99 +1095,10 @@ export default function HomeView({
               </div>
 
               {/* Tool content */}
-              <div style={{ padding: '16px 20px', maxHeight: '500px', overflowY: 'auto' }}>
+              <div style={{ padding: '16px 20px', maxHeight: '500px', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {selectedTool === 'support' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Support requests</div>
-
-                    {/* 3-column support layout */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px', flex: 1, overflowY: 'auto', minHeight: 0 }}>
-
-                      {/* Column 1: Handled (green) */}
-                      <div style={{ display: 'flex', flexDirection: 'column', padding: '12px', background: 'rgba(16, 185, 129, 0.05)', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.15)' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#10B981', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid rgba(16, 185, 129, 0.2)' }}>Handled</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {[
-                            { sender: 'jane@acme.co', subject: 'Integration setup', time: '1h ago' },
-                            { sender: 'support@client.io', subject: 'API docs updated', time: '3h ago' },
-                          ].map((item, i) => (
-                            <div key={i} style={{
-                              padding: '10px', borderRadius: '4px', background: 'var(--cv6-surface)',
-                              border: '1px solid var(--cv6-divider)', cursor: 'pointer', transition: 'all 100ms ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                              e.currentTarget.style.borderColor = '#10B981'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'var(--cv6-surface)'
-                              e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                            }}>
-                              <div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--cv6-text-primary)', marginBottom: '2px' }}>{item.subject}</div>
-                              <div style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)' }}>{item.sender}</div>
-                              <div style={{ fontSize: '9px', color: 'var(--cv6-text-tertiary)', marginTop: '3px' }}>{item.time}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Column 2: Needs You (amber/orange) */}
-                      <div style={{ display: 'flex', flexDirection: 'column', padding: '12px', background: 'rgba(245, 158, 11, 0.05)', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.15)' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#F59E0B', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid rgba(245, 158, 11, 0.2)' }}>Needs You</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {[
-                            { sender: 'client@company.co', subject: 'Design review needed', time: '2h ago' },
-                            { sender: 'john@startup.ai', subject: 'Deployment approval', time: '5h ago' },
-                            { sender: 'pm@product.team', subject: 'Release blockers', time: '6h ago' },
-                          ].map((item, i) => (
-                            <div key={i} style={{
-                              padding: '10px', borderRadius: '4px', background: 'var(--cv6-surface)',
-                              border: '1px solid var(--cv6-divider)', cursor: 'pointer', transition: 'all 100ms ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                              e.currentTarget.style.borderColor = '#F59E0B'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'var(--cv6-surface)'
-                              e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                            }}>
-                              <div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--cv6-text-primary)', marginBottom: '2px' }}>{item.subject}</div>
-                              <div style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)' }}>{item.sender}</div>
-                              <div style={{ fontSize: '9px', color: 'var(--cv6-text-tertiary)', marginTop: '3px' }}>{item.time}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Column 3: Holding (blue) */}
-                      <div style={{ display: 'flex', flexDirection: 'column', padding: '12px', background: 'rgba(62, 109, 181, 0.05)', borderRadius: '6px', border: '1px solid rgba(62, 109, 181, 0.15)' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#3E6DB5', marginBottom: '12px', paddingBottom: '8px', borderBottom: '1px solid rgba(62, 109, 181, 0.2)' }}>Holding</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {[
-                            { sender: 'ops@company.net', subject: 'Infrastructure check', time: '12m ago' },
-                          ].map((item, i) => (
-                            <div key={i} style={{
-                              padding: '10px', borderRadius: '4px', background: 'var(--cv6-surface)',
-                              border: '1px solid var(--cv6-divider)', cursor: 'pointer', transition: 'all 100ms ease',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                              e.currentTarget.style.borderColor = '#3E6DB5'
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'var(--cv6-surface)'
-                              e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                            }}>
-                              <div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--cv6-text-primary)', marginBottom: '2px' }}>{item.subject}</div>
-                              <div style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)' }}>{item.sender}</div>
-                              <div style={{ fontSize: '9px', color: 'var(--cv6-text-tertiary)', marginTop: '3px' }}>{item.time}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                    </div>
+                  <div data-cv6="true" style={{ display: 'flex', flexDirection: 'column', height: '100%', flex: 1 }}>
+                    <SupportDashboard worldId={worldId || 'aom'} cv6Mode={true} />
                   </div>
                 )}
 
