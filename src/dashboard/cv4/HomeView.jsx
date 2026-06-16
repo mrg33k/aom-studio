@@ -590,25 +590,7 @@ export default function HomeView({
       {/* R7: CV6 layout — missions as primary, keyboard navigation, inline actions, happening now */}
       {cv6 ? (
         <div className="hm-shell" style={{ maxWidth: '100%' }}>
-          {/* R11: PUNCH-LIST #5 — CREW STATUS BANNER (5-COMPANY TEST: emphasize AI crew is ALIVE working for you RIGHT NOW) */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-            padding: '12px 16px', marginBottom: '24px',
-            background: 'linear-gradient(135deg, var(--cv6-accent-primary) 0%, rgba(0,102,255,0.8) 100%)',
-            color: '#ffffff', borderRadius: '8px',
-            fontSize: '13px', fontWeight: '600', letterSpacing: '0.05em',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{
-                display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%',
-                background: '#ffffff', animation: 'hm-breathe 1.2s ease-in-out infinite',
-              }}></span>
-              <span>Your crew is live • {visibleAgents?.length || 0} collaborators working</span>
-            </div>
-            <span style={{ fontSize: '11px', opacity: 0.8, fontWeight: 500 }}>Active now</span>
-          </div>
-
-          {/* R11: Top nav bar — global icons (PUNCH-LIST #1) — primary (left) + secondary (right) with divider, 24px icons, strong hover */}
+          {/* R12: Top nav bar — global icons — primary (left) + secondary (right) with divider, 24px icons, strong hover */}
           {cv6 && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
@@ -918,99 +900,106 @@ export default function HomeView({
             </div>
           </div>
 
-          {/* R11: PUNCH-LIST #3 — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
-          {allMissionsForCV6.length > 0 && (
-            <div className="hm-section" style={{ marginBottom: '32px' }}>
+          {/* R12: TWO-COLUMN LAYOUT — Active Work (left) + Collaborators (right) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
+            {/* R12: LEFT COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
+            <div className="hm-section" style={{ marginBottom: '0' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
-              {/* Scrollable container: cap at 3 visible, internal scroll for the rest */}
-              <div style={{
-                display: 'flex', flexDirection: 'column', gap: '8px',
-                maxHeight: '190px', // 56px per item * 3 + 8px gaps * 2 = 184px, rounded to 190px
-                overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
-                scrollBehavior: 'smooth',
-                borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                padding: '8px 8px 8px 8px',
-                background: 'var(--cv6-hover)',
-              }}>
-                {allMissionsForCV6.map((m, idx) => {
-                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
-                  return (
-                    <button
-                      key={m.mission.slug}
-                      className="hm-mission"
-                      onClick={() => {
-                        handleProjectSelect(m.project, m.mission)
-                        document.querySelector('[data-cv4-home]')?.focus()
-                      }}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
-                        background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                        color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
-                        borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                        fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                        flex: '0 0 auto', minHeight: '56px',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                          e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.background = 'var(--cv6-surface)'
-                          e.currentTarget.style.borderColor = 'transparent'
-                        }
-                      }}
-                    >
-                      <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.mission.name || m.mission.slug}</div>
-                        <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
-                      </div>
-                      <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
-                    </button>
-                  )
-                })}
-              </div>
-              {allMissionsForCV6.length > 3 && (
-                <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--cv6-divider)', textAlign: 'center' }}>
-                  ↓ +{allMissionsForCV6.length - 3} more (scroll within)
-                </div>
+              {allMissionsForCV6.length > 0 ? (
+                <>
+                  {/* Scrollable container: cap at 3 visible, internal scroll for the rest */}
+                  <div style={{
+                    display: 'flex', flexDirection: 'column', gap: '8px',
+                    maxHeight: '190px', // 56px per item * 3 + 8px gaps * 2 = 184px, rounded to 190px
+                    overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
+                    scrollBehavior: 'smooth',
+                    borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                    padding: '8px 8px 8px 8px',
+                    background: 'var(--cv6-hover)',
+                  }}>
+                    {allMissionsForCV6.map((m, idx) => {
+                      const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
+                      return (
+                        <button
+                          key={m.mission.slug}
+                          className="hm-mission"
+                          onClick={() => {
+                            handleProjectSelect(m.project, m.mission)
+                            document.querySelector('[data-cv4-home]')?.focus()
+                          }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
+                            background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                            color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                            border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
+                            borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                            fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                            flex: '0 0 auto', minHeight: '56px',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                              e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.background = 'var(--cv6-surface)'
+                              e.currentTarget.style.borderColor = 'transparent'
+                            }
+                          }}
+                        >
+                          <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.mission.name || m.mission.slug}</div>
+                            <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
+                          </div>
+                          <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {allMissionsForCV6.length > 3 && (
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--cv6-divider)', textAlign: 'center' }}>
+                      ↓ +{allMissionsForCV6.length - 3} more (scroll within)
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', padding: '16px', textAlign: 'center' }}>No active missions</div>
               )}
             </div>
-          )}
 
-          {/* Agents section */}
-          <div className="hm-section">
-            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Collaborators</div>
-            {visibleAgents.map((a, idx) => {
-              const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
-              return (
-                <button
-                  key={a.slug}
-                  className="hm-row"
-                  onClick={() => {
-                    onSelectAgent && onSelectAgent(a)
-                    // PUNCH-LIST #4: Refocus the home container after click so arrow nav continues
-                    document.querySelector('[data-cv4-home]')?.focus()
-                  }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '6px',
-                    background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
-                    color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                    border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                    borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                    fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                  }}
-                >
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
-                  <span style={{ flex: 1 }}>{a.name || a.slug}</span>
-                  <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0 }}>{relativeTime(a.last_message_at)}</span>
-                </button>
-              )
-            })}
+            {/* R12: RIGHT COLUMN — COLLABORATORS */}
+            <div className="hm-section" style={{ marginBottom: '0' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Collaborators</div>
+              {visibleAgents.map((a, idx) => {
+                const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+                return (
+                  <button
+                    key={a.slug}
+                    className="hm-row"
+                    onClick={() => {
+                      onSelectAgent && onSelectAgent(a)
+                      // PUNCH-LIST #4: Refocus the home container after click so arrow nav continues
+                      document.querySelector('[data-cv4-home]')?.focus()
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '6px',
+                      background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
+                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                      border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                      borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                      fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+                    }}
+                  >
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                    <span style={{ flex: 1 }}>{a.name || a.slug}</span>
+                    <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0 }}>{relativeTime(a.last_message_at)}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       ) : (

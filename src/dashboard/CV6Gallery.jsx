@@ -336,7 +336,7 @@ function ScreenFrame({ theme, cv5, label, children }) {
           {label}
         </span>
       </div>
-      <div style={{ height: 660, overflow: 'auto' }}>
+      <div style={{ minHeight: '100vh', overflow: 'auto' }}>
         <div {...attrs} style={{ minHeight: '100%' }}>
           {children}
         </div>
