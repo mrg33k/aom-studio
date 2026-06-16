@@ -420,17 +420,6 @@
   display: none;
 }
 
-/* ── Agents: right column on desktop, clean cards */
-[data-cv6] [data-cv4-home] .hm-section:nth-of-type(2) {
-  order: 3;
-}
-
-@media (max-width: 1439px) {
-  [data-cv6] [data-cv4-home] .hm-section:nth-of-type(2) {
-    order: auto;
-  }
-}
-
 /* Agent rows: compact, with visible status dot + last-active time */
 [data-cv6] [data-cv4-home] .hm-row {
   display: flex;
@@ -520,18 +509,6 @@
 [data-cv6] [data-cv4-home] .hm-pin.pinned {
   color: var(--cv6-accent-success) !important;
   opacity: 1 !important;
-}
-
-/* ── Projects section: center column on desktop, shows recent + all below */
-[data-cv6] [data-cv4-home] .hm-section:first-of-type {
-  order: 2;
-}
-
-@media (max-width: 1439px) {
-  [data-cv6] [data-cv4-home] .hm-section:first-of-type {
-    order: auto;
-    grid-column: 1;
-  }
 }
 
 /* Project card: container with subtle border + shadow */
