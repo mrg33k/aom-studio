@@ -1,11 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // Live Scribe — call/meeting companion (Mode B of aom:live-scribe).
-// Listens to a call on speaker, builds a perfect running transcript (left),
-// and a living brief on the right: summary, talking points, live web research
-// on things said, and smart questions to ask next.
+// Listens to a call on speaker, builds a perfect running transcript (left,
+// color-coded by speaker with live tap-to-name), and a living brief on the
+// right: summary, talking points, verbatim quotes, live web research, questions.
 //
-// Transcript: browser SpeechRecognition (Chrome). Brief: /api/dashboard/call-scribe (Gemini + Google Search).
+// Transcript: browser SpeechRecognition (Chrome) feeds one live speaker; the
+// self-hosted diarization engine (later) feeds real per-voice segments.
+// The UI renders from a {speakerId,text} segment model + a speakers map, so
+// renaming a voice relabels every line of theirs at once.
+// Brief: /api/dashboard/call-scribe (Gemini + Google Search).
 
 const ANALYZE_EVERY_MS = 15000;
 const GOLD = '#EAB308';
@@ -13,6 +17,19 @@ const INK = '#1A1714';
 const PAPER = '#FAF7F0';
 const CARD = '#FFFFFF';
 const LINE = '#E7E0D2';
+// Speaker palette — distinct, on warm paper, deliberately NOT gold (accent) or red (REC).
+const SPEAKER_COLORS = ['#2F8E84', '#5B6CC4', '#B5654A', '#8A5A8C', '#6F7D3A', '#3F7CAC'];
+const LIVE_SPEAKER = 'S1'; // browser mic has no diarization; everything lands on one live voice
+
+const SAMPLE = [
+  ['S1', 'Thanks everyone for joining. Today we are deciding whether to move the launch to September.'],
+  ['S2', 'I think September is tight. Engineering still has two integration bugs open.'],
+  ['S3', 'From the marketing side, September actually lines up better with the trade show in Phoenix.'],
+  ['S4', 'Budget wise we can support either, but slipping past September starts eating into Q4.'],
+  ['S1', 'Okay. Can the brand assets be ready either way?'],
+  ['S3', 'Yes, the brand kit is basically done. We just need the final logos signed off.'],
+  ['S2', 'If we get one more week of QA, I am comfortable committing to September.'],
+];
 
 function useFonts() {
   useEffect(() => {
@@ -36,7 +53,9 @@ export default function LiveScribe() {
   useFonts();
   const [supported, setSupported] = useState(true);
   const [recording, setRecording] = useState(false);
-  const [finalText, setFinalText] = useState('');
+  const [segments, setSegments] = useState([]); // [{ speakerId, text }]
+  const [speakers, setSpeakers] = useState({}); // id -> { name, color }
+  const [editingSpeaker, setEditingSpeaker] = useState(null);
   const [interim, setInterim] = useState('');
   const [context, setContext] = useState('');
   const [brief, setBrief] = useState({ summary: '', talkingPoints: [], quotes: [], research: [], questions: [] });
@@ -50,15 +69,16 @@ export default function LiveScribe() {
   const lastAnalyzedLen = useRef(0);
   const transcriptScroll = useRef(null);
 
-  // keep refs in sync
+  const transcriptText = segments.map((s) => s.text).join(' ');
+
   useEffect(() => { recordingRef.current = recording; }, [recording]);
-  useEffect(() => { finalRef.current = finalText; }, [finalText]);
+  useEffect(() => { finalRef.current = transcriptText; }, [transcriptText]);
 
   // auto-scroll transcript
   useEffect(() => {
     const el = transcriptScroll.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [finalText, interim]);
+  }, [segments, interim]);
 
   // elapsed timer
   useEffect(() => {
@@ -66,6 +86,35 @@ export default function LiveScribe() {
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(t);
   }, [recording]);
+
+  const ensureSpeaker = useCallback((id, index) => {
+    setSpeakers((prev) => {
+      if (prev[id]) return prev;
+      const n = Object.keys(prev).length;
+      const idx = index != null ? index : n;
+      return { ...prev, [id]: { name: `Speaker ${idx + 1}`, color: SPEAKER_COLORS[idx % SPEAKER_COLORS.length] } };
+    });
+  }, []);
+
+  const appendSegment = useCallback((speakerId, text) => {
+    const clean = text.trim();
+    if (!clean) return;
+    setSegments((prev) => {
+      const last = prev[prev.length - 1];
+      if (last && last.speakerId === speakerId) {
+        const merged = [...prev];
+        merged[merged.length - 1] = { ...last, text: `${last.text} ${clean}`.trim() };
+        return merged;
+      }
+      return [...prev, { speakerId, text: clean }];
+    });
+  }, []);
+
+  const renameSpeaker = useCallback((id, name) => {
+    const n = name.trim();
+    setSpeakers((prev) => (prev[id] ? { ...prev, [id]: { ...prev[id], name: n || prev[id].name } } : prev));
+    setEditingSpeaker(null);
+  }, []);
 
   const analyze = useCallback(async () => {
     const transcript = finalRef.current.trim();
@@ -79,7 +128,7 @@ export default function LiveScribe() {
         body: JSON.stringify({ transcript, context: context.trim() || undefined }),
       });
       const data = await r.json();
-      if (data && (data.summary || data.talkingPoints?.length || data.research?.length)) {
+      if (data && (data.summary || data.talkingPoints?.length || data.quotes?.length || data.research?.length)) {
         setBrief({
           summary: data.summary || '',
           talkingPoints: data.talkingPoints || [],
@@ -106,6 +155,7 @@ export default function LiveScribe() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) { setSupported(false); return; }
     setErr('');
+    ensureSpeaker(LIVE_SPEAKER, 0);
     const recog = new SR();
     recog.continuous = true;
     recog.interimResults = true;
@@ -119,12 +169,7 @@ export default function LiveScribe() {
         if (res.isFinal) finalChunk += res[0].transcript;
         else interimChunk += res[0].transcript;
       }
-      if (finalChunk) {
-        setFinalText((prev) => {
-          const sep = prev && !prev.endsWith(' ') ? ' ' : '';
-          return prev + sep + finalChunk.trim();
-        });
-      }
+      if (finalChunk) appendSegment(LIVE_SPEAKER, finalChunk);
       setInterim(interimChunk);
     };
 
@@ -136,7 +181,6 @@ export default function LiveScribe() {
       }
     };
 
-    // Chrome stops on silence / ~60s; restart while we are still recording.
     recog.onend = () => {
       if (recordingRef.current) {
         try { recog.start(); } catch { /* already starting */ }
@@ -147,7 +191,7 @@ export default function LiveScribe() {
     try { recog.start(); } catch { /* noop */ }
     setRecording(true);
     recordingRef.current = true;
-  }, []);
+  }, [appendSegment, ensureSpeaker]);
 
   const stop = useCallback(() => {
     setRecording(false);
@@ -155,40 +199,54 @@ export default function LiveScribe() {
     setInterim('');
     const recog = recogRef.current;
     if (recog) { try { recog.stop(); } catch { /* noop */ } }
-    // final pass
     setTimeout(analyze, 400);
   }, [analyze]);
 
   const reset = useCallback(() => {
-    setFinalText(''); setInterim(''); setElapsed(0);
-    setBrief({ summary: '', talkingPoints: [], research: [], questions: [] });
+    setSegments([]); setSpeakers({}); setInterim(''); setElapsed(0); setEditingSpeaker(null);
+    setBrief({ summary: '', talkingPoints: [], quotes: [], research: [], questions: [] });
     lastAnalyzedLen.current = 0;
     finalRef.current = '';
   }, []);
+
+  const loadSample = useCallback(() => {
+    const ids = [...new Set(SAMPLE.map(([id]) => id))];
+    const sp = {};
+    ids.forEach((id, i) => { sp[id] = { name: `Speaker ${i + 1}`, color: SPEAKER_COLORS[i % SPEAKER_COLORS.length] }; });
+    setSpeakers(sp);
+    setSegments(SAMPLE.map(([speakerId, text]) => ({ speakerId, text })));
+    finalRef.current = SAMPLE.map(([, t]) => t).join(' ');
+    lastAnalyzedLen.current = 0;
+    setTimeout(analyze, 50);
+  }, [analyze]);
 
   const copyBrief = useCallback(() => {
     const lines = [];
     if (context.trim()) lines.push(`Call: ${context.trim()}`, '');
     if (brief.summary) lines.push('SUMMARY', brief.summary, '');
-    if (brief.talkingPoints.length) { lines.push('TALKING POINTS'); brief.talkingPoints.forEach(p => lines.push(`- ${p}`)); lines.push(''); }
-    if (brief.quotes.length) { lines.push('QUOTES'); brief.quotes.forEach(q => lines.push(`"${q}"`)); lines.push(''); }
-    if (brief.research.length) { lines.push('RESEARCH'); brief.research.forEach(r => lines.push(`- ${r.topic}: ${r.finding}${r.source ? ` (${r.source})` : ''}`)); lines.push(''); }
-    if (brief.questions.length) { lines.push('QUESTIONS TO ASK'); brief.questions.forEach(q => lines.push(`- ${q}`)); lines.push(''); }
-    lines.push('FULL TRANSCRIPT', finalText);
+    if (brief.talkingPoints.length) { lines.push('TALKING POINTS'); brief.talkingPoints.forEach((p) => lines.push(`- ${p}`)); lines.push(''); }
+    if (brief.quotes.length) { lines.push('QUOTES'); brief.quotes.forEach((q) => lines.push(`"${q}"`)); lines.push(''); }
+    if (brief.research.length) { lines.push('RESEARCH'); brief.research.forEach((r) => lines.push(`- ${r.topic}: ${r.finding}${r.source ? ` (${r.source})` : ''}`)); lines.push(''); }
+    if (brief.questions.length) { lines.push('QUESTIONS TO ASK'); brief.questions.forEach((q) => lines.push(`- ${q}`)); lines.push(''); }
+    lines.push('FULL TRANSCRIPT');
+    segments.forEach((s) => lines.push(`${speakers[s.speakerId]?.name || s.speakerId}: ${s.text}`));
     navigator.clipboard?.writeText(lines.join('\n'));
-  }, [brief, context, finalText]);
+  }, [brief, context, segments, speakers]);
 
   const F = { fontFamily: "'Space Grotesk', system-ui, sans-serif" };
   const DISPLAY = { fontFamily: "'Syne', system-ui, sans-serif" };
   const hasBrief = Boolean(brief.summary || brief.talkingPoints.length || brief.quotes.length || brief.research.length || brief.questions.length);
-  const showActions = Boolean(finalText) || hasBrief;
-  const transcriptActive = recording || Boolean(finalText);
+  const hasTranscript = segments.length > 0;
+  const showActions = hasTranscript || hasBrief;
+  const transcriptActive = recording || hasTranscript;
+  const speakerIds = Object.keys(speakers);
+  const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
 
   return (
     <div style={{ minHeight: '100vh', background: PAPER, color: INK, ...F }}>
       <style>{`
         .ls-card { background:${CARD}; border:1px solid ${LINE}; border-radius:16px; }
-        .ls-btn { ${'' /* base */} font-family:'Space Grotesk',sans-serif; font-weight:600; border-radius:999px; cursor:pointer; border:1px solid ${INK}; transition:transform .08s ease, opacity .15s ease; }
+        .ls-btn { font-family:'Space Grotesk',sans-serif; font-weight:600; border-radius:999px; cursor:pointer; border:1px solid ${INK}; transition:transform .08s ease, opacity .15s ease; }
         .ls-btn:active { transform:translateY(1px); }
         .ls-rec-dot { width:10px; height:10px; border-radius:50%; background:#E5484D; box-shadow:0 0 0 0 rgba(229,72,77,.6); animation:lspulse 1.4s infinite; }
         @keyframes lspulse { 0%{box-shadow:0 0 0 0 rgba(229,72,77,.55)} 70%{box-shadow:0 0 0 9px rgba(229,72,77,0)} 100%{box-shadow:0 0 0 0 rgba(229,72,77,0)} }
@@ -203,6 +261,8 @@ export default function LiveScribe() {
         .ls-eq span { width:5px; border-radius:3px; background:#C9A227; animation:lseq 1.1s ease-in-out infinite; }
         .ls-eq span:nth-child(2){ animation-delay:.18s } .ls-eq span:nth-child(3){ animation-delay:.36s } .ls-eq span:nth-child(4){ animation-delay:.54s } .ls-eq span:nth-child(5){ animation-delay:.72s }
         @keyframes lseq { 0%,100%{height:7px; opacity:.55} 50%{height:30px; opacity:1} }
+        .ls-chip { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; background:#FBF9F4; border:1px solid ${LINE}; }
+        .ls-chip:hover { border-color:#C9BFA9; }
       `}</style>
 
       {/* Header */}
@@ -226,9 +286,9 @@ export default function LiveScribe() {
               </span>
             )}
             {!recording ? (
-              <button className={`ls-btn${!finalText ? ' ls-start-pulse' : ''}`} onClick={start}
+              <button className={`ls-btn${!hasTranscript ? ' ls-start-pulse' : ''}`} onClick={start}
                 style={{ background: GOLD, color: INK, borderColor: '#C9A227', padding: '15px 34px', fontSize: 17, fontWeight: 700 }}>
-                {finalText ? 'Resume' : 'Start listening'}
+                {hasTranscript ? 'Resume' : 'Start listening'}
               </button>
             ) : (
               <button className="ls-btn" onClick={stop}
@@ -271,19 +331,72 @@ export default function LiveScribe() {
           <div className="ls-card" style={{ display: 'flex', flexDirection: 'column', height: transcriptActive ? 'min(70vh, 640px)' : 320 }}>
             <div style={{ padding: '14px 18px', borderBottom: `1px solid ${LINE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7 }}>Transcript</span>
-              <span style={{ fontSize: 12, opacity: 0.45 }}>{finalText ? `${finalText.split(/\s+/).filter(Boolean).length} words` : (recording ? 'listening…' : 'ready')}</span>
+              <span style={{ fontSize: 12, opacity: 0.45 }}>{hasTranscript ? `${wordCount} words` : (recording ? 'listening…' : 'ready')}</span>
             </div>
+
+            {/* Speaker chips — tap to name */}
+            {speakerIds.length > 0 && (
+              <div style={{ padding: '10px 16px', borderBottom: `1px solid ${LINE}`, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                {speakerIds.map((id) => (
+                  editingSpeaker === id ? (
+                    <input
+                      key={id}
+                      autoFocus
+                      defaultValue={speakers[id].name}
+                      onBlur={(e) => renameSpeaker(id, e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') renameSpeaker(id, e.target.value); if (e.key === 'Escape') setEditingSpeaker(null); }}
+                      style={{ ...F, fontSize: 13, fontWeight: 600, padding: '4px 10px', borderRadius: 999, border: `1px solid ${speakers[id].color}`, outline: 'none', width: 130, color: INK }}
+                    />
+                  ) : (
+                    <button key={id} className="ls-chip" onClick={() => setEditingSpeaker(id)} title="Tap to name this voice">
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: speakers[id].color }} />
+                      <span>{speakers[id].name}</span>
+                    </button>
+                  )
+                ))}
+                <span style={{ fontSize: 11.5, opacity: 0.4, marginLeft: 2 }}>tap a voice to name it</span>
+              </div>
+            )}
+
             <div ref={transcriptScroll} style={{ padding: '18px', overflowY: 'auto', flex: 1, fontSize: 16, lineHeight: 1.7 }}>
-              {!finalText && !interim ? (
+              {!hasTranscript && !interim ? (
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
                   <div className="ls-eq" aria-hidden="true"><span /><span /><span /><span /><span /></div>
                   <div style={{ ...DISPLAY, fontWeight: 700, fontSize: 15, opacity: 0.55 }}>
                     {recording ? 'Listening…' : 'Ready to listen'}
                   </div>
-                  {!recording && <div style={{ fontSize: 13, opacity: 0.4 }}>Press Start listening and begin the call.</div>}
+                  {!recording && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                      <div style={{ fontSize: 13, opacity: 0.4 }}>Press Start listening and begin the call.</div>
+                      <button className="ls-btn" onClick={loadSample} style={{ background: 'transparent', color: INK, padding: '7px 14px', fontSize: 12.5, borderColor: LINE }}>
+                        Load sample conversation
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <><span>{finalText}</span>{' '}<span style={{ opacity: 0.45 }}>{interim}</span></>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {segments.map((s, i) => {
+                    const sp = speakers[s.speakerId];
+                    const prev = segments[i - 1];
+                    const showLabel = !prev || prev.speakerId !== s.speakerId;
+                    return (
+                      <div key={i} className="ls-fade">
+                        {showLabel && sp && (
+                          <div
+                            onClick={() => setEditingSpeaker(s.speakerId)}
+                            style={{ ...DISPLAY, color: sp.color, fontWeight: 700, fontSize: 12, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 3, cursor: 'pointer' }}
+                            title="Tap to name this voice"
+                          >
+                            {sp.name}
+                          </div>
+                        )}
+                        <div style={{ borderLeft: sp ? `2px solid ${sp.color}33` : 'none', paddingLeft: sp ? 12 : 0 }}>{s.text}</div>
+                      </div>
+                    );
+                  })}
+                  {interim && <div style={{ opacity: 0.45, paddingLeft: 12 }}>{interim}</div>}
+                </div>
               )}
             </div>
           </div>
