@@ -160,6 +160,7 @@ export default function HomeView({
   const [pinnedProjects, setPinnedProjects] = useState(() => readStored(PIN_PROJECTS_KEY + ':' + userId, []))
   const [expandedProjects, setExpandedProjects] = useState(() => readStored(EXPANDED_PROJECTS_KEY + ':' + userId, {}))
   const [searchText, setSearchText] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
   const greeting = useMemo(() => pickGreeting(), [])
 
   // Live recents: track the last time the user visited each project room.
@@ -719,10 +720,34 @@ export default function HomeView({
             </div>
           )}
 
-          <h1 className="hm-welcome" style={{ marginBottom: '32px' }}>
-            <span className="hm-l1">{greeting}</span>{' '}
-            <span className="hm-l2">{displayName(user) || 'there'}.</span>
-          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+            <h1 className="hm-welcome" style={{ margin: 0 }}>
+              <span className="hm-l1">{greeting}</span>{' '}
+              <span className="hm-l2">{displayName(user) || 'there'}.</span>
+            </h1>
+            {/* R14: Search icon button (collapse to icon only) */}
+            <button
+              onClick={() => setShowSearch(true)}
+              style={{
+                width: '40px', height: '40px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                transition: 'all 120ms ease', fontFamily: 'inherit',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'var(--cv6-surface)'
+                e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+          </div>
 
           {/* R11: PUNCH-LIST #6 — HAPPENING NOW (density + alive, 6-item grid, breathing room) */}
           {happeningNow && happeningNow.length > 0 && (
@@ -760,157 +785,85 @@ export default function HomeView({
             </div>
           )}
 
-          {/* Search bar */}
-          <div className="hm-search">
-            <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              value={searchText}
-              onChange={e => setSearchText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && onOpenSearch) onOpenSearch(searchText) }}
-              placeholder="messages, tasks, agents"
-              autoComplete="off"
-            />
-            <span className="hm-search-hint">⌘K</span>
-          </div>
+          {/* R14: Search bar — icon-only (collapsed) when hidden, expands on click next to greeting */}
+          {showSearch ? (
+            <div className="hm-search" style={{ marginBottom: '16px' }}>
+              <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                type="text"
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && onOpenSearch) {
+                    onOpenSearch(searchText)
+                    setShowSearch(false)
+                  }
+                  if (e.key === 'Escape') setShowSearch(false)
+                }}
+                placeholder="messages, tasks, agents"
+                autoComplete="off"
+                autoFocus
+              />
+              <span className="hm-search-hint">⌘K</span>
+            </div>
+          ) : null}
 
-          {/* R11: PUNCH-LIST #2 — ACTIONABLE STATS with clear affordances (whole card clickable, arrow indicator) */}
-          {(needsYou && needsYou.length > 0) && (
-            <div className="hm-section" style={{ gridColumn: '1 / -1', marginBottom: '32px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
-                {needsYou.map((n, idx) => {
-                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
+          {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '32px', minHeight: '400px' }}>
+            {/* R14: LEFT COLUMN — COLLABORATORS */}
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px', color: 'var(--cv6-text-tertiary)' }}>Crew · Live</div>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Collaborators</div>
+              <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
+                {visibleAgents.map((a, idx) => {
+                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
                   return (
-                  <button
-                    key={n.key}
-                    onClick={() => n.onOpen && n.onOpen()}
-                    style={{
-                      display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
-                      background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                      border: isSelected ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                      borderRadius: '8px', cursor: 'pointer', transition: 'all 120ms ease',
-                      textAlign: 'left', fontFamily: 'inherit', fontWeight: '500',
-                      boxShadow: isSelected ? '0 0 0 3px rgba(0,102,255,0.1)' : 'none',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.background = 'var(--cv6-surface)'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = 'none'
-                      }
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0, marginTop: '4px', animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '14px', fontWeight: '600' }}>{n.label}</div>
-                          <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--cv6-text-secondary)', marginTop: '4px' }}>{n.detail}</div>
-                        </div>
+                    <button
+                      key={a.slug}
+                      className="hm-row"
+                      onClick={() => {
+                        onSelectAgent && onSelectAgent(a)
+                        document.querySelector('[data-cv4-home]')?.focus()
+                      }}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', marginBottom: '6px',
+                        background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
+                        color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                        borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                        fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500', width: '100%',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                        <span style={{ flex: 1 }}>{a.name || a.slug}</span>
+                        <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
                       </div>
-                      <span style={{ fontSize: '16px', color: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0 }}>→</span>
-                    </div>
-                  </button>
-                )
+                      <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.75)' : 'var(--cv6-text-secondary)', paddingLeft: '20px', fontWeight: '400' }}>
+                        {a.slug === 'bobby' && 'building components'}
+                        {a.slug === 'steffen' && 'refining brand'}
+                        {a.slug === 'cleo' && 'editing video'}
+                        {a.slug === 'tony' && 'scheduling posts'}
+                        {a.slug === 'elon' && 'routing work'}
+                        {!['bobby', 'steffen', 'cleo', 'tony', 'elon'].includes(a.slug) && 'idle'}
+                      </div>
+                    </button>
+                  )
                 })}
               </div>
             </div>
-          )}
 
-          {/* R11: PUNCH-LIST #4 — QUICK ACTION / INLINE REPLY (act without leaving) */}
-          <div className="hm-section" style={{ marginBottom: '32px', gridColumn: '1 / -1' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Quick reply</div>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input
-                type="text"
-                placeholder="Type a quick reply or command..."
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    onQuickReply && onQuickReply(e.currentTarget.value)
-                    e.currentTarget.value = ''
-                  }
-                }}
-                style={{
-                  flex: 1,
-                  padding: '12px 14px',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  background: 'var(--cv6-surface)',
-                  color: 'var(--cv6-text-primary)',
-                  border: '1px solid var(--cv6-divider)',
-                  borderRadius: '6px',
-                  transition: 'all 120ms ease',
-                  outline: 'none',
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,102,255,0.1)'
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}
-              />
-              <button
-                onClick={(e) => {
-                  const input = e.currentTarget.previousElementSibling
-                  if (input && input.value.trim()) {
-                    onQuickReply && onQuickReply(input.value)
-                    input.value = ''
-                    input.focus()
-                  }
-                }}
-                style={{
-                  padding: '12px 20px',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  fontFamily: 'inherit',
-                  background: 'var(--cv6-accent-primary)',
-                  color: '#ffffff',
-                  border: '1px solid var(--cv6-accent-primary)',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  transition: 'all 120ms ease',
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--cv6-accent-primary-hover)'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.2)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--cv6-accent-primary)'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                  e.currentTarget.style.boxShadow = 'none'
-                }}
-              >
-                Send
-              </button>
-            </div>
-          </div>
-
-          {/* R12: TWO-COLUMN LAYOUT — Active Work (left) + Collaborators (right) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
-            {/* R12: LEFT COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
-            <div className="hm-section" style={{ marginBottom: '0' }}>
+            {/* R14: MIDDLE COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
               {allMissionsForCV6.length > 0 ? (
                 <>
-                  {/* Scrollable container: cap at 3 visible, internal scroll for the rest */}
+                  {/* Scrollable container: shows all missions with internal scroll */}
                   <div style={{
                     display: 'flex', flexDirection: 'column', gap: '8px',
-                    maxHeight: '190px', // 56px per item * 3 + 8px gaps * 2 = 184px, rounded to 190px
+                    flex: 1, // Grow to fill column
                     overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
                     scrollBehavior: 'smooth',
                     borderRadius: '6px', border: '1px solid var(--cv6-divider)',
@@ -970,48 +923,122 @@ export default function HomeView({
               )}
             </div>
 
-            {/* R13: RIGHT COLUMN — COLLABORATORS (with CREW · LIVE label + live status indicators) */}
-            <div className="hm-section" style={{ marginBottom: '0' }}>
-              <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '8px', color: 'var(--cv6-text-tertiary)' }}>Crew · Live</div>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Collaborators</div>
-              {visibleAgents.map((a, idx) => {
-                const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
-                return (
+            {/* R14: RIGHT COLUMN — CONVERSATION + QUICK REPLY */}
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Conversation</div>
+
+              {/* Conversation thread — scrollable area with sample messages */}
+              <div style={{
+                flex: 1,
+                overflowY: 'auto',
+                paddingRight: '4px',
+                marginBottom: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                borderRadius: '6px',
+                border: '1px solid var(--cv6-divider)',
+                padding: '12px',
+                background: 'var(--cv6-hover)',
+              }}>
+                {/* Sample conversation thread for demo — in production, this will show real messages from selected mission */}
+                <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', textAlign: 'center', padding: '24px 12px' }}>
+                  Select a mission to view conversation
+                </div>
+              </div>
+
+              {/* Quick Reply input at bottom of right column */}
+              <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                  <input
+                    type="text"
+                    placeholder="Reply..."
+                    style={{
+                      flex: 1, padding: '10px 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                      background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '14px',
+                      fontFamily: 'inherit', outline: 'none',
+                    }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
+                    onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
+                  />
                   <button
-                    key={a.slug}
-                    className="hm-row"
                     onClick={() => {
-                      onSelectAgent && onSelectAgent(a)
-                      // PUNCH-LIST #4: Refocus the home container after click so arrow nav continues
-                      document.querySelector('[data-cv4-home]')?.focus()
+                      // Placeholder for reply action
                     }}
                     style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', padding: '12px 16px', marginBottom: '6px',
-                      background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
-                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                      border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                      borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                      fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500', width: '100%',
+                      padding: '10px 20px', borderRadius: '6px', background: 'var(--cv6-accent-primary)', color: '#ffffff',
+                      border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit',
+                      transition: 'all 120ms ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--cv6-accent-hover)'
+                      e.currentTarget.style.transform = 'translateY(-2px)'
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.2)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'var(--cv6-accent-primary)'
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = 'none'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
-                      <span style={{ flex: 1 }}>{a.name || a.slug}</span>
-                      <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.75)' : 'var(--cv6-text-secondary)', paddingLeft: '20px', fontWeight: '400' }}>
-                      {a.slug === 'bobby' && 'building components'}
-                      {a.slug === 'steffen' && 'refining brand'}
-                      {a.slug === 'cleo' && 'editing video'}
-                      {a.slug === 'tony' && 'scheduling posts'}
-                      {a.slug === 'elon' && 'routing work'}
-                      {!['bobby', 'steffen', 'cleo', 'tony', 'elon'].includes(a.slug) && 'idle'}
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* R14: WHAT NEEDS YOU — moved below the 3-column layout */}
+          {(needsYou && needsYou.length > 0) && (
+            <div className="hm-section" style={{ marginBottom: '32px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+                {needsYou.map((n, idx) => {
+                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
+                  return (
+                  <button
+                    key={n.key}
+                    onClick={() => n.onOpen && n.onOpen()}
+                    style={{
+                      display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
+                      background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+                      border: isSelected ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                      borderRadius: '8px', cursor: 'pointer', transition: 'all 120ms ease',
+                      textAlign: 'left', fontFamily: 'inherit', fontWeight: '500',
+                      boxShadow: isSelected ? '0 0 0 3px rgba(0,102,255,0.1)' : 'none',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                        e.currentTarget.style.transform = 'translateY(-2px)'
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'var(--cv6-surface)'
+                        e.currentTarget.style.transform = 'translateY(0)'
+                        e.currentTarget.style.boxShadow = 'none'
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0, marginTop: '4px', animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '14px', fontWeight: '600' }}>{n.label}</div>
+                          <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--cv6-text-secondary)', marginTop: '4px' }}>{n.detail}</div>
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '16px', color: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0 }}>→</span>
                     </div>
                   </button>
                 )
-              })}
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ) : (
         /* CV4 layout — keep as-is for backward compatibility */
