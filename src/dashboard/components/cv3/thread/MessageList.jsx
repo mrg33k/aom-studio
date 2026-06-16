@@ -881,7 +881,7 @@ function MessageList({ roomType = 'agent' }) {
   // already visible — no yank when the user's msg is already on screen.
   useEffect(() => {
     if (!floatMode || !lastUserMsgRef.current) return
-    lastUserMsgRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    lastUserMsgRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [floatMode])
 
   // Track scroll position + scroll-up intent. Exits float mode on any upward

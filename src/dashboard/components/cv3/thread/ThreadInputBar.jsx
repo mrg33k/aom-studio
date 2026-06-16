@@ -21,7 +21,7 @@ import AttachedSkillChip from '../../../cv4/AttachedSkillChip.jsx'
 // slash-command autocomplete, attach button, commands stub, and the
 // mic-or-send button that toggles between voice mode and send.
 export default function ThreadInputBar() {
-  const { selectedAgent, chatInputFocused, setChatInputFocused } = useChatCore()
+  const { selectedAgent, setSelectedAgent, onBack, chatInputFocused, setChatInputFocused } = useChatCore()
   const {
     input, setInput, inputRef,
     handleSend, handleKeyDown,
@@ -181,7 +181,15 @@ export default function ThreadInputBar() {
           type="text"
           value={input}
           onChange={e => { setInput(e.target.value); updateCaret(e) }}
-          onKeyDown={handleKeyDown}
+          onKeyDown={(e) => {
+              if (e.key === 'ArrowLeft' && !input) {
+                e.preventDefault()
+                setSelectedAgent(null)
+                onBack?.()
+                return
+              }
+              handleKeyDown(e)
+            }}
           onKeyUp={updateCaret}
           onClick={updateCaret}
           onSelect={updateCaret}
