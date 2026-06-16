@@ -354,55 +354,70 @@ export default function HomeView({
 
   // R7: for CV6, flatten all missions into a single list with project context
   const allMissionsForCV6 = useMemo(() => {
-    if (!cv6) return []
+    if (!cv6 || !projectRooms) return []
     const all = []
-    projectRooms.forEach(p => {
-      const missions = missionsByProject[p.slug] || []
-      missions.forEach(m => {
-        all.push({ mission: m, project: p })
+    try {
+      projectRooms.forEach(p => {
+        if (!p || !p.slug) return
+        const missions = missionsByProject[p.slug] || []
+        if (!Array.isArray(missions)) return
+        missions.forEach(m => {
+          if (m && m.slug) all.push({ mission: m, project: p })
+        })
       })
-    })
-    // Sort by recency
-    return all.sort((a, b) => {
-      const tsA = a.mission.last_message_at ? new Date(a.mission.last_message_at).getTime() : 0
-      const tsB = b.mission.last_message_at ? new Date(b.mission.last_message_at).getTime() : 0
-      return tsB - tsA
-    })
+      // Sort by recency
+      return all.sort((a, b) => {
+        const tsA = a.mission?.last_message_at ? new Date(a.mission.last_message_at).getTime() : 0
+        const tsB = b.mission?.last_message_at ? new Date(b.mission.last_message_at).getTime() : 0
+        return tsB - tsA
+      })
+    } catch (_) {
+      return []
+    }
   }, [cv6, projectRooms, missionsByProject])
 
   // R7: compute "happening now" section — agents with recent activity + active tasks
   const happeningNow = useMemo(() => {
     if (!cv6) return null
-    const events = []
-    // Agent activity: those with messages in the last 5 minutes
-    const now = Date.now()
-    const fiveMinAgo = now - 5 * 60000
-    visibleAgents.forEach(a => {
-      const lastMsgTs = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
-      if (lastMsgTs > fiveMinAgo) {
-        events.push({
-          type: 'agent_activity',
-          agent: a,
-          timestamp: lastMsgTs,
-          label: `${a.name || a.slug} active`,
-          detail: relativeTime(a.last_message_at),
+    try {
+      const events = []
+      // Agent activity: those with messages in the last 5 minutes
+      const now = Date.now()
+      const fiveMinAgo = now - 5 * 60000
+      if (Array.isArray(visibleAgents)) {
+        visibleAgents.forEach(a => {
+          if (!a || !a.slug) return
+          const lastMsgTs = a.last_message_at ? new Date(a.last_message_at).getTime() : 0
+          if (lastMsgTs > fiveMinAgo) {
+            events.push({
+              type: 'agent_activity',
+              agent: a,
+              timestamp: lastMsgTs,
+              label: `${a.name || a.slug} active`,
+              detail: relativeTime(a.last_message_at),
+            })
+          }
         })
       }
-    })
-    // Active missions (running tasks)
-    allMissionsForCV6.forEach(m => {
-      if (m.mission.status === 'running') {
-        events.push({
-          type: 'mission_running',
-          mission: m.mission,
-          project: m.project,
-          timestamp: m.mission.last_message_at ? new Date(m.mission.last_message_at).getTime() : 0,
-          label: `${m.mission.name || m.mission.slug} in progress`,
-          detail: `in ${m.project.name || m.project.slug}`,
+      // Active missions (running tasks)
+      if (Array.isArray(allMissionsForCV6)) {
+        allMissionsForCV6.forEach(m => {
+          if (m?.mission?.status === 'running') {
+            events.push({
+              type: 'mission_running',
+              mission: m.mission,
+              project: m.project,
+              timestamp: m.mission.last_message_at ? new Date(m.mission.last_message_at).getTime() : 0,
+              label: `${m.mission.name || m.mission.slug} in progress`,
+              detail: `in ${m.project.name || m.project.slug}`,
+            })
+          }
         })
       }
-    })
-    return events.length > 0 ? events.sort((a, b) => b.timestamp - a.timestamp) : null
+      return events.length > 0 ? events.sort((a, b) => b.timestamp - a.timestamp) : null
+    } catch (_) {
+      return null
+    }
   }, [cv6, visibleAgents, allMissionsForCV6])
 
   // R7: keyboard navigation state for CV6 (defined after all dependencies are ready)
@@ -410,18 +425,28 @@ export default function HomeView({
 
   const selectableItems = useMemo(() => {
     if (!cv6) return []
-    const items = []
-    // Missions first (primary), then agents, then projects
-    allMissionsForCV6.forEach((m) => {
-      items.push({ type: 'mission', item: m.mission, project: m.project })
-    })
-    visibleAgents.forEach((a) => {
-      items.push({ type: 'agent', item: a })
-    })
-    recentProjects.forEach((p) => {
-      items.push({ type: 'project', item: p })
-    })
-    return items
+    try {
+      const items = []
+      // Missions first (primary), then agents, then projects
+      if (Array.isArray(allMissionsForCV6)) {
+        allMissionsForCV6.forEach((m) => {
+          if (m?.mission) items.push({ type: 'mission', item: m.mission, project: m.project })
+        })
+      }
+      if (Array.isArray(visibleAgents)) {
+        visibleAgents.forEach((a) => {
+          if (a?.slug) items.push({ type: 'agent', item: a })
+        })
+      }
+      if (Array.isArray(recentProjects)) {
+        recentProjects.forEach((p) => {
+          if (p?.slug) items.push({ type: 'project', item: p })
+        })
+      }
+      return items
+    } catch (_) {
+      return []
+    }
   }, [cv6, allMissionsForCV6, visibleAgents, recentProjects])
 
   const handleKeyDown = useCallback((e) => {
@@ -562,7 +587,7 @@ export default function HomeView({
         <div className="hm-shell" style={{ maxWidth: '100%' }}>
           <h1 className="hm-welcome">
             <span className="hm-l1">{greeting}</span>{' '}
-            <span className="hm-l2">{displayName(user)}.</span>
+            <span className="hm-l2">{displayName(user) || 'there'}.</span>
           </h1>
 
           {/* Happening now — live signals of agent activity + running work */}
