@@ -1257,6 +1257,8 @@ function tabStyle(active) {
 }
 
 // ── Full dashboard ───────────────────────────────────────────────────────────
+export { useSupportData, buildItems }
+
 export default function SupportDashboard({ isDesktop = true, onClose, worldId, onDiscuss }) {
   const [view, setView] = useState('desk') // desk | inbox | chat
   const { wishes } = useSupportData(worldId)
