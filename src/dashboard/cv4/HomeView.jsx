@@ -869,6 +869,7 @@ export default function HomeView({
                     borderRadius: '6px', border: '1px solid var(--cv6-divider)',
                     padding: '8px 8px 8px 8px',
                     background: 'var(--cv6-hover)',
+                    maxHeight: '200px', // Cap at ~3 missions (56px each + 8px gaps + padding)
                   }}>
                     {allMissionsForCV6.map((m, idx) => {
                       const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
