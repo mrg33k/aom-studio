@@ -880,9 +880,11 @@ html.dark-theme .essay-sentence--new {
   box-shadow: 0 0 0 2px rgba(201, 164, 48, 0.30);
 }
 
-/* Mobile — give the stacked panel room for HUD + Writing Desk + Quests */
+/* Mobile — the chat with the Wizard is primary; the panel scrolls internally
+   so HUD + Writing Desk + Quests never crowd the conversation off-screen. */
 @media (max-width: 900px) {
-  .action-panel { max-height: 60vh; }
-  .essay-paragraph { max-height: 26vh; }
+  .messages-container { min-height: 30vh; }
+  .action-panel { max-height: 40vh; }
+  .essay-paragraph { max-height: 22vh; }
   .celebrate-burst { top: 64px; font-size: 14px; padding: 8px 18px; }
 }
