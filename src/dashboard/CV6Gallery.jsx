@@ -28,6 +28,11 @@ import BucketSection from './cv4/BucketSection.jsx'
 import ProjectFileReader from './cv4/ProjectFileReader.jsx'
 import MailAccountSwitcher from './cv4/MailAccountSwitcher.jsx'
 
+// ── Real full screens (rendered live so Steffen restyles them in place) ──
+import HomeView from './cv4/HomeView.jsx'
+import CommandDeckHome from './cv5/CommandDeckHome.jsx'
+import SupportDashboard from './cv4/SupportDashboard.jsx'
+
 const SHELL = {
   bg: '#0A0F14',
   panel: '#121A22',
@@ -241,14 +246,107 @@ const REGISTRY = [
   // (animated, with sample chat overlaid) — tracked for a later round.
 ]
 
+// ── Sample data for the live full screens (no auth, no backend) ──
+const MOCK_USER = { name: 'Patrik', initials: 'P', email: 'patrik@aheadofmarket.com' }
+const MOCK_AGENTS = [
+  { slug: 'elon', name: 'Elon', initials: 'E', is_ea: true, status: 'idle' },
+  { slug: 'rex', name: 'Rex', initials: 'R', is_ea: true, status: 'running' },
+  { slug: 'gary', name: 'Gary', initials: 'G', is_ea: true, status: 'idle' },
+]
+const MOCK_PROJECTS = [
+  { slug: 'corner', name: 'Corner', status: 'in-progress', unread: 0 },
+  { slug: 'space-rising', name: 'Space Rising', status: 'in-progress', unread: 2 },
+  { slug: 'ambition-mechanical', name: 'Ambition Mechanical', status: 'in-progress', unread: 0 },
+  { slug: 'brandon-wiley', name: 'Brandon Wiley Documentary', status: 'in-progress', unread: 0 },
+  { slug: 'iso-wizard', name: 'Iso Wizard', status: 'in-progress', unread: 1 },
+]
+const SCREEN_PROPS = {
+  user: MOCK_USER,
+  worldId: 'aom',
+  agents: MOCK_AGENTS,
+  projectRooms: MOCK_PROJECTS,
+  needsYou: [],
+  onSelectAgent: () => {},
+  onSelectProject: () => {},
+  onOpenSearch: () => {},
+}
+
+// Themed device frame: scopes the CV4/CV5 theme attributes so light + dark
+// render, and contains a full screen in a scrollable preview box.
+function ScreenFrame({ theme, cv5, children }) {
+  const attrs = { 'data-shell': 'cv4', 'data-theme': theme, 'data-cv4': 'true' }
+  if (cv5) attrs['data-cv5'] = 'true'
+  return (
+    <div
+      style={{
+        width: '100%',
+        height: 680,
+        overflow: 'auto',
+        border: `1px solid ${SHELL.line}`,
+        borderRadius: 10,
+        background: theme === 'light' ? '#EDE9E0' : '#0A0F14',
+      }}
+    >
+      <div {...attrs} style={{ minHeight: '100%' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+// ── Full screens, rendered live in both themes ──
+const SCREENS = [
+  {
+    id: 'screen-home',
+    name: 'Home',
+    purpose: 'The dashboard home — projects, agents, and where you left off.',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark"><HomeView {...SCREEN_PROPS} /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light"><HomeView {...SCREEN_PROPS} /></ScreenFrame> },
+    ],
+  },
+  {
+    id: 'screen-command-deck',
+    name: 'Command Deck',
+    purpose: 'The command surface — your rooms, your crew, and what needs you.',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" cv5><CommandDeckHome {...SCREEN_PROPS} /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" cv5><CommandDeckHome {...SCREEN_PROPS} /></ScreenFrame> },
+    ],
+  },
+  {
+    id: 'screen-support',
+    name: 'Support',
+    purpose: 'Front desk — what was handled, what needs your call, what is holding. Dark only today.',
+    wide: true,
+    states: [
+      {
+        label: 'Default',
+        render: () => (
+          <ScreenFrame theme="dark">
+            <SupportDashboard isDesktop={true} worldId="aom" onClose={() => {}} onDiscuss={() => {}} />
+          </ScreenFrame>
+        ),
+      },
+    ],
+  },
+  // NEXT: Chat thread (needs chat-context mocks) + left/right menu — tracked
+  // in cv4/COMPONENT-MANIFEST.md. Added once their mock wrappers are wired.
+]
+
+// Screens first, then pieces. One flat list for lookup + feedback.
+const ALL = [...SCREENS, ...REGISTRY]
+
 const idFromHash = () => {
-  if (typeof window === 'undefined') return REGISTRY[0].id
+  if (typeof window === 'undefined') return ALL[0].id
   // Query param (?piece=mail-chip) is the robust deep-link — survives tools and
   // shares that mangle URL fragments. Hash (#mail-chip) is the in-app shortcut.
   const q = new URLSearchParams(window.location.search).get('piece')
-  if (q && REGISTRY.some((c) => c.id === q)) return q
+  if (q && ALL.some((c) => c.id === q)) return q
   const h = window.location.hash.replace(/^#/, '')
-  return REGISTRY.some((c) => c.id === h) ? h : REGISTRY[0].id
+  return ALL.some((c) => c.id === h) ? h : ALL[0].id
 }
 
 // ── Feedback: per-piece notes, saved locally, copied out as one block ──
@@ -277,7 +375,7 @@ function useIsMobile() {
 
 export default function CV6Gallery() {
   const [activeId, setActiveId] = useState(idFromHash)
-  const active = REGISTRY.find((c) => c.id === activeId) || REGISTRY[0]
+  const active = ALL.find((c) => c.id === activeId) || ALL[0]
   const isMobile = useIsMobile()
   const [feedback, setFeedback] = useState(loadFeedback)
   const [copied, setCopied] = useState(false)
@@ -308,10 +406,10 @@ export default function CV6Gallery() {
     })
   }
 
-  const notedCount = REGISTRY.filter((c) => (feedback[c.id] || '').trim()).length
+  const notedCount = ALL.filter((c) => (feedback[c.id] || '').trim()).length
 
   const copyAll = () => {
-    const blocks = REGISTRY.filter((c) => (feedback[c.id] || '').trim()).map(
+    const blocks = ALL.filter((c) => (feedback[c.id] || '').trim()).map(
       (c) => `## ${c.name}\n${feedback[c.id].trim()}`
     )
     const text = blocks.length
@@ -350,44 +448,65 @@ export default function CV6Gallery() {
     </button>
   )
 
+  const navItem = (c) => {
+    const on = c.id === activeId
+    const hasNote = (feedback[c.id] || '').trim().length > 0
+    return (
+      <button
+        key={c.id}
+        type="button"
+        onClick={() => select(c.id)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 8,
+          textAlign: 'left',
+          padding: '9px 12px',
+          borderRadius: 8,
+          border: '1px solid transparent',
+          background: on ? 'rgba(16,185,129,0.10)' : 'transparent',
+          borderColor: on ? 'rgba(16,185,129,0.30)' : 'transparent',
+          color: on ? SHELL.text : SHELL.text2,
+          fontSize: 13,
+          fontWeight: on ? 600 : 500,
+          cursor: 'pointer',
+          fontFamily: SHELL.sans,
+        }}
+      >
+        <span>{c.name}</span>
+        {hasNote && (
+          <span
+            title="You left a note"
+            style={{ width: 6, height: 6, borderRadius: '50%', background: SHELL.accent, flexShrink: 0 }}
+          />
+        )}
+      </button>
+    )
+  }
+
+  const groupHeader = (label) => (
+    <div
+      style={{
+        fontSize: 10,
+        color: SHELL.text3,
+        fontFamily: SHELL.mono,
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        padding: '0 12px',
+        margin: '14px 0 6px',
+      }}
+    >
+      {label}
+    </div>
+  )
+
   const nav = (
     <nav style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {REGISTRY.map((c) => {
-        const on = c.id === activeId
-        const hasNote = (feedback[c.id] || '').trim().length > 0
-        return (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => select(c.id)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8,
-              textAlign: 'left',
-              padding: '9px 12px',
-              borderRadius: 8,
-              border: '1px solid transparent',
-              background: on ? 'rgba(16,185,129,0.10)' : 'transparent',
-              borderColor: on ? 'rgba(16,185,129,0.30)' : 'transparent',
-              color: on ? SHELL.text : SHELL.text2,
-              fontSize: 13,
-              fontWeight: on ? 600 : 500,
-              cursor: 'pointer',
-              fontFamily: SHELL.sans,
-            }}
-          >
-            <span>{c.name}</span>
-            {hasNote && (
-              <span
-                title="You left a note"
-                style={{ width: 6, height: 6, borderRadius: '50%', background: SHELL.accent, flexShrink: 0 }}
-              />
-            )}
-          </button>
-        )
-      })}
+      {groupHeader('Screens')}
+      {SCREENS.map(navItem)}
+      {groupHeader('Pieces')}
+      {REGISTRY.map(navItem)}
     </nav>
   )
 
@@ -396,7 +515,7 @@ export default function CV6Gallery() {
       style={{
         flex: 1,
         padding: isMobile ? '20px 16px 64px' : '40px 48px',
-        maxWidth: isMobile ? '100%' : 1100,
+        maxWidth: isMobile ? '100%' : active.wide ? 1500 : 1100,
         width: '100%',
         boxSizing: 'border-box',
       }}
@@ -432,28 +551,35 @@ export default function CV6Gallery() {
             >
               {s.label}
             </div>
-            <div style={{ padding: isMobile ? 12 : 18, display: 'flex', justifyContent: 'center' }}>
-              {/* Defined canvas plate: the component sits on a tightly-sized,
-                  centered stage (its home dark surface) that hugs the piece. */}
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: isMobile ? '100%' : active.stageWidth || 560,
-                  background: active.canvasBg || 'rgba(255,255,255,0.02)',
-                  borderRadius: 12,
-                  padding: isMobile ? '22px 16px' : '28px 32px',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  maxHeight: active.maxHeight || 'none',
-                  overflow: active.maxHeight ? 'auto' : 'visible',
-                }}
-              >
-                <div style={{ width: '100%', maxWidth: isMobile ? '100%' : active.frame || 'none' }}>
-                  <StateBoundary>{s.render()}</StateBoundary>
+            {active.wide ? (
+              // Full screens render in their own framed preview — no narrow plate.
+              <div style={{ padding: isMobile ? 10 : 14 }}>
+                <StateBoundary>{s.render()}</StateBoundary>
+              </div>
+            ) : (
+              <div style={{ padding: isMobile ? 12 : 18, display: 'flex', justifyContent: 'center' }}>
+                {/* Defined canvas plate: the component sits on a tightly-sized,
+                    centered stage (its home dark surface) that hugs the piece. */}
+                <div
+                  style={{
+                    width: '100%',
+                    maxWidth: isMobile ? '100%' : active.stageWidth || 560,
+                    background: active.canvasBg || 'rgba(255,255,255,0.02)',
+                    borderRadius: 12,
+                    padding: isMobile ? '22px 16px' : '28px 32px',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    maxHeight: active.maxHeight || 'none',
+                    overflow: active.maxHeight ? 'auto' : 'visible',
+                  }}
+                >
+                  <div style={{ width: '100%', maxWidth: isMobile ? '100%' : active.frame || 'none' }}>
+                    <StateBoundary>{s.render()}</StateBoundary>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         ))}
       </div>
@@ -541,7 +667,7 @@ export default function CV6Gallery() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: SHELL.accent }} />
               <span style={{ fontSize: 14, fontWeight: 700 }}>CV6 Gallery</span>
-              <span style={{ fontSize: 11, color: SHELL.text3, fontFamily: SHELL.mono }}>{REGISTRY.length} pieces</span>
+              <span style={{ fontSize: 11, color: SHELL.text3, fontFamily: SHELL.mono }}>{SCREENS.length} screens · {REGISTRY.length} pieces</span>
             </div>
             {copyButton}
           </div>
@@ -563,12 +689,22 @@ export default function CV6Gallery() {
               outline: 'none',
             }}
           >
-            {REGISTRY.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-                {(feedback[c.id] || '').trim() ? '  •' : ''}
-              </option>
-            ))}
+            <optgroup label="Screens">
+              {SCREENS.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {(feedback[c.id] || '').trim() ? '  •' : ''}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Pieces">
+              {REGISTRY.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                  {(feedback[c.id] || '').trim() ? '  •' : ''}
+                </option>
+              ))}
+            </optgroup>
           </select>
         </header>
         {stage}
@@ -609,7 +745,7 @@ export default function CV6Gallery() {
             paddingLeft: 16,
           }}
         >
-          {REGISTRY.length} pieces
+          {SCREENS.length} screens · {REGISTRY.length} pieces
         </div>
         {nav}
         <div style={{ marginTop: 20, paddingTop: 16, borderTop: `1px solid ${SHELL.line}` }}>{copyButton}</div>
