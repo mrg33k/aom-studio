@@ -150,7 +150,7 @@ export default function CV6Gallery() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {active.states.map((s) => (
             <div
               key={s.label}
@@ -176,24 +176,23 @@ export default function CV6Gallery() {
               </div>
               <div
                 style={{
-                  padding: 24,
+                  padding: 18,
                   display: 'flex',
                   justifyContent: 'center',
                 }}
               >
                 {/* Defined canvas plate: the component sits on a tightly-sized,
-                    centered stage (its home dark surface) rather than swimming
-                    in the full panel width. */}
+                    centered stage (its home dark surface) that hugs the piece
+                    rather than swimming in the full panel width. */}
                 <div
                   style={{
                     width: '100%',
                     maxWidth: active.stageWidth || 560,
                     background: active.canvasBg || 'rgba(255,255,255,0.02)',
                     borderRadius: 12,
-                    padding: '40px 32px',
+                    padding: '28px 32px',
                     display: 'flex',
                     justifyContent: 'center',
-                    minHeight: 120,
                     alignItems: 'center',
                   }}
                 >
