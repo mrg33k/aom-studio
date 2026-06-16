@@ -31,6 +31,7 @@
     doneCount: null, // today's completed-subject count (live; null until baseline set)
     hudReady: false, // suppresses the win-burst during the initial load
     celebrateMsg: null, // transient win-burst banner text
+    resumeBanner: null, // "welcome back, you're on X" after a refresh (never lose his place)
     theme: localStorage.getItem('wizard-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   };
 
@@ -108,6 +109,20 @@
   function countDoneNow() {
     const parsed = parseDayState(appState.dayState);
     return parsed ? parsed.quests.filter((q) => q.status === 'done').length : 0;
+  }
+
+  // The subject Ethan is currently on — for the "welcome back" resume bar so a
+  // refresh never leaves him guessing where he was. In-progress wins, else the
+  // next queued, else the first not-yet-done.
+  function currentSubject() {
+    const parsed = parseDayState(appState.dayState);
+    if (!parsed) return null;
+    const ip = parsed.quests.find((q) => q.status === 'in-progress');
+    if (ip) return ip.name;
+    const nx = parsed.quests.find((q) => q.status === 'next');
+    if (nx) return nx.name;
+    const todo = parsed.quests.find((q) => q.status !== 'done');
+    return todo ? todo.name : null;
   }
 
   function levelTitle(level) {
@@ -368,6 +383,7 @@
   async function sendMessage(text, opts) {
     opts = opts || {};
     if (!text.trim()) return;
+    appState.resumeBanner = null; // he's moving again — drop the welcome-back bar
 
     // Optimistically add user message to UI
     appState.messages.push({
@@ -568,6 +584,10 @@
         </div>
 
         <div class="messages-container${appState.messages.length === 0 && appState.isLoading ? ' messages-container--init' : ''}">
+          ${appState.resumeBanner ? `<div class="resume-banner">
+            <span class="resume-text">Welcome back, Ethan. You&rsquo;re on <strong>${escapeHtml(appState.resumeBanner)}</strong> &mdash; pick up right below.</span>
+            <button class="resume-dismiss" title="Got it" onclick="window.__wizardChat.dismissResume()">&times;</button>
+          </div>` : ''}
           ${messagesHtml}
           ${loadingIndicator}
         </div>
@@ -632,6 +652,10 @@
         sendMessage(text);
       }
     },
+    dismissResume: () => {
+      appState.resumeBanner = null;
+      render();
+    },
     addSentence: (text) => {
       const t = (text || '').trim();
       if (!t || appState.isLoading) return;
@@ -683,6 +707,10 @@
       // The Wizard uses the day ledger + cross-day memory (yesterday's ledger)
       // to craft the opener. No hardcoded fallback message.
       await requestWizardGreeting();
+    } else {
+      // Returning to an in-progress day (a refresh) — show where he left off so
+      // he never has to guess. Pure UI from the loaded ledger; nothing resets.
+      appState.resumeBanner = currentSubject();
     }
     if (appState.doneCount == null) appState.doneCount = countDoneNow();
     appState.hudReady = true; // win-bursts only fire on completions from here on

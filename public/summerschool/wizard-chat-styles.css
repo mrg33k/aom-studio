@@ -342,6 +342,48 @@ body {
   font-style: normal;
 }
 
+/* ===== Resume bar (Build R8) — "welcome back, you're on X" after a refresh,
+   so Ethan never loses his place. Sticky at the top of the chat. ===== */
+.resume-banner {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 6px;
+  padding: 10px 12px;
+  background: linear-gradient(180deg, var(--color-indigo), var(--color-indigo-deep));
+  border: 1px solid var(--color-indigo-deep);
+  border-left: 3px solid var(--color-gold);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(50, 42, 85, 0.28);
+}
+.resume-text {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: #f3ead9;
+}
+.resume-text strong {
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  letter-spacing: 0.4px;
+}
+.resume-dismiss {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  background: rgba(212, 175, 55, 0.14);
+  color: #f3ead9;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.resume-dismiss:hover { background: rgba(212, 175, 55, 0.28); }
+
 /* ===== Game HUD (Build R6) — XP / level / streak / prize meter ===== */
 .game-hud {
   margin-bottom: 18px;
