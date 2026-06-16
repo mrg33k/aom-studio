@@ -220,6 +220,17 @@ export default function LiveScribe() {
     setTimeout(analyze, 50);
   }, [analyze]);
 
+  // Optional /scribe?demo=1 — auto-load the sample so the color/name view is
+  // visible without interaction (shareable demo link; also used for verification).
+  const demoLoaded = useRef(false);
+  useEffect(() => {
+    if (demoLoaded.current) return;
+    if (typeof window !== 'undefined' && /[?&]demo=1\b/.test(window.location.search)) {
+      demoLoaded.current = true;
+      loadSample();
+    }
+  }, [loadSample]);
+
   const copyBrief = useCallback(() => {
     const lines = [];
     if (context.trim()) lines.push(`Call: ${context.trim()}`, '');
