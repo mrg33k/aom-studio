@@ -19,6 +19,7 @@
 // cv4/COMPONENT-MANIFEST.md (NEEDS-PROVIDERS).
 
 import { Component, useEffect, useState } from 'react'
+import './cv6.css'
 
 // ── Real CV4 components (the same files the live app renders) ──
 import SkillsBadge from './cv4/SkillsBadge.jsx'

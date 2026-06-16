@@ -1,0 +1,256 @@
+/* CV6 Design System CSS
+ * Scoped under [data-cv6] to keep the live /dashboard (CV4) untouched.
+ * This file implements the visual language defined in:
+ * corner/missions/corner-ui-cv6/DESIGN.md
+ */
+
+/* ─────────────────────────────────────────────────────────────────
+   Root tokens: Light + Dark themes
+   ───────────────────────────────────────────────────────────────── */
+
+[data-cv6] {
+  --cv6-ground: #fafafa;
+  --cv6-surface: #ffffff;
+  --cv6-divider: rgba(0, 0, 0, 0.08);
+  --cv6-hover: rgba(0, 0, 0, 0.03);
+
+  --cv6-text-primary: #1a1a1a;
+  --cv6-text-secondary: #666666;
+  --cv6-text-tertiary: #999999;
+
+  --cv6-accent-primary: #0066ff;
+  --cv6-accent-primary-hover: #0052cc;
+  --cv6-accent-primary-active: #003d99;
+  --cv6-accent-success: #10b981;
+  --cv6-accent-warn: #f59e0b;
+  --cv6-accent-error: #ef4444;
+
+  --cv6-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.12);
+  --cv6-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.16);
+  --cv6-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.14);
+}
+
+[data-cv6][data-theme="dark"],
+[data-cv6].dark {
+  --cv6-ground: #0a0a0b;
+  --cv6-surface: #1a1a1b;
+  --cv6-divider: rgba(255, 255, 255, 0.06);
+  --cv6-hover: rgba(255, 255, 255, 0.04);
+
+  --cv6-text-primary: #e5e5e5;
+  --cv6-text-secondary: #a3a3a3;
+  --cv6-text-tertiary: #696969;
+
+  --cv6-accent-primary: #3b82f6;
+  --cv6-accent-primary-hover: #60a5fa;
+  --cv6-accent-primary-active: #1d4ed8;
+  --cv6-accent-success: #34d399;
+  --cv6-accent-warn: #fbbf24;
+  --cv6-accent-error: #f87171;
+
+  --cv6-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.32), 0 8px 32px rgba(0, 0, 0, 0.48);
+  --cv6-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.48);
+  --cv6-shadow-hover: 0 6px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Typography base (Inter + Space Mono)
+   ───────────────────────────────────────────────────────────────── */
+
+[data-cv6] {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--cv6-text-primary);
+  background-color: var(--cv6-ground);
+  letter-spacing: 0;
+}
+
+[data-cv6] h1 {
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+[data-cv6] h2 {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+[data-cv6] h3 {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+[data-cv6] h4 {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+[data-cv6] .label {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+[data-cv6] .caption {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--cv6-text-tertiary);
+}
+
+[data-cv6] .mono {
+  font-family: 'Space Mono', 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Skills Button (SkillsBadge.jsx)
+   R5 restyled: clean sans-serif, single accent, purposeful interaction
+   ───────────────────────────────────────────────────────────────── */
+
+[data-cv6] button[data-testid="cv4-skills-badge"] {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  margin-bottom: 10px;
+
+  /* Typography */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  letter-spacing: 0;
+
+  /* Color & Surface */
+  background: var(--cv6-accent-primary);
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  box-shadow: var(--cv6-shadow-sm);
+
+  /* Interaction */
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-cv6] button[data-testid="cv4-skills-badge"]:hover:not([aria-expanded="true"]) {
+  background: var(--cv6-accent-primary-hover);
+  box-shadow: var(--cv6-shadow-hover);
+}
+
+[data-cv6] button[data-testid="cv4-skills-badge"]:active {
+  transform: scale(0.98);
+  box-shadow: var(--cv6-shadow-sm);
+}
+
+[data-cv6] button[data-testid="cv4-skills-badge"][aria-expanded="true"] {
+  background: var(--cv6-accent-primary-active);
+  box-shadow: var(--cv6-shadow-md);
+}
+
+/* Icon badge inside button */
+[data-cv6] button[data-testid="cv4-skills-badge"] span:first-of-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}
+
+[data-cv6] button[data-testid="cv4-skills-badge"] span:first-of-type svg {
+  width: 14px;
+  height: 14px;
+  fill: #ffffff;
+}
+
+/* Text container (main label + subtext) */
+[data-cv6] button[data-testid="cv4-skills-badge"] span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+/* Main label */
+[data-cv6] button[data-testid="cv4-skills-badge"] span:nth-child(2) > span:first-child {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Subtext (secondary label) */
+[data-cv6] button[data-testid="cv4-skills-badge"] span:nth-child(2) > span:nth-child(2) {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Chevron (right icon) */
+[data-cv6] button[data-testid="cv4-skills-badge"] > span:last-child {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.85);
+  flex-shrink: 0;
+  transition: transform 0.2s ease-out;
+}
+
+[data-cv6] button[data-testid="cv4-skills-badge"][aria-expanded="true"] > span:last-child {
+  transform: rotate(90deg);
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Responsive: Mobile @390px
+   ───────────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  [data-cv6] button[data-testid="cv4-skills-badge"] {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  [data-cv6] button[data-testid="cv4-skills-badge"] span:first-of-type {
+    width: 24px;
+    height: 24px;
+  }
+
+  [data-cv6] button[data-testid="cv4-skills-badge"] span:nth-child(2) > span:first-child {
+    font-size: 13px;
+  }
+
+  [data-cv6] button[data-testid="cv4-skills-badge"] span:nth-child(2) > span:nth-child(2) {
+    font-size: 11px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Reduced Motion support (accessibility)
+   ───────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  [data-cv6] * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
