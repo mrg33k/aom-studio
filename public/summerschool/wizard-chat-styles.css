@@ -481,16 +481,18 @@ body {
   overflow-y: auto;
 }
 
-.essay-sentence { transition: background 0.5s ease; }
+/* Newest sentence: a clean gold underline that wraps per-line (no ragged
+   highlight boxes), text stays fully readable. Fades in on add. */
 .essay-sentence--new {
-  background: rgba(212, 175, 55, 0.28);
-  border-radius: 3px;
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.28);
-  animation: essay-pop 0.5s ease;
+  text-decoration: underline;
+  text-decoration-color: var(--color-gold);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  animation: essay-pop 0.55s ease;
 }
 @keyframes essay-pop {
-  0% { background: rgba(212, 175, 55, 0.55); }
-  100% { background: rgba(212, 175, 55, 0.28); }
+  from { opacity: 0.3; }
+  to { opacity: 1; }
 }
 
 .essay-count {
@@ -876,8 +878,7 @@ html.dark-theme .essay-input:disabled { background-color: #2a2520; color: #666; 
 html.dark-theme .essay-hint { color: #a89f8d; }
 html.dark-theme .essay-add-btn:disabled { background: #3d352b; border-color: #2a2520; color: #666; }
 html.dark-theme .essay-sentence--new {
-  background: rgba(201, 164, 48, 0.30);
-  box-shadow: 0 0 0 2px rgba(201, 164, 48, 0.30);
+  text-decoration-color: var(--color-gold);
 }
 
 /* Mobile — the chat with the Wizard is primary; the panel scrolls internally
