@@ -271,19 +271,19 @@
   box-sizing: border-box;
 }
 
-/* Desktop layout: 3-column grid */
+/* Shell is a single vertical stack at all widths; each section manages its own
+   internal columns (the 3-col row and What Needs You both have their own grids). */
 @media (min-width: 1440px) {
   [data-cv6] [data-cv4-home] .hm-shell {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 32px;
     padding: 48px 64px;
   }
 }
 
-/* Tablet: 2-column */
 @media (min-width: 768px) and (max-width: 1439px) {
   [data-cv6] [data-cv4-home] .hm-shell {
-    grid-template-columns: 1fr 280px;
+    grid-template-columns: 1fr;
     gap: 20px;
   }
 }
