@@ -271,24 +271,55 @@ const SCREEN_PROPS = {
   onOpenSearch: () => {},
 }
 
-// Themed device frame: scopes the CV4/CV5 theme attributes so light + dark
-// render, and contains a full screen in a scrollable preview box.
-function ScreenFrame({ theme, cv5, children }) {
+// Themed device frame: an app-window preview (browser chrome + bordered,
+// scrollable viewport) that scopes the CV4/CV5 theme so light + dark render.
+// The window chrome makes a full screen read unmistakably as "a screen",
+// distinct from the small component pieces.
+function ScreenFrame({ theme, cv5, label, children }) {
   const attrs = { 'data-shell': 'cv4', 'data-theme': theme, 'data-cv4': 'true' }
   if (cv5) attrs['data-cv5'] = 'true'
+  const light = theme === 'light'
+  const edge = light ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.13)'
   return (
     <div
       style={{
-        width: '100%',
-        height: 680,
-        overflow: 'auto',
-        border: `1px solid ${SHELL.line}`,
-        borderRadius: 10,
-        background: theme === 'light' ? '#EDE9E0' : '#0A0F14',
+        borderRadius: 12,
+        overflow: 'hidden',
+        border: `1px solid ${edge}`,
+        boxShadow: '0 10px 34px rgba(0,0,0,0.40)',
+        background: light ? '#EDE9E0' : '#0A0F14',
       }}
     >
-      <div {...attrs} style={{ minHeight: '100%' }}>
-        {children}
+      {/* window chrome */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 7,
+          padding: '9px 13px',
+          borderBottom: `1px solid ${edge}`,
+          background: light ? '#E3DED3' : '#0E141B',
+        }}
+      >
+        {['#FF5F57', '#FEBC2E', '#28C840'].map((c) => (
+          <span key={c} style={{ width: 10, height: 10, borderRadius: '50%', background: c, opacity: 0.9 }} />
+        ))}
+        <span
+          style={{
+            marginLeft: 8,
+            fontSize: 11,
+            fontFamily: SHELL.mono,
+            letterSpacing: '0.04em',
+            color: light ? '#857C70' : SHELL.text3,
+          }}
+        >
+          {label}
+        </span>
+      </div>
+      <div style={{ height: 660, overflow: 'auto' }}>
+        <div {...attrs} style={{ minHeight: '100%' }}>
+          {children}
+        </div>
       </div>
     </div>
   )
@@ -302,8 +333,8 @@ const SCREENS = [
     purpose: 'The dashboard home — projects, agents, and where you left off.',
     wide: true,
     states: [
-      { label: 'Dark', render: () => <ScreenFrame theme="dark"><HomeView {...SCREEN_PROPS} /></ScreenFrame> },
-      { label: 'Light', render: () => <ScreenFrame theme="light"><HomeView {...SCREEN_PROPS} /></ScreenFrame> },
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Home · Dark"><HomeView {...SCREEN_PROPS} /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" label="Home · Light"><HomeView {...SCREEN_PROPS} /></ScreenFrame> },
     ],
   },
   {
@@ -312,8 +343,8 @@ const SCREENS = [
     purpose: 'The command surface — your rooms, your crew, and what needs you.',
     wide: true,
     states: [
-      { label: 'Dark', render: () => <ScreenFrame theme="dark" cv5><CommandDeckHome {...SCREEN_PROPS} /></ScreenFrame> },
-      { label: 'Light', render: () => <ScreenFrame theme="light" cv5><CommandDeckHome {...SCREEN_PROPS} /></ScreenFrame> },
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" cv5 label="Command Deck · Dark"><CommandDeckHome {...SCREEN_PROPS} /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" cv5 label="Command Deck · Light"><CommandDeckHome {...SCREEN_PROPS} /></ScreenFrame> },
     ],
   },
   {
@@ -325,7 +356,7 @@ const SCREENS = [
       {
         label: 'Default',
         render: () => (
-          <ScreenFrame theme="dark">
+          <ScreenFrame theme="dark" label="Support · Front desk">
             <SupportDashboard isDesktop={true} worldId="aom" onClose={() => {}} onDiscuss={() => {}} />
           </ScreenFrame>
         ),
@@ -527,36 +558,34 @@ export default function CV6Gallery() {
         <p style={{ fontSize: 14, color: SHELL.text2, margin: 0, maxWidth: 620 }}>{active.purpose}</p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {active.states.map((s) => (
-          <div
-            key={s.label}
-            style={{
-              border: `1px solid ${SHELL.line}`,
-              borderRadius: 14,
-              overflow: 'hidden',
-              background: SHELL.panel,
-            }}
-          >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: active.wide ? 32 : 14 }}>
+        {active.states.map((s) =>
+          active.wide ? (
+            // Full screens: the window frame IS the container. No outer panel.
+            <StateBoundary key={s.label}>{s.render()}</StateBoundary>
+          ) : (
             <div
+              key={s.label}
               style={{
-                padding: '10px 16px',
-                borderBottom: `1px solid ${SHELL.line}`,
-                fontSize: 11,
-                fontFamily: SHELL.mono,
-                letterSpacing: '0.06em',
-                textTransform: 'uppercase',
-                color: SHELL.text3,
+                border: `1px solid ${SHELL.line}`,
+                borderRadius: 14,
+                overflow: 'hidden',
+                background: SHELL.panel,
               }}
             >
-              {s.label}
-            </div>
-            {active.wide ? (
-              // Full screens render in their own framed preview — no narrow plate.
-              <div style={{ padding: isMobile ? 10 : 14 }}>
-                <StateBoundary>{s.render()}</StateBoundary>
+              <div
+                style={{
+                  padding: '10px 16px',
+                  borderBottom: `1px solid ${SHELL.line}`,
+                  fontSize: 11,
+                  fontFamily: SHELL.mono,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: SHELL.text3,
+                }}
+              >
+                {s.label}
               </div>
-            ) : (
               <div style={{ padding: isMobile ? 12 : 18, display: 'flex', justifyContent: 'center' }}>
                 {/* Defined canvas plate: the component sits on a tightly-sized,
                     centered stage (its home dark surface) that hugs the piece. */}
@@ -579,9 +608,9 @@ export default function CV6Gallery() {
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          )
+        )}
       </div>
 
       {/* ── Per-piece feedback ── */}
