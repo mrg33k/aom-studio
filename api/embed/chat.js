@@ -488,6 +488,95 @@ async function saveProjects(embedId, visitorId, items) {
   } catch (_) { /* non-fatal */ }
 }
 
+// --- Missions under projects (Build R13b) — Corner-shape: project -> missions -
+// Patrik: the left bar should mirror Corner — projects with missions under them.
+// A mission is a concrete step/part of one of Ethan's projects ("design the
+// towers", "build the lobby"). When working on a project, the Wizard helps break
+// it into missions and tracks them. Persisted per visitor (not date-keyed).
+// Emitted as <<MISSION: <project> / <mission>=active|done; ...>>, stripped.
+const MISSIONS_PROTOCOL = `
+MISSIONS (the parts of Ethan's projects — Corner shape: a project has missions).
+When you and Ethan are working on one of HIS projects and it makes sense to break
+it into concrete parts, or he names a part he wants to do, track each part as a
+mission UNDER that project. Add or update with ONE line placed JUST BEFORE the
+<<READ:>>/<<SPELL:>>/<<REMIND:>>/<<PROJECT:>>/<<ASSIGN:>>/<<DAY:>> lines (DAY stays
+last), machine-only, never shown:
+<<MISSION: Tower Defense Game / design the towers=active; Tower Defense Game / build the lobby=done>>
+The part before " / " is the project name (match his existing project exactly);
+after it is the short mission name in his words. Mark a mission done ONLY when he
+finishes that part. Keep them small and real. Never invent missions he didn't
+talk about. Only make missions for projects that already exist.`
+
+// Strip ALL <<MISSION: ...>> markers anywhere; returns { text, mission }.
+function extractMissions(replyText) {
+  const m = replyText.match(/<<MISSION:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<MISSION:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, mission: m ? m[1].trim() : null }
+}
+
+// Parse "<project> / <mission>=active|done; ..." into [{ project, name, status }].
+function parseMissions(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*\/\s*(.+?)\s*=\s*(done|active)\s*$/i)
+    if (m) out.push({ project: m[1].trim(), name: m[2].trim(), status: m[3].toLowerCase() })
+  }
+  return out
+}
+
+// Merge new missions with prior. Done is sticky; new appended; cap 16.
+function mergeMissions(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  const keyOf = (x) => `${(x.project || '').toLowerCase()}::${(x.name || '').toLowerCase()}`
+  for (const m of priorList) {
+    const k = keyOf(m)
+    if (m.project && m.name && !byKey.has(k)) { byKey.set(k, { project: m.project, name: m.name, status: m.status }); order.push(k) }
+  }
+  for (const m of newList) {
+    if (!m.project || !m.name) continue
+    const k = keyOf(m)
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { project: m.project, name: m.name, status: m.status }); order.push(k) }
+    else if (m.status === 'done') ex.status = 'done' // can finish; never un-finish
+  }
+  return order.map((k) => byKey.get(k)).slice(-16)
+}
+
+async function fetchMissions(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_missions')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveMissions(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-missions',
+        event_type: 'wizard_missions',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
 // --- Reminders (Build R8 slice 3) — the Wizard as Ethan's real EA -----------
 // Not school. When Ethan asks the Wizard to remember or remind him of his OWN
 // stuff (bring cleats Thursday, practice piano tonight, ask mom about the trip),
@@ -964,6 +1053,14 @@ export default async function handler(req, res) {
       await saveSpellbook(embed_id, visitor_id || null, updated)
       return res.status(200).json({ ok: true, spellbook: updated })
     }
+    if (kind === 'mission') {
+      const proj = String(body.complete.project || '').trim().toLowerCase()
+      const list = await fetchMissions(embed_id, visitor_id || null)
+      const updated = list.map((m) =>
+        (m.name.toLowerCase() === text && (m.project || '').toLowerCase() === proj ? { ...m, status: 'done' } : m))
+      await saveMissions(embed_id, visitor_id || null, updated)
+      return res.status(200).json({ ok: true, missions: updated })
+    }
     return res.status(400).json({ error: 'unknown complete.kind' })
   }
 
@@ -1043,9 +1140,10 @@ export default async function handler(req, res) {
     let latestReminders = null
     let latestSpellbook = null
     let latestReading = null
+    let latestMissions = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading, priorMissions] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
@@ -1055,6 +1153,7 @@ export default async function handler(req, res) {
           fetchReminders(embed_id, visitor_id || null),
           fetchSpellbook(embed_id, visitor_id || null),
           fetchReading(embed_id, visitor_id || null),
+          fetchMissions(embed_id, visitor_id || null),
         ])
 
         // Writing Desk: if this turn is a typed essay sentence, append it to
@@ -1110,6 +1209,13 @@ export default async function handler(req, res) {
             priorProjectList.map((p) => `- ${p.name} [${p.status}]`).join('\n')
         }
         systemPrompt += `\n${PROJECTS_PROTOCOL}`
+        // Inject missions (the parts of his projects) so the Wizard tracks them.
+        const priorMissionList = Array.isArray(priorMissions) ? priorMissions : []
+        if (priorMissionList.length) {
+          systemPrompt += `\n\n=== ETHAN'S MISSIONS (parts of his projects) ===\n` +
+            priorMissionList.map((m) => `- ${m.project} / ${m.name} [${m.status}]`).join('\n')
+        }
+        systemPrompt += `\n${MISSIONS_PROTOCOL}`
         // Inject Ethan's reminders so the Wizard, as his EA, can bring them up.
         const priorReminderList = Array.isArray(priorReminders) ? priorReminders : []
         if (priorReminderList.length) {
@@ -1149,7 +1255,8 @@ export default async function handler(req, res) {
         const reminderExtract = extractReminders(projectExtract.text)
         const spellExtract = extractSpellbook(reminderExtract.text)
         const readExtract = extractReading(spellExtract.text)
-        const dayExtract = extractDayState(readExtract.text)
+        const missionExtract = extractMissions(readExtract.text)
+        const dayExtract = extractDayState(missionExtract.text)
         const newDayState = dayExtract.state
         const replyText = dayExtract.text.replace(/<<[A-Z]+:[\s\S]*?>>/g, '').trim()
 
@@ -1202,6 +1309,14 @@ export default async function handler(req, res) {
           await saveReading(embed_id, visitor_id || null, canonicalReading)
         }
         latestReading = canonicalReading
+
+        // Merge + persist missions (parts of his projects) if updated this turn.
+        let canonicalMissions = priorMissionList
+        if (missionExtract.mission) {
+          canonicalMissions = mergeMissions(parseMissions(missionExtract.mission), priorMissionList)
+          await saveMissions(embed_id, visitor_id || null, canonicalMissions)
+        }
+        latestMissions = canonicalMissions
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
@@ -1270,6 +1385,8 @@ export default async function handler(req, res) {
       spellbook: latestSpellbook,
       // Ethan's Bookshelf (his book + where he is) so his board shows his reading.
       reading: latestReading,
+      // Missions (the parts of his projects) so the left bar nests them.
+      missions: latestMissions,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {

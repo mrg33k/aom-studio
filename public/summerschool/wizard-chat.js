@@ -42,6 +42,9 @@
     projectActive: null, // name of the project currently open via the left bar (Build R13); null = School
     addingProject: false, // left-bar "add a project" inline input open (Build R13)
     addProjectValue: '', // text in the add-project input
+    missions: null, // [{project, name, status}] parts of his projects (Build R13b)
+    addingMission: false, // left-bar "add a mission" inline input open (Build R13b)
+    addMissionValue: '', // text in the add-mission input
     theme: localStorage.getItem('wizard-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
   };
 
@@ -411,14 +414,39 @@
     const subj = currentSubject();
     const onProject = appState.projectActive || null;
     const schoolActive = !onProject;
+    const allMissions = appState.missions || [];
     const projectItems = projects.length
       ? projects.map((p, i) => {
           const done = (p.status || '').toLowerCase() === 'done';
           const active = onProject && onProject.toLowerCase() === (p.name || '').toLowerCase();
-          return `<button type="button" class="nav-item nav-item--project ${active ? 'is-active' : ''}" onclick="window.__wizardChat.openProject(${i})">
-              <span class="nav-item-icon">${done ? '&#9733;' : '&#9671;'}</span>
-              <span class="nav-item-label">${escapeHtml(p.name)}</span>
-            </button>`;
+          // Missions belonging to this project (Build R13b), nested under it.
+          const mine = allMissions.filter((m) => (m.project || '').toLowerCase() === (p.name || '').toLowerCase());
+          const missionRows = mine.map((m) => {
+            const mdone = (m.status || '').toLowerCase() === 'done';
+            const safeName = escapeHtml(m.name).replace(/'/g, "\\'");
+            const safeProj = escapeHtml(p.name).replace(/'/g, "\\'");
+            return `<div class="nav-mission ${mdone ? 'is-done' : ''}">
+                <button type="button" class="nav-mission-check" title="${mdone ? 'Done' : 'Mark done'}" ${mdone ? 'disabled' : `onclick="window.__wizardChat.completeMission('${safeProj}','${safeName}')"`}>${mdone ? '&#10003;' : '&#9675;'}</button>
+                <button type="button" class="nav-mission-label" onclick="window.__wizardChat.openMission('${safeProj}','${safeName}')">${escapeHtml(m.name)}</button>
+              </div>`;
+          }).join('');
+          // Add-a-mission shows only under the currently open project.
+          const addMission = active
+            ? (appState.addingMission
+                ? `<form class="nav-add-form nav-add-form--mission" onsubmit="window.__wizardChat.submitAddMission(document.getElementById('nav-mission-input').value); return false;">
+                    <input id="nav-mission-input" class="nav-add-input" type="text" placeholder="Add a part to work on" value="${escapeHtml(appState.addMissionValue || '')}" />
+                    <button type="submit" class="nav-add-go" title="Add">&#10148;</button>
+                  </form>`
+                : `<button type="button" class="nav-add-mission-btn" onclick="window.__wizardChat.startAddMission()">+ Add a mission</button>`)
+            : '';
+          return `<div class="nav-project-group">
+              <button type="button" class="nav-item nav-item--project ${active ? 'is-active' : ''}" onclick="window.__wizardChat.openProject(${i})">
+                <span class="nav-item-icon">${done ? '&#9733;' : '&#9671;'}</span>
+                <span class="nav-item-label">${escapeHtml(p.name)}</span>
+              </button>
+              ${missionRows ? `<div class="nav-mission-list">${missionRows}</div>` : ''}
+              ${addMission}
+            </div>`;
         }).join('')
       : `<div class="nav-empty">Nothing yet. Add something you want to build for fun.</div>`;
     const addBlock = appState.addingProject
@@ -633,6 +661,7 @@
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
+      if (Array.isArray(data.missions)) appState.missions = data.missions;
       applyProgress(data.progress);
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
       let hadVisible = false;
@@ -689,6 +718,7 @@
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
+      if (Array.isArray(data.missions)) appState.missions = data.missions;
       if (appState.doneCount == null) appState.doneCount = countDoneNow();
       // Advance sinceTs so the poll picks up from after the greeting was inserted.
       if (data.since_ts && data.since_ts > appState.sinceTs) {
@@ -783,6 +813,7 @@
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
+      if (Array.isArray(data.missions)) appState.missions = data.missions;
         checkCompletion();
         // Use the server's since_ts so we poll from after the user message
         if (data.since_ts) {
@@ -1071,6 +1102,37 @@
       appState.addingProject = false; appState.addProjectValue = '';
       render();
       if (name) sendMessage(`I want to start a new project: ${name}`);
+    },
+    // Left bar: open a mission (a part of the open project) to work on it.
+    openMission: (project, name) => {
+      if (appState.isLoading) return;
+      appState.projectActive = project;
+      appState.worldOpen = false;
+      sendMessage(`Let's work on the "${name}" part of my project ${project}.`, { projectFocus: project });
+    },
+    // Left bar: tap a mission's circle to mark that part done.
+    completeMission: (project, name) => {
+      const list = appState.missions || [];
+      const m = list.find((x) => (x.project || '').toLowerCase() === project.toLowerCase() && (x.name || '').toLowerCase() === name.toLowerCase());
+      if (!m || (m.status || '').toLowerCase() === 'done') return;
+      m.status = 'done'; // optimistic
+      render();
+      fetch('/api/embed/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ embed_id: EMBED_ID, content: '<<complete>>', visitor_id: 'ethan-' + appState.sessionId, host_origin: window.location.origin, complete: { kind: 'mission', text: name, project } }),
+      }).then((r) => r.ok ? r.json() : null).then((data) => {
+        if (data && Array.isArray(data.missions)) appState.missions = data.missions;
+        render();
+      }).catch(() => {});
+    },
+    startAddMission: () => { appState.addingMission = true; appState.addMissionValue = ''; render();
+      const el = document.getElementById('nav-mission-input'); if (el) el.focus(); },
+    submitAddMission: (val) => {
+      const name = (val || '').trim();
+      const project = appState.projectActive;
+      appState.addingMission = false; appState.addMissionValue = '';
+      render();
+      if (name && project) sendMessage(`Add a mission to my project ${project}: ${name}`, { projectFocus: project });
     },
     completeItem: (kind, i) => {
       // spellbook items key on .word and finish as 'mastered'; the rest key on
