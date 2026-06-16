@@ -447,6 +447,10 @@ html.dark-theme .project-hint { color: #a89f8d; }
 }
 .remind-icon { color: var(--color-gold-soft); flex: none; font-size: 13px; margin-top: 1px; }
 .remind-text { color: var(--color-text); }
+/* The model stores reminders in his casual words ("bring cleats thursday");
+   lift just the first letter so the card reads finished, not sloppy. */
+.remind-text::first-letter { text-transform: uppercase; }
+.world-card--remind .world-card-title::first-letter { text-transform: uppercase; }
 html.dark-theme .remind-row { background: rgba(26, 24, 20, 0.85); }
 html.dark-theme .remind-icon { color: var(--color-gold); }
 .world-card--remind { border-left: 4px solid var(--color-gold-soft); cursor: default; }
