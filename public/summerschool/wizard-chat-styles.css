@@ -189,21 +189,23 @@ body {
 .nav-item--project .nav-item-label { text-transform: capitalize; }
 .nav-item-sub { display: block; font-size: 11px; opacity: 0.7; }
 .nav-empty { font-size: 12px; color: var(--color-text); opacity: 0.6; padding: 6px 11px; line-height: 1.4; }
+/* Secondary action — reads one level below the project items above it. */
 .nav-add-btn {
   width: 100%;
   text-align: left;
-  margin-top: 6px;
-  padding: 8px 11px;
-  border: 1px solid var(--color-gold-soft);
+  margin-top: 7px;
+  padding: 7px 11px;
+  border: 1px solid rgba(212, 175, 55, 0.28);
   border-radius: 8px;
   background: none;
-  color: var(--color-gold-soft);
+  color: var(--color-text);
+  opacity: 0.72;
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: 12px;
   font-family: inherit;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, color 0.15s ease;
 }
-.nav-add-btn:hover { background: rgba(212, 175, 55, 0.10); border-color: var(--color-gold); color: var(--color-gold); }
+.nav-add-btn:hover { background: rgba(212, 175, 55, 0.08); border-color: var(--color-gold-soft); color: var(--color-gold); opacity: 1; }
 .nav-add-form { display: flex; gap: 6px; margin-top: 6px; }
 .nav-add-input {
   flex: 1; min-width: 0;
