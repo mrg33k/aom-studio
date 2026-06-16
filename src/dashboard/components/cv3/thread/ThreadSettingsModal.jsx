@@ -555,7 +555,7 @@ function InviteMembersPanel() {
   const [result, setResult] = useState(null)   // { credentials, invite_text, world }
   const [copied, setCopied] = useState(false)
 
-  const label = { fontSize: 11, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }
+  const label = { fontSize: 12, fontWeight: 600, color: C.text2, fontFamily: "'Inter', sans-serif", textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }
   const input = { width: '100%', boxSizing: 'border-box', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '8px 12px', color: C.text, fontSize: 13, fontFamily: "'Inter', sans-serif", outline: 'none', marginBottom: 14 }
 
   const submit = async () => {
