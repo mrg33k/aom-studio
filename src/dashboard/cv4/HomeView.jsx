@@ -459,6 +459,9 @@ export default function HomeView({
   const [replyText, setReplyText] = useState('')
   const [conversationMessages, setConversationMessages] = useState([])
 
+  // R23: Active Work search filtering
+  const [activeworkSearchText, setActiveworkSearchText] = useState('')
+
   // Sample conversation thread for CV6 gallery demo
   const sampleConversation = [
     { id: 1, sender: 'user', text: 'Can we schedule the design review for next Tuesday?' },
@@ -712,7 +715,7 @@ export default function HomeView({
             }}>
               {/* Primary group (left): Explorer, Files, Home, Theme */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* Explorer — R18: compass icon */}
+                {/* Explorer — R23: folder-tree/sidebar icon (clearer "explore/browse" intent) */}
                 <button
                   title="Open Explorer"
                   onClick={() => onOpenDrawer?.('explorer')}
@@ -726,7 +729,7 @@ export default function HomeView({
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
                 >
                   <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    <path d="M15 3H9a6 6 0 0 0-6 6v6a6 6 0 0 0 6 6h6a6 6 0 0 0 6-6V9a6 6 0 0 0-6-6z"/><path d="M9 10h2"/><path d="M9 14h2"/><path d="M13 10h2"/><path d="M13 14h2"/>
                   </svg>
                 </button>
 
@@ -748,6 +751,23 @@ export default function HomeView({
                   </svg>
                 </button>
 
+                {/* R23: Home icon — return to home view */}
+                <button
+                  title="Home"
+                  onClick={() => window.location.href = '/dashboard?view=home'}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                  </svg>
+                </button>
 
                 {/* Theme toggle */}
                 <button
@@ -845,74 +865,6 @@ export default function HomeView({
             </button>
           </div>
 
-          {/* R21: Tools toolbar row — below greeting, horizontal compact entry point */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
-            {/* Support */}
-            <button
-              onClick={() => setSelectedTool('support')}
-              title="Support"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-secondary)',
-                cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontSize: '12px', fontWeight: '500',
-              }}
-              onMouseEnter={(e) => {
-                if (selectedTool !== 'support') {
-                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                  e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                  e.currentTarget.style.color = 'var(--cv6-text-primary)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedTool !== 'support') {
-                  e.currentTarget.style.background = 'var(--cv6-surface)'
-                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                  e.currentTarget.style.color = 'var(--cv6-text-secondary)'
-                }
-              }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-              </svg>
-              Support
-            </button>
-
-            {/* Command Deck */}
-            <button
-              onClick={() => setSelectedTool('command')}
-              title="Command Deck"
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-secondary)',
-                cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontSize: '12px', fontWeight: '500',
-              }}
-              onMouseEnter={(e) => {
-                if (selectedTool !== 'command') {
-                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                  e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                  e.currentTarget.style.color = 'var(--cv6-text-primary)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedTool !== 'command') {
-                  e.currentTarget.style.background = 'var(--cv6-surface)'
-                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                  e.currentTarget.style.color = 'var(--cv6-text-secondary)'
-                }
-              }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '16px', height: '16px' }}>
-                <polyline points="4 9 7 9 7 20 4 20"/>
-                <polyline points="12 9 15 9 15 20 12 20"/>
-                <polyline points="20 9 23 9 23 20 20 20"/>
-              </svg>
-              Command
-            </button>
-          </div>
 
           {/* R11: PUNCH-LIST #6 — HAPPENING NOW (density + alive, 6-item grid, breathing room) */}
           {happeningNow && happeningNow.length > 0 && (
@@ -975,8 +927,109 @@ export default function HomeView({
             </div>
           ) : null}
 
-          {/* R21: Full-screen tool app container — rolls in above the 3-column band, above What Needs You */}
-          {selectedTool && (
+          {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
+          <div style={{ marginBottom: '32px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+              {/* Home tool */}
+              <button
+                onClick={() => setSelectedTool('home')}
+                title="Home"
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '12px', borderRadius: '6px', border: selectedTool === 'home' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'home' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'home' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  width: '72px', minHeight: '72px',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'home') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'home') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Home</span>
+              </button>
+
+              {/* Support tool */}
+              <button
+                onClick={() => setSelectedTool('support')}
+                title="Support"
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '12px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  width: '72px', minHeight: '72px',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'support') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'support') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Support</span>
+              </button>
+
+              {/* Command tool */}
+              <button
+                onClick={() => setSelectedTool('command')}
+                title="Command"
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '12px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  width: '72px', minHeight: '72px',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'command') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'command') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
+                  <polyline points="4 9 7 9 7 20 4 20"/>
+                  <polyline points="12 9 15 9 15 20 12 20"/>
+                  <polyline points="20 9 23 9 23 20 20 20"/>
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Command</span>
+              </button>
+            </div>
+          </div>
+
+          {/* R23: Full-screen tool app container — rolls in above the 3-column band, above What Needs You */}
+          {selectedTool && selectedTool !== 'home' && (
             <div style={{
               animation: 'cv6-tool-roll-in 300ms ease-out',
               marginBottom: '24px', borderRadius: '8px', border: '1px solid var(--cv6-divider)',
@@ -1101,7 +1154,7 @@ export default function HomeView({
                         {a.slug === 'cleo' && 'editing video'}
                         {a.slug === 'tony' && 'scheduling posts'}
                         {a.slug === 'elon' && 'routing work'}
-                        {!['bobby', 'steffen', 'cleo', 'tony', 'elon'].includes(a.slug) && 'idle'}
+                        {!['bobby', 'steffen', 'cleo', 'tony', 'elon'].includes(a.slug) && 'Ready'}
                       </div>
                     </button>
                   )
@@ -1112,7 +1165,21 @@ export default function HomeView({
 
             {/* R14: MIDDLE COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
+              {/* R23: Search input for Active Work filtering */}
+              <input
+                type="text"
+                placeholder="Search missions..."
+                value={activeworkSearchText || ''}
+                onChange={(e) => setActiveworkSearchText(e.target.value)}
+                style={{
+                  marginBottom: '12px', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
+                  background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '13px',
+                  fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
+              />
               {allMissionsForCV6.length > 0 ? (
                 <>
                   {/* Scrollable container: shows 5 visible missions with internal scroll */}
@@ -1124,7 +1191,14 @@ export default function HomeView({
                     // R20: grey container removed — cards fall clean against the page (Patrik 2026-06-16)
                     maxHeight: '328px', // R18: Cap at 5 visible missions (56px each + 8px gaps + 16px padding)
                   }}>
-                    {allMissionsForCV6.map((m, idx) => {
+                    {/* R23: Filter missions by search text */}
+                    {allMissionsForCV6.filter(m => {
+                      if (!activeworkSearchText.trim()) return true
+                      const searchLower = activeworkSearchText.toLowerCase()
+                      const missionName = (m.mission.name || m.mission.slug).toLowerCase()
+                      const projectName = (m.project.name || m.project.slug).toLowerCase()
+                      return missionName.includes(searchLower) || projectName.includes(searchLower)
+                    }).map((m, idx) => {
                       const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
                       return (
                         <button
@@ -1254,43 +1328,10 @@ export default function HomeView({
                     ))}
                   </div>
 
-                  {/* R19: Suggested replies section */}
-                  {suggestedReplies.length > 0 && (
-                    <div style={{ marginBottom: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {suggestedReplies.map((reply, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setReplyText(reply.text)
-                            replyInputRef.current?.focus()
-                          }}
-                          style={{
-                            padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
-                            background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)',
-                            fontSize: '12px', fontFamily: 'inherit', cursor: 'pointer',
-                            transition: 'all 120ms ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                            e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                            e.currentTarget.style.color = 'var(--cv6-accent-primary)'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'var(--cv6-surface)'
-                            e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                            e.currentTarget.style.color = 'var(--cv6-text-secondary)'
-                          }}
-                        >
-                          {reply.text}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* R19: Conversation input with command menu + Send */}
+                  {/* R23: Conversation input with command menu + Send — divider ABOVE input row */}
                   <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-                      {/* Command menu button (left) */}
+                      {/* R23: Command menu button (left) — crystal-ball icon */}
                       <button
                         onClick={() => console.log('Command menu (placeholder)')}
                         style={{
@@ -1310,7 +1351,7 @@ export default function HomeView({
                           e.currentTarget.style.color = 'var(--cv6-text-secondary)'
                         }}
                       >
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                       </button>
 
                       {/* Text input (flex) */}
@@ -1342,7 +1383,7 @@ export default function HomeView({
                         onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
                       />
 
-                      {/* Send button (right) — R19: Green (#10B981) */}
+                      {/* R23: Send button (right) — icon only, green (#10B981) */}
                       <button
                         onClick={() => {
                           if (replyText.trim()) {
@@ -1357,11 +1398,13 @@ export default function HomeView({
                           }
                         }}
                         style={{
-                          padding: '10px 16px', borderRadius: '6px', background: '#10B981', color: '#ffffff',
-                          border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500', fontFamily: 'inherit',
+                          width: '36px', height: '36px', borderRadius: '6px', background: '#10B981', color: '#ffffff',
+                          border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                           transition: 'all 120ms ease', opacity: replyText.trim() ? 1 : 0.5,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
                         }}
                         disabled={!replyText.trim()}
+                        title="Send"
                         onMouseEnter={(e) => {
                           if (replyText.trim()) {
                             e.currentTarget.style.background = '#0d9b6e'
@@ -1375,10 +1418,45 @@ export default function HomeView({
                           e.currentTarget.style.boxShadow = 'none'
                         }}
                       >
-                        Send
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
                       </button>
                     </div>
                   </div>
+
+                  {/* R23: Suggested replies section — moved BELOW the input row */}
+                  {suggestedReplies.length > 0 && (
+                    <div style={{ marginTop: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {suggestedReplies.map((reply, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setReplyText(reply.text)
+                            replyInputRef.current?.focus()
+                          }}
+                          style={{
+                            padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
+                            background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)',
+                            fontSize: '12px', fontFamily: 'inherit', cursor: 'pointer',
+                            transition: 'all 120ms ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                            e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                            e.currentTarget.style.color = 'var(--cv6-accent-primary)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'var(--cv6-surface)'
+                            e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                            e.currentTarget.style.color = 'var(--cv6-text-secondary)'
+                          }}
+                        >
+                          {reply.text}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </>
               ) : (
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-secondary)', fontSize: '14px' }}>
@@ -1388,73 +1466,6 @@ export default function HomeView({
             </div>
           </div>
 
-          {/* R21: Tools box — positioned below the 3-column grid; appears below Agents on desktop, below Active Work on mobile when stacked */}
-          <div className="hm-tools-box" style={{ marginBottom: '32px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', color: 'var(--cv6-text-secondary)' }}>Tools</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              {/* Support */}
-              <button
-                onClick={() => setSelectedTool('support')}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '14px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid rgba(255, 255, 255, 0.15)',
-                  background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'rgba(255, 255, 255, 0.05)',
-                  color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
-                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  minHeight: '80px',
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedTool !== 'support') {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedTool !== 'support') {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
-                  }
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                <span style={{ fontSize: '11px', fontWeight: '500' }}>Support</span>
-              </button>
-
-              {/* Command Deck */}
-              <button
-                onClick={() => setSelectedTool('command')}
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '14px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid rgba(255, 255, 255, 0.15)',
-                  background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'rgba(255, 255, 255, 0.05)',
-                  color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
-                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  minHeight: '80px',
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedTool !== 'command') {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.25)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedTool !== 'command') {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'
-                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'
-                  }
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                  <polyline points="4 9 7 9 7 20 4 20"/>
-                  <polyline points="12 9 15 9 15 20 12 20"/>
-                  <polyline points="20 9 23 9 23 20 20 20"/>
-                </svg>
-                <span style={{ fontSize: '11px', fontWeight: '500' }}>Command</span>
-              </button>
-            </div>
-          </div>
 
           {/* R14: WHAT NEEDS YOU — moved below the 3-column layout */}
           {(needsYou && needsYou.length > 0) && (
@@ -1463,6 +1474,7 @@ export default function HomeView({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 {needsYou.map((n, idx) => {
                   const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
+                  const roomColorHash = n.roomSlug ? `hsl(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 60%)` : 'var(--cv6-accent-warn)'
                   return (
                   <button
                     key={n.key}
@@ -1493,7 +1505,7 @@ export default function HomeView({
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
-                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0, marginTop: '4px', animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isSelected ? '#ffffff' : roomColorHash, flexShrink: 0, marginTop: '4px', animation: 'hm-breathe 2s ease-in-out infinite' }}></span>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '14px', fontWeight: '600' }}>{n.label}</div>
                           <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--cv6-text-secondary)', marginTop: '4px' }}>{n.detail}</div>
