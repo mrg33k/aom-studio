@@ -379,6 +379,94 @@ async function saveAssignments(embedId, visitorId, items) {
   } catch (_) { /* non-fatal */ }
 }
 
+// --- Ethan's own projects (Build R6) ----------------------------------------
+// Like dad's Corner projects: things Ethan WANTS to build/do for fun. When he
+// says he wants to make something, the Wizard adds it as HIS project, remembers
+// it across days, and helps him chip away at it. Persisted per visitor (not
+// date-keyed). Emitted as <<PROJECT: name=active|done; ...>>, stripped like the
+// other machine markers so Ethan never sees it.
+const PROJECTS_PROTOCOL = `
+ETHAN'S PROJECTS (his own ideas, for fun — like dad's projects, but his):
+When Ethan says he wants to make, build, write, design, or work on something of
+his own (a comic, a Minecraft world, a song, a skateboard design, a story —
+anything HE is excited about), treat it as HIS project. Add or update it with
+ONE line placed JUST BEFORE the <<ASSIGN:>>/<<DAY:>> lines (the DAY line stays
+the very last line), machine-only, never shown, never mentioned:
+<<PROJECT: comic book about a dragon=active; minecraft castle=done>>
+Use a short clear name in his words. Mark a project done ONLY when he says he
+finished it. These are HIS to drive — be his teammate: get genuinely excited,
+ask what he wants to do next on it, and you can weave a lesson into his project
+when it fits (write about it, do the math his build needs). Never invent a
+project he didn't ask for.`
+
+// Strip ALL <<PROJECT: ...>> markers anywhere; returns { text, project }.
+function extractProjects(replyText) {
+  const m = replyText.match(/<<PROJECT:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<PROJECT:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, project: m ? m[1].trim() : null }
+}
+
+// Parse "name=active|done; ..." into [{ name, status }]. Mirrors parseAssignments.
+function parseProjects(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(done|active)\s*$/i)
+    if (m) out.push({ name: m[1].trim(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Merge new projects with prior. Done is sticky; new items appended; cap 8.
+function mergeProjects(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const p of priorList) {
+    const k = p.name.toLowerCase()
+    if (!byKey.has(k)) { byKey.set(k, { name: p.name, status: p.status }); order.push(k) }
+  }
+  for (const p of newList) {
+    const k = p.name.toLowerCase()
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { name: p.name, status: p.status }); order.push(k) }
+    else if (p.status === 'done') ex.status = 'done' // can finish; never un-finish
+  }
+  return order.map((k) => byKey.get(k)).slice(-8)
+}
+
+async function fetchProjects(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_projects')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveProjects(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-projects',
+        event_type: 'wizard_projects',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
 // Parse a day-state string into a structured object: { subjects, note, now }
 // Example input: "Reading=done (done); Math=in-progress (step: fraction doubling); note=..."
 // Returns: { subjects: Map<name, {status, detail}>, note, now }
@@ -621,14 +709,16 @@ export default async function handler(req, res) {
     let latestDayState = null
     let latestEssay = null
     let latestAssignments = null
+    let latestProjects = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState, priorEssay, priorAssignments] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
           fetchEssay(embed_id, visitor_id || null),
           fetchAssignments(embed_id, visitor_id || null),
+          fetchProjects(embed_id, visitor_id || null),
         ])
 
         // Writing Desk: if this turn is a typed essay sentence, append it to
@@ -674,6 +764,13 @@ export default async function handler(req, res) {
             priorAssignList.map((a) => `- ${a.text} [${a.status}]`).join('\n')
         }
         systemPrompt += `\n${ASSIGNMENTS_PROTOCOL}`
+        // Inject Ethan's own projects so the Wizard remembers and helps with them.
+        const priorProjectList = Array.isArray(priorProjects) ? priorProjects : []
+        if (priorProjectList.length) {
+          systemPrompt += `\n\n=== ETHAN'S PROJECTS (his own, for fun — be his teammate) ===\n` +
+            priorProjectList.map((p) => `- ${p.name} [${p.status}]`).join('\n')
+        }
+        systemPrompt += `\n${PROJECTS_PROTOCOL}`
         const rawReply = await callGeminiWithRetry(
           systemPrompt,
           history,
@@ -683,7 +780,8 @@ export default async function handler(req, res) {
         // Strip ASSIGN first (anywhere), then DAY (which must end the text), then
         // a final scrub so no machine marker can ever leak onto Ethan's screen.
         const assignExtract = extractAssignments(rawReply || '')
-        const dayExtract = extractDayState(assignExtract.text)
+        const projectExtract = extractProjects(assignExtract.text)
+        const dayExtract = extractDayState(projectExtract.text)
         const newDayState = dayExtract.state
         const replyText = dayExtract.text.replace(/<<[A-Z]+:[\s\S]*?>>/g, '').trim()
 
@@ -704,6 +802,14 @@ export default async function handler(req, res) {
           await saveAssignments(embed_id, visitor_id || null, canonicalAssignments)
         }
         latestAssignments = canonicalAssignments
+
+        // Merge + persist Ethan's projects if he started/finished one this turn.
+        let canonicalProjects = priorProjectList
+        if (projectExtract.project) {
+          canonicalProjects = mergeProjects(parseProjects(projectExtract.project), priorProjectList)
+          await saveProjects(embed_id, visitor_id || null, canonicalProjects)
+        }
+        latestProjects = canonicalProjects
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
@@ -764,6 +870,8 @@ export default async function handler(req, res) {
       essay: latestEssay,
       // Running assignments so the board can show what the Wizard set.
       assignments: latestAssignments,
+      // Ethan's own projects so the board can show what he's building for fun.
+      projects: latestProjects,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {
