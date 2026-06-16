@@ -332,80 +332,87 @@
 
 <!-- Scoping Tool Modal -->
 <div id="scopingModal" class="modal">
-    <div class="modal-content">
-        <button class="modal-close" onclick="closeScopingTool()">&times;</button>
+    <div class="scope-panel">
+        <button class="modal-close" onclick="closeScopingTool()" aria-label="Close">&times;</button>
 
-        <div class="scoping-header">
-            <h2>Project Scope Assessment</h2>
-            <p>Five questions to understand your needs</p>
+        <div class="scope-top">
+            <span class="scope-kicker">Caliente Construction</span>
+            <span class="scope-title">Scope your project</span>
+            <div class="scope-progress">
+                <span class="scope-step-label">Step <strong id="scopeStepNum">1</strong> of 6</span>
+                <div class="scope-bar"><div class="scope-bar-fill" id="scopeBarFill"></div></div>
+            </div>
         </div>
 
-        <form id="scopingForm" class="scoping-form">
-            <div class="form-section">
-                <label class="form-label">What type of project?</label>
-                <div class="form-options">
-                    <label class="option"><input type="radio" name="projectType" value="new-build" onchange="updateResults()"><span>New Build</span></label>
-                    <label class="option"><input type="radio" name="projectType" value="tenant-improvement" onchange="updateResults()"><span>Tenant Improvement</span></label>
-                    <label class="option"><input type="radio" name="projectType" value="renovation" onchange="updateResults()"><span>Renovation</span></label>
-                    <label class="option"><input type="radio" name="projectType" value="pre-construction" onchange="updateResults()"><span>Pre-Construction Planning</span></label>
+        <div id="scopingForm" class="scope-body">
+            <div class="scope-step active" data-step="0">
+                <h3 class="scope-q">What type of project?</h3>
+                <div class="scope-opts">
+                    <button type="button" class="opt" data-name="projectType" data-value="new-build"><span class="opt-label">New build</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="projectType" data-value="tenant-improvement"><span class="opt-label">Tenant improvement</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="projectType" data-value="renovation"><span class="opt-label">Renovation</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="projectType" data-value="pre-construction"><span class="opt-label">Pre-construction planning</span><span class="opt-check"></span></button>
                 </div>
             </div>
 
-            <div class="form-section">
-                <label class="form-label">Primary sector?</label>
-                <div class="form-options">
-                    <label class="option"><input type="radio" name="sector" value="commercial" onchange="updateResults()"><span>Commercial / Office</span></label>
-                    <label class="option"><input type="radio" name="sector" value="industrial" onchange="updateResults()"><span>Industrial</span></label>
-                    <label class="option"><input type="radio" name="sector" value="education" onchange="updateResults()"><span>Education</span></label>
-                    <label class="option"><input type="radio" name="sector" value="healthcare" onchange="updateResults()"><span>Healthcare</span></label>
-                    <label class="option"><input type="radio" name="sector" value="hospitality" onchange="updateResults()"><span>Hospitality</span></label>
+            <div class="scope-step" data-step="1">
+                <h3 class="scope-q">What sector is it in?</h3>
+                <div class="scope-opts">
+                    <button type="button" class="opt" data-name="sector" data-value="commercial"><span class="opt-label">Commercial / office</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="sector" data-value="industrial"><span class="opt-label">Industrial</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="sector" data-value="education"><span class="opt-label">Education</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="sector" data-value="healthcare"><span class="opt-label">Healthcare</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="sector" data-value="hospitality"><span class="opt-label">Hospitality</span><span class="opt-check"></span></button>
                 </div>
             </div>
 
-            <div class="form-section">
-                <label class="form-label">Preferred delivery method?</label>
-                <div class="form-options">
-                    <label class="option"><input type="radio" name="delivery" value="design-build" onchange="updateResults()"><span>Design-Build</span></label>
-                    <label class="option"><input type="radio" name="delivery" value="cmar" onchange="updateResults()"><span>Construction Manager At Risk</span></label>
-                    <label class="option"><input type="radio" name="delivery" value="gc" onchange="updateResults()"><span>General Contracting</span></label>
-                    <label class="option"><input type="radio" name="delivery" value="unsure" onchange="updateResults()"><span>Not Sure</span></label>
+            <div class="scope-step" data-step="2">
+                <h3 class="scope-q">How would you like it delivered?</h3>
+                <div class="scope-opts">
+                    <button type="button" class="opt" data-name="delivery" data-value="design-build"><span class="opt-label">Design-build</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="delivery" data-value="cmar"><span class="opt-label">Construction manager at risk</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="delivery" data-value="gc"><span class="opt-label">General contracting</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="delivery" data-value="unsure"><span class="opt-label">Not sure yet</span><span class="opt-check"></span></button>
                 </div>
             </div>
 
-            <div class="form-section">
-                <label class="form-label">Estimated project value?</label>
-                <div class="form-options">
-                    <label class="option"><input type="radio" name="budget" value="under-1m" onchange="updateResults()"><span>Under $1M</span></label>
-                    <label class="option"><input type="radio" name="budget" value="1m-5m" onchange="updateResults()"><span>$1M - $5M</span></label>
-                    <label class="option"><input type="radio" name="budget" value="5m-20m" onchange="updateResults()"><span>$5M - $20M</span></label>
-                    <label class="option"><input type="radio" name="budget" value="20m-plus" onchange="updateResults()"><span>$20M+</span></label>
+            <div class="scope-step" data-step="3">
+                <h3 class="scope-q">What is the estimated project value?</h3>
+                <div class="scope-opts">
+                    <button type="button" class="opt" data-name="budget" data-value="under-1m"><span class="opt-label">Under $1M</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="budget" data-value="1m-5m"><span class="opt-label">$1M &ndash; $5M</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="budget" data-value="5m-20m"><span class="opt-label">$5M &ndash; $20M</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="budget" data-value="20m-plus"><span class="opt-label">$20M+</span><span class="opt-check"></span></button>
                 </div>
             </div>
 
-            <div class="form-section">
-                <label class="form-label">When do you need to start?</label>
-                <div class="form-options">
-                    <label class="option"><input type="radio" name="timeline" value="immediate" onchange="updateResults()"><span>Immediate (Next 30 days)</span></label>
-                    <label class="option"><input type="radio" name="timeline" value="soon" onchange="updateResults()"><span>Soon (30-90 days)</span></label>
-                    <label class="option"><input type="radio" name="timeline" value="planning" onchange="updateResults()"><span>Planning Phase (90+ days)</span></label>
-                    <label class="option"><input type="radio" name="timeline" value="exploring" onchange="updateResults()"><span>Exploring Options</span></label>
+            <div class="scope-step" data-step="4">
+                <h3 class="scope-q">When do you need to start?</h3>
+                <div class="scope-opts">
+                    <button type="button" class="opt" data-name="timeline" data-value="immediate"><span class="opt-label">Immediate &middot; next 30 days</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="timeline" data-value="soon"><span class="opt-label">Soon &middot; 30 to 90 days</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="timeline" data-value="planning"><span class="opt-label">Planning phase &middot; 90+ days</span><span class="opt-check"></span></button>
+                    <button type="button" class="opt" data-name="timeline" data-value="exploring"><span class="opt-label">Still exploring options</span><span class="opt-check"></span></button>
                 </div>
             </div>
 
-            <div id="results" class="results" style="display: none;">
-                <h3>Based on your project, we recommend:</h3>
-                <div id="recommendedServices" class="recommended-services"></div>
-            </div>
-
-            <div class="contact-section">
-                <h3>Let's Talk</h3>
-                <input type="text" placeholder="Your Name" required>
-                <input type="email" placeholder="Your Email" required>
-                <input type="tel" placeholder="Your Phone" required>
-                <button type="submit" class="button-submit">Request a Scope</button>
+            <div class="scope-step" data-step="5">
+                <h3 class="scope-q">Where do we send your scope?</h3>
+                <div id="recoPanel" class="reco"></div>
+                <div class="scope-fields">
+                    <input id="scopeName" type="text" placeholder="Your name" autocomplete="name">
+                    <input id="scopeEmail" type="email" placeholder="Work email" autocomplete="email">
+                    <input id="scopePhone" type="tel" placeholder="Phone (optional)" autocomplete="tel">
+                </div>
                 <div id="scopeSuccess" class="scope-success" style="display:none;"></div>
             </div>
-        </form>
+        </div>
+
+        <div class="scope-foot">
+            <button type="button" class="scope-back" id="scopeBack" onclick="scopeBack()" style="visibility:hidden">Back</button>
+            <span class="scope-hint" id="scopeHint">Pick one to continue</span>
+            <button type="button" class="scope-submit" id="scopeSubmit" onclick="scopeSubmitForm()" style="display:none">Request my scope</button>
+        </div>
     </div>
 </div>
 
