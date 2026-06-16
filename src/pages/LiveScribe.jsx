@@ -332,7 +332,7 @@ export default function LiveScribe() {
                     <div key={i} style={{ borderLeft: `3px solid ${GOLD}`, paddingLeft: 12 }}>
                       <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.topic}</div>
                       <div style={{ fontSize: 14, lineHeight: 1.55, opacity: 0.85, marginTop: 2 }}>{r.finding}</div>
-                      {r.source && <a className="ls-src" href={r.source} target="_blank" rel="noreferrer" style={{ fontSize: 12.5 }}>{(() => { try { return new URL(r.source).hostname.replace('www.', ''); } catch { return 'source'; } })()}</a>}
+                      {r.source && <a className="ls-src" href={r.source} target="_blank" rel="noreferrer" style={{ fontSize: 12.5 }}>{(() => { try { const h = new URL(r.source).hostname.replace('www.', ''); return /vertexaisearch|grounding-api-redirect|googleusercontent/.test(h) ? 'source ↗' : `${h} ↗`; } catch { return 'source ↗'; } })()}</a>}
                     </div>
                   ))}
                 </div>
