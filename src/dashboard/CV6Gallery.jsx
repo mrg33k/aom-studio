@@ -23,7 +23,6 @@ import MailChip from './cv4/MailChip.jsx'
 import BucketSection from './cv4/BucketSection.jsx'
 import ProjectFileReader from './cv4/ProjectFileReader.jsx'
 import MailAccountSwitcher from './cv4/MailAccountSwitcher.jsx'
-import ChatWaveBackground from './cv4/ChatWaveBackground.jsx'
 
 const SHELL = {
   bg: '#0A0F14',
@@ -232,24 +231,10 @@ const REGISTRY = [
       },
     ],
   },
-  {
-    id: 'chat-wave',
-    name: 'Chat wave background',
-    purpose: 'The ambient animated backdrop behind a chat room. Hue shifts per room.',
-    canvasBg: 'transparent',
-    stageWidth: 720,
-    frame: 'none',
-    states: [
-      {
-        label: 'Dark theme',
-        render: () => (
-          <div style={{ position: 'relative', width: '100%', height: 220, borderRadius: 10, overflow: 'hidden' }}>
-            <ChatWaveBackground chatKey="corner:integrations" theme="dark" />
-          </div>
-        ),
-      },
-    ],
-  },
+  // NOTE: ChatWaveBackground (the animated WebGL chat backdrop) was trialled
+  // here but reads as a blank box in a static gallery frame and is not a
+  // CSS-restyleable piece. Backgrounds need a dedicated live-preview treatment
+  // (animated, with sample chat overlaid) — tracked for a later round.
 ]
 
 const idFromHash = () => {
