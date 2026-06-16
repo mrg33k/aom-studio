@@ -417,7 +417,12 @@ export default function HomeView({
     if (!cv6) return []
     try {
       const items = []
-      // Missions first (primary), then agents, then projects
+      // Actionable stats first (highest priority — things that need you NOW), then missions, agents, projects
+      if (Array.isArray(needsYou)) {
+        needsYou.forEach((n) => {
+          if (n?.key) items.push({ type: 'needsyou', item: n })
+        })
+      }
       if (Array.isArray(allMissionsForCV6)) {
         allMissionsForCV6.forEach((m) => {
           if (m?.mission) items.push({ type: 'mission', item: m.mission, project: m.project })
@@ -437,7 +442,7 @@ export default function HomeView({
     } catch (_) {
       return []
     }
-  }, [cv6, allMissionsForCV6, visibleAgents, recentProjects])
+  }, [cv6, needsYou, allMissionsForCV6, visibleAgents, recentProjects])
 
   const handleKeyDown = useCallback((e) => {
     if (!cv6 || selectableItems.length === 0) return
@@ -458,6 +463,8 @@ export default function HomeView({
           onSelectAgent && onSelectAgent(sel.item)
         } else if (sel.type === 'project') {
           handleProjectSelect(sel.item, null)
+        } else if (sel.type === 'needsyou') {
+          sel.item.onOpen && sel.item.onOpen()
         }
       }
     } else if (e.key === 'ArrowLeft') {
@@ -755,23 +762,33 @@ export default function HomeView({
             <div className="hm-section" style={{ gridColumn: '1 / -1' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-                {needsYou.map((n, idx) => (
+                {needsYou.map((n, idx) => {
+                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
+                  return (
                   <button
                     key={n.key}
                     onClick={() => n.onOpen && n.onOpen()}
                     style={{
                       display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px',
-                      background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+                      background: isSelected ? 'var(--cv6-surface-active)' : 'var(--cv6-surface)',
+                      border: isSelected ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                       borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                      textAlign: 'left', fontFamily: 'inherit', borderLeft: '3px solid var(--cv6-accent-warn)',
+                      textAlign: 'left', fontFamily: 'inherit',
+                      borderLeft: isSelected ? '4px solid var(--cv6-accent-primary)' : '3px solid var(--cv6-accent-warn)',
+                      outline: isSelected ? `2px solid var(--cv6-accent-primary)` : 'none',
+                      outlineOffset: isSelected ? '2px' : '0',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                      e.currentTarget.style.borderColor = 'var(--cv6-accent-warn)'
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                        e.currentTarget.style.borderColor = 'var(--cv6-accent-warn)'
+                      }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'var(--cv6-surface)'
-                      e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                      if (!isSelected) {
+                        e.currentTarget.style.background = 'var(--cv6-surface)'
+                        e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                      }
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -780,7 +797,8 @@ export default function HomeView({
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginLeft: '14px' }}>{n.detail}</div>
                   </button>
-                ))}
+                )
+                })}
               </div>
             </div>
           )}
