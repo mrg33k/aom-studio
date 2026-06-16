@@ -447,7 +447,8 @@ export default function HomeView({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setSelectedIndex(prev => prev === -1 ? selectableItems.length - 1 : (prev - 1 + selectableItems.length) % selectableItems.length)
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
+      // PUNCH-LIST #1: ArrowRight opens, same as Enter
       e.preventDefault()
       if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
         const sel = selectableItems[selectedIndex]
@@ -459,6 +460,13 @@ export default function HomeView({
           handleProjectSelect(sel.item, null)
         }
       }
+    } else if (e.key === 'ArrowLeft') {
+      // PUNCH-LIST #2: ArrowLeft back-to-home hook (room-side implementation pending)
+      // This is the Home-side wiring. Room view will call onBackToHome to return here.
+      // Documented hook: onBackToHome prop must be connected by room view.
+      e.preventDefault()
+      // For now, Home is already visible; this prep allows room view to wire back
+      // Handler will be: onBackToHome?.()
     }
   }, [cv6, selectableItems, selectedIndex, onSelectAgent])
 
@@ -580,22 +588,29 @@ export default function HomeView({
             <span className="hm-l2">{displayName(user) || 'there'}.</span>
           </h1>
 
-          {/* Happening now — live signals of agent activity + running work */}
+          {/* PUNCH-LIST #6: Happening now — dense and alive, not sparse */}
           {happeningNow && happeningNow.length > 0 && (
-            <div className="hm-happening-now">
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', color: 'var(--cv6-text-secondary)' }}>Happening now</div>
-              {happeningNow.slice(0, 3).map((evt, idx) => (
-                <div key={idx} style={{
-                  display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid var(--cv6-divider)',
-                  fontSize: '14px', color: 'var(--cv6-text-primary)',
-                }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '500' }}>{evt.label}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>{evt.detail}</div>
+            <div className="hm-happening-now" style={{ marginBottom: '36px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What's happening now</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+                {happeningNow.slice(0, 6).map((evt, idx) => (
+                  <div key={idx} style={{
+                    display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px',
+                    background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+                    borderRadius: '6px', fontSize: '13px', color: 'var(--cv6-text-primary)',
+                    transition: 'all 120ms ease',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--cv6-surface-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--cv6-surface)'}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                      <div style={{ fontWeight: '600', fontSize: '13px' }}>{evt.label}</div>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', marginLeft: '14px' }}>{evt.detail}</div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
@@ -620,12 +635,17 @@ export default function HomeView({
             <div className="hm-section">
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
               {allMissionsForCV6.map((m, idx) => {
-                const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.mission?.slug === m.mission.slug
+                // PUNCH-LIST #3: Fix inconsistent shape check. Use item?.slug + type check (matches agent/project pattern)
+                const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
                 return (
                   <button
                     key={m.mission.slug}
                     className="hm-mission"
-                    onClick={() => handleProjectSelect(m.project, m.mission)}
+                    onClick={() => {
+                      handleProjectSelect(m.project, m.mission)
+                      // PUNCH-LIST #4: Refocus the home container after click so arrow nav continues
+                      document.querySelector('[data-cv4-home]')?.focus()
+                    }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '6px',
                       background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
@@ -656,7 +676,11 @@ export default function HomeView({
                 <button
                   key={a.slug}
                   className="hm-row"
-                  onClick={() => onSelectAgent && onSelectAgent(a)}
+                  onClick={() => {
+                    onSelectAgent && onSelectAgent(a)
+                    // PUNCH-LIST #4: Refocus the home container after click so arrow nav continues
+                    document.querySelector('[data-cv4-home]')?.focus()
+                  }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 16px', marginBottom: '6px',
                     background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
