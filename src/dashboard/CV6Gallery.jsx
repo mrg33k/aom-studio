@@ -276,7 +276,7 @@ const SCREEN_PROPS = {
 // The window chrome makes a full screen read unmistakably as "a screen",
 // distinct from the small component pieces.
 function ScreenFrame({ theme, cv5, label, children }) {
-  const attrs = { 'data-shell': 'cv4', 'data-theme': theme, 'data-cv4': 'true' }
+  const attrs = { 'data-shell': 'cv4', 'data-theme': theme, 'data-cv4': 'true', 'data-cv6': 'true' }
   if (cv5) attrs['data-cv5'] = 'true'
   const light = theme === 'light'
   const edge = light ? 'rgba(0,0,0,0.14)' : 'rgba(255,255,255,0.13)'

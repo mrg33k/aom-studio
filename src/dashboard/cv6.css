@@ -9,10 +9,10 @@
    ───────────────────────────────────────────────────────────────── */
 
 [data-cv6] {
-  --cv6-ground: #fafafa;
+  --cv6-ground: #f5f5f5;
   --cv6-surface: #ffffff;
-  --cv6-divider: rgba(0, 0, 0, 0.08);
-  --cv6-hover: rgba(0, 0, 0, 0.03);
+  --cv6-divider: rgba(0, 0, 0, 0.10);
+  --cv6-hover: rgba(0, 0, 0, 0.04);
 
   --cv6-text-primary: #1a1a1a;
   --cv6-text-secondary: #666666;
@@ -241,6 +241,559 @@
 
   [data-cv6] button[data-testid="cv4-skills-badge"] span:nth-child(2) > span:nth-child(2) {
     font-size: 11px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Home Screen (HomeView.jsx) — CV6 Redesign R6
+   The workspace you stay in all day, not a lobby you pass through.
+   ───────────────────────────────────────────────────────────────── */
+
+/* Root container: full viewport grid layout */
+[data-cv6] [data-cv4-home] {
+  background: var(--cv6-ground) !important;
+  color: var(--cv6-text-primary) !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* Main shell: 2-column on desktop (320px left + 1fr center + 280px right),
+   1-column on mobile. Max-width keeps content readable. */
+[data-cv6] [data-cv4-home] .hm-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Desktop layout: 3-column grid */
+@media (min-width: 1440px) {
+  [data-cv6] [data-cv4-home] .hm-shell {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    padding: 48px 64px;
+  }
+}
+
+/* Tablet: 2-column */
+@media (min-width: 768px) and (max-width: 1439px) {
+  [data-cv6] [data-cv4-home] .hm-shell {
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+  }
+}
+
+/* ── Welcome + Search: Hero zone (spans full width on small, 2 cols on larger) */
+[data-cv6] [data-cv4-home] .hm-welcome {
+  font-size: 36px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.015em !important;
+  margin: 0 0 32px !important;
+  color: var(--cv6-text-primary) !important;
+  grid-column: 1 / -1;
+}
+
+[data-cv6] [data-cv4-home] .hm-welcome .hm-l1 {
+  color: var(--cv6-text-primary) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-welcome .hm-l2 {
+  color: var(--cv6-text-secondary) !important;
+  margin-left: 0.3em !important;
+}
+
+/* Search bar: full width at top, clean styling per CV6 */
+[data-cv6] [data-cv4-home] .hm-search {
+  position: relative;
+  margin-bottom: 20px;
+  grid-column: 1 / -1;
+}
+
+[data-cv6] [data-cv4-home] .hm-search input {
+  width: 100%;
+  padding: 12px 48px 12px 44px !important;
+  background: var(--cv6-surface) !important;
+  border: 1px solid var(--cv6-divider) !important;
+  border-radius: 8px !important;
+  color: var(--cv6-text-primary) !important;
+  font-family: 'Inter', inherit !important;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  outline: none !important;
+  transition: all 0.2s ease-out !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-search input::placeholder {
+  color: var(--cv6-text-tertiary) !important;
+  font-weight: 400 !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-search input:focus {
+  border-color: var(--cv6-accent-primary) !important;
+  box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1) !important;
+  background: var(--cv6-surface) !important;
+}
+
+[data-cv6][data-theme="dark"] [data-cv4-home] .hm-search input:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-search-icon {
+  color: var(--cv6-text-tertiary) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-search-hint {
+  color: var(--cv6-text-tertiary) !important;
+  font-family: 'Space Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* ── Sections: stacked vertically in their assigned grid column */
+[data-cv6] [data-cv4-home] .hm-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 0 !important;
+}
+
+/* Section headers: clean, uppercase label + chevron */
+[data-cv6] [data-cv4-home] .hm-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 !important;
+  border-bottom: 1px solid var(--cv6-divider) !important;
+  margin-bottom: 12px !important;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease-out;
+}
+
+[data-cv6] [data-cv4-home] .hm-section-header:hover {
+  color: var(--cv6-accent-primary);
+}
+
+[data-cv6] [data-cv4-home] .hm-section-label {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--cv6-text-secondary) !important;
+  flex: 1;
+  transition: color 0.2s ease-out;
+}
+
+[data-cv6] [data-cv4-home] .hm-section-header:hover .hm-section-label {
+  color: var(--cv6-text-primary) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-section-chevron {
+  color: var(--cv6-text-tertiary) !important;
+  display: flex;
+  align-items: center;
+  transition: transform 0.2s ease-out;
+  flex-shrink: 0;
+}
+
+[data-cv6] [data-cv4-home] .hm-section-header:hover .hm-section-chevron {
+  color: var(--cv6-text-secondary) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease-out;
+}
+
+[data-cv6] [data-cv4-home] .hm-section-body.collapsed {
+  display: none;
+}
+
+/* ── Agents: right column on desktop, clean cards */
+[data-cv6] [data-cv4-home] .hm-section:nth-of-type(2) {
+  order: 3;
+}
+
+@media (max-width: 1439px) {
+  [data-cv6] [data-cv4-home] .hm-section:nth-of-type(2) {
+    order: auto;
+  }
+}
+
+/* Agent rows: compact, with visible status dot + last-active time */
+[data-cv6] [data-cv4-home] .hm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: 1px solid var(--cv6-divider) !important;
+  border-radius: 6px !important;
+  color: var(--cv6-text-primary) !important;
+  font-family: 'Inter', inherit !important;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  margin-bottom: 8px;
+}
+
+[data-cv6] [data-cv4-home] .hm-row:last-of-type {
+  margin-bottom: 0 !important;
+  border-bottom: 1px solid var(--cv6-divider) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-row:hover {
+  background: var(--cv6-hover) !important;
+  border-color: var(--cv6-accent-primary) !important;
+}
+
+/* Agent status dot */
+[data-cv6] [data-cv4-home] .hm-agent-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  background: var(--cv6-accent-success) !important;
+  flex-shrink: 0 !important;
+  animation: cv6-pulse 2s ease-in-out infinite;
+}
+
+@keyframes cv6-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+[data-cv6] [data-cv4-home] .hm-agent-name {
+  flex: 1;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.005em !important;
+  color: var(--cv6-text-primary) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-agent-meta {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.03em !important;
+  color: var(--cv6-text-tertiary) !important;
+  white-space: nowrap;
+}
+
+/* Pin button: subtle by default, prominent on hover */
+[data-cv6] [data-cv4-home] .hm-pin {
+  width: 20px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  color: var(--cv6-text-tertiary) !important;
+  cursor: pointer;
+  opacity: 0.4;
+  transition: all 0.2s ease-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+[data-cv6] [data-cv4-home] .hm-row:hover .hm-pin {
+  opacity: 0.8;
+}
+
+[data-cv6] [data-cv4-home] .hm-pin:hover {
+  color: var(--cv6-accent-primary) !important;
+  opacity: 1 !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-pin.pinned {
+  color: var(--cv6-accent-success) !important;
+  opacity: 1 !important;
+}
+
+/* ── Projects section: center column on desktop, shows recent + all below */
+[data-cv6] [data-cv4-home] .hm-section:first-of-type {
+  order: 2;
+}
+
+@media (max-width: 1439px) {
+  [data-cv6] [data-cv4-home] .hm-section:first-of-type {
+    order: auto;
+    grid-column: 1;
+  }
+}
+
+/* Project card: container with subtle border + shadow */
+[data-cv6] [data-cv4-home] .hm-proj {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 14px;
+  background: var(--cv6-surface) !important;
+  border: 1px solid var(--cv6-divider) !important;
+  border-radius: 8px !important;
+  margin-bottom: 12px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease-out;
+}
+
+[data-cv6][data-theme="dark"] [data-cv4-home] .hm-proj {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+[data-cv6] [data-cv4-home] .hm-proj:hover {
+  border-color: var(--cv6-accent-primary);
+  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.1);
+}
+
+[data-cv6][data-theme="dark"] [data-cv4-home] .hm-proj:hover {
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+[data-cv6] [data-cv4-home] .hm-proj:last-of-type {
+  border-bottom: 1px solid var(--cv6-divider) !important;
+}
+
+/* Project header: name + icons in a flex row */
+[data-cv6] [data-cv4-home] .hm-proj-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-proj-name {
+  flex: 1;
+  font-family: 'Inter', inherit !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.005em !important;
+  color: var(--cv6-text-primary) !important;
+  cursor: pointer;
+  text-decoration: none;
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  text-align: left;
+  transition: color 0.2s ease-out;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-cv6] [data-cv4-home] .hm-proj-name:hover {
+  color: var(--cv6-accent-primary) !important;
+}
+
+/* Icon buttons in project header */
+[data-cv6] [data-cv4-home] .hm-icon-btn {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 4px !important;
+  color: var(--cv6-text-tertiary) !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease-out;
+}
+
+[data-cv6] [data-cv4-home] .hm-icon-btn:hover {
+  background: var(--cv6-hover) !important;
+  color: var(--cv6-text-primary) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-icon-btn.chat:hover {
+  color: var(--cv6-accent-success) !important;
+}
+
+/* Missions: nested under expanded project */
+[data-cv6] [data-cv4-home] .hm-missions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cv6-divider) !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  border-left: none !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-mission {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px !important;
+  background: var(--cv6-hover) !important;
+  border: 1px solid transparent !important;
+  border-radius: 4px !important;
+  color: var(--cv6-text-primary) !important;
+  font-family: 'Inter', inherit !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease-out;
+  width: auto !important;
+  margin-left: 0 !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-mission:hover {
+  background: var(--cv6-surface) !important;
+  border-color: var(--cv6-accent-primary) !important;
+  color: var(--cv6-accent-primary) !important;
+}
+
+/* Mission status dot */
+[data-cv6] [data-cv4-home] .hm-mdot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: var(--cv6-text-tertiary) !important;
+  flex-shrink: 0 !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-mdot.active {
+  background: var(--cv6-accent-success) !important;
+  animation: cv6-pulse 2s ease-in-out infinite;
+}
+
+[data-cv6] [data-cv4-home] .hm-mdot.queued {
+  background: var(--cv6-accent-warn) !important;
+  animation: cv6-pulse 2s ease-in-out infinite;
+}
+
+[data-cv6] [data-cv4-home] .hm-mname {
+  flex: 1;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--cv6-text-primary) !important;
+  letter-spacing: -0.005em !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-mage {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 10px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.03em !important;
+  color: var(--cv6-text-tertiary) !important;
+  white-space: nowrap;
+}
+
+/* "Needs you" section: alert/priority items */
+[data-cv6] [data-cv4-home] .hm-needs {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 20px 0 !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-needs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px !important;
+  background: rgba(245, 158, 11, 0.08) !important;
+  border: 1px solid rgba(245, 158, 11, 0.2) !important;
+  border-radius: 6px !important;
+  cursor: pointer;
+  font-family: 'Inter', inherit !important;
+  text-align: left;
+  transition: all 0.2s ease-out;
+  width: 100%;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--cv6-text-primary) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-needs-row:hover {
+  background: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
+
+[data-cv6][data-theme="dark"] [data-cv4-home] .hm-needs-row {
+  background: rgba(251, 191, 36, 0.1) !important;
+  border-color: rgba(251, 191, 36, 0.25) !important;
+}
+
+[data-cv6][data-theme="dark"] [data-cv4-home] .hm-needs-row:hover {
+  background: rgba(251, 191, 36, 0.15) !important;
+  border-color: rgba(251, 191, 36, 0.45) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-needs-dot {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: var(--cv6-accent-warn) !important;
+  flex-shrink: 0 !important;
+  animation: cv6-pulse 2s ease-in-out infinite;
+}
+
+[data-cv6] [data-cv4-home] .hm-needs-label {
+  flex: 1;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.005em !important;
+  color: var(--cv6-text-primary) !important;
+}
+
+[data-cv6] [data-cv4-home] .hm-needs-detail {
+  font-family: 'Space Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em !important;
+  color: var(--cv6-accent-warn) !important;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Responsive: Mobile (single column) ──*/
+@media (max-width: 767px) {
+  [data-cv6] [data-cv4-home] .hm-shell {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+
+  [data-cv6] [data-cv4-home] .hm-welcome {
+    font-size: clamp(24px, 6vw, 32px) !important;
+    margin-bottom: 16px !important;
+  }
+
+  [data-cv6] [data-cv4-home] .hm-search {
+    margin-bottom: 16px !important;
+  }
+
+  [data-cv6] [data-cv4-home] .hm-row,
+  [data-cv6] [data-cv4-home] .hm-proj {
+    padding: 11px 12px !important;
+  }
+
+  [data-cv6] [data-cv4-home] .hm-agent-name,
+  [data-cv6] [data-cv4-home] .hm-proj-name {
+    font-size: 15px !important;
+  }
+
+  [data-cv6] [data-cv4-home] .hm-icon-btn {
+    width: 24px !important;
+    height: 24px !important;
   }
 }
 
