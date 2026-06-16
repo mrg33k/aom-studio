@@ -1009,6 +1009,21 @@ html.dark-theme .hud-prize-label { color: var(--color-text); }
   82% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
   100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.96); }
 }
+/* Full-day-complete win — bigger, lingers longer, doubled gold halo. */
+.celebrate-burst--big {
+  font-size: 19px;
+  padding: 13px 30px;
+  border-radius: 28px;
+  box-shadow: 0 8px 32px rgba(176, 143, 37, 0.65), 0 0 0 6px rgba(212, 175, 55, 0.22);
+  animation: celebrate-pop-big 4.2s ease forwards;
+}
+@keyframes celebrate-pop-big {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-14px) scale(0.8); }
+  9% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.12); }
+  16% { transform: translateX(-50%) translateY(0) scale(1); }
+  88% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.97); }
+}
 
 /* Quest list — driven by the Wizard's day ledger */
 .quest-list {

@@ -34,6 +34,7 @@
     doneCount: null, // today's completed-subject count (live; null until baseline set)
     hudReady: false, // suppresses the win-burst during the initial load
     celebrateMsg: null, // transient win-burst banner text
+    celebrateBig: false, // true = full-day-complete win (bigger burst)
     resumeBanner: null, // "welcome back, you're on X" after a refresh (never lose his place)
     worldOpen: false, // My World overview overlay (Build R8 slice 2) — additive, never the default surface
     theme: localStorage.getItem('wizard-theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
@@ -172,20 +173,31 @@
     }
     if (appState.hudReady && live > appState.doneCount) {
       const gained = live - appState.doneCount;
-      triggerCelebration('Quest complete!  +' + gained * XP_PER_SUBJECT + ' XP');
+      const parsed = parseDayState(appState.dayState);
+      const total = parsed ? parsed.quests.length : 0;
+      // When this completion finishes the WHOLE day, give him a bigger payoff
+      // than a single quest — the end-of-day win that builds toward his prize.
+      if (total > 0 && live >= total) {
+        triggerCelebration('Day complete! You finished everything today. ✨', true);
+      } else {
+        triggerCelebration('Quest complete!  +' + gained * XP_PER_SUBJECT + ' XP', false);
+      }
     }
     appState.doneCount = live;
   }
 
   let celebrateTimer = null;
-  function triggerCelebration(msg) {
+  function triggerCelebration(msg, big) {
     appState.celebrateMsg = msg;
+    appState.celebrateBig = !!big;
     render();
     if (celebrateTimer) clearTimeout(celebrateTimer);
+    // The full-day win lingers a beat longer so it feels like a real moment.
     celebrateTimer = setTimeout(() => {
       appState.celebrateMsg = null;
+      appState.celebrateBig = false;
       render();
-    }, 2600);
+    }, big ? 4200 : 2600);
   }
 
   function renderGameHud() {
@@ -783,7 +795,7 @@
       : '';
 
     const celebrateHtml = appState.celebrateMsg
-      ? `<div class="celebrate-burst">${escapeHtml(appState.celebrateMsg)}</div>`
+      ? `<div class="celebrate-burst${appState.celebrateBig ? ' celebrate-burst--big' : ''}">${escapeHtml(appState.celebrateMsg)}</div>`
       : '';
 
     const html = `
