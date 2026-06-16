@@ -219,10 +219,14 @@
   function renderAssignments() {
     const items = appState.assignments || [];
     if (!items.length) return '';
-    const rows = items.map((a) => {
+    const rows = items.map((a, i) => {
       const done = (a.status || '').toLowerCase() === 'done';
+      // Pending items get a tappable check so Ethan can mark his own work done.
+      const icon = done
+        ? `<span class="assign-icon">&#10004;</span>`
+        : `<button type="button" class="assign-icon check-btn" title="Mark done" onclick="window.__wizardChat.completeItem('assignment', ${i})">&#9675;</button>`;
       return `<div class="assign-row ${done ? 'assign-done' : ''}">
-          <span class="assign-icon">${done ? '&#10004;' : '&#9675;'}</span>
+          ${icon}
           <span class="assign-text">${escapeHtml(a.text)}</span>
         </div>`;
     }).join('');
@@ -284,10 +288,11 @@
   // --- Reminders (Build R8 slice 3) — the Wizard as Ethan's EA ---------------
   // His own to-dos (not school). The Wizard holds them and brings them up.
   function renderReminders() {
-    const items = (appState.reminders || []).filter((r) => (r.status || '').toLowerCase() !== 'done');
-    if (!items.length) return '';
-    const rows = items.map((r) => `<div class="remind-row">
-          <span class="remind-icon">&#9788;</span>
+    const all = appState.reminders || [];
+    const open = all.map((r, i) => ({ r, i })).filter(({ r }) => (r.status || '').toLowerCase() !== 'done');
+    if (!open.length) return '';
+    const rows = open.map(({ r, i }) => `<div class="remind-row">
+          <button type="button" class="remind-icon check-btn" title="Mark done" onclick="window.__wizardChat.completeItem('reminder', ${i})">&#9788;</button>
           <span class="remind-text">${escapeHtml(r.text)}</span>
         </div>`).join('');
     return `<div class="remind-panel">
@@ -863,6 +868,29 @@
       // Opening a project is Ethan's move — send it as his message, and tell the
       // Wizard (via project_focus) to be his teammate on it right now.
       sendMessage(`Let’s work on my project: ${p.name}`, { projectFocus: p.name });
+    },
+    completeItem: (kind, i) => {
+      const list = kind === 'reminder' ? appState.reminders : appState.assignments;
+      const item = list && list[i];
+      if (!item || (item.status || '').toLowerCase() === 'done') return;
+      item.status = 'done'; // optimistic — server confirms below
+      render();
+      fetch('/api/embed/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embed_id: EMBED_ID,
+          content: '<<complete>>',
+          visitor_id: 'ethan-' + appState.sessionId,
+          host_origin: window.location.origin,
+          complete: { kind, text: item.text },
+        }),
+      }).then((r) => r.ok ? r.json() : null).then((data) => {
+        if (!data) return;
+        if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
+        if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
+        render();
+      }).catch(() => {});
     },
     openWorld: () => {
       appState.worldOpen = true;

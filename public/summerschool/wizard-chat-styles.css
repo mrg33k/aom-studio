@@ -446,6 +446,18 @@ html.dark-theme .project-hint { color: #a89f8d; }
   line-height: 1.4;
 }
 .remind-icon { color: var(--color-gold-soft); flex: none; font-size: 13px; margin-top: 1px; }
+/* Tappable check (Build R8 slice 4) — Ethan marks his own items done. */
+.check-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  line-height: inherit;
+  transition: transform 0.1s ease, color 0.15s ease;
+}
+.check-btn:hover { transform: scale(1.25); color: var(--color-gold); }
+.check-btn:active { transform: scale(0.95); }
 .remind-text { color: var(--color-text); }
 /* The model stores reminders in his casual words ("bring cleats thursday");
    lift just the first letter so the card reads finished, not sloppy. */

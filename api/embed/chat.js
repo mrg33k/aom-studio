@@ -755,6 +755,30 @@ export default async function handler(req, res) {
   }
   res.setHeader('Access-Control-Allow-Origin', origin || '*')
 
+  // Tap-to-complete (Build R8 slice 4): Ethan checks off his own reminder or
+  // assignment. Deterministic and fully isolated — marks the item done in the
+  // event store and returns the updated list. Short-circuits BEFORE any message
+  // write or AI call, so it never touches his thread or session (can't lose his
+  // place). The Wizard's injected lists are done-sticky, so it stays done.
+  if (body.complete && typeof body.complete === 'object') {
+    const kind = body.complete.kind
+    const text = String(body.complete.text || '').trim().toLowerCase()
+    if (!text) return res.status(400).json({ error: 'complete.text required' })
+    if (kind === 'reminder') {
+      const list = await fetchReminders(embed_id, visitor_id || null)
+      const updated = list.map((r) => (r.text.toLowerCase() === text ? { ...r, status: 'done' } : r))
+      await saveReminders(embed_id, visitor_id || null, updated)
+      return res.status(200).json({ ok: true, reminders: updated })
+    }
+    if (kind === 'assignment') {
+      const list = await fetchAssignments(embed_id, visitor_id || null)
+      const updated = list.map((a) => (a.text.toLowerCase() === text ? { ...a, status: 'done' } : a))
+      await saveAssignments(embed_id, visitor_id || null, updated)
+      return res.status(200).json({ ok: true, assignments: updated })
+    }
+    return res.status(400).json({ error: 'unknown complete.kind' })
+  }
+
   // Mirror the dashboard's project-chat send. The local SSE bridge reads
   // metadata.mission_slug to load the mission's CONTEXT/VISION/BUILD as the
   // EA's system-prompt context.  metadata.embed_overlay is the embed's extra
