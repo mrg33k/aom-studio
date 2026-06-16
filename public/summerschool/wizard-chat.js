@@ -26,6 +26,7 @@
     sessionId: null,
     dayState: null, // Wizard's day ledger string — drives Today's Quests
     essay: null, // array of sentences Ethan typed into the Writing Desk today
+    assignments: null, // [{text, status}] the Wizard tracks + follows up on
     progress: null, // { totalDone, todayDone, streak, activeDays } base from page load
     baseDone: 0, // all-time subjects done BEFORE today (today is tracked live)
     doneCount: null, // today's completed-subject count (live; null until baseline set)
@@ -211,6 +212,23 @@
       </div>`;
   }
 
+  // --- Assignments (Build R5) — what the Wizard set for Ethan to do ----------
+  function renderAssignments() {
+    const items = appState.assignments || [];
+    if (!items.length) return '';
+    const rows = items.map((a) => {
+      const done = (a.status || '').toLowerCase() === 'done';
+      return `<div class="assign-row ${done ? 'assign-done' : ''}">
+          <span class="assign-icon">${done ? '&#10004;' : '&#9675;'}</span>
+          <span class="assign-text">${escapeHtml(a.text)}</span>
+        </div>`;
+    }).join('');
+    return `<div class="assign-panel">
+        <div class="action-title">&#9998; Assignments</div>
+        <div class="assign-list">${rows}</div>
+      </div>`;
+  }
+
   // --- Countdown to school (Build R8 R4) -------------------------------------
   // Frames the summer as prep: days until 7th grade at Kenilworth. Date is our
   // canon (CONTEXT.md "August 3rd, 7th grade starts"); confirm with Patrik and
@@ -345,6 +363,7 @@
       const data = await response.json();
       if (data.day_state) appState.dayState = data.day_state;
       if (Array.isArray(data.essay)) appState.essay = data.essay;
+      if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
       applyProgress(data.progress);
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
       let hadVisible = false;
@@ -394,6 +413,7 @@
       const data = await response.json();
       if (data.day_state) appState.dayState = data.day_state;
       if (Array.isArray(data.essay)) appState.essay = data.essay;
+      if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
       if (appState.doneCount == null) appState.doneCount = countDoneNow();
       // Advance sinceTs so the poll picks up from after the greeting was inserted.
       if (data.since_ts && data.since_ts > appState.sinceTs) {
@@ -462,6 +482,7 @@
         const data = await response.json();
         if (data.day_state) appState.dayState = data.day_state;
         if (Array.isArray(data.essay)) appState.essay = data.essay;
+      if (Array.isArray(data.assignments)) appState.assignments = data.assignments;
         checkCompletion();
         // Use the server's since_ts so we poll from after the user message
         if (data.since_ts) {
@@ -654,6 +675,7 @@
           ${isWritingActive() ? renderWritingDesk() : ''}
           <div class="action-title">&#10022; Today's Quests</div>
           ${renderQuestsPanel()}
+          ${renderAssignments()}
         </div>
       </div>
     `;

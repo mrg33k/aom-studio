@@ -295,6 +295,90 @@ function extractDayState(replyText) {
   return { text: replyText.slice(0, m.index).trim(), state: m[1].trim() }
 }
 
+// --- Daily assignments (Build R5) -------------------------------------------
+// The Wizard sets short concrete assignments and follows up on the pending
+// ones. Persisted per visitor (not date-keyed — pending carry across days).
+// The Wizard emits an optional <<ASSIGN: text=pending|done; ...>> line,
+// stripped before Ethan sees it (like the day ledger).
+const ASSIGNMENTS_PROTOCOL = `
+ASSIGNMENTS (things for Ethan to do or practice — you track these and follow up):
+Keep 1-3 active, concrete and realistic ("read 10 pages tonight", "finish your
+essay intro"). When you give a NEW one or mark one DONE, add ONE line JUST
+BEFORE your final <<DAY:>> line (the DAY line must stay the very last line),
+machine-only, never shown, never mentioned:
+<<ASSIGN: read 10 pages tonight=pending; finish essay intro=done>>
+Mark an assignment done ONLY when Ethan confirms he did it. At the START of a
+session, check in on any pending assignment in the list below ("Last time I
+asked you to ___ — did you?") before the day's lessons. A couple of meaningful
+things he actually does beats a long list.`
+
+function parseAssignments(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(done|pending)\s*$/i)
+    if (m) out.push({ text: m[1].trim(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Strip ALL <<ASSIGN: ...>> markers anywhere; returns { text, assign }.
+function extractAssignments(replyText) {
+  const m = replyText.match(/<<ASSIGN:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<ASSIGN:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, assign: m ? m[1].trim() : null }
+}
+
+// Merge new assignment statuses with prior. Done is sticky; new items appended.
+function mergeAssignments(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const a of priorList) {
+    const k = a.text.toLowerCase()
+    if (!byKey.has(k)) { byKey.set(k, { text: a.text, status: a.status }); order.push(k) }
+  }
+  for (const a of newList) {
+    const k = a.text.toLowerCase()
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { text: a.text, status: a.status }); order.push(k) }
+    else if (a.status === 'done') ex.status = 'done' // can complete; never un-complete
+  }
+  return order.map((k) => byKey.get(k)).slice(-6)
+}
+
+async function fetchAssignments(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_assignments')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveAssignments(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-assignments',
+        event_type: 'wizard_assignments',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
 // Parse a day-state string into a structured object: { subjects, note, now }
 // Example input: "Reading=done (done); Math=in-progress (step: fraction doubling); note=..."
 // Returns: { subjects: Map<name, {status, detail}>, note, now }
@@ -536,13 +620,15 @@ export default async function handler(req, res) {
     let aiError = null
     let latestDayState = null
     let latestEssay = null
+    let latestAssignments = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState, priorEssay] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments] = await Promise.all([
           fetchHistory(cfg, visitor_id || null),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
           fetchEssay(embed_id, visitor_id || null),
+          fetchAssignments(embed_id, visitor_id || null),
         ])
 
         // Writing Desk: if this turn is a typed essay sentence, append it to
@@ -581,13 +667,25 @@ export default async function handler(req, res) {
           }
         }
         systemPrompt += `\n${WRITING_DESK_PROTOCOL}`
+        // Inject the running assignments list so the Wizard can follow up.
+        const priorAssignList = Array.isArray(priorAssignments) ? priorAssignments : []
+        if (priorAssignList.length) {
+          systemPrompt += `\n\n=== ETHAN'S ASSIGNMENTS (yours to follow up on) ===\n` +
+            priorAssignList.map((a) => `- ${a.text} [${a.status}]`).join('\n')
+        }
+        systemPrompt += `\n${ASSIGNMENTS_PROTOCOL}`
         const rawReply = await callGeminiWithRetry(
           systemPrompt,
           history,
           visitorText,
           cfg.ai.model || 'gemini-2.5-flash'
         )
-        const { text: replyText, state: newDayState } = extractDayState(rawReply || '')
+        // Strip ASSIGN first (anywhere), then DAY (which must end the text), then
+        // a final scrub so no machine marker can ever leak onto Ethan's screen.
+        const assignExtract = extractAssignments(rawReply || '')
+        const dayExtract = extractDayState(assignExtract.text)
+        const newDayState = dayExtract.state
+        const replyText = dayExtract.text.replace(/<<[A-Z]+:[\s\S]*?>>/g, '').trim()
 
         // Merge the new state with prior state deterministically.
         // This prevents the model's free-text ledger from drifting.
@@ -598,6 +696,14 @@ export default async function handler(req, res) {
           await saveDayState(embed_id, visitor_id || null, canonicalDayState)
         }
         latestDayState = canonicalDayState
+
+        // Merge + persist assignments if the Wizard set/updated any this turn.
+        let canonicalAssignments = priorAssignList
+        if (assignExtract.assign) {
+          canonicalAssignments = mergeAssignments(parseAssignments(assignExtract.assign), priorAssignList)
+          await saveAssignments(embed_id, visitor_id || null, canonicalAssignments)
+        }
+        latestAssignments = canonicalAssignments
         if (replyText) {
           const replyRow = {
             id: crypto.randomUUID(),
@@ -656,6 +762,8 @@ export default async function handler(req, res) {
       day_state: latestDayState,
       // Today's essay sentences so the Writing Desk renders the real draft.
       essay: latestEssay,
+      // Running assignments so the board can show what the Wizard set.
+      assignments: latestAssignments,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.
       since_ts: sinceTs,
       routing: {
