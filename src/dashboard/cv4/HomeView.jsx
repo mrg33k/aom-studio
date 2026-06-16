@@ -757,7 +757,7 @@ export default function HomeView({
               {/* Scrollable container: cap at 3 visible, internal scroll for the rest */}
               <div style={{
                 display: 'flex', flexDirection: 'column', gap: '6px',
-                maxHeight: '3.5em * 3 + 12px * 2', // ~130px for 3 items + gaps
+                maxHeight: '186px', // 56px per item * 3 + 6px gaps * 2 = 180px, rounded to 186px to cap at exactly 3 items
                 overflow: 'hidden', overflowY: 'auto', paddingRight: '8px',
                 // Remove left/right/bottom borders: use open-ended container
                 borderLeft: 'none', borderRight: 'none', borderBottom: 'none',
