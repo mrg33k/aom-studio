@@ -549,6 +549,30 @@ html.dark-theme .book-current { background: rgba(26, 24, 20, 0.85); }
 html.dark-theme .book-title { color: var(--color-gold); }
 html.dark-theme .book-shelf { color: var(--color-gold); }
 
+/* World hint (Build R12) — subtle pointer to My World for his projects +
+   reminders after the board declutter. A quiet tap-line, not a panel. */
+.world-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 18px;
+  padding: 9px 12px;
+  background: none;
+  border: 1px dashed rgba(212, 175, 55, 0.40);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--color-gold-soft);
+  font-size: 12.5px;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.world-hint:hover { background: rgba(212, 175, 55, 0.08); border-color: var(--color-gold); }
+.world-hint-icon { flex: none; font-size: 12px; }
+.world-hint-text { flex: 1; }
+.world-hint-go { flex: none; opacity: 0.8; }
+html.dark-theme .world-hint { color: var(--color-gold); }
+
 /* ===== My World overview (Build R8 slice 2) — Ethan's own Corner home.
    Additive overlay; the chat stays the default surface (never lose his place). */
 .world-btn {

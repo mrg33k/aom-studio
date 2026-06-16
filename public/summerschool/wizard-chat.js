@@ -380,6 +380,24 @@
       </div>`;
   }
 
+  // --- World hint (Build R12) — board declutter -----------------------------
+  // His own fun projects + life reminders moved off the school board into My
+  // World (his Corner). A subtle tap-line points there so they're never lost —
+  // only shown when he actually has some.
+  function renderWorldHint() {
+    const projects = (appState.projects || []).length;
+    const reminders = (appState.reminders || []).filter((r) => (r.status || '').toLowerCase() !== 'done').length;
+    if (!projects && !reminders) return '';
+    const bits = [];
+    if (projects) bits.push(`${projects} project${projects === 1 ? '' : 's'}`);
+    if (reminders) bits.push(`${reminders} reminder${reminders === 1 ? '' : 's'}`);
+    return `<button type="button" class="world-hint" onclick="window.__wizardChat.openWorld()">
+        <span class="world-hint-icon">&#10022;</span>
+        <span class="world-hint-text">Your ${bits.join(' and ')} are in My World</span>
+        <span class="world-hint-go">&#10148;</span>
+      </button>`;
+  }
+
   // --- My World overview (Build R8 slice 2) — Ethan's own Corner home --------
   // A tap-in overview of his areas: his School (the Wizard class) + his own
   // Projects. Additive overlay — the chat stays his default surface, so a
@@ -936,8 +954,7 @@
           ${renderAssignments()}
           ${renderBookshelf()}
           ${renderSpellbook()}
-          ${renderProjects()}
-          ${renderReminders()}
+          ${renderWorldHint()}
         </div>
       </div>
     `;
