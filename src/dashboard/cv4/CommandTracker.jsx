@@ -136,10 +136,11 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         } catch { /* ledger optional */ }
       }
 
-      // Load claude sessions (include all sessions for accurate "live now" display)
+      // Load claude sessions (both blocked/stalled sessions and all active workers)
       const sRes = await authFetch('/api/dashboard/claude-sessions')
       const stuckData = sRes?.ok ? await sRes.json() : { sessions: [], workers: [] }
-      const sessions = Array.isArray(stuckData.sessions) ? stuckData.sessions.filter((s) => s && typeof s === 'object') : []
+      const blockedSessions = Array.isArray(stuckData.sessions) ? stuckData.sessions.filter((s) => s && typeof s === 'object') : []
+      const workers = Array.isArray(stuckData.workers) ? stuckData.workers.filter((w) => w && typeof w === 'object') : []
 
       // Load routines
       const rRes = await authFetch(`/api/dashboard/routines?client_id=${encodeURIComponent(worldId)}`)
@@ -182,51 +183,45 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         return
       }
 
-      // Build rows: merge room-goals with live session data
+      // Build rows: room-goals + active workers not in room-goals
+      // Workers are terminal sessions actively working; they may or may not map to a room-goal
       const roomSlugs = new Set(Object.keys(goals.rooms || {}))
-      sessions.forEach((s) => {
-        if (s && s.room && typeof s.room === 'string') roomSlugs.add(s.room)
-      })
+      const tableRows = []
 
-      const tableRows = Array.from(roomSlugs)
+      // First pass: emit room-goal rows (with optional attached worker)
+      Array.from(roomSlugs)
         .sort()
-        .map((slug) => {
+        .forEach((slug) => {
           const roomGoal = (goals.rooms || {})[slug] || {}
-          const sessionsForRoom = sessions.filter((s) => s && typeof s === 'object' && s.room === slug)
-          const liveSession = sessionsForRoom.length > 0 ? sessionsForRoom[0] : null
+          // Workers don't have a 'room' field; match by name pattern or presence of any worker
+          // For now, rooms-without-attached-workers show IDLE status
+          const liveWorker = null  // TODO: implement name matching if we have a room->session map
 
-          // Derive LIVE NOW: if there's an active session, show what it's doing
-          // Use the session's summary (what the session reports it's doing), fallback to generic message
+          // Derive LIVE NOW: worker's intent / what it's actively doing
           let liveNow = '—'
-          if (liveSession) {
-            if (liveSession.summary && typeof liveSession.summary === 'string') {
-              liveNow = liveSession.summary
-            } else if (liveSession.status === 'working' || liveSession.status === 'active') {
-              liveNow = '[Session active]'
-            }
+          if (liveWorker && liveWorker.intent) {
+            liveNow = liveWorker.intent
           }
 
-          // Derive status from sessions + staleness
-          // WORKING if live session is recent (active)
-          // BLOCKED if live session has blocked status
-          // IDLE if no live session AND last activity is stale (>30 min)
+          // Derive status from worker recency + staleness
+          // WORKING if worker touched recently
+          // BLOCKED if worker has blocked state
+          // IDLE if no worker OR worker is stale (>30 min)
           let status = 'idle'
-          let isRecent = false
-          if (liveSession) {
-            const lastActivity = liveSession.last_activity ? new Date(liveSession.last_activity).getTime() : null
-            const now = Date.now()
+          if (liveWorker) {
+            const ageMs = (liveWorker.ageSeconds || 0) * 1000
             const thirtyMinMs = 30 * 60 * 1000
-            isRecent = lastActivity && (now - lastActivity) < thirtyMinMs
+            const isRecent = ageMs < thirtyMinMs
 
-            if (liveSession.status === 'blocked') {
+            if (liveWorker.state === 'blocked') {
               status = 'blocked'
-            } else if (liveSession.status === 'working' || liveSession.status === 'active') {
+            } else if (liveWorker.state === 'working') {
               status = isRecent ? 'active' : 'idle'
             } else {
               status = 'idle'
             }
           } else {
-            // No live session: check if last activity is stale
+            // No live worker: check if last activity is stale
             const lastTouchTs = roomGoal.last_touched ? new Date(roomGoal.last_touched).getTime() : null
             if (lastTouchTs) {
               const now = Date.now()
@@ -235,7 +230,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             }
           }
 
-          const lastTouched = roomGoal.last_touched || (liveSession && liveSession.last_activity) || null
+          const lastTouched = roomGoal.last_touched || (liveWorker && liveWorker.updatedAt) || null
           const goal = (typeof roomGoal.goal === 'string' ? roomGoal.goal : '').substring(0, 80)
 
           // Find routine for this project (by project_slug match, looking for one with master-loop in the name)
@@ -248,7 +243,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             }
           }
 
-          return {
+          tableRows.push({
             slug,
             display: roomDisplay(slug, map),
             goal,
@@ -256,8 +251,61 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             liveNow,
             lastActivity: lastTouched,
             routineId,
-          }
+            isWorkerRow: false,
+          })
         })
+
+      // Second pass: emit active workers NOT already in room-goals
+      // These are terminal sessions working on something not explicitly in room-goals
+      const roomSlugsSet = new Set(roomSlugs)
+      workers.forEach((w) => {
+        if (!w || !w.name) return
+        const isRecent = (w.ageSeconds || 0) < (30 * 60)  // < 30 min
+        const isWorking = w.state === 'working' || w.state === 'blocked'
+        if (!isRecent && !isWorking) return  // Skip old inactive workers
+
+        // Only emit if not already covered by a room-goal row
+        // Workers don't have a room slug; we'd need a name->room mapping
+        // For now, emit all workers (future: implement deduplication)
+        const display = roomDisplay(w.name, map)
+        let status = 'idle'
+        if (w.state === 'blocked') {
+          status = 'blocked'
+        } else if (w.state === 'working') {
+          status = isRecent ? 'active' : 'idle'
+        }
+
+        // claude-sessions workers report ageSeconds (not a timestamp); convert.
+        const workerLastActivity = typeof w.ageSeconds === 'number'
+          ? new Date(Date.now() - w.ageSeconds * 1000).toISOString()
+          : null
+        tableRows.push({
+          slug: `workers:${w.name}`,
+          display: { name: w.name, tag: 'Terminal' },
+          goal: w.detail || w.intent || '',
+          status,
+          liveNow: w.intent || '—',
+          lastActivity: workerLastActivity,
+          routineId: null,
+          isWorkerRow: true,
+        })
+      })
+
+      // Sort: ACTIVE then BLOCKED at top (workers first), then IDLE below
+      tableRows.sort((a, b) => {
+        const statusOrder = { active: 0, blocked: 1, idle: 2 }
+        const aStatus = statusOrder[a.status] || 99
+        const bStatus = statusOrder[b.status] || 99
+        if (aStatus !== bStatus) return aStatus - bStatus
+        // Within same status: workers first
+        if (a.isWorkerRow !== b.isWorkerRow) return a.isWorkerRow ? -1 : 1
+        // Then by last activity (newer first)
+        const aTime = a.lastActivity ? new Date(a.lastActivity).getTime() : 0
+        const bTime = b.lastActivity ? new Date(b.lastActivity).getTime() : 0
+        if (aTime !== bTime) return bTime - aTime
+        // Finally by slug
+        return (a.slug || '').localeCompare(b.slug || '')
+      })
 
       setRows(tableRows)
       setLoading(false)
@@ -423,7 +471,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
 
       {/* Rows */}
       {rows.map((row, idx) => {
-        // Look up routine status by the routineId
+        // Look up routine status by the routineId (room-goal rows only)
         const routine = row.routineId && typeof routineMap[row.routineId] === 'object'
           ? routineMap[row.routineId]
           : null
@@ -433,30 +481,34 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         const label = statusLabel(row.status)
 
         const isHovered = hoveredRoutineId === row.routineId
+        // Worker rows are read-only (no routine toggle)
+        const isWorkerRow = row.isWorkerRow === true
+
         return (
           <div
             key={row.slug || `row-${idx}`}
-            onClick={() => onJumpToRoom?.(row.slug)}
+            onClick={() => !isWorkerRow && onJumpToRoom?.(row.slug)}
             style={{
               display: 'grid',
               gridTemplateColumns: '1fr 2fr 80px 1.5fr 100px 60px',
               gap: '12px',
               padding: '11px 16px',
               borderBottom: '1px solid var(--cv6-divider)',
-              background: isHovered ? 'var(--cv6-surface-hover)' : 'var(--cv6-surface)',
-              cursor: 'pointer',
+              background: isWorkerRow ? 'rgba(255,255,255,0.01)' : (isHovered ? 'var(--cv6-surface-hover)' : 'var(--cv6-surface)'),
+              cursor: isWorkerRow ? 'default' : 'pointer',
               transition: 'background 120ms ease',
               alignItems: 'center',
+              opacity: isWorkerRow ? 0.95 : 1,
             }}
-            onMouseEnter={() => setHoveredRoutineId(row.routineId)}
-            onMouseLeave={() => setHoveredRoutineId(null)}
+            onMouseEnter={() => !isWorkerRow && setHoveredRoutineId(row.routineId)}
+            onMouseLeave={() => !isWorkerRow && setHoveredRoutineId(null)}
           >
-            {/* ROOM */}
+            {/* ROOM / WORKER NAME */}
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
                   fontSize: 13,
-                  fontWeight: 600,
+                  fontWeight: isWorkerRow ? 500 : 600,
                   color: 'var(--cv6-text-primary)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
@@ -551,7 +603,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               {relativeTime(row.lastActivity)}
             </div>
 
-            {/* MASTER LOOP TOGGLE */}
+            {/* MASTER LOOP TOGGLE (room-goal rows only) */}
             <div
               onClick={(e) => e.stopPropagation()}
               style={{
@@ -560,7 +612,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 alignItems: 'center',
               }}
             >
-              {row.routineId && typeof row.routineId === 'string' ? (
+              {!isWorkerRow && row.routineId && typeof row.routineId === 'string' ? (
                 <ToggleSwitch
                   on={toggling[row.routineId] !== undefined ? toggling[row.routineId] : routineOn}
                   onChange={(wantOn) => toggleRoutine(row.routineId, wantOn)}
