@@ -982,6 +982,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const [tall, setTall] = useState(false) // R88: expand the tracker box vertically
   const [sortCol, setSortCol] = useState(null) // R88: click a header to sort by that column
   const [sortDir, setSortDir] = useState(1)
+  const [selectorCollapsed, setSelectorCollapsed] = useState(false) // collapse Trackers list to a slim bar so the sheet is the focus
   // Space Rising real tracker (admin_tickets) — live via /api/dashboard/admin-tickets.
   const [srStatus, setSrStatus] = useState(null) // null|loading|connected|needs_key|error
   useEffect(() => {
@@ -1121,13 +1122,27 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
 
   const statusCol = sel ? TRACKER_TEMPLATES[sel.template].statusCol : null
 
-  const Selector = () => (
+  // Collapsed: a slim pillar so the spreadsheet is the focus; click to expand.
+  const SelectorCollapsed = () => (
+    <div onClick={() => setSelectorCollapsed(false)} title="Show trackers" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '10px 0', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', height: '100%', cursor: 'pointer', background: 'var(--cv6-surface)' }}>
+      <button title="Show trackers" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--cv6-text-secondary)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', marginTop: '4px' }}>Trackers</span>
+    </div>
+  )
+  const Selector = () => selectorCollapsed ? SelectorCollapsed() : (
     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', overflowY: 'auto', height: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)' }}>
         <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Trackers</span>
-        <button onClick={() => { setCreating(true); setDraftName('') }} title="New tracker" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button onClick={() => { setCreating(true); setDraftName('') }} title="New tracker" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button onClick={() => setSelectorCollapsed(true)} title="Collapse trackers" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+        </div>
       </div>
       {creating && (
         <div style={{ padding: '12px', borderBottom: '1px solid var(--cv6-divider)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1284,7 +1299,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         Space Rising live tracker is wired and ready. It needs its data key added to the dashboard settings to switch on.
       </div>
     )}
-    <div style={{ height: isNarrow ? '64vh' : (tall ? '82vh' : '440px'), minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : '230px 1fr', transition: 'height 160ms ease' }}>
+    <div style={{ height: isNarrow ? '64vh' : (tall ? '82vh' : '440px'), minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : (selectorCollapsed ? '40px 1fr' : '230px 1fr'), transition: 'grid-template-columns 160ms ease, height 160ms ease' }}>
       {isNarrow ? (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {mobilePane === 'sheet' && (
