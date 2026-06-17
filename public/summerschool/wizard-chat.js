@@ -465,14 +465,20 @@
     const items = appState.mathlab || [];
     if (!items.length) return '';
     const mastered = items.filter((s) => (s.status || '').toLowerCase() === 'mastered').length;
-    const skills = items.map((s) => {
+    const skills = items.map((s, i) => {
       const isMast = (s.status || '').toLowerCase() === 'mastered';
+      // Mastered skills stay lit as an achievement. Learning skills are tappable:
+      // tap one to drill THAT exact skill with the Wizard (Build R91) — more
+      // targeted than the random Math challenge chip.
       return isMast
         ? `<span class="math-skill math-skill--mastered" title="Mastered">&#10004; ${escapeHtml(s.skill)}</span>`
-        : `<span class="math-skill math-skill--learning">${escapeHtml(s.skill)}</span>`;
+        : `<button type="button" class="math-skill math-skill--learning" title="Practice this with the Wizard" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.drillMath(${i})">${escapeHtml(s.skill)}</button>`;
     }).join('');
+    const hint = items.some((s) => (s.status || '').toLowerCase() !== 'mastered')
+      ? `<div class="math-hint">Tap a skill to practice it with the Wizard.</div>` : '';
     return `<div class="math-panel">
         <div class="action-title">&#128290; Math Lab <span class="math-count">${mastered}/${items.length} mastered</span></div>
+        ${hint}
         <div class="math-skills">${skills}</div>
       </div>`;
   }
@@ -1036,6 +1042,7 @@
       if (opts.practiceWord) payload.practice_word = opts.practiceWord;
       if (opts.readingFocus) payload.reading_focus = opts.readingFocus;
       if (opts.mathFocus) payload.math_focus = true;
+      if (opts.mathSkill) payload.math_skill = opts.mathSkill;
       if (opts.progressSummary) payload.progress_summary = opts.progressSummary;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
@@ -1451,6 +1458,14 @@
     mathChallenge: () => {
       if (appState.isLoading) return;
       sendMessage(`Can you give me a math challenge to solve? Make it a good one for 7th grade.`, { mathFocus: true });
+    },
+    // Math Lab drill (Build R91): tap a specific "learning" skill to practice THAT
+    // exact skill with the Wizard (targeted, vs the random Math challenge chip).
+    drillMath: (i) => {
+      const list = appState.mathlab || [];
+      const s = list[i];
+      if (!s || appState.isLoading) return;
+      sendMessage(`Can you give me a problem to practice "${s.skill}"? Make it a good one for 7th grade, then check my answer.`, { mathFocus: true, mathSkill: s.skill });
     },
     // Quick-start chip: practice the first word he hasn't mastered yet.
     practiceSpellStart: () => {

@@ -1177,6 +1177,11 @@ export default async function handler(req, res) {
   // Math challenge (Build R25): Ethan tapped for a math problem (his strength +
   // Kenilworth focus). The Wizard poses a 7th-grade-prep problem this turn.
   const mathFocus = !!body.math_focus
+  // Math Lab targeted drill (Build R91): when Ethan taps a specific "learning"
+  // skill in his Math Lab, the widget sends math_skill so the Wizard drills THAT
+  // exact skill this turn (e.g. the ratios he's still shaky on) instead of a
+  // random challenge. Behavior-only prompt hint; sets mathFocus too.
+  const mathSkill = typeof body.math_skill === 'string' ? body.math_skill.slice(0, 80).trim() : ''
   // Progress recap (Build R26): Ethan tapped "How am I doing?" — the widget hands
   // his real numbers so the Wizard's recap is accurate, not invented.
   const progressSummary = typeof body.progress_summary === 'string' ? body.progress_summary.slice(0, 300).trim() : ''
@@ -1452,7 +1457,9 @@ export default async function handler(req, res) {
           systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED TO READ WITH YOU: "${readingFocus}" ===\nHe wants to pick up his book RIGHT NOW. Do a warm reading check-in for THIS reply; do NOT redirect to the lesson or any other subject, even if one was mid-way. Pick ONE: ask what's happened in the story so far, OR what he predicts happens next. React with genuine interest to his answer, then nudge him to read on a little more. Keep it light, curious, and encouraging — reading is something he's building. Reading leads this turn.`
         }
         // Math challenge tap (Build R25) — his strength + Kenilworth focus.
-        if (mathFocus) {
+        if (mathFocus && mathSkill) {
+          systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED A MATH SKILL TO DRILL: "${mathSkill}" ===\nHe wants to practice THIS specific skill RIGHT NOW (it's in his Math Lab as something he's still building). Give him ONE focused problem on "${mathSkill}" at a 7th-grade-prep level — squarely on that skill, not a general challenge. State it clearly, then ask him to solve it and show his thinking. Do NOT redirect to another subject, even if one was mid-way. Next turn, check his answer and walk him through it if he misses; only count "${mathSkill}" as mastered once he solves a fresh one correctly AND explains it. Keep it encouraging and a little competitive. This skill leads this turn.`
+        } else if (mathFocus) {
           systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED FOR A MATH CHALLENGE ===\nGive him ONE math problem RIGHT NOW at a 7th-grade-prep level. He is strong at math and heading to Kenilworth, so make it genuinely challenging but fair — a word problem, fractions/ratios, percentages, or pre-algebra. State the problem clearly, then ask him to solve it and show his thinking. Do NOT redirect to another subject, even if one was mid-way. Next turn, check his answer and walk through it if he misses. Keep it encouraging and a little competitive — he likes a real challenge. Math leads this turn.`
         }
         // Writing Desk (Build R29) — when Ethan deliberately types a sentence into

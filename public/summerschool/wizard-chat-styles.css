@@ -761,6 +761,13 @@ html.dark-theme .spell-word--learning { color: var(--color-gold); }
   color: var(--color-gold-soft);
   margin-left: 8px;
 }
+.math-hint {
+  font-size: 11px;
+  color: var(--color-gold-soft);
+  opacity: 0.85;
+  margin: 2px 0 8px;
+  line-height: 1.4;
+}
 .math-skills { display: flex; flex-wrap: wrap; gap: 7px; }
 .math-skill {
   font-family: inherit;
@@ -770,11 +777,20 @@ html.dark-theme .spell-word--learning { color: var(--color-gold); }
   padding: 6px 12px;
   border-radius: 999px;
 }
+/* Learning = still building it: gold outline, and now a tappable button to drill
+   that exact skill with the Wizard (Build R91). */
 .math-skill--learning {
   border: 2px solid var(--color-gold);
   background: rgba(212, 175, 55, 0.10);
   color: var(--color-gold);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
 }
+.math-skill--learning:hover {
+  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.30);
+  background: rgba(212, 175, 55, 0.18);
+}
+.math-skill--learning:disabled { cursor: default; opacity: 0.6; box-shadow: none; }
 .math-skill--mastered {
   border: 1px solid #b08f25;
   background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
