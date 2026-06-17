@@ -824,6 +824,14 @@ export default function HomeView({
     if (idx >= 0) setSelectedIndex(idx)
   }, [selectableItems])
 
+  // R33: keep the keyboard-selected card in view as you arrow through a
+  // scrolling column (agents / active work), so the highlight never leaves the frame.
+  useEffect(() => {
+    if (!cv6) return
+    const el = homeRef.current?.querySelector('[data-cv6-sel="true"]')
+    if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [cv6, selectedIndex])
+
   // R32: a card's "room color" — the same hue as its color dot. Used to tint the
   // selected highlight so it matches the room, with a readable fill for white text.
   const roomHue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
@@ -1168,138 +1176,16 @@ export default function HomeView({
           <div style={{ marginTop: '-4px', marginBottom: '28px' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
-              {/* Home tool */}
-              <button
-                onClick={() => setSelectedTool('home')}
-                title="Home"
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '12px 16px', borderRadius: '6px', border: selectedTool === 'home' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                  background: selectedTool === 'home' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                  color: selectedTool === 'home' ? '#ffffff' : 'var(--cv6-text-primary)',
-                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  minWidth: '64px', minHeight: '56px',
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedTool !== 'home') {
-                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedTool !== 'home') {
-                    e.currentTarget.style.background = 'var(--cv6-surface)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                  }
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Home</span>
-              </button>
-
-              {/* Support tool */}
-              <button
-                onClick={() => setSelectedTool('support')}
-                title="Support"
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '12px 16px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                  background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                  color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
-                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  minWidth: '64px', minHeight: '56px',
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedTool !== 'support') {
-                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedTool !== 'support') {
-                    e.currentTarget.style.background = 'var(--cv6-surface)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                  }
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Support</span>
-              </button>
-
-              {/* Command tool */}
-              <button
-                onClick={() => setSelectedTool('command')}
-                title="Command"
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '12px 16px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                  background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                  color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
-                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  minWidth: '64px', minHeight: '56px',
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedTool !== 'command') {
-                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedTool !== 'command') {
-                    e.currentTarget.style.background = 'var(--cv6-surface)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                  }
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
-                  <polyline points="4 9 7 9 7 20 4 20"/>
-                  <polyline points="12 9 15 9 15 20 12 20"/>
-                  <polyline points="20 9 23 9 23 20 20 20"/>
-                </svg>
-                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Command</span>
-              </button>
-
-              {/* R31: Live Scribe tool — built today, gets its own redesign later */}
-              <button
-                onClick={() => setSelectedTool('scribe')}
-                title="Live Scribe"
-                style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '12px 16px', borderRadius: '6px', border: selectedTool === 'scribe' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                  background: selectedTool === 'scribe' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                  color: selectedTool === 'scribe' ? '#ffffff' : 'var(--cv6-text-primary)',
-                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  minWidth: '64px', minHeight: '56px',
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedTool !== 'scribe') {
-                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedTool !== 'scribe') {
-                    e.currentTarget.style.background = 'var(--cv6-surface)'
-                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-                  }
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: '20px', height: '20px' }}>
-                  <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/>
-                </svg>
-                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Live Scribe</span>
-              </button>
-
-              {/* R32: upcoming tools — icons placed now, surfaces built later (Review, Tracker, Projects, Files) */}
+              {/* R33: single ordered tool list — Home, then Patrik's order: Projects, Files, Review, Support, Tracker, Command, Live Scribe */}
               {[
-                { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
-                { key: 'tracker', label: 'Tracker', svg: (<><rect x="9" y="8" width="6" height="9" rx="3"/><path d="M9 12h6"/><path d="M10 6l-1-2M14 6l1-2"/><path d="M4 9l3 2M20 9l-3 2M4 16l3-2M20 16l-3-2"/></>) },
+                { key: 'home', label: 'Home', svg: (<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>) },
                 { key: 'projects', label: 'Projects', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>) },
                 { key: 'files', label: 'Files', svg: (<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>) },
+                { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
+                { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>) },
+                { key: 'tracker', label: 'Tracker', svg: (<><rect x="9" y="8" width="6" height="9" rx="3"/><path d="M9 12h6"/><path d="M10 6l-1-2M14 6l1-2"/><path d="M4 9l3 2M20 9l-3 2M4 16l3-2M20 16l-3-2"/></>) },
+                { key: 'command', label: 'Command', svg: (<><polyline points="4 9 7 9 7 20 4 20"/><polyline points="12 9 15 9 15 20 12 20"/><polyline points="20 9 23 9 23 20 20 20"/></>) },
+                { key: 'scribe', label: 'Live Scribe', svg: (<><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></>) },
               ].map(t => (
                 <button
                   key={t.key}
@@ -1415,6 +1301,7 @@ export default function HomeView({
                     <button
                       key={a.slug}
                       className="hm-card"
+                      data-cv6-sel={isSelected ? 'true' : undefined}
                       onClick={() => {
                         if (cv6) {
                           // R31: match the mission card — click pulls the agent's
@@ -1553,6 +1440,7 @@ export default function HomeView({
                             <button
                               key={`mission-${m.mission.slug}`}
                               className="hm-card"
+                              data-cv6-sel={isSelected ? 'true' : undefined}
                               onClick={() => {
                                 selectByItem('mission', m.mission.slug) // R31: cursor follows the click
                                 handleProjectSelect(m.project, m.mission)
@@ -1610,6 +1498,7 @@ export default function HomeView({
                             <button
                               key={`project-${p.slug}`}
                               className="hm-card"
+                              data-cv6-sel={isSelected ? 'true' : undefined}
                               onClick={() => {
                                 selectByItem('project', p.slug) // R31: cursor follows the click
                                 handleProjectSelect(p, null)
@@ -1957,6 +1846,7 @@ export default function HomeView({
                   <button
                     key={n.key}
                     className="hm-needs-card"
+                    data-cv6-sel={isSelected ? 'true' : undefined}
                     onClick={() => n.onOpen && n.onOpen()}
                     style={{
                       display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
