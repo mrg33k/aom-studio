@@ -2906,6 +2906,7 @@ export default function CornerVG() {
                 projectRooms={projectRooms}
                 needsYou={homeNeedsYou}
                 onChatSend={handleCvgChatSend}
+                onReplyToRoom={postReplyToRoom}
                 commandDeckSlot={cv6Mode ? (
                   <CommandTracker
                     worldId={worldId}

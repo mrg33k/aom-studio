@@ -681,11 +681,14 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
 }
 
 // ── Review Tool — excel/inventory list + full review modal (R38 r3) ───────────────
-function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
+function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId }) {
   const [openItem, setOpenItem] = useState(null)
   const [reviewText, setReviewText] = useState('')
   const [done, setDone] = useState({})       // id -> true (reviewed + pushed)
   const [isNarrow, setIsNarrow] = useState(false)
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const check = () => setIsNarrow(window.innerWidth < 720)
@@ -693,43 +696,52 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  const TYPES = [
-    { key: 'image', label: 'Image', color: '#8B5CF6' },
-    { key: 'video', label: 'Video', color: '#EC4899' },
-    { key: 'doc', label: 'Doc', color: '#0066FF' },
-    { key: 'copy', label: 'Copy', color: '#F59E0B' },
-    { key: 'code', label: 'Code', color: '#10B981' },
-  ]
-  const items = useMemo(() => {
-    const out = []; let i = 0
-    for (const p of (projects || []).slice(0, 6)) {
-      const real = (missionsByProject[p.slug] || []).slice(0, 2)
-      const ms = real.length ? real : [{ slug: p.slug + '-main', name: 'Main' }, { slug: p.slug + '-launch', name: 'Launch' }]
-      for (const m of ms.slice(0, 2)) {
-        const t = TYPES[i % TYPES.length]
-        out.push({
-          id: `${p.slug}__${m.slug}__${i}`,
-          project: p.name || p.slug, mission: m.name || m.slug, type: t,
-          item: t.key === 'image' ? 'Hero banner v2' : t.key === 'video' ? 'Launch teaser cut' : t.key === 'doc' ? 'One-pager draft' : t.key === 'copy' ? 'Landing headline set' : 'Checkout flow patch',
-          ready: i % 3 !== 0,
-          notes: `I optimized for ${t.key === 'image' ? 'contrast and the focal crop' : t.key === 'video' ? 'pacing and the first three seconds' : t.key === 'doc' ? 'a tight, skimmable structure' : t.key === 'copy' ? 'a sharper hook and clearer CTA' : 'the smallest safe change'}. One spot I want your eyes on is flagged below.`,
-        })
-        i++
+  // Fetch real deliverables from review-queue endpoint
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}`)
+        if (res?.ok) {
+          const data = await res.json()
+          const deliverables = (data.items || []).map((item, idx) => ({
+            id: item.path,
+            project: item.project,
+            mission: item.mission || '(root)',
+            type: item.type,
+            item: item.name,
+            ready: true,
+            notes: '',
+            path: item.path,
+            last_modified: item.last_modified,
+          }))
+          setItems(deliverables)
+        }
+      } catch (err) {
+        console.error('[review-queue]', err)
+      } finally {
+        setLoading(false)
       }
     }
-    return out
-  }, [projects, missionsByProject])
+    load()
+  }, [worldId])
 
   const headCell = { fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--cv6-text-secondary)', padding: '10px 14px', textAlign: 'left' }
   const cell = { fontSize: '13px', color: 'var(--cv6-text-primary)', padding: '11px 14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
   const cols = '1.1fr 1.1fr 1.2fr 80px 76px'
 
-  function pushReview() {
-    if (!openItem) return
-    setDone(prev => ({ ...prev, [openItem.id]: true }))
-    onPushToRoom && onPushToRoom(openItem, reviewText)
-    console.log('[review-push]', openItem.id, reviewText)
-    setOpenItem(null); setReviewText('')
+  async function pushReview() {
+    if (!openItem || !onReplyToRoom) return
+    const roomSlug = openItem.mission && openItem.mission !== '(root)'
+      ? `${openItem.project}:${openItem.mission}`
+      : openItem.project
+    const res = await onReplyToRoom(roomSlug, reviewText)
+    if (res?.ok) {
+      setDone(prev => ({ ...prev, [openItem.id]: true }))
+      setOpenItem(null)
+      setReviewText('')
+    } else {
+      console.error('[review-push] failed:', res)
+    }
   }
 
   return (
@@ -829,13 +841,9 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
             </button>
           </div>
           <div style={{ flex: 1, display: isNarrow ? 'block' : 'grid', gridTemplateColumns: '1.6fr 1fr', overflow: 'auto', minHeight: 0 }}>
-            {/* Item in full */}
-            <div style={{ padding: '24px', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isNarrow ? '240px' : 'auto' }}>
-              <div style={{ width: '100%', maxWidth: '520px', aspectRatio: openItem.type.key === 'video' ? '16/9' : openItem.type.key === 'image' ? '4/3' : 'auto', minHeight: '220px', borderRadius: '12px', border: `1px solid ${openItem.type.color}40`, background: `${openItem.type.color}12`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '24px', color: openItem.type.color }}>
-                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{openItem.type.key === 'video' ? <><polygon points="5 3 19 12 5 21 5 3"/></> : openItem.type.key === 'image' ? <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></> : openItem.type.key === 'code' ? <><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></> : <><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></>}</svg>
-                <div style={{ fontSize: '13px', fontWeight: '600' }}>{openItem.item}</div>
-                <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', textAlign: 'center' }}>Live {openItem.type.label.toLowerCase()} preview renders here</div>
-              </div>
+            {/* Item in full — show real preview via FilePreviewPanel */}
+            <div style={{ padding: '24px', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isNarrow ? '240px' : 'auto', overflow: 'auto' }}>
+              <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} style={{ width: '100%', maxWidth: '520px' }} />
             </div>
             {/* Review column */}
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--cv6-surface)' }}>
@@ -1733,6 +1741,7 @@ export default function HomeView({
   needsYou = [],
   cv6, // R7: gate for CV6 design system (keyboard nav, missions-primary, inline actions, happening now)
   onChatSend, // real send for the CV6 Chat tool (agent/project routing + Gemini lane on /cvg). Omit → optimistic only (gallery).
+  onReplyToRoom, // real reply function for Review tool (posts notes to rooms). Omit → review notes are optimistic only.
   commandDeckSlot, // real goal-ledger CommandDeck element (passed from CornerVG). When present the Command tool renders the LIVE ledger instead of the sample deck (gallery has none → sample).
 }) {
   // Pin state — keyed by user id
@@ -2910,7 +2919,8 @@ export default function HomeView({
                   <ReviewToolOverlay
                     projects={[...(recentProjects || []), ...(allProjects || [])]}
                     missionsByProject={missionsByProject}
-                    onPushToRoom={(item, text) => { handleProjectSelect && console.log('[review->room]', item.project, item.mission, text) }}
+                    worldId={worldId}
+                    onReplyToRoom={onReplyToRoom}
                   />
                 )}
 
