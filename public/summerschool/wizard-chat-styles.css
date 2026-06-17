@@ -887,6 +887,11 @@ html.dark-theme .math-skill--learning { color: var(--color-gold); }
   padding: 2px 8px;
   border-radius: 999px;
 }
+/* Write chip (Build R93) — writing is Ethan's #1 priority, so it spans the full
+   width as the primary action and sits ABOVE the spelling + math pair (which
+   wrap onto the line below). Filled gold like spelling, just full-width. */
+.practice-chip--write { flex-basis: 100%; }
+
 /* Math challenge chip (Build R25) — secondary outline so the spelling chip (his
    gap) stays the primary; math is his strength, a bonus challenge. */
 .practice-chip--math {

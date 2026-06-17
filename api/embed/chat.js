@@ -1247,6 +1247,12 @@ export default async function handler(req, res) {
   // Math challenge (Build R25): Ethan tapped for a math problem (his strength +
   // Kenilworth focus). The Wizard poses a 7th-grade-prep problem this turn.
   const mathFocus = !!body.math_focus
+  // Write-now (Build R93): Ethan tapped the "Write" quick-start chip. Writing is
+  // his #1 priority, but he could only write when the daily Writing subject came
+  // up. This opens his Writing Desk on demand for extra practice. It is EXTRA
+  // practice, not the scheduled lesson — the Wizard must NOT touch the day board,
+  // so his lesson position is never disturbed (prime directive).
+  const writeFocus = !!body.write_focus
   // Math Lab targeted drill (Build R91): when Ethan taps a specific "learning"
   // skill in his Math Lab, the widget sends math_skill so the Wizard drills THAT
   // exact skill this turn (e.g. the ratios he's still shaky on) instead of a
@@ -1548,6 +1554,12 @@ export default async function handler(req, res) {
         // pattern as opening a project / tapping a spelling word.
         if (essayMode) {
           systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN IS WRITING IN HIS WRITING DESK ===\nThe message he just sent is a sentence he typed into his Writing Desk (his essay so far is shown above). Work on his WRITING with him this turn: react specifically and genuinely to what he just wrote, then warmly nudge his next sentence. Do NOT deflect to another subject or say "we'll get to Writing later" — when he chooses to write, you write with him right now.`
+        }
+        // Write-now tap (Build R93): Ethan opened his Writing Desk on demand for
+        // EXTRA writing (his #1 priority). Get him started immediately, but do NOT
+        // touch the day board — this is extra practice, his lesson stays put.
+        if (writeFocus) {
+          systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED "WRITE" (his Writing Desk just opened) ===\nHe chose to write something RIGHT NOW. Writing is his #1 priority, so meet that energy. For THIS reply: get him started on a piece immediately — ask for exactly ONE first sentence and tell him to type it into his Writing Desk (talking does not count). If he seems unsure what to write, offer one warm, concrete idea to react to. Keep it short and inviting, no long preamble, and do NOT redirect him to the warm-up or another subject. CRITICAL: this is EXTRA writing practice, NOT the scheduled Writing lesson — do NOT change his day board and do NOT mark Writing in-progress in the ledger; leave his lesson position exactly where it is. Writing leads this turn.`
         }
         // Progress recap tap (Build R26) — warm, accurate "how am I doing".
         if (progressSummary) {

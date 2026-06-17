@@ -21,6 +21,7 @@
     messages: [],
     inputValue: '',
     essayInput: '', // draft text in the Writing Desk box (preserved across renders)
+    deskOpen: false, // client-only: Ethan tapped "Write" to open the Desk on demand (Build R93)
     isLoading: false,
     sinceTs: null, // ISO timestamp — poll for messages newer than this
     sessionId: null,
@@ -415,16 +416,35 @@
       </button>`;
   }
 
-  // Quick-practice actions grouped into one tidy row (Build R27) — spelling
-  // (his gap, primary/filled) + math (his strength, secondary/outline) sit
-  // side-by-side under the quests instead of two stacked full-width blocks, so
-  // the board reads calmer for a kid who distracts easily. Each still shows only
-  // when relevant; the row hides entirely when neither does.
+  // --- Write quick-start (Build R93) ----------------------------------------
+  // Writing is Ethan's #1 priority and biggest gap, but he could only write when
+  // the daily Writing subject came up. This chip opens his Writing Desk on demand
+  // for extra practice (with the blank-page starter chips), nudging the Wizard to
+  // invite a first sentence — without touching his day board. Shows while today's
+  // Writing isn't done (matches the math chip), so the board stays calm.
+  function renderWriteChip() {
+    const parsed = parseDayState(appState.dayState);
+    if (!parsed) return '';
+    const writing = parsed.quests.find((q) => /writ/i.test(q.name));
+    if (!writing || writing.status === 'done') return '';
+    if (appState.deskOpen) return ''; // already open — no need to invite again
+    return `<button type="button" class="practice-chip practice-chip--write" title="Open your Writing Desk and start a piece" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.writeStart()">
+        <span class="practice-chip-icon">&#9997;</span>
+        <span class="practice-chip-text">Write something</span>
+      </button>`;
+  }
+
+  // Quick-practice actions grouped into one tidy row (Build R27) — writing (his
+  // #1 priority, primary/filled) + spelling (his gap) + math (his strength,
+  // secondary/outline) sit side-by-side under the quests instead of stacked
+  // full-width blocks, so the board reads calmer for a kid who distracts easily.
+  // Each shows only when relevant; the row hides entirely when none do.
   function renderPracticeRow() {
+    const write = renderWriteChip();
     const spell = renderPracticeChip();
     const math = renderMathChip();
-    if (!spell && !math) return '';
-    return `<div class="practice-row">${spell}${math}</div>`;
+    if (!write && !spell && !math) return '';
+    return `<div class="practice-row">${write}${spell}${math}</div>`;
   }
 
   // --- Bookshelf (Build R11) — his reading, carried across the week ----------
@@ -755,6 +775,10 @@
   // when the Wizard marks Writing in-progress, or once the essay has content.
 
   function isWritingActive() {
+    // Build R93: Ethan can open the Desk on demand (client-only flag) for extra
+    // writing without touching the day board. His real work (typed sentences)
+    // persists via the essay, so a refresh still reopens the Desk if he wrote.
+    if (appState.deskOpen) return true;
     const parsed = parseDayState(appState.dayState);
     if (parsed) {
       const w = parsed.quests.find((q) => /writ/i.test(q.name));
@@ -1073,6 +1097,7 @@
       if (opts.readingFocus) payload.reading_focus = opts.readingFocus;
       if (opts.mathFocus) payload.math_focus = true;
       if (opts.mathSkill) payload.math_skill = opts.mathSkill;
+      if (opts.writeFocus) payload.write_focus = true;
       if (opts.progressSummary) payload.progress_summary = opts.progressSummary;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
@@ -1504,6 +1529,16 @@
     toggleStory: (i) => {
       appState.storyOpen = appState.storyOpen === i ? null : i;
       render();
+    },
+    // Write something (Build R93): open the Writing Desk on demand (client-only,
+    // no board change) and nudge the Wizard to invite a first sentence. His #1
+    // priority gets an entry point any time, not just during the Writing subject.
+    writeStart: () => {
+      if (appState.isLoading) return;
+      appState.deskOpen = true; // open the Desk now (with blank-page starters)
+      appState.navOpen = false; // close the mobile drawer if open
+      render();
+      sendMessage(`I want to write something right now. Can we start a new piece?`, { writeFocus: true });
     },
     // Quick-start chip: practice the first word he hasn't mastered yet.
     practiceSpellStart: () => {
