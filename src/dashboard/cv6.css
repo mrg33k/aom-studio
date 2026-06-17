@@ -890,6 +890,23 @@
 @keyframes hm-shine { 0%{transform:translateX(-120%)} 60%,100%{transform:translateX(320%)} }
 @keyframes hm-progress-slide { 0%{left:-35%} 100%{left:100%} }
 
+/* Neutralize cv5's body-typography bleed inside the cv6 home. The /cvg shell
+   carries [data-cv5], whose `[data-cv5] body/p/span/div { font-family:Figtree;
+   font-size:16px; line-height:1.6; color:... }` (0,1,1) targets elements
+   DIRECTLY and beat cv6's matching (0,1,1) override by bundle order — turning
+   the whole home Figtree/16px (hero shrank to 16px Figtree, washed text). The
+   gallery has no [data-cv5], so it inherits the cv6 base. :where() keeps the
+   type part at ZERO specificity, so this is (0,2,0) — beats cv5 (0,1,1)
+   regardless of order. Placed BEFORE the mono class rules below so those (also
+   (0,2,0)) still win the tie and keep JetBrains Mono. Body now inherits the cv6
+   base from the re-anchored home root, exactly like the gallery. */
+[data-cv6] [data-cv4-home] :where(p, span, div) {
+  color: var(--cv6-text-primary);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
 /* Greeting */
 [data-cv6] .hm-welcome { font-weight:800; font-size:clamp(40px,6vw,64px); line-height:1.02; letter-spacing:-.03em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
 [data-cv6] .hm-welcome .hm-l1 { color:var(--cv6-text-primary); }
@@ -933,24 +950,13 @@
   [data-cv6] .hm-three-column-grid { grid-template-columns: 1fr; }
 }
 
-/* Base text override for the CV6 subtree. The /cvg surface also carries
-   [data-cv5], whose broad body rule
-   `[data-cv5] body/p/span/div { font-family:var(--cv5-body); font-size:16px;
-   line-height:1.6; color:var(--cv5-text-primary) }` targets elements DIRECTLY
-   and beats inheritance. On the /cv6 gallery there is no [data-cv5] ancestor,
-   so spans/divs inherit normally (e.g. the welcome spans inherit the h1's 36px
-   serif). On /cvg the cv5 rule forced them to 16px Figtree — shrinking the hero
-   greeting and washing out text. Mirror the cv5 rule for CV6 with `inherit` so
-   the CV6 home behaves exactly like the gallery: same specificity (0,1,1),
-   cv6.css loads after cv5.css so CV6 wins. Specific class rules (0,2,0)+ and
-   inline cv6 styles still win where intended. */
-/* Re-anchor the CV6 base typography on the home ROOT (data-cv6 + data-cv4-home
-   on the same element, both surfaces). The inherit-override below makes every
-   cv6 span/div/p inherit, but the root is itself a [data-cv6] div, so without
-   this it would inherit Figtree/16px/1.6 from the cv5 shell instead of the cv6
-   base — cascading the wrong font down (e.g. the Inter hero became Figtree).
-   (0,2,0) beats the (0,1,1) override + cv5's (0,1,1), so the chain starts from
-   cv6 values exactly like the gallery's [data-cv6] root (Inter / 16px / 1.5). */
+/* Re-anchor the CV6 base typography on the home ROOT (data-cv6 + data-cv4-home).
+   The :where neutralizer (placed above, before the mono rules) makes every cv6
+   span/div/p inherit; the root is itself a [data-cv6] div, so without this it
+   would inherit Figtree/16px/1.6 from the cv5 shell instead of the cv6 base —
+   cascading the wrong font down. (0,2,0) on the root beats cv5's (0,1,1), so the
+   inherit chain starts from cv6 values exactly like the gallery's [data-cv6]
+   root (Inter / 16px / 1.5). */
 [data-cv6][data-cv4-home] {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
@@ -969,13 +975,4 @@
 [data-cv6][data-cv4-home] .hm-welcome .hm-l1,
 [data-cv6][data-cv4-home] .hm-welcome .hm-l2 {
   font-family: inherit !important;
-}
-
-[data-cv6] p,
-[data-cv6] span,
-[data-cv6] div {
-  color: var(--cv6-text-primary);
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
 }
