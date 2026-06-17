@@ -228,11 +228,26 @@ function isNonSupportEmail(it) {
   return false
 }
 
+// A wish can also be spawned from a marketing blast that slipped past intake
+// (the triage agent even stages a reply to it). Same posture as the email
+// filter: only drop clear automated/marketing senders, and NEVER something a
+// human already replied to or resolved. Conservative AND condition on the body
+// so a real customer ask is never hidden.
+function isNonSupportWish(w) {
+  if (!w || w.status === 'resolved' || w.latest_response) return false
+  const from = String(w.email || '').toLowerCase()
+  const body = String(w.message || '').toLowerCase()
+  if (/(no-?reply|do-?not-?reply|mailer-daemon|postmaster|bounce[@+]|notifications?@|newsletter@|marketing@|mailchimp|sendgrid|klaviyo|kmail-lists|salesforce|hubspot)/.test(from)) return true
+  if (/unsubscribe|update your preferences|manage your preferences|view (this|in) (your )?browser/.test(body) &&
+      /(% off|\bsale\b|webinar|newsletter|deal|limited time|promo|discount|save \$|save up to|free trial|purchase online)/.test(body)) return true
+  return false
+}
+
 // Queue order, not feed order: what waits on you leads, oldest wait first
 // (the person waiting longest deserves the top slot). Finished work sinks.
 function buildItems(wishes, mailboxes) {
   const items = []
-  for (const w of wishes || []) items.push(wishToItem(w))
+  for (const w of wishes || []) { if (isNonSupportWish(w)) continue; items.push(wishToItem(w)) }
   for (const box of mailboxes || []) {
     for (const it of box.needs || []) { if (isNonSupportEmail(it)) continue; items.push(emailToItem(it, false)) }
     for (const it of box.replied || []) { if (isNonSupportEmail(it)) continue; items.push(emailToItem(it, true)) }
