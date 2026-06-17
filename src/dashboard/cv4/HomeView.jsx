@@ -888,6 +888,38 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
     return () => { active = false; clearInterval(t) }
   }, [])
 
+  // R88: live CV6 / cvg bug tracker. Source of truth is a JSON on the studio disk
+  // (corner/missions/corner-ui-cv6/deliverables/cv6-bug-tracker.json), read through
+  // the tunnel so edits show up here with no redeploy. This is the page-by-page
+  // expected-vs-actual list the EA and Patrik both work from.
+  useEffect(() => {
+    let active = true
+    const pull = async () => {
+      try {
+        const r = await authFetch('/api/dashboard/cv6-bugs')
+        if (!active || !r.ok) return
+        const d = await r.json()
+        const bugs = Array.isArray(d.bugs) ? d.bugs : []
+        if (!bugs.length) return
+        const rows = bugs.map(b => ({
+          Page: b.page || '',
+          Bug: b.title || '(untitled)',
+          Expected: b.expected || '',
+          Severity: (b.severity || '').replace(/^\w/, c => c.toUpperCase()),
+          Status: b.status || 'Open',
+          Owner: b.owner || '',
+        }))
+        const cv6Tracker = { id: 'cv6-bugs', name: 'CV6 Bugs', scope: 'Corner CV6', template: 'bugs', columns: ['Page', 'Bug', 'Expected', 'Severity', 'Status', 'Owner'], rows, on: true, live: true }
+        setTrackers(prev => [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')])
+        // This is the active work surface right now, so make it the default view.
+        setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'cv6-bugs' : prev)
+      } catch { /* best-effort */ }
+    }
+    pull()
+    const t = setInterval(pull, 30000)
+    return () => { active = false; clearInterval(t) }
+  }, [])
+
   const sel = trackers.find(t => t.id === selId)
   const scopeName = (slug) => { const p = (projects || []).find(x => x.slug === slug); return p ? (p.name || p.slug) : slug }
 
@@ -2307,24 +2339,7 @@ export default function HomeView({
                     <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
                   </svg>
                 </button>
-
-                {/* Help/Info icon */}
-                <button
-                  title="Help & documentation"
-                  onClick={() => window.open('https://aheadofmarket.com/docs', '_blank')}
-                  style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
-                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
-                  </svg>
-                </button>
+                {/* R88: Help/documentation icon removed (Patrik 2026-06-17) — not used. */}
               </div>
 
               {/* Divider */}
@@ -2881,10 +2896,13 @@ export default function HomeView({
                               className="hm-card"
                               data-cv6-sel={isSelected ? 'true' : undefined}
                               onClick={() => {
-                                selectByItem('mission', m.mission.slug) // R31: cursor follows the click
-                                handleProjectSelect(m.project, m.mission)
+                                // R88 (Patrik): single click opens the conversation + quick reply in the
+                                // right column (matches the agent card). Double click opens the Chat tool.
+                                selectByItem('mission', m.mission.slug) // cursor follows the click
+                                setSelectedRoom({ project: m.project, mission: m.mission })
                                 homeRef.current?.focus()
                               }}
+                              onDoubleClick={() => openChatToolForRoom({ project: m.project, mission: m.mission })}
                               onContextMenu={(e) => { e.preventDefault(); selectByItem('mission', m.mission.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'mission', item: m.mission, project: m.project }) }}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
@@ -2940,10 +2958,13 @@ export default function HomeView({
                               className="hm-card"
                               data-cv6-sel={isSelected ? 'true' : undefined}
                               onClick={() => {
-                                selectByItem('project', p.slug) // R31: cursor follows the click
-                                handleProjectSelect(p, null)
+                                // R88 (Patrik): single click opens the conversation + quick reply in the
+                                // right column. Double click opens the Chat tool.
+                                selectByItem('project', p.slug) // cursor follows the click
+                                setSelectedRoom({ project: p, mission: null })
                                 homeRef.current?.focus()
                               }}
+                              onDoubleClick={() => openChatToolForRoom({ project: p, mission: null })}
                               onContextMenu={(e) => { e.preventDefault(); selectByItem('project', p.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
