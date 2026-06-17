@@ -250,8 +250,10 @@ function SupportColumn({ title, column, items, accentColor }) {
       {/* Cards List */}
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {items.length === 0 ? (
-          <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '16px 0', marginTop: '8px' }}>
-            —
+          <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '20px 12px', marginTop: '8px', lineHeight: 1.5 }}>
+            {column === 'ready' ? 'Nothing staged to send right now.'
+              : column === 'decision' ? 'Nothing waiting on you. Inbox is clear.'
+              : 'Nothing here yet.'}
           </div>
         ) : (
           items.map(item => (
