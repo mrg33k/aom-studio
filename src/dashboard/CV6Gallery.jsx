@@ -377,8 +377,27 @@ const SCREENS = [
       },
     ],
   },
-  // NEXT: Chat thread (needs chat-context mocks) + left/right menu — tracked
-  // in cv4/COMPONENT-MANIFEST.md. Added once their mock wrappers are wired.
+  {
+    id: 'screen-projects',
+    name: 'Projects tool',
+    purpose: 'Finder/Dropbox 3-column browser. Drag a mission onto a project to move it (macOS-style confirm), live create, mobile drill.',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Projects · CV6"><HomeView {...SCREEN_PROPS} initialTool="projects" /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" label="Projects · CV6"><HomeView {...SCREEN_PROPS} initialTool="projects" /></ScreenFrame> },
+    ],
+  },
+  {
+    id: 'screen-review',
+    name: 'Review tool',
+    purpose: 'Excel/inventory list (Project · Mission · Item · Type · eye). Click a ready item for the full review modal.',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Review · CV6"><HomeView {...SCREEN_PROPS} initialTool="review" /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" label="Review · CV6"><HomeView {...SCREEN_PROPS} initialTool="review" /></ScreenFrame> },
+    ],
+  },
+  // NEXT: Tracker tool, Chat thread + left/right menu — tracked in cv4/COMPONENT-MANIFEST.md.
 ]
 
 // Screens first, then pieces. One flat list for lookup + feedback.

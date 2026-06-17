@@ -634,6 +634,143 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
   )
 }
 
+// ── Review Tool — excel/inventory list + full review modal (R38 r3) ───────────────
+function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
+  const [openItem, setOpenItem] = useState(null)
+  const [reviewText, setReviewText] = useState('')
+  const [done, setDone] = useState({})       // id -> true (reviewed + pushed)
+  const [isNarrow, setIsNarrow] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsNarrow(window.innerWidth < 720)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  const TYPES = [
+    { key: 'image', label: 'Image', color: '#8B5CF6' },
+    { key: 'video', label: 'Video', color: '#EC4899' },
+    { key: 'doc', label: 'Doc', color: '#0066FF' },
+    { key: 'copy', label: 'Copy', color: '#F59E0B' },
+    { key: 'code', label: 'Code', color: '#10B981' },
+  ]
+  const items = useMemo(() => {
+    const out = []; let i = 0
+    for (const p of (projects || []).slice(0, 5)) {
+      const ms = (missionsByProject[p.slug] || []).slice(0, 2)
+      for (const m of ms) {
+        const t = TYPES[i % TYPES.length]
+        out.push({
+          id: `${p.slug}__${m.slug}__${i}`,
+          project: p.name || p.slug, mission: m.name || m.slug, type: t,
+          item: t.key === 'image' ? 'Hero banner v2' : t.key === 'video' ? 'Launch teaser cut' : t.key === 'doc' ? 'One-pager draft' : t.key === 'copy' ? 'Landing headline set' : 'Checkout flow patch',
+          ready: i % 3 !== 0,
+          notes: `I optimized for ${t.key === 'image' ? 'contrast and the focal crop' : t.key === 'video' ? 'pacing and the first three seconds' : t.key === 'doc' ? 'a tight, skimmable structure' : t.key === 'copy' ? 'a sharper hook and clearer CTA' : 'the smallest safe change'}. One spot I want your eyes on is flagged below.`,
+        })
+        i++
+      }
+    }
+    return out
+  }, [projects, missionsByProject])
+
+  const headCell = { fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--cv6-text-secondary)', padding: '10px 14px', textAlign: 'left' }
+  const cell = { fontSize: '13px', color: 'var(--cv6-text-primary)', padding: '11px 14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
+  const cols = '1.1fr 1.1fr 1.2fr 80px 56px'
+
+  function pushReview() {
+    if (!openItem) return
+    setDone(prev => ({ ...prev, [openItem.id]: true }))
+    onPushToRoom && onPushToRoom(openItem, reviewText)
+    console.log('[review-push]', openItem.id, reviewText)
+    setOpenItem(null); setReviewText('')
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{items.filter(it => it.ready && !done[it.id]).length} ready for review · {items.length} in the pipeline</div>
+      {/* Inventory table — horizontal scroll on mobile */}
+      <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ minWidth: '560px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: cols, borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)' }}>
+              <div style={headCell}>Project</div><div style={headCell}>Mission</div><div style={headCell}>Item</div><div style={headCell}>Type</div><div style={{ ...headCell, textAlign: 'center' }}>Review</div>
+            </div>
+            <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
+              {items.map(it => {
+                const isDone = done[it.id]
+                const clickable = it.ready && !isDone
+                return (
+                  <div key={it.id} style={{ display: 'grid', gridTemplateColumns: cols, alignItems: 'center', borderBottom: '1px solid var(--cv6-divider)', background: isDone ? 'var(--cv6-surface-hover)' : 'transparent', transition: 'background 120ms ease' }}
+                    onMouseEnter={(e) => { if (clickable) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                    onMouseLeave={(e) => { if (!isDone) e.currentTarget.style.background = 'transparent' }}>
+                    <div style={cell}>{it.project}</div>
+                    <div style={{ ...cell, color: 'var(--cv6-text-secondary)' }}>{it.mission}</div>
+                    <div style={cell}>{it.item}</div>
+                    <div style={{ padding: '11px 14px' }}><span style={{ fontSize: '11px', fontWeight: '700', color: it.type.color, background: `${it.type.color}1f`, padding: '3px 8px', borderRadius: '5px' }}>{it.type.label}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '8px' }}>
+                      <button
+                        onClick={() => { if (clickable) { setOpenItem(it); setReviewText('') } }}
+                        disabled={!clickable}
+                        title={isDone ? 'Reviewed' : it.ready ? 'Review' : 'Not ready yet'}
+                        style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', cursor: clickable ? 'pointer' : 'default',
+                          background: isDone ? 'rgba(16,185,129,0.14)' : clickable ? 'var(--cv6-text-primary)' : 'transparent',
+                          color: isDone ? '#10B981' : clickable ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 120ms ease', opacity: it.ready ? 1 : 0.45 }}>
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+              {items.length === 0 && <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Nothing in the review pipeline yet</div>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Full review modal — covers the list. Item on left, review column on right. */}
+      {openItem && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'var(--cv6-ground, #0c0c0d)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)' }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{openItem.item}</div>
+              <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{openItem.project} · {openItem.mission} · {openItem.type.label}</div>
+            </div>
+            <button onClick={() => { setOpenItem(null); setReviewText('') }} title="Close" style={{ flexShrink: 0, width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div style={{ flex: 1, display: isNarrow ? 'block' : 'grid', gridTemplateColumns: '1.6fr 1fr', overflow: 'auto', minHeight: 0 }}>
+            {/* Item in full */}
+            <div style={{ padding: '24px', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isNarrow ? '240px' : 'auto' }}>
+              <div style={{ width: '100%', maxWidth: '520px', aspectRatio: openItem.type.key === 'video' ? '16/9' : openItem.type.key === 'image' ? '4/3' : 'auto', minHeight: '220px', borderRadius: '12px', border: `1px solid ${openItem.type.color}40`, background: `${openItem.type.color}12`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '24px', color: openItem.type.color }}>
+                <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{openItem.type.key === 'video' ? <><polygon points="5 3 19 12 5 21 5 3"/></> : openItem.type.key === 'image' ? <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></> : openItem.type.key === 'code' ? <><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></> : <><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></>}</svg>
+                <div style={{ fontSize: '13px', fontWeight: '600' }}>{openItem.item}</div>
+                <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', textAlign: 'center' }}>Live {openItem.type.label.toLowerCase()} preview renders here</div>
+              </div>
+            </div>
+            {/* Review column */}
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--cv6-surface)' }}>
+              <div>
+                <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--cv6-text-secondary)', marginBottom: '8px' }}>What the agent did</div>
+                <div style={{ fontSize: '13px', lineHeight: 1.55, color: 'var(--cv6-text-secondary)', background: 'var(--cv6-surface-hover)', borderRadius: '8px', padding: '12px 14px' }}>{openItem.notes}</div>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--cv6-text-secondary)', marginBottom: '8px' }}>Your review</div>
+                <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="Type your notes, changes, or approval…" style={{ flex: 1, minHeight: '120px', resize: 'vertical', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.5, outline: 'none' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button onClick={() => { setOpenItem(null); setReviewText('') }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Close</button>
+                <button onClick={pushReview} style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>Save & push to room</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function HomeView({
   user,
   worldId,
@@ -642,6 +779,7 @@ export default function HomeView({
   onSelectAgent,
   onSelectProject,
   onOpenSearch,
+  initialTool, // R38: gallery pieces can open a tool directly (e.g. 'projects', 'review')
   // "Needs you" rows — home tells the real story before it offers a search box.
   // Each row: { key, label, detail, onOpen }. Parent only passes rows whose
   // click target is real, so every row here is one tap from acting.
@@ -677,7 +815,7 @@ export default function HomeView({
   }
 
   // R21: Tools box state — which tool is open in full-screen mode
-  const [selectedTool, setSelectedTool] = useState('home') // R26: Home tool selected by default when Home screen is active
+  const [selectedTool, setSelectedTool] = useState(initialTool || 'home') // R26: Home default; R38: gallery can open a tool
 
   // R37: right-click menu for active-work cards (missions + projects). Same options as the
   // left-menu; every action is a forward-advance into the project screen (navigate + confirm).
@@ -1667,7 +1805,15 @@ export default function HomeView({
                   />
                 )}
 
-                {['review', 'tracker', 'files'].includes(selectedTool) && (
+                {selectedTool === 'review' && (
+                  <ReviewToolOverlay
+                    projects={[...(recentProjects || []), ...(allProjects || [])]}
+                    missionsByProject={missionsByProject}
+                    onPushToRoom={(item, text) => { handleProjectSelect && console.log('[review->room]', item.project, item.mission, text) }}
+                  />
+                )}
+
+                {['tracker', 'files'].includes(selectedTool) && (
                   <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center', textTransform: 'capitalize' }}>
                     {selectedTool} coming soon
                   </div>
