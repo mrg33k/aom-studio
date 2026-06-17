@@ -1508,7 +1508,9 @@ export default function CornerVG() {
       // tracks the SMALL viewport (URL bar visible). 100dvh was overshooting
       // on iOS Safari and creating ~200px of empty space below the composer.
       height: '100vh',
-      background: C.bg,
+      // cv6: shell ground = cv6-ground so no cv5 beige peeks around the home
+      // (matches the /cv6 gallery's seamless ground in both themes).
+      background: cv6Mode ? 'var(--cv6-ground)' : C.bg,
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
@@ -2854,7 +2856,10 @@ export default function CornerVG() {
               flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
               position: 'relative', zIndex: 1, // keep chat above the wave canvas
               width: '100%',
-              maxWidth: showSupportInbox ? '100%' : (isDesktop ? 840 : '100%'),
+              // cv6 HOME fills the full width like the /cv6 gallery (the home
+              // owns its own centered max-width via .hm-shell). The 840px clamp
+              // is for the chat conversation line-length only — keep it there.
+              maxWidth: showSupportInbox ? '100%' : ((cv6Mode && isHomeMode) ? '100%' : (isDesktop ? 840 : '100%')),
               margin: '0 auto',
               // R22d: frosted panel behind the messages so text reads over
               // the wave — translucent room ink + blur; wave glows through
