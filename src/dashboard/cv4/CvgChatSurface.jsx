@@ -45,6 +45,21 @@ function isHiddenLoopCue(m) {
   return !!(m && m.role === 'user' && m.metadata && m.metadata.master_loop)
 }
 
+// Lightweight inline markdown for chat bubbles. HTML is escaped first, then only
+// our own controlled tags are injected, so this is safe for user + AI text.
+// Handles `code`, **bold**, *italic*. Newlines are kept via whiteSpace:pre-wrap.
+function renderInlineMarkdown(text) {
+  if (!text) return ''
+  let s = String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  s = s.replace(/`([^`]+)`/g, '<code style="font-family:\'Space Mono\',monospace;font-size:0.9em;background:var(--cv6-hover);padding:1px 4px;border-radius:3px">$1</code>')
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>')
+  return s
+}
+
 export default function CvgChatSurface({
   worldId,
   target,
@@ -389,10 +404,9 @@ export default function CvgChatSurface({
                 wordBreak: 'break-word',
                 whiteSpace: 'pre-wrap',
               }}
-            >
-              {/* Messages from Supabase have .text field, not .content */}
-              {msg.text || msg.content}
-            </div>
+              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(msg.text || msg.content) }}
+            />
+            {/* Messages from Supabase use .text (fallback .content) */}
           </div>
           )
         })}

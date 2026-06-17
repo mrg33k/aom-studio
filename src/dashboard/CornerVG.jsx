@@ -464,14 +464,18 @@ export default function CornerVG() {
       return
     }
     setSelectedAgent(null)
+    // Direct-URL load has no friendly mission name in scope (the missions tree
+    // loads inside child components), so title-case the slug as a readable
+    // fallback. Click navigation (handleSelectMission) sets the real name.
+    const titleFromSlug = missionSlug.replace(/[-_:]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
     setConversationTarget(prev => {
       if (prev && prev.slug === routeProjectId && prev.missionSlug === missionSlug) return prev
       return {
-        name: missionSlug,
+        name: titleFromSlug,
         slug: routeProjectId,
         type: 'project',
         missionSlug,
-        missionName: missionSlug,
+        missionName: titleFromSlug,
         missionPath: `corner:${missionSlug}`,
       }
     })
