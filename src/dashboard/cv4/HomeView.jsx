@@ -155,7 +155,7 @@ function getMissionIcon(slug) {
 // (deploy / review / approval / request), rendered in the room's color by the caller.
 function getNeedsTypeIcon(item) {
   const hay = `${item?.label || ''} ${item?.key || ''} ${item?.detail || ''}`.toLowerCase()
-  const p = { viewBox: '0 0 24 24', width: 16, height: 16, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
+  const p = { viewBox: '0 0 24 24', width: 22, height: 22, fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' }
   if (hay.includes('deploy')) {
     return <svg {...p}><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/></svg>
   }
@@ -1248,7 +1248,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, onCreateProject,
       {sel && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: '10px 12px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
           <textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} placeholder={`Message ${sel.name}…`} rows={1} style={{ flex: 1, resize: 'none', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', maxHeight: '110px' }} />
-          <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '8px', border: 'none', background: draft.trim() ? roomSolid(sel.slug) : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '8px', border: 'none', background: draft.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {draft.trim()
               ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>}
@@ -1379,7 +1379,7 @@ function CommandDeckOverlay({ projects, agents }) {
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button onClick={() => sendNow(c.id)} style={{ padding: '8px 16px', borderRadius: '7px', border: 'none', background: roomSolid(c.slug), color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Send now</button>
+                  <button onClick={() => sendNow(c.id)} style={{ padding: '8px 16px', borderRadius: '7px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Send now</button>
                   {c.paused
                     ? <button onClick={() => update(c.id, { paused: false })} style={{ padding: '8px 14px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Resume timer</button>
                     : <button onClick={() => update(c.id, { paused: true })} style={{ padding: '8px 14px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Pause</button>}
@@ -2371,15 +2371,9 @@ export default function HomeView({
                   { key: 'command', label: 'Command', svg: (<><polyline points="4 9 7 9 7 20 4 20"/><polyline points="12 9 15 9 15 20 12 20"/><polyline points="20 9 23 9 23 20 20 20"/></>) },
                   { key: 'scribe', label: 'Live Scribe', svg: (<><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></>) },
                 ]
-                const rest = TOOLS.filter(t => t.key !== 'home')
-                const ordered = [...rest].sort((a, b) => {
-                  const ia = toolRecency.indexOf(a.key), ib = toolRecency.indexOf(b.key)
-                  if (ia === -1 && ib === -1) return 0
-                  if (ia === -1) return 1
-                  if (ib === -1) return -1
-                  return ia - ib
-                })
-                return [TOOLS[0], ...ordered]
+                // R50: LOCKED order — a nav that reshuffles kills spatial memory (Patrik).
+                // Active tool is shown by color/weight in a FIXED position, never moved.
+                return TOOLS
               })().map(t => (
                 <button
                   key={t.key}
@@ -3028,19 +3022,19 @@ export default function HomeView({
                           }
                         }}
                         style={{
-                          width: '42px', height: '100%', flexShrink: 0, borderRadius: '6px', background: '#10B981', color: '#ffffff',
+                          width: '42px', height: '100%', flexShrink: 0, borderRadius: '6px', background: 'var(--cv6-accent-primary)', color: '#ffffff',
                           border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                           transition: 'all 120ms ease',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
                         }}
                         title={replyText.trim() ? 'Send' : 'Voice message'}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#0d9b6e'
+                          e.currentTarget.style.filter = 'brightness(0.92)'
                           e.currentTarget.style.transform = 'translateY(-2px)'
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)'
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.3)'
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#10B981'
+                          e.currentTarget.style.filter = 'none'
                           e.currentTarget.style.transform = 'translateY(0)'
                           e.currentTarget.style.boxShadow = 'none'
                         }}
@@ -3109,7 +3103,7 @@ export default function HomeView({
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1 }}>
                         <span style={{
-                          flexShrink: 0, width: '34px', height: '34px', borderRadius: '8px',
+                          flexShrink: 0, width: '46px', height: '46px', borderRadius: '10px',
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           background: isSelected ? 'rgba(255,255,255,0.18)' : (n.roomSlug ? `hsla(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 55%, 0.14)` : 'rgba(245,158,11,0.14)'),
                           color: isSelected ? '#ffffff' : roomColorHash,
