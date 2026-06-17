@@ -1192,47 +1192,6 @@ export default function HomeView({
           </div>
 
 
-          {/* R34: clean idea chips under the welcome message — tap one to jump into the room and kick it off */}
-          {cv6 && suggestedIdeas.length > 0 && (
-            <div style={{ marginTop: '-8px', marginBottom: '20px' }}>
-              {/* R35: idea-section heading with a lightbulb */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.6c.6.5 1 1.3 1 2.1v.3h6v-.3c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>
-                </svg>
-                Ideas
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-              {suggestedIdeas.map((idea, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    if (idea.project) handleProjectSelect(idea.project, null)
-                    // Real surface: also auto-sends idea.prompt to that room to kick it off.
-                    console.log('[idea]', idea.label, '→', idea.prompt)
-                    homeRef.current?.focus()
-                  }}
-                  title={idea.prompt}
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '8px',
-                    padding: '8px 14px', borderRadius: '999px', cursor: 'pointer', fontFamily: 'inherit',
-                    fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)',
-                    background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
-                    transition: 'all 140ms ease', whiteSpace: 'nowrap',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,102,255,0.10)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
-                >
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={idea.kind === 'spark' ? '#A855F7' : 'var(--cv6-accent-primary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                    <path d="M12 3l1.8 4.6L18.5 9.4 13.8 11.2 12 16 10.2 11.2 5.5 9.4 10.2 7.6z"/>
-                  </svg>
-                  {idea.label}
-                </button>
-              ))}
-              </div>
-            </div>
-          )}
-
           {/* R11: PUNCH-LIST #6 — HAPPENING NOW (density + alive, 6-item grid, breathing room) */}
           {happeningNow && happeningNow.length > 0 && (
             <div className="hm-happening-now" style={{ marginBottom: '48px' }}>
@@ -1296,7 +1255,7 @@ export default function HomeView({
 
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
           {/* R26: tighter gap to greeting (marginTop) + smaller tiles */}
-          <div style={{ marginTop: '-4px', marginBottom: '18px' }}>
+          <div style={{ marginTop: '-4px', marginBottom: '16px' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
               {/* R33: single ordered tool list — Home, then Patrik's order: Projects, Files, Review, Support, Tracker, Command, Live Scribe */}
@@ -1407,7 +1366,7 @@ export default function HomeView({
           )}
 
           {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
-          <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '22px', minHeight: '400px' }}>
+          <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '18px', minHeight: '400px' }}>
             {/* R14: LEFT COLUMN — COLLABORATORS */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
@@ -1959,7 +1918,7 @@ export default function HomeView({
 
           {/* R14: WHAT NEEDS YOU — moved below the 3-column layout */}
           {(needsYou && needsYou.length > 0) && (
-            <div className="hm-section" style={{ marginBottom: '24px' }}>
+            <div className="hm-section" style={{ marginBottom: '18px' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 {needsYou.map((n, idx) => {
@@ -2013,6 +1972,46 @@ export default function HomeView({
                   </button>
                 )
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* R36: Ideas moved to the bottom, below What Needs You — tap one to jump into the room and kick it off */}
+          {cv6 && suggestedIdeas.length > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.6c.6.5 1 1.3 1 2.1v.3h6v-.3c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>
+                </svg>
+                Ideas
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                {suggestedIdeas.map((idea, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      if (idea.project) handleProjectSelect(idea.project, null)
+                      // Real surface: also auto-sends idea.prompt to that room to kick it off.
+                      console.log('[idea]', idea.label, '→', idea.prompt)
+                      homeRef.current?.focus()
+                    }}
+                    title={idea.prompt}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '8px',
+                      padding: '8px 14px', borderRadius: '999px', cursor: 'pointer', fontFamily: 'inherit',
+                      fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)',
+                      background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+                      transition: 'all 140ms ease', whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,102,255,0.10)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={idea.kind === 'spark' ? '#A855F7' : 'var(--cv6-accent-primary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <path d="M12 3l1.8 4.6L18.5 9.4 13.8 11.2 12 16 10.2 11.2 5.5 9.4 10.2 7.6z"/>
+                    </svg>
+                    {idea.label}
+                  </button>
+                ))}
               </div>
             </div>
           )}
