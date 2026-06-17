@@ -292,9 +292,9 @@
 [data-cv6] [data-cv4-home] .hm-welcome {
   font-size: 36px !important;
   font-weight: 700 !important;
-  line-height: 1.2 !important;
+  line-height: 1.1 !important;   /* R39: hug the text so the search button aligns on its row */
   letter-spacing: -0.015em !important;
-  margin: 0 0 20px !important;
+  margin: 0 !important;          /* R39: spacing controlled by the row, not a fixed 20px */
   color: var(--cv6-text-primary) !important;
   grid-column: 1 / -1;
 }
