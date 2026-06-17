@@ -700,7 +700,9 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+    // R48: position:relative so the review modal can sit ABSOLUTELY inside the tool area
+    // (covering only the review tools, never extending past the screen).
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative', minHeight: '100%', flex: 1 }}>
       <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{items.filter(it => it.ready && !done[it.id]).length} ready for review · {items.length} in the pipeline</div>
       {/* Mobile: card per item so the review action (eye) is always visible — no horizontal scroll. */}
       {isNarrow ? (
@@ -774,9 +776,9 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
       </div>
       )}
 
-      {/* Full review modal — covers the list. Item on left, review column on right. */}
+      {/* Full review modal — covers ONLY the review tool area (absolute inside it), never the whole screen. */}
       {openItem && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'var(--cv6-ground, #0c0c0d)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 60, borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)' }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{openItem.item}</div>
