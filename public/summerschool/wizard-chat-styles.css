@@ -750,6 +750,39 @@ html.dark-theme .world-card--remind .world-card-icon { color: var(--color-gold);
 }
 html.dark-theme .spell-word--learning { color: var(--color-gold); }
 
+/* Math Lab (Build R90) — math is Ethan's #1 Kenilworth priority, so his math
+   skills get the same achievement treatment as the Spellbook: learning skills
+   carry a gold outline, mastered ones light up with a gold fill. Read-only pills
+   (active practice is the Math challenge chip), so no tap affordance here. */
+.math-panel { margin-top: 18px; }
+.math-count {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-gold-soft);
+  margin-left: 8px;
+}
+.math-skills { display: flex; flex-wrap: wrap; gap: 7px; }
+.math-skill {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+.math-skill--learning {
+  border: 2px solid var(--color-gold);
+  background: rgba(212, 175, 55, 0.10);
+  color: var(--color-gold);
+}
+.math-skill--mastered {
+  border: 1px solid #b08f25;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  color: #322a55;
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.30);
+}
+html.dark-theme .math-skill--learning { color: var(--color-gold); }
+
 /* Practice-spelling quick-start chip (Build R23) — a one-tap CTA under the
    quests so his #1-gap practice is reachable without scrolling to the Spellbook */
 .practice-row {

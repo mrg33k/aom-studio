@@ -915,6 +915,96 @@ async function saveReading(embedId, visitorId, items) {
   } catch (_) { /* non-fatal */ }
 }
 
+// --- Math Lab (Build R90) — math is the #1 Kenilworth priority, but unlike
+// spelling (Spellbook) and reading (Bookshelf) it had no surface that stacked
+// his wins across the week (it just showed a daily chip and vanished). This
+// tracks the math SKILLS Ethan is building (e.g. "two-step word problems",
+// "equivalent fractions") with learning|mastered, so the priority is visible
+// and he watches mastery build toward 7th grade at Kenilworth. Persisted per
+// visitor (carries across days), emitted as
+// <<MATH: equivalent fractions=mastered; ratios=learning>>, stripped server-side.
+const MATHLAB_PROTOCOL = `
+MATH LAB (his math — math is the #1 priority for Kenilworth, treat it as real).
+Track the math SKILLS Ethan is building, not one-off problems: short skill names
+like "two-step word problems", "equivalent fractions", "ratios", "percent of a
+number", "order of operations". When he works a skill, mark it "learning"; mark
+it "mastered" ONLY when he solves a fresh one correctly AND explains his thinking.
+Each day, naturally re-test 1 skill still in "learning" from earlier in the week.
+Add or update with ONE line placed JUST BEFORE the
+<<READ:>>/<<SPELL:>>/<<REMIND:>>/<<PROJECT:>>/<<ASSIGN:>>/<<DAY:>> lines (the DAY
+line stays the very last line), machine-only, never shown:
+<<MATH: two-step word problems=learning; equivalent fractions=mastered>>
+Keep skills short + lowercase. A few real skills a week, not a flood.`
+
+// Strip ALL <<MATH: ...>> markers anywhere; returns { text, math }.
+function extractMathlab(replyText) {
+  const m = replyText.match(/<<MATH:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<MATH:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, math: m ? m[1].trim() : null }
+}
+
+// Parse "skill=learning|mastered; ..." into [{ skill, status }].
+function parseMathlab(str) {
+  if (!str || typeof str !== 'string') return []
+  const out = []
+  for (const part of str.split(';')) {
+    const m = part.match(/^\s*(.+?)\s*=\s*(mastered|learning)\s*$/i)
+    if (m) out.push({ skill: m[1].trim().toLowerCase(), status: m[2].toLowerCase() })
+  }
+  return out
+}
+
+// Merge new skills with prior. Mastered is sticky; new appended; cap 12.
+function mergeMathlab(newList, priorList) {
+  const byKey = new Map()
+  const order = []
+  for (const s of priorList) {
+    const k = (s.skill || '').toLowerCase()
+    if (k && !byKey.has(k)) { byKey.set(k, { skill: s.skill, status: s.status }); order.push(k) }
+  }
+  for (const s of newList) {
+    const k = (s.skill || '').toLowerCase()
+    if (!k) continue
+    const ex = byKey.get(k)
+    if (!ex) { byKey.set(k, { skill: s.skill, status: s.status }); order.push(k) }
+    else if (s.status === 'mastered') ex.status = 'mastered' // can master; never un-master
+  }
+  return order.map((k) => byKey.get(k)).slice(-12)
+}
+
+async function fetchMathlab(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_mathlab')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveMathlab(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-mathlab',
+        event_type: 'wizard_mathlab',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
+}
+
 // Parse a day-state string into a structured object: { subjects, note, now }
 // Example input: "Reading=done (done); Math=in-progress (step: fraction doubling); note=..."
 // Returns: { subjects: Map<name, {status, detail}>, note, now }
@@ -1230,10 +1320,11 @@ export default async function handler(req, res) {
     let latestReminders = null
     let latestSpellbook = null
     let latestReading = null
+    let latestMathlab = null
     let latestMissions = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading, priorMissions] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading, priorMathlab, priorMissions] = await Promise.all([
           fetchHistory(cfg, visitor_id || null, 10, room),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
@@ -1243,6 +1334,7 @@ export default async function handler(req, res) {
           fetchReminders(embed_id, visitor_id || null),
           fetchSpellbook(embed_id, visitor_id || null),
           fetchReading(embed_id, visitor_id || null),
+          fetchMathlab(embed_id, visitor_id || null),
           fetchMissions(embed_id, visitor_id || null),
         ])
 
@@ -1337,6 +1429,13 @@ export default async function handler(req, res) {
             priorReadingList.map((b) => `- ${b.title} [${b.status}]${b.spot ? ` — ${b.spot}` : ''}`).join('\n')
         }
         systemPrompt += `\n${READING_PROTOCOL}`
+        // Inject Ethan's Math Lab so the Wizard re-tests skills he's still learning.
+        const priorMathList = Array.isArray(priorMathlab) ? priorMathlab : []
+        if (priorMathList.length) {
+          systemPrompt += `\n\n=== ETHAN'S MATH LAB (math skills he's building — re-test the "learning" ones; math is the #1 Kenilworth priority) ===\n` +
+            priorMathList.map((s) => `- ${s.skill} [${s.status}]`).join('\n')
+        }
+        systemPrompt += `\n${MATHLAB_PROTOCOL}`
         // Open-a-project focus goes LAST so it outranks the lesson-flow protocols
         // above — when Ethan taps a project, working on it IS this turn.
         if (projectFocus) {
@@ -1381,7 +1480,8 @@ export default async function handler(req, res) {
         const reminderExtract = extractReminders(projectExtract.text)
         const spellExtract = extractSpellbook(reminderExtract.text)
         const readExtract = extractReading(spellExtract.text)
-        const missionExtract = extractMissions(readExtract.text)
+        const mathExtract = extractMathlab(readExtract.text)
+        const missionExtract = extractMissions(mathExtract.text)
         const dayExtract = extractDayState(missionExtract.text)
         const newDayState = dayExtract.state
         const replyText = dayExtract.text
@@ -1438,6 +1538,14 @@ export default async function handler(req, res) {
           await saveReading(embed_id, visitor_id || null, canonicalReading)
         }
         latestReading = canonicalReading
+
+        // Merge + persist Ethan's Math Lab if the Wizard added/mastered skills.
+        let canonicalMathlab = priorMathList
+        if (mathExtract.math) {
+          canonicalMathlab = mergeMathlab(parseMathlab(mathExtract.math), priorMathList)
+          await saveMathlab(embed_id, visitor_id || null, canonicalMathlab)
+        }
+        latestMathlab = canonicalMathlab
 
         // Merge + persist missions (parts of his projects) if updated this turn.
         let canonicalMissions = priorMissionList
@@ -1515,6 +1623,8 @@ export default async function handler(req, res) {
       spellbook: latestSpellbook,
       // Ethan's Bookshelf (his book + where he is) so his board shows his reading.
       reading: latestReading,
+      // Ethan's Math Lab (skills he's mastering) for his board — Kenilworth focus.
+      mathlab: latestMathlab,
       // Missions (the parts of his projects) so the left bar nests them.
       missions: latestMissions,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.

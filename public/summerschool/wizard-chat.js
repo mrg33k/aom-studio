@@ -31,6 +31,7 @@
     reminders: null, // [{text, status}] his own to-dos the Wizard holds as his EA (Build R8 slice 3)
     spellbook: null, // [{word, status}] spelling + vocab he's mastering (Build R10)
     reading: null, // [{title, status, spot}] his book + where he is (Build R11)
+    mathlab: null, // [{skill, status}] math skills he's mastering, Kenilworth focus (Build R90)
     progress: null, // { totalDone, todayDone, streak, activeDays } base from page load
     baseDone: 0, // all-time subjects done BEFORE today (today is tracked live)
     doneCount: null, // today's completed-subject count (live; null until baseline set)
@@ -452,6 +453,30 @@
       </div>`;
   }
 
+  // --- Math Lab (Build R90) — math is Ethan's #1 Kenilworth priority, but it was
+  // the only academic subject with no surface that stacked his wins across the
+  // week (spelling has the Spellbook, reading the Bookshelf; math just had a
+  // chip that vanished). This shows the math SKILLS he's building — learning ones
+  // and the mastered ones lit with a check — so the priority is visible and he
+  // watches his mastery grow toward 7th grade. Read-only here (active practice is
+  // the "Math challenge" chip); loaded on page load + every turn, so a refresh
+  // keeps his place.
+  function renderMathLab() {
+    const items = appState.mathlab || [];
+    if (!items.length) return '';
+    const mastered = items.filter((s) => (s.status || '').toLowerCase() === 'mastered').length;
+    const skills = items.map((s) => {
+      const isMast = (s.status || '').toLowerCase() === 'mastered';
+      return isMast
+        ? `<span class="math-skill math-skill--mastered" title="Mastered">&#10004; ${escapeHtml(s.skill)}</span>`
+        : `<span class="math-skill math-skill--learning">${escapeHtml(s.skill)}</span>`;
+    }).join('');
+    return `<div class="math-panel">
+        <div class="action-title">&#128290; Math Lab <span class="math-count">${mastered}/${items.length} mastered</span></div>
+        <div class="math-skills">${skills}</div>
+      </div>`;
+  }
+
   // --- Project rail (Build R19) — the right panel inside a project room ------
   // In a project room the school quest board is hidden (it's school's). The rail
   // instead focuses on the open project: its parts (missions) to work on,
@@ -817,6 +842,7 @@
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
+      if (Array.isArray(data.mathlab)) appState.mathlab = data.mathlab;
       if (Array.isArray(data.missions)) appState.missions = data.missions;
       applyProgress(data.progress);
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
@@ -875,6 +901,7 @@
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
+      if (Array.isArray(data.mathlab)) appState.mathlab = data.mathlab;
       if (Array.isArray(data.missions)) appState.missions = data.missions;
       if (appState.doneCount == null) appState.doneCount = countDoneNow();
       // Advance sinceTs so the poll picks up from after the greeting was inserted.
@@ -1034,6 +1061,7 @@
       if (Array.isArray(data.reminders)) appState.reminders = data.reminders;
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
+      if (Array.isArray(data.mathlab)) appState.mathlab = data.mathlab;
       if (Array.isArray(data.missions)) appState.missions = data.missions;
         checkCompletion();
         // Use the server's since_ts so we poll from after the user message
@@ -1253,6 +1281,7 @@
             ${isWritingActive() ? renderWritingDesk() : ''}
             ${renderPracticeRow()}
             ${renderBookshelf()}
+            ${renderMathLab()}
             ${renderSpellbook()}
             ${renderAssignments()}
           ` : `
@@ -1404,6 +1433,7 @@
       const totalDone = (appState.baseDone || 0) + (appState.doneCount || 0);
       const mastered = (appState.spellbook || []).filter((w) => (w.status || '').toLowerCase() === 'mastered').length;
       const books = (appState.reading || []).filter((b) => (b.status || '').toLowerCase() === 'finished').length;
+      const mathMastered = (appState.mathlab || []).filter((s) => (s.status || '').toLowerCase() === 'mastered').length;
       const days = daysUntilSchool();
       const parts = [];
       if (g.todayTotal) parts.push(`${g.todayDone} of ${g.todayTotal} subjects done today`);
@@ -1411,6 +1441,7 @@
       if (g.streak > 1) parts.push(`a ${g.streak}-day streak`);
       if (mastered) parts.push(`${mastered} spelling word${mastered === 1 ? '' : 's'} mastered`);
       if (books) parts.push(`${books} book${books === 1 ? '' : 's'} finished`);
+      if (mathMastered) parts.push(`${mathMastered} math skill${mathMastered === 1 ? '' : 's'} mastered`);
       if (days != null && days >= 0) parts.push(`${days} days until Kenilworth`);
       const summary = parts.join(', ') || 'just getting started today';
       sendMessage(`How am I doing so far?`, { progressSummary: summary });
