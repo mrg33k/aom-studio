@@ -1135,6 +1135,28 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const [localProjects, setLocalProjects] = useState(projects || [])
   const [isNarrow, setIsNarrow] = useState(false)
   const [mobileCol, setMobileCol] = useState(0)       // 0 rooms · 1 chat · 2 files
+  const chatNavRef = useRef(null)
+  // R56 (Patrik): inside the Chat tool, Down/Up move the room selection and Right opens that
+  // room (mobile → chat column; desktop → focus the message box, the chat is already shown).
+  // Document-level so it works without juggling focus; ignores input/textarea targets so the
+  // message box keeps normal cursor keys.
+  useEffect(() => {
+    const onKey = (e) => {
+      const tag = e.target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (!rooms.length) return
+      const idx = Math.max(0, rooms.findIndex(r => sel && r.kind === sel.kind && r.slug === sel.slug))
+      if (e.key === 'ArrowDown') { e.preventDefault(); setSel(rooms[(idx + 1) % rooms.length]) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(rooms[(idx - 1 + rooms.length) % rooms.length]) }
+      else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        if (isNarrow) setMobileCol(1)
+        else chatNavRef.current?.querySelector('textarea')?.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [rooms, sel, isNarrow])
   useEffect(() => {
     if (typeof window === 'undefined') return
     const check = () => setIsNarrow(window.innerWidth < 720)
@@ -1296,7 +1318,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     )
   }
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '230px 1.4fr 0.9fr', height: '460px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+    <div ref={chatNavRef} style={{ display: 'grid', gridTemplateColumns: '230px 1.4fr 0.9fr', height: '460px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
       <RoomsCol /><ChatCol /><FilesCol />
     </div>
   )
@@ -1813,7 +1835,15 @@ export default function HomeView({
     if (!cv6) return []
     try {
       const items = []
-      // R18: Keyboard nav starts with Agents (top left), then cascades down
+      // R56 (Patrik keyboard model): the Tools row is selectable too, first (it sits at the top).
+      // Tab/arrows cycle through these; Right/Enter opens the tool.
+      const KB_TOOLS = [
+        { key: 'home', label: 'Home' }, { key: 'chat', label: 'Chat' }, { key: 'projects', label: 'Projects' },
+        { key: 'files', label: 'Files' }, { key: 'review', label: 'Review' }, { key: 'support', label: 'Support' },
+        { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
+      ]
+      KB_TOOLS.forEach((t) => items.push({ type: 'tool', item: t }))
+      // R18: then Agents (top left), then cascades down
       if (Array.isArray(visibleAgents)) {
         visibleAgents.forEach((a) => {
           if (a?.slug) items.push({ type: 'agent', item: a })
@@ -1845,71 +1875,45 @@ export default function HomeView({
 
   const handleKeyDown = useCallback((e) => {
     if (!cv6 || selectableItems.length === 0) return
-    if (e.key === 'ArrowDown') {
+    if (selectedTool && selectedTool !== 'home') return // R56: when a tool is open, its own nav takes over
+    // R56 (Patrik keyboard model): Tab + Down/Up move the selection across EVERYTHING
+    // (tools, agents, missions, needs-you, projects). Enter behaves EXACTLY like Right:
+    // both "activate" the selected thing — open a tool, or two-press a room (quick view → open).
+    const activate = () => {
+      if (selectedIndex < 0 || selectedIndex >= selectableItems.length) return
+      const sel = selectableItems[selectedIndex]
+      if (sel.type === 'tool') {
+        openTool(sel.item.key) // Right/Enter opens tools too
+      } else if (sel.type === 'needsyou') {
+        sel.item.onOpen && sel.item.onOpen()
+      } else if (sel.type === 'mission') {
+        const inQuickView = selectedRoom && selectedRoom.mission && selectedRoom.mission.slug === sel.item.slug
+        if (!inQuickView) { recordVisit(sel.project.slug, sel.item.slug); setSelectedRoom({ project: sel.project, mission: sel.item }) }
+        else { onSelectProject && onSelectProject(sel.project, sel.item) }
+      } else if (sel.type === 'project') {
+        const inQuickView = selectedRoom && !selectedRoom.mission && selectedRoom.project?.slug === sel.item.slug
+        if (!inQuickView) { recordVisit(sel.item.slug, null); setSelectedRoom({ project: sel.item, mission: null }) }
+        else { onSelectProject && onSelectProject(sel.item, null) }
+      } else if (sel.type === 'agent') {
+        const inQuickView = selectedRoom && selectedRoom.agent && selectedRoom.agent.slug === sel.item.slug
+        if (!inQuickView) { setSelectedRoom({ agent: sel.item, project: null, mission: null }) }
+        else { onSelectAgent && onSelectAgent(sel.item) }
+      }
+    }
+    if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
       e.preventDefault()
       setSelectedIndex(prev => (prev + 1) % selectableItems.length)
-    } else if (e.key === 'ArrowUp') {
+    } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
       e.preventDefault()
       setSelectedIndex(prev => prev === -1 ? selectableItems.length - 1 : (prev - 1 + selectableItems.length) % selectableItems.length)
-    } else if (e.key === 'Enter') {
-      // Enter opens the selected item
+    } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
       e.preventDefault()
-      if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
-        const sel = selectableItems[selectedIndex]
-        if (sel.type === 'mission') {
-          handleProjectSelect(sel.project, sel.item)
-        } else if (sel.type === 'agent') {
-          onSelectAgent && onSelectAgent(sel.item)
-        } else if (sel.type === 'project') {
-          handleProjectSelect(sel.item, null)
-        } else if (sel.type === 'needsyou') {
-          sel.item.onOpen && sel.item.onOpen()
-        }
-      }
-    } else if (e.key === 'ArrowRight') {
-      // R26: ArrowRight two-press behavior (Patrik's model)
-      // First press: pull the conversation into quick view (no navigation)
-      // Second press (same item already in quick view): open the room
-      // R30b: Extended to support agent type
-      e.preventDefault()
-      if (selectedIndex >= 0 && selectedIndex < selectableItems.length) {
-        const sel = selectableItems[selectedIndex]
-        if (sel.type === 'mission') {
-          const inQuickView = selectedRoom && selectedRoom.mission && selectedRoom.mission.slug === sel.item.slug
-          if (!inQuickView) {
-            recordVisit(sel.project.slug, sel.item.slug)
-            setSelectedRoom({ project: sel.project, mission: sel.item })
-          } else {
-            onSelectProject && onSelectProject(sel.project, sel.item)
-          }
-        } else if (sel.type === 'project') {
-          const inQuickView = selectedRoom && !selectedRoom.mission && selectedRoom.project?.slug === sel.item.slug
-          if (!inQuickView) {
-            recordVisit(sel.item.slug, null)
-            setSelectedRoom({ project: sel.item, mission: null })
-          } else {
-            onSelectProject && onSelectProject(sel.item, null)
-          }
-        } else if (sel.type === 'agent') {
-          const inQuickView = selectedRoom && selectedRoom.agent && selectedRoom.agent.slug === sel.item.slug
-          if (!inQuickView) {
-            // First press: pull agent conversation into quick view
-            setSelectedRoom({ agent: sel.item, project: null, mission: null })
-          } else {
-            // Second press: open the agent
-            onSelectAgent && onSelectAgent(sel.item)
-          }
-        }
-      }
+      activate()
     } else if (e.key === 'ArrowLeft') {
       // PUNCH-LIST #2: ArrowLeft back-to-home hook (room-side implementation pending)
-      // This is the Home-side wiring. Room view will call onBackToHome to return here.
-      // Documented hook: onBackToHome prop must be connected by room view.
       e.preventDefault()
-      // For now, Home is already visible; this prep allows room view to wire back
-      // Handler will be: onBackToHome?.()
     }
-  }, [cv6, selectableItems, selectedIndex, onSelectAgent, selectedRoom, onSelectProject])
+  }, [cv6, selectableItems, selectedIndex, onSelectAgent, selectedRoom, onSelectProject, openTool, selectedTool])
 
   useEffect(() => {
     if (!cv6) return
@@ -2374,6 +2378,8 @@ export default function HomeView({
                     flex: '0 0 auto',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     padding: '12px 16px', borderRadius: '6px', border: selectedTool === t.key ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                    // R56: ring the tool the keyboard cursor is on (Tab/arrows), distinct from the open tool
+                    boxShadow: (selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'tool' && selectableItems[selectedIndex]?.item?.key === t.key) ? '0 0 0 2px var(--cv6-accent-primary)' : 'none',
                     background: selectedTool === t.key ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                     color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)',
                     cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
