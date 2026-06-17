@@ -383,10 +383,9 @@
   function renderPracticeChip() {
     const words = (appState.spellbook || []).filter((w) => (w.status || '').toLowerCase() !== 'mastered');
     if (!words.length) return '';
-    return `<button type="button" class="practice-chip" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.practiceSpellStart()">
+    return `<button type="button" class="practice-chip" title="${words.length} word${words.length === 1 ? '' : 's'} to practice" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.practiceSpellStart()">
         <span class="practice-chip-icon">&#9998;</span>
         <span class="practice-chip-text">Practice spelling</span>
-        <span class="practice-chip-count">${words.length} word${words.length === 1 ? '' : 's'}</span>
       </button>`;
   }
 
@@ -400,11 +399,22 @@
     if (!parsed) return '';
     const math = parsed.quests.find((q) => /math/i.test(q.name));
     if (!math || math.status === 'done') return '';
-    return `<button type="button" class="practice-chip practice-chip--math" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.mathChallenge()">
+    return `<button type="button" class="practice-chip practice-chip--math" title="A 7th-grade-prep problem to stay sharp for Kenilworth" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.mathChallenge()">
         <span class="practice-chip-icon">&#128290;</span>
         <span class="practice-chip-text">Math challenge</span>
-        <span class="practice-chip-count">Kenilworth prep</span>
       </button>`;
+  }
+
+  // Quick-practice actions grouped into one tidy row (Build R27) — spelling
+  // (his gap, primary/filled) + math (his strength, secondary/outline) sit
+  // side-by-side under the quests instead of two stacked full-width blocks, so
+  // the board reads calmer for a kid who distracts easily. Each still shows only
+  // when relevant; the row hides entirely when neither does.
+  function renderPracticeRow() {
+    const spell = renderPracticeChip();
+    const math = renderMathChip();
+    if (!spell && !math) return '';
+    return `<div class="practice-row">${spell}${math}</div>`;
   }
 
   // --- Bookshelf (Build R11) — his reading, carried across the week ----------
@@ -1220,8 +1230,7 @@
             ${isWritingActive() ? renderWritingDesk() : ''}
             <div class="action-title">&#10022; Today's Quests</div>
             ${renderQuestsPanel()}
-            ${renderPracticeChip()}
-            ${renderMathChip()}
+            ${renderPracticeRow()}
             ${renderBookshelf()}
             ${renderSpellbook()}
             ${renderAssignments()}
