@@ -82,6 +82,10 @@ export default function CvgChatSurface({
   // step (real step events from /api/dashboard/message-steps), or "Working…".
   const [awaitingReply, setAwaitingReply] = useState(false)
   const [stepText, setStepText] = useState('')
+  const [loadError, setLoadError] = useState('')   // chat-2: surface a failed load
+  const [sendError, setSendError] = useState('')   // chat-1: surface a failed send
+  const [reloadKey, setReloadKey] = useState(0)     // bump to retry loadHistory
+  const [lastFailedText, setLastFailedText] = useState('') // chat-1: retry payload
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -97,6 +101,7 @@ export default function CvgChatSurface({
 
     setLoading(true)
     setMessages([])
+    setLoadError('')
 
     const loadHistory = async () => {
       try {
@@ -111,12 +116,11 @@ export default function CvgChatSurface({
             .order('timestamp', { ascending: false })
             .limit(200)
 
-          if (!error && data) {
-            const filtered = data
-              .reverse()
-              .filter(m => !isHiddenLoopCue(m))
-            setMessages(filtered)
-          }
+          if (error) throw error
+          const filtered = (data || [])
+            .reverse()
+            .filter(m => !isHiddenLoopCue(m))
+          setMessages(filtered)
         } else if (target.type === 'project') {
           // Load project chat: project=target.slug OR agent=project:target.slug
           // Support both owner (worldId) and shared (shared:slug) channels
@@ -132,22 +136,22 @@ export default function CvgChatSurface({
             .order('timestamp', { ascending: false })
             .limit(400)
 
-          if (!error && data) {
-            const filtered = data
-              .filter(matchesMission)
-              .reverse()
-            setMessages(filtered)
-          }
+          if (error) throw error
+          const filtered = (data || [])
+            .filter(matchesMission)
+            .reverse()
+          setMessages(filtered)
         }
       } catch (e) {
         console.error('[CvgChatSurface] load history error', e)
+        setLoadError('We could not load this conversation.')
       } finally {
         setLoading(false)
       }
     }
 
     loadHistory()
-  }, [target?.slug, target?.type, worldId, target?.missionSlug])
+  }, [target?.slug, target?.type, worldId, target?.missionSlug, reloadKey])
 
   // Real-time subscription
   useEffect(() => {
@@ -257,6 +261,7 @@ export default function CvgChatSurface({
     setIsSending(true)
     setAwaitingReply(true)
     setStepText('Working…')
+    setSendError('')
 
     try {
       // Call parent's onSend handler with the target + text
@@ -264,8 +269,15 @@ export default function CvgChatSurface({
       if (onSend) {
         await onSend(target, text)
       }
+      setLastFailedText('')
     } catch (e) {
       console.error('[CvgChatSurface] send failed', e)
+      // chat-1: don't lose the message or hang the indicator — surface it + offer retry.
+      setSendError("Your message didn't send.")
+      setLastFailedText(text)
+      setInput(text)
+      setAwaitingReply(false)
+      setStepText('')
     } finally {
       setIsSending(false)
     }
@@ -393,7 +405,16 @@ export default function CvgChatSurface({
           </div>
         )}
 
-        {!loading && messages.length === 0 && (
+        {!loading && loadError && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', fontSize: 14 }}>
+            <div>
+              <p style={{ margin: '0 0 10px', color: 'var(--cv6-text-secondary)' }}>{loadError}</p>
+              <button onClick={() => setReloadKey(k => k + 1)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>Try again</button>
+            </div>
+          </div>
+        )}
+
+        {!loading && !loadError && messages.length === 0 && (
           <div
             style={{
               display: 'flex',
@@ -493,8 +514,13 @@ export default function CvgChatSurface({
           flexShrink: 0,
         }}
       >
-        {/* Character count / hint (optional, shown on focus) */}
-        {/* WIRING NEEDED: Add paste chips, attachment previews, etc. here */}
+        {/* chat-1: a failed send shows here with a one-tap retry; the text is also restored to the box. */}
+        {sendError && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)' }}>
+            <span style={{ fontSize: 13, color: '#EF4444' }}>{sendError}</span>
+            <button onClick={() => { if (lastFailedText) { setInput(lastFailedText); } setSendError(''); handleSend(); }} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#EF4444', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700 }}>Retry</button>
+          </div>
+        )}
 
         {/* Input row */}
         <div
