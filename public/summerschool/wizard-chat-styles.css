@@ -731,6 +731,40 @@ html.dark-theme .world-card--remind .world-card-icon { color: var(--color-gold);
 }
 html.dark-theme .spell-word--learning { color: var(--color-gold); }
 
+/* Practice-spelling quick-start chip (Build R23) — a one-tap CTA under the
+   quests so his #1-gap practice is reachable without scrolling to the Spellbook */
+.practice-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 14px 0 6px;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));
+  color: #322a55;
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.30);
+  transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+.practice-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212, 175, 55, 0.40); filter: brightness(1.04); }
+.practice-chip:active { transform: translateY(0); }
+.practice-chip:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: none; }
+.practice-chip-icon { font-size: 15px; }
+.practice-chip-text { flex: 1 1 auto; text-align: left; }
+.practice-chip-count {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(50, 42, 85, 0.18);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
 /* Bookshelf (Build R11) — his reading, carried across the week. Compact: the
    current book (title + where he is) as a gold-accent card, plus a small shelf
    line of finished books that grows as an achievement. */

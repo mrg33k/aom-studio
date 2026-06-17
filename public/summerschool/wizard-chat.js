@@ -375,6 +375,21 @@
       </div>`;
   }
 
+  // --- Practice spelling quick-start (Build R23) ----------------------------
+  // Spelling is Ethan's #1 gap, and his Spellbook used to sit at the very bottom
+  // of the rail. This compact chip — right under Today's Quests — lets him jump
+  // straight into practicing a word with the Wizard without scrolling. Shows
+  // only when he has unmastered words.
+  function renderPracticeChip() {
+    const words = (appState.spellbook || []).filter((w) => (w.status || '').toLowerCase() !== 'mastered');
+    if (!words.length) return '';
+    return `<button type="button" class="practice-chip" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.practiceSpellStart()">
+        <span class="practice-chip-icon">&#9998;</span>
+        <span class="practice-chip-text">Practice spelling</span>
+        <span class="practice-chip-count">${words.length} word${words.length === 1 ? '' : 's'}</span>
+      </button>`;
+  }
+
   // --- Bookshelf (Build R11) — his reading, carried across the week ----------
   // Reading is Ethan's other core gap. The book he's on + where he is shows here
   // and carries day to day so he picks the thread back up; finished books stack
@@ -1183,9 +1198,10 @@
             ${isWritingActive() ? renderWritingDesk() : ''}
             <div class="action-title">&#10022; Today's Quests</div>
             ${renderQuestsPanel()}
-            ${renderAssignments()}
+            ${renderPracticeChip()}
             ${renderBookshelf()}
             ${renderSpellbook()}
+            ${renderAssignments()}
           ` : `
             ${renderGameHud()}
             ${renderProjectRail()}
@@ -1314,6 +1330,14 @@
       const w = list[i];
       if (!w || appState.isLoading) return;
       sendMessage(`Can you quiz me on spelling the word "${w.word}"? Say it, use it in a sentence, ask me to spell it out loud, then check my answer and give me a quick tip if I miss it.`, { practiceWord: w.word });
+    },
+    // Quick-start chip: practice the first word he hasn't mastered yet.
+    practiceSpellStart: () => {
+      if (appState.isLoading) return;
+      const list = appState.spellbook || [];
+      const idx = list.findIndex((w) => (w.status || '').toLowerCase() !== 'mastered');
+      if (idx === -1) return;
+      window.__wizardChat.practiceSpell(idx);
     },
     completeItem: (kind, i) => {
       // spellbook items key on .word and finish as 'mastered'; the rest key on
