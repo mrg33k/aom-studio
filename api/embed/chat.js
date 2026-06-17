@@ -1233,6 +1233,14 @@ export default async function handler(req, res) {
             systemPrompt += `\n\n=== YESTERDAY (your final ledger from the previous session) ===\n${yesterday.payload.state}\nGREETING RULE — overrides the standard opener for THIS first reply only: your very first sentence MUST mention one specific thing from yesterday's ledger (something he crushed, or something left unfinished that you'll pick back up). Example shape: "Morning, Ethan! Yesterday you crushed those math problems — today let's finish that writing piece you started." THEN continue into today's normal opener. Never recite the ledger itself.`
           }
         }
+        // Opener rule (Build R28): the day's first message sets the tone. For a
+        // 12yo who distracts easily, a flat "I'm ready when you are" loses him —
+        // the opener must be warm AND directional (lead straight into the first
+        // thing). Applies to every session-start; layers under the yesterday
+        // recall rule above. Not on the after-school wind-down (its own flow).
+        if (visitorText === '<<session-start>>' && !afterSchool) {
+          systemPrompt += `\n\n=== THIS IS THE START OF ETHAN'S DAY — YOUR OPENER ===\nOpen warm and with a little energy, then KICK THE DAY OFF YOURSELF in the same short reply — do not wait for him to decide what to do. Lead straight into the first thing (the Communication warm-up) so he has ONE clear thing to engage with right away. Keep it to 2-4 short sentences. NEVER end your opener by handing the decision back to him ("I'm ready when you are", "what do you want to do?", "let me know") — YOU set the first step. He focuses best when the next move is obvious.`
+        }
         systemPrompt += `\n${DAY_STATE_PROTOCOL}`
         // Inject the live essay so the Wizard sees exactly what Ethan has typed
         // into his Writing Desk (survives the 10-message history window).
