@@ -1167,7 +1167,7 @@ export default function HomeView({
           {/* R26: tighter gap to greeting (marginTop) + smaller tiles */}
           <div style={{ marginTop: '-4px', marginBottom: '28px' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
               {/* Home tool */}
               <button
                 onClick={() => setSelectedTool('home')}
@@ -1293,6 +1293,35 @@ export default function HomeView({
                 </svg>
                 <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Live Scribe</span>
               </button>
+
+              {/* R32: upcoming tools — icons placed now, surfaces built later (Review, Tracker, Projects, Files) */}
+              {[
+                { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
+                { key: 'tracker', label: 'Tracker', svg: (<><rect x="9" y="8" width="6" height="9" rx="3"/><path d="M9 12h6"/><path d="M10 6l-1-2M14 6l1-2"/><path d="M4 9l3 2M20 9l-3 2M4 16l3-2M20 16l-3-2"/></>) },
+                { key: 'projects', label: 'Projects', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>) },
+                { key: 'files', label: 'Files', svg: (<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>) },
+              ].map(t => (
+                <button
+                  key={t.key}
+                  onClick={() => setSelectedTool(t.key)}
+                  title={t.label}
+                  style={{
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                    padding: '12px 16px', borderRadius: '6px', border: selectedTool === t.key ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                    background: selectedTool === t.key ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                    color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)',
+                    cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                    minWidth: '64px', minHeight: '56px',
+                  }}
+                  onMouseEnter={(e) => { if (selectedTool !== t.key) { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)' } }}
+                  onMouseLeave={(e) => { if (selectedTool !== t.key) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' } }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+                    {t.svg}
+                  </svg>
+                  <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>{t.label}</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -1312,6 +1341,10 @@ export default function HomeView({
                   {selectedTool === 'support' && 'Support'}
                   {selectedTool === 'command' && 'Command Deck'}
                   {selectedTool === 'scribe' && 'Live Scribe'}
+                  {selectedTool === 'review' && 'Review'}
+                  {selectedTool === 'tracker' && 'Tracker'}
+                  {selectedTool === 'projects' && 'Projects'}
+                  {selectedTool === 'files' && 'Files'}
                 </div>
                 <button
                   onClick={() => setSelectedTool('home')}
@@ -1352,6 +1385,12 @@ export default function HomeView({
                 {selectedTool === 'scribe' && (
                   <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
                     Live Scribe coming soon
+                  </div>
+                )}
+
+                {['review', 'tracker', 'projects', 'files'].includes(selectedTool) && (
+                  <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center', textTransform: 'capitalize' }}>
+                    {selectedTool} coming soon
                   </div>
                 )}
               </div>
@@ -1397,7 +1436,7 @@ export default function HomeView({
                         boxShadow: isSelected ? `0 3px 14px ${roomGlow(a.slug)}` : 'none',
                         transform: isSelected ? 'translateY(-1px)' : 'none',
                         borderRadius: '6px', cursor: 'pointer',
-                        transition: 'background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease',
+                        transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
                         fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
                       }}
                       onMouseEnter={(e) => {
@@ -1528,7 +1567,7 @@ export default function HomeView({
                                 boxShadow: isSelected ? `0 3px 14px ${roomGlow(m.project.slug)}` : 'none',
                                 transform: isSelected ? 'translateY(-1px)' : 'none',
                                 borderRadius: '6px', cursor: 'pointer',
-                                transition: 'background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease',
+                                transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
                                 fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
                                 flex: '0 0 auto', minHeight: '56px',
                               }}
@@ -1585,7 +1624,7 @@ export default function HomeView({
                                 boxShadow: isSelected ? `0 3px 14px ${roomGlow(p.slug)}` : 'none',
                                 transform: isSelected ? 'translateY(-1px)' : 'none',
                                 borderRadius: '6px', cursor: 'pointer',
-                                transition: 'background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease',
+                                transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
                                 fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
                                 flex: '0 0 auto', minHeight: '56px',
                               }}
@@ -1924,7 +1963,7 @@ export default function HomeView({
                       background: isSelected ? roomColorHash : 'var(--cv6-surface)',
                       color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
                       border: isSelected ? `2px solid ${roomColorHash}` : '1px solid var(--cv6-divider)',
-                      borderRadius: '8px', cursor: 'pointer', transition: 'all 200ms ease',
+                      borderRadius: '8px', cursor: 'pointer', transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
                       textAlign: 'left', fontFamily: 'inherit', fontWeight: '500',
                       boxShadow: isSelected ? `0 3px 14px ${n.roomSlug ? `hsla(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 50%, 0.30)` : 'rgba(245,158,11,0.25)'}` : 'none',
                     }}
