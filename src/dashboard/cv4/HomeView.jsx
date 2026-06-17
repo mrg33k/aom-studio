@@ -2024,7 +2024,7 @@ export default function HomeView({
             <div style={{
               animation: 'cv6-tool-roll-in 300ms ease-out',
               marginBottom: '24px', borderRadius: '8px', border: 'none',
-              background: 'transparent', overflow: 'hidden', minHeight: '280px',
+              background: 'transparent', overflow: 'hidden', minHeight: '72vh',
             }}>
               {/* Tool header with close control */}
               <div style={{
@@ -2065,7 +2065,7 @@ export default function HomeView({
               </div>
 
               {/* Tool content */}
-              <div style={{ padding: '16px 20px', maxHeight: '500px', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '16px 20px', minHeight: '64vh', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {selectedTool === 'support' && (
                   <SupportToolOverlay worldId={worldId || 'aom'} />
                 )}
@@ -2112,6 +2112,8 @@ export default function HomeView({
             </div>
           )}
 
+          {/* R39: home body (columns, what-needs-you, ideas) hides while a tool is open — tools get the full screen */}
+          {selectedTool === 'home' && (<>
           {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
           <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '18px', minHeight: '400px' }}>
             {/* R14: LEFT COLUMN — COLLABORATORS */}
@@ -2764,6 +2766,9 @@ export default function HomeView({
               </div>
             </div>
           )}
+          </>)}
+
+          {/* R39: close home-body fragment */}
           </>)}
 
           {/* R37: right-click menu for active-work cards — mirrors the left-menu; each action advances into the project screen */}
