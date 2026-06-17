@@ -389,31 +389,77 @@ function SupportCard({ item, accentColor }) {
 // Export SupportToolOverlay for use in CV6Gallery
 export { SupportToolOverlay }
 
-// ── Projects Tool — Finder/Dropbox-style 3-column browser (R38 round 1) ───────────
-// Column 1 Projects → Column 2 Missions → Column 3 Preview. Drill down by clicking.
-// Drag-drop + move-confirmation + live add land in the next rounds.
-function ProjectsToolOverlay({ projects, missionsByProject, onOpen }) {
+// ── Projects Tool — Finder/Dropbox 3-column browser, drag-to-move + confirm + live create + mobile (R38 r2) ──
+function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen }) {
+  const [projects, setProjects] = useState(projectsProp || [])
+  const [missionsMap, setMissionsMap] = useState(missionsByProject || {})
   const [selProj, setSelProj] = useState(null)
   const [selMission, setSelMission] = useState(null)
-  const missions = selProj ? (missionsByProject[selProj.slug] || []) : []
+  const [dragMission, setDragMission] = useState(null)   // { mission, fromSlug }
+  const [dropProj, setDropProj] = useState(null)         // slug hovered as drop target
+  const [confirmMove, setConfirmMove] = useState(null)   // { mission, fromProj, toProj }
+  const [creating, setCreating] = useState(null)         // 'project' | 'mission'
+  const [draftName, setDraftName] = useState('')
+  const [mobileCol, setMobileCol] = useState(0)          // 0 projects → 1 missions → 2 preview
+  const [isNarrow, setIsNarrow] = useState(false)
+
+  useEffect(() => { setProjects(projectsProp || []) }, [projectsProp])
+  useEffect(() => { setMissionsMap(missionsByProject || {}) }, [missionsByProject])
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsNarrow(window.innerWidth < 720)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
+  const missions = selProj ? (missionsMap[selProj.slug] || []) : []
+  const slugify = (name, n) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + n
+
+  function doMove(mission, fromSlug, toSlug) {
+    setMissionsMap(prev => {
+      const next = { ...prev }
+      next[fromSlug] = (next[fromSlug] || []).filter(m => m.slug !== mission.slug)
+      next[toSlug] = [...(next[toSlug] || []).filter(m => m.slug !== mission.slug), mission]
+      return next
+    })
+    console.log('[project-move]', mission.slug, fromSlug, '->', toSlug) // API persist wires next round
+  }
+  function commitCreate() {
+    const name = draftName.trim(); if (!name) { setCreating(null); return }
+    if (creating === 'project') {
+      const slug = slugify(name, projects.length + 1)
+      const p = { slug, name }
+      setProjects(prev => [p, ...prev]); setMissionsMap(prev => ({ ...prev, [slug]: [] }))
+      setSelProj(p); setSelMission(null); if (isNarrow) setMobileCol(1)
+      console.log('[project-create]', slug, name)
+    } else if (creating === 'mission' && selProj) {
+      const slug = slugify(name, (missionsMap[selProj.slug] || []).length + 1)
+      const m = { slug, name, status: 'idle' }
+      setMissionsMap(prev => ({ ...prev, [selProj.slug]: [m, ...(prev[selProj.slug] || [])] }))
+      setSelMission(m); if (isNarrow) setMobileCol(2)
+      console.log('[mission-create]', selProj.slug, slug, name)
+    }
+    setCreating(null); setDraftName('')
+  }
 
   const colStyle = { display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto' }
   const headStyle = { flexShrink: 0, fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)', padding: '10px 14px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', borderBottom: '1px solid var(--cv6-divider)', zIndex: 1 }
   const emptyHint = (t) => <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>{t}</div>
 
-  const Row = ({ label, sub, slug, active, onClick, chevron }) => (
+  const Row = ({ label, sub, slug, active, onClick, chevron, dnd, dropActive }) => (
     <button
       onClick={onClick}
-      draggable
+      {...(dnd || {})}
       style={{
-        display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left',
-        padding: '9px 12px', border: 'none', borderRadius: '6px', margin: '2px 6px', cursor: 'pointer', fontFamily: 'inherit',
-        background: active ? `hsla(${hue(slug)}, 60%, 48%, 0.12)` : 'transparent',
-        transition: 'background 120ms ease', maxWidth: 'calc(100% - 12px)',
+        display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left',
+        padding: '9px 12px', borderRadius: '6px', margin: '2px 6px', cursor: 'pointer', fontFamily: 'inherit',
+        border: dropActive ? '2px dashed var(--cv6-accent-primary)' : '2px solid transparent',
+        background: dropActive ? 'hsla(220,90%,55%,0.10)' : active ? `hsla(${hue(slug)}, 60%, 48%, 0.12)` : 'transparent',
+        transition: 'background 120ms ease',
       }}
-      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+      onMouseEnter={(e) => { if (!active && !dropActive) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+      onMouseLeave={(e) => { if (!active && !dropActive) e.currentTarget.style.background = 'transparent' }}
     >
       <span style={{ flexShrink: 0, color: `hsl(${hue(slug)}, 60%, 52%)`, display: 'inline-flex' }}>
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -426,57 +472,127 @@ function ProjectsToolOverlay({ projects, missionsByProject, onOpen }) {
     </button>
   )
 
+  const missionDnd = (m) => ({
+    draggable: true,
+    onDragStart: (e) => { setDragMission({ mission: m, fromSlug: selProj.slug }); e.dataTransfer.effectAllowed = 'move' },
+    onDragEnd: () => { setDragMission(null); setDropProj(null) },
+  })
+  const projectDrop = (p) => ({
+    onDragOver: (e) => { if (dragMission && dragMission.fromSlug !== p.slug) { e.preventDefault(); setDropProj(p.slug) } },
+    onDragLeave: () => setDropProj(d => (d === p.slug ? null : d)),
+    onDrop: (e) => { e.preventDefault(); if (dragMission && dragMission.fromSlug !== p.slug) { const fromProj = projects.find(x => x.slug === dragMission.fromSlug); setConfirmMove({ mission: dragMission.mission, fromProj, toProj: p }) } setDragMission(null); setDropProj(null) },
+  })
+
+  const ProjectsCol = () => (
+    <div style={colStyle}>
+      <div style={headStyle}>Projects</div>
+      {creating === 'project' && (
+        <input autoFocus value={draftName} onChange={e => setDraftName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitCreate(); if (e.key === 'Escape') { setCreating(null); setDraftName('') } }} onBlur={commitCreate} placeholder="Project name…" style={{ margin: '4px 8px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
+      )}
+      {projects.length ? projects.map(p => (
+        <Row key={p.slug} label={p.name || p.slug} sub={`${(missionsMap[p.slug] || []).length} missions`} slug={p.slug} active={selProj?.slug === p.slug} chevron dropActive={dropProj === p.slug} dnd={projectDrop(p)} onClick={() => { setSelProj(p); setSelMission(null); if (isNarrow) setMobileCol(1) }} />
+      )) : emptyHint('No projects')}
+    </div>
+  )
+  const MissionsCol = () => (
+    <div style={colStyle}>
+      <div style={headStyle}>Missions</div>
+      {creating === 'mission' && selProj && (
+        <input autoFocus value={draftName} onChange={e => setDraftName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitCreate(); if (e.key === 'Escape') { setCreating(null); setDraftName('') } }} onBlur={commitCreate} placeholder="Mission name…" style={{ margin: '4px 8px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
+      )}
+      {!selProj ? emptyHint('Select a project') : (missions.length ? missions.map(m => (
+        <Row key={m.slug} label={m.name || m.slug} sub={m.status === 'running' ? 'working' : 'idle'} slug={selProj.slug} active={selMission?.slug === m.slug} chevron dnd={missionDnd(m)} onClick={() => { setSelMission(m); if (isNarrow) setMobileCol(2) }} />
+      )) : emptyHint('No missions yet'))}
+    </div>
+  )
+  const PreviewCol = () => (
+    <div style={{ ...colStyle, borderRight: 'none' }}>
+      <div style={headStyle}>Preview</div>
+      {selMission && selProj ? (
+        <div style={{ padding: '16px' }}>
+          <div style={{ width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '12px' }}>
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{selMission.name || selMission.slug}</div>
+          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>in {selProj.name || selProj.slug}</div>
+          <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>
+            <div>Status: {selMission.status === 'running' ? 'Working' : 'Idle'}</div>
+            <button onClick={() => onOpen && onOpen(selProj, selMission)} style={{ marginTop: '6px', alignSelf: 'flex-start', padding: '8px 14px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>Open room</button>
+          </div>
+        </div>
+      ) : selProj ? (
+        <div style={{ padding: '16px', fontSize: '13px', color: 'var(--cv6-text-secondary)' }}>{selProj.name || selProj.slug} · {(missionsMap[selProj.slug] || []).length} missions. Select a mission to preview.</div>
+      ) : emptyHint('Select a project, then a mission')}
+    </div>
+  )
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-      {/* Toolbar — New project / New mission (live-create wires next round) */}
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button onClick={() => console.log('New project (placeholder)')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
+      {/* Toolbar — New project / New mission (live create) */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <button onClick={() => { setCreating('project'); setDraftName('') }} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New project
         </button>
-        <button onClick={() => console.log('New mission (placeholder)')} disabled={!selProj} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: selProj ? 'var(--cv6-text-primary)' : 'var(--cv6-text-tertiary)', cursor: selProj ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', opacity: selProj ? 1 : 0.6 }}>
+        <button onClick={() => { if (selProj) { setCreating('mission'); setDraftName('') } }} disabled={!selProj} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: selProj ? 'var(--cv6-text-primary)' : 'var(--cv6-text-tertiary)', cursor: selProj ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', opacity: selProj ? 1 : 0.6 }}>
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           New mission
         </button>
-        <span style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>Drag a mission onto a project to move it</span>
+        {!isNarrow && <span style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>Drag a mission onto a project to move it</span>}
       </div>
 
-      {/* Three Finder/Dropbox columns */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: '420px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
-        {/* Column 1 — Projects */}
-        <div style={colStyle}>
-          <div style={headStyle}>Projects</div>
-          {(projects || []).length ? (projects || []).map(p => (
-            <Row key={p.slug} label={p.name || p.slug} sub={`${(missionsByProject[p.slug] || []).length} missions`} slug={p.slug} active={selProj?.slug === p.slug} chevron onClick={() => { setSelProj(p); setSelMission(null) }} />
-          )) : emptyHint('No projects')}
+      {isNarrow ? (
+        /* Mobile: single-column drill with a back bar (Finder/Dropbox mobile pattern) */
+        <div style={{ display: 'flex', flexDirection: 'column', height: '60vh', minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+          {mobileCol > 0 && (
+            <button onClick={() => setMobileCol(mobileCol - 1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-accent-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              {mobileCol === 1 ? (selProj?.name || 'Projects') : (selMission?.name || 'Missions')}
+            </button>
+          )}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {mobileCol === 0 && <ProjectsCol />}
+            {mobileCol === 1 && <MissionsCol />}
+            {mobileCol === 2 && <PreviewCol />}
+          </div>
         </div>
-        {/* Column 2 — Missions */}
-        <div style={colStyle}>
-          <div style={headStyle}>Missions</div>
-          {!selProj ? emptyHint('Select a project') : (missions.length ? missions.map(m => (
-            <Row key={m.slug} label={m.name || m.slug} sub={m.status === 'running' ? 'working' : 'idle'} slug={selProj.slug} active={selMission?.slug === m.slug} chevron onClick={() => setSelMission(m)} />
-          )) : emptyHint('No missions yet'))}
+      ) : (
+        /* Desktop: three Finder/Dropbox columns */
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: '420px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+          <ProjectsCol />
+          <MissionsCol />
+          <PreviewCol />
         </div>
-        {/* Column 3 — Preview */}
-        <div style={{ ...colStyle, borderRight: 'none' }}>
-          <div style={headStyle}>Preview</div>
-          {selMission ? (
-            <div style={{ padding: '16px' }}>
-              <div style={{ width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '12px' }}>
-                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      )}
+
+      {/* macOS-style move confirmation: source mission → arrow → destination project */}
+      {confirmMove && (
+        <div onClick={() => setConfirmMove(null)} style={{ position: 'fixed', inset: 0, zIndex: 50, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '14px', padding: '24px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', fontFamily: 'inherit' }}>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--cv6-text-primary)', marginBottom: '4px' }}>Move this mission?</div>
+            <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', marginBottom: '20px' }}>“{confirmMove.mission.name || confirmMove.mission.slug}” will move from {confirmMove.fromProj?.name || 'its project'} to {confirmMove.toProj.name || confirmMove.toProj.slug}.</div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '22px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '110px' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(confirmMove.fromProj?.slug)}, 60%, 50%, 0.16)`, color: `hsl(${hue(confirmMove.fromProj?.slug)}, 60%, 50%)` }}>
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{confirmMove.mission.name || confirmMove.mission.slug}</span>
               </div>
-              <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{selMission.name || selMission.slug}</div>
-              <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>in {selProj.name || selProj.slug}</div>
-              <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>
-                <div>Status: {selMission.status === 'running' ? 'Working' : 'Idle'}</div>
-                <button onClick={() => onOpen && onOpen(selProj, selMission)} style={{ marginTop: '6px', alignSelf: 'flex-start', padding: '8px 14px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>Open room</button>
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '110px' }}>
+                <div style={{ width: '56px', height: '56px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(confirmMove.toProj.slug)}, 60%, 50%, 0.16)`, color: `hsl(${hue(confirmMove.toProj.slug)}, 60%, 50%)` }}>
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <span style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{confirmMove.toProj.name || confirmMove.toProj.slug}</span>
               </div>
             </div>
-          ) : selProj ? (
-            <div style={{ padding: '16px', fontSize: '13px', color: 'var(--cv6-text-secondary)' }}>{selProj.name || selProj.slug} · {(missionsByProject[selProj.slug] || []).length} missions. Select a mission to preview.</div>
-          ) : emptyHint('Select a project, then a mission')}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button onClick={() => setConfirmMove(null)} style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Cancel</button>
+              <button onClick={() => { doMove(confirmMove.mission, confirmMove.fromProj.slug, confirmMove.toProj.slug); setConfirmMove(null) }} style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>Move</button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
