@@ -42,6 +42,7 @@
     projectActive: null, // name of the project currently open via the left bar (Build R13); null = School
     activeRoom: 'school', // which conversation room is open (Build R19): 'school' or 'project:<slug>'. Set in init from localStorage.
     roomCache: {}, // per-room thread snapshots { [roomKey]: { messages, sinceTs, loaded } } so switching rooms never loses his place
+    navOpen: false, // mobile: left-bar drawer open (Build R21). Pure UI, defaults closed so the chat (his place) is visible on load.
     addingProject: false, // left-bar "add a project" inline input open (Build R13)
     addProjectValue: '', // text in the add-project input
     missions: null, // [{project, name, status}] parts of his projects (Build R13b)
@@ -520,7 +521,7 @@
           <button type="submit" class="nav-add-go" title="Add">&#10148;</button>
         </form>`
       : `<button type="button" class="nav-add-btn" onclick="window.__wizardChat.startAddProject()">+ Add a project</button>`;
-    return `<nav class="side-nav" aria-label="Ethan's Corner">
+    return `<nav class="side-nav ${appState.navOpen ? 'is-open' : ''}" aria-label="Ethan's Corner">
         <div class="nav-eyebrow">&#10022; Ethan&rsquo;s Corner</div>
         <div class="nav-section-label">School</div>
         <button type="button" class="nav-item nav-item--school ${schoolActive ? 'is-active' : ''}" onclick="window.__wizardChat.selectSchool()">
@@ -1097,6 +1098,10 @@
       <div class="wizard-chat-container">
         ${celebrateHtml}
         <div class="chat-header">
+          <button class="nav-toggle" title="${appState.projectActive ? escapeHtml(appState.projectActive) : 'Summer School'} — open menu" aria-label="Open menu" onclick="window.__wizardChat.toggleNav()">
+            <span class="nav-toggle-bars">&#9776;</span>
+            <span class="nav-toggle-label">${appState.projectActive ? escapeHtml(appState.projectActive) : 'School'}</span>
+          </button>
           <h1><span class="header-ornament-inline">&#10022;</span> ${headerGreeting().title} <span class="header-ornament-inline">&#10022;</span></h1>
           <p>${headerGreeting().sub}</p>
           <div class="theme-selector" title="Choose Light or Dark Theme">
@@ -1113,6 +1118,7 @@
         </div>
         ${renderWorld()}
 
+        <div class="nav-backdrop ${appState.navOpen ? 'is-open' : ''}" onclick="window.__wizardChat.closeNav()"></div>
         <div class="wizard-rail">
           ${renderSideNav()}
           <div class="wizard-figure-wrap">
@@ -1208,10 +1214,14 @@
       appState.resumeBanner = null;
       render();
     },
+    // Mobile drawer (Build R21): open/close the left-bar menu. Pure UI.
+    toggleNav: () => { appState.navOpen = !appState.navOpen; render(); },
+    closeNav: () => { if (appState.navOpen) { appState.navOpen = false; render(); } },
     openProject: async (i) => {
       const items = appState.projects || [];
       const p = items[i];
       if (!p || appState.isLoading) return;
+      appState.navOpen = false; // close the mobile drawer so he lands in the chat
       appState.worldOpen = false; // if opened from My World, drop back into the chat
       // Open THIS project's own room (its own thread) — never blends with school.
       // First visit (empty room) → seed the opening message so the Wizard greets
@@ -1224,6 +1234,7 @@
     // school" turn, he picks up exactly where his lesson left off.
     selectSchool: async () => {
       if (appState.isLoading) return;
+      appState.navOpen = false; // close the mobile drawer
       appState.worldOpen = false;
       await switchRoom('school', { label: 'Summer School' });
     },
@@ -1233,6 +1244,7 @@
     submitAddProject: async (val) => {
       const name = (val || '').trim();
       appState.addingProject = false; appState.addProjectValue = '';
+      appState.navOpen = false; // close the mobile drawer
       render();
       if (!name) return;
       // A new project gets its own room from the very first message, so its
@@ -1243,6 +1255,7 @@
     // Left bar: open a mission (a part of the open project) to work on it.
     openMission: async (project, name) => {
       if (appState.isLoading) return;
+      appState.navOpen = false; // close the mobile drawer
       appState.worldOpen = false;
       // Missions live inside their project's room — open the room, then focus
       // this part so the Wizard zooms straight to it.
@@ -1270,6 +1283,7 @@
       const name = (val || '').trim();
       const project = appState.projectActive;
       appState.addingMission = false; appState.addMissionValue = '';
+      appState.navOpen = false; // close the mobile drawer
       render();
       if (name && project) sendMessage(`Add a mission to my project ${project}: ${name}`, { projectFocus: project });
     },

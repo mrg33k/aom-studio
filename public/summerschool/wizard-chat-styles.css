@@ -142,6 +142,10 @@ body {
 
 /* Side nav (Build R13) — Corner-style left bar: School + his Projects + add. */
 .side-nav { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; }
+
+/* Mobile drawer trigger + backdrop (Build R21) — hidden on desktop, shown <=900px */
+.nav-toggle { display: none; }
+.nav-backdrop { display: none; }
 .nav-eyebrow {
   font-family: var(--font-display);
   font-size: 12px;
@@ -1407,8 +1411,33 @@ html.dark-theme .hud-prize-label { color: var(--color-text); }
     grid-template-rows: auto auto 1fr auto auto;
   }
 
-  .chat-header { grid-column: 1; }
+  .chat-header { grid-column: 1; position: relative; }
 
+  /* Hamburger: a tappable chip in the header showing the current room (Build R21) */
+  .nav-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    position: absolute;
+    left: 12px;
+    top: 14px;
+    z-index: 10;
+    padding: 7px 12px;
+    background: var(--color-wizard);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    color: var(--color-gold-soft);
+    font-family: var(--font-display);
+    font-size: 12.5px;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    max-width: 52vw;
+  }
+  .nav-toggle:active { transform: scale(0.97); }
+  .nav-toggle-bars { font-size: 15px; line-height: 1; }
+  .nav-toggle-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Left bar becomes an off-canvas slide-in drawer */
   .wizard-rail {
     grid-column: 1;
     grid-row: 2;
@@ -1420,6 +1449,34 @@ html.dark-theme .hud-prize-label { color: var(--color-text); }
     border-bottom: 1px solid var(--color-border);
     padding: 8px 12px 0;
   }
+
+  .side-nav {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: min(82vw, 320px);
+    z-index: 60;
+    margin: 0;
+    padding: 18px 16px;
+    background: var(--color-bg);
+    border-right: 1px solid var(--color-border);
+    box-shadow: 2px 0 28px rgba(0, 0, 0, 0.22);
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .side-nav.is-open { transform: translateX(0); }
+
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .nav-backdrop.is-open { opacity: 1; pointer-events: auto; }
 
   .wizard-figure { max-width: 110px; }
   .wizard-nameplate { margin: 0 0 12px; font-size: 12px; padding: 4px 12px; }
