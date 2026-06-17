@@ -427,6 +427,16 @@ const SCREENS = [
       { label: 'Light', render: () => <ScreenFrame theme="light" label="Chat · CV6"><HomeView {...SCREEN_PROPS} initialTool="chat" /></ScreenFrame> },
     ],
   },
+  {
+    id: 'screen-command',
+    name: 'Command Deck',
+    purpose: 'Live response deck — one card per thing needing you, best-guess reply preloaded with a countdown that auto-sends.',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Command · CV6"><HomeView {...SCREEN_PROPS} initialTool="command" /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" label="Command · CV6"><HomeView {...SCREEN_PROPS} initialTool="command" /></ScreenFrame> },
+    ],
+  },
 ]
 
 // Screens first, then pieces. One flat list for lookup + feedback.

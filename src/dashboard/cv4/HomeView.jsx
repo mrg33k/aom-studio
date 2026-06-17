@@ -1091,7 +1091,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents }) {
 
   const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
   const seedThread = (room) => ([
-    { from: 'them', text: `On it — picking up ${room.name} where we left off.` },
+    { from: 'them', text: `On it. Picking up ${room.name} where we left off.` },
     { from: 'me', text: 'Great. Push it as far as you can and flag anything you need.' },
     { from: 'them', text: 'Will do. First pass is ready for you to look at whenever.' },
   ])
@@ -1229,6 +1229,101 @@ function ChatToolOverlay({ projects, missionsByProject, agents }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '230px 1.4fr 0.9fr', height: '460px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
       <RoomsCol /><ChatCol /><FilesCol />
+    </div>
+  )
+}
+
+// R41: COMMAND DECK — the live response deck. One card per thing that needs Patrik.
+// Each card preloads the EA's best-guess reply (editable) with a countdown that auto-sends;
+// alternates sit below. Do nothing and it fires on the timer; edit and it sends your version.
+function CommandDeckOverlay({ projects, agents }) {
+  const seed = useMemo(() => {
+    const pool = [
+      { who: (agents || [])[0]?.name || 'Elon', slug: (agents || [])[0]?.slug || 'elon', situation: 'Bobby finished the pricing section and is asking if the CTA copy is final before he locks it.', best: 'Looks good. Lock the CTA as is and move on to the FAQ block.', alts: ['Change the CTA to "Start free" first, then lock.', 'Hold. I want to see it on mobile before locking.'] },
+      { who: (projects || [])[0]?.name || 'Corner', slug: (projects || [])[0]?.slug || 'corner', situation: 'The launch teaser render is ready for review and needs a yes/no to publish.', best: 'Approved. Publish it and post the teaser to the launch room.', alts: ['Hold publish. Re-cut the last 3 seconds first.', 'Send me the file before anything goes out.'] },
+      { who: (projects || [])[1]?.name || 'Space Rising', slug: (projects || [])[1]?.slug || 'space-rising', situation: 'A support email came in asking about enterprise pricing. Drafted a reply.', best: 'Send the reply as drafted and book a call for next week.', alts: ['Add our deck before sending.', 'I will handle this one myself.'] },
+    ]
+    return pool
+  }, [agents, projects])
+
+  const [cards, setCards] = useState(() => seed.map((c, i) => ({ ...c, id: i, text: c.best, secs: 18 + i * 8, status: 'live', paused: false })))
+  // Single ticking clock drives every card's countdown (no per-card intervals).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const t = window.setInterval(() => {
+      setCards(prev => prev.map(c => {
+        if (c.status !== 'live' || c.paused) return c
+        const s = c.secs - 1
+        if (s <= 0) return { ...c, secs: 0, status: 'sent' }
+        return { ...c, secs: s }
+      }))
+    }, 1000)
+    return () => window.clearInterval(t)
+  }, [])
+
+  const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
+  const update = (id, patch) => setCards(prev => prev.map(c => (c.id === id ? { ...c, ...patch } : c)))
+  const sendNow = (id) => { update(id, { status: 'sent', secs: 0 }); const c = cards.find(x => x.id === id); console.log('[command-deck-send]', c?.slug, c?.text) }
+  const dismiss = (id) => update(id, { status: 'dismissed' })
+
+  const live = cards.filter(c => c.status === 'live' || c.status === 'sent')
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '760px', width: '100%', margin: '0 auto' }}>
+      <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', lineHeight: 1.5 }}>
+        Here is what needs you. Each reply is the one I think you would give. Do nothing and it sends on the timer; edit it and it sends your version.
+      </div>
+      {live.length === 0 && <div style={{ padding: '28px', textAlign: 'center', fontSize: '14px', color: 'var(--cv6-text-tertiary)' }}>All clear. Nothing waiting on you.</div>}
+      {cards.map(c => {
+        if (c.status === 'dismissed') return null
+        const h = hue(c.slug)
+        const sent = c.status === 'sent'
+        return (
+          <div key={c.id} style={{ border: '1px solid var(--cv6-divider)', borderLeft: `3px solid hsl(${h}, 70%, 55%)`, borderRadius: '10px', background: 'var(--cv6-surface)', padding: '16px 18px', opacity: sent ? 0.6 : 1, transition: 'opacity 200ms ease' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>
+                <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${h}, 70%, 55%)` }} />{c.who}
+              </span>
+              {sent ? (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#10B981' }}>
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Sent
+                </span>
+              ) : (
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: c.paused ? 'var(--cv6-text-tertiary)' : `hsl(${h}, 65%, 45%)` }}>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  {c.paused ? 'Paused while editing' : `Sends in ${c.secs}s`}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', lineHeight: 1.5, marginBottom: '12px' }}>{c.situation}</div>
+            <textarea
+              value={c.text}
+              disabled={sent}
+              onChange={e => update(c.id, { text: e.target.value, paused: true })}
+              rows={2}
+              style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', padding: '11px 13px', borderRadius: '8px', border: `1px solid hsl(${h}, 50%, 60%)`, background: sent ? 'var(--cv6-surface-hover)' : 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.45, outline: 'none', marginBottom: '10px' }}
+            />
+            {!sent && (
+              <>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '12px' }}>
+                  {c.alts.map((a, i) => (
+                    <button key={i} onClick={() => update(c.id, { text: a, paused: true })} style={{ padding: '6px 11px', borderRadius: '999px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', textAlign: 'left' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = `hsl(${h}, 60%, 55%)`; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>{a}</button>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button onClick={() => sendNow(c.id)} style={{ padding: '8px 16px', borderRadius: '7px', border: 'none', background: `hsl(${h}, 70%, 50%)`, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Send now</button>
+                  {c.paused
+                    ? <button onClick={() => update(c.id, { paused: false })} style={{ padding: '8px 14px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Resume timer</button>
+                    : <button onClick={() => update(c.id, { paused: true })} style={{ padding: '8px 14px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Pause</button>}
+                  <button onClick={() => dismiss(c.id)} style={{ marginLeft: 'auto', padding: '8px 14px', borderRadius: '7px', border: 'none', background: 'transparent', color: 'var(--cv6-text-tertiary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>Dismiss</button>
+                </div>
+              </>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -2250,9 +2345,10 @@ export default function HomeView({
                 )}
 
                 {selectedTool === 'command' && (
-                  <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
-                    Command Deck coming soon
-                  </div>
+                  <CommandDeckOverlay
+                    projects={[...(recentProjects || []), ...(allProjects || [])]}
+                    agents={visibleAgents}
+                  />
                 )}
 
                 {selectedTool === 'scribe' && (
