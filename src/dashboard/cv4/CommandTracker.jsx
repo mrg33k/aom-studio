@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { authFetch } from '../lib/authFetch.js'
+import { supabase } from '../lib/supabase.js'
 
 function titleCaseSlug(s) {
   return (s || '')
@@ -311,6 +312,60 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           isWorkerRow: true,
         })
       })
+
+      // ── Live accuracy: enrich rows with recent MESSAGE activity ──────────────
+      // The goal-ledger.json is updated by a daemon and can lag days behind, so
+      // rows looked IDLE even for rooms worked today. The messages table is the
+      // live truth: pull recent messages, map them to room slugs, and use the
+      // newest of (ledger last_touched, latest message) for recency + status.
+      // Also surface the last USER message (one line) as LIVE NOW for room rows.
+      try {
+        if (supabase && worldId) {
+          const sharedIds = Array.from(new Set(
+            tableRows.filter(r => !r.isWorkerRow && r.slug && r.slug.includes(':'))
+              .map(r => `shared:${r.slug.split(':')[0]}`)
+          ))
+          const clientIds = [worldId, ...sharedIds]
+          const { data: msgs } = await supabase
+            .from('messages')
+            .select('agent,project,text,role,sender,timestamp,metadata,client_id')
+            .in('client_id', clientIds)
+            .order('timestamp', { ascending: false })
+            .limit(600)
+          const byRoom = {}        // slug -> { ts, lastUserText }
+          const isUserMsg = (m) => m.role === 'user' || m.agent === 'user' || m.sender === 'user'
+          for (const m of (msgs || [])) {
+            // Derive the room slug this message belongs to.
+            let slug = null
+            const missionTag = m.metadata && m.metadata.mission_slug
+            if (m.project && missionTag) slug = `${m.project}:${missionTag}`
+            else if (m.project) slug = m.project
+            else if (m.agent && !String(m.agent).startsWith('project:')) slug = m.agent
+            else if (m.agent && String(m.agent).startsWith('project:')) slug = m.agent.slice(8)
+            if (!slug) continue
+            const ts = m.timestamp ? new Date(m.timestamp).getTime() : 0
+            if (!byRoom[slug]) byRoom[slug] = { ts: 0, lastUserText: '' }
+            if (ts > byRoom[slug].ts) byRoom[slug].ts = ts
+            if (isUserMsg(m) && !byRoom[slug].lastUserText && (m.text || '').trim()) {
+              byRoom[slug].lastUserText = (m.text || '').replace(/\s+/g, ' ').trim().slice(0, 90)
+            }
+          }
+          const nowMs = Date.now()
+          const THIRTY = 30 * 60 * 1000
+          tableRows.forEach((row) => {
+            if (row.isWorkerRow) return
+            // Try exact slug, then project-only match.
+            const hit = byRoom[row.slug] || (row.slug.includes(':') ? byRoom[row.slug.split(':')[0]] : null)
+            if (!hit) return
+            const rowTs = row.lastActivity ? new Date(row.lastActivity).getTime() : 0
+            if (hit.ts > rowTs) row.lastActivity = new Date(hit.ts).toISOString()
+            // Recent message ⇒ the room is active (overrides a stale-ledger idle).
+            if (hit.ts && (nowMs - hit.ts) < THIRTY && row.status === 'idle') row.status = 'active'
+            // Surface the last user message as LIVE NOW when nothing live is set.
+            if ((!row.liveNow || row.liveNow === '—') && hit.lastUserText) row.liveNow = hit.lastUserText
+          })
+        }
+      } catch (_) { /* message enrichment is best-effort */ }
 
       // Sort: ACTIVE then BLOCKED at top (workers first), then IDLE below
       tableRows.sort((a, b) => {
