@@ -20,6 +20,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { authFetch } from '../lib/authFetch.js'
+import { supabase } from '../lib/supabase.js'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
 import { useSupportData, buildItems } from './SupportDashboard.jsx'
 import LiveScribe from '../../pages/LiveScribe.jsx'
@@ -1807,6 +1808,23 @@ export default function HomeView({
   }, [])
   const [conversationMessages, setConversationMessages] = useState([])
 
+  // Quick-reply from the home conversation preview. Routes a REAL send through
+  // onChatSend (agent/project routing + Gemini lane on /cvg); the reply streams
+  // back via the preview's realtime subscription. On the no-backend gallery
+  // (no onChatSend) it stays optimistic so the demo still responds.
+  const sendQuickReply = useCallback((text) => {
+    const t = (text || '').trim()
+    if (!t || !selectedRoom) return
+    const sel = selectedRoom.agent
+      ? { type: 'agent', slug: selectedRoom.agent.slug, name: selectedRoom.agent.name || selectedRoom.agent.slug }
+      : { type: 'project', slug: selectedRoom.project.slug, name: selectedRoom.project.name || selectedRoom.project.slug, missionSlug: selectedRoom.mission?.slug }
+    if (onChatSend) {
+      onChatSend(sel, t)
+    } else {
+      setConversationMessages(prev => [{ id: `temp-${Date.now()}`, sender: 'user', text: t }, ...prev])
+    }
+  }, [selectedRoom, onChatSend])
+
   // R23: Active Work search filtering
   const [activeworkSearchText, setActiveworkSearchText] = useState('')
 
@@ -1820,14 +1838,101 @@ export default function HomeView({
     { id: 6, sender: 'agent', text: 'The Corner refactor is on schedule. One code review pending on Bobby\'s PR. I\'ll chase it today.' },
   ]
 
-  // R19: Initialize conversation thread when a room is selected (quick-view wire)
+  // Quick-chat conversation preview — load the SELECTED room's REAL messages.
+  // Patrik: "rooms don't change data, all the chats are the same / not wired up."
+  // Root cause was this effect hardcoding sampleConversation for every room.
+  // Now we fetch the room's real Supabase thread (newest first, to match the
+  // column-reverse render + quick-reply prepend). The sample is only a fallback
+  // for the /cv6 gallery where there is no backend.
   useEffect(() => {
-    if (selectedRoom) {
-      // In production, this would fetch real messages from the room.
-      // For CV6 gallery, use sample conversation as placeholder.
-      setConversationMessages(sampleConversation)
+    if (!selectedRoom) { setConversationMessages([]); return }
+
+    let active = true
+    const toBubble = (m) => ({
+      id: m.id,
+      sender: (m.role === 'user' || m.agent === 'user' || m.sender === 'user') ? 'user' : 'agent',
+      text: m.text || m.content || '',
+    })
+
+    const load = async () => {
+      // No live backend (gallery): keep the sample demo thread.
+      if (!supabase || !worldId) { setConversationMessages(sampleConversation); return }
+      try {
+        let rows = []
+        if (selectedRoom.agent) {
+          const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('client_id', worldId)
+            .eq('agent', selectedRoom.agent.slug)
+            .or('project.is.null,project.eq.')
+            .order('timestamp', { ascending: false })
+            .limit(50)
+          if (error) throw error
+          rows = data || []
+        } else if (selectedRoom.project) {
+          const projSlug = selectedRoom.project.slug
+          const sharedCid = `shared:${projSlug}`
+          const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
+          const missionSlug = selectedRoom.mission?.slug || null
+          const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .in('client_id', clientIds)
+            .or(`project.eq.${projSlug},agent.eq.project:${projSlug}`)
+            .order('timestamp', { ascending: false })
+            .limit(50)
+          if (error) throw error
+          rows = (data || []).filter((m) => {
+            // Show messages tagged for this mission, or untagged room-level ones.
+            const tag = (m && m.metadata && m.metadata.mission_slug) || ''
+            if (!missionSlug) return true
+            if (!tag) return true
+            return tag === missionSlug || tag.endsWith(':' + missionSlug)
+          })
+        }
+        if (!active) return
+        setConversationMessages(rows.map(toBubble))
+      } catch (_) {
+        // Backend unreachable → fall back to the sample so the panel isn't blank.
+        if (active) setConversationMessages(sampleConversation)
+      }
     }
-  }, [selectedRoom])
+
+    load()
+
+    // Live: stream new messages into the preview so a reply appears without
+    // re-selecting the room. Mirrors the full chat surface's subscription.
+    let channel = null
+    if (supabase && worldId) {
+      const matches = (m) => {
+        if (!m || m.client_id !== worldId) return false
+        if (selectedRoom.agent) return m.agent === selectedRoom.agent.slug && !m.project
+        if (selectedRoom.project) {
+          const projSlug = selectedRoom.project.slug
+          const isRoom = m.project === projSlug || m.agent === `project:${projSlug}`
+          if (!isRoom) return false
+          const missionSlug = selectedRoom.mission?.slug || null
+          const tag = (m.metadata && m.metadata.mission_slug) || ''
+          if (!missionSlug || !tag) return true
+          return tag === missionSlug || tag.endsWith(':' + missionSlug)
+        }
+        return false
+      }
+      channel = supabase
+        .channel(`cv6-quickchat-${worldId}-${Date.now()}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` }, (payload) => {
+          if (!active || !matches(payload.new)) return
+          setConversationMessages((prev) => prev.some((x) => x.id === payload.new.id) ? prev : [toBubble(payload.new), ...prev])
+        })
+        .subscribe()
+    }
+
+    return () => {
+      active = false
+      if (channel) { try { supabase.removeChannel(channel) } catch (_) {} }
+    }
+  }, [selectedRoom, worldId])
 
   // R19: Suggested replies based on context (placeholder)
   const suggestedReplies = [
@@ -3056,15 +3161,8 @@ export default function HomeView({
                             return
                           }
                           if (e.key === 'Enter' && replyText.trim()) {
-                            // R19: Add user message, animate to top, clear input
-                            const newMsg = { id: Math.max(...conversationMessages.map(m => m.id), 0) + 1, sender: 'user', text: replyText }
-                            setConversationMessages([newMsg, ...conversationMessages])
+                            sendQuickReply(replyText)
                             setReplyText('')
-                            // Simulate agent reply
-                            setTimeout(() => {
-                              const agentMsg = { id: newMsg.id + 1, sender: 'agent', text: 'Got it. Working on it.' }
-                              setConversationMessages(prev => [agentMsg, ...prev])
-                            }, 800)
                           }
                         }}
                         style={{
@@ -3080,14 +3178,8 @@ export default function HomeView({
                       <button
                         onClick={() => {
                           if (replyText.trim()) {
-                            const newMsg = { id: Math.max(...conversationMessages.map(m => m.id), 0) + 1, sender: 'user', text: replyText }
-                            setConversationMessages([newMsg, ...conversationMessages])
+                            sendQuickReply(replyText)
                             setReplyText('')
-                            // Simulate agent reply
-                            setTimeout(() => {
-                              const agentMsg = { id: newMsg.id + 1, sender: 'agent', text: 'Got it. Working on it.' }
-                              setConversationMessages(prev => [agentMsg, ...prev])
-                            }, 800)
                           } else {
                             // Voice conversation entry point (placeholder until wired)
                             console.log('Voice message (placeholder)')
