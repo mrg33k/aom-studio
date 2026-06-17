@@ -434,6 +434,25 @@ export default function HomeView({
   // R21: Tools box state — which tool is open in full-screen mode
   const [selectedTool, setSelectedTool] = useState('home') // R26: Home tool selected by default when Home screen is active
 
+  // R35: live clock + timezone for the top-right display (greeting font, click to change zone)
+  const [now, setNow] = useState(() => new Date())
+  const [timezone, setTimezone] = useState(() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch (_) { return 'America/Los_Angeles' } })
+  const [showTzPicker, setShowTzPicker] = useState(false)
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000)
+    return () => clearInterval(t)
+  }, [])
+  const TZ_OPTIONS = [
+    { label: 'Pacific', zone: 'America/Los_Angeles' },
+    { label: 'Mountain', zone: 'America/Denver' },
+    { label: 'Central', zone: 'America/Chicago' },
+    { label: 'Eastern', zone: 'America/New_York' },
+    { label: 'London', zone: 'Europe/London' },
+    { label: 'Oslo', zone: 'Europe/Oslo' },
+  ]
+  const fmtDate = (d, zone) => { try { return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: zone }).format(d) } catch (_) { return '' } }
+  const fmtTime = (d, zone) => { try { return new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit', timeZone: zone }).format(d) } catch (_) { return '' } }
+
   // Record a visit — called right before routing away from home.
   // Accepts a project slug and an optional mission slug.
   // Mission visits are stored as 'm:{projSlug}/{missionSlug}' so they share
@@ -1076,8 +1095,52 @@ export default function HomeView({
               {/* Divider */}
               <div style={{ flex: 1 }}></div>
 
-              {/* Secondary group (right): Avatar — R32: Support icon removed (Support lives in the Tools row) */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* Secondary group (right): date/time + Avatar — R32: Support icon removed (Support lives in the Tools row) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                {/* R35: live date + time, greeting font; click to change timezone */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    onClick={() => setShowTzPicker(v => !v)}
+                    title="Change timezone"
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px',
+                      background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 6px',
+                      borderRadius: '6px', fontFamily: 'inherit', transition: 'background 120ms ease', lineHeight: 1.1,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <span style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)' }}>{fmtTime(now, timezone)}</span>
+                    <span style={{ fontSize: '11px', fontWeight: '500', color: 'var(--cv6-text-secondary)' }}>{fmtDate(now, timezone)}</span>
+                  </button>
+                  {showTzPicker && (
+                    <div style={{
+                      position: 'absolute', top: '100%', right: 0, marginTop: '6px', zIndex: 20,
+                      background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '8px',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.16)', padding: '6px', minWidth: '150px',
+                    }}>
+                      {TZ_OPTIONS.map(tz => (
+                        <button
+                          key={tz.zone}
+                          onClick={() => { setTimezone(tz.zone); setShowTzPicker(false) }}
+                          style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', width: '100%',
+                            padding: '8px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
+                            fontSize: '13px', textAlign: 'left',
+                            background: timezone === tz.zone ? 'var(--cv6-surface-hover)' : 'transparent',
+                            color: timezone === tz.zone ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-primary)',
+                            fontWeight: timezone === tz.zone ? '600' : '500',
+                          }}
+                          onMouseEnter={(e) => { if (timezone !== tz.zone) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                          onMouseLeave={(e) => { if (timezone !== tz.zone) e.currentTarget.style.background = 'transparent' }}
+                        >
+                          <span>{tz.label}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>{fmtTime(now, tz.zone)}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {/* Avatar */}
                 <button
                   title="User settings"
@@ -1131,7 +1194,15 @@ export default function HomeView({
 
           {/* R34: clean idea chips under the welcome message — tap one to jump into the room and kick it off */}
           {cv6 && suggestedIdeas.length > 0 && (
-            <div style={{ marginTop: '-12px', marginBottom: '28px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            <div style={{ marginTop: '-8px', marginBottom: '20px' }}>
+              {/* R35: idea-section heading with a lightbulb */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.6c.6.5 1 1.3 1 2.1v.3h6v-.3c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>
+                </svg>
+                Ideas
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
               {suggestedIdeas.map((idea, i) => (
                 <button
                   key={i}
@@ -1158,6 +1229,7 @@ export default function HomeView({
                   {idea.label}
                 </button>
               ))}
+              </div>
             </div>
           )}
 
@@ -1224,8 +1296,8 @@ export default function HomeView({
 
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
           {/* R26: tighter gap to greeting (marginTop) + smaller tiles */}
-          <div style={{ marginTop: '-4px', marginBottom: '28px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
+          <div style={{ marginTop: '-4px', marginBottom: '18px' }}>
+            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
               {/* R33: single ordered tool list — Home, then Patrik's order: Projects, Files, Review, Support, Tracker, Command, Live Scribe */}
               {[
@@ -1335,7 +1407,7 @@ export default function HomeView({
           )}
 
           {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
-          <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '32px', minHeight: '400px' }}>
+          <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '22px', minHeight: '400px' }}>
             {/* R14: LEFT COLUMN — COLLABORATORS */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
@@ -1887,8 +1959,8 @@ export default function HomeView({
 
           {/* R14: WHAT NEEDS YOU — moved below the 3-column layout */}
           {(needsYou && needsYou.length > 0) && (
-            <div className="hm-section" style={{ marginBottom: '32px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
+            <div className="hm-section" style={{ marginBottom: '24px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 {needsYou.map((n, idx) => {
                   const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
