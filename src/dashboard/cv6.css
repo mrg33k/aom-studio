@@ -50,7 +50,14 @@
 }
 
 [data-cv6][data-theme="dark"],
-[data-cv6].dark {
+[data-cv6].dark,
+/* R54: HomeView's root carries its own bare [data-cv6] (no data-theme) so cv6.css
+   applies even on surfaces with no [data-cv6] ancestor. But a bare [data-cv6]
+   re-declares the LIGHT token defaults, overriding the dark tokens it should inherit
+   from a dark shell ancestor — which silently broke dark mode for the whole home +
+   every tool overlay (gallery AND the real /dashboard). Re-apply the dark tokens to
+   any themeless [data-cv6] nested inside a dark one so the theme cascades through. */
+[data-cv6][data-theme="dark"] [data-cv6]:not([data-theme]):not(.dark) {
   --cv6-ground: #0a0a0b;
   --cv6-surface: #1a1a1b;
   --cv6-surface-hover: #242427;

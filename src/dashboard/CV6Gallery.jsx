@@ -33,17 +33,23 @@ import MailAccountSwitcher from './cv4/MailAccountSwitcher.jsx'
 import HomeView, { SupportToolOverlay } from './cv4/HomeView.jsx'
 import SupportDashboard from './cv4/SupportDashboard.jsx'
 
+// R54: light NEUTRAL canvas (was near-black #0A0F14). A dark page made every
+// LIGHT app frame look like it had black margins ("black edges of the page").
+// A clean light canvas lets light frames blend and dark frames read as intentional
+// dark windows — the same way Storybook/Figma present components on a neutral desk.
 const SHELL = {
-  bg: '#0A0F14',
-  panel: '#121A22',
-  line: 'rgba(255,255,255,0.08)',
-  text: '#E8EBEF',
-  text2: '#9AA4B0',
-  text3: '#5E6975',
-  accent: '#10B981',
+  bg: '#ECECEE',
+  panel: '#FFFFFF',
+  line: 'rgba(0,0,0,0.10)',
+  text: '#1A1A1A',
+  text2: '#555B63',
+  text3: '#8A9099',
+  accent: '#0E8E63',
   mono: "'JetBrains Mono', ui-monospace, monospace",
   sans: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
 }
+// Inputs/surfaces that were hardcoded dark in the chrome, now light to match.
+const SHELL_INPUT_BG = '#FFFFFF'
 
 // ── Crash isolation: one broken piece must not white-screen the gallery ──
 class StateBoundary extends Component {
@@ -548,7 +554,7 @@ export default function CV6Gallery() {
         padding: '8px 13px',
         borderRadius: 9,
         border: `1px solid ${copied ? 'rgba(16,185,129,0.5)' : SHELL.line}`,
-        background: copied ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.03)',
+        background: copied ? 'rgba(14,142,99,0.12)' : 'rgba(0,0,0,0.03)',
         color: copied ? SHELL.accent : SHELL.text2,
         fontFamily: SHELL.sans,
         fontSize: 12.5,
@@ -701,7 +707,7 @@ export default function CV6Gallery() {
           marginTop: 22,
           border: `1px solid ${SHELL.line}`,
           borderRadius: 14,
-          background: 'rgba(255,255,255,0.015)',
+          background: SHELL.panel,
           padding: 16,
         }}
       >
@@ -729,7 +735,7 @@ export default function CV6Gallery() {
             width: '100%',
             boxSizing: 'border-box',
             resize: 'vertical',
-            background: '#0B1117',
+            background: SHELL_INPUT_BG,
             border: `1px solid ${SHELL.line}`,
             borderRadius: 10,
             color: SHELL.text,
@@ -768,7 +774,7 @@ export default function CV6Gallery() {
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            background: 'rgba(10,15,20,0.92)',
+            background: 'rgba(236,236,238,0.92)',
             backdropFilter: 'blur(8px)',
             borderBottom: `1px solid ${SHELL.line}`,
             padding: '12px 16px',
@@ -788,7 +794,7 @@ export default function CV6Gallery() {
             style={{
               width: '100%',
               boxSizing: 'border-box',
-              background: '#0B1117',
+              background: SHELL_INPUT_BG,
               border: `1px solid ${SHELL.line}`,
               borderRadius: 10,
               color: SHELL.text,
