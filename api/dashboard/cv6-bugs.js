@@ -2,10 +2,12 @@
 //
 // Serves the CV6 / cvg bug tracker so it renders live inside the dashboard
 // Tracker tool. The source of truth is a JSON file on the studio disk:
-//   AOM-EA/corner/missions/corner-ui-cv6/deliverables/cv6-bug-tracker.json
-// It is edited live on disk (by an agent or by hand); this endpoint reads the
-// current bytes through the same RAG tunnel the Command Center uses, so updates
-// appear in the Tracker tool with no redeploy. Local fs is the dev fallback.
+//   AOM-EA/corner/users/aom/missions/master-loop/deliverables/cv6-bug-tracker.json
+// (kept in the master-loop deliverables dir because that is the path the RAG
+// tunnel serves). It is edited live on disk (by an agent or by hand); this
+// endpoint reads the current bytes through the same tunnel the Command Center
+// uses, so updates appear in the Tracker tool with no redeploy. Local fs is the
+// dev fallback.
 //
 // Response: { bugs: [{ id, page, title, expected, severity, status, owner }], updated, count }
 
@@ -17,7 +19,7 @@ const AOM_EA_HARDCODED = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/A
 const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
 const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
 
-const REL = 'corner/missions/corner-ui-cv6/deliverables/cv6-bug-tracker.json';
+const REL = 'corner/users/aom/missions/master-loop/deliverables/cv6-bug-tracker.json';
 const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
 async function readSource() {
