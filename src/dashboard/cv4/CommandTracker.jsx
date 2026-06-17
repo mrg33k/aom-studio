@@ -408,6 +408,34 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             // Surface the last user message as LIVE NOW when nothing live is set.
             if ((!row.liveNow || row.liveNow === '—') && hit.lastUserText) row.liveNow = hit.lastUserText
           })
+
+          // Add ANY room with recent activity that the stale ledger doesn't list,
+          // so a room worked today (e.g. fresh missions) still appears live.
+          const existingSlugs = new Set(tableRows.map(r => r.slug))
+          const NINETY = 90 * 60 * 1000
+          Object.entries(byRoom)
+            .filter(([slug, v]) => slug.includes(':') && v.ts && (nowMs - v.ts) < NINETY && !existingSlugs.has(slug))
+            .sort((a, b) => b[1].ts - a[1].ts)
+            .slice(0, 12)
+            .forEach(([slug, v]) => {
+              // Find a routine for this project so the toggle still works.
+              let routineId = null
+              const projectMatch = slug.split(':')[0]
+              if (projectMatch && routinesByProject[projectMatch]) {
+                const ml = routinesByProject[projectMatch].find((r) => r && r.id && r.name && r.name.includes('master-loop'))
+                if (ml && ml.id) routineId = ml.id
+              }
+              tableRows.push({
+                slug,
+                display: roomDisplay(slug, map),
+                goal: '',
+                status: 'active',
+                liveNow: v.lastUserText || '—',
+                lastActivity: new Date(v.ts).toISOString(),
+                routineId,
+                isWorkerRow: false,
+              })
+            })
         }
       } catch (_) { /* message enrichment is best-effort */ }
 
