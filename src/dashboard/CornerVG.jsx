@@ -2900,6 +2900,24 @@ export default function CornerVG() {
                 projectRooms={projectRooms}
                 needsYou={homeNeedsYou}
                 onChatSend={handleCvgChatSend}
+                commandDeckSlot={cv6Mode ? (
+                  <CommandDeck
+                    worldId={worldId}
+                    basePath={'/cvg/project'}
+                    onReplyToRoom={postReplyToRoom}
+                    onJumpToRoom={(room) => {
+                      if (room.includes(':')) {
+                        const parts = room.split(':')
+                        const mission = parts.pop()
+                        const proj = parts[parts.length - 1]
+                        navigate(`/cvg/project/${proj}?mission=${encodeURIComponent(mission)}`)
+                      } else {
+                        setSelectedAgent({ slug: room, name: room })
+                        setConversationTarget({ name: room, type: 'agent' })
+                      }
+                    }}
+                  />
+                ) : undefined}
                 onSelectAgent={(agent) => {
                   setSelectedAgent(agent)
                   setConversationTarget({ name: agent.name, type: 'agent' })

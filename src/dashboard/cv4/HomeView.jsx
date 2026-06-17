@@ -1460,6 +1460,7 @@ export default function HomeView({
   needsYou = [],
   cv6, // R7: gate for CV6 design system (keyboard nav, missions-primary, inline actions, happening now)
   onChatSend, // real send for the CV6 Chat tool (agent/project routing + Gemini lane on /cvg). Omit → optimistic only (gallery).
+  commandDeckSlot, // real goal-ledger CommandDeck element (passed from CornerVG). When present the Command tool renders the LIVE ledger instead of the sample deck (gallery has none → sample).
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -2457,10 +2458,12 @@ export default function HomeView({
                 )}
 
                 {selectedTool === 'command' && (
-                  <CommandDeckOverlay
-                    projects={[...(recentProjects || []), ...(allProjects || [])]}
-                    agents={visibleAgents}
-                  />
+                  commandDeckSlot || (
+                    <CommandDeckOverlay
+                      projects={[...(recentProjects || []), ...(allProjects || [])]}
+                      agents={visibleAgents}
+                    />
+                  )
                 )}
 
                 {selectedTool === 'scribe' && (
