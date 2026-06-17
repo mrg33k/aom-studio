@@ -2193,6 +2193,7 @@ export default function HomeView({
     if (supabase && worldId) {
       const matches = (m) => {
         if (!m || m.client_id !== worldId) return false
+        if (m.metadata && m.metadata.view_command) return false // view-1: steer rows are not chat
         if (selectedRoom.agent) return m.agent === selectedRoom.agent.slug && !m.project
         if (selectedRoom.project) {
           const projSlug = selectedRoom.project.slug
@@ -2219,6 +2220,42 @@ export default function HomeView({
       if (channel) { try { supabase.removeChannel(channel) } catch (_) {} }
     }
   }, [selectedRoom, worldId])
+
+  // view-1: agents steer the user's view. An agent posts a message carrying
+  // metadata.view_command; the dashboard, if open for this world, navigates
+  // there in real time. Reuses the messages realtime channel — no new infra.
+  // Commands are scoped to this worldId (the filter), so one person's agent can
+  // never move another workspace's screen. Stale commands (>45s old) are ignored
+  // so a reconnect can't replay an old jump.
+  const VIEW_TOOL_KEYS = useMemo(() => new Set(['home', 'chat', 'projects', 'files', 'review', 'support', 'tracker', 'command', 'scribe']), [])
+  useEffect(() => {
+    if (!supabase || !worldId || !cv6) return
+    let active = true
+    const handle = (m) => {
+      if (!active || !m || m.client_id !== worldId) return
+      const cmd = m.metadata && m.metadata.view_command
+      if (!cmd || typeof cmd !== 'object') return
+      const ts = m.timestamp ? new Date(m.timestamp).getTime() : Date.now()
+      if (Date.now() - ts > 45000) return
+      try {
+        if (cmd.action === 'open_tool' && VIEW_TOOL_KEYS.has(cmd.tool)) {
+          openTool(cmd.tool)
+        } else if (cmd.action === 'open_room' && cmd.project) {
+          const proj = (projectRooms || []).find((p) => p && p.slug === cmd.project)
+          if (proj) {
+            const mission = cmd.mission ? { slug: cmd.mission, name: cmd.mission } : null
+            setSelectedRoom({ project: proj, mission })
+            openTool('chat')
+          }
+        }
+      } catch (_) { /* a bad command must never break the dashboard */ }
+    }
+    const channel = supabase
+      .channel(`cv6-viewcmd-${worldId}-${Date.now()}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` }, (payload) => handle(payload.new))
+      .subscribe()
+    return () => { active = false; try { supabase.removeChannel(channel) } catch (_) {} }
+  }, [worldId, cv6, openTool, projectRooms, VIEW_TOOL_KEYS])
 
   // R19: Suggested replies based on context (placeholder)
   const suggestedReplies = [
