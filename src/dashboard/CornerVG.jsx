@@ -60,6 +60,8 @@ import PhoneRecordingOverlay from './components/cv3/phone-recording/PhoneRecordi
 import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
 import TasksPanelCv4 from './cv4/TasksPanelCv4.jsx'
+import CommandDeck from './cv4/CommandDeck.jsx'
+import { getProjectEA } from './data/project-ea.js'
 import RightMenu from './cv4/RightMenu.jsx'
 import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 // R10 — MailListPanel moved into the left rail (cv4/LeftMailPanel.jsx),
@@ -132,6 +134,7 @@ export default function CornerVG() {
   const [authReady, setAuthReady]       = useState(false)
   const [worldId, setWorldId]           = useState(null)
   const [tab, setTab]                   = useState('chat')
+  const [deckTab, setDeckTab]           = useState('chat') // 'chat' | 'deck' — Command Deck in Elon's room (ported from CornerV4)
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
@@ -1323,6 +1326,46 @@ export default function CornerVG() {
       setInputBarSending(false)
     }
   }, [inputBarText, inputBarSending, selectedAgent, agents, tab, worldId])
+
+  // Command Deck reply-to-room (ported from CornerV4). Routes a deck reply to
+  // the right room: project:mission via chat-bridge, plain agent via supabase-messages.
+  const postReplyToRoom = useCallback(async (roomSlug, text) => {
+    const t = (text || '').trim()
+    if (!roomSlug || !t) return { ok: false }
+    try {
+      const parts = roomSlug.split(':')
+      if (parts.length > 1) {
+        const mission = parts[parts.length - 1]
+        const projSlug = parts[parts.length - 2]
+        const projectObj = (projectRooms || []).find(p => p?.slug === projSlug) || { slug: projSlug }
+        const agentKey = getProjectEA(projectObj, agents) || 'elon'
+        const clientId = projectObj.isShared ? `shared:${projSlug}` : worldId
+        const res = await authFetch('/api/dashboard/chat-bridge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: agentKey, message: t, room: `project:${projSlug}`, project: projSlug, mission,
+            client_id: clientId, user_id: currentUser?.id || null, user_name: currentUser?.email || null,
+            metadata: { mission_slug: mission, command_deck_reply: true },
+          }),
+        })
+        return { ok: res.ok }
+      }
+      const res = await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: roomSlug, text: t, role: 'user', source: 'command-deck',
+          client_id: worldId, world_id: worldId, user_id: currentUser?.id || null,
+          user_name: currentUser?.email || null, metadata: { command_deck_reply: true },
+        }),
+      })
+      return { ok: res.ok }
+    } catch (err) {
+      console.error('[CommandDeck] reply failed', err)
+      return { ok: false }
+    }
+  }, [agents, projectRooms, worldId, currentUser])
 
   // ── Nav heights ───────────────────────────────────────────────────────────
 
@@ -2675,6 +2718,8 @@ export default function CornerVG() {
         worldId={worldId}
         activeTool={activeTool}
         onExitTool={() => setActiveTool(null)}
+        deckActive={deckTab === 'deck'}
+        onToggleDeck={() => setDeckTab(t => (t === 'deck' ? 'chat' : 'deck'))}
       />
 
       {/* ── MAIN ROW (desktop): [Files drawer] [Chat (centered)] [Tasks drawer].
@@ -2817,6 +2862,27 @@ export default function CornerVG() {
                   } else {
                     handleSelectProject(proj)
                   }
+                }}
+              />
+            ) : selectedAgent?.slug === 'elon' && deckTab === 'deck' ? (
+              // command:deck — entry is the loop icon in the room header (ContextNav).
+              // Ported from CornerV4 so the live goal ledger is testable on /cvg.
+              <CommandDeck
+                worldId={worldId}
+                basePath={`/cvg/project`}
+                onClose={() => setDeckTab('chat')}
+                onReplyToRoom={postReplyToRoom}
+                onJumpToRoom={(room) => {
+                  if (room.includes(':')) {
+                    const parts = room.split(':')
+                    const mission = parts.pop()
+                    const proj = parts[parts.length - 1]
+                    navigate(`/cvg/project/${proj}?mission=${encodeURIComponent(mission)}`)
+                  } else {
+                    setSelectedAgent({ slug: room, name: room })
+                    setConversationTarget({ name: room, type: 'agent' })
+                  }
+                  setDeckTab('chat')
                 }}
               />
             ) : (
