@@ -590,11 +590,23 @@
   // Projects, each select-to-open, plus add a project inline. Replaces the My
   // World modal as the projects home. Additive to the existing left column —
   // no session/ledger change, so a refresh still resumes his place.
+  // School day complete = every subject on today's board is done. The 5-page
+  // reading gate is implicit here: the Wizard won't mark Reading done until he's
+  // read his pages, so "all done" already means the pages are read. Until the
+  // day is complete, his fun projects stay locked (Patrik 2026-06-17: school
+  // before the fun). Read-only check off the ledger — never changes his place.
+  function isDayComplete() {
+    const parsed = parseDayState(appState.dayState);
+    if (!parsed || !parsed.quests || !parsed.quests.length) return false;
+    return parsed.quests.every((q) => (q.status || '').toLowerCase() === 'done');
+  }
+
   function renderSideNav() {
     const projects = appState.projects || [];
     const subj = currentSubject();
     const onProject = appState.projectActive || null;
     const schoolActive = !onProject;
+    const dayComplete = isDayComplete();
     const allMissions = appState.missions || [];
     const norm = (s) => (s || '').toLowerCase().trim();
     const projNames = projects.map((p) => norm(p.name));
@@ -681,8 +693,10 @@
         </button>
         ${schoolActive ? `<button type="button" class="nav-progress-btn" onclick="window.__wizardChat.progressRecap()"><span class="nav-progress-icon">&#10022;</span> How am I doing?</button>` : ''}
         <div class="nav-section-label">My Projects</div>
-        <div class="nav-list">${projectItems}</div>
-        ${addBlock}
+        ${dayComplete
+          ? `<div class="nav-list">${projectItems}</div>
+        ${addBlock}`
+          : `<div class="nav-locked"><span class="nav-locked-icon">&#128274;</span><span class="nav-locked-text">Finish your school day first. Your projects open up the moment you&rsquo;re done.</span></div>`}
         ${reminderBlock}
       </nav>`;
   }
@@ -1403,6 +1417,7 @@
       const items = appState.projects || [];
       const p = items[i];
       if (!p || appState.isLoading) return;
+      if (!isDayComplete()) return; // school before the fun (Patrik 2026-06-17)
       appState.navOpen = false; // close the mobile drawer so he lands in the chat
       appState.worldOpen = false; // if opened from My World, drop back into the chat
       // Open THIS project's own room (its own thread) — never blends with school.
@@ -1421,9 +1436,10 @@
       await switchRoom('school', { label: 'Summer School' });
     },
     // Left bar: add a project inline (Corner-style), no modal.
-    startAddProject: () => { appState.addingProject = true; appState.addProjectValue = ''; render();
+    startAddProject: () => { if (!isDayComplete()) return; appState.addingProject = true; appState.addProjectValue = ''; render();
       const el = document.getElementById('nav-add-input'); if (el) el.focus(); },
     submitAddProject: async (val) => {
+      if (!isDayComplete()) { appState.addingProject = false; render(); return; }
       const name = (val || '').trim();
       appState.addingProject = false; appState.addProjectValue = '';
       appState.navOpen = false; // close the mobile drawer
@@ -1437,6 +1453,7 @@
     // Left bar: open a mission (a part of the open project) to work on it.
     openMission: async (project, name) => {
       if (appState.isLoading) return;
+      if (!isDayComplete()) return; // school before the fun (Patrik 2026-06-17)
       appState.navOpen = false; // close the mobile drawer
       appState.worldOpen = false;
       // Missions live inside their project's room — open the room, then focus
