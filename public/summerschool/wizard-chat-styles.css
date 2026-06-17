@@ -1793,6 +1793,12 @@ html.dark-theme .theme-selector {
   /* Icon-only My World button on mobile so the centered title clears it. */
   .world-btn { top: 12px; left: 12px; padding: 6px 9px; font-size: 0; gap: 0; }
   .world-btn-icon { font-size: 15px; }
+  /* Phone: shrink the decorative wizard so the CHAT (the real interface) gets the
+     screen instead of a big figure pushing it down (Build R33). Keeps a small
+     wizard for character. */
+  .wizard-rail { padding: 4px 12px 0; gap: 8px; }
+  .wizard-figure { max-width: 64px; }
+  .wizard-nameplate { font-size: 10px; padding: 3px 9px; margin: 0 0 4px; }
 }
 
 html.dark-theme .typing-label {
