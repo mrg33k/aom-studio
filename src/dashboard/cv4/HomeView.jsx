@@ -209,7 +209,8 @@ function SupportToolOverlay({ worldId }) {
   // Map items to 3 columns: Needs You (amber) | In Progress (green) | Handled (blue)
   const needsYou = items.filter(it => it.status === 'needs_you' || it.ready)
   const inProgress = items.filter(it => it.status === 'working' || it.status === 'heard')
-  const handled = items.filter(it => it.status === 'resolved')
+  // 'resolved' wishes + 'responded' emails (already replied) both belong in Handled.
+  const handled = items.filter(it => it.status === 'resolved' || it.status === 'responded')
 
   // Mobile: the three columns stack vertically so cards stay full-width and readable.
   return (
