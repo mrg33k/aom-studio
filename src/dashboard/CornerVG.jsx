@@ -327,11 +327,14 @@ export default function CornerVG() {
     document.head.appendChild(style)
     const badge = document.createElement('div')
     badge.id = 'cvg-surface-badge'
-    badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px;animation:cvg-dot-pulse 2s ease-in-out infinite;vertical-align:middle"></span><span>GEMINI 3.5 FLASH</span>'
-    badge.style.cssText = 'position:fixed;bottom:10px;right:10px;z-index:99999;' +
-      'font:600 10px/1 "JetBrains Mono",monospace;letter-spacing:.12em;' +
-      'color:#0b0f14;background:#f4b942;padding:5px 10px;border-radius:4px;' +
-      'opacity:.92;pointer-events:none;display:flex;align-items:center;'
+    badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;margin-right:7px;animation:cvg-dot-pulse 2s ease-in-out infinite;vertical-align:middle"></span><span>GEMINI 3.5 FLASH</span>'
+    // CV6-native: calm glass pill (surface + 1px hairline, no loud amber), mono label.
+    badge.style.cssText = 'position:fixed;bottom:14px;right:14px;z-index:99999;' +
+      'font:500 10px/1.35 "JetBrains Mono",monospace;letter-spacing:.08em;' +
+      'color:#E8EBEF;background:rgba(20,21,24,0.82);' +
+      'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' +
+      'border:1px solid rgba(255,255,255,0.10);padding:7px 11px;border-radius:8px;' +
+      'pointer-events:none;display:flex;align-items:center;'
     document.body.appendChild(badge)
     return () => {
       try { document.documentElement.removeAttribute('data-shell') } catch (_) {}
@@ -358,12 +361,12 @@ export default function CornerVG() {
         if (!badge) return
         badge.style.flexDirection = 'column'
         badge.style.alignItems = 'flex-start'
-        badge.style.gap = '3px'
+        badge.style.gap = '4px'
         badge.innerHTML =
           '<div style="display:flex;align-items:center">' +
-          '<span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:6px;animation:cvg-dot-pulse 2s ease-in-out infinite"></span>' +
+          '<span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;margin-right:7px;animation:cvg-dot-pulse 2s ease-in-out infinite"></span>' +
           '<span>GEMINI 3.5 FLASH</span></div>' +
-          `<div style="font-size:9px;opacity:0.75;padding-left:13px">Gemini $${data.cost_usd.toFixed(2)} this month</div>`
+          `<div style="font-size:9px;letter-spacing:.04em;color:#9BA3AE;padding-left:14px">$${data.cost_usd.toFixed(2)} this month</div>`
       })
       .catch(() => {})
   }, [worldId])
