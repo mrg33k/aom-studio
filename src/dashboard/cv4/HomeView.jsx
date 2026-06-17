@@ -974,6 +974,16 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
 
 // ── Files Tool — Finder/Dropbox 3-column file browser for a project (R38 r5) ───────
 const FILE_TYPE_COLOR = { image: '#8B5CF6', video: '#EC4899', doc: '#0066FF', code: '#10B981', audio: '#F59E0B' }
+
+// Room accent color, hue derived from the slug. Yellow/green/cyan hues (50-190) look
+// much lighter than blue/red/purple at the same lightness, so white text on them fails.
+// roomSolid darkens just those bright hues so white text always reads on a filled surface.
+const roomHueOf = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
+const roomSolid = (slug) => {
+  const h = roomHueOf(slug)
+  const bright = h >= 50 && h <= 190
+  return `hsl(${h}, ${bright ? 50 : 62}%, ${bright ? 34 : 47}%)`
+}
 function buildFileTree(proj) {
   if (!proj) return []
   return [
@@ -1221,13 +1231,13 @@ function ChatToolOverlay({ projects, missionsByProject, agents, onCreateProject,
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => (
-          <div key={i} style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: m.from === 'me' ? `hsl(${hue(sel.slug)}, 70%, 60%)` : 'var(--cv6-surface-hover)', color: m.from === 'me' ? '#fff' : 'var(--cv6-text-primary)' }}>{m.text}</div>
+          <div key={i} style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: m.from === 'me' ? roomSolid(sel.slug) : 'var(--cv6-surface-hover)', color: m.from === 'me' ? '#fff' : 'var(--cv6-text-primary)' }}>{m.text}</div>
         ))}
       </div>
       {sel && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: '10px 12px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
           <textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} placeholder={`Message ${sel.name}…`} rows={1} style={{ flex: 1, resize: 'none', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', maxHeight: '110px' }} />
-          <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '8px', border: 'none', background: draft.trim() ? `hsl(${hue(sel.slug)}, 70%, 55%)` : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '8px', border: 'none', background: draft.trim() ? roomSolid(sel.slug) : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {draft.trim()
               ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>}
@@ -1356,7 +1366,7 @@ function CommandDeckOverlay({ projects, agents }) {
                   ))}
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button onClick={() => sendNow(c.id)} style={{ padding: '8px 16px', borderRadius: '7px', border: 'none', background: `hsl(${h}, 70%, 50%)`, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Send now</button>
+                  <button onClick={() => sendNow(c.id)} style={{ padding: '8px 16px', borderRadius: '7px', border: 'none', background: roomSolid(c.slug), color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Send now</button>
                   {c.paused
                     ? <button onClick={() => update(c.id, { paused: false })} style={{ padding: '8px 14px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Resume timer</button>
                     : <button onClick={() => update(c.id, { paused: true })} style={{ padding: '8px 14px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Pause</button>}
@@ -1868,7 +1878,7 @@ export default function HomeView({
   // R32: a card's "room color" — the same hue as its color dot. Used to tint the
   // selected highlight so it matches the room, with a readable fill for white text.
   const roomHue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
-  const roomFill = (slug) => `hsl(${roomHue(slug)}, 60%, 48%)`   // selected background (white text reads)
+  const roomFill = (slug) => roomSolid(slug)   // selected background; bright hues darkened so white text reads
   const roomGlow = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.30)`
   const roomTint = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.10)`  // hover wash, text stays dark
 
@@ -2865,7 +2875,7 @@ export default function HomeView({
                             // R19: Color-coded bubbles
                             background: msg.sender === 'user'
                               // R31: agent rooms have no .project — derive room color from agent slug to avoid a crash
-                              ? `hsl(${(((selectedRoom.agent || selectedRoom.project).slug.charCodeAt(0)) * 137) % 360}, 70%, 60%)`  // Room color for user messages
+                              ? roomSolid((selectedRoom.agent || selectedRoom.project).slug)  // Room color, darkened on bright hues so white text reads
                               : 'var(--cv6-surface)',  // Gray for agent messages
                             color: msg.sender === 'user' ? '#ffffff' : 'var(--cv6-text-primary)',
                           }}
