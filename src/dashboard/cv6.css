@@ -933,12 +933,22 @@
   [data-cv6] .hm-three-column-grid { grid-template-columns: 1fr; }
 }
 
-/* Base text color override for the CV6 subtree. The /cvg surface also carries
-   [data-cv5], whose `[data-cv5] span/div/p { color: var(--cv5-text-primary) }`
-   (a dark-ground light text) targets elements directly and would otherwise win
-   over inheritance, washing out CV6 text on its light ground. Mirror it for CV6
-   so CV6 owns its base color. Specific class rules (0,2,0) + inline cv6 colors
-   still win for intentionally-muted text. */
+/* Base text override for the CV6 subtree. The /cvg surface also carries
+   [data-cv5], whose broad body rule
+   `[data-cv5] body/p/span/div { font-family:var(--cv5-body); font-size:16px;
+   line-height:1.6; color:var(--cv5-text-primary) }` targets elements DIRECTLY
+   and beats inheritance. On the /cv6 gallery there is no [data-cv5] ancestor,
+   so spans/divs inherit normally (e.g. the welcome spans inherit the h1's 36px
+   serif). On /cvg the cv5 rule forced them to 16px Figtree — shrinking the hero
+   greeting and washing out text. Mirror the cv5 rule for CV6 with `inherit` so
+   the CV6 home behaves exactly like the gallery: same specificity (0,1,1),
+   cv6.css loads after cv5.css so CV6 wins. Specific class rules (0,2,0)+ and
+   inline cv6 styles still win where intended. */
 [data-cv6] p,
 [data-cv6] span,
-[data-cv6] div { color: var(--cv6-text-primary); }
+[data-cv6] div {
+  color: var(--cv6-text-primary);
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
