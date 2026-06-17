@@ -309,18 +309,9 @@ function SupportCard({ item, accentColor }) {
         }
       }}
     >
-      {/* Card Header: prominent icon chip + Who + Status Badge (R32) */}
+      {/* Card Header: Who + Status Badge. R50: dropped the per-card mail icon — it just
+          re-encoded the column color (Patrik); removing it buys back a lot of visual calm. */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', width: '100%' }}>
-        {/* R32: larger, more prominent icon in an accent-tinted chip */}
-        <span style={{
-          flexShrink: 0, width: '38px', height: '38px', borderRadius: '9px',
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          background: `${accentColor}1f`, color: accentColor,
-        }}>
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/>
-          </svg>
-        </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -689,7 +680,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
 
   const headCell = { fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--cv6-text-secondary)', padding: '10px 14px', textAlign: 'left' }
   const cell = { fontSize: '13px', color: 'var(--cv6-text-primary)', padding: '11px 14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }
-  const cols = '1.1fr 1.1fr 1.2fr 80px 56px'
+  const cols = '1.1fr 1.1fr 1.2fr 80px 76px'
 
   function pushReview() {
     if (!openItem) return
@@ -703,7 +694,14 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
     // R48: position:relative so the review modal can sit ABSOLUTELY inside the tool area
     // (covering only the review tools, never extending past the screen).
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative', minHeight: '100%', flex: 1 }}>
-      <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{items.filter(it => it.ready && !done[it.id]).length} ready for review · {items.length} in the pipeline</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{items.filter(it => it.ready && !done[it.id]).length} ready for review · {items.length} in the pipeline</div>
+        {/* R50: legend so the eye states read clearly */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ display: 'inline-flex', width: '18px', height: '18px', borderRadius: '5px', background: 'var(--cv6-text-primary)', color: 'var(--cv6-surface)', alignItems: 'center', justifyContent: 'center' }}><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>ready to open</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ display: 'inline-flex', width: '18px', height: '18px', borderRadius: '5px', color: 'var(--cv6-text-tertiary)', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>not ready yet</span>
+        </div>
+      </div>
       {/* Mobile: card per item so the review action (eye) is always visible — no horizontal scroll. */}
       {isNarrow ? (
         <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
@@ -738,7 +736,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
       /* Desktop: inventory table */
       <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
         <div style={{ overflowX: 'auto' }}>
-          <div style={{ minWidth: '560px' }}>
+          <div style={{ minWidth: '580px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: cols, borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)' }}>
               <div style={headCell}>Project</div><div style={headCell}>Mission</div><div style={headCell}>Item</div><div style={headCell}>Type</div><div style={{ ...headCell, textAlign: 'center' }}>Review</div>
             </div>
@@ -2117,23 +2115,7 @@ export default function HomeView({
                   </svg>
                 </button>
 
-                {/* R23: Home icon — return to home view */}
-                <button
-                  title="Home"
-                  onClick={() => window.location.href = '/dashboard?view=home'}
-                  style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
-                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                  </svg>
-                </button>
+                {/* R50: Home icon removed from the top nav — Home already lives in the Tools row (Patrik: drop the duplicate). */}
 
                 {/* Theme toggle */}
                 <button
@@ -2378,7 +2360,7 @@ export default function HomeView({
           {/* R37: home body (tools, columns, what-needs-you, ideas) hides while searching */}
           {!showSearch && (<>
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
-          <div className="hm-tools-block" style={{ marginTop: '-4px', marginBottom: '16px' }}>
+          <div className="hm-tools-block" style={{ marginTop: '-4px', marginBottom: '8px' }}>
             <div className="hm-tools-heading" style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div className="hm-tools-row" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
               {/* R48: Home pinned first, then tools in recency order (most-recently-used next to Home), then the rest in default order. Mobile: one scrollable row (cv6.css .hm-tools-row). */}
