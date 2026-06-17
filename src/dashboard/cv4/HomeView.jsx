@@ -1514,7 +1514,7 @@ function FilesToolOverlay({ projects }) {
 
 // R40: CHAT tool — the old 3-pane room view rebuilt inside the new tool window.
 // LEFT rooms list + inline create form · MIDDLE the room's full chat · RIGHT the room's files.
-function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission, onSend }) {
+function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission, onSend, onClose }) {
   const rooms = useMemo(() => {
     const ag = (agents || []).map(a => ({ kind: 'agent', slug: a.slug, name: a.name || a.slug }))
     const pr = (projects || []).map(p => ({ kind: 'project', slug: p.slug, name: p.name || p.slug }))
@@ -1535,6 +1535,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const [localProjects, setLocalProjects] = useState(projects || [])
   const [isNarrow, setIsNarrow] = useState(false)
   const [mobileCol, setMobileCol] = useState(0)       // 0 rooms · 1 chat · 2 files
+  const [listFocused, setListFocused] = useState(false) // R57: room list is the active column (Left from empty input)
   const chatNavRef = useRef(null)
   // R56 (Patrik): inside the Chat tool, Down/Up move the room selection and Right opens that
   // room (mobile → chat column; desktop → focus the message box, the chat is already shown).
@@ -1546,17 +1547,23 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
       if (!rooms.length) return
       const idx = Math.max(0, rooms.findIndex(r => sel && r.kind === sel.kind && r.slug === sel.slug))
-      if (e.key === 'ArrowDown') { e.preventDefault(); setSel(rooms[(idx + 1) % rooms.length]) }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); setSel(rooms[(idx - 1 + rooms.length) % rooms.length]) }
-      else if (e.key === 'ArrowRight') {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setListFocused(true); setSel(rooms[(idx + 1) % rooms.length]) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setListFocused(true); setSel(rooms[(idx - 1 + rooms.length) % rooms.length]) }
+      else if (e.key === 'ArrowRight' || e.key === 'Enter') {
         e.preventDefault()
+        setListFocused(false)
         if (isNarrow) setMobileCol(1)
         else chatNavRef.current?.querySelector('textarea')?.focus()
+      }
+      else if (e.key === 'ArrowLeft') {
+        // R57: Left while the room list is focused (not in the input) → back to Home.
+        e.preventDefault()
+        onClose && onClose()
       }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [rooms, sel, isNarrow])
+  }, [rooms, sel, isNarrow, onClose])
   useEffect(() => {
     if (typeof window === 'undefined') return
     const check = () => setIsNarrow(window.innerWidth < 720)
@@ -1643,7 +1650,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
       {rooms.map(r => {
         const active = sel?.slug === r.slug && sel?.kind === r.kind
         return (
-          <button key={r.kind + r.slug} onClick={() => { setSel(r); if (isNarrow) setMobileCol(1) }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '10px 12px', margin: '2px 6px', borderRadius: '6px', border: '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit', background: active ? `hsla(${hue(r.slug)}, 60%, 48%, 0.12)` : 'transparent' }}
+          <button key={r.kind + r.slug} onClick={() => { setSel(r); setListFocused(true); if (isNarrow) setMobileCol(1) }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '10px 12px', margin: '2px 6px', borderRadius: '6px', border: (active && listFocused) ? '2px solid var(--cv6-accent-primary)' : '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit', background: active ? `hsla(${hue(r.slug)}, 60%, 48%, 0.12)` : 'transparent' }}
             onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}>
             <span style={{ flexShrink: 0, width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(r.slug)}, 65%, 55%)` }} />
             <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
@@ -1675,7 +1682,11 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
       </div>
       {sel && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: '10px 12px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-          <textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} placeholder={`Message ${sel.name}…`} rows={1} style={{ flex: 1, resize: 'none', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', maxHeight: '110px' }} />
+          <textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); return }
+            // R57: Left in an empty input → step back to the room list (which then takes Up/Down).
+            if (e.key === 'ArrowLeft' && !draft) { e.preventDefault(); setListFocused(true); e.target.blur() }
+          }} placeholder={`Message ${sel.name}…`} rows={1} style={{ flex: 1, resize: 'none', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', maxHeight: '110px' }} />
           <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '8px', border: 'none', background: draft.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {draft.trim()
               ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -2457,9 +2468,10 @@ export default function HomeView({
       }
     }
     if (e.key === 'Tab') {
-      // Tab lane = the Tools row.
+      // Tab lane = the Tools row. First Tab enters the lane on the current tool
+      // (Home by default); subsequent Tabs cycle.
       e.preventDefault()
-      setToolsFocused(true)
+      if (!toolsFocused) { setToolsFocused(true); return }
       setToolNavIndex(prev => e.shiftKey ? (prev - 1 + TOOL_TABS.length) % TOOL_TABS.length : (prev + 1) % TOOL_TABS.length)
     } else if (e.key === 'ArrowDown') {
       // Arrow lane = the list. First arrow from the tools lane returns to the list.
@@ -3107,6 +3119,7 @@ export default function HomeView({
                     onCreateProject={persistCreateProject}
                     onCreateMission={persistCreateMission}
                     onSend={onChatSend}
+                    onClose={() => setSelectedTool('home')}
                   />
                 )}
               </div>
