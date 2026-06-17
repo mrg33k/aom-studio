@@ -197,14 +197,22 @@ function Chevron({ collapsed }) {
 function SupportToolOverlay({ worldId }) {
   const { wishes, mailboxes } = useSupportData(worldId)
   const items = buildItems(wishes, mailboxes)
+  const [isNarrow, setIsNarrow] = useState(false)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsNarrow(window.innerWidth < 720)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // Map items to 3 columns: Needs You (amber) | In Progress (green) | Handled (blue)
   const needsYou = items.filter(it => it.status === 'needs_you' || it.ready)
   const inProgress = items.filter(it => it.status === 'working' || it.status === 'heard')
   const handled = items.filter(it => it.status === 'resolved')
 
+  // Mobile: the three columns stack vertically so cards stay full-width and readable.
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', height: '100%', flex: 1 }}>
+    <div style={{ display: isNarrow ? 'flex' : 'grid', flexDirection: isNarrow ? 'column' : undefined, gridTemplateColumns: isNarrow ? undefined : '1fr 1fr 1fr', gap: '16px', height: isNarrow ? 'auto' : '100%', flex: 1 }}>
       {/* NEEDS YOU Column — Amber (#F59E0B) */}
       <SupportColumn title="Needs You" status="needs_you" items={needsYou} accentColor="#F59E0B" />
 
