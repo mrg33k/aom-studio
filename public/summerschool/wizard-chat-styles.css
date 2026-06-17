@@ -1596,8 +1596,12 @@ html.dark-theme .essay-starter { color: var(--color-gold); }
     max-width: 52vw;
   }
   .nav-toggle:active { transform: scale(0.97); }
-  .nav-toggle-bars { font-size: 15px; line-height: 1; }
-  .nav-toggle-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav-toggle-bars { font-size: 16px; line-height: 1; }
+  /* Icon-only on mobile (Build R36): the room-aware header already names the room,
+     so the chip's room label was redundant AND collided with the centered title
+     for long project names. Just the menu icon, no collision. */
+  .nav-toggle-label { display: none; }
+  .nav-toggle { gap: 0; max-width: none; padding: 7px 11px; }
 
   /* Left bar becomes an off-canvas slide-in drawer */
   .wizard-rail {
