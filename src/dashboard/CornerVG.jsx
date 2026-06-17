@@ -2901,22 +2901,10 @@ export default function CornerVG() {
                 needsYou={homeNeedsYou}
                 onChatSend={handleCvgChatSend}
                 commandDeckSlot={cv6Mode ? (
-                  <CommandDeck
-                    worldId={worldId}
-                    basePath={'/cvg/project'}
-                    onReplyToRoom={postReplyToRoom}
-                    onJumpToRoom={(room) => {
-                      if (room.includes(':')) {
-                        const parts = room.split(':')
-                        const mission = parts.pop()
-                        const proj = parts[parts.length - 1]
-                        navigate(`/cvg/project/${proj}?mission=${encodeURIComponent(mission)}`)
-                      } else {
-                        setSelectedAgent({ slug: room, name: room })
-                        setConversationTarget({ name: room, type: 'agent' })
-                      }
-                    }}
-                  />
+                  <div style={{ padding: '48px 8px', color: 'var(--cv6-text-secondary)', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', lineHeight: 1.7 }}>
+                    <div style={{ fontSize: '15px', color: 'var(--cv6-text-primary)', fontWeight: 600, marginBottom: '10px' }}>Command Center</div>
+                    Building the terminal and session tracker. A spreadsheet view of every project, what each one is working on, and a master loop on/off switch per project. Landing shortly.
+                  </div>
                 ) : undefined}
                 onSelectAgent={(agent) => {
                   setSelectedAgent(agent)
