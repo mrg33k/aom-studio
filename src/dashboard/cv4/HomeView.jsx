@@ -2178,7 +2178,8 @@ export default function HomeView({
           })
         }
         if (!active) return
-        setConversationMessages(rows.map(toBubble))
+        // view-1: never render steer-control rows as conversation.
+        setConversationMessages(rows.filter((m) => !(m && m.metadata && m.metadata.view_command)).map(toBubble))
       } catch (_) {
         // Backend unreachable → fall back to the sample so the panel isn't blank.
         if (active) setConversationMessages(sampleConversation)

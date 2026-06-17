@@ -410,6 +410,9 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           const byRoom = {}        // slug -> { ts, lastUserText }
           const isUserMsg = (m) => m.role === 'user' || m.agent === 'user' || m.sender === 'user'
           for (const m of (msgs || [])) {
+            // view-1: steer signals (agent:'system' carrying metadata.view_command)
+            // are control messages, not room activity — never let them spawn a room.
+            if (m.metadata && m.metadata.view_command) continue;
             // Derive the room slug this message belongs to.
             let slug = null
             const missionTag = m.metadata && m.metadata.mission_slug

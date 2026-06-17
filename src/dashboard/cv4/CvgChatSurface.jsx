@@ -44,7 +44,10 @@ function makeMissionMatcher(missionSlug) {
 
 // Helper: drop messages with hidden master-loop metadata
 function isHiddenLoopCue(m) {
-  return !!(m && m.role === 'user' && m.metadata && m.metadata.master_loop)
+  if (!m || !m.metadata) return false
+  // view-1: steer-control rows are not chat — never render them.
+  if (m.metadata.view_command) return true
+  return !!(m.role === 'user' && m.metadata.master_loop)
 }
 
 // Lightweight inline markdown for chat bubbles. HTML is escaped first, then only
