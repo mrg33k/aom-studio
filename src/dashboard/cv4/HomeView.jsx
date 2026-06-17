@@ -806,6 +806,13 @@ export default function HomeView({
     return () => homeEl.removeEventListener('keydown', handleKeyDown)
   }, [cv6, handleKeyDown])
 
+  // R31: Clicking a card moves the keyboard cursor to that card, so Up/Down
+  // resume from where the user clicked instead of snapping back to Agents (top).
+  const selectByItem = useCallback((type, slug) => {
+    const idx = selectableItems.findIndex(s => s.type === type && s.item?.slug === slug)
+    if (idx >= 0) setSelectedIndex(idx)
+  }, [selectableItems])
+
   // R22: reclaim focus when the user clicks a neutral area inside Home, so arrow
   // keys keep responding after any interaction. Clicks on inputs/buttons keep
   // their own focus (so typing still works).
@@ -1057,7 +1064,7 @@ export default function HomeView({
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: cv6 ? '-20px' : 0, marginBottom: cv6 ? '16px' : '32px' }}>
             <h1 className="hm-welcome" style={{ margin: 0 }}>
               <span className="hm-l1">{greeting}</span>{' '}
               <span className="hm-l2">{displayName(user) || 'there'}.</span>
@@ -1150,7 +1157,7 @@ export default function HomeView({
 
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
           {/* R26: tighter gap to greeting (marginTop) + smaller tiles */}
-          <div style={{ marginTop: '-16px', marginBottom: '28px' }}>
+          <div style={{ marginTop: '-4px', marginBottom: '28px' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
               {/* Home tool */}
@@ -1159,11 +1166,11 @@ export default function HomeView({
                 title="Home"
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '8px', borderRadius: '6px', border: selectedTool === 'home' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  padding: '12px 16px', borderRadius: '6px', border: selectedTool === 'home' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                   background: selectedTool === 'home' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                   color: selectedTool === 'home' ? '#ffffff' : 'var(--cv6-text-primary)',
                   cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  width: '52px', minHeight: '52px',
+                  minWidth: '64px', minHeight: '56px',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedTool !== 'home') {
@@ -1181,7 +1188,7 @@ export default function HomeView({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
                   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
                 </svg>
-                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Home</span>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Home</span>
               </button>
 
               {/* Support tool */}
@@ -1190,11 +1197,11 @@ export default function HomeView({
                 title="Support"
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '8px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  padding: '12px 16px', borderRadius: '6px', border: selectedTool === 'support' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                   background: selectedTool === 'support' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                   color: selectedTool === 'support' ? '#ffffff' : 'var(--cv6-text-primary)',
                   cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  width: '52px', minHeight: '52px',
+                  minWidth: '64px', minHeight: '56px',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedTool !== 'support') {
@@ -1212,7 +1219,7 @@ export default function HomeView({
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '20px', height: '20px' }}>
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
-                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Support</span>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Support</span>
               </button>
 
               {/* Command tool */}
@@ -1221,11 +1228,11 @@ export default function HomeView({
                 title="Command"
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  padding: '8px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  padding: '12px 16px', borderRadius: '6px', border: selectedTool === 'command' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                   background: selectedTool === 'command' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                   color: selectedTool === 'command' ? '#ffffff' : 'var(--cv6-text-primary)',
                   cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                  width: '52px', minHeight: '52px',
+                  minWidth: '64px', minHeight: '56px',
                 }}
                 onMouseEnter={(e) => {
                   if (selectedTool !== 'command') {
@@ -1245,7 +1252,38 @@ export default function HomeView({
                   <polyline points="12 9 15 9 15 20 12 20"/>
                   <polyline points="20 9 23 9 23 20 20 20"/>
                 </svg>
-                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center' }}>Command</span>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Command</span>
+              </button>
+
+              {/* R31: Live Scribe tool — built today, gets its own redesign later */}
+              <button
+                onClick={() => setSelectedTool('scribe')}
+                title="Live Scribe"
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '12px 16px', borderRadius: '6px', border: selectedTool === 'scribe' ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  background: selectedTool === 'scribe' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: selectedTool === 'scribe' ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
+                  minWidth: '64px', minHeight: '56px',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedTool !== 'scribe') {
+                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedTool !== 'scribe') {
+                    e.currentTarget.style.background = 'var(--cv6-surface)'
+                    e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                  }
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ width: '20px', height: '20px' }}>
+                  <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/>
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>Live Scribe</span>
               </button>
             </div>
           </div>
@@ -1265,6 +1303,7 @@ export default function HomeView({
                 <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', textTransform: 'capitalize' }}>
                   {selectedTool === 'support' && 'Support'}
                   {selectedTool === 'command' && 'Command Deck'}
+                  {selectedTool === 'scribe' && 'Live Scribe'}
                 </div>
                 <button
                   onClick={() => setSelectedTool('home')}
@@ -1301,6 +1340,12 @@ export default function HomeView({
                     Command Deck coming soon
                   </div>
                 )}
+
+                {selectedTool === 'scribe' && (
+                  <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
+                    Live Scribe coming soon
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1313,36 +1358,55 @@ export default function HomeView({
               <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '16px' }}>
                 {visibleAgents.map((a, idx) => {
                   const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+                  const agentStatus = a.slug === 'bobby' ? 'building components'
+                    : a.slug === 'steffen' ? 'refining brand'
+                    : a.slug === 'cleo' ? 'editing video'
+                    : a.slug === 'tony' ? 'scheduling posts'
+                    : a.slug === 'elon' ? 'routing work'
+                    : 'Ready'
                   return (
                     <button
                       key={a.slug}
-                      className="hm-row"
+                      className="hm-mission"
                       onClick={() => {
-                        onSelectAgent && onSelectAgent(a)
-                        homeRef.current?.focus()
+                        if (cv6) {
+                          // R31: match the mission card — click pulls the agent's
+                          // conversation into the quick-view column AND moves the cursor here.
+                          selectByItem('agent', a.slug)
+                          setSelectedRoom({ agent: a, project: null, mission: null })
+                          homeRef.current?.focus()
+                        } else {
+                          onSelectAgent && onSelectAgent(a)
+                        }
                       }}
                       style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '6px', padding: '12px 14px', marginBottom: '16px', minHeight: '56px', justifyContent: 'center',
-                        background: isSelected ? 'var(--cv6-accent-primary)' : 'transparent',
+                        // R31: single-row layout matching active-work cards (56px, 8px gap between)
+                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '8px', minHeight: '56px',
+                        background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                         color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
                         borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
                         fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500', width: '100%',
                       }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                          e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.background = 'var(--cv6-surface)'
+                          e.currentTarget.style.borderColor = 'transparent'
+                        }
+                      }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
-                        <span style={{ flex: 1 }}>{a.name || a.slug}</span>
-                        <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
+                        <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentStatus}</div>
                       </div>
-                      <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.75)' : 'var(--cv6-text-secondary)', paddingLeft: '20px', fontWeight: '400' }}>
-                        {a.slug === 'bobby' && 'building components'}
-                        {a.slug === 'steffen' && 'refining brand'}
-                        {a.slug === 'cleo' && 'editing video'}
-                        {a.slug === 'tony' && 'scheduling posts'}
-                        {a.slug === 'elon' && 'routing work'}
-                        {!['bobby', 'steffen', 'cleo', 'tony', 'elon'].includes(a.slug) && 'Ready'}
-                      </div>
+                      <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
                     </button>
                   )
                 })}
@@ -1423,6 +1487,7 @@ export default function HomeView({
                               key={`mission-${m.mission.slug}`}
                               className="hm-mission"
                               onClick={() => {
+                                selectByItem('mission', m.mission.slug) // R31: cursor follows the click
                                 handleProjectSelect(m.project, m.mission)
                                 homeRef.current?.focus()
                               }}
@@ -1475,6 +1540,7 @@ export default function HomeView({
                               key={`project-${p.slug}`}
                               className="hm-mission"
                               onClick={() => {
+                                selectByItem('project', p.slug) // R31: cursor follows the click
                                 handleProjectSelect(p, null)
                                 homeRef.current?.focus()
                               }}
@@ -1541,6 +1607,7 @@ export default function HomeView({
               {/* R19: Room identifier header with color tinting */}
               {/* R30b: Support agent rooms in addition to project/mission rooms */}
               <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
                 fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em',
                 marginBottom: '12px', paddingBottom: '12px',
                 borderBottom: selectedRoom ? (selectedRoom.agent
@@ -1553,18 +1620,18 @@ export default function HomeView({
                 {selectedRoom ? (
                   selectedRoom.agent ? (
                     // Agent room header
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       <span style={{
-                        width: '8px', height: '8px', borderRadius: '50%',
+                        width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
                         background: `hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
                       }}/>
                       {selectedRoom.agent.name || selectedRoom.agent.slug}
                     </span>
                   ) : (
                     // Project/mission room header
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       <span style={{
-                        width: '8px', height: '8px', borderRadius: '50%',
+                        width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
                         background: `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
                       }}/>
                       {selectedRoom.project.name || selectedRoom.project.slug} • {selectedRoom.mission?.name || 'Select a mission'}
@@ -1572,6 +1639,43 @@ export default function HomeView({
                   )
                 ) : (
                   'Conversation'
+                )}
+
+                {/* R31: room-scoped Files + Explorer — same glyphs as the top nav, but for THIS room.
+                    Buttons are present + ready; the room-scoped menus get designed in a later phase. */}
+                {selectedRoom && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                    <button
+                      title="This room's files"
+                      onClick={() => onOpenDrawer?.('files')}
+                      style={{
+                        width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'transparent',
+                        color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 120ms ease', padding: 0,
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
+                      </svg>
+                    </button>
+                    <button
+                      title="This room's explorer"
+                      onClick={() => onOpenDrawer?.('explorer')}
+                      style={{
+                        width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'transparent',
+                        color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 120ms ease', padding: 0,
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                    >
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M15 3H9a6 6 0 0 0-6 6v6a6 6 0 0 0 6 6h6a6 6 0 0 0 6-6V9a6 6 0 0 0-6-6z"/><path d="M9 10h2"/><path d="M9 14h2"/><path d="M13 10h2"/><path d="M13 14h2"/>
+                      </svg>
+                    </button>
+                  </span>
                 )}
               </div>
 
@@ -1607,7 +1711,8 @@ export default function HomeView({
                             wordWrap: 'break-word',
                             // R19: Color-coded bubbles
                             background: msg.sender === 'user'
-                              ? `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`  // Room color for user messages
+                              // R31: agent rooms have no .project — derive room color from agent slug to avoid a crash
+                              ? `hsl(${(((selectedRoom.agent || selectedRoom.project).slug.charCodeAt(0)) * 137) % 360}, 70%, 60%)`  // Room color for user messages
                               : 'var(--cv6-surface)',  // Gray for agent messages
                             color: msg.sender === 'user' ? '#ffffff' : 'var(--cv6-text-primary)',
                           }}
@@ -1652,12 +1757,12 @@ export default function HomeView({
                         ))}
                       </div>
                     )}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', height: '42px' }}>
                       {/* R30: Command button (left) — purple gradient + crystal-ball icon, height matches input */}
                       <button
                         onClick={() => console.log('Command menu (placeholder)')}
                         style={{
-                          width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', border: 'none',
+                          width: '42px', height: '100%', flexShrink: 0, borderRadius: '6px', border: 'none',
                           background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#ffffff',
                           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           transition: 'all 120ms ease', boxShadow: '0 2px 8px rgba(124,58,237,0.28)',
@@ -1699,7 +1804,7 @@ export default function HomeView({
                           }
                         }}
                         style={{
-                          flex: 1, height: '40px', boxSizing: 'border-box', padding: '0 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
+                          flex: 1, height: '100%', boxSizing: 'border-box', padding: '0 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
                           background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '14px',
                           fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
                         }}
@@ -1722,7 +1827,7 @@ export default function HomeView({
                           }
                         }}
                         style={{
-                          width: '40px', height: '40px', flexShrink: 0, borderRadius: '6px', background: '#10B981', color: '#ffffff',
+                          width: '42px', height: '100%', flexShrink: 0, borderRadius: '6px', background: '#10B981', color: '#ffffff',
                           border: 'none', cursor: 'pointer', fontFamily: 'inherit',
                           transition: 'all 120ms ease', opacity: replyText.trim() ? 1 : 0.5,
                           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
