@@ -1979,11 +1979,13 @@ export default function HomeView({
     <div data-cv4-home data-cv6={cv6 ? 'true' : undefined} ref={homeRef} onMouseDown={cv6 ? handleHomeMouseDown : undefined} style={{
       width: '100%', height: '100%', overflowY: 'auto',
       background: 'transparent',
-      color: 'var(--c-text, #E8EBEF)',
-      fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+      color: cv6 ? 'var(--cv6-text-primary)' : 'var(--c-text, #E8EBEF)',
+      fontFamily: cv6 ? 'inherit' : "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
       outline: 'none',
     }} tabIndex={cv6 ? 0 : -1}>
-      <style>{`
+      {/* cv4 home style block — gated OFF in cv6 mode. CV6 owns its home styles in
+          cv6.css (ported 2026-06-17), so cv4's dark-ground colors never bleed in. */}
+      {!cv6 && <style>{`
         @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.3} }
         @keyframes cv6-msg-float-in { 0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)} }
         @keyframes cv6-msg-fade-in { 0%{opacity:0}100%{opacity:1} }
@@ -2090,7 +2092,7 @@ export default function HomeView({
           [data-cv4-home] .hm-three-column-grid { grid-template-columns: 1fr; }
           [data-cv4-home] .hm-shell { padding: 48px 20px 80px; }
         }
-      `}</style>
+      `}</style>}
 
       {/* R7: CV6 layout — missions as primary, keyboard navigation, inline actions, happening now */}
       {cv6 ? (

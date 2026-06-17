@@ -136,9 +136,8 @@ export default function CornerVG() {
   const [worldId, setWorldId]           = useState(null)
   const [tab, setTab]                   = useState('chat')
   const [deckTab, setDeckTab]           = useState('chat') // 'chat' | 'deck' — Command Deck in Elon's room (ported from CornerV4)
-  // CV6 surface gate: /cvg?cv6=1 turns on the CV6 design while it's being built,
-  // so the default /cvg stays the working cv4 surface until CV6 is verified.
-  const cv6Mode = (typeof window !== 'undefined') && new URLSearchParams(window.location.search).get('cv6') === '1'
+  // /cvg IS the CV6 surface. No cv4, no toggle (Patrik: "no more cv4 anymore that's the point").
+  const cv6Mode = true
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
@@ -2703,7 +2702,7 @@ export default function CornerVG() {
       </nav>
 
       {/* ── CV4 CONTEXT NAV (second row: hamburger + title · Chat|Tasks · slot) */}
-      <CV4ContextNav
+      {!cv6Mode && <CV4ContextNav
         tab={tab}
         onSwitchTab={handleTabChange}
         unreadChat={unreadChat}
@@ -2724,7 +2723,7 @@ export default function CornerVG() {
         onExitTool={() => setActiveTool(null)}
         deckActive={deckTab === 'deck'}
         onToggleDeck={() => setDeckTab(t => (t === 'deck' ? 'chat' : 'deck'))}
-      />
+      />}
 
       {/* ── MAIN ROW (desktop): [Files drawer] [Chat (centered)] [Tasks drawer].
           Both side drawers are closeable; chat caps its width on wide screens
