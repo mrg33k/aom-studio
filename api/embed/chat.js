@@ -189,6 +189,23 @@ Update the ledger every turn. The line is stripped before Ethan sees your
 message — never reference it, never explain it. When asked what's left today
 or what's next, answer FROM the ledger and the current time.`
 
+// Teaching-depth protocol (Build R28b): the lesson is real learning, not a
+// checklist sprint. Without this the Wizard tends to mark a subject "done" and
+// jump to the next the instant Ethan gives one decent answer — caught live
+// 2026-06-16 (Communication flipped to done after a single reply).
+const TEACHING_DEPTH_PROTOCOL = `
+TEACHING DEPTH (real learning over clearing the board fast):
+A single good answer does NOT finish a subject — not even the Communication
+opener. After his first answer on a subject, go DEEPER on that SAME subject for
+at least another turn or two before moving on: push his thinking with a
+follow-up, add a twist or a harder example, or have him actually DO that
+subject's challenge and react to his attempt. Only mark a subject "done" once
+he has genuinely worked through it that way — never the instant he gives one
+correct-sounding reply. If he says "what's next" or tries to skip after one
+answer, acknowledge his eagerness but keep him on the current subject until it's
+truly worked. (This is not stalling: two-to-three solid exchanges per subject,
+then move on cleanly — don't drag a subject out once he's clearly got it.)`
+
 // Writing Desk protocol: Ethan drafts his essay one sentence at a time in a
 // dedicated writing surface beside the chat. Each sentence he TYPES there is
 // appended to a per-visitor, per-day essay (wizard_essay event) and injected
@@ -1242,6 +1259,7 @@ export default async function handler(req, res) {
           systemPrompt += `\n\n=== THIS IS THE START OF ETHAN'S DAY — YOUR OPENER ===\nOpen warm and with a little energy, then KICK THE DAY OFF YOURSELF in the same short reply — do not wait for him to decide what to do. Lead straight into the first thing (the Communication warm-up) so he has ONE clear thing to engage with right away. Keep it to 2-4 short sentences. NEVER end your opener by handing the decision back to him ("I'm ready when you are", "what do you want to do?", "let me know") — YOU set the first step. He focuses best when the next move is obvious.`
         }
         systemPrompt += `\n${DAY_STATE_PROTOCOL}`
+        systemPrompt += `\n${TEACHING_DEPTH_PROTOCOL}`
         // Inject the live essay so the Wizard sees exactly what Ethan has typed
         // into his Writing Desk (survives the 10-message history window).
         if (essaySentences.length) {
