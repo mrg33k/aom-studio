@@ -1564,6 +1564,13 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [rooms, sel, isNarrow, onClose])
+  // R57: opening the Chat tool means "I'm in the room" — focus the message box (desktop) so
+  // the keyboard flow is input → Left → room list → Left → Home, matching the home rail.
+  useEffect(() => {
+    if (isNarrow) return
+    const ta = chatNavRef.current?.querySelector('textarea')
+    if (ta) { ta.focus(); setListFocused(false) }
+  }, [isNarrow])
   useEffect(() => {
     if (typeof window === 'undefined') return
     const check = () => setIsNarrow(window.innerWidth < 720)
