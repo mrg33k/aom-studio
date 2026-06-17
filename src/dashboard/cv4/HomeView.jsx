@@ -18,7 +18,7 @@
 //   - Project row dropdown → expands inline mission list
 //   - Pin toggle → updates localStorage and resorts list
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
 import { useSupportData, buildItems } from './SupportDashboard.jsx'
@@ -203,7 +203,7 @@ function SupportToolOverlay({ worldId }) {
   const handled = items.filter(it => it.status === 'resolved')
 
   return (
-    <div data-cv6="true" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', height: '100%', flex: 1 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', height: '100%', flex: 1 }}>
       {/* NEEDS YOU Column — Amber (#F59E0B) */}
       <SupportColumn title="Needs You" status="needs_you" items={needsYou} accentColor="#F59E0B" />
 
@@ -433,6 +433,10 @@ export default function HomeView({
 
   // R21: Tools box state — which tool is open in full-screen mode
   const [selectedTool, setSelectedTool] = useState('home') // R26: Home tool selected by default when Home screen is active
+
+  // R37: right-click menu for active-work cards (missions + projects). Same options as the
+  // left-menu; every action is a forward-advance into the project screen (navigate + confirm).
+  const [cardMenu, setCardMenu] = useState(null) // { x, y, type:'mission'|'project', item, project }
 
   // R35: live clock + timezone for the top-right display (greeting font, click to change zone)
   const [now, setNow] = useState(() => new Date())
@@ -1011,7 +1015,7 @@ export default function HomeView({
           {cv6 && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
-              marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid var(--cv6-divider)',
+              marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid var(--cv6-divider)',
             }}>
               {/* Primary group (left): Explorer, Files, Home, Theme */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1162,19 +1166,47 @@ export default function HomeView({
             </div>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: cv6 ? '-20px' : 0, marginBottom: cv6 ? '16px' : '32px' }}>
+          {cv6 && showSearch ? (
+            /* R37: search mode — greeting becomes a big "Search" field in the greeting font, icon + underline */
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '-20px', marginBottom: '20px', paddingBottom: '10px', borderBottom: '2px solid var(--cv6-text-primary)' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 'clamp(28px,4vw,44px)', height: 'clamp(28px,4vw,44px)', flexShrink: 0 }}>
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <input
+                className="hm-welcome"
+                type="text"
+                value={searchText}
+                onChange={e => setSearchText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Escape') { setShowSearch(false); setSearchText('') } }}
+                placeholder="Search"
+                autoComplete="off"
+                autoFocus
+                style={{ flex: 1, minWidth: 0, margin: 0, border: 'none', outline: 'none', background: 'transparent', padding: 0, color: 'var(--cv6-text-primary)' }}
+              />
+              <button
+                onClick={() => { setShowSearch(false); setSearchText('') }}
+                title="Close search"
+                style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 120ms ease' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: cv6 ? '-6px' : 0, marginBottom: cv6 ? '14px' : '32px' }}>
             <h1 className="hm-welcome" style={{ margin: 0 }}>
               <span className="hm-l1">{greeting}</span>{' '}
               <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
             </h1>
-            {/* R14: Search icon button (collapse to icon only) */}
+            {/* R14: Search icon button (collapse to icon only) — same row as greeting */}
             <button
               onClick={() => setShowSearch(true)}
               style={{
                 width: '40px', height: '40px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
                 background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                transition: 'all 120ms ease', fontFamily: 'inherit',
+                transition: 'all 120ms ease', fontFamily: 'inherit', flexShrink: 0,
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = 'var(--cv6-surface-hover)'
@@ -1190,6 +1222,7 @@ export default function HomeView({
               </svg>
             </button>
           </div>
+          )}
 
 
           {/* R11: PUNCH-LIST #6 — HAPPENING NOW (density + alive, 6-item grid, breathing room) */}
@@ -1228,33 +1261,58 @@ export default function HomeView({
             </div>
           )}
 
-          {/* R14: Search bar — icon-only (collapsed) when hidden, expands on click next to greeting */}
-          {showSearch ? (
-            <div className="hm-search" style={{ marginBottom: '16px' }}>
-              <svg className="hm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <input
-                type="text"
-                value={searchText}
-                onChange={e => setSearchText(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && onOpenSearch) {
-                    onOpenSearch(searchText)
-                    setShowSearch(false)
-                  }
-                  if (e.key === 'Escape') setShowSearch(false)
-                }}
-                placeholder="messages, tasks, agents"
-                autoComplete="off"
-                autoFocus
-              />
-              <span className="hm-search-hint">⌘K</span>
-            </div>
-          ) : null}
+          {/* R37: GLOBAL SEARCH RESULTS — category headings spread across 3 columns (stack on mobile) */}
+          {cv6 && showSearch && (() => {
+            const q = searchText.trim().toLowerCase()
+            const match = (s) => !q || (s || '').toLowerCase().includes(q)
+            const toolList = [
+              { label: 'Home', key: 'home' }, { label: 'Projects', key: 'projects' }, { label: 'Files', key: 'files' },
+              { label: 'Review', key: 'review' }, { label: 'Support', key: 'support' }, { label: 'Tracker', key: 'tracker' },
+              { label: 'Command', key: 'command' }, { label: 'Live Scribe', key: 'scribe' },
+            ].filter(t => match(t.label))
+            const projectHits = [...(recentProjects || []), ...(allProjects || [])].filter(p => match(p.name || p.slug)).slice(0, 8)
+            const missionHits = (allMissionsForCV6 || []).filter(m => match(m.mission?.name || m.mission?.slug)).slice(0, 8)
+            const groups = [
+              { key: 'tools', title: 'Tools', rows: toolList.map(t => ({ label: t.label, onClick: () => { setShowSearch(false); setSearchText(''); setSelectedTool(t.key) } })) },
+              { key: 'projects', title: 'Projects', rows: projectHits.map(p => ({ label: p.name || p.slug, onClick: () => { setShowSearch(false); setSearchText(''); handleProjectSelect(p, null) } })) },
+              { key: 'missions', title: 'Missions', rows: missionHits.map(m => ({ label: m.mission.name || m.mission.slug, sub: m.project?.name || m.project?.slug, onClick: () => { setShowSearch(false); setSearchText(''); handleProjectSelect(m.project, m.mission) } })) },
+              { key: 'files', title: 'Files', rows: [] },
+              { key: 'review', title: 'Review', rows: [] },
+              { key: 'tracker', title: 'Tracker', rows: [] },
+              { key: 'support', title: 'Support', rows: [] },
+            ]
+            return (
+              <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px 28px', marginBottom: '32px', alignItems: 'start' }}>
+                {groups.map(g => (
+                  <div key={g.key} style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>{g.title}</div>
+                    {g.rows.length === 0 ? (
+                      <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', padding: '4px 0' }}>{q ? 'No matches' : 'Nothing yet'}</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {g.rows.map((r, i) => (
+                          <button
+                            key={i}
+                            onClick={r.onClick}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1px', width: '100%', textAlign: 'left', padding: '8px 10px', borderRadius: '6px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 120ms ease' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--cv6-surface-hover)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          >
+                            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>{r.label}</span>
+                            {r.sub && <span style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>in {r.sub}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
 
+          {/* R37: home body (tools, columns, what-needs-you, ideas) hides while searching */}
+          {!showSearch && (<>
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
-          {/* R26: tighter gap to greeting (marginTop) + smaller tiles */}
           <div style={{ marginTop: '-4px', marginBottom: '16px' }}>
             <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
@@ -1297,8 +1355,8 @@ export default function HomeView({
           {selectedTool && selectedTool !== 'home' && (
             <div style={{
               animation: 'cv6-tool-roll-in 300ms ease-out',
-              marginBottom: '24px', borderRadius: '8px', border: '1px solid var(--cv6-divider)',
-              background: 'var(--cv6-surface)', overflow: 'hidden', minHeight: '280px',
+              marginBottom: '24px', borderRadius: '8px', border: 'none',
+              background: 'transparent', overflow: 'hidden', minHeight: '280px',
             }}>
               {/* Tool header with close control */}
               <div style={{
@@ -1528,6 +1586,7 @@ export default function HomeView({
                                 handleProjectSelect(m.project, m.mission)
                                 homeRef.current?.focus()
                               }}
+                              onContextMenu={(e) => { e.preventDefault(); selectByItem('mission', m.mission.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'mission', item: m.mission, project: m.project }) }}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
                                 boxSizing: 'border-box', width: '100%',
@@ -1586,6 +1645,7 @@ export default function HomeView({
                                 handleProjectSelect(p, null)
                                 homeRef.current?.focus()
                               }}
+                              onContextMenu={(e) => { e.preventDefault(); selectByItem('project', p.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
                                 boxSizing: 'border-box', width: '100%',
@@ -2015,6 +2075,47 @@ export default function HomeView({
               </div>
             </div>
           )}
+          </>)}
+
+          {/* R37: right-click menu for active-work cards — mirrors the left-menu; each action advances into the project screen */}
+          {cardMenu && (() => {
+            const isM = cardMenu.type === 'mission'
+            const opts = [
+              { key: 'brief-me', label: 'Brief me' },
+              ...(isM ? [{ key: 'whats-next', label: "What's next" }] : []),
+              { key: 'rename', label: 'Rename' },
+              { key: 'create-subfolder', label: 'Create subfolder…' },
+              { key: 'move-to-folder', label: 'Move to subfolder…' },
+              ...(isM ? [{ key: 'embed', label: 'Embed this room' }] : []),
+              { key: 'delete', label: 'Delete', danger: true },
+            ]
+            const advance = (key) => {
+              // Forward-advance: open the room (the move happens on the project screen + is shown there)
+              console.log('[card-action]', key, cardMenu.type, cardMenu.item.slug)
+              handleProjectSelect(cardMenu.project, isM ? cardMenu.item : null)
+              setCardMenu(null)
+            }
+            return (
+              <>
+                <div onClick={() => setCardMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCardMenu(null) }} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                <div style={{ position: 'fixed', top: Math.min(cardMenu.y, (typeof window !== 'undefined' ? window.innerHeight : 800) - 320), left: Math.min(cardMenu.x, (typeof window !== 'undefined' ? window.innerWidth : 1000) - 220), zIndex: 41, minWidth: '204px', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.18)', padding: '6px', fontFamily: 'inherit' }}>
+                  {opts.map((o, i) => (
+                    <Fragment key={o.key}>
+                      {o.danger && <div style={{ height: '1px', background: 'var(--cv6-divider)', margin: '6px 4px' }} />}
+                      <button
+                        onClick={() => advance(o.key)}
+                        style={{ display: 'block', width: '100%', textAlign: 'left', padding: '9px 12px', borderRadius: '6px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '500', color: o.danger ? '#E5484D' : 'var(--cv6-text-primary)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = o.danger ? 'rgba(229,72,77,0.10)' : 'var(--cv6-surface-hover)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        {o.label}
+                      </button>
+                    </Fragment>
+                  ))}
+                </div>
+              </>
+            )
+          })()}
         </div>
       ) : (
         /* CV4 layout — keep as-is for backward compatibility */
