@@ -97,12 +97,14 @@ export default async function handler(req, res) {
     const title = clean(req.body.title, 160);
     if (!title) return res.status(400).json({ error: 'title required' });
     const id = 'u-' + Date.now().toString(36);
+    const pr = parseInt(req.body.priority, 10);
     data.bugs.push({
       id,
       page: clean(req.body.page, 40) || 'General',
       title,
       expected: clean(req.body.expected, 240),
       severity: ALLOWED_STATUS.includes(req.body.severity) ? req.body.severity : (clean(req.body.severity, 12) || 'Medium'),
+      priority: (pr >= 1 && pr <= 5) ? pr : 3,
       status: 'Open',
       owner: clean(req.body.owner, 24) || 'Patrik',
       added_by: 'patrik',
@@ -120,6 +122,7 @@ export default async function handler(req, res) {
     if (req.body.title != null) bug.title = clean(req.body.title, 160);
     if (req.body.expected != null) bug.expected = clean(req.body.expected, 240);
     if (req.body.severity != null) bug.severity = clean(req.body.severity, 12);
+    if (req.body.priority != null) { const pr = parseInt(req.body.priority, 10); if (pr >= 1 && pr <= 5) bug.priority = pr; }
     const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true });

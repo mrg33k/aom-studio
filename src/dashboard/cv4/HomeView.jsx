@@ -951,6 +951,8 @@ const TRACKER_TEMPLATES = {
   blank: { label: 'Blank sheet', columns: ['Column 1', 'Column 2', 'Column 3'], statusCol: null, seed: [{ 'Column 1': '', 'Column 2': '', 'Column 3': '' }] },
 }
 const STATUS_COLORS = { 'Open': '#F59E0B', 'In progress': '#0066FF', 'Done': '#10B981' }
+// Priority 1 (now) -> 5 (later). Warm/urgent at the top, cool/calm at the bottom.
+const PRIORITY_COLORS = { 1: '#EF4444', 2: '#F59E0B', 3: '#0066FF', 4: '#6B7B8C', 5: '#9AA7B4' }
 
 // R88: weighted column tracks so dense trackers stay readable. Short fields
 // (status/severity/owner) stay narrow; long text fields (bug/expected/notes)
@@ -1033,6 +1035,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
       if (!bugs.length) return
       const rows = bugs.map(b => ({
         __id: b.id,
+        Priority: b.priority || 3,
         Page: b.page || '',
         Bug: b.title || '(untitled)',
         Expected: b.expected || '',
@@ -1040,7 +1043,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         Status: b.status || 'Open',
         Owner: b.owner || '',
       }))
-      const cv6Tracker = { id: 'cv6-bugs', name: 'CV6 Bugs', scope: 'Corner CV6', template: 'bugs', columns: ['Page', 'Bug', 'Expected', 'Severity', 'Status', 'Owner'], rows, on: true, live: true }
+      const cv6Tracker = { id: 'cv6-bugs', name: 'CV6 Bugs', scope: 'Corner CV6', template: 'bugs', columns: ['Priority', 'Page', 'Bug', 'Expected', 'Severity', 'Status', 'Owner'], rows, on: true, live: true }
       setTrackers(prev => [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')])
       setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'cv6-bugs' : prev)
     } catch { /* best-effort */ }
@@ -1054,7 +1057,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   // R88 (Patrik): add a bug from the UI. Persists via /api/dashboard/cv6-bugs so
   // the agents see it too, then refreshes the live list.
   const [addingBug, setAddingBug] = useState(false)
-  const [bugDraft, setBugDraft] = useState({ page: 'Homepage', title: '', expected: '', severity: 'Medium' })
+  const [bugDraft, setBugDraft] = useState({ page: 'Homepage', title: '', expected: '', severity: 'Medium', priority: 3 })
   const [savingBug, setSavingBug] = useState(false)
   const submitBug = useCallback(async () => {
     const title = (bugDraft.title || '').trim()
@@ -1067,7 +1070,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
       })
       if (r.ok) {
         setAddingBug(false)
-        setBugDraft({ page: 'Homepage', title: '', expected: '', severity: 'Medium' })
+        setBugDraft({ page: 'Homepage', title: '', expected: '', severity: 'Medium', priority: 3 })
         await pullBugs()
       }
     } finally { setSavingBug(false) }
@@ -1079,6 +1082,17 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
       await authFetch('/api/dashboard/cv6-bugs', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update', world: 'aom', id, status }),
+      })
+    } catch { /* optimistic; next poll reconciles */ }
+  }, [])
+  const updateBugPriority = useCallback(async (id, priority) => {
+    if (!id) return
+    const pr = parseInt(priority, 10)
+    setTrackers(prev => prev.map(t => t.id !== 'cv6-bugs' ? t : { ...t, rows: t.rows.map(r => r.__id === id ? { ...r, Priority: pr } : r) }))
+    try {
+      await authFetch('/api/dashboard/cv6-bugs', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', world: 'aom', id, priority: pr }),
       })
     } catch { /* optimistic; next poll reconciles */ }
   }, [])
@@ -1180,6 +1194,9 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
           <select value={bugDraft.severity} onChange={e => setBugDraft(d => ({ ...d, severity: e.target.value }))} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px' }}>
             {['Low', 'Medium', 'High'].map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          <select value={bugDraft.priority} onChange={e => setBugDraft(d => ({ ...d, priority: parseInt(e.target.value, 10) }))} title="Priority — 1 is do now, 5 is later" style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: PRIORITY_COLORS[bugDraft.priority] || 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>
+            {[1, 2, 3, 4, 5].map(p => <option key={p} value={p}>P{p}</option>)}
+          </select>
           <button onClick={submitBug} disabled={savingBug || !bugDraft.title.trim()} style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: savingBug ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700', opacity: (savingBug || !bugDraft.title.trim()) ? 0.6 : 1 }}>{savingBug ? 'Saving…' : 'Save bug'}</button>
           <button onClick={() => setAddingBug(false)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>Cancel</button>
         </div>
@@ -1198,13 +1215,25 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
             // original row index. Severity/Status sort by rank, others A-Z.
             const RANK = { Severity: { High: 0, Medium: 1, Low: 2 }, Status: { Open: 0, 'In progress': 1, Done: 2 } }
             const decorated = sel.rows.map((row, origIndex) => ({ row, origIndex }))
-            const displayRows = sortCol ? [...decorated].sort((a, b) => {
-              const av = a.row[sortCol] == null ? '' : a.row[sortCol]
-              const bv = b.row[sortCol] == null ? '' : b.row[sortCol]
-              const rmap = RANK[sortCol]
+            const cmp = (a, b, col, dir) => {
+              if (col === 'Priority') return ((Number(a.row.Priority) || 3) - (Number(b.row.Priority) || 3)) * dir
+              const av = a.row[col] == null ? '' : a.row[col]
+              const bv = b.row[col] == null ? '' : b.row[col]
+              const rmap = RANK[col]
               const c = rmap ? ((rmap[av] ?? 99) - (rmap[bv] ?? 99)) : String(av).localeCompare(String(bv))
-              return c * sortDir
-            }) : decorated
+              return c * dir
+            }
+            let displayRows
+            if (sortCol) {
+              displayRows = [...decorated].sort((a, b) => cmp(a, b, sortCol, sortDir))
+            } else if (sel.id === 'cv6-bugs') {
+              // Default: what's now at the top. Done sinks; then by priority 1->5; then status.
+              const doneZ = (x) => (String(x.row.Status).toLowerCase() === 'done' ? 1 : 0)
+              displayRows = [...decorated].sort((a, b) =>
+                (doneZ(a) - doneZ(b)) || cmp(a, b, 'Priority', 1) || cmp(a, b, 'Status', 1))
+            } else {
+              displayRows = decorated
+            }
             return displayRows.map(({ row, origIndex }) => {
             const ri = origIndex
             const isExp = expandedRow === ri
@@ -1212,7 +1241,12 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
             <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', cursor: sel.live ? 'pointer' : 'default', background: isExp ? 'var(--cv6-surface-hover)' : 'transparent' }}>
               {sel.columns.map(c => (
                 <div key={c} style={{ borderRight: '1px solid var(--cv6-divider)', padding: '0', minWidth: 0 }}>
-                  {c === statusCol ? (
+                  {(sel.id === 'cv6-bugs' && c === 'Priority') ? (
+                    // Priority 1 (now) -> 5 (later), adjustable inline, persists to the file.
+                    <select value={row.Priority || 3} onChange={e => updateBugPriority(row.__id, e.target.value)} onClick={e => e.stopPropagation()} title="Priority — 1 is do now, 5 is later" style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: PRIORITY_COLORS[row.Priority || 3] || 'var(--cv6-text-primary)', fontWeight: '700', outline: 'none' }}>
+                      {[1, 2, 3, 4, 5].map(p => <option key={p} value={p}>P{p}</option>)}
+                    </select>
+                  ) : c === statusCol ? (
                     sel.id === 'cv6-bugs' ? (
                       // CV6 bug status persists to the tracker file so the agents see it.
                       <select value={row[c] || 'Open'} onChange={e => updateBugStatus(row.__id, e.target.value)} onClick={e => e.stopPropagation()} style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none' }}>
