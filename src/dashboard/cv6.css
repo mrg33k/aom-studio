@@ -925,3 +925,13 @@
 @media (max-width: 768px) {
   [data-cv6] .hm-three-column-grid { grid-template-columns: 1fr; }
 }
+
+/* Base text color override for the CV6 subtree. The /cvg surface also carries
+   [data-cv5], whose `[data-cv5] span/div/p { color: var(--cv5-text-primary) }`
+   (a dark-ground light text) targets elements directly and would otherwise win
+   over inheritance, washing out CV6 text on its light ground. Mirror it for CV6
+   so CV6 owns its base color. Specific class rules (0,2,0) + inline cv6 colors
+   still win for intentionally-muted text. */
+[data-cv6] p,
+[data-cv6] span,
+[data-cv6] div { color: var(--cv6-text-primary); }
