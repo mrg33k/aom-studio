@@ -1,71 +1,209 @@
 // CvgChatSurface.jsx — CV6-styled live conversation surface for /cvg.
-// Replaces the CV4 ChatPanel fallback when opening a conversation on /cvg.
+// Live-wired to Supabase for real-time message streaming.
 //
 // Responsibilities:
-//   1. Message thread (user + assistant bubbles, CV6-styled, theme-aware)
-//   2. Composer (textarea + send button, CV6-styled)
-//   3. Step indicator (animated row showing assistant's current task)
+//   1. Load conversation history from Supabase (agent or project thread)
+//   2. Live-subscribe to message INSERTs + UPDATEs for the target
+//   3. Message thread (user + assistant bubbles, CV6-styled, theme-aware)
+//   4. Composer (textarea + send button, CV6-styled)
+//   5. Step indicator (animated row showing assistant's current task)
 //
 // Props:
 //   - worldId: string (for context routing)
-//   - target: { type: 'agent'|'project', name, slug, project? }
+//   - target: { type: 'agent'|'project', name, slug, project?, missionSlug? }
 //   - theme: 'light'|'dark' (inherited from parent, applied to data-theme)
-//   - messages: array of { id, role: 'user'|'assistant', content, timestamp? }
-//   - onSend: (text, attachments?) => void
+//   - onSend: (sel, text) => Promise<void> (called by parent, e.g. handleCvgChatSend)
 //   - onBack: () => void
-//   - busyStep: string|null (e.g., 'Thinking…', 'Reading files…', null when idle)
 //
 // Design system:
 //   - All colors via var(--cv6-*) tokens (auto dark/light cascade via css)
 //   - Typography: Inter (body) + Space Mono (mono labels)
 //   - Message width: max 720px (comfortable reading)
 //   - Padding/gaps: 14px card base, 8px section gaps
-//
-// Status: COMPLETE VISUAL SURFACE + DOCUMENTED PROPS
-// Next agent must wire: Supabase message loading, streaming, send routing,
-// and busyStep signals from the bridge. See "WIRING NEEDED" markers below.
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase.js'
+
+// Helper: filter messages by mission scope (same logic as cv3 useChatMessages)
+function makeMissionMatcher(missionSlug) {
+  return (m) => {
+    const tag = (m && m.metadata && m.metadata.mission_slug) || ''
+    if (missionSlug) {
+      // For CV6, accept exact match or any tag (missionSlugsMatch not imported here)
+      return tag === missionSlug || tag.endsWith(':' + missionSlug)
+    }
+    return !tag
+  }
+}
+
+// Helper: drop messages with hidden master-loop metadata
+function isHiddenLoopCue(m) {
+  return !!(m && m.role === 'user' && m.metadata && m.metadata.master_loop)
+}
 
 export default function CvgChatSurface({
   worldId,
   target,
   theme = 'light',
-  messages = [],
   onSend,
   onBack,
-  busyStep = null,
 }) {
   const inputRef = useRef(null)
   const messagesEndRef = useRef(null)
   const [input, setInput] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [messages, setMessages] = useState([])
+  const [loading, setLoading] = useState(true)
 
-  // Auto-scroll to bottom when messages change or busyStep updates
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, busyStep])
+  }, [messages])
 
-  const handleSend = useCallback(() => {
-    if (!input.trim() || isSending) return
+  // Load message history on mount or when target changes
+  useEffect(() => {
+    if (!target || !worldId || !supabase) {
+      setLoading(false)
+      return
+    }
 
-    setIsSending(true)
-    const text = input.trim()
-    setInput('')
+    setLoading(true)
+    setMessages([])
 
-    // WIRING NEEDED: Pass to onSend handler; orchestrator will route
-    // through chat-bridge or /api/dashboard/cvg-chat with model override
-    // Model comes from parent (CornerVG) via onSend metadata, NOT hardcoded here
-    if (onSend) {
-      onSend(text, {
-        worldId,
-        target,
-        // model override (if needed) set by parent/caller
+    const loadHistory = async () => {
+      try {
+        if (target.type === 'agent') {
+          // Load agent thread: agent=target.slug, no project, not hidden loop cues
+          const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('client_id', worldId)
+            .eq('agent', target.slug)
+            .or('project.is.null,project.eq.')
+            .order('timestamp', { ascending: false })
+            .limit(200)
+
+          if (!error && data) {
+            const filtered = data
+              .reverse()
+              .filter(m => !isHiddenLoopCue(m))
+            setMessages(filtered)
+          }
+        } else if (target.type === 'project') {
+          // Load project chat: project=target.slug OR agent=project:target.slug
+          // Support both owner (worldId) and shared (shared:slug) channels
+          const sharedCid = `shared:${target.slug}`
+          const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
+          const matchesMission = makeMissionMatcher(target.missionSlug)
+
+          const { data, error } = await supabase
+            .from('messages')
+            .select('*')
+            .in('client_id', clientIds)
+            .or(`project.eq.${target.slug},agent.eq.project:${target.slug}`)
+            .order('timestamp', { ascending: false })
+            .limit(400)
+
+          if (!error && data) {
+            const filtered = data
+              .filter(matchesMission)
+              .reverse()
+            setMessages(filtered)
+          }
+        }
+      } catch (e) {
+        console.error('[CvgChatSurface] load history error', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadHistory()
+  }, [target?.slug, target?.type, worldId, target?.missionSlug])
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!target || !worldId || !supabase) return
+
+    let active = true
+    let channel = null
+
+    const handleInsert = (payload) => {
+      const msg = payload.new
+      if (!active) return
+      if (msg.client_id !== worldId) return
+      if (isHiddenLoopCue(msg)) return
+
+      if (target.type === 'agent') {
+        // Agent thread: filter on agent + no project
+        if (msg.agent !== target.slug) return
+        if (msg.project) return
+      } else if (target.type === 'project') {
+        // Project chat: filter on project OR legacy agent=project:slug
+        const isLegacy = msg.agent === `project:${target.slug}`
+        const isCurrent = msg.project === target.slug
+        if (!isLegacy && !isCurrent) return
+
+        // Mission filtering
+        const matchesMission = makeMissionMatcher(target.missionSlug)
+        if (!matchesMission(msg)) return
+      }
+
+      // Dedup + add
+      setMessages(prev => {
+        if (prev.some(m => m.id === msg.id)) return prev
+        return [...prev, msg]
       })
     }
 
-    setIsSending(false)
-  }, [input, isSending, onSend, worldId, target])
+    const handleUpdate = (payload) => {
+      const msg = payload.new
+      if (!msg?.id || !active) return
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, ...msg } : m))
+    }
+
+    // Set up subscription
+    channel = supabase
+      .channel(`cvg-chat-${worldId}-${target.slug}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+        handleInsert,
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
+        handleUpdate,
+      )
+      .subscribe()
+
+    return () => {
+      active = false
+      if (channel) {
+        try { supabase.removeChannel(channel) } catch (_) {}
+      }
+    }
+  }, [target?.slug, target?.type, worldId, target?.missionSlug])
+
+  const handleSend = useCallback(async () => {
+    if (!input.trim() || isSending) return
+
+    const text = input.trim()
+    setInput('')
+    setIsSending(true)
+
+    try {
+      // Call parent's onSend handler with the target + text
+      // Parent is CornerVG.handleCvgChatSend, which routes to chat-bridge or supabase-messages
+      if (onSend) {
+        await onSend(target, text)
+      }
+    } catch (e) {
+      console.error('[CvgChatSurface] send failed', e)
+    } finally {
+      setIsSending(false)
+    }
+  }, [input, isSending, onSend, target])
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -171,7 +309,25 @@ export default function CvgChatSurface({
           background: 'var(--cv6-ground)',
         }}
       >
-        {messages.length === 0 && !busyStep && (
+        {loading && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100%',
+              color: 'var(--cv6-text-tertiary)',
+              textAlign: 'center',
+              fontSize: 14,
+            }}
+          >
+            <div>
+              <p style={{ margin: 0 }}>Loading conversation…</p>
+            </div>
+          </div>
+        )}
+
+        {!loading && messages.length === 0 && (
           <div
             style={{
               display: 'flex',
@@ -225,41 +381,13 @@ export default function CvgChatSurface({
                 whiteSpace: 'pre-wrap',
               }}
             >
-              {msg.content}
+              {/* Messages from Supabase have .text field, not .content */}
+              {msg.text || msg.content}
             </div>
           </div>
         ))}
 
-        {/* Step indicator (animated, shown while busyStep is truthy) */}
-        {busyStep && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '10px 12px',
-              borderRadius: 6,
-              background: 'var(--cv6-hover)',
-              border: '1px solid var(--cv6-divider)',
-              color: 'var(--cv6-text-secondary)',
-              fontSize: 13,
-              fontFamily: "'Space Mono', monospace",
-            }}
-          >
-            {/* Pulsing dot */}
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: '50%',
-                background: 'var(--cv6-accent-primary)',
-                flexShrink: 0,
-                animation: 'cv6-chat-pulse 1.5s ease-in-out infinite',
-              }}
-            />
-            <span>{busyStep}</span>
-          </div>
-        )}
+        {/* Step indicator — FUTURE: will render busyStep from bridge stream */}
 
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
@@ -371,39 +499,21 @@ export default function CvgChatSurface({
 }
 
 /**
- * ─── WIRING CHECKLIST FOR NEXT AGENT ───
+ * ─── WIRING STATUS ───
  *
- * This component is a COMPLETE VISUAL SURFACE. To wire it live on /cvg:
+ * LIVE WIRED (R1):
+ * ✓ MESSAGE LOADING — Supabase queries for both agent + project threads
+ * ✓ LIVE STREAMING — Realtime subscriptions on INSERT + UPDATE
+ * ✓ SEND ROUTING — onSend handler passed to parent (CornerVG.handleCvgChatSend)
+ * ✓ MISSION FILTERING — Project chats support mission-scope isolation
+ * ✓ THEME INHERITANCE — theme prop applied to [data-cv6] root
  *
- * 1. MESSAGE LOADING (initial state)
- *    - Query Supabase `messages` table for the conversation
- *    - Filter by (conversation_id, world_id) from URL params
- *    - Pass as `messages` prop
- *    - Format: array of { id, role: 'user'|'assistant', content, timestamp? }
+ * REMAINING (future rounds):
+ * - STEP INDICATOR / busyStep — Wire bridge stream for animated step display
+ * - MESSAGE OPTIMISM — Add temp/bridge-stream message prefixes like cv3
+ * - ATTACHMENTS — Wire file upload + preview rendering
  *
- * 2. LIVE MESSAGE STREAMING (onSend)
- *    - Wire onSend handler to call `/api/dashboard/chat-bridge`
- *    - OR route through CornerVG's handleCvgChatSend + useChatSend hook
- *    - Pass model override: 'gemini-2.0-flash' (set in onSend callback above)
- *    - Set isSending = true while waiting; false on response
- *    - Append assistant message to messages array
- *
- * 3. STEP INDICATOR (busyStep)
- *    - Wire from bridge stream: watch message.metadata.step_status
- *    - Values: null | 'Thinking…' | 'Reading files…' | 'Writing…' (etc.)
- *    - Update busyStep prop as bridge emits steps
- *    - Set to null when message completes
- *
- * 4. TARGET ROUTING (target prop)
- *    - Extract from URL params (/cvg/project/:slug or /cvg/agent/:slug)
- *    - Shape: { type: 'agent'|'project', name, slug, project? }
- *    - Pass to onSend so bridge knows where to route the message
- *
- * 5. THEME INHERITANCE
- *    - Read from CornerVG's theme state
- *    - Pass as `theme` prop
- *    - CSS auto-applies dark tokens via [data-cv6][data-theme="dark"]
- *
- * Props are fully documented in the JSDoc header.
- * No inline styles require CSS vars — all use var(--cv6-*) which cascade correctly.
+ * Note: The busyStep prop was removed from the signature since we're not yet
+ * streaming bridge updates. When steps are wired, add it back and connect
+ * to the events table subscription (event_type='message_step').
  */

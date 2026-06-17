@@ -195,12 +195,44 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           const sessionsForRoom = sessions.filter((s) => s && typeof s === 'object' && s.room === slug)
           const liveSession = sessionsForRoom.length > 0 ? sessionsForRoom[0] : null
 
+          // Derive LIVE NOW: if there's an active session, show what it's doing
+          // Use the session's summary (what the session reports it's doing), fallback to generic message
+          let liveNow = '—'
+          if (liveSession) {
+            if (liveSession.summary && typeof liveSession.summary === 'string') {
+              liveNow = liveSession.summary
+            } else if (liveSession.status === 'working' || liveSession.status === 'active') {
+              liveNow = '[Session active]'
+            }
+          }
+
           // Derive status from sessions + staleness
+          // WORKING if live session is recent (active)
+          // BLOCKED if live session has blocked status
+          // IDLE if no live session AND last activity is stale (>30 min)
           let status = 'idle'
-          if (liveSession && liveSession.status && typeof liveSession.status === 'string') {
-            status = liveSession.status === 'working' ? 'active' : liveSession.status
-          } else if (roomGoal.status && typeof roomGoal.status === 'string') {
-            status = roomGoal.status
+          let isRecent = false
+          if (liveSession) {
+            const lastActivity = liveSession.last_activity ? new Date(liveSession.last_activity).getTime() : null
+            const now = Date.now()
+            const thirtyMinMs = 30 * 60 * 1000
+            isRecent = lastActivity && (now - lastActivity) < thirtyMinMs
+
+            if (liveSession.status === 'blocked') {
+              status = 'blocked'
+            } else if (liveSession.status === 'working' || liveSession.status === 'active') {
+              status = isRecent ? 'active' : 'idle'
+            } else {
+              status = 'idle'
+            }
+          } else {
+            // No live session: check if last activity is stale
+            const lastTouchTs = roomGoal.last_touched ? new Date(roomGoal.last_touched).getTime() : null
+            if (lastTouchTs) {
+              const now = Date.now()
+              const thirtyMinMs = 30 * 60 * 1000
+              status = (now - lastTouchTs) > thirtyMinMs ? 'idle' : 'active'
+            }
           }
 
           const lastTouched = roomGoal.last_touched || (liveSession && liveSession.last_activity) || null
@@ -221,7 +253,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             display: roomDisplay(slug, map),
             goal,
             status,
-            liveNow: liveSession?.summary ? liveSession.summary : (liveSession ? '[Session active]' : '—'),
+            liveNow,
             lastActivity: lastTouched,
             routineId,
           }

@@ -1380,7 +1380,7 @@ export default function CornerVG() {
     if (!sel || !t) return
     const sm = surfaceModel()
     try {
-      if (sel.kind === 'project') {
+      if (sel.type === 'project') {
         const projectObj = (projectRooms || []).find(p => p?.slug === sel.slug) || { slug: sel.slug }
         const agentKey = getProjectEA(projectObj, agents) || 'elon'
         const clientId = projectObj.isShared ? `shared:${sel.slug}` : worldId
@@ -2953,12 +2953,29 @@ export default function CornerVG() {
                   setDeckTab('chat')
                 }}
               />
+            ) : cv6Mode && (selectedAgent || conversationTarget) ? (
+              /* CvgChatSurface (cv6 live conversation surface) wired to Supabase
+                 for real-time message streaming. Routes sends through handleCvgChatSend
+                 which applies the Gemini model override. */
+              <CvgChatSurface
+                key={selectedAgent?.slug || conversationTarget?.slug || 'chat'}
+                worldId={worldId}
+                target={selectedAgent ? {
+                  type: 'agent',
+                  slug: selectedAgent.slug,
+                  name: selectedAgent.name,
+                } : conversationTarget?.type === 'project' ? {
+                  type: 'project',
+                  slug: conversationTarget.slug,
+                  name: conversationTarget.name,
+                  missionSlug: conversationTarget.missionSlug,
+                } : null}
+                theme={theme}
+                onSend={handleCvgChatSend}
+                onBack={handleBackFromConversation}
+              />
             ) : (
-              /* CvgChatSurface (cv6 live conversation + step indicator) is built and
-                 approved but needs the LIVE message source wired (next batch). Until
-                 then conversations use ChatPanel so they keep working. The undefined
-                 `themeMode` + hardcoded messages={[]} from the blind integration would
-                 have crashed / shown an empty thread. */
+              /* Fall back to ChatPanel on cv4 surfaces (non-cv6 OR no conversation selected) */
               <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
           </div>

@@ -2477,7 +2477,7 @@ export default function HomeView({
               }}>
                 <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', textTransform: 'capitalize' }}>
                   {selectedTool === 'support' && 'Support'}
-                  {selectedTool === 'command' && 'Command Deck'}
+                  {selectedTool === 'command' && 'Command Center'}
                   {selectedTool === 'scribe' && 'Live Scribe'}
                   {selectedTool === 'review' && 'Review'}
                   {selectedTool === 'tracker' && 'Tracker'}
