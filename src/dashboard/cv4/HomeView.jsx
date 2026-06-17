@@ -2507,9 +2507,15 @@ export default function HomeView({
     const homeEl = homeRef.current
     if (!homeEl) return
     homeEl.addEventListener('keydown', handleKeyDown)
-    homeEl.focus()
     return () => homeEl.removeEventListener('keydown', handleKeyDown)
   }, [cv6, handleKeyDown])
+  // R57: only grab focus for the home rail when we're actually on Home. Doing it on every
+  // handleKeyDown recreation stole focus back from an open tool's inputs (e.g. the chat box),
+  // which broke the chat tool's Left-arrow flow.
+  useEffect(() => {
+    if (!cv6) return
+    if (selectedTool === 'home') homeRef.current?.focus()
+  }, [cv6, selectedTool])
 
   // R31: Clicking a card moves the keyboard cursor to that card, so Up/Down
   // resume from where the user clicked instead of snapping back to Agents (top).
