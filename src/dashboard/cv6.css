@@ -483,7 +483,7 @@
     position: fixed;
     left: 0; right: 0; bottom: 0;
     z-index: 60;
-    flex-wrap: nowrap;
+    flex-wrap: nowrap !important;
     overflow-x: auto;
     overflow-y: hidden;
     gap: 8px;
