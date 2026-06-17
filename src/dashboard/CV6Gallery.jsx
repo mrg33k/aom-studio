@@ -397,7 +397,17 @@ const SCREENS = [
       { label: 'Light', render: () => <ScreenFrame theme="light" label="Review · CV6"><HomeView {...SCREEN_PROPS} initialTool="review" /></ScreenFrame> },
     ],
   },
-  // NEXT: Tracker tool, Chat thread + left/right menu — tracked in cv4/COMPONENT-MANIFEST.md.
+  {
+    id: 'screen-tracker',
+    name: 'Tracker tool',
+    purpose: 'Per-room custom spreadsheets (bug tracker / storyboard templates). Toggle ON and the agent works the list to done.',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Tracker · CV6"><HomeView {...SCREEN_PROPS} initialTool="tracker" /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" label="Tracker · CV6"><HomeView {...SCREEN_PROPS} initialTool="tracker" /></ScreenFrame> },
+    ],
+  },
+  // NEXT: Files tool, Chat thread + left/right menu — tracked in cv4/COMPONENT-MANIFEST.md.
 ]
 
 // Screens first, then pieces. One flat list for lookup + feedback.

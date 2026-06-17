@@ -772,6 +772,164 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
   )
 }
 
+// ── Tracker Tool — per-room custom spreadsheets the agent can work (R38 r4) ────────
+const TRACKER_TEMPLATES = {
+  bugs: { label: 'Bug tracker', columns: ['Item', 'Severity', 'Status', 'Owner'], statusCol: 'Status', seed: [
+    { Item: 'Login button misaligned on mobile', Severity: 'High', Status: 'Open', Owner: 'Bobby' },
+    { Item: 'Slow image load on gallery', Severity: 'Medium', Status: 'In progress', Owner: 'Bobby' },
+    { Item: 'Typo in onboarding copy', Severity: 'Low', Status: 'Open', Owner: 'Cleo' },
+  ] },
+  storyboard: { label: 'Storyboard', columns: ['Scene', 'Shot', 'Notes', 'Status'], statusCol: 'Status', seed: [
+    { Scene: '1 · Hook', Shot: 'Close-up product', Notes: 'Punchy, 2s max', Status: 'Open' },
+    { Scene: '2 · Problem', Shot: 'User frustrated', Notes: 'Handheld feel', Status: 'In progress' },
+  ] },
+  blank: { label: 'Blank sheet', columns: ['Column 1', 'Column 2', 'Column 3'], statusCol: null, seed: [{ 'Column 1': '', 'Column 2': '', 'Column 3': '' }] },
+}
+const STATUS_COLORS = { 'Open': '#F59E0B', 'In progress': '#0066FF', 'Done': '#10B981' }
+
+function TrackerToolOverlay({ projects, missionsByProject }) {
+  const firstProj = (projects || [])[0]
+  const [trackers, setTrackers] = useState(() => [
+    { id: 't1', name: 'Launch bugs', scope: firstProj ? (firstProj.name || firstProj.slug) : 'Corner', template: 'bugs', columns: TRACKER_TEMPLATES.bugs.columns, rows: TRACKER_TEMPLATES.bugs.seed.map(r => ({ ...r })), on: false },
+  ])
+  const [selId, setSelId] = useState('t1')
+  const [creating, setCreating] = useState(false)
+  const [draftName, setDraftName] = useState('')
+  const [draftScope, setDraftScope] = useState(firstProj ? (firstProj.slug) : '')
+  const [draftTemplate, setDraftTemplate] = useState('bugs')
+  const [isNarrow, setIsNarrow] = useState(false)
+  const [mobilePane, setMobilePane] = useState('list')
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsNarrow(window.innerWidth < 720)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
+  const sel = trackers.find(t => t.id === selId)
+  const scopeName = (slug) => { const p = (projects || []).find(x => x.slug === slug); return p ? (p.name || p.slug) : slug }
+
+  function createTracker() {
+    const name = draftName.trim(); if (!name) { setCreating(false); return }
+    const tpl = TRACKER_TEMPLATES[draftTemplate]
+    const id = 't' + (trackers.length + 1) + '-' + Math.abs(name.length * 7 % 999)
+    const t = { id, name, scope: scopeName(draftScope) || 'Unassigned', template: draftTemplate, columns: tpl.columns, rows: tpl.seed.map(r => ({ ...r })), on: false }
+    setTrackers(prev => [...prev, t]); setSelId(id); setCreating(false); setDraftName(''); if (isNarrow) setMobilePane('sheet')
+    console.log('[tracker-create]', id, name, draftTemplate)
+  }
+  function setCell(rowIdx, col, val) {
+    setTrackers(prev => prev.map(t => t.id !== selId ? t : { ...t, rows: t.rows.map((r, i) => i === rowIdx ? { ...r, [col]: val } : r) }))
+  }
+  function addRow() {
+    setTrackers(prev => prev.map(t => t.id !== selId ? t : { ...t, rows: [...t.rows, Object.fromEntries(t.columns.map(c => [c, c === TRACKER_TEMPLATES[t.template].statusCol ? 'Open' : '']))] }))
+  }
+  function toggleOn() {
+    setTrackers(prev => prev.map(t => t.id !== selId ? t : { ...t, on: !t.on }))
+    console.log('[tracker-toggle]', selId)
+  }
+
+  const statusCol = sel ? TRACKER_TEMPLATES[sel.template].statusCol : null
+
+  const Selector = () => (
+    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', overflowY: 'auto', height: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)' }}>
+        <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Trackers</span>
+        <button onClick={() => { setCreating(true); setDraftName('') }} title="New tracker" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      {creating && (
+        <div style={{ padding: '12px', borderBottom: '1px solid var(--cv6-divider)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <input autoFocus value={draftName} onChange={e => setDraftName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') createTracker(); if (e.key === 'Escape') setCreating(false) }} placeholder="Tracker name…" style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
+          <select value={draftScope} onChange={e => setDraftScope(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px' }}>
+            <option value="">Pick a project…</option>
+            {(projects || []).map(p => <option key={p.slug} value={p.slug}>{p.name || p.slug}</option>)}
+          </select>
+          <select value={draftTemplate} onChange={e => setDraftTemplate(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px' }}>
+            {Object.entries(TRACKER_TEMPLATES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+          </select>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => setCreating(false)} style={{ flex: 1, padding: '7px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>Cancel</button>
+            <button onClick={createTracker} style={{ flex: 1, padding: '7px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '700' }}>Create</button>
+          </div>
+        </div>
+      )}
+      {trackers.map(t => (
+        <button key={t.id} onClick={() => { setSelId(t.id); if (isNarrow) setMobilePane('sheet') }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '11px 14px', margin: '2px 6px', borderRadius: '6px', border: '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit', background: selId === t.id ? 'hsla(220,90%,55%,0.10)' : 'transparent' }}
+          onMouseEnter={(e) => { if (selId !== t.id) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (selId !== t.id) e.currentTarget.style.background = 'transparent' }}>
+        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: t.on ? '#10B981' : 'var(--cv6-text-tertiary)', flexShrink: 0 }} />
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
+          <span style={{ display: 'block', fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{t.scope} · {TRACKER_TEMPLATES[t.template].label}</span>
+        </span>
+        </button>
+      ))}
+    </div>
+  )
+
+  const Sheet = () => !sel ? (
+    <div style={{ padding: '20px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Select or create a tracker</div>
+  ) : (
+    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{sel.name}</div>
+          <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{sel.scope} · {sel.rows.length} rows</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={addRow} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add row
+          </button>
+          <button onClick={toggleOn} title="Turn the tracker on so the agent works it" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 10px 6px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '700', background: sel.on ? 'rgba(16,185,129,0.15)' : 'var(--cv6-surface-hover)', color: sel.on ? '#10B981' : 'var(--cv6-text-secondary)' }}>
+            {sel.on ? 'Agent ON' : 'Agent off'}
+            <span style={{ width: '34px', height: '20px', borderRadius: '11px', background: sel.on ? '#10B981' : 'var(--cv6-text-tertiary)', position: 'relative', transition: 'background 150ms ease', flexShrink: 0 }}>
+              <span style={{ position: 'absolute', top: '2px', left: sel.on ? '16px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 150ms ease' }} />
+            </span>
+          </button>
+        </div>
+      </div>
+      {sel.on && <div style={{ padding: '8px 14px', fontSize: '12px', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderBottom: '1px solid var(--cv6-divider)' }}>Agent is watching this tracker and working items toward done.</div>}
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <div style={{ minWidth: `${sel.columns.length * 150}px` }}>
+          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${sel.columns.length}, minmax(140px, 1fr))`, borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1 }}>
+            {sel.columns.map(c => <div key={c} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--cv6-text-secondary)', padding: '10px 12px' }}>{c}</div>)}
+          </div>
+          {sel.rows.map((row, ri) => (
+            <div key={ri} style={{ display: 'grid', gridTemplateColumns: `repeat(${sel.columns.length}, minmax(140px, 1fr))`, borderBottom: '1px solid var(--cv6-divider)' }}>
+              {sel.columns.map(c => (
+                <div key={c} style={{ borderRight: '1px solid var(--cv6-divider)', padding: '0' }}>
+                  {c === statusCol ? (
+                    <select value={row[c] || 'Open'} onChange={e => setCell(ri, c, e.target.value)} style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none' }}>
+                      {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  ) : (
+                    <input value={row[c] || ''} onChange={e => setCell(ri, c, e.target.value)} placeholder="—" style={{ width: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', color: 'var(--cv6-text-primary)', outline: 'none' }} />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div style={{ height: isNarrow ? '64vh' : '440px', minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : '230px 1fr' }}>
+      {isNarrow ? (
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          {mobilePane === 'sheet' && (
+            <button onClick={() => setMobilePane('list')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-accent-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Trackers
+            </button>
+          )}
+          <div style={{ flex: 1, minHeight: 0 }}>{mobilePane === 'list' ? <Selector /> : <Sheet />}</div>
+        </div>
+      ) : (<><Selector /><Sheet /></>)}
+    </div>
+  )
+}
+
 export default function HomeView({
   user,
   worldId,
@@ -1814,9 +1972,16 @@ export default function HomeView({
                   />
                 )}
 
-                {['tracker', 'files'].includes(selectedTool) && (
-                  <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center', textTransform: 'capitalize' }}>
-                    {selectedTool} coming soon
+                {selectedTool === 'tracker' && (
+                  <TrackerToolOverlay
+                    projects={[...(recentProjects || []), ...(allProjects || [])]}
+                    missionsByProject={missionsByProject}
+                  />
+                )}
+
+                {selectedTool === 'files' && (
+                  <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
+                    Files coming soon
                   </div>
                 )}
               </div>
