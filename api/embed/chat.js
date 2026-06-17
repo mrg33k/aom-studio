@@ -1039,6 +1039,9 @@ export default async function handler(req, res) {
   // sends practice_word so the Wizard runs the spelling check on THAT word this
   // turn instead of redirecting him to the lesson. Behavior-only prompt hint.
   const practiceWord = typeof body.practice_word === 'string' ? body.practice_word.slice(0, 60).trim() : ''
+  // Bookshelf read-with-me (Build R24): when Ethan taps his book, the Wizard runs
+  // a reading check-in on it this turn instead of redirecting to the lesson.
+  const readingFocus = typeof body.reading_focus === 'string' ? body.reading_focus.slice(0, 120).trim() : ''
   // Which conversation room this turn belongs to (Build R19). The widget sends
   // an explicit `room` ('school' or 'project:<slug>'); if absent, derive it from
   // project_focus so older clients still land project turns in the project room.
@@ -1285,6 +1288,11 @@ export default async function handler(req, res) {
         // like opening a project. He asked to drill THIS word; do it now.
         if (practiceWord) {
           systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED A SPELLING WORD TO PRACTICE: "${practiceWord}" ===\nHe wants to practice spelling THIS word RIGHT NOW. Do it immediately for THIS reply. Do NOT redirect him back to the lesson, the warm-up, or any other subject, even if one was mid-way. Run a quick, friendly spelling check: say the word clearly, use it in a natural sentence, then ask him to spell it out for you. Next turn, confirm his answer and give a short memory tip if he misses it. Keep it light and encouraging — spelling is something he's building, so make a small win feel good. Spelling leads this turn.`
+        }
+        // Bookshelf read-with-me tap (Build R24) — reading is his other core gap;
+        // a tap on his book leads the turn, like opening a project.
+        if (readingFocus) {
+          systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED TO READ WITH YOU: "${readingFocus}" ===\nHe wants to pick up his book RIGHT NOW. Do a warm reading check-in for THIS reply; do NOT redirect to the lesson or any other subject, even if one was mid-way. Pick ONE: ask what's happened in the story so far, OR what he predicts happens next. React with genuine interest to his answer, then nudge him to read on a little more. Keep it light, curious, and encouraging — reading is something he's building. Reading leads this turn.`
         }
         const rawReply = await callGeminiWithRetry(
           systemPrompt,

@@ -788,6 +788,23 @@ html.dark-theme .spell-word--learning { color: var(--color-gold); }
 }
 .book-spot { font-size: 12.5px; line-height: 1.35; color: var(--color-text); opacity: 0.85; }
 .book-spot::first-letter { text-transform: uppercase; }
+/* Read-with-the-Wizard tap (Build R24) — reading is his other core gap */
+.book-read-btn {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border: 1.5px solid var(--color-gold);
+  border-radius: 999px;
+  background: rgba(212, 175, 55, 0.10);
+  color: var(--color-gold-soft);
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, color 0.15s ease;
+}
+.book-read-btn:hover { background: rgba(212, 175, 55, 0.20); color: var(--color-gold); }
+.book-read-btn:active { transform: scale(0.97); }
+.book-read-btn:disabled { opacity: 0.6; cursor: default; }
+html.dark-theme .book-read-btn { color: var(--color-gold); }
 .book-shelf {
   margin-top: 8px;
   font-size: 12px;

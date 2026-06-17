@@ -404,6 +404,7 @@
       ? `<div class="book-current">
           <span class="book-title">${escapeHtml(current.title)}</span>
           ${current.spot ? `<span class="book-spot">${escapeHtml(current.spot)}</span>` : ''}
+          <button type="button" class="book-read-btn" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.readWithWizard()">&#128214; Pick up my book</button>
         </div>`
       : '';
     const shelfHtml = finished.length
@@ -957,6 +958,7 @@
       if (isAfterSchoolNow()) payload.after_school = true;
       if (opts.projectFocus) payload.project_focus = opts.projectFocus;
       if (opts.practiceWord) payload.practice_word = opts.practiceWord;
+      if (opts.readingFocus) payload.reading_focus = opts.readingFocus;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1330,6 +1332,16 @@
       const w = list[i];
       if (!w || appState.isLoading) return;
       sendMessage(`Can you quiz me on spelling the word "${w.word}"? Say it, use it in a sentence, ask me to spell it out loud, then check my answer and give me a quick tip if I miss it.`, { practiceWord: w.word });
+    },
+    // Bookshelf: tap to read with the Wizard — a reading check-in on his current
+    // book (what's happened / what's next), his other core gap. Stays in School.
+    readWithWizard: () => {
+      if (appState.isLoading) return;
+      const reading = (appState.reading || []).filter((b) => (b.status || '').toLowerCase() !== 'finished');
+      const current = reading.length ? reading[reading.length - 1] : null;
+      if (!current) return;
+      const spot = current.spot ? ` I'm at: ${current.spot}.` : '';
+      sendMessage(`Let's pick up my book "${current.title}".${spot} Can we read together — ask me what's happened so far or what I think happens next, then help me keep going?`, { readingFocus: current.title });
     },
     // Quick-start chip: practice the first word he hasn't mastered yet.
     practiceSpellStart: () => {
