@@ -764,6 +764,17 @@ html.dark-theme .spell-word--learning { color: var(--color-gold); }
   padding: 2px 8px;
   border-radius: 999px;
 }
+/* Math challenge chip (Build R25) — secondary outline so the spelling chip (his
+   gap) stays the primary; math is his strength, a bonus challenge. */
+.practice-chip--math {
+  background: rgba(212, 175, 55, 0.10);
+  color: var(--color-gold-soft);
+  border: 1.5px solid var(--color-gold);
+  box-shadow: none;
+}
+.practice-chip--math:hover { background: rgba(212, 175, 55, 0.20); color: var(--color-gold); filter: none; transform: translateY(-1px); }
+.practice-chip--math .practice-chip-count { background: rgba(212, 175, 55, 0.18); color: var(--color-gold-soft); }
+html.dark-theme .practice-chip--math { color: var(--color-gold); }
 
 /* Bookshelf (Build R11) — his reading, carried across the week. Compact: the
    current book (title + where he is) as a gold-accent card, plus a small shelf

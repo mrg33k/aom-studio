@@ -390,6 +390,23 @@
       </button>`;
   }
 
+  // --- Math challenge quick-start (Build R25) --------------------------------
+  // Math is Ethan's strength and his Kenilworth focus ("stay ahead"). One tap
+  // pulls a 7th-grade-prep problem from the Wizard. Secondary (outline) style so
+  // the spelling chip (his gap) stays the primary action. Shows when today's
+  // Math isn't done yet.
+  function renderMathChip() {
+    const parsed = parseDayState(appState.dayState);
+    if (!parsed) return '';
+    const math = parsed.quests.find((q) => /math/i.test(q.name));
+    if (!math || math.status === 'done') return '';
+    return `<button type="button" class="practice-chip practice-chip--math" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.mathChallenge()">
+        <span class="practice-chip-icon">&#128290;</span>
+        <span class="practice-chip-text">Math challenge</span>
+        <span class="practice-chip-count">Kenilworth prep</span>
+      </button>`;
+  }
+
   // --- Bookshelf (Build R11) — his reading, carried across the week ----------
   // Reading is Ethan's other core gap. The book he's on + where he is shows here
   // and carries day to day so he picks the thread back up; finished books stack
@@ -959,6 +976,7 @@
       if (opts.projectFocus) payload.project_focus = opts.projectFocus;
       if (opts.practiceWord) payload.practice_word = opts.practiceWord;
       if (opts.readingFocus) payload.reading_focus = opts.readingFocus;
+      if (opts.mathFocus) payload.math_focus = true;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1201,6 +1219,7 @@
             <div class="action-title">&#10022; Today's Quests</div>
             ${renderQuestsPanel()}
             ${renderPracticeChip()}
+            ${renderMathChip()}
             ${renderBookshelf()}
             ${renderSpellbook()}
             ${renderAssignments()}
@@ -1342,6 +1361,12 @@
       if (!current) return;
       const spot = current.spot ? ` I'm at: ${current.spot}.` : '';
       sendMessage(`Let's pick up my book "${current.title}".${spot} Can we read together — ask me what's happened so far or what I think happens next, then help me keep going?`, { readingFocus: current.title });
+    },
+    // Math challenge: pull a 7th-grade-prep problem from the Wizard (his strength
+    // + Kenilworth focus). Stays in School and leads the turn.
+    mathChallenge: () => {
+      if (appState.isLoading) return;
+      sendMessage(`Can you give me a math challenge to solve? Make it a good one for 7th grade.`, { mathFocus: true });
     },
     // Quick-start chip: practice the first word he hasn't mastered yet.
     practiceSpellStart: () => {

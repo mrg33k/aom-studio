@@ -1042,6 +1042,9 @@ export default async function handler(req, res) {
   // Bookshelf read-with-me (Build R24): when Ethan taps his book, the Wizard runs
   // a reading check-in on it this turn instead of redirecting to the lesson.
   const readingFocus = typeof body.reading_focus === 'string' ? body.reading_focus.slice(0, 120).trim() : ''
+  // Math challenge (Build R25): Ethan tapped for a math problem (his strength +
+  // Kenilworth focus). The Wizard poses a 7th-grade-prep problem this turn.
+  const mathFocus = !!body.math_focus
   // Which conversation room this turn belongs to (Build R19). The widget sends
   // an explicit `room` ('school' or 'project:<slug>'); if absent, derive it from
   // project_focus so older clients still land project turns in the project room.
@@ -1293,6 +1296,10 @@ export default async function handler(req, res) {
         // a tap on his book leads the turn, like opening a project.
         if (readingFocus) {
           systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED TO READ WITH YOU: "${readingFocus}" ===\nHe wants to pick up his book RIGHT NOW. Do a warm reading check-in for THIS reply; do NOT redirect to the lesson or any other subject, even if one was mid-way. Pick ONE: ask what's happened in the story so far, OR what he predicts happens next. React with genuine interest to his answer, then nudge him to read on a little more. Keep it light, curious, and encouraging — reading is something he's building. Reading leads this turn.`
+        }
+        // Math challenge tap (Build R25) — his strength + Kenilworth focus.
+        if (mathFocus) {
+          systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED FOR A MATH CHALLENGE ===\nGive him ONE math problem RIGHT NOW at a 7th-grade-prep level. He is strong at math and heading to Kenilworth, so make it genuinely challenging but fair — a word problem, fractions/ratios, percentages, or pre-algebra. State the problem clearly, then ask him to solve it and show his thinking. Do NOT redirect to another subject, even if one was mid-way. Next turn, check his answer and walk through it if he misses. Keep it encouraging and a little competitive — he likes a real challenge. Math leads this turn.`
         }
         const rawReply = await callGeminiWithRetry(
           systemPrompt,
