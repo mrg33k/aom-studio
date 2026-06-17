@@ -522,8 +522,13 @@
   [data-cv6] .hm-tools-row::-webkit-scrollbar { display: none; }
   /* compact dock tiles */
   [data-cv6] .hm-tools-row > button { min-width: 58px !important; min-height: 50px !important; padding: 8px 12px !important; }
-  /* keep page content clear of the fixed dock */
-  [data-cv6] [data-cv4-home] .hm-shell { padding-bottom: 92px; }
+  /* keep page content clear of the fixed dock.
+     !important: the max-width:767px block below sets `padding: 16px` (shorthand),
+     which is later in source and same specificity, so it would otherwise reset
+     padding-bottom to 16px and the 80px fixed dock would cover the chat input. */
+  [data-cv6] [data-cv4-home] .hm-shell {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+  }
 }
 
 [data-cv6] [data-cv4-home] .hm-agent-name {
