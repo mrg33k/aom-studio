@@ -944,6 +944,19 @@
    the CV6 home behaves exactly like the gallery: same specificity (0,1,1),
    cv6.css loads after cv5.css so CV6 wins. Specific class rules (0,2,0)+ and
    inline cv6 styles still win where intended. */
+/* Re-anchor the CV6 base typography on the home ROOT (data-cv6 + data-cv4-home
+   on the same element, both surfaces). The inherit-override below makes every
+   cv6 span/div/p inherit, but the root is itself a [data-cv6] div, so without
+   this it would inherit Figtree/16px/1.6 from the cv5 shell instead of the cv6
+   base — cascading the wrong font down (e.g. the Inter hero became Figtree).
+   (0,2,0) beats the (0,1,1) override + cv5's (0,1,1), so the chain starts from
+   cv6 values exactly like the gallery's [data-cv6] root (Inter / 16px / 1.5). */
+[data-cv6][data-cv4-home] {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
 [data-cv6] p,
 [data-cv6] span,
 [data-cv6] div {
