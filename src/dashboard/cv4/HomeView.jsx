@@ -219,7 +219,8 @@ function SupportToolOverlay({ worldId }) {
 // ── Support Column Component ────────────────────────────────────────────────────
 function SupportColumn({ title, status, items, accentColor }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    // R32: minWidth:0 stops a long email/word from stretching this column past its 1fr share
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
       {/* Column Header */}
       <div style={{
         fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -299,8 +300,18 @@ function SupportCard({ item, accentColor }) {
         }
       }}
     >
-      {/* Card Header: Who + Status Badge (matching Active Work card design) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', width: '100%' }}>
+      {/* Card Header: prominent icon chip + Who + Status Badge (R32) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', width: '100%' }}>
+        {/* R32: larger, more prominent icon in an accent-tinted chip */}
+        <span style={{
+          flexShrink: 0, width: '38px', height: '38px', borderRadius: '9px',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          background: `${accentColor}1f`, color: accentColor,
+        }}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 7l-10 6L2 7"/>
+          </svg>
+        </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -323,9 +334,9 @@ function SupportCard({ item, accentColor }) {
       {/* Preview Text (collapsed to 2 lines, expanded to many) */}
       {item.text && (
         <p style={{
-          margin: '0', fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4',
+          margin: '0', fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4', width: '100%',
           display: '-webkit-box', WebkitLineClamp: isExpanded ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          whiteSpace: 'pre-wrap',
+          whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word',
         }}>
           {item.text}
         </p>
@@ -813,6 +824,13 @@ export default function HomeView({
     if (idx >= 0) setSelectedIndex(idx)
   }, [selectableItems])
 
+  // R32: a card's "room color" — the same hue as its color dot. Used to tint the
+  // selected highlight so it matches the room, with a readable fill for white text.
+  const roomHue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
+  const roomFill = (slug) => `hsl(${roomHue(slug)}, 60%, 48%)`   // selected background (white text reads)
+  const roomGlow = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.30)`
+  const roomTint = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.10)`  // hover wash, text stays dark
+
   // R22: reclaim focus when the user clicks a neutral area inside Home, so arrow
   // keys keep responding after any interaction. Clicks on inputs/buttons keep
   // their own focus (so typing still works).
@@ -835,6 +853,14 @@ export default function HomeView({
         @keyframes hm-breathe { 0%,100%{opacity:1}50%{opacity:.3} }
         @keyframes cv6-msg-float-in { 0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)} }
         @keyframes cv6-msg-fade-in { 0%{opacity:0}100%{opacity:1} }
+        /* R32: slow gloss/shine sweep for the What-Needs-You cards */
+        @keyframes hm-shine { 0%{transform:translateX(-120%)} 60%,100%{transform:translateX(320%)} }
+        [data-cv4-home] .hm-needs-card { position:relative; overflow:hidden; }
+        [data-cv4-home] .hm-needs-card::after { content:''; position:absolute; top:0; left:0; width:40%; height:100%; background:linear-gradient(100deg, transparent, rgba(255,255,255,0.10), transparent); transform:translateX(-120%); animation:hm-shine 5.5s ease-in-out infinite; pointer-events:none; }
+        /* R32: smooth indeterminate progress bar (active work in motion) */
+        @keyframes hm-progress-slide { 0%{left:-35%} 100%{left:100%} }
+        [data-cv4-home] .hm-progress { position:relative; height:2px; border-radius:2px; overflow:hidden; background:rgba(127,127,127,0.18); }
+        [data-cv4-home] .hm-progress::before { content:''; position:absolute; top:0; left:-35%; width:35%; height:100%; border-radius:2px; background:currentColor; animation:hm-progress-slide 1.8s ease-in-out infinite; }
         [data-cv4-home] .hm-shell { max-width:1040px; margin:0 auto; padding:72px 40px 100px; }
         [data-cv4-home] .hm-welcome { font-weight:800; font-size:clamp(40px,6vw,64px); line-height:1.02; letter-spacing:-.03em; margin:0 0 48px; -webkit-font-smoothing:antialiased; text-wrap:balance; }
         [data-cv4-home] .hm-welcome .hm-l1 { color:#E8EBEF; }
@@ -1023,26 +1049,8 @@ export default function HomeView({
               {/* Divider */}
               <div style={{ flex: 1 }}></div>
 
-              {/* Secondary group (right): Support, Avatar */}
+              {/* Secondary group (right): Avatar — R32: Support icon removed (Support lives in the Tools row) */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* Support */}
-                <button
-                  title="Go to Support"
-                  onClick={() => window.location.href = '/dashboard?view=support'}
-                  style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
-                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
-                  </svg>
-                </button>
-
                 {/* Avatar */}
                 <button
                   title="User settings"
@@ -1367,7 +1375,7 @@ export default function HomeView({
                   return (
                     <button
                       key={a.slug}
-                      className="hm-mission"
+                      className="hm-card"
                       onClick={() => {
                         if (cv6) {
                           // R31: match the mission card — click pulls the agent's
@@ -1380,18 +1388,22 @@ export default function HomeView({
                         }
                       }}
                       style={{
-                        // R31: single-row layout matching active-work cards (56px, 8px gap between)
+                        // R31/R32: single-row card, full width, room-color highlight when selected
                         display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '8px', minHeight: '56px',
-                        background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                        boxSizing: 'border-box', width: '100%', position: 'relative', overflow: 'hidden',
+                        background: isSelected ? roomFill(a.slug) : 'var(--cv6-surface)',
                         color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
-                        borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
-                        fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500', width: '100%',
+                        border: isSelected ? `1px solid ${roomFill(a.slug)}` : '1px solid transparent',
+                        boxShadow: isSelected ? `0 3px 14px ${roomGlow(a.slug)}` : 'none',
+                        transform: isSelected ? 'translateY(-1px)' : 'none',
+                        borderRadius: '6px', cursor: 'pointer',
+                        transition: 'background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease',
+                        fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
                       }}
                       onMouseEnter={(e) => {
                         if (!isSelected) {
-                          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                          e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                          e.currentTarget.style.background = roomTint(a.slug)
+                          e.currentTarget.style.borderColor = roomFill(a.slug)
                         }
                       }}
                       onMouseLeave={(e) => {
@@ -1401,12 +1413,16 @@ export default function HomeView({
                         }
                       }}
                     >
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : '#10B981', animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : `hsl(${roomHue(a.slug)}, 60%, 55%)`, animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
                         <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentStatus}</div>
                       </div>
                       <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
+                      {/* R32: smooth motion line on agents that are actively working */}
+                      {agentStatus !== 'Ready' && (
+                        <div className="hm-progress" style={{ position: 'absolute', left: '10px', right: '10px', bottom: '6px', color: isSelected ? 'rgba(255,255,255,0.85)' : `hsl(${roomHue(a.slug)}, 60%, 55%)` }} />
+                      )}
                     </button>
                   )
                 })}
@@ -1459,8 +1475,20 @@ export default function HomeView({
                           combined.push({ type: 'project', project: p, timestamp: p.last_message_at })
                         })
                       }
-                      // Sort by recency (most recent first)
+                      // Sort by recency (most recent first).
+                      // R32: when searching, a project whose NAME matches floats above its missions.
+                      const search = activeworkSearchText.trim().toLowerCase()
+                      const nameMatchRank = (item) => {
+                        if (!search) return 0
+                        if (item.type === 'project') {
+                          const pn = (item.project.name || item.project.slug).toLowerCase()
+                          return pn.includes(search) ? -1 : 0  // matched project leads
+                        }
+                        return 0
+                      }
                       combined.sort((a, b) => {
+                        const r = nameMatchRank(a) - nameMatchRank(b)
+                        if (r !== 0) return r
                         const aTime = new Date(a.timestamp || 0).getTime()
                         const bTime = new Date(b.timestamp || 0).getTime()
                         return bTime - aTime
@@ -1485,7 +1513,7 @@ export default function HomeView({
                           return (
                             <button
                               key={`mission-${m.mission.slug}`}
-                              className="hm-mission"
+                              className="hm-card"
                               onClick={() => {
                                 selectByItem('mission', m.mission.slug) // R31: cursor follows the click
                                 handleProjectSelect(m.project, m.mission)
@@ -1493,17 +1521,21 @@ export default function HomeView({
                               }}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
-                                background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                                boxSizing: 'border-box', width: '100%',
+                                background: isSelected ? roomFill(m.project.slug) : 'var(--cv6-surface)',
                                 color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                                border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
-                                borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                                border: isSelected ? `1px solid ${roomFill(m.project.slug)}` : '1px solid transparent',
+                                boxShadow: isSelected ? `0 3px 14px ${roomGlow(m.project.slug)}` : 'none',
+                                transform: isSelected ? 'translateY(-1px)' : 'none',
+                                borderRadius: '6px', cursor: 'pointer',
+                                transition: 'background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease',
                                 fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
                                 flex: '0 0 auto', minHeight: '56px',
                               }}
                               onMouseEnter={(e) => {
                                 if (!isSelected) {
-                                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                                  e.currentTarget.style.background = roomTint(m.project.slug)
+                                  e.currentTarget.style.borderColor = roomFill(m.project.slug)
                                 }
                               }}
                               onMouseLeave={(e) => {
@@ -1538,7 +1570,7 @@ export default function HomeView({
                           return (
                             <button
                               key={`project-${p.slug}`}
-                              className="hm-mission"
+                              className="hm-card"
                               onClick={() => {
                                 selectByItem('project', p.slug) // R31: cursor follows the click
                                 handleProjectSelect(p, null)
@@ -1546,17 +1578,21 @@ export default function HomeView({
                               }}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
-                                background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                                boxSizing: 'border-box', width: '100%',
+                                background: isSelected ? roomFill(p.slug) : 'var(--cv6-surface)',
                                 color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                                border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
-                                borderRadius: '6px', cursor: 'pointer', transition: 'all 120ms ease',
+                                border: isSelected ? `1px solid ${roomFill(p.slug)}` : '1px solid transparent',
+                                boxShadow: isSelected ? `0 3px 14px ${roomGlow(p.slug)}` : 'none',
+                                transform: isSelected ? 'translateY(-1px)' : 'none',
+                                borderRadius: '6px', cursor: 'pointer',
+                                transition: 'background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease',
                                 fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
                                 flex: '0 0 auto', minHeight: '56px',
                               }}
                               onMouseEnter={(e) => {
                                 if (!isSelected) {
-                                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                                  e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+                                  e.currentTarget.style.background = roomTint(p.slug)
+                                  e.currentTarget.style.borderColor = roomFill(p.slug)
                                 }
                               }}
                               onMouseLeave={(e) => {
@@ -1812,7 +1848,7 @@ export default function HomeView({
                         onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
                       />
 
-                      {/* R23: Send button (right) — icon only, green (#10B981) */}
+                      {/* R32: Mic by default (voice), turns into Send once the user types */}
                       <button
                         onClick={() => {
                           if (replyText.trim()) {
@@ -1824,22 +1860,22 @@ export default function HomeView({
                               const agentMsg = { id: newMsg.id + 1, sender: 'agent', text: 'Got it. Working on it.' }
                               setConversationMessages(prev => [agentMsg, ...prev])
                             }, 800)
+                          } else {
+                            // Voice conversation entry point (placeholder until wired)
+                            console.log('Voice message (placeholder)')
                           }
                         }}
                         style={{
                           width: '42px', height: '100%', flexShrink: 0, borderRadius: '6px', background: '#10B981', color: '#ffffff',
                           border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                          transition: 'all 120ms ease', opacity: replyText.trim() ? 1 : 0.5,
+                          transition: 'all 120ms ease',
                           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
                         }}
-                        disabled={!replyText.trim()}
-                        title="Send"
+                        title={replyText.trim() ? 'Send' : 'Voice message'}
                         onMouseEnter={(e) => {
-                          if (replyText.trim()) {
-                            e.currentTarget.style.background = '#0d9b6e'
-                            e.currentTarget.style.transform = 'translateY(-2px)'
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)'
-                          }
+                          e.currentTarget.style.background = '#0d9b6e'
+                          e.currentTarget.style.transform = 'translateY(-2px)'
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)'
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.background = '#10B981'
@@ -1847,9 +1883,15 @@ export default function HomeView({
                           e.currentTarget.style.boxShadow = 'none'
                         }}
                       >
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                        </svg>
+                        {replyText.trim() ? (
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                          </svg>
+                        ) : (
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/>
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1875,15 +1917,16 @@ export default function HomeView({
                   return (
                   <button
                     key={n.key}
+                    className="hm-needs-card"
                     onClick={() => n.onOpen && n.onOpen()}
                     style={{
                       display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
-                      background: isSelected ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                      background: isSelected ? roomColorHash : 'var(--cv6-surface)',
                       color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                      border: isSelected ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                      borderRadius: '8px', cursor: 'pointer', transition: 'all 120ms ease',
+                      border: isSelected ? `2px solid ${roomColorHash}` : '1px solid var(--cv6-divider)',
+                      borderRadius: '8px', cursor: 'pointer', transition: 'all 200ms ease',
                       textAlign: 'left', fontFamily: 'inherit', fontWeight: '500',
-                      boxShadow: isSelected ? '0 0 0 3px rgba(0,102,255,0.1)' : 'none',
+                      boxShadow: isSelected ? `0 3px 14px ${n.roomSlug ? `hsla(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 50%, 0.30)` : 'rgba(245,158,11,0.25)'}` : 'none',
                     }}
                     onMouseEnter={(e) => {
                       if (!isSelected) {
@@ -1901,8 +1944,13 @@ export default function HomeView({
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
-                        <span style={{ color: isSelected ? '#ffffff' : roomColorHash, flexShrink: 0, marginTop: '1px', display: 'inline-flex' }}>{getNeedsTypeIcon(n)}</span>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1 }}>
+                        <span style={{
+                          flexShrink: 0, width: '34px', height: '34px', borderRadius: '8px',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          background: isSelected ? 'rgba(255,255,255,0.18)' : (n.roomSlug ? `hsla(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 55%, 0.14)` : 'rgba(245,158,11,0.14)'),
+                          color: isSelected ? '#ffffff' : roomColorHash,
+                        }}>{getNeedsTypeIcon(n)}</span>
                         <div style={{ flex: 1 }}>
                           <div style={{ fontSize: '14px', fontWeight: '600' }}>{n.label}</div>
                           <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--cv6-text-secondary)', marginTop: '4px' }}>{n.detail}</div>
