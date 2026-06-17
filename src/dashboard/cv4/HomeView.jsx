@@ -389,6 +389,98 @@ function SupportCard({ item, accentColor }) {
 // Export SupportToolOverlay for use in CV6Gallery
 export { SupportToolOverlay }
 
+// ── Projects Tool — Finder/Dropbox-style 3-column browser (R38 round 1) ───────────
+// Column 1 Projects → Column 2 Missions → Column 3 Preview. Drill down by clicking.
+// Drag-drop + move-confirmation + live add land in the next rounds.
+function ProjectsToolOverlay({ projects, missionsByProject, onOpen }) {
+  const [selProj, setSelProj] = useState(null)
+  const [selMission, setSelMission] = useState(null)
+  const missions = selProj ? (missionsByProject[selProj.slug] || []) : []
+  const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
+
+  const colStyle = { display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto' }
+  const headStyle = { flexShrink: 0, fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)', padding: '10px 14px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', borderBottom: '1px solid var(--cv6-divider)', zIndex: 1 }
+  const emptyHint = (t) => <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>{t}</div>
+
+  const Row = ({ label, sub, slug, active, onClick, chevron }) => (
+    <button
+      onClick={onClick}
+      draggable
+      style={{
+        display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left',
+        padding: '9px 12px', border: 'none', borderRadius: '6px', margin: '2px 6px', cursor: 'pointer', fontFamily: 'inherit',
+        background: active ? `hsla(${hue(slug)}, 60%, 48%, 0.12)` : 'transparent',
+        transition: 'background 120ms ease', maxWidth: 'calc(100% - 12px)',
+      }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+    >
+      <span style={{ flexShrink: 0, color: `hsl(${hue(slug)}, 60%, 52%)`, display: 'inline-flex' }}>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+        {sub && <span style={{ display: 'block', fontSize: '11px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>}
+      </span>
+      {chevron && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>}
+    </button>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* Toolbar — New project / New mission (live-create wires next round) */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button onClick={() => console.log('New project (placeholder)')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New project
+        </button>
+        <button onClick={() => console.log('New mission (placeholder)')} disabled={!selProj} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: selProj ? 'var(--cv6-text-primary)' : 'var(--cv6-text-tertiary)', cursor: selProj ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', opacity: selProj ? 1 : 0.6 }}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New mission
+        </button>
+        <span style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>Drag a mission onto a project to move it</span>
+      </div>
+
+      {/* Three Finder/Dropbox columns */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: '420px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+        {/* Column 1 — Projects */}
+        <div style={colStyle}>
+          <div style={headStyle}>Projects</div>
+          {(projects || []).length ? (projects || []).map(p => (
+            <Row key={p.slug} label={p.name || p.slug} sub={`${(missionsByProject[p.slug] || []).length} missions`} slug={p.slug} active={selProj?.slug === p.slug} chevron onClick={() => { setSelProj(p); setSelMission(null) }} />
+          )) : emptyHint('No projects')}
+        </div>
+        {/* Column 2 — Missions */}
+        <div style={colStyle}>
+          <div style={headStyle}>Missions</div>
+          {!selProj ? emptyHint('Select a project') : (missions.length ? missions.map(m => (
+            <Row key={m.slug} label={m.name || m.slug} sub={m.status === 'running' ? 'working' : 'idle'} slug={selProj.slug} active={selMission?.slug === m.slug} chevron onClick={() => setSelMission(m)} />
+          )) : emptyHint('No missions yet'))}
+        </div>
+        {/* Column 3 — Preview */}
+        <div style={{ ...colStyle, borderRight: 'none' }}>
+          <div style={headStyle}>Preview</div>
+          {selMission ? (
+            <div style={{ padding: '16px' }}>
+              <div style={{ width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '12px' }}>
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{selMission.name || selMission.slug}</div>
+              <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>in {selProj.name || selProj.slug}</div>
+              <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>
+                <div>Status: {selMission.status === 'running' ? 'Working' : 'Idle'}</div>
+                <button onClick={() => onOpen && onOpen(selProj, selMission)} style={{ marginTop: '6px', alignSelf: 'flex-start', padding: '8px 14px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>Open room</button>
+              </div>
+            </div>
+          ) : selProj ? (
+            <div style={{ padding: '16px', fontSize: '13px', color: 'var(--cv6-text-secondary)' }}>{selProj.name || selProj.slug} · {(missionsByProject[selProj.slug] || []).length} missions. Select a mission to preview.</div>
+          ) : emptyHint('Select a project, then a mission')}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function HomeView({
   user,
   worldId,
@@ -1414,7 +1506,15 @@ export default function HomeView({
                   </div>
                 )}
 
-                {['review', 'tracker', 'projects', 'files'].includes(selectedTool) && (
+                {selectedTool === 'projects' && (
+                  <ProjectsToolOverlay
+                    projects={[...(recentProjects || []), ...(allProjects || [])]}
+                    missionsByProject={missionsByProject}
+                    onOpen={handleProjectSelect}
+                  />
+                )}
+
+                {['review', 'tracker', 'files'].includes(selectedTool) && (
                   <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center', textTransform: 'capitalize' }}>
                     {selectedTool} coming soon
                   </div>
