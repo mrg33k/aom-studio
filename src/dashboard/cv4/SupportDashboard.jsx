@@ -235,6 +235,10 @@ function isNonSupportEmail(it) {
 // so a real customer ask is never hidden.
 function isNonSupportWish(w) {
   if (!w || w.status === 'resolved' || w.latest_response) return false
+  // The intake/triage agent already classifies blasts as 'spam' — honor it.
+  // (Bug was: wishToItem only special-cased 'resolved', so a spam wish with a
+  // staged draft still computed ready=true and showed in 'Ready to send'.)
+  if (w.status === 'spam') return true
   const from = String(w.email || '').toLowerCase()
   const body = String(w.message || '').toLowerCase()
   if (/(no-?reply|do-?not-?reply|mailer-daemon|postmaster|bounce[@+]|notifications?@|newsletter@|marketing@|mailchimp|sendgrid|klaviyo|kmail-lists|salesforce|hubspot)/.test(from)) return true
