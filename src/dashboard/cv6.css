@@ -466,12 +466,39 @@
 @keyframes cv6-tool-roll-in {
   0% {
     opacity: 0;
-    transform: scaleY(0.95);
+    transform: translateY(8px) scale(0.992);
   }
   100% {
     opacity: 1;
-    transform: scaleY(1);
+    transform: translateY(0) scale(1);
   }
+}
+
+/* R48: on mobile the tools become a fixed bottom drawer (app-dock style) that scrolls
+   horizontally, instead of a tall wrapping grid. Content gets bottom padding to clear it. */
+@media (max-width: 720px) {
+  [data-cv6] .hm-tools-heading { display: none; }
+  [data-cv6] .hm-tools-block { margin: 0 !important; }
+  [data-cv6] .hm-tools-row {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 60;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 8px;
+    padding: 9px 12px calc(9px + env(safe-area-inset-bottom, 0px));
+    background: var(--cv6-surface);
+    border-top: 1px solid var(--cv6-divider);
+    box-shadow: 0 -4px 18px rgba(0,0,0,0.12);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  [data-cv6] .hm-tools-row::-webkit-scrollbar { display: none; }
+  /* compact dock tiles */
+  [data-cv6] .hm-tools-row > button { min-width: 58px !important; min-height: 50px !important; padding: 8px 12px !important; }
+  /* keep page content clear of the fixed dock */
+  [data-cv6] [data-cv4-home] .hm-shell { padding-bottom: 92px; }
 }
 
 [data-cv6] [data-cv4-home] .hm-agent-name {

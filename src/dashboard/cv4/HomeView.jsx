@@ -411,6 +411,7 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
   const [draftName, setDraftName] = useState('')
   const [mobileCol, setMobileCol] = useState(0)          // 0 projects → 1 missions → 2 preview
   const [isNarrow, setIsNarrow] = useState(false)
+  const [movePick, setMovePick] = useState(false)        // R48: Move Room → choose destination project
 
   // Merge new prop data in WITHOUT wiping local creates/moves (prop array is a fresh
   // reference every parent render, so a plain reset would erase optimistic changes).
@@ -527,7 +528,7 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
         <input autoFocus value={draftName} onChange={e => setDraftName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitCreate(); if (e.key === 'Escape') { setCreating(null); setDraftName('') } }} onBlur={commitCreate} placeholder="Mission name…" style={{ margin: '4px 8px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
       )}
       {!selProj ? emptyHint('Select a project') : (missions.length ? missions.map(m => (
-        <Row key={m.slug} label={m.name || m.slug} sub={m.status === 'running' ? 'working' : 'idle'} slug={selProj.slug} active={selMission?.slug === m.slug} chevron dnd={missionDnd(m)} onClick={() => { setSelMission(m); if (isNarrow) setMobileCol(2) }} />
+        <Row key={m.slug} label={m.name || m.slug} sub={m.status === 'running' ? 'working' : (m.last_message_at ? relativeTime(m.last_message_at) : 'recently')} slug={selProj.slug} active={selMission?.slug === m.slug} chevron dnd={missionDnd(m)} onClick={() => { setSelMission(m); if (isNarrow) setMobileCol(2) }} />
       )) : emptyHint('No missions yet'))}
     </div>
   )
@@ -535,37 +536,39 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
     <div style={{ ...colStyle, borderRight: 'none' }}>
       <div style={headStyle}>Preview</div>
       {selMission && selProj ? (
-        <div style={{ padding: '18px' }}>
-          <div style={{ width: '52px', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '14px' }}>
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <div style={{ padding: '22px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          {/* R48: bigger, centered icon */}
+          <div style={{ width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '16px' }}>
+            <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <div style={{ fontSize: '17px', fontWeight: '700', color: 'var(--cv6-text-primary)', letterSpacing: '-0.01em' }}>{selMission.name || selMission.slug}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: selMission.status === 'running' ? '#10B981' : 'var(--cv6-text-tertiary)' }} />
-            <span style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{selMission.status === 'running' ? 'Working now' : 'Idle'} · in {selProj.name || selProj.slug}</span>
+          <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--cv6-text-primary)', letterSpacing: '-0.01em' }}>{selMission.name || selMission.slug}</div>
+          {/* R48: never "Idle" — show last visited instead */}
+          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '5px' }}>
+            in {selProj.name || selProj.slug} · last visited {selMission.last_message_at ? relativeTime(selMission.last_message_at) : 'recently'}
           </div>
-          {/* R38 r2: small room description */}
           <p style={{ marginTop: '14px', fontSize: '13px', lineHeight: 1.5, color: 'var(--cv6-text-secondary)' }}>
-            {selMission.description || selMission.summary || `Part of ${selProj.name || selProj.slug}. ${selMission.status === 'running' ? 'An agent is actively pushing this forward.' : 'Open it to pick up where it left off.'}`}
+            {selMission.description || selMission.summary || `Part of ${selProj.name || selProj.slug}. Open it to pick up where it left off.`}
           </p>
-          <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px' }}>
-            <div style={{ padding: '10px', borderRadius: '8px', background: 'var(--cv6-surface-hover)' }}>
-              <div style={{ color: 'var(--cv6-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: '700', fontSize: '10px' }}>Status</div>
-              <div style={{ color: 'var(--cv6-text-primary)', fontWeight: '600', marginTop: '3px', fontSize: '13px' }}>{selMission.status === 'running' ? 'Working' : 'Idle'}</div>
-            </div>
-            <div style={{ padding: '10px', borderRadius: '8px', background: 'var(--cv6-surface-hover)' }}>
-              <div style={{ color: 'var(--cv6-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: '700', fontSize: '10px' }}>Last active</div>
-              <div style={{ color: 'var(--cv6-text-primary)', fontWeight: '600', marginTop: '3px', fontSize: '13px' }}>{selMission.last_message_at ? relativeTime(selMission.last_message_at) : 'recently'}</div>
-            </div>
+          {/* R48: Open Room / Move Room / Invite */}
+          <div style={{ marginTop: '18px', width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <button onClick={() => onOpen && onOpen(selProj, selMission)} style={{ width: '100%', padding: '11px 14px', borderRadius: '8px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>Open Room</button>
+            {movePick ? (
+              <select autoFocus value="" onChange={e => { const to = projects.find(p => p.slug === e.target.value); if (to) setConfirmMove({ mission: selMission, fromProj: selProj, toProj: to }); setMovePick(false) }} onBlur={() => setMovePick(false)} style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px' }}>
+                <option value="">Move to which project…</option>
+                {projects.filter(p => p.slug !== selProj.slug).map(p => <option key={p.slug} value={p.slug}>{p.name || p.slug}</option>)}
+              </select>
+            ) : (
+              <button onClick={() => setMovePick(true)} style={{ width: '100%', padding: '11px 14px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Move Room</button>
+            )}
+            <button onClick={() => onOpen && onOpen(selProj, selMission)} style={{ width: '100%', padding: '11px 14px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Invite</button>
           </div>
-          <button onClick={() => onOpen && onOpen(selProj, selMission)} style={{ marginTop: '16px', width: '100%', padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>Open room</button>
         </div>
       ) : selProj ? (
-        <div style={{ padding: '18px' }}>
-          <div style={{ width: '52px', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '14px' }}>
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <div style={{ padding: '22px 18px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ width: '76px', height: '76px', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '16px' }}>
+            <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <div style={{ fontSize: '17px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{selProj.name || selProj.slug}</div>
+          <div style={{ fontSize: '18px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{selProj.name || selProj.slug}</div>
           <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '5px' }}>{(missionsMap[selProj.slug] || []).length} missions</div>
           <p style={{ marginTop: '14px', fontSize: '13px', lineHeight: 1.5, color: 'var(--cv6-text-secondary)' }}>{selProj.description || `A project room holding ${(missionsMap[selProj.slug] || []).length} missions. Pick a mission to see its details, or drag missions between projects to reorganize.`}</p>
         </div>
@@ -1426,6 +1429,12 @@ export default function HomeView({
 
   // R21: Tools box state — which tool is open in full-screen mode
   const [selectedTool, setSelectedTool] = useState(initialTool || 'home') // R26: Home default; R38: gallery can open a tool
+  const [toolRecency, setToolRecency] = useState([]) // R48: most-recently-used tools sit next to Home
+  // R48: open a tool AND record it as most-recent so the row reorders into recency order.
+  const openTool = useCallback((key) => {
+    setSelectedTool(key)
+    if (key !== 'home') setToolRecency(prev => [key, ...prev.filter(k => k !== key)])
+  }, [])
 
   // R37: right-click menu for active-work cards (missions + projects). Same options as the
   // left-menu; every action is a forward-advance into the project screen (navigate + confirm).
@@ -2186,7 +2195,8 @@ export default function HomeView({
             </div>
           )}
 
-          {cv6 && showSearch ? (
+          {/* R48: greeting + search hide entirely when a tool/room is open (cv6) */}
+          {(!cv6 || selectedTool === 'home') && (cv6 && showSearch ? (
             /* R37: search mode — greeting becomes a big "Search" field in the greeting font, icon + underline */
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '-20px', marginBottom: '20px', paddingBottom: '10px', borderBottom: '2px solid var(--cv6-text-primary)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 'clamp(28px,4vw,44px)', height: 'clamp(28px,4vw,44px)', flexShrink: 0 }}>
@@ -2242,7 +2252,7 @@ export default function HomeView({
               </svg>
             </button>
           </div>
-          )}
+          ))}
 
 
           {/* R11: PUNCH-LIST #6 — HAPPENING NOW (density + alive, 6-item grid, breathing room) */}
@@ -2333,26 +2343,38 @@ export default function HomeView({
           {/* R37: home body (tools, columns, what-needs-you, ideas) hides while searching */}
           {!showSearch && (<>
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
-          <div style={{ marginTop: '-4px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
-            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
-              {/* R33: single ordered tool list — Home, then Patrik's order: Projects, Files, Review, Support, Tracker, Command, Live Scribe */}
-              {[
-                { key: 'home', label: 'Home', svg: (<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>) },
-                { key: 'chat', label: 'Chat', svg: (<><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></>) },
-                { key: 'projects', label: 'Projects', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>) },
-                { key: 'files', label: 'Files', svg: (<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>) },
-                { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
-                { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>) },
-                { key: 'tracker', label: 'Tracker', svg: (<><rect x="9" y="8" width="6" height="9" rx="3"/><path d="M9 12h6"/><path d="M10 6l-1-2M14 6l1-2"/><path d="M4 9l3 2M20 9l-3 2M4 16l3-2M20 16l-3-2"/></>) },
-                { key: 'command', label: 'Command', svg: (<><polyline points="4 9 7 9 7 20 4 20"/><polyline points="12 9 15 9 15 20 12 20"/><polyline points="20 9 23 9 23 20 20 20"/></>) },
-                { key: 'scribe', label: 'Live Scribe', svg: (<><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></>) },
-              ].map(t => (
+          <div className="hm-tools-block" style={{ marginTop: '-4px', marginBottom: '16px' }}>
+            <div className="hm-tools-heading" style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
+            <div className="hm-tools-row" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
+              {/* R48: Home pinned first, then tools in recency order (most-recently-used next to Home), then the rest in default order. Mobile: one scrollable row (cv6.css .hm-tools-row). */}
+              {(() => {
+                const TOOLS = [
+                  { key: 'home', label: 'Home', svg: (<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>) },
+                  { key: 'chat', label: 'Chat', svg: (<><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></>) },
+                  { key: 'projects', label: 'Projects', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>) },
+                  { key: 'files', label: 'Files', svg: (<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>) },
+                  { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
+                  { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>) },
+                  { key: 'tracker', label: 'Tracker', svg: (<><rect x="9" y="8" width="6" height="9" rx="3"/><path d="M9 12h6"/><path d="M10 6l-1-2M14 6l1-2"/><path d="M4 9l3 2M20 9l-3 2M4 16l3-2M20 16l-3-2"/></>) },
+                  { key: 'command', label: 'Command', svg: (<><polyline points="4 9 7 9 7 20 4 20"/><polyline points="12 9 15 9 15 20 12 20"/><polyline points="20 9 23 9 23 20 20 20"/></>) },
+                  { key: 'scribe', label: 'Live Scribe', svg: (<><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></>) },
+                ]
+                const rest = TOOLS.filter(t => t.key !== 'home')
+                const ordered = [...rest].sort((a, b) => {
+                  const ia = toolRecency.indexOf(a.key), ib = toolRecency.indexOf(b.key)
+                  if (ia === -1 && ib === -1) return 0
+                  if (ia === -1) return 1
+                  if (ib === -1) return -1
+                  return ia - ib
+                })
+                return [TOOLS[0], ...ordered]
+              })().map(t => (
                 <button
                   key={t.key}
-                  onClick={() => setSelectedTool(t.key)}
+                  onClick={() => openTool(t.key)}
                   title={t.label}
                   style={{
+                    flex: '0 0 auto',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     padding: '12px 16px', borderRadius: '6px', border: selectedTool === t.key ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                     background: selectedTool === t.key ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
@@ -2373,8 +2395,9 @@ export default function HomeView({
           </div>
 
           {/* R23: Full-screen tool app container — rolls in above the 3-column band, above What Needs You */}
+          {/* R48: key on selectedTool so the roll-in replays every time a DIFFERENT tool opens (not just the first) */}
           {selectedTool && selectedTool !== 'home' && (
-            <div style={{
+            <div key={selectedTool} style={{
               animation: 'cv6-tool-roll-in 300ms ease-out',
               marginBottom: '24px', borderRadius: '8px', border: 'none',
               background: 'transparent', overflow: 'hidden', minHeight: '72vh',
