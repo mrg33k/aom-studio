@@ -417,7 +417,16 @@ const SCREENS = [
       { label: 'Light', render: () => <ScreenFrame theme="light" label="Files · CV6"><HomeView {...SCREEN_PROPS} initialTool="files" /></ScreenFrame> },
     ],
   },
-  // NEXT: Chat thread + left/right menu — tracked in cv4/COMPONENT-MANIFEST.md.
+  {
+    id: 'screen-chat',
+    name: 'Chat tool',
+    purpose: 'Full room view: rooms list + inline create (left), the room chat (middle), the room files (right).',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Chat · CV6"><HomeView {...SCREEN_PROPS} initialTool="chat" /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" label="Chat · CV6"><HomeView {...SCREEN_PROPS} initialTool="chat" /></ScreenFrame> },
+    ],
+  },
 ]
 
 // Screens first, then pieces. One flat list for lookup + feedback.

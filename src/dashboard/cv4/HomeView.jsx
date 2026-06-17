@@ -1056,6 +1056,183 @@ function FilesToolOverlay({ projects }) {
   )
 }
 
+// R40: CHAT tool — the old 3-pane room view rebuilt inside the new tool window.
+// LEFT rooms list + inline create form · MIDDLE the room's full chat · RIGHT the room's files.
+function ChatToolOverlay({ projects, missionsByProject, agents }) {
+  const rooms = useMemo(() => {
+    const ag = (agents || []).map(a => ({ kind: 'agent', slug: a.slug, name: a.name || a.slug }))
+    const pr = (projects || []).map(p => ({ kind: 'project', slug: p.slug, name: p.name || p.slug }))
+    return [...ag, ...pr]
+  }, [agents, projects])
+  const [sel, setSel] = useState(rooms[0] || null)
+  const [draft, setDraft] = useState('')
+  const [thread, setThread] = useState({})            // slug -> [{ from, text }]
+  const [creating, setCreating] = useState(null)      // 'project' | 'mission'
+  const [npName, setNpName] = useState('')
+  const [nmProj, setNmProj] = useState((projects || [])[0]?.slug || '')
+  const [nmName, setNmName] = useState('')
+  const [nmGoal, setNmGoal] = useState('')
+  const [localProjects, setLocalProjects] = useState(projects || [])
+  const [isNarrow, setIsNarrow] = useState(false)
+  const [mobileCol, setMobileCol] = useState(0)       // 0 rooms · 1 chat · 2 files
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsNarrow(window.innerWidth < 720)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  useEffect(() => {
+    setLocalProjects(prev => {
+      const have = new Set(prev.map(p => p.slug))
+      const add = (projects || []).filter(p => !have.has(p.slug))
+      return add.length ? [...prev, ...add] : prev
+    })
+  }, [projects])
+
+  const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
+  const seedThread = (room) => ([
+    { from: 'them', text: `On it — picking up ${room.name} where we left off.` },
+    { from: 'me', text: 'Great. Push it as far as you can and flag anything you need.' },
+    { from: 'them', text: 'Will do. First pass is ready for you to look at whenever.' },
+  ])
+  const msgs = sel ? (thread[sel.slug] || seedThread(sel)) : []
+  const files = useMemo(() => buildFileTree(sel ? { slug: sel.slug } : null), [sel])
+
+  function send() {
+    const t = draft.trim(); if (!t || !sel) return
+    setThread(prev => ({ ...prev, [sel.slug]: [...(prev[sel.slug] || seedThread(sel)), { from: 'me', text: t }] }))
+    setDraft('')
+    console.log('[chat-send]', sel.kind, sel.slug, t) // API persist wires next round
+  }
+  function commitProject() {
+    const name = npName.trim(); if (!name) { setCreating(null); setNpName(''); return }
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + (localProjects.length + 1)
+    const p = { slug, name }
+    setLocalProjects(prev => [p, ...prev]); setSel({ kind: 'project', slug, name })
+    setCreating(null); setNpName('')
+    console.log('[chat-new-project]', slug, name)
+  }
+  function commitMission() {
+    const name = nmName.trim(); if (!name || !nmProj) { setCreating(null); return }
+    console.log('[chat-new-mission]', nmProj, name, nmGoal) // API persist wires next round
+    setCreating(null); setNmName(''); setNmGoal('')
+  }
+
+  const colStyle = { display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto' }
+  const headStyle = { flexShrink: 0, fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--cv6-surface)', borderBottom: '1px solid var(--cv6-divider)' }
+  const iconBtn = (title, onClick, children) => (
+    <button title={title} onClick={onClick} style={{ width: '28px', height: '28px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>
+      {children}
+    </button>
+  )
+  const projGlyph = <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+  const fileGlyph = <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+
+  const RoomsCol = () => (
+    <div style={colStyle}>
+      <div style={headStyle}>All Rooms</div>
+      <div style={{ display: 'flex', gap: '6px', padding: '8px 10px', borderBottom: '1px solid var(--cv6-divider)' }}>
+        <button onClick={() => setCreating(creating === 'project' ? null : 'project')} style={{ flex: 1, padding: '7px 8px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: creating === 'project' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)', color: creating === 'project' ? '#fff' : 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>+ Project</button>
+        <button onClick={() => setCreating(creating === 'mission' ? null : 'mission')} style={{ flex: 1, padding: '7px 8px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: creating === 'mission' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)', color: creating === 'mission' ? '#fff' : 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>+ Mission</button>
+      </div>
+      {creating === 'project' && (
+        <div style={{ padding: '10px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)' }}>
+          <input autoFocus value={npName} onChange={e => setNpName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitProject(); if (e.key === 'Escape') setCreating(null) }} placeholder="Name the project…" style={{ width: '100%', boxSizing: 'border-box', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', marginBottom: '8px' }} />
+          <button onClick={commitProject} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Save</button>
+        </div>
+      )}
+      {creating === 'mission' && (
+        <div style={{ padding: '10px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <select value={nmProj} onChange={e => setNmProj(e.target.value)} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px' }}>
+            <option value="">Pick a project…</option>
+            {localProjects.map(p => <option key={p.slug} value={p.slug}>{p.name || p.slug}</option>)}
+          </select>
+          <input value={nmName} onChange={e => setNmName(e.target.value)} placeholder="Name the mission…" style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
+          <textarea value={nmGoal} onChange={e => setNmGoal(e.target.value)} placeholder="Mission goal…" rows={2} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', resize: 'vertical' }} />
+          <button onClick={commitMission} style={{ padding: '8px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Save</button>
+        </div>
+      )}
+      {rooms.map(r => {
+        const active = sel?.slug === r.slug && sel?.kind === r.kind
+        return (
+          <button key={r.kind + r.slug} onClick={() => { setSel(r); if (isNarrow) setMobileCol(1) }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '10px 12px', margin: '2px 6px', borderRadius: '6px', border: '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit', background: active ? `hsla(${hue(r.slug)}, 60%, 48%, 0.12)` : 'transparent' }}
+            onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+            <span style={{ flexShrink: 0, width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(r.slug)}, 65%, 55%)` }} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+            <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)' }}>{r.kind === 'agent' ? 'Agent' : 'Project'}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+
+  const ChatCol = () => (
+    <div style={{ ...colStyle, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)' }}>
+      <div style={{ ...headStyle, borderBottom: sel ? `2px solid hsl(${hue(sel.slug)}, 70%, 60%)` : '1px solid var(--cv6-divider)' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'none', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', letterSpacing: 0 }}>
+          {sel ? <><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(sel.slug)}, 70%, 60%)` }} />{sel.name}</> : 'Select a room'}
+        </span>
+        {sel && <span style={{ display: 'flex', gap: '6px' }}>{iconBtn('Projects', () => { if (isNarrow) setMobileCol(2) }, projGlyph)}{iconBtn('Files', () => { if (isNarrow) setMobileCol(2) }, fileGlyph)}</span>}
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => (
+          <div key={i} style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: m.from === 'me' ? `hsl(${hue(sel.slug)}, 70%, 60%)` : 'var(--cv6-surface-hover)', color: m.from === 'me' ? '#fff' : 'var(--cv6-text-primary)' }}>{m.text}</div>
+        ))}
+      </div>
+      {sel && (
+        <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: '10px 12px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+          <textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} placeholder={`Message ${sel.name}…`} rows={1} style={{ flex: 1, resize: 'none', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', maxHeight: '110px' }} />
+          <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '8px', border: 'none', background: draft.trim() ? `hsl(${hue(sel.slug)}, 70%, 55%)` : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {draft.trim()
+              ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+
+  const FilesCol = () => (
+    <div style={{ ...colStyle, borderRight: 'none' }}>
+      <div style={headStyle}><span>Files</span></div>
+      {!sel ? <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>No room selected</div> : files.map((n, i) => {
+        const isFolder = n.type === 'folder'
+        const color = isFolder ? 'var(--cv6-text-secondary)' : (FILE_TYPE_COLOR[n.fileType] || 'var(--cv6-text-secondary)')
+        return (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', margin: '2px 6px', borderRadius: '6px' }}>
+            <span style={{ flexShrink: 0, color, display: 'inline-flex' }}>
+              {isFolder
+                ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>}
+            </span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+
+  if (isNarrow) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '66vh', minHeight: '380px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+        {mobileCol > 0 && (
+          <button onClick={() => setMobileCol(mobileCol - 1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-accent-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>{mobileCol === 1 ? 'Rooms' : (sel?.name || 'Chat')}
+          </button>
+        )}
+        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>{mobileCol === 0 ? <RoomsCol /> : mobileCol === 1 ? <ChatCol /> : <FilesCol />}</div>
+      </div>
+    )
+  }
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '230px 1.4fr 0.9fr', height: '460px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+      <RoomsCol /><ChatCol /><FilesCol />
+    </div>
+  )
+}
+
 export default function HomeView({
   user,
   worldId,
@@ -1987,6 +2164,7 @@ export default function HomeView({
               {/* R33: single ordered tool list — Home, then Patrik's order: Projects, Files, Review, Support, Tracker, Command, Live Scribe */}
               {[
                 { key: 'home', label: 'Home', svg: (<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>) },
+                { key: 'chat', label: 'Chat', svg: (<><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></>) },
                 { key: 'projects', label: 'Projects', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>) },
                 { key: 'files', label: 'Files', svg: (<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>) },
                 { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
@@ -2039,6 +2217,7 @@ export default function HomeView({
                   {selectedTool === 'tracker' && 'Tracker'}
                   {selectedTool === 'projects' && 'Projects'}
                   {selectedTool === 'files' && 'Files'}
+                  {selectedTool === 'chat' && 'Chat'}
                 </div>
                 <button
                   onClick={() => setSelectedTool('home')}
@@ -2107,6 +2286,14 @@ export default function HomeView({
 
                 {selectedTool === 'files' && (
                   <FilesToolOverlay projects={[...(recentProjects || []), ...(allProjects || [])]} />
+                )}
+
+                {selectedTool === 'chat' && (
+                  <ChatToolOverlay
+                    projects={[...(recentProjects || []), ...(allProjects || [])]}
+                    missionsByProject={missionsByProject}
+                    agents={visibleAgents}
+                  />
                 )}
               </div>
             </div>
