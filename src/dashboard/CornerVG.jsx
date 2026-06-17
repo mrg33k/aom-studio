@@ -62,8 +62,10 @@ import CV4Drawer from './cv4/Drawer.jsx'
 import CV4ContextNav from './cv4/ContextNav.jsx'
 import TasksPanelCv4 from './cv4/TasksPanelCv4.jsx'
 import CommandDeck from './cv4/CommandDeck.jsx'
+import CommandTracker from './cv4/CommandTracker.jsx'
 import { getProjectEA } from './data/project-ea.js'
 import RightMenu from './cv4/RightMenu.jsx'
+import CvgChatSurface from './cv4/CvgChatSurface.jsx'
 import SkillsMissionPicker from './cv4/SkillsMissionPicker.jsx'
 // R10 — MailListPanel moved into the left rail (cv4/LeftMailPanel.jsx),
 // imported via cv4/Drawer.jsx; no longer mounted here directly.
@@ -2901,10 +2903,22 @@ export default function CornerVG() {
                 needsYou={homeNeedsYou}
                 onChatSend={handleCvgChatSend}
                 commandDeckSlot={cv6Mode ? (
-                  <div style={{ padding: '48px 8px', color: 'var(--cv6-text-secondary)', fontFamily: "'JetBrains Mono', monospace", fontSize: '13px', lineHeight: 1.7 }}>
-                    <div style={{ fontSize: '15px', color: 'var(--cv6-text-primary)', fontWeight: 600, marginBottom: '10px' }}>Command Center</div>
-                    Building the terminal and session tracker. A spreadsheet view of every project, what each one is working on, and a master loop on/off switch per project. Landing shortly.
-                  </div>
+                  <CommandTracker
+                    worldId={worldId}
+                    basePath={'/cvg/project'}
+                    onReplyToRoom={postReplyToRoom}
+                    onJumpToRoom={(room) => {
+                      if (room.includes(':')) {
+                        const parts = room.split(':')
+                        const mission = parts.pop()
+                        const proj = parts[parts.length - 1]
+                        navigate(`/cvg/project/${proj}?mission=${encodeURIComponent(mission)}`)
+                      } else {
+                        setSelectedAgent({ slug: room, name: room })
+                        setConversationTarget({ name: room, type: 'agent' })
+                      }
+                    }}
+                  />
                 ) : undefined}
                 onSelectAgent={(agent) => {
                   setSelectedAgent(agent)
@@ -2940,6 +2954,11 @@ export default function CornerVG() {
                 }}
               />
             ) : (
+              /* CvgChatSurface (cv6 live conversation + step indicator) is built and
+                 approved but needs the LIVE message source wired (next batch). Until
+                 then conversations use ChatPanel so they keep working. The undefined
+                 `themeMode` + hardcoded messages={[]} from the blind integration would
+                 have crashed / shown an empty thread. */
               <ChatPanel key={selectedAgent?.slug || 'chat'} />
             )}
           </div>

@@ -1885,7 +1885,12 @@ export default function HomeView({
     // (tools, agents, missions, needs-you, projects). Enter behaves EXACTLY like Right:
     // both "activate" the selected thing — open a tool, or two-press a room (quick view → open).
     const activate = () => {
-      if (selectedIndex < 0 || selectedIndex >= selectableItems.length) return
+      if (selectedIndex < 0) {
+        // R55 fix: Right/Enter from default home (no selection) opens CV6 Chat tool
+        openTool('chat')
+        return
+      }
+      if (selectedIndex >= selectableItems.length) return
       const sel = selectableItems[selectedIndex]
       if (sel.type === 'tool') {
         openTool(sel.item.key) // Right/Enter opens tools too
@@ -2108,12 +2113,30 @@ export default function HomeView({
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
               marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid var(--cv6-divider)',
             }}>
-              {/* Primary group (left): Theme only.
+              {/* Primary group (left): Search + Theme + Info.
                   R50 removed the Home icon (duplicated Tools→Home).
                   R53 removed Explorer (duplicated the projects/missions tree on the Home body)
                   and Files (duplicated the Files tool in the Tools row) — both were unlabeled
-                  duplicate destinations. No mystery glyphs remain in the header. */}
+                  duplicate destinations. CV6 R71: readded Search, Theme, and Help/Info icons. */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Search icon */}
+                <button
+                  title="Open search"
+                  onClick={() => setShowSearch(true)}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                </button>
+
                 {/* Theme toggle */}
                 <button
                   title="Toggle theme"
@@ -2137,12 +2160,30 @@ export default function HomeView({
                     <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
                   </svg>
                 </button>
+
+                {/* Help/Info icon */}
+                <button
+                  title="Help & documentation"
+                  onClick={() => window.open('https://aheadofmarket.com/docs', '_blank')}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>
+                  </svg>
+                </button>
               </div>
 
               {/* Divider */}
               <div style={{ flex: 1 }}></div>
 
-              {/* Secondary group (right): date/time + Avatar — R32: Support icon removed (Support lives in the Tools row) */}
+              {/* Secondary group (right): date/time + Notifications + Avatar — R32: Support icon removed (Support lives in the Tools row); CV6 R71: readded Notifications icon */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 {/* R35: live date + time, greeting font; click to change timezone */}
                 <div style={{ position: 'relative' }}>
@@ -2188,6 +2229,23 @@ export default function HomeView({
                     </div>
                   )}
                 </div>
+                {/* Notifications bell icon */}
+                <button
+                  title="Notifications"
+                  onClick={() => window.location.href = '/dashboard?view=notifications'}
+                  style={{
+                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  </svg>
+                </button>
                 {/* Avatar */}
                 <button
                   title="User settings"
