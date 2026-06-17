@@ -836,6 +836,18 @@ const TRACKER_TEMPLATES = {
 }
 const STATUS_COLORS = { 'Open': '#F59E0B', 'In progress': '#0066FF', 'Done': '#10B981' }
 
+// R88: weighted column tracks so dense trackers stay readable. Short fields
+// (status/severity/owner) stay narrow; long text fields (bug/expected/notes)
+// get the room they need. Long cells clamp to 2 lines and a row expands on tap.
+function trackerColTrack(name) {
+  const n = String(name).toLowerCase()
+  if (['status', 'severity', 'priority', 'done'].includes(n)) return 'minmax(96px, 0.55fr)'
+  if (['owner', 'area', 'type', 'date'].includes(n)) return 'minmax(88px, 0.55fr)'
+  if (['page', 'scope', 'scene', 'shot'].includes(n)) return 'minmax(96px, 0.7fr)'
+  if (['bug', 'expected', 'item', 'title', 'notes', 'description', 'review'].includes(n)) return 'minmax(180px, 2.4fr)'
+  return 'minmax(120px, 1fr)'
+}
+
 function TrackerToolOverlay({ projects, missionsByProject }) {
   const firstProj = (projects || [])[0]
   const [trackers, setTrackers] = useState(() => [
@@ -848,6 +860,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const [draftTemplate, setDraftTemplate] = useState('bugs')
   const [isNarrow, setIsNarrow] = useState(false)
   const [mobilePane, setMobilePane] = useState('list')
+  const [expandedRow, setExpandedRow] = useState(null) // R88: click a row to read every cell in full
   // Space Rising real tracker (admin_tickets) — live via /api/dashboard/admin-tickets.
   const [srStatus, setSrStatus] = useState(null) // null|loading|connected|needs_key|error
   useEffect(() => {
@@ -981,14 +994,17 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
     </div>
   )
 
-  const Sheet = () => !sel ? (
+  const Sheet = () => {
+   if (!sel) return (
     <div style={{ padding: '20px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Select or create a tracker</div>
-  ) : (
+   )
+   const gridTemplate = sel.columns.map(trackerColTrack).join(' ')
+   return (
     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{sel.name}</div>
-          <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{sel.scope} · {sel.rows.length} rows</div>
+          <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{sel.scope} · {sel.rows.length} rows{sel.live ? ' · tap a row to read it in full' : ''}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button onClick={addRow} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
@@ -1004,29 +1020,40 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
       </div>
       {sel.on && <div style={{ padding: '8px 14px', fontSize: '12px', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderBottom: '1px solid var(--cv6-divider)' }}>Agent is watching this tracker and working items toward done.</div>}
       <div style={{ flex: 1, overflow: 'auto' }}>
-        <div style={{ minWidth: `${sel.columns.length * 150}px` }}>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${sel.columns.length}, minmax(140px, 1fr))`, borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1 }}>
+        <div>
+          <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1 }}>
             {sel.columns.map(c => <div key={c} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--cv6-text-secondary)', padding: '10px 12px' }}>{c}</div>)}
           </div>
-          {sel.rows.map((row, ri) => (
-            <div key={ri} style={{ display: 'grid', gridTemplateColumns: `repeat(${sel.columns.length}, minmax(140px, 1fr))`, borderBottom: '1px solid var(--cv6-divider)' }}>
+          {sel.rows.map((row, ri) => {
+            const isExp = expandedRow === ri
+            return (
+            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', cursor: sel.live ? 'pointer' : 'default', background: isExp ? 'var(--cv6-surface-hover)' : 'transparent' }}>
               {sel.columns.map(c => (
-                <div key={c} style={{ borderRight: '1px solid var(--cv6-divider)', padding: '0' }}>
+                <div key={c} style={{ borderRight: '1px solid var(--cv6-divider)', padding: '0', minWidth: 0 }}>
                   {c === statusCol ? (
-                    <select value={row[c] || 'Open'} onChange={e => setCell(ri, c, e.target.value)} style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none' }}>
-                      {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    sel.live ? (
+                      <div style={{ minHeight: '40px', display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: '13px', fontWeight: '600', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)' }}>{row[c] || 'Open'}</div>
+                    ) : (
+                      <select value={row[c] || 'Open'} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none' }}>
+                        {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    )
                   ) : (
-                    <input value={row[c] || ''} onChange={e => setCell(ri, c, e.target.value)} placeholder="—" style={{ width: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', color: 'var(--cv6-text-primary)', outline: 'none' }} />
+                    sel.live ? (
+                      <div title={row[c] || ''} style={{ minHeight: '40px', padding: '10px 12px', fontSize: '13px', color: 'var(--cv6-text-primary)', lineHeight: 1.4, wordBreak: 'break-word', overflow: 'hidden', ...(isExp ? {} : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }) }}>{row[c] || '—'}</div>
+                    ) : (
+                      <input value={row[c] || ''} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} placeholder="—" title={row[c] || ''} style={{ width: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', color: 'var(--cv6-text-primary)', outline: 'none' }} />
+                    )
                   )}
                 </div>
               ))}
             </div>
-          ))}
+          )})}
         </div>
       </div>
     </div>
-  )
+   )
+  }
 
   return (
    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
