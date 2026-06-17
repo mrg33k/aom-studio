@@ -2392,7 +2392,9 @@ export default function HomeView({
           if (proj) {
             const mission = cmd.mission ? { slug: cmd.mission, name: cmd.mission } : null
             setSelectedRoom({ project: proj, mission })
-            openTool('chat')
+            // Open the Chat tool PRESELECTED to this room. The tool reads chatInitialRoom
+            // (not selectedRoom), so set it via openChatToolForRoom or it defaults to room 0.
+            openChatToolForRoom({ project: proj })
           }
         }
       } catch (_) { /* a bad command must never break the dashboard */ }
@@ -2402,7 +2404,7 @@ export default function HomeView({
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` }, (payload) => handle(payload.new))
       .subscribe()
     return () => { active = false; try { supabase.removeChannel(channel) } catch (_) {} }
-  }, [worldId, cv6, openTool, projectRooms, VIEW_TOOL_KEYS])
+  }, [worldId, cv6, openTool, openChatToolForRoom, projectRooms, VIEW_TOOL_KEYS])
 
   // R19: Suggested replies based on context (placeholder)
   const suggestedReplies = [
