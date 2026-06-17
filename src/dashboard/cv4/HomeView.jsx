@@ -1544,6 +1544,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   useEffect(() => {
     const onKey = (e) => {
       const tag = e.target?.tagName
+      if (e.key && e.key.startsWith('Arrow')) console.log('[chatdoc]', e.key, 'tag=', tag, 'active=', document.activeElement?.tagName)
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
       if (!rooms.length) return
       const idx = Math.max(0, rooms.findIndex(r => sel && r.kind === sel.kind && r.slug === sel.slug))
@@ -1692,6 +1693,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
           <textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); return }
             // R57: Left in an empty input → step back to the room list (which then takes Up/Down).
+            if (e.key === 'ArrowLeft') { console.log('[chatta] ArrowLeft draft=', JSON.stringify(draft)) }
             if (e.key === 'ArrowLeft' && !draft) { e.preventDefault(); setListFocused(true); e.target.blur() }
           }} placeholder={`Message ${sel.name}…`} rows={1} style={{ flex: 1, resize: 'none', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', maxHeight: '110px' }} />
           <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '8px', border: 'none', background: draft.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
