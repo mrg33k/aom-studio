@@ -1,25 +1,15 @@
 // GET /api/dashboard/review-queue?world=<world-id>
 //
-// Aggregates deliverables from recently-active rooms into a review queue.
-// Returns the 40 most recent files (newest first) from deliverable-type kinds
-// (deliverable, research-drop, visuals, screenshots) updated within the last 3 days.
+// Aggregates deliverables from the world's rooms into a review queue: the 40
+// most recent real deliverable files (newest first) updated within the last
+// 3 days. Excludes canon (VISION/CONTEXT/BUILD/RESEARCH) and the tape.
 //
-// Response shape:
-// {
-//   items: [
-//     {
-//       name: "hero-banner-v2.png",
-//       path: "corner/users/aom/projects/ambition-mechanical/missions/website/deliverables/hero-banner-v2.png",
-//       project: "ambition-mechanical",
-//       mission: "website",
-//       kind: "deliverable",
-//       type: { key: "image", label: "Image", color: "#8B5CF6" },
-//       last_modified: "2026-06-15T14:32:00Z",
-//       notes: "SVG conversion of original design"
-//     },
-//     ...
-//   ]
-// }
+// IMPORTANT: Vercel functions have NO disk access to the AOM-EA checkout, so the
+// canonical source is the RAG tunnel's /project-files-walk (same pattern as
+// project-files.js). We list the world's projects from Supabase, walk each via
+// the tunnel, and aggregate. Local fs is only a dev fallback.
+//
+// Response: { items: [ { name, path, project, mission, kind, type:{key,label,color}, last_modified } ] }
 
 import fs from 'fs';
 import path from 'path';
@@ -30,7 +20,16 @@ const AOM_EA_HARDCODED = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/A
 const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
 const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
 
-// File type detection by extension
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
+
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+const MAX_ITEMS = 40;
+
+// Kinds that are NOT review material (the canon docs + the agent's own tape).
+const EXCLUDE_KINDS = new Set(['canon', 'tape']);
+
 const TYPE_MAP = {
   image: { key: 'image', label: 'Image', color: '#8B5CF6' },
   video: { key: 'video', label: 'Video', color: '#EC4899' },
@@ -38,7 +37,6 @@ const TYPE_MAP = {
   copy: { key: 'copy', label: 'Copy', color: '#F59E0B' },
   code: { key: 'code', label: 'Code', color: '#10B981' },
 };
-
 const EXTENSIONS = {
   image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'],
   video: ['.mp4', '.mov', '.webm', '.mkv'],
@@ -46,116 +44,101 @@ const EXTENSIONS = {
   copy: ['.md', '.txt'],
   code: ['.js', '.jsx', '.ts', '.tsx', '.py', '.go', '.rs', '.java'],
 };
-
 function detectType(filename) {
-  const ext = path.extname(filename).toLowerCase();
+  const ext = path.extname(filename || '').toLowerCase();
   for (const [key, exts] of Object.entries(EXTENSIONS)) {
     if (exts.includes(ext)) return TYPE_MAP[key];
   }
-  return TYPE_MAP.doc; // default
+  return TYPE_MAP.doc;
 }
 
-function isHidden(name) {
-  if (name.startsWith('.')) return true;
-  if (['node_modules', 'archive', 'vision-qa', 'assets'].includes(name)) return true;
-  return false;
-}
-
-function walkDeliverables(dirAbs, depth = 0) {
-  const files = [];
-  if (depth > 3) return files;
-
-  let entries;
-  try { entries = fs.readdirSync(dirAbs, { withFileTypes: true }); } catch { return files; }
-
-  for (const ent of entries) {
-    if (isHidden(ent.name)) continue;
-    const abs = path.join(dirAbs, ent.name);
-
-    if (ent.isDirectory()) {
-      files.push(...walkDeliverables(abs, depth + 1));
-      continue;
-    }
-
-    if (!ent.isFile()) continue;
-
-    try {
-      const st = fs.statSync(abs);
-      files.push({
-        name: ent.name,
-        path: abs,
-        mtime: st.mtime,
-      });
-    } catch { }
+// List the project slugs that belong to this world.
+async function listProjectSlugs(world) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return [];
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(world)}&select=slug`;
+    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    if (!r.ok) return [];
+    const rows = await r.json();
+    if (!Array.isArray(rows)) return [];
+    return rows.map((x) => x.slug).filter((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s));
+  } catch {
+    return [];
   }
-
-  return files;
 }
 
-function collectDeliverables(worldId) {
+// Walk one project through the tunnel; return its review-eligible files (recent).
+async function walkProjectViaTunnel(slug, now) {
+  try {
+    const url = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`;
+    const r = await fetch(url, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
+    if (!r.ok) return [];
+    const body = await r.json();
+    const out = [];
+    const pushFrom = (files, mission) => {
+      for (const f of files || []) {
+        if (!f || EXCLUDE_KINDS.has(f.kind)) continue;
+        const ts = f.last_modified ? new Date(f.last_modified).getTime() : 0;
+        if (!ts || now - ts > THREE_DAYS_MS) continue;
+        out.push({
+          name: f.name,
+          path: f.path,           // kept server-side only; UI shows name + room
+          project: slug,
+          mission: mission || null,
+          kind: f.kind || 'deliverable',
+          type: detectType(f.name),
+          last_modified: new Date(ts).toISOString(),
+        });
+      }
+    };
+    pushFrom(body.files, null);
+    for (const m of body.missions || []) pushFrom(m.files, m.slug);
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+// Local-disk fallback (vercel dev only): reuse a shallow walk.
+function collectViaDisk(world, now) {
   const items = [];
-  const projectsDir = path.join(AOM_EA_ROOT, 'corner', 'users', worldId, 'projects');
-
+  const projectsDir = path.join(AOM_EA_ROOT, 'corner', 'users', world, 'projects');
   if (!fs.existsSync(projectsDir)) return items;
-
   let projects;
   try { projects = fs.readdirSync(projectsDir); } catch { return items; }
-
-  const now = Date.now();
-  const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
-
-  for (const projSlug of projects) {
-    if (isHidden(projSlug)) continue;
-
-    const projAbs = path.join(projectsDir, projSlug);
-
-    // Check project-level deliverables
-    const projFiles = walkDeliverables(projAbs);
-    for (const f of projFiles) {
-      if (now - f.mtime.getTime() > threeDaysMs) continue;
-      items.push({
-        name: f.name,
-        path: f.path,
-        project: projSlug,
-        mission: null,
-        kind: 'deliverable',
-        type: detectType(f.name),
-        last_modified: f.mtime.toISOString(),
-        notes: '',
-      });
+  const walk = (dirAbs, depth = 0) => {
+    const acc = [];
+    if (depth > 3) return acc;
+    let entries;
+    try { entries = fs.readdirSync(dirAbs, { withFileTypes: true }); } catch { return acc; }
+    for (const ent of entries) {
+      if (ent.name.startsWith('.')) continue;
+      const abs = path.join(dirAbs, ent.name);
+      if (ent.isDirectory()) { acc.push(...walk(abs, depth + 1)); continue; }
+      if (!ent.isFile()) continue;
+      try { const st = fs.statSync(abs); acc.push({ name: ent.name, path: abs, mtime: st.mtime }); } catch { /* ignore */ }
     }
-
-    // Check missions within the project
-    const missionsDir = path.join(projAbs, 'missions');
-    if (fs.existsSync(missionsDir)) {
-      let missions;
-      try { missions = fs.readdirSync(missionsDir); } catch { missions = []; }
-
-      for (const missionSlug of missions) {
-        if (isHidden(missionSlug)) continue;
-
-        const missionAbs = path.join(missionsDir, missionSlug);
-        const missionFiles = walkDeliverables(missionAbs);
-        for (const f of missionFiles) {
-          if (now - f.mtime.getTime() > threeDaysMs) continue;
-          items.push({
-            name: f.name,
-            path: f.path,
-            project: projSlug,
-            mission: missionSlug,
-            kind: 'deliverable',
-            type: detectType(f.name),
-            last_modified: f.mtime.toISOString(),
-            notes: '',
-          });
+    return acc;
+  };
+  for (const projSlug of projects) {
+    if (projSlug.startsWith('.')) continue;
+    const projAbs = path.join(projectsDir, projSlug);
+    const delivAbs = path.join(projAbs, 'missions');
+    if (!fs.existsSync(delivAbs)) continue;
+    let missions; try { missions = fs.readdirSync(delivAbs); } catch { missions = []; }
+    for (const missionSlug of missions) {
+      if (missionSlug.startsWith('.')) continue;
+      for (const sub of ['deliverables', 'screenshots', 'visuals', 'exports']) {
+        const d = path.join(delivAbs, missionSlug, sub);
+        if (!fs.existsSync(d)) continue;
+        for (const f of walk(d)) {
+          if (now - f.mtime.getTime() > THREE_DAYS_MS) continue;
+          items.push({ name: f.name, path: f.path, project: projSlug, mission: missionSlug, kind: 'deliverable', type: detectType(f.name), last_modified: f.mtime.toISOString() });
         }
       }
     }
   }
-
-  // Sort by mtime newest-first and return top 40
-  items.sort((a, b) => new Date(b.last_modified).getTime() - new Date(a.last_modified).getTime());
-  return items.slice(0, 40);
+  return items;
 }
 
 export default async function handler(req, res) {
@@ -168,20 +151,28 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
   const { world } = req.query;
-  if (!world || typeof world !== 'string') {
-    return res.status(400).json({ error: 'world required' });
-  }
+  if (!world || typeof world !== 'string') return res.status(400).json({ error: 'world required' });
 
-  // Tenant gate
   try {
     await verifyTenant(world, req);
   } catch (err) {
-    if (err instanceof TenantAuthError) {
-      return res.status(err.status || 403).json({ error: err.message });
-    }
+    if (err instanceof TenantAuthError) return res.status(err.status || 403).json({ error: err.message });
     throw err;
   }
 
-  const items = collectDeliverables(world);
-  return res.status(200).json({ items });
+  const now = Date.now();
+  let items = [];
+
+  // Canonical path: aggregate through the RAG tunnel (works on Vercel).
+  const slugs = await listProjectSlugs(world);
+  if (slugs.length) {
+    const perProject = await Promise.all(slugs.map((s) => walkProjectViaTunnel(s, now)));
+    items = perProject.flat();
+  }
+
+  // Local-dev fallback only when the tunnel path yielded nothing.
+  if (!items.length) items = collectViaDisk(world, now);
+
+  items.sort((a, b) => new Date(b.last_modified).getTime() - new Date(a.last_modified).getTime());
+  return res.status(200).json({ items: items.slice(0, MAX_ITEMS) });
 }
