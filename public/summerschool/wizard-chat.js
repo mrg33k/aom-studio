@@ -277,6 +277,12 @@
   // Saying "Morning, Ethan" at 8pm is exactly the HUD-vs-reality mismatch that
   // pulls his focus, so the title + subtitle track the Phoenix time of day.
   function headerGreeting() {
+    // In a project room the header brands the project (his own space with the
+    // Wizard), not the school day — keeps the rooms visually separate so a
+    // project never wears school's greeting (Build R20, completes R19 rooms).
+    if (appState.activeRoom && appState.activeRoom !== 'school' && appState.projectActive) {
+      return { title: escapeHtml(appState.projectActive), sub: 'Your project with the Wizard &mdash; let&rsquo;s build something' };
+    }
     let mins = 9 * 60; // safe default = morning
     try {
       const s = new Date().toLocaleString('en-US', { timeZone: 'America/Phoenix', hour12: false, hour: '2-digit', minute: '2-digit' });
