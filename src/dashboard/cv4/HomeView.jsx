@@ -1299,97 +1299,118 @@ function ChatToolOverlay({ projects, missionsByProject, agents, onCreateProject,
   )
 }
 
-// R41: COMMAND DECK — the live response deck. One card per thing that needs Patrik.
-// Each card preloads the EA's best-guess reply (editable) with a countdown that auto-sends;
-// alternates sit below. Do nothing and it fires on the timer; edit and it sends your version.
+// R50: COMMAND DECK — compact live table (per Patrik's wireframe). One ROW per reply
+// waiting on you: select · agent (+ incoming) · editable reply · timer with depleting bar ·
+// send/hold/discard. Header has Hold all + Send selected. Agent color = identity (dot + bar);
+// the one action color drives every primary control.
 function CommandDeckOverlay({ projects, agents }) {
-  const seed = useMemo(() => {
-    const pool = [
-      { who: (agents || [])[0]?.name || 'Elon', slug: (agents || [])[0]?.slug || 'elon', situation: 'Bobby finished the pricing section and is asking if the CTA copy is final before he locks it.', best: 'Looks good. Lock the CTA as is and move on to the FAQ block.', alts: ['Change the CTA to "Start free" first, then lock.', 'Hold. I want to see it on mobile before locking.'] },
-      { who: (projects || [])[0]?.name || 'Corner', slug: (projects || [])[0]?.slug || 'corner', situation: 'The launch teaser render is ready for review and needs a yes/no to publish.', best: 'Approved. Publish it and post the teaser to the launch room.', alts: ['Hold publish. Re-cut the last 3 seconds first.', 'Send me the file before anything goes out.'] },
-      { who: (projects || [])[1]?.name || 'Space Rising', slug: (projects || [])[1]?.slug || 'space-rising', situation: 'A support email came in asking about enterprise pricing. Drafted a reply.', best: 'Send the reply as drafted and book a call for next week.', alts: ['Add our deck before sending.', 'I will handle this one myself.'] },
-    ]
-    return pool
-  }, [agents, projects])
+  const seed = useMemo(() => ([
+    { who: (agents || [])[0]?.name || 'Elon', slug: (agents || [])[0]?.slug || 'elon', incoming: 'CTA copy final?', reply: 'Looks good. Lock the CTA as is and move on to the FAQ block.' },
+    { who: (projects || [])[0]?.name || 'Corner', slug: (projects || [])[0]?.slug || 'corner', incoming: 'Publish teaser?', reply: 'Approved. Publish it and post the teaser to the launch room.' },
+    { who: (projects || [])[1]?.name || 'Space Rising', slug: (projects || [])[1]?.slug || 'space-rising', incoming: 'Enterprise pricing', reply: 'Send the reply as drafted and book a call for next week.' },
+  ]), [agents, projects])
 
-  const [cards, setCards] = useState(() => seed.map((c, i) => ({ ...c, id: i, text: c.best, secs: 18 + i * 8, status: 'live', paused: false })))
-  // Single ticking clock drives every card's countdown (no per-card intervals).
+  const [rows, setRows] = useState(() => seed.map((c, i) => ({ ...c, id: i, secs: 14 + i * 8, total: 30, status: 'live', held: false, checked: true })))
   useEffect(() => {
     if (typeof window === 'undefined') return
     const t = window.setInterval(() => {
-      setCards(prev => prev.map(c => {
-        if (c.status !== 'live' || c.paused) return c
-        const s = c.secs - 1
-        if (s <= 0) return { ...c, secs: 0, status: 'sent' }
-        return { ...c, secs: s }
+      setRows(prev => prev.map(r => {
+        if (r.status !== 'live' || r.held) return r
+        const s = r.secs - 1
+        return s <= 0 ? { ...r, secs: 0, status: 'sent' } : { ...r, secs: s }
       }))
     }, 1000)
     return () => window.clearInterval(t)
   }, [])
 
   const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
-  const update = (id, patch) => setCards(prev => prev.map(c => (c.id === id ? { ...c, ...patch } : c)))
-  const sendNow = (id) => { update(id, { status: 'sent', secs: 0 }); const c = cards.find(x => x.id === id); console.log('[command-deck-send]', c?.slug, c?.text) }
-  const dismiss = (id) => update(id, { status: 'dismissed' })
+  const update = (id, patch) => setRows(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)))
+  const sendNow = (id) => { update(id, { status: 'sent', secs: 0 }); const r = rows.find(x => x.id === id); console.log('[command-deck-send]', r?.slug, r?.reply) }
+  const discard = (id) => update(id, { status: 'discarded' })
+  const toggleHold = (id) => setRows(prev => prev.map(r => (r.id === id ? { ...r, held: !r.held } : r)))
+  const live = rows.filter(r => r.status === 'live')
+  const pending = live.length
+  const allChecked = pending > 0 && live.every(r => r.checked)
+  const setAllChecked = (v) => setRows(prev => prev.map(r => (r.status === 'live' ? { ...r, checked: v } : r)))
+  const holdAll = () => setRows(prev => prev.map(r => (r.status === 'live' ? { ...r, held: true } : r)))
+  const sendSelected = () => setRows(prev => prev.map(r => (r.status === 'live' && r.checked ? { ...r, status: 'sent', secs: 0 } : r)))
 
-  const live = cards.filter(c => c.status === 'live' || c.status === 'sent')
+  const GRID = '30px 150px 1fr 88px 92px'
+  const head = { fontSize: '11px', fontWeight: '700', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)', padding: '9px 8px' }
+  const cell = { padding: '10px 8px', minWidth: 0, alignSelf: 'start' }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '760px', width: '100%', margin: '0 auto' }}>
-      <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', lineHeight: 1.5 }}>
-        Here is what needs you. Each reply is the one I think you would give. Do nothing and it sends on the timer; edit it and it sends your version.
+    <div style={{ maxWidth: '860px', width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {/* Header: pending summary + Hold all + Send selected */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)' }}><b style={{ color: 'var(--cv6-text-primary)', fontWeight: '600' }}>{pending} {pending === 1 ? 'reply' : 'replies'}</b> pending · sending automatically</span>
+        <span style={{ display: 'flex', gap: '6px' }}>
+          <button onClick={holdAll} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', padding: '7px 12px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '600' }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>Hold all
+          </button>
+          <button onClick={sendSelected} style={{ fontSize: '12px', padding: '7px 14px', borderRadius: '7px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontWeight: '600' }}>Send selected</button>
+        </span>
       </div>
-      {live.length === 0 && <div style={{ padding: '28px', textAlign: 'center', fontSize: '14px', color: 'var(--cv6-text-tertiary)' }}>All clear. Nothing waiting on you.</div>}
-      {cards.map(c => {
-        if (c.status === 'dismissed') return null
-        const h = hue(c.slug)
-        const sent = c.status === 'sent'
-        return (
-          <div key={c.id} style={{ border: '1px solid var(--cv6-divider)', borderLeft: `3px solid hsl(${h}, 70%, 55%)`, borderRadius: '10px', background: 'var(--cv6-surface)', padding: '16px 18px', opacity: sent ? 0.6 : 1, transition: 'opacity 200ms ease' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>
-                <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${h}, 70%, 55%)` }} />{c.who}
+
+      {/* Table */}
+      <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'center', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)' }}>
+          <span style={{ ...head, paddingLeft: '10px' }}><input type="checkbox" checked={allChecked} onChange={e => setAllChecked(e.target.checked)} style={{ accentColor: 'var(--cv6-accent-primary)', cursor: 'pointer' }} aria-label="Select all" /></span>
+          <span style={head}>Agent</span>
+          <span style={head}>Reply (editable)</span>
+          <span style={head}>Sends</span>
+          <span style={head} />
+        </div>
+        {pending === 0 && <div style={{ padding: '24px', textAlign: 'center', fontSize: '14px', color: 'var(--cv6-text-tertiary)' }}>All clear. Nothing waiting on you.</div>}
+        {rows.map(r => {
+          if (r.status === 'discarded' && false) return null
+          const h = hue(r.slug)
+          const done = r.status !== 'live'
+          const pct = Math.max(0, Math.min(100, (r.secs / r.total) * 100))
+          return (
+            <div key={r.id} style={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'start', borderBottom: '1px solid var(--cv6-divider)', opacity: done ? 0.45 : 1, transition: 'opacity 200ms ease' }}>
+              <span style={{ ...cell, paddingLeft: '10px', paddingTop: '13px' }}><input type="checkbox" checked={r.checked} disabled={done} onChange={e => update(r.id, { checked: e.target.checked })} style={{ accentColor: 'var(--cv6-accent-primary)', cursor: done ? 'default' : 'pointer' }} aria-label={`Select ${r.who}`} /></span>
+              <span style={cell}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0, background: `hsl(${h}, 65%, 52%)` }} />
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.who}</span>
+                </span>
+                <span style={{ display: 'block', fontSize: '11px', color: 'var(--cv6-text-tertiary)', marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.incoming}>{r.incoming}</span>
               </span>
-              {sent ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: '#10B981' }}>
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Sent
+              <span style={cell}>
+                <textarea value={r.reply} disabled={done} onChange={e => update(r.id, { reply: e.target.value, held: true })} rows={2}
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'none', padding: '6px 8px', borderRadius: '5px', border: '1px solid transparent', background: 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.45, outline: 'none' }}
+                  onFocus={e => { e.currentTarget.style.border = '1px solid var(--cv6-accent-primary)'; e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,102,255,0.12)' }}
+                  onBlur={e => { e.currentTarget.style.border = '1px solid transparent'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.boxShadow = 'none' }} />
+              </span>
+              <span style={{ ...cell, paddingTop: '12px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontVariantNumeric: 'tabular-nums', color: r.status === 'sent' ? '#10B981' : r.status === 'discarded' ? 'var(--cv6-text-tertiary)' : r.held ? 'var(--cv6-text-tertiary)' : 'var(--cv6-text-secondary)' }}>
+                  {r.status === 'sent' ? 'sent' : r.status === 'discarded' ? 'discarded' : r.held ? 'held' : `${r.secs}s`}
                 </span>
-              ) : (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: '600', color: c.paused ? 'var(--cv6-text-tertiary)' : `hsl(${h}, 65%, 45%)` }}>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  {c.paused ? 'Paused while editing' : `Sends in ${c.secs}s`}
-                </span>
-              )}
+                {!done && (
+                  <span style={{ display: 'block', height: '2px', borderRadius: '2px', background: 'var(--cv6-surface-hover)', overflow: 'hidden', marginTop: '5px' }}>
+                    <span style={{ display: 'block', height: '100%', width: `${r.held ? 100 : pct}%`, background: r.held ? 'var(--cv6-text-tertiary)' : `hsl(${h}, 65%, 52%)`, transition: 'width 1s linear' }} />
+                  </span>
+                )}
+              </span>
+              <span style={{ ...cell, paddingTop: '8px', display: 'flex', gap: '2px' }}>
+                <button onClick={() => sendNow(r.id)} disabled={done} title="Send now" aria-label="Send now" style={{ padding: '5px 7px', border: 'none', background: 'transparent', borderRadius: '5px', cursor: done ? 'default' : 'pointer', color: 'var(--cv6-accent-primary)', display: 'inline-flex' }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+                <button onClick={() => toggleHold(r.id)} disabled={done} title={r.held ? 'Resume timer' : 'Hold timer'} aria-label="Hold timer" style={{ padding: '5px 7px', border: 'none', background: 'transparent', borderRadius: '5px', cursor: done ? 'default' : 'pointer', color: 'var(--cv6-text-secondary)', display: 'inline-flex' }}>
+                  {r.held
+                    ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>}
+                </button>
+                <button onClick={() => discard(r.id)} disabled={done} title="Discard without sending" aria-label="Discard" style={{ padding: '5px 7px', border: 'none', background: 'transparent', borderRadius: '5px', cursor: done ? 'default' : 'pointer', color: 'var(--cv6-text-tertiary)', display: 'inline-flex' }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                </button>
+              </span>
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', lineHeight: 1.5, marginBottom: '12px' }}>{c.situation}</div>
-            <textarea
-              value={c.text}
-              disabled={sent}
-              onChange={e => update(c.id, { text: e.target.value, paused: true })}
-              rows={2}
-              style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', padding: '11px 13px', borderRadius: '8px', border: `1px solid hsl(${h}, 50%, 60%)`, background: sent ? 'var(--cv6-surface-hover)' : 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.45, outline: 'none', marginBottom: '10px' }}
-            />
-            {!sent && (
-              <>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '12px' }}>
-                  {c.alts.map((a, i) => (
-                    <button key={i} onClick={() => update(c.id, { text: a, paused: true })} style={{ padding: '6px 11px', borderRadius: '999px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', textAlign: 'left' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = `hsl(${h}, 60%, 55%)`; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>{a}</button>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <button onClick={() => sendNow(c.id)} style={{ padding: '8px 16px', borderRadius: '7px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Send now</button>
-                  {c.paused
-                    ? <button onClick={() => update(c.id, { paused: false })} style={{ padding: '8px 14px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Resume timer</button>
-                    : <button onClick={() => update(c.id, { paused: true })} style={{ padding: '8px 14px', borderRadius: '7px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Pause</button>}
-                  <button onClick={() => dismiss(c.id)} style={{ marginLeft: 'auto', padding: '8px 14px', borderRadius: '7px', border: 'none', background: 'transparent', color: 'var(--cv6-text-tertiary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>Dismiss</button>
-                </div>
-              </>
-            )}
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
+      <p style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', lineHeight: 1.5, margin: '2px' }}>Click any reply to edit it in place. Unchecked rows are left out of Send selected but still send on their own timer unless you hold them.</p>
     </div>
   )
 }
