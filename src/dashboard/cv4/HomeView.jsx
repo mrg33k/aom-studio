@@ -1226,13 +1226,19 @@ function ChatToolOverlay({ projects, missionsByProject, agents, onCreateProject,
     </div>
   )
 
-  const ChatCol = () => (
-    <div style={{ ...colStyle, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)' }}>
+  const ChatCol = ({ mobile } = {}) => (
+    <div style={{ ...colStyle, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', height: mobile ? '100%' : undefined }}>
+      {/* Secondary nav: (mobile) back + dot + name on the left, room Projects/Files icons on the right */}
       <div style={{ ...headStyle, borderBottom: sel ? `2px solid hsl(${hue(sel.slug)}, 70%, 60%)` : '1px solid var(--cv6-divider)' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'none', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', letterSpacing: 0 }}>
-          {sel ? <><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(sel.slug)}, 70%, 60%)` }} />{sel.name}</> : 'Select a room'}
+        <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, textTransform: 'none', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', letterSpacing: 0 }}>
+          {mobile && (
+            <button onClick={() => setMobileCol(0)} title="Back to rooms" style={{ flexShrink: 0, width: '30px', height: '30px', marginLeft: '-4px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--cv6-accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+          )}
+          {sel ? <><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(sel.slug)}, 70%, 60%)`, flexShrink: 0 }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sel.name}</span></> : 'Select a room'}
         </span>
-        {sel && <span style={{ display: 'flex', gap: '6px' }}>{iconBtn('Projects', () => { if (isNarrow) setMobileCol(2) }, projGlyph)}{iconBtn('Files', () => { if (isNarrow) setMobileCol(2) }, fileGlyph)}</span>}
+        {sel && <span style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>{iconBtn('Projects', () => { if (isNarrow) setMobileCol(2) }, projGlyph)}{iconBtn('Files', () => { if (isNarrow) setMobileCol(2) }, fileGlyph)}</span>}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => (
@@ -1273,14 +1279,16 @@ function ChatToolOverlay({ projects, missionsByProject, agents, onCreateProject,
   )
 
   if (isNarrow) {
+    // R49: mobile chat is a FULL room. Chat view fills the tool area (own secondary nav with
+    // back + name + room icons via ChatCol mobile); only Rooms/Files keep a plain back bar.
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '66vh', minHeight: '380px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
-        {mobileCol > 0 && (
-          <button onClick={() => setMobileCol(mobileCol - 1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-accent-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>{mobileCol === 1 ? 'Rooms' : (sel?.name || 'Chat')}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '70vh', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+        {mobileCol === 2 && (
+          <button onClick={() => setMobileCol(1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-accent-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>{sel?.name || 'Chat'}
           </button>
         )}
-        <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>{mobileCol === 0 ? <RoomsCol /> : mobileCol === 1 ? <ChatCol /> : <FilesCol />}</div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>{mobileCol === 0 ? <RoomsCol /> : mobileCol === 1 ? <ChatCol mobile /> : <FilesCol />}</div>
       </div>
     )
   }
@@ -2107,8 +2115,10 @@ export default function HomeView({
                 {/* Theme toggle */}
                 <button
                   title="Toggle theme"
-                  onClick={() => {
-                    const shell = document.querySelector('[data-shell="cv4"]')
+                  onClick={(e) => {
+                    // R49: flip the cv6/shell container THIS button lives in (closest), so it works
+                    // reliably even when several frames are on the page (gallery). Fall back to the doc shell.
+                    const shell = e.currentTarget.closest('[data-cv6]') || e.currentTarget.closest('[data-shell="cv4"]') || document.querySelector('[data-shell="cv4"]')
                     const isDark = shell?.getAttribute('data-theme') === 'dark'
                     shell?.setAttribute('data-theme', isDark ? 'light' : 'dark')
                   }}
