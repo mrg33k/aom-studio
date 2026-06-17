@@ -1502,7 +1502,7 @@ export default function CornerVG() {
       <CornerDataProvider value={dataValue}>
         <CornerNavProvider value={navValue}>
           <LiveCallProvider>
-    <div data-testid="dashboard-home-root" data-cv4 data-cv5 data-shell="cv4" data-theme={theme} style={{
+    <div data-testid="dashboard-home-root" data-cv4 data-cv5 data-cv6 data-shell="cv4" data-theme={theme} style={{
       width: '100%',
       // 100vh fallback; the @supports rule below upgrades to 100svh which
       // tracks the SMALL viewport (URL bar visible). 100dvh was overshooting
