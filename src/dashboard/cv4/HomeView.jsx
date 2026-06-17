@@ -862,6 +862,8 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const [mobilePane, setMobilePane] = useState('list')
   const [expandedRow, setExpandedRow] = useState(null) // R88: click a row to read every cell in full
   const [tall, setTall] = useState(false) // R88: expand the tracker box vertically
+  const [sortCol, setSortCol] = useState(null) // R88: click a header to sort by that column
+  const [sortDir, setSortDir] = useState(1)
   // Space Rising real tracker (admin_tickets) — live via /api/dashboard/admin-tickets.
   const [srStatus, setSrStatus] = useState(null) // null|loading|connected|needs_key|error
   useEffect(() => {
@@ -1069,9 +1071,26 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
       <div style={{ flex: 1, overflow: 'auto' }}>
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1 }}>
-            {sel.columns.map(c => <div key={c} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--cv6-text-secondary)', padding: '10px 12px' }}>{c}</div>)}
+            {sel.columns.map(c => (
+              <div key={c} onClick={() => { setSortDir(d => sortCol === c ? -d : 1); setSortCol(c); setExpandedRow(null) }} title={`Sort by ${c}`} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: sortCol === c ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)', padding: '10px 12px', cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                {c}{sortCol === c ? <span style={{ fontSize: '9px' }}>{sortDir === 1 ? '▲' : '▼'}</span> : null}
+              </div>
+            ))}
           </div>
-          {sel.rows.map((row, ri) => {
+          {(() => {
+            // Sort a decorated copy so inline edit + expand still reference the
+            // original row index. Severity/Status sort by rank, others A-Z.
+            const RANK = { Severity: { High: 0, Medium: 1, Low: 2 }, Status: { Open: 0, 'In progress': 1, Done: 2 } }
+            const decorated = sel.rows.map((row, origIndex) => ({ row, origIndex }))
+            const displayRows = sortCol ? [...decorated].sort((a, b) => {
+              const av = a.row[sortCol] == null ? '' : a.row[sortCol]
+              const bv = b.row[sortCol] == null ? '' : b.row[sortCol]
+              const rmap = RANK[sortCol]
+              const c = rmap ? ((rmap[av] ?? 99) - (rmap[bv] ?? 99)) : String(av).localeCompare(String(bv))
+              return c * sortDir
+            }) : decorated
+            return displayRows.map(({ row, origIndex }) => {
+            const ri = origIndex
             const isExp = expandedRow === ri
             return (
             <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', cursor: sel.live ? 'pointer' : 'default', background: isExp ? 'var(--cv6-surface-hover)' : 'transparent' }}>
@@ -1100,7 +1119,8 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
                 </div>
               ))}
             </div>
-          )})}
+          )})
+          })()}
         </div>
       </div>
     </div>
@@ -1822,8 +1842,9 @@ export default function HomeView({
 
   useEffect(() => {
     fetchMissions()
-    // Refresh every 60s so newly-created missions appear without a page reload.
-    const timer = setInterval(fetchMissions, 60000)
+    // R88: refresh every 20s so a mission an agent creates lands within seconds
+    // (user-created ones refresh immediately via persistCreateMission).
+    const timer = setInterval(fetchMissions, 20000)
     return () => clearInterval(timer)
   }, [fetchMissions])
 
@@ -1882,16 +1903,20 @@ export default function HomeView({
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, name, client_id: worldId || 'aom', agent_slug: 'ea' }),
       })
+      // R88: refresh now so the new project's missions show in real time, not in 60s.
+      fetchMissions()
     } catch { /* optimistic UI already reflects it; surfacing handled elsewhere */ }
-  }, [worldId])
+  }, [worldId, fetchMissions])
   const persistCreateMission = useCallback(async (parentSlug, missionSlug, name) => {
     try {
       await authFetch('/api/dashboard/create-mission-from-drawer', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parent_slug: parentSlug, mission_slug: missionSlug, name, client_id: worldId || 'aom' }),
       })
+      // R88: refresh now so the new mission appears in Active Work within seconds.
+      fetchMissions()
     } catch { /* optimistic */ }
-  }, [worldId])
+  }, [worldId, fetchMissions])
   const persistMoveFile = useCallback(async (slug, from, to) => {
     try {
       await authFetch('/api/dashboard/project-file-move', {
