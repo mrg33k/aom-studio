@@ -315,8 +315,9 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       // Sort: ACTIVE then BLOCKED at top (workers first), then IDLE below
       tableRows.sort((a, b) => {
         const statusOrder = { active: 0, blocked: 1, idle: 2 }
-        const aStatus = statusOrder[a.status] || 99
-        const bStatus = statusOrder[b.status] || 99
+        // Nullish coalescing, NOT ||: active maps to 0 and `0 || 99` would wrongly be 99.
+        const aStatus = statusOrder[a.status] ?? 99
+        const bStatus = statusOrder[b.status] ?? 99
         if (aStatus !== bStatus) return aStatus - bStatus
         // Within same status: workers first
         if (a.isWorkerRow !== b.isWorkerRow) return a.isWorkerRow ? -1 : 1
