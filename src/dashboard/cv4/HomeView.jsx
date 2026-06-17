@@ -21,6 +21,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 import { supabase } from '../lib/supabase.js'
+import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
 import { useSupportData, buildItems } from './SupportDashboard.jsx'
 import LiveScribe from '../../pages/LiveScribe.jsx'
@@ -3048,6 +3049,8 @@ export default function HomeView({
                   {/* R19: Conversation thread — scrollable area with messages */}
                   <div style={{
                     flex: 1,
+                    minHeight: 0,
+                    maxHeight: '320px', // Fixed box — real threads scroll, they don't grow it (Patrik 2026-06-17)
                     overflowY: 'auto',
                     paddingRight: '4px',
                     marginBottom: '12px',
@@ -3081,7 +3084,8 @@ export default function HomeView({
                             color: msg.sender === 'user' ? '#ffffff' : 'var(--cv6-text-primary)',
                           }}
                         >
-                          {msg.text}
+                          {/* CV4 chat renderer: clean markdown, no raw dashes/asterisks */}
+                          <ChatMessageRenderer content={msg.text} />
                         </div>
                       </div>
                     ))}

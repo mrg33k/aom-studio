@@ -23,6 +23,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { authFetch } from '../lib/authFetch.js'
+import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx'
 
 // Helper: filter messages by mission scope (same logic as cv3 useChatMessages)
 function makeMissionMatcher(missionSlug) {
@@ -73,6 +75,10 @@ export default function CvgChatSurface({
   const [isSending, setIsSending] = useState(false)
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(true)
+  // Step indicator: while a turn is in flight we show the assistant's current
+  // step (real step events from /api/dashboard/message-steps), or "Working…".
+  const [awaitingReply, setAwaitingReply] = useState(false)
+  const [stepText, setStepText] = useState('')
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -173,6 +179,13 @@ export default function CvgChatSurface({
         if (prev.some(m => m.id === msg.id)) return prev
         return [...prev, msg]
       })
+
+      // An assistant reply ends the in-flight turn → hide the step indicator.
+      const isUserMsg = msg.role === 'user' || msg.agent === 'user' || msg.sender === 'user'
+      if (!isUserMsg) {
+        setAwaitingReply(false)
+        setStepText('')
+      }
     }
 
     const handleUpdate = (payload) => {
@@ -204,12 +217,43 @@ export default function CvgChatSurface({
     }
   }, [target?.slug, target?.type, worldId, target?.missionSlug])
 
+  // Step indicator: while awaiting a reply, poll the real step events for this
+  // surface and show the assistant's current step. Service-role proxied endpoint
+  // (events table has RLS). Falls back to "Working…" until a step lands. A 60s
+  // safety net clears the indicator if no reply ever arrives.
+  useEffect(() => {
+    if (!awaitingReply || !worldId) return
+    let active = true
+    const qs = new URLSearchParams({ client_id: worldId, limit: '20' })
+    if (target?.type === 'agent') qs.set('agent', target.slug)
+    else if (target?.type === 'project') qs.set('project', target.slug)
+
+    const poll = async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/message-steps?${qs.toString()}`)
+        if (!r.ok || !active) return
+        const d = await r.json()
+        const steps = Array.isArray(d.steps) ? d.steps : []
+        // Latest in-progress step wins; else latest step text.
+        const sorted = steps.slice().sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+        const live = sorted.find(s => s.status === 'in_progress') || sorted[0]
+        if (active && live && live.text) setStepText(live.text)
+      } catch (_) { /* keep last */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    const safety = setTimeout(() => { if (active) { setAwaitingReply(false); setStepText('') } }, 60000)
+    return () => { active = false; clearInterval(t); clearTimeout(safety) }
+  }, [awaitingReply, worldId, target?.slug, target?.type])
+
   const handleSend = useCallback(async () => {
     if (!input.trim() || isSending) return
 
     const text = input.trim()
     setInput('')
     setIsSending(true)
+    setAwaitingReply(true)
+    setStepText('Working…')
 
     try {
       // Call parent's onSend handler with the target + text
@@ -402,16 +446,33 @@ export default function CvgChatSurface({
                 fontSize: 14,
                 lineHeight: 1.5,
                 wordBreak: 'break-word',
-                whiteSpace: 'pre-wrap',
               }}
-              dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(msg.text || msg.content) }}
-            />
-            {/* Messages from Supabase use .text (fallback .content) */}
+            >
+              {/* CV4 chat renderer: clean markdown (lists, bold, links), no raw symbols */}
+              <ChatMessageRenderer content={msg.text || msg.content} />
+            </div>
           </div>
           )
         })}
 
-        {/* Step indicator — FUTURE: will render busyStep from bridge stream */}
+        {/* Step indicator — shows the assistant's current step while it works */}
+        {awaitingReply && (
+          <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 8 }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+              maxWidth: 'min(720px, 85%)', padding: '10px 14px', borderRadius: 8,
+              background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+              color: 'var(--cv6-text-secondary)', fontSize: 13,
+            }}>
+              <span style={{ display: 'inline-flex', gap: 3 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cv6-accent-primary)', animation: 'cv6-step-bounce 1.2s ease-in-out infinite' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cv6-accent-primary)', animation: 'cv6-step-bounce 1.2s ease-in-out 0.2s infinite' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cv6-accent-primary)', animation: 'cv6-step-bounce 1.2s ease-in-out 0.4s infinite' }} />
+              </span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stepText || 'Working…'}</span>
+            </div>
+          </div>
+        )}
 
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
@@ -516,6 +577,10 @@ export default function CvgChatSurface({
         @keyframes cv6-chat-pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.5; }
+        }
+        @keyframes cv6-step-bounce {
+          0%, 80%, 100% { transform: translateY(0); opacity: 0.5; }
+          40% { transform: translateY(-4px); opacity: 1; }
         }
       `}</style>
     </div>
