@@ -391,7 +391,7 @@ function SupportCard({ item, accentColor }) {
 export { SupportToolOverlay }
 
 // ── Projects Tool — Finder/Dropbox 3-column browser, drag-to-move + confirm + live create + mobile (R38 r2) ──
-function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen }) {
+function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen, onCreateProject, onCreateMission, onMoveFile }) {
   const [projects, setProjects] = useState(projectsProp || [])
   const [missionsMap, setMissionsMap] = useState(missionsByProject || {})
   const [selProj, setSelProj] = useState(null)
@@ -440,7 +440,8 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
       next[toSlug] = [...(next[toSlug] || []).filter(m => m.slug !== mission.slug), mission]
       return next
     })
-    console.log('[project-move]', mission.slug, fromSlug, '->', toSlug) // API persist wires next round
+    // Mission reparent is optimistic-only: there is no mission-move backend endpoint
+    // yet (project-file-move handles files, not mission rows). Gap noted in BUILD.md.
   }
   function commitCreate() {
     const name = draftName.trim(); if (!name) { setCreating(null); return }
@@ -449,13 +450,13 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
       const p = { slug, name }
       setProjects(prev => [p, ...prev]); setMissionsMap(prev => ({ ...prev, [slug]: [] }))
       setSelProj(p); setSelMission(null); if (isNarrow) setMobileCol(1)
-      console.log('[project-create]', slug, name)
+      onCreateProject && onCreateProject(slug, name)
     } else if (creating === 'mission' && selProj) {
       const slug = slugify(name, (missionsMap[selProj.slug] || []).length + 1)
       const m = { slug, name, status: 'idle' }
       setMissionsMap(prev => ({ ...prev, [selProj.slug]: [m, ...(prev[selProj.slug] || [])] }))
       setSelMission(m); if (isNarrow) setMobileCol(2)
-      console.log('[mission-create]', selProj.slug, slug, name)
+      onCreateMission && onCreateMission(selProj.slug, slug, name)
     }
     setCreating(null); setDraftName('')
   }
@@ -1059,7 +1060,7 @@ function FilesToolOverlay({ projects }) {
 
 // R40: CHAT tool — the old 3-pane room view rebuilt inside the new tool window.
 // LEFT rooms list + inline create form · MIDDLE the room's full chat · RIGHT the room's files.
-function ChatToolOverlay({ projects, missionsByProject, agents }) {
+function ChatToolOverlay({ projects, missionsByProject, agents, onCreateProject, onCreateMission }) {
   const rooms = useMemo(() => {
     const ag = (agents || []).map(a => ({ kind: 'agent', slug: a.slug, name: a.name || a.slug }))
     const pr = (projects || []).map(p => ({ kind: 'project', slug: p.slug, name: p.name || p.slug }))
@@ -1111,11 +1112,12 @@ function ChatToolOverlay({ projects, missionsByProject, agents }) {
     const p = { slug, name }
     setLocalProjects(prev => [p, ...prev]); setSel({ kind: 'project', slug, name })
     setCreating(null); setNpName('')
-    console.log('[chat-new-project]', slug, name)
+    onCreateProject && onCreateProject(slug, name)
   }
   function commitMission() {
     const name = nmName.trim(); if (!name || !nmProj) { setCreating(null); return }
-    console.log('[chat-new-mission]', nmProj, name, nmGoal) // API persist wires next round
+    const missionSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    onCreateMission && onCreateMission(nmProj, missionSlug, name)
     setCreating(null); setNmName(''); setNmGoal('')
   }
 
@@ -1534,6 +1536,33 @@ export default function HomeView({
       .sort((a, b) => (a.name || a.slug || '').localeCompare(b.name || b.slug || ''))
     return { recentProjects: recent, allProjects: rest }
   }, [projectRooms, pinnedProjects, missionsByProject, recentVisits])
+
+  // R43: real persistence for the tool actions. Optimistic UI updates first; these
+  // fire the actual backend write. In the gallery (no auth) they no-op gracefully.
+  const persistCreateProject = useCallback(async (slug, name) => {
+    try {
+      await authFetch('/api/dashboard/create-project-from-chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, name, client_id: worldId || 'aom', agent_slug: 'ea' }),
+      })
+    } catch { /* optimistic UI already reflects it; surfacing handled elsewhere */ }
+  }, [worldId])
+  const persistCreateMission = useCallback(async (parentSlug, missionSlug, name) => {
+    try {
+      await authFetch('/api/dashboard/create-mission-from-drawer', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parent_slug: parentSlug, mission_slug: missionSlug, name, client_id: worldId || 'aom' }),
+      })
+    } catch { /* optimistic */ }
+  }, [worldId])
+  const persistMoveFile = useCallback(async (slug, from, to) => {
+    try {
+      await authFetch('/api/dashboard/project-file-move', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, from, to }),
+      })
+    } catch { /* optimistic */ }
+  }, [])
 
   function toggleAgentPin(slug) {
     setPinnedAgents(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug])
@@ -2361,6 +2390,9 @@ export default function HomeView({
                     projects={[...(recentProjects || []), ...(allProjects || [])]}
                     missionsByProject={missionsByProject}
                     onOpen={handleProjectSelect}
+                    onCreateProject={persistCreateProject}
+                    onCreateMission={persistCreateMission}
+                    onMoveFile={persistMoveFile}
                   />
                 )}
 
@@ -2388,6 +2420,8 @@ export default function HomeView({
                     projects={[...(recentProjects || []), ...(allProjects || [])]}
                     missionsByProject={missionsByProject}
                     agents={visibleAgents}
+                    onCreateProject={persistCreateProject}
+                    onCreateMission={persistCreateMission}
                   />
                 )}
               </div>
