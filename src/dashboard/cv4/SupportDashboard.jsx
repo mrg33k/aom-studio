@@ -211,14 +211,31 @@ function useSupportData(worldId) {
   return { wishes, mailboxes }
 }
 
+// R88: keep the support board for real, two-way support. An email from a
+// no-reply / automated / bulk-marketing sender can never be a support
+// conversation, so drop it before it clutters the board. Conservative on
+// purpose: only clear automated senders and obvious marketing, never an
+// ambiguous human address (better to show a maybe than hide a real customer).
+function isNonSupportEmail(it) {
+  const from = String(it.email || it.from || '').toLowerCase()
+  const subj = String(it.subject || '').toLowerCase()
+  const body = String((it.lastInbound && it.lastInbound.snippet) || it.snippet || '').toLowerCase()
+  // Automated / no-reply senders: never a reply-able support thread.
+  if (/(no-?reply|do-?not-?reply|mailer-daemon|postmaster|bounce[@+]|notifications?@|newsletter@|marketing@|mailchimp|sendgrid|salesforce|hubspot)/.test(from)) return true
+  // Obvious bulk marketing: an unsubscribe footer AND a promo subject.
+  if (/unsubscribe|update your preferences|view (this|in) (your )?browser/.test(body) &&
+      /(% off|\bsale\b|webinar|newsletter|deal|limited time|promo|discount|save \$|free trial)/.test(subj + ' ' + body)) return true
+  return false
+}
+
 // Queue order, not feed order: what waits on you leads, oldest wait first
 // (the person waiting longest deserves the top slot). Finished work sinks.
 function buildItems(wishes, mailboxes) {
   const items = []
   for (const w of wishes || []) items.push(wishToItem(w))
   for (const box of mailboxes || []) {
-    for (const it of box.needs || []) items.push(emailToItem(it, false))
-    for (const it of box.replied || []) items.push(emailToItem(it, true))
+    for (const it of box.needs || []) { if (isNonSupportEmail(it)) continue; items.push(emailToItem(it, false)) }
+    for (const it of box.replied || []) { if (isNonSupportEmail(it)) continue; items.push(emailToItem(it, true)) }
   }
   const rank = (it) => (it.ready ? 0 : it.status === 'needs_you' ? 1 : it.status === 'working' ? 2 : 3)
   items.sort((a, b) => {

@@ -905,32 +905,63 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   // (corner/missions/corner-ui-cv6/deliverables/cv6-bug-tracker.json), read through
   // the tunnel so edits show up here with no redeploy. This is the page-by-page
   // expected-vs-actual list the EA and Patrik both work from.
+  const pullBugs = useCallback(async () => {
+    try {
+      const r = await authFetch('/api/dashboard/cv6-bugs')
+      if (!r.ok) return
+      const d = await r.json()
+      const bugs = Array.isArray(d.bugs) ? d.bugs : []
+      if (!bugs.length) return
+      const rows = bugs.map(b => ({
+        __id: b.id,
+        Page: b.page || '',
+        Bug: b.title || '(untitled)',
+        Expected: b.expected || '',
+        Severity: (b.severity || '').replace(/^\w/, c => c.toUpperCase()),
+        Status: b.status || 'Open',
+        Owner: b.owner || '',
+      }))
+      const cv6Tracker = { id: 'cv6-bugs', name: 'CV6 Bugs', scope: 'Corner CV6', template: 'bugs', columns: ['Page', 'Bug', 'Expected', 'Severity', 'Status', 'Owner'], rows, on: true, live: true }
+      setTrackers(prev => [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')])
+      setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'cv6-bugs' : prev)
+    } catch { /* best-effort */ }
+  }, [])
   useEffect(() => {
-    let active = true
-    const pull = async () => {
-      try {
-        const r = await authFetch('/api/dashboard/cv6-bugs')
-        if (!active || !r.ok) return
-        const d = await r.json()
-        const bugs = Array.isArray(d.bugs) ? d.bugs : []
-        if (!bugs.length) return
-        const rows = bugs.map(b => ({
-          Page: b.page || '',
-          Bug: b.title || '(untitled)',
-          Expected: b.expected || '',
-          Severity: (b.severity || '').replace(/^\w/, c => c.toUpperCase()),
-          Status: b.status || 'Open',
-          Owner: b.owner || '',
-        }))
-        const cv6Tracker = { id: 'cv6-bugs', name: 'CV6 Bugs', scope: 'Corner CV6', template: 'bugs', columns: ['Page', 'Bug', 'Expected', 'Severity', 'Status', 'Owner'], rows, on: true, live: true }
-        setTrackers(prev => [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')])
-        // This is the active work surface right now, so make it the default view.
-        setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'cv6-bugs' : prev)
-      } catch { /* best-effort */ }
-    }
-    pull()
-    const t = setInterval(pull, 30000)
-    return () => { active = false; clearInterval(t) }
+    pullBugs()
+    const t = setInterval(pullBugs, 30000)
+    return () => clearInterval(t)
+  }, [pullBugs])
+
+  // R88 (Patrik): add a bug from the UI. Persists via /api/dashboard/cv6-bugs so
+  // the agents see it too, then refreshes the live list.
+  const [addingBug, setAddingBug] = useState(false)
+  const [bugDraft, setBugDraft] = useState({ page: 'Homepage', title: '', expected: '', severity: 'Medium' })
+  const [savingBug, setSavingBug] = useState(false)
+  const submitBug = useCallback(async () => {
+    const title = (bugDraft.title || '').trim()
+    if (!title) { setAddingBug(false); return }
+    setSavingBug(true)
+    try {
+      const r = await authFetch('/api/dashboard/cv6-bugs', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add', world: 'aom', ...bugDraft, title }),
+      })
+      if (r.ok) {
+        setAddingBug(false)
+        setBugDraft({ page: 'Homepage', title: '', expected: '', severity: 'Medium' })
+        await pullBugs()
+      }
+    } finally { setSavingBug(false) }
+  }, [bugDraft, pullBugs])
+  const updateBugStatus = useCallback(async (id, status) => {
+    if (!id) return
+    setTrackers(prev => prev.map(t => t.id !== 'cv6-bugs' ? t : { ...t, rows: t.rows.map(r => r.__id === id ? { ...r, Status: status } : r) }))
+    try {
+      await authFetch('/api/dashboard/cv6-bugs', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', world: 'aom', id, status }),
+      })
+    } catch { /* optimistic; next poll reconciles */ }
   }, [])
 
   const sel = trackers.find(t => t.id === selId)
@@ -1007,8 +1038,8 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
           <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{sel.scope} · {sel.rows.length} rows{sel.live ? ' · tap a row to read it in full' : ''}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={addRow} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add row
+          <button onClick={() => { if (sel.id === 'cv6-bugs') setAddingBug(v => !v); else addRow() }} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>{sel.id === 'cv6-bugs' ? 'Add bug' : 'Add row'}
           </button>
           <button onClick={toggleOn} title="Turn the tracker on so the agent works it" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 10px 6px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '700', background: sel.on ? 'rgba(16,185,129,0.15)' : 'var(--cv6-surface-hover)', color: sel.on ? '#10B981' : 'var(--cv6-text-secondary)' }}>
             {sel.on ? 'Agent ON' : 'Agent off'}
@@ -1019,6 +1050,18 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         </div>
       </div>
       {sel.on && <div style={{ padding: '8px 14px', fontSize: '12px', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderBottom: '1px solid var(--cv6-divider)' }}>Agent is watching this tracker and working items toward done.</div>}
+      {sel.id === 'cv6-bugs' && addingBug && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)' }}>
+          <input value={bugDraft.page} onChange={e => setBugDraft(d => ({ ...d, page: e.target.value }))} placeholder="Page" style={{ width: '110px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
+          <input autoFocus value={bugDraft.title} onChange={e => setBugDraft(d => ({ ...d, title: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') submitBug(); if (e.key === 'Escape') setAddingBug(false) }} placeholder="What is wrong?" style={{ flex: 2, minWidth: '180px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
+          <input value={bugDraft.expected} onChange={e => setBugDraft(d => ({ ...d, expected: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') submitBug(); if (e.key === 'Escape') setAddingBug(false) }} placeholder="What should happen?" style={{ flex: 2, minWidth: '180px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
+          <select value={bugDraft.severity} onChange={e => setBugDraft(d => ({ ...d, severity: e.target.value }))} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px' }}>
+            {['Low', 'Medium', 'High'].map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <button onClick={submitBug} disabled={savingBug || !bugDraft.title.trim()} style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: savingBug ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700', opacity: (savingBug || !bugDraft.title.trim()) ? 0.6 : 1 }}>{savingBug ? 'Saving…' : 'Save bug'}</button>
+          <button onClick={() => setAddingBug(false)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>Cancel</button>
+        </div>
+      )}
       <div style={{ flex: 1, overflow: 'auto' }}>
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1 }}>
@@ -1031,7 +1074,12 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
               {sel.columns.map(c => (
                 <div key={c} style={{ borderRight: '1px solid var(--cv6-divider)', padding: '0', minWidth: 0 }}>
                   {c === statusCol ? (
-                    sel.live ? (
+                    sel.id === 'cv6-bugs' ? (
+                      // CV6 bug status persists to the tracker file so the agents see it.
+                      <select value={row[c] || 'Open'} onChange={e => updateBugStatus(row.__id, e.target.value)} onClick={e => e.stopPropagation()} style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none' }}>
+                        {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    ) : sel.live ? (
                       <div style={{ minHeight: '40px', display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: '13px', fontWeight: '600', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)' }}>{row[c] || 'Open'}</div>
                     ) : (
                       <select value={row[c] || 'Open'} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none' }}>
@@ -2164,17 +2212,19 @@ export default function HomeView({
       } else if (sel.type === 'needsyou') {
         sel.item.onOpen && sel.item.onOpen()
       } else if (sel.type === 'mission') {
+        // R88 (Patrik): first activate = quick view; second activate opens the
+        // Chat TOOL (matching the double-click), not the old full-chat navigation.
         const inQuickView = selectedRoom && selectedRoom.mission && selectedRoom.mission.slug === sel.item.slug
         if (!inQuickView) { recordVisit(sel.project.slug, sel.item.slug); setSelectedRoom({ project: sel.project, mission: sel.item }) }
-        else { onSelectProject && onSelectProject(sel.project, sel.item) }
+        else { openChatToolForRoom({ project: sel.project, mission: sel.item }) }
       } else if (sel.type === 'project') {
         const inQuickView = selectedRoom && !selectedRoom.mission && selectedRoom.project?.slug === sel.item.slug
         if (!inQuickView) { recordVisit(sel.item.slug, null); setSelectedRoom({ project: sel.item, mission: null }) }
-        else { onSelectProject && onSelectProject(sel.item, null) }
+        else { openChatToolForRoom({ project: sel.item, mission: null }) }
       } else if (sel.type === 'agent') {
         const inQuickView = selectedRoom && selectedRoom.agent && selectedRoom.agent.slug === sel.item.slug
         if (!inQuickView) { setSelectedRoom({ agent: sel.item, project: null, mission: null }) }
-        else { onSelectAgent && onSelectAgent(sel.item) }
+        else { openChatToolForRoom({ agent: sel.item }) }
       }
     }
     if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
@@ -2190,7 +2240,7 @@ export default function HomeView({
       // PUNCH-LIST #2: ArrowLeft back-to-home hook (room-side implementation pending)
       e.preventDefault()
     }
-  }, [cv6, selectableItems, selectedIndex, onSelectAgent, selectedRoom, onSelectProject, openTool, selectedTool])
+  }, [cv6, selectableItems, selectedIndex, onSelectAgent, selectedRoom, onSelectProject, openTool, selectedTool, openChatToolForRoom])
 
   useEffect(() => {
     if (!cv6) return
