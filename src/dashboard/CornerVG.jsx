@@ -2847,6 +2847,7 @@ export default function CornerVG() {
               <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
             ) : isHomeMode ? (
               <HomeView
+                cv6
                 user={currentUser}
                 worldId={worldId}
                 agents={agents}
