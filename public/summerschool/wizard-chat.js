@@ -1498,11 +1498,14 @@
       const mastered = (appState.spellbook || []).filter((w) => (w.status || '').toLowerCase() === 'mastered').length;
       const books = (appState.reading || []).filter((b) => (b.status || '').toLowerCase() === 'finished').length;
       const mathMastered = (appState.mathlab || []).filter((s) => (s.status || '').toLowerCase() === 'mastered').length;
+      const storiesWritten = (appState.stories || []).length;
       const days = daysUntilSchool();
       const parts = [];
       if (g.todayTotal) parts.push(`${g.todayDone} of ${g.todayTotal} subjects done today`);
       if (totalDone) parts.push(`${totalDone} subjects completed in total`);
       if (g.streak > 1) parts.push(`a ${g.streak}-day streak`);
+      // Writing is his #1 priority, so his finished stories lead the achievements.
+      if (storiesWritten) parts.push(`${storiesWritten} stor${storiesWritten === 1 ? 'y' : 'ies'} written and saved`);
       if (mastered) parts.push(`${mastered} spelling word${mastered === 1 ? '' : 's'} mastered`);
       if (books) parts.push(`${books} book${books === 1 ? '' : 's'} finished`);
       if (mathMastered) parts.push(`${mathMastered} math skill${mathMastered === 1 ? '' : 's'} mastered`);
