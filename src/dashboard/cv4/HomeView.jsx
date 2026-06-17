@@ -861,6 +861,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const [isNarrow, setIsNarrow] = useState(false)
   const [mobilePane, setMobilePane] = useState('list')
   const [expandedRow, setExpandedRow] = useState(null) // R88: click a row to read every cell in full
+  const [tall, setTall] = useState(false) // R88: expand the tracker box vertically
   // Space Rising real tracker (admin_tickets) — live via /api/dashboard/admin-tickets.
   const [srStatus, setSrStatus] = useState(null) // null|loading|connected|needs_key|error
   useEffect(() => {
@@ -1031,13 +1032,16 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
    )
    const gridTemplate = sel.columns.map(trackerColTrack).join(' ')
    return (
-    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{sel.name}</div>
           <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{sel.scope} · {sel.rows.length} rows{sel.live ? ' · tap a row to read it in full' : ''}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={() => setTall(v => !v)} title={tall ? 'Shrink the box' : 'Expand the box taller'} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{tall ? <><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/></> : <><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></>}</svg>{tall ? 'Shrink' : 'Expand'}
+          </button>
           <button onClick={() => { if (sel.id === 'cv6-bugs') setAddingBug(v => !v); else addRow() }} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>{sel.id === 'cv6-bugs' ? 'Add bug' : 'Add row'}
           </button>
@@ -1110,7 +1114,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         Space Rising live tracker is wired and ready. It needs its data key added to the dashboard settings to switch on.
       </div>
     )}
-    <div style={{ height: isNarrow ? '64vh' : '440px', minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : '230px 1fr' }}>
+    <div style={{ height: isNarrow ? '64vh' : (tall ? '82vh' : '440px'), minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : '230px 1fr', transition: 'height 160ms ease' }}>
       {isNarrow ? (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {mobilePane === 'sheet' && (

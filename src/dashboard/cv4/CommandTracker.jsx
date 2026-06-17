@@ -428,11 +428,13 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           })
 
           // Add ANY room with recent activity that the stale ledger doesn't list,
-          // so a room worked today (e.g. fresh missions) still appears live.
+          // so a room worked today still appears live. R88: include project-only
+          // and agent rooms too (not just project:mission) so a room Patrik is in
+          // shows up even without a mission tag; only the worldId itself is skipped.
           const existingSlugs = new Set(tableRows.map(r => r.slug))
           const NINETY = 90 * 60 * 1000
           Object.entries(byRoom)
-            .filter(([slug, v]) => slug.includes(':') && v.ts && (nowMs - v.ts) < NINETY && !existingSlugs.has(slug))
+            .filter(([slug, v]) => slug && slug !== worldId && v.ts && (nowMs - v.ts) < NINETY && !existingSlugs.has(slug))
             .sort((a, b) => b[1].ts - a[1].ts)
             .slice(0, 12)
             .forEach(([slug, v]) => {
