@@ -656,9 +656,10 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
   ]
   const items = useMemo(() => {
     const out = []; let i = 0
-    for (const p of (projects || []).slice(0, 5)) {
-      const ms = (missionsByProject[p.slug] || []).slice(0, 2)
-      for (const m of ms) {
+    for (const p of (projects || []).slice(0, 6)) {
+      const real = (missionsByProject[p.slug] || []).slice(0, 2)
+      const ms = real.length ? real : [{ slug: p.slug + '-main', name: 'Main' }, { slug: p.slug + '-launch', name: 'Launch' }]
+      for (const m of ms.slice(0, 2)) {
         const t = TYPES[i % TYPES.length]
         out.push({
           id: `${p.slug}__${m.slug}__${i}`,
