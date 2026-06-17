@@ -1248,9 +1248,9 @@
             ${renderAfterSchoolChip()}
             ${renderCountdown()}
             ${renderGameHud()}
-            ${isWritingActive() ? renderWritingDesk() : ''}
             <div class="action-title">&#10022; Today's Quests</div>
             ${renderQuestsPanel()}
+            ${isWritingActive() ? renderWritingDesk() : ''}
             ${renderPracticeRow()}
             ${renderBookshelf()}
             ${renderSpellbook()}
