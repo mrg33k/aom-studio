@@ -521,6 +521,21 @@
           <button type="submit" class="nav-add-go" title="Add">&#10148;</button>
         </form>`
       : `<button type="button" class="nav-add-btn" onclick="window.__wizardChat.startAddProject()">+ Add a project</button>`;
+    // Reminders (Build R21d): his EA-held to-dos now live in the left bar too,
+    // so everything is in one Corner home and the My World modal can retire.
+    // Indexed back into the full list so tap-to-complete hits the right item.
+    const allReminders = appState.reminders || [];
+    const openReminders = allReminders.filter((r) => (r.status || '').toLowerCase() !== 'done');
+    const reminderBlock = openReminders.length
+      ? `<div class="nav-section-label">Reminders</div>
+         <div class="nav-reminders">${openReminders.map((r) => {
+            const idx = allReminders.indexOf(r);
+            return `<div class="nav-remind">
+              <button type="button" class="nav-remind-check" title="Mark done" onclick="window.__wizardChat.completeItem('reminder', ${idx})">&#9675;</button>
+              <span class="nav-remind-label">${escapeHtml(r.text)}</span>
+            </div>`;
+          }).join('')}</div>`
+      : '';
     return `<nav class="side-nav ${appState.navOpen ? 'is-open' : ''}" aria-label="Ethan's Corner">
         <div class="nav-eyebrow">&#10022; Ethan&rsquo;s Corner</div>
         <div class="nav-section-label">School</div>
@@ -531,13 +546,15 @@
         <div class="nav-section-label">My Projects</div>
         <div class="nav-list">${projectItems}</div>
         ${addBlock}
+        ${reminderBlock}
       </nav>`;
   }
 
-  // --- My World overview (Build R8 slice 2) — Ethan's own Corner home --------
-  // A tap-in overview of his areas: his School (the Wizard class) + his own
-  // Projects. Additive overlay — the chat stays his default surface, so a
-  // refresh always lands him back in his place. Tapping an area takes him in.
+  // --- My World overview (Build R8 slice 2) — RETIRED R21d -------------------
+  // Superseded by the left bar: School + Projects + missions (R13/R13b) and now
+  // Reminders (R21d) all live in the persistent Corner left bar / mobile drawer,
+  // so this modal is no longer rendered or reachable (no My World button). Kept
+  // defined for easy rollback; safe to delete once the left bar has proven out.
   function renderWorld() {
     if (!appState.worldOpen) return '';
     const g = gameStats();
@@ -1112,11 +1129,7 @@
               <span class="theme-icon">&#9790;</span>
             </button>
           </div>
-          <button class="world-btn" title="My World" onclick="window.__wizardChat.openWorld()">
-            <span class="world-btn-icon">&#9636;</span> My World
-          </button>
         </div>
-        ${renderWorld()}
 
         <div class="nav-backdrop ${appState.navOpen ? 'is-open' : ''}" onclick="window.__wizardChat.closeNav()"></div>
         <div class="wizard-rail">
@@ -1169,7 +1182,6 @@
             ${renderGameHud()}
             ${renderProjectRail()}
           `}
-          ${renderWorldHint()}
         </div>
       </div>
     `;
