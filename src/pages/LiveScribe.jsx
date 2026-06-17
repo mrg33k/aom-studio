@@ -10,6 +10,11 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 // The UI renders from a {speakerId,text} segment model + a speakers map, so
 // renaming a voice relabels every line of theirs at once.
 // Brief: /api/dashboard/call-scribe (Gemini + Google Search).
+//
+// `embedded` (R41 CV6): when true the page chrome is dropped and the warm-paper
+// palette is swapped for CV6 theme variables so Scribe renders inside the
+// dashboard tool shell. The standalone /scribe route renders with embedded=false
+// and is byte-for-byte the original look.
 
 const ANALYZE_EVERY_MS = 15000;
 const GOLD = '#EAB308';
@@ -32,8 +37,9 @@ const SAMPLE = [
   ['S2', 'If we get one more week of QA, I am comfortable committing to September.'],
 ];
 
-function useFonts() {
+function useFonts(active) {
   useEffect(() => {
+    if (!active) return;
     const id = 'live-scribe-fonts';
     if (document.getElementById(id)) return;
     const l = document.createElement('link');
@@ -41,7 +47,7 @@ function useFonts() {
     l.rel = 'stylesheet';
     l.href = 'https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Space+Grotesk:wght@400;500;600&display=swap';
     document.head.appendChild(l);
-  }, []);
+  }, [active]);
 }
 
 function fmtTime(s) {
@@ -50,8 +56,8 @@ function fmtTime(s) {
   return `${m}:${ss}`;
 }
 
-export default function LiveScribe() {
-  useFonts();
+export default function LiveScribe({ embedded = false }) {
+  useFonts(!embedded);
   const [supported, setSupported] = useState(true);
   const [recording, setRecording] = useState(false);
   const [segments, setSegments] = useState([]); // [{ speakerId, text }]
@@ -273,20 +279,26 @@ export default function LiveScribe() {
     navigator.clipboard?.writeText(lines.join('\n'));
   }, [brief, context, segments, speakers]);
 
-  const F = { fontFamily: "'Space Grotesk', system-ui, sans-serif" };
-  const DISPLAY = { fontFamily: "'Syne', system-ui, sans-serif" };
+  // Theme — standalone (warm paper) vs embedded (CV6 vars). Same component, two skins.
+  const C = embedded
+    ? { paper: 'transparent', ink: 'var(--cv6-text-primary)', soft: 'var(--cv6-text-secondary)', card: 'var(--cv6-surface)', line: 'var(--cv6-divider)', gold: 'var(--cv6-accent-primary)', goldBorder: 'var(--cv6-accent-primary)', btnInk: '#ffffff', btnBorder: 'var(--cv6-divider)', src: 'var(--cv6-accent-primary)' }
+    : { paper: PAPER, ink: INK, soft: INK, card: CARD, line: LINE, gold: GOLD, goldBorder: '#C9A227', btnInk: INK, btnBorder: INK, src: '#A66A00' };
+
+  const F = embedded ? { fontFamily: 'inherit' } : { fontFamily: "'Space Grotesk', system-ui, sans-serif" };
+  const DISPLAY = embedded ? { fontFamily: 'inherit' } : { fontFamily: "'Syne', system-ui, sans-serif" };
   const hasBrief = Boolean(brief.summary || brief.talkingPoints.length || brief.quotes.length || brief.research.length || brief.questions.length);
   const hasTranscript = segments.length > 0;
   const showActions = hasTranscript || hasBrief;
   const transcriptActive = recording || hasTranscript;
   const speakerIds = Object.keys(speakers);
   const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
+  const maxW = embedded ? '100%' : 1180;
 
   return (
-    <div style={{ minHeight: '100vh', background: PAPER, color: INK, ...F }}>
+    <div style={{ minHeight: embedded ? 'auto' : '100vh', width: '100%', background: C.paper, color: C.ink, ...F }}>
       <style>{`
-        .ls-card { background:${CARD}; border:1px solid ${LINE}; border-radius:16px; }
-        .ls-btn { font-family:'Space Grotesk',sans-serif; font-weight:600; border-radius:999px; cursor:pointer; border:1px solid ${INK}; transition:transform .08s ease, opacity .15s ease; }
+        .ls-card { background:${C.card}; border:1px solid ${C.line}; border-radius:16px; }
+        .ls-btn { font-family:${embedded ? 'inherit' : "'Space Grotesk',sans-serif"}; font-weight:600; border-radius:999px; cursor:pointer; border:1px solid ${C.btnBorder}; transition:transform .08s ease, opacity .15s ease; }
         .ls-btn:active { transform:translateY(1px); }
         .ls-rec-dot { width:10px; height:10px; border-radius:50%; background:#E5484D; box-shadow:0 0 0 0 rgba(229,72,77,.6); animation:lspulse 1.4s infinite; }
         @keyframes lspulse { 0%{box-shadow:0 0 0 0 rgba(229,72,77,.55)} 70%{box-shadow:0 0 0 9px rgba(229,72,77,0)} 100%{box-shadow:0 0 0 0 rgba(229,72,77,0)} }
@@ -294,14 +306,14 @@ export default function LiveScribe() {
         @media (max-width: 900px){ .ls-grid{ grid-template-columns:1fr; } }
         .ls-fade { animation:lsfade .3s ease; }
         @keyframes lsfade { from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
-        a.ls-src { color:#A66A00; text-decoration:none; border-bottom:1px solid rgba(166,106,0,.3); }
+        a.ls-src { color:${C.src}; text-decoration:none; border-bottom:1px solid rgba(166,106,0,.3); }
         .ls-start-pulse { animation:lsbtnpulse 2.2s infinite; }
         @keyframes lsbtnpulse { 0%{box-shadow:0 0 0 0 rgba(234,179,8,.45)} 70%{box-shadow:0 0 0 14px rgba(234,179,8,0)} 100%{box-shadow:0 0 0 0 rgba(234,179,8,0)} }
         .ls-eq { display:flex; gap:5px; align-items:flex-end; height:34px; }
         .ls-eq span { width:5px; border-radius:3px; background:#C9A227; animation:lseq 1.1s ease-in-out infinite; }
         .ls-eq span:nth-child(2){ animation-delay:.18s } .ls-eq span:nth-child(3){ animation-delay:.36s } .ls-eq span:nth-child(4){ animation-delay:.54s } .ls-eq span:nth-child(5){ animation-delay:.72s }
         @keyframes lseq { 0%,100%{height:7px; opacity:.55} 50%{height:30px; opacity:1} }
-        .ls-chip { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; background:#FBF9F4; border:1px solid ${LINE}; }
+        .ls-chip { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; background:${embedded ? 'var(--cv6-surface)' : '#FBF9F4'}; border:1px solid ${C.line}; color:${C.ink}; }
         .ls-chip:hover { border-color:#C9BFA9; }
         .ls-chip-hint { animation:lschiphint 1.7s ease 3; }
         @keyframes lschiphint { 0%{box-shadow:0 0 0 0 rgba(26,23,20,.22)} 70%{box-shadow:0 0 0 7px rgba(26,23,20,0)} 100%{box-shadow:0 0 0 0 rgba(26,23,20,0)} }
@@ -310,13 +322,15 @@ export default function LiveScribe() {
       <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={onImportFile} style={{ display: 'none' }} />
 
       {/* Header */}
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '28px 24px 8px' }}>
+      <div style={{ maxWidth: maxW, margin: '0 auto', padding: embedded ? '0 0 8px' : '28px 24px 8px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <div style={{ ...DISPLAY, fontWeight: 800, fontSize: 46, letterSpacing: '-0.02em', lineHeight: 1 }}>
-              Live Scribe
-            </div>
-            <div style={{ opacity: 0.6, fontSize: 15, marginTop: 8, maxWidth: 460 }}>
+            {!embedded && (
+              <div style={{ ...DISPLAY, fontWeight: 800, fontSize: 46, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                Live Scribe
+              </div>
+            )}
+            <div style={{ opacity: 0.6, fontSize: embedded ? 13.5 : 15, marginTop: embedded ? 0 : 8, maxWidth: 460 }}>
               Put the call on speaker. I write it down, look things up, and build your notes as you talk.
             </div>
           </div>
@@ -331,12 +345,12 @@ export default function LiveScribe() {
             )}
             {!recording ? (
               <button className={`ls-btn${!hasTranscript ? ' ls-start-pulse' : ''}`} onClick={start}
-                style={{ background: GOLD, color: INK, borderColor: '#C9A227', padding: '15px 34px', fontSize: 17, fontWeight: 700 }}>
+                style={{ background: C.gold, color: C.btnInk, borderColor: C.goldBorder, padding: embedded ? '11px 24px' : '15px 34px', fontSize: embedded ? 15 : 17, fontWeight: 700 }}>
                 {hasTranscript ? 'Resume' : 'Start listening'}
               </button>
             ) : (
               <button className="ls-btn" onClick={stop}
-                style={{ background: 'transparent', color: INK, padding: '15px 30px', fontSize: 17, fontWeight: 700 }}>
+                style={{ background: 'transparent', color: C.ink, padding: embedded ? '11px 22px' : '15px 30px', fontSize: embedded ? 15 : 17, fontWeight: 700 }}>
                 Stop
               </button>
             )}
@@ -344,24 +358,24 @@ export default function LiveScribe() {
         </div>
 
         {/* context + actions */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, marginTop: embedded ? 12 : 18, flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             value={context}
             onChange={(e) => setContext(e.target.value)}
             placeholder="Optional: who's this call with? (e.g. Acme Corp, partnership)"
-            style={{ ...F, flex: '0 1 440px', minWidth: 220, padding: '9px 13px', borderRadius: 10, border: `1px solid ${LINE}`, background: 'transparent', color: INK, fontSize: 13.5, outline: 'none' }}
+            style={{ ...F, flex: '0 1 440px', minWidth: 220, padding: '9px 13px', borderRadius: 10, border: `1px solid ${C.line}`, background: 'transparent', color: C.ink, fontSize: 13.5, outline: 'none' }}
           />
           <span style={{ marginLeft: 'auto' }} />
           {showActions && (
             <>
-              <button className="ls-btn" onClick={copyBrief} style={{ background: CARD, color: INK, padding: '9px 16px', fontSize: 13, borderColor: LINE }}>Copy brief</button>
-              <button className="ls-btn" onClick={reset} style={{ background: CARD, color: '#9A4A4A', padding: '9px 16px', fontSize: 13, borderColor: LINE }}>Clear</button>
+              <button className="ls-btn" onClick={copyBrief} style={{ background: C.card, color: C.ink, padding: '9px 16px', fontSize: 13, borderColor: C.line }}>Copy brief</button>
+              <button className="ls-btn" onClick={reset} style={{ background: C.card, color: '#9A4A4A', padding: '9px 16px', fontSize: 13, borderColor: C.line }}>Clear</button>
             </>
           )}
         </div>
 
         {!supported && (
-          <div className="ls-card" style={{ marginTop: 16, padding: 16, borderColor: '#E5C07A', background: '#FFF7E6' }}>
+          <div className="ls-card" style={{ marginTop: 16, padding: 16, borderColor: '#E5C07A', background: '#FFF7E6', color: INK }}>
             Live transcription needs Chrome (it uses Chrome's built-in speech engine). Open this page in Chrome and press Start.
           </div>
         )}
@@ -369,18 +383,18 @@ export default function LiveScribe() {
       </div>
 
       {/* Body */}
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '16px 24px 48px' }}>
+      <div style={{ maxWidth: maxW, margin: '0 auto', padding: embedded ? '12px 0 8px' : '16px 24px 48px' }}>
         <div className="ls-grid">
           {/* Transcript */}
           <div className="ls-card" style={{ display: 'flex', flexDirection: 'column', height: transcriptActive ? 'min(70vh, 640px)' : 320 }}>
-            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${LINE}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.line}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7 }}>Transcript</span>
               <span style={{ fontSize: 12, opacity: 0.45 }}>{hasTranscript ? `${wordCount} words` : (recording ? 'listening…' : 'ready')}</span>
             </div>
 
             {/* Speaker chips — tap to name */}
             {speakerIds.length > 0 && (
-              <div style={{ padding: '10px 16px', borderBottom: `1px solid ${LINE}`, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+              <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.line}`, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                 {speakerIds.map((id, idx) => (
                   editingSpeaker === id ? (
                     <input
@@ -389,7 +403,7 @@ export default function LiveScribe() {
                       defaultValue={speakers[id].name}
                       onBlur={(e) => renameSpeaker(id, e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') renameSpeaker(id, e.target.value); if (e.key === 'Escape') setEditingSpeaker(null); }}
-                      style={{ ...F, fontSize: 13, fontWeight: 600, padding: '4px 10px', borderRadius: 999, border: `1px solid ${speakers[id].color}`, outline: 'none', width: 130, color: INK }}
+                      style={{ ...F, fontSize: 13, fontWeight: 600, padding: '4px 10px', borderRadius: 999, border: `1px solid ${speakers[id].color}`, outline: 'none', width: 130, color: C.ink, background: 'transparent' }}
                     />
                   ) : (
                     <button key={id} className={`ls-chip${idx === 0 ? ' ls-chip-hint' : ''}`} onClick={() => setEditingSpeaker(id)} title="Tap to name this voice">
@@ -413,10 +427,10 @@ export default function LiveScribe() {
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
                       <div style={{ fontSize: 13, opacity: 0.4 }}>Press Start listening, or bring in a recording.</div>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-                        <button className="ls-btn" onClick={() => fileInputRef.current?.click()} style={{ background: 'transparent', color: INK, padding: '7px 14px', fontSize: 12.5, borderColor: LINE }}>
+                        <button className="ls-btn" onClick={() => fileInputRef.current?.click()} style={{ background: 'transparent', color: C.ink, padding: '7px 14px', fontSize: 12.5, borderColor: C.line }}>
                           Import a recording
                         </button>
-                        <button className="ls-btn" onClick={loadSample} style={{ background: 'transparent', color: INK, padding: '7px 14px', fontSize: 12.5, borderColor: LINE }}>
+                        <button className="ls-btn" onClick={loadSample} style={{ background: 'transparent', color: C.ink, padding: '7px 14px', fontSize: 12.5, borderColor: C.line }}>
                           Load sample conversation
                         </button>
                       </div>
@@ -458,7 +472,7 @@ export default function LiveScribe() {
             <div className="ls-card" style={{ padding: '16px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7 }}>Brief</span>
-                {analyzing && <span style={{ fontSize: 12, color: '#A66A00' }}>updating…</span>}
+                {analyzing && <span style={{ fontSize: 12, color: C.src }}>updating…</span>}
               </div>
               <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.6, minHeight: 24 }}>
                 {brief.summary
@@ -511,7 +525,7 @@ export default function LiveScribe() {
                 <div style={{ ...DISPLAY, fontWeight: 700, fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 10 }}>Live research</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {brief.research.map((r, i) => (
-                    <div key={i} style={{ borderLeft: `3px solid ${GOLD}`, paddingLeft: 12 }}>
+                    <div key={i} style={{ borderLeft: `3px solid ${C.gold}`, paddingLeft: 12 }}>
                       <div style={{ fontWeight: 600, fontSize: 14.5 }}>{r.topic}</div>
                       <div style={{ fontSize: 14, lineHeight: 1.55, opacity: 0.85, marginTop: 2 }}>{r.finding}</div>
                       {r.source && <a className="ls-src" href={r.source} target="_blank" rel="noreferrer" style={{ fontSize: 12.5 }}>{(() => { try { const h = new URL(r.source).hostname.replace('www.', ''); return /vertexaisearch|grounding-api-redirect|googleusercontent/.test(h) ? 'source ↗' : `${h} ↗`; } catch { return 'source ↗'; } })()}</a>}

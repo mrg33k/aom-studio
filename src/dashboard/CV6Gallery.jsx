@@ -437,6 +437,16 @@ const SCREENS = [
       { label: 'Light', render: () => <ScreenFrame theme="light" label="Command · CV6"><HomeView {...SCREEN_PROPS} initialTool="command" /></ScreenFrame> },
     ],
   },
+  {
+    id: 'screen-scribe',
+    name: 'Live Scribe',
+    purpose: 'Call companion in the CV6 shell — live transcript with tap-to-name speakers + a living brief.',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Live Scribe · CV6"><HomeView {...SCREEN_PROPS} initialTool="scribe" /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" label="Live Scribe · CV6"><HomeView {...SCREEN_PROPS} initialTool="scribe" /></ScreenFrame> },
+    ],
+  },
 ]
 
 // Screens first, then pieces. One flat list for lookup + feedback.

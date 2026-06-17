@@ -22,6 +22,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { authFetch } from '../lib/authFetch.js'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
 import { useSupportData, buildItems } from './SupportDashboard.jsx'
+import LiveScribe from '../../pages/LiveScribe.jsx'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
@@ -2352,9 +2353,7 @@ export default function HomeView({
                 )}
 
                 {selectedTool === 'scribe' && (
-                  <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
-                    Live Scribe coming soon
-                  </div>
+                  <LiveScribe embedded />
                 )}
 
                 {selectedTool === 'projects' && (
