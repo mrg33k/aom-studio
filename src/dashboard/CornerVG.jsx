@@ -1389,7 +1389,7 @@ export default function CornerVG() {
           body: JSON.stringify({
             agent: agentKey, message: t, room: `project:${sel.slug}`, project: sel.slug,
             client_id: clientId, user_id: currentUser?.id || null, user_name: currentUser?.email || null,
-            metadata: { source: 'cvg-chat-tool', ...(sm ? { model: sm } : {}) },
+            metadata: { source: 'cvg-chat-tool', ...(sel.missionSlug ? { mission_slug: sel.missionSlug } : {}), ...(sm ? { model: sm } : {}) },
           }),
         })
       } else {

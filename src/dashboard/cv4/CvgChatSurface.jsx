@@ -29,7 +29,11 @@ function makeMissionMatcher(missionSlug) {
   return (m) => {
     const tag = (m && m.metadata && m.metadata.mission_slug) || ''
     if (missionSlug) {
-      // For CV6, accept exact match or any tag (missionSlugsMatch not imported here)
+      // Show messages tagged for this mission, OR untagged room-level messages.
+      // Replies from the bridge may arrive untagged; dropping them left the
+      // thread empty even though the send succeeded. Tagged-for-another-mission
+      // messages are still excluded (they carry that mission's tag).
+      if (!tag) return true
       return tag === missionSlug || tag.endsWith(':' + missionSlug)
     }
     return !tag
@@ -349,12 +353,17 @@ export default function CvgChatSurface({
         )}
 
         {/* Message bubbles */}
-        {messages.map((msg) => (
+        {messages.map((msg) => {
+          // Messages mark the sender via role OR agent ('user') depending on the
+          // write path (supabase-messages sets role:'user'; chat-bridge stores the
+          // user turn with agent='user'). Treat either as the user bubble.
+          const isUser = msg.role === 'user' || msg.agent === 'user' || msg.sender === 'user'
+          return (
           <div
             key={msg.id}
             style={{
               display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+              justifyContent: isUser ? 'flex-end' : 'flex-start',
               gap: 8,
             }}
           >
@@ -364,15 +373,15 @@ export default function CvgChatSurface({
                 padding: '12px 14px',
                 borderRadius: 8,
                 background:
-                  msg.role === 'user'
+                  isUser
                     ? 'var(--cv6-accent-primary)'
                     : 'var(--cv6-surface)',
                 border:
-                  msg.role === 'user'
+                  isUser
                     ? 'none'
                     : '1px solid var(--cv6-divider)',
                 color:
-                  msg.role === 'user'
+                  isUser
                     ? 'white'
                     : 'var(--cv6-text-primary)',
                 fontSize: 14,
@@ -385,7 +394,8 @@ export default function CvgChatSurface({
               {msg.text || msg.content}
             </div>
           </div>
-        ))}
+          )
+        })}
 
         {/* Step indicator — FUTURE: will render busyStep from bridge stream */}
 
