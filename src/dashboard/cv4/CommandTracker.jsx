@@ -37,6 +37,19 @@ function relativeTime(timestamp) {
   return `${Math.round(secs / 86400)}d ago`
 }
 
+// The goal/live feed sometimes carries a raw user message that includes an
+// absolute file path or a tracking URL blob. Never surface those to the user
+// (rule 4: think in the user's world). Strip them, collapse whitespace; if
+// nothing readable is left the caller falls back to a dash.
+function cleanCell(s) {
+  if (typeof s !== 'string') return ''
+  return s
+    .replace(/(?:[A-Za-z]:)?[\\/](?:Users|home)[\\/][^\s]+/gi, '')
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function statusColor(status) {
   // Returns a CSS custom property; all are cv6 tokens
   if (status === 'active' || status === 'working') return 'var(--cv6-accent-success)'
@@ -736,8 +749,8 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               />
             ) : (
               <div
-                onClick={(e) => { if (!isWorkerRow) { e.stopPropagation(); setEditingGoalSlug(row.slug); setGoalDraft(typeof row.goal === 'string' ? row.goal : '') } }}
-                title={isWorkerRow ? undefined : 'Click to edit the goal'}
+                onClick={(e) => { if (!isWorkerRow) { e.stopPropagation(); setEditingGoalSlug(row.slug); setGoalDraft(cleanCell(row.goal)) } }}
+                title={isWorkerRow ? (cleanCell(row.goal) || undefined) : 'Click to edit the goal'}
                 style={{
                   fontSize: 12,
                   color: 'var(--cv6-text-secondary)',
@@ -748,7 +761,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                   cursor: isWorkerRow ? 'default' : 'text',
                 }}
               >
-                {(typeof row.goal === 'string' && row.goal) ? row.goal : '—'}
+                {cleanCell(row.goal) || '—'}
               </div>
             )}
 
@@ -785,6 +798,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
 
             {/* LIVE NOW */}
             <div
+              title={cleanCell(row.liveNow) || undefined}
               style={{
                 fontSize: 12,
                 color: 'var(--cv6-text-secondary)',
@@ -794,7 +808,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 minWidth: 0,
               }}
             >
-              {(typeof row.liveNow === 'string' && row.liveNow) ? row.liveNow : '—'}
+              {cleanCell(row.liveNow) || '—'}
             </div>
 
             {/* LAST ACTIVITY */}
