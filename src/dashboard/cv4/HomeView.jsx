@@ -1115,12 +1115,74 @@ function buildFileTree(proj) {
   ]
 }
 
+// R88: real file data. /api/dashboard/project-files?slug= returns canon files +
+// per-mission files for a project; map it to the miller-column node shape.
+function fileTypeFromName(name) {
+  const ext = String(name).toLowerCase().split('.').pop()
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'heic'].includes(ext)) return 'image'
+  if (['mp4', 'mov', 'webm', 'm4v'].includes(ext)) return 'video'
+  if (['mp3', 'wav', 'm4a', 'aac', 'ogg'].includes(ext)) return 'audio'
+  return 'doc'
+}
+function realFileTree(d) {
+  if (!d) return []
+  const fileNode = (f) => ({ name: f.name, type: 'file', fileType: fileTypeFromName(f.name), path: f.path })
+  const top = (Array.isArray(d.files) ? d.files : []).map(fileNode)
+  const missions = (Array.isArray(d.missions) ? d.missions : [])
+    .filter(m => m && (m.files || []).length)
+    .map(m => ({ name: m.slug, type: 'folder', children: (Array.isArray(m.files) ? m.files : []).map(fileNode) }))
+  const out = [...top]
+  if (missions.length) out.push({ name: 'Missions', type: 'folder', children: missions })
+  return out
+}
+
+// R88: preview panel that loads and shows the REAL file content (text rendered
+// as markdown; images/video/audio fetched as an authed blob and shown inline).
+// Module-scoped so it does not remount on every parent render.
+function FilePreviewPanel({ node }) {
+  const [data, setData] = useState({ state: 'idle' })
+  useEffect(() => {
+    if (!node || node.type === 'folder' || !node.path) { setData({ state: 'idle' }); return }
+    let active = true; let objUrl = null
+    const ft = node.fileType
+    const isMedia = ft === 'image' || ft === 'video' || ft === 'audio'
+    setData({ state: 'loading' })
+    const url = `/api/dashboard/project-file?path=${encodeURIComponent(node.path)}${isMedia ? '&raw=1' : ''}`
+    authFetch(url).then(async (r) => {
+      if (!r.ok) throw new Error('load')
+      if (isMedia) { const b = await r.blob(); objUrl = URL.createObjectURL(b); if (active) setData({ state: 'media', url: objUrl }) }
+      else { const j = await r.json(); if (active) setData({ state: 'text', text: typeof j.content === 'string' ? j.content : '' }) }
+    }).catch(() => { if (active) setData({ state: 'error' }) })
+    return () => { active = false; if (objUrl) URL.revokeObjectURL(objUrl) }
+  }, [node && node.path, node && node.fileType])
+
+  const hint = (t) => <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>{t}</div>
+  if (!node) return hint('Select a file to preview')
+  if (node.type === 'folder') return hint((node.children || []).length ? `${node.children.length} items inside` : 'Empty folder')
+  const color = FILE_TYPE_COLOR[node.fileType] || 'var(--cv6-text-secondary)'
+  return (
+    <div style={{ padding: '14px', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', wordBreak: 'break-word', flex: 1, minWidth: 0 }}>{node.name}</span>
+        <span style={{ fontSize: '10px', fontWeight: '700', color, background: `${color}1f`, padding: '2px 7px', borderRadius: '5px', textTransform: 'uppercase', flexShrink: 0 }}>{node.fileType}</span>
+      </div>
+      {data.state === 'loading' && hint('Loading…')}
+      {data.state === 'error' && <div style={{ fontSize: '13px', color: '#ef4444' }}>Could not open this file.</div>}
+      {data.state === 'media' && node.fileType === 'image' && <img src={data.url} alt={node.name} style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
+      {data.state === 'media' && node.fileType === 'video' && <video src={data.url} controls style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
+      {data.state === 'media' && node.fileType === 'audio' && <audio src={data.url} controls style={{ width: '100%' }} />}
+      {data.state === 'text' && <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--cv6-text-primary)', wordBreak: 'break-word' }}><ChatMessageRenderer content={data.text || '(empty file)'} /></div>}
+    </div>
+  )
+}
+
 function FilesToolOverlay({ projects }) {
   const [proj, setProj] = useState((projects || [])[0] || null)
   const [sel1, setSel1] = useState(null)
   const [sel2, setSel2] = useState(null)
   const [isNarrow, setIsNarrow] = useState(false)
   const [mobileCol, setMobileCol] = useState(0)
+  const [tree, setTree] = useState([])
   useEffect(() => {
     if (typeof window === 'undefined') return
     const check = () => setIsNarrow(window.innerWidth < 720)
@@ -1129,7 +1191,25 @@ function FilesToolOverlay({ projects }) {
   }, [])
   useEffect(() => { setSel1(null); setSel2(null); setMobileCol(0) }, [proj])
 
-  const tree = useMemo(() => buildFileTree(proj), [proj])
+  // R88: load the REAL file tree for the selected project and refresh every 12s
+  // so files an agent lands on disk appear live. Falls back to sample data on
+  // the no-backend gallery (project without a slug).
+  useEffect(() => {
+    if (!proj || !proj.slug) { setTree(buildFileTree(proj)); return }
+    let active = true
+    const load = async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(proj.slug)}`)
+        if (!active) return
+        if (!r.ok) { setTree([]); return }
+        const d = await r.json()
+        setTree(realFileTree(d))
+      } catch { if (active) setTree([]) }
+    }
+    load()
+    const t = setInterval(load, 12000)
+    return () => { active = false; clearInterval(t) }
+  }, [proj])
   const col2items = sel1 && sel1.type === 'folder' ? (sel1.children || []) : []
   const col3node = sel2
 
@@ -1141,7 +1221,7 @@ function FilesToolOverlay({ projects }) {
     const isFolder = node.type === 'folder'
     const color = isFolder ? 'var(--cv6-text-secondary)' : (FILE_TYPE_COLOR[node.fileType] || 'var(--cv6-text-secondary)')
     return (
-      <button onClick={onClick} draggable style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '8px 12px', margin: '2px 6px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'hsla(220,90%,55%,0.10)' : 'transparent', transition: 'background 120ms ease' }}
+      <button onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '8px 12px', margin: '2px 6px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'hsla(220,90%,55%,0.10)' : 'transparent', transition: 'background 120ms ease' }}
         onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}>
         <span style={{ flexShrink: 0, color, display: 'inline-flex' }}>
           {isFolder
@@ -1154,25 +1234,6 @@ function FilesToolOverlay({ projects }) {
     )
   }
 
-  const FilePreview = ({ node }) => {
-    if (!node) return emptyHint('Select a file to preview')
-    if (node.type === 'folder') return (
-      <div>
-        <div style={headStyle}>{node.name}</div>
-        {(node.children || []).length ? (node.children || []).map((c, i) => <FileRow key={i} node={c} active={false} onClick={() => {}} />) : emptyHint('Empty folder')}
-      </div>
-    )
-    const color = FILE_TYPE_COLOR[node.fileType] || 'var(--cv6-text-secondary)'
-    return (
-      <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '12px' }}>
-        <div style={{ width: '100%', aspectRatio: '4/3', borderRadius: '12px', border: `1px solid ${color}40`, background: `${color}12`, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{node.fileType === 'video' ? <polygon points="5 3 19 12 5 21 5 3"/> : node.fileType === 'image' ? <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></> : node.fileType === 'audio' ? <><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></> : <><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></>}</svg>
-        </div>
-        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', wordBreak: 'break-word' }}>{node.name}</div>
-        <span style={{ fontSize: '11px', fontWeight: '700', color, background: `${color}1f`, padding: '3px 8px', borderRadius: '5px', textTransform: 'uppercase' }}>{node.fileType}</span>
-      </div>
-    )
-  }
 
   const Col1 = () => (
     <div style={colStyle}><div style={headStyle}>{proj ? (proj.name || proj.slug) : 'Files'}</div>
@@ -1181,11 +1242,11 @@ function FilesToolOverlay({ projects }) {
   )
   const Col2 = () => (
     <div style={colStyle}><div style={headStyle}>{sel1 && sel1.type === 'folder' ? sel1.name : 'Contents'}</div>
-      {!sel1 ? emptyHint('Select a folder') : (sel1.type === 'file' ? <FilePreview node={sel1} /> : (col2items.length ? col2items.map((n, i) => <FileRow key={i} node={n} active={sel2 === n} onClick={() => { setSel2(n); if (isNarrow) setMobileCol(2) }} />) : emptyHint('Empty folder')))}
+      {!sel1 ? emptyHint('Select a folder') : (sel1.type === 'file' ? <FilePreviewPanel node={sel1} /> : (col2items.length ? col2items.map((n, i) => <FileRow key={i} node={n} active={sel2 === n} onClick={() => { setSel2(n); if (isNarrow) setMobileCol(2) }} />) : emptyHint('Empty folder')))}
     </div>
   )
   const Col3 = () => (
-    <div style={{ ...colStyle, borderRight: 'none' }}><div style={headStyle}>Preview</div><FilePreview node={col3node} /></div>
+    <div style={{ ...colStyle, borderRight: 'none' }}><div style={headStyle}>Preview</div><FilePreviewPanel node={col3node} /></div>
   )
 
   return (
@@ -1194,7 +1255,7 @@ function FilesToolOverlay({ projects }) {
         <select value={proj ? proj.slug : ''} onChange={e => setProj((projects || []).find(p => p.slug === e.target.value) || null)} style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
           {(projects || []).map(p => <option key={p.slug} value={p.slug}>{p.name || p.slug}</option>)}
         </select>
-        <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>Click a folder to open it · drag files to organize</span>
+        <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>Click a folder to open it · click a file to preview it</span>
       </div>
       {isNarrow ? (
         <div style={{ display: 'flex', flexDirection: 'column', height: '62vh', minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
