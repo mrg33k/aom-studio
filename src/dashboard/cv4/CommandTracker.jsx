@@ -104,6 +104,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   const [rows, setRows] = useState([])
   const [routineMap, setRoutineMap] = useState({}) // id by routine id (not name)
   const [toggling, setToggling] = useState({}) // id -> isOptimistic state
+  const [autopilotBusy, setAutopilotBusy] = useState({}) // bareSlug -> optimistic on/off while saving
   const [nameMap, setNameMap] = useState({})
   const [hoveredRoutineId, setHoveredRoutineId] = useState(null) // for hover state
   // Inline quick-reply from the spreadsheet (Patrik: reply right here, restarts the room timer)
@@ -341,6 +342,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             liveNow,
             lastActivity: lastTouched,
             routineId,
+            autopilot: roomGoal.autopilot !== false, // default ON; only explicit false reads as off
             isWorkerRow: false,
           })
         })
@@ -556,6 +558,32 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       })
     }
   }, [])
+
+  // Per-room autopilot: whether the assistant keeps pushing this room forward on its own.
+  // Writes the `autopilot` flag onto the room's goal record; master-loop-tick.py honors it.
+  const toggleAutopilot = useCallback(async (slug, wantOn) => {
+    const key = String(slug || '').split(':').pop().trim() || String(slug || '')
+    if (!key) return
+    setAutopilotBusy((prev) => ({ ...prev, [key]: wantOn }))
+    try {
+      const res = await authFetch('/api/dashboard/room-autopilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world: worldId, slug: key, on: wantOn }),
+      })
+      if (res?.ok) {
+        // Reflect the saved value on the row so it sticks after the busy flag clears.
+        setRows((prev) => prev.map((r) => (r && !r.isWorkerRow && String(r.slug || '').split(':').pop().trim() === key)
+          ? { ...r, autopilot: wantOn } : r))
+      } else {
+        console.error('Failed to toggle autopilot:', res?.status)
+      }
+    } catch (err) {
+      console.error('Error toggling autopilot:', err)
+    } finally {
+      setAutopilotBusy((prev) => { const next = { ...prev }; delete next[key]; return next })
+    }
+  }, [worldId])
 
   if (loading) {
     return (
@@ -835,12 +863,18 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 alignItems: 'center',
               }}
             >
-              {!isWorkerRow && row.routineId && typeof row.routineId === 'string' ? (
-                <ToggleSwitch
-                  on={toggling[row.routineId] !== undefined ? toggling[row.routineId] : routineOn}
-                  onChange={(wantOn) => toggleRoutine(row.routineId, wantOn)}
-                  disabled={!!isToggling}
-                />
+              {!isWorkerRow ? (
+                (() => {
+                  const apKey = String(row.slug || '').split(':').pop().trim() || String(row.slug || '')
+                  const apOn = autopilotBusy[apKey] !== undefined ? autopilotBusy[apKey] : (row.autopilot !== false)
+                  return (
+                    <ToggleSwitch
+                      on={apOn}
+                      onChange={(wantOn) => toggleAutopilot(row.slug, wantOn)}
+                      disabled={autopilotBusy[apKey] !== undefined}
+                    />
+                  )
+                })()
               ) : (
                 <div
                   style={{
