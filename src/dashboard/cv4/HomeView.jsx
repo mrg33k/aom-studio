@@ -1982,7 +1982,7 @@ export default function HomeView({
   return (
     <div data-cv4-home data-cv6={cv6 ? 'true' : undefined} ref={homeRef} onMouseDown={cv6 ? handleHomeMouseDown : undefined} style={{
       width: '100%', height: '100%', overflowY: 'auto',
-      background: 'transparent',
+      background: cv6 ? 'var(--cv6-ground)' : 'transparent',
       color: cv6 ? 'var(--cv6-text-primary)' : 'var(--c-text, #E8EBEF)',
       fontFamily: cv6 ? 'inherit' : "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
       outline: 'none',

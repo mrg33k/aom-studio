@@ -57,7 +57,14 @@
    from a dark shell ancestor — which silently broke dark mode for the whole home +
    every tool overlay (gallery AND the real /dashboard). Re-apply the dark tokens to
    any themeless [data-cv6] nested inside a dark one so the theme cascades through. */
-[data-cv6][data-theme="dark"] [data-cv6]:not([data-theme]):not(.dark) {
+[data-cv6][data-theme="dark"] [data-cv6]:not([data-theme]):not(.dark),
+/* R61: On /cvg the theme lives on the cv5 wrapper (data-theme="dark"), NOT on a
+   [data-cv6] ancestor — so the cascade above never fired and the home rendered its
+   LIGHT defaults on /cvg's dark shell (washed-out, unreadable cards). Cascade dark
+   tokens from ANY dark ancestor into a themeless cv6 root so /cvg dark matches the
+   gallery. */
+[data-theme="dark"] [data-cv6]:not([data-theme]):not(.dark),
+.dark [data-cv6]:not([data-theme]):not(.dark) {
   --cv6-ground: #0a0a0b;
   --cv6-surface: #1a1a1b;
   --cv6-surface-hover: #242427;
