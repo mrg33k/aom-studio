@@ -688,6 +688,53 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
   const [isNarrow, setIsNarrow] = useState(false)
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  // Per-deliverable "what's next" checklist (Patrik: this list is how you review).
+  const [checklist, setChecklist] = useState([])
+  const [newStep, setNewStep] = useState('')
+  const [savingStep, setSavingStep] = useState(false)
+  const loadChecklist = useCallback(async (deliverable) => {
+    if (!deliverable) { setChecklist([]); return }
+    try {
+      const r = await authFetch(`/api/dashboard/review-checklist?world=${encodeURIComponent(worldId || 'aom')}&deliverable=${encodeURIComponent(deliverable)}`)
+      if (r?.ok) { const d = await r.json(); setChecklist(Array.isArray(d.list) ? d.list : []) }
+    } catch (_) { /* keep last */ }
+  }, [worldId])
+  useEffect(() => { loadChecklist(openItem?.id) }, [openItem?.id, loadChecklist])
+  const addStep = useCallback(async () => {
+    const text = (newStep || '').trim()
+    if (!text || !openItem) return
+    setSavingStep(true)
+    // optimistic
+    const tmp = { id: 'tmp-' + Date.now(), text, done: false }
+    setChecklist(prev => [...prev, tmp]); setNewStep('')
+    try {
+      const r = await authFetch('/api/dashboard/review-checklist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add', world: worldId || 'aom', deliverable: openItem.id, text }),
+      })
+      if (r?.ok) await loadChecklist(openItem.id)
+    } finally { setSavingStep(false) }
+  }, [newStep, openItem, worldId, loadChecklist])
+  const toggleStep = useCallback(async (id) => {
+    if (!openItem) return
+    setChecklist(prev => prev.map(it => it.id === id ? { ...it, done: !it.done } : it))
+    try {
+      await authFetch('/api/dashboard/review-checklist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle', world: worldId || 'aom', deliverable: openItem.id, id }),
+      })
+    } catch (_) { /* optimistic */ }
+  }, [openItem, worldId])
+  const deleteStep = useCallback(async (id) => {
+    if (!openItem) return
+    setChecklist(prev => prev.filter(it => it.id !== id))
+    try {
+      await authFetch('/api/dashboard/review-checklist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', world: worldId || 'aom', deliverable: openItem.id, id }),
+      })
+    } catch (_) { /* optimistic */ }
+  }, [openItem, worldId])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -845,19 +892,42 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
             <div style={{ padding: '24px', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isNarrow ? '240px' : 'auto', overflow: 'auto' }}>
               <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} style={{ width: '100%', maxWidth: '520px' }} />
             </div>
-            {/* Review column */}
-            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--cv6-surface)' }}>
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--cv6-text-secondary)', marginBottom: '8px' }}>What the agent did</div>
-                <div style={{ fontSize: '13px', lineHeight: 1.55, color: 'var(--cv6-text-secondary)', background: 'var(--cv6-surface-hover)', borderRadius: '8px', padding: '12px 14px' }}>{openItem.notes}</div>
+            {/* What's next — a clean checklist for THIS deliverable (Uber-style). */}
+            <div style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--cv6-surface)', minHeight: 0 }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>What's next</div>
+              {/* Add a step — big calm input, Enter to add */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid var(--cv6-divider)', borderRadius: '12px', padding: '4px 6px 4px 14px', background: 'var(--cv6-ground)' }}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <input
+                  value={newStep}
+                  onChange={e => setNewStep(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addStep() } }}
+                  placeholder="Add a next step…"
+                  style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '15px', outline: 'none' }}
+                />
+                <button onClick={addStep} disabled={savingStep || !newStep.trim()} title="Add" style={{ flexShrink: 0, padding: '9px 16px', borderRadius: '9px', border: 'none', background: newStep.trim() ? 'var(--cv6-text-primary)' : 'var(--cv6-surface-hover)', color: newStep.trim() ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)', cursor: newStep.trim() ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '14px', fontWeight: '700' }}>Add</button>
               </div>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--cv6-text-secondary)', marginBottom: '8px' }}>Your review</div>
-                <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="Type your notes, changes, or approval…" style={{ flex: 1, minHeight: '120px', resize: 'vertical', padding: '12px 14px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.5, outline: 'none' }} />
+              {/* The list */}
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
+                {checklist.length === 0 ? (
+                  <div style={{ fontSize: '13.5px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '28px 12px', lineHeight: 1.5 }}>No steps yet. Add the first thing the agent should do on this.</div>
+                ) : (
+                  checklist.map(step => (
+                    <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '13px', padding: '13px 4px', borderBottom: '1px solid var(--cv6-divider)' }}>
+                      <button onClick={() => toggleStep(step.id)} title={step.done ? 'Mark not done' : 'Mark done'} style={{ flexShrink: 0, marginTop: '1px', width: '22px', height: '22px', borderRadius: '50%', border: step.done ? 'none' : '2px solid var(--cv6-text-tertiary)', background: step.done ? '#10B981' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                        {step.done && <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                      </button>
+                      <span style={{ flex: 1, fontSize: '14.5px', lineHeight: 1.45, color: step.done ? 'var(--cv6-text-tertiary)' : 'var(--cv6-text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.text}</span>
+                      <button onClick={() => deleteStep(step.id)} title="Remove" style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--cv6-text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }}>
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button onClick={() => { setOpenItem(null); setReviewText('') }} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Close</button>
-                <button onClick={pushReview} style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>Save & push to room</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--cv6-text-tertiary)' }}>{checklist.filter(s => s.done).length} of {checklist.length} done</span>
+                <button onClick={() => { setOpenItem(null); setNewStep('') }} style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Close</button>
               </div>
             </div>
           </div>
