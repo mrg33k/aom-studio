@@ -213,12 +213,23 @@
 
   function renderGameHud() {
     const s = gameStats();
+    // In a project room, keep the HUD to his GENERAL game progress (level + XP) —
+    // the school-framed bits ("quests today" + "Road to winning Summer School")
+    // belong to School, not his project space (Build R34, think-in-the-users-world).
+    const inProject = appState.activeRoom && appState.activeRoom !== 'school';
     const streakHtml = s.streak > 1
       ? `<div class="hud-streak"><span class="hud-streak-icon">&#9650;</span>${s.streak}-day streak</div>`
       : '';
     const todayHtml = s.todayTotal
       ? `${s.todayDone}/${s.todayTotal} quests today`
       : 'Begin your climb';
+    const xpLabel = inProject ? `${s.xp} XP` : `${s.xp} XP &middot; ${todayHtml}`;
+    const prizeHtml = inProject ? '' : `
+        <div class="hud-prize">
+          <div class="hud-prize-label"><span class="hud-prize-orn">&#10022;</span> Road to winning Summer School</div>
+          <div class="hud-prizebar"><div class="hud-prizebar-fill" style="width:${s.winPct}%"></div></div>
+          <div class="hud-prize-sub">${s.winPct}% &middot; a reward waits at the finish</div>
+        </div>`;
     return `
       <div class="game-hud">
         <div class="hud-top">
@@ -229,12 +240,8 @@
           ${streakHtml}
         </div>
         <div class="hud-xpbar"><div class="hud-xpbar-fill" style="width:${s.levelPct}%"></div></div>
-        <div class="hud-xp-label">${s.xp} XP &middot; ${todayHtml}</div>
-        <div class="hud-prize">
-          <div class="hud-prize-label"><span class="hud-prize-orn">&#10022;</span> Road to winning Summer School</div>
-          <div class="hud-prizebar"><div class="hud-prizebar-fill" style="width:${s.winPct}%"></div></div>
-          <div class="hud-prize-sub">${s.winPct}% &middot; a reward waits at the finish</div>
-        </div>
+        <div class="hud-xp-label">${xpLabel}</div>
+        ${prizeHtml}
       </div>`;
   }
 
