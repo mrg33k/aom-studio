@@ -839,6 +839,25 @@ export default function HomeView({
   const roomGlow = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.30)`
   const roomTint = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.10)`  // hover wash, text stays dark
 
+  // R34: clean idea chips under the greeting. Real version reads the ledger for the
+  // user's top 3 goals + 2 aspirational ("things they'd want but haven't named yet").
+  // Here we seed from their most-active rooms so the chips are real + clickable; the
+  // ledger-driven data + auto-send pipeline wire when chat/rooms are built.
+  const suggestedIdeas = useMemo(() => {
+    if (!cv6) return []
+    const top = (recentProjects || []).slice(0, 3)
+    const goals = top.map(p => ({
+      kind: 'goal', project: p,
+      label: `Move ${p.name || p.slug} forward`,
+      prompt: `Let's make real progress on ${p.name || p.slug}. What's the single highest-value next step, and can you start it now?`,
+    }))
+    const sparks = [
+      { kind: 'spark', project: top[0] || null, label: 'Cut a sizzle reel from recent wins', prompt: 'Pull our strongest recent moments and cut a short sizzle reel I can share.' },
+      { kind: 'spark', project: top[0] || null, label: 'Line up 5 lookalike leads', prompt: 'Find 5 new leads that resemble our best customers and draft a first touch for each.' },
+    ]
+    return [...goals, ...sparks].slice(0, 5)
+  }, [cv6, recentProjects])
+
   // R22: reclaim focus when the user clicks a neutral area inside Home, so arrow
   // keys keep responding after any interaction. Clicks on inputs/buttons keep
   // their own focus (so typing still works).
@@ -1083,7 +1102,7 @@ export default function HomeView({
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: cv6 ? '-20px' : 0, marginBottom: cv6 ? '16px' : '32px' }}>
             <h1 className="hm-welcome" style={{ margin: 0 }}>
               <span className="hm-l1">{greeting}</span>{' '}
-              <span className="hm-l2">{displayName(user) || 'there'}.</span>
+              <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
             </h1>
             {/* R14: Search icon button (collapse to icon only) */}
             <button
@@ -1109,6 +1128,38 @@ export default function HomeView({
             </button>
           </div>
 
+
+          {/* R34: clean idea chips under the welcome message — tap one to jump into the room and kick it off */}
+          {cv6 && suggestedIdeas.length > 0 && (
+            <div style={{ marginTop: '-12px', marginBottom: '28px', display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              {suggestedIdeas.map((idea, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    if (idea.project) handleProjectSelect(idea.project, null)
+                    // Real surface: also auto-sends idea.prompt to that room to kick it off.
+                    console.log('[idea]', idea.label, '→', idea.prompt)
+                    homeRef.current?.focus()
+                  }}
+                  title={idea.prompt}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    padding: '8px 14px', borderRadius: '999px', cursor: 'pointer', fontFamily: 'inherit',
+                    fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)',
+                    background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+                    transition: 'all 140ms ease', whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,102,255,0.10)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={idea.kind === 'spark' ? '#A855F7' : 'var(--cv6-accent-primary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M12 3l1.8 4.6L18.5 9.4 13.8 11.2 12 16 10.2 11.2 5.5 9.4 10.2 7.6z"/>
+                  </svg>
+                  {idea.label}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* R11: PUNCH-LIST #6 — HAPPENING NOW (density + alive, 6-item grid, breathing room) */}
           {happeningNow && happeningNow.length > 0 && (
