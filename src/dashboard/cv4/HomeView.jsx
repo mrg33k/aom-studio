@@ -1335,7 +1335,7 @@ function CommandDeckOverlay({ projects, agents }) {
   const holdAll = () => setRows(prev => prev.map(r => (r.status === 'live' ? { ...r, held: true } : r)))
   const sendSelected = () => setRows(prev => prev.map(r => (r.status === 'live' && r.checked ? { ...r, status: 'sent', secs: 0 } : r)))
 
-  const GRID = '30px 150px 1fr 88px 92px'
+  const GRID = '28px 132px minmax(220px, 1fr) 76px 84px'
   const head = { fontSize: '11px', fontWeight: '700', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)', padding: '9px 8px' }
   const cell = { padding: '10px 8px', minWidth: 0, alignSelf: 'start' }
 
@@ -1352,8 +1352,9 @@ function CommandDeckOverlay({ projects, agents }) {
         </span>
       </div>
 
-      {/* Table */}
-      <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+      {/* Table — scrolls horizontally on narrow so the Reply column keeps a usable width */}
+      <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflowX: 'auto', background: 'var(--cv6-surface)' }}>
+        <div style={{ minWidth: '600px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'center', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)' }}>
           <span style={{ ...head, paddingLeft: '10px' }}><input type="checkbox" checked={allChecked} onChange={e => setAllChecked(e.target.checked)} style={{ accentColor: 'var(--cv6-accent-primary)', cursor: 'pointer' }} aria-label="Select all" /></span>
           <span style={head}>Agent</span>
@@ -1409,6 +1410,7 @@ function CommandDeckOverlay({ projects, agents }) {
             </div>
           )
         })}
+        </div>
       </div>
       <p style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', lineHeight: 1.5, margin: '2px' }}>Click any reply to edit it in place. Unchecked rows are left out of Send selected but still send on their own timer unless you hold them.</p>
     </div>
