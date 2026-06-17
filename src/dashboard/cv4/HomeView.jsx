@@ -1114,13 +1114,17 @@ function FilesToolOverlay({ projects }) {
 
 // R40: CHAT tool — the old 3-pane room view rebuilt inside the new tool window.
 // LEFT rooms list + inline create form · MIDDLE the room's full chat · RIGHT the room's files.
-function ChatToolOverlay({ projects, missionsByProject, agents, onCreateProject, onCreateMission }) {
+function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission }) {
   const rooms = useMemo(() => {
     const ag = (agents || []).map(a => ({ kind: 'agent', slug: a.slug, name: a.name || a.slug }))
     const pr = (projects || []).map(p => ({ kind: 'project', slug: p.slug, name: p.name || p.slug }))
     return [...ag, ...pr]
   }, [agents, projects])
-  const [sel, setSel] = useState(rooms[0] || null)
+  // R55: open preselected to the room the user jumped from (match by kind+slug so we reuse the
+  // real room object; fall back to the passed room, then the first room).
+  const matchInitial = () => initialRoom ? (rooms.find(r => r.kind === initialRoom.kind && r.slug === initialRoom.slug) || initialRoom) : null
+  const [sel, setSel] = useState(matchInitial() || rooms[0] || null)
+  useEffect(() => { const m = matchInitial(); if (m) setSel(m) }, [initialRoom])
   const [draft, setDraft] = useState('')
   const [thread, setThread] = useState({})            // slug -> [{ from, text }]
   const [creating, setCreating] = useState(null)      // 'project' | 'mission'
@@ -1758,7 +1762,22 @@ export default function HomeView({
 
   // R19: Conversation column state + quick-view wiring
   const [selectedRoom, setSelectedRoom] = useState(null) // { project, mission } or null
+  const [chatInitialRoom, setChatInitialRoom] = useState(null) // R55: room to preselect when the Chat tool opens via keyboard jump
   const [replyText, setReplyText] = useState('')
+
+  // R55 (Patrik): keyboard speed move — from the quick-reply input, when it is EMPTY and the
+  // user presses Right, jump straight into the full Chat tool with this room preselected.
+  // Desktop + iPad only (>=768px); on a phone Right just moves the cursor as normal.
+  const openChatToolForRoom = useCallback((room) => {
+    if (!room) return
+    if (typeof window !== 'undefined' && window.innerWidth < 768) return
+    let initial = null
+    if (room.agent) initial = { kind: 'agent', slug: room.agent.slug, name: room.agent.name || room.agent.slug }
+    else if (room.project) initial = { kind: 'project', slug: room.project.slug, name: room.project.name || room.project.slug }
+    if (!initial) return
+    setChatInitialRoom(initial)
+    setSelectedTool('chat')
+  }, [])
   const [conversationMessages, setConversationMessages] = useState([])
 
   // R23: Active Work search filtering
@@ -2471,6 +2490,7 @@ export default function HomeView({
                     projects={[...(recentProjects || []), ...(allProjects || [])]}
                     missionsByProject={missionsByProject}
                     agents={visibleAgents}
+                    initialRoom={chatInitialRoom}
                     onCreateProject={persistCreateProject}
                     onCreateMission={persistCreateMission}
                   />
@@ -2955,6 +2975,12 @@ export default function HomeView({
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
                         onKeyDown={(e) => {
+                          // R55: empty input + Right arrow → jump into the full Chat tool (desktop/iPad). Huge speed move.
+                          if (e.key === 'ArrowRight' && !replyText.trim()) {
+                            e.preventDefault()
+                            openChatToolForRoom(selectedRoom)
+                            return
+                          }
                           if (e.key === 'Enter' && replyText.trim()) {
                             // R19: Add user message, animate to top, clear input
                             const newMsg = { id: Math.max(...conversationMessages.map(m => m.id), 0) + 1, sender: 'user', text: replyText }
