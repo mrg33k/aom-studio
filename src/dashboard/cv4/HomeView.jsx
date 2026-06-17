@@ -1376,39 +1376,65 @@ function realFileTree(d) {
 // R88: preview panel that loads and shows the REAL file content (text rendered
 // as markdown; images/video/audio fetched as an authed blob and shown inline).
 // Module-scoped so it does not remount on every parent render.
+// Resolve a preview kind from a node. Callers (e.g. the Review modal) may pass a
+// node WITHOUT fileType, so we always fall back to the filename extension. This is
+// why images/PDFs used to break in Review: no fileType -> everything fetched as text.
+function previewKind(node) {
+  if (!node) return 'text'
+  const ext = String(node.name || '').toLowerCase().split('.').pop()
+  if (node.fileType === 'image' || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'heic'].includes(ext)) return 'image'
+  if (node.fileType === 'video' || ['mp4', 'mov', 'webm', 'm4v'].includes(ext)) return 'video'
+  if (node.fileType === 'audio' || ['mp3', 'wav', 'm4a', 'aac', 'ogg'].includes(ext)) return 'audio'
+  if (ext === 'pdf') return 'pdf'
+  return 'text'
+}
+
 function FilePreviewPanel({ node }) {
   const [data, setData] = useState({ state: 'idle' })
+  const kind = previewKind(node)
   useEffect(() => {
     if (!node || node.type === 'folder' || !node.path) { setData({ state: 'idle' }); return }
     let active = true; let objUrl = null
-    const ft = node.fileType
-    const isMedia = ft === 'image' || ft === 'video' || ft === 'audio'
+    const isBinary = kind === 'image' || kind === 'video' || kind === 'audio' || kind === 'pdf'
     setData({ state: 'loading' })
-    const url = `/api/dashboard/project-file?path=${encodeURIComponent(node.path)}${isMedia ? '&raw=1' : ''}`
+    const url = `/api/dashboard/project-file?path=${encodeURIComponent(node.path)}${isBinary ? '&raw=1' : ''}`
     authFetch(url).then(async (r) => {
       if (!r.ok) throw new Error('load')
-      if (isMedia) { const b = await r.blob(); objUrl = URL.createObjectURL(b); if (active) setData({ state: 'media', url: objUrl }) }
+      if (isBinary) { const b = await r.blob(); objUrl = URL.createObjectURL(b); if (active) setData({ state: 'media', url: objUrl }) }
       else { const j = await r.json(); if (active) setData({ state: 'text', text: typeof j.content === 'string' ? j.content : '' }) }
     }).catch(() => { if (active) setData({ state: 'error' }) })
     return () => { active = false; if (objUrl) URL.revokeObjectURL(objUrl) }
-  }, [node && node.path, node && node.fileType])
+  }, [node && node.path, kind])
 
   const hint = (t) => <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>{t}</div>
   if (!node) return hint('Select a file to preview')
   if (node.type === 'folder') return hint((node.children || []).length ? `${node.children.length} items inside` : 'Empty folder')
-  const color = FILE_TYPE_COLOR[node.fileType] || 'var(--cv6-text-secondary)'
+  const chip = kind === 'pdf' ? 'pdf' : (node.fileType || kind)
+  const color = FILE_TYPE_COLOR[chip] || FILE_TYPE_COLOR.doc
   return (
     <div style={{ padding: '14px', minWidth: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
         <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', wordBreak: 'break-word', flex: 1, minWidth: 0 }}>{node.name}</span>
-        <span style={{ fontSize: '10px', fontWeight: '700', color, background: `${color}1f`, padding: '2px 7px', borderRadius: '5px', textTransform: 'uppercase', flexShrink: 0 }}>{node.fileType}</span>
+        <span style={{ fontSize: '10px', fontWeight: '700', color, background: `${color}1f`, padding: '2px 7px', borderRadius: '5px', textTransform: 'uppercase', flexShrink: 0 }}>{chip}</span>
       </div>
       {data.state === 'loading' && hint('Loading…')}
       {data.state === 'error' && <div style={{ fontSize: '13px', color: '#ef4444' }}>Could not open this file.</div>}
-      {data.state === 'media' && node.fileType === 'image' && <img src={data.url} alt={node.name} style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
-      {data.state === 'media' && node.fileType === 'video' && <video src={data.url} controls style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
-      {data.state === 'media' && node.fileType === 'audio' && <audio src={data.url} controls style={{ width: '100%' }} />}
-      {data.state === 'text' && <div style={{ fontSize: '13px', lineHeight: 1.5, color: 'var(--cv6-text-primary)', wordBreak: 'break-word' }}><ChatMessageRenderer content={data.text || '(empty file)'} /></div>}
+      {data.state === 'media' && kind === 'image' && <img src={data.url} alt={node.name} style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
+      {data.state === 'media' && kind === 'video' && <video src={data.url} controls style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
+      {data.state === 'media' && kind === 'audio' && <audio src={data.url} controls style={{ width: '100%' }} />}
+      {data.state === 'media' && kind === 'pdf' && (
+        <div>
+          <iframe src={data.url} title={node.name} style={{ width: '100%', height: '70vh', border: '1px solid var(--cv6-divider)', borderRadius: '8px', background: '#fff', display: 'block' }} />
+          <a href={data.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: 'var(--cv6-accent-primary)', textDecoration: 'none' }}>Open full size →</a>
+        </div>
+      )}
+      {/* R58 (Patrik): text/markdown should read like an article — roomier type, a
+          comfortable measure, and the markdown heading hierarchy from .cmr-content. */}
+      {data.state === 'text' && (
+        <article style={{ fontSize: '15px', lineHeight: 1.72, color: 'var(--cv6-text-primary)', wordBreak: 'break-word', maxWidth: '70ch' }}>
+          <ChatMessageRenderer content={data.text || '(empty file)'} />
+        </article>
+      )}
     </div>
   )
 }
