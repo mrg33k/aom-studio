@@ -93,6 +93,28 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   const [toggling, setToggling] = useState({}) // id -> isOptimistic state
   const [nameMap, setNameMap] = useState({})
   const [hoveredRoutineId, setHoveredRoutineId] = useState(null) // for hover state
+  // Inline quick-reply from the spreadsheet (Patrik: reply right here, restarts the room timer)
+  const [replyOpenSlug, setReplyOpenSlug] = useState(null)
+  const [replyText, setReplyText] = useState('')
+  const [replySending, setReplySending] = useState(false)
+  const [replyDoneSlug, setReplyDoneSlug] = useState(null)
+
+  const sendInlineReply = useCallback(async (slug) => {
+    const t = (replyText || '').trim()
+    if (!t || !slug || !onReplyToRoom) return
+    setReplySending(true)
+    try {
+      const res = await onReplyToRoom(slug, t)
+      if (res && res.ok !== false) {
+        setReplyText('')
+        setReplyOpenSlug(null)
+        setReplyDoneSlug(slug)
+        setTimeout(() => setReplyDoneSlug(null), 4000)
+      }
+    } finally {
+      setReplySending(false)
+    }
+  }, [replyText, onReplyToRoom])
 
   const load = useCallback(async () => {
     try {
@@ -562,15 +584,14 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         const isWorkerRow = row.isWorkerRow === true
 
         return (
+         <div key={row.slug || `row-${idx}`} style={{ borderBottom: '1px solid var(--cv6-divider)' }}>
           <div
-            key={row.slug || `row-${idx}`}
             onClick={() => !isWorkerRow && onJumpToRoom?.(row.slug)}
             style={{
               display: 'grid',
               gridTemplateColumns: '1fr 2fr 80px 1.5fr 100px 60px',
               gap: '12px',
               padding: '11px 16px',
-              borderBottom: '1px solid var(--cv6-divider)',
               background: isWorkerRow ? 'rgba(255,255,255,0.01)' : (isHovered ? 'var(--cv6-surface-hover)' : 'var(--cv6-surface)'),
               cursor: isWorkerRow ? 'default' : 'pointer',
               transition: 'background 120ms ease',
@@ -581,7 +602,8 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             onMouseLeave={() => !isWorkerRow && setHoveredRoutineId(null)}
           >
             {/* ROOM / WORKER NAME */}
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
               <div
                 style={{
                   fontSize: 13,
@@ -606,6 +628,22 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 >
                   {row.display.tag}
                 </div>
+              )}
+              </div>
+              {/* Inline reply trigger (room rows only) */}
+              {!isWorkerRow && onReplyToRoom && (
+                <button
+                  title="Quick reply to this room"
+                  onClick={(e) => { e.stopPropagation(); setReplyOpenSlug(replyOpenSlug === row.slug ? null : row.slug); setReplyText('') }}
+                  style={{
+                    flexShrink: 0, width: 24, height: 24, borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: replyOpenSlug === row.slug ? 'var(--cv6-accent-primary)' : 'transparent',
+                    color: replyOpenSlug === row.slug ? '#fff' : (replyDoneSlug === row.slug ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)'),
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                </button>
               )}
             </div>
 
@@ -708,6 +746,42 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               )}
             </div>
           </div>
+          {/* Inline reply composer (expands under the row) */}
+          {replyOpenSlug === row.slug && !isWorkerRow && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ display: 'flex', gap: 8, padding: '10px 16px 12px', background: 'var(--cv6-surface)', alignItems: 'center' }}
+            >
+              <input
+                autoFocus
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') sendInlineReply(row.slug); if (e.key === 'Escape') setReplyOpenSlug(null) }}
+                placeholder={`Quick reply to ${(row.display && row.display.name) || row.slug}…`}
+                style={{
+                  flex: 1, padding: '8px 12px', borderRadius: 6, border: '1px solid var(--cv6-divider)',
+                  background: 'var(--cv6-ground)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: 13, outline: 'none',
+                }}
+              />
+              <button
+                onClick={() => sendInlineReply(row.slug)}
+                disabled={!replyText.trim() || replySending}
+                style={{
+                  padding: '8px 14px', borderRadius: 6, border: 'none', cursor: replyText.trim() && !replySending ? 'pointer' : 'not-allowed',
+                  background: replyText.trim() && !replySending ? 'var(--cv6-accent-primary)' : 'var(--cv6-hover)',
+                  color: replyText.trim() && !replySending ? '#fff' : 'var(--cv6-text-tertiary)', fontSize: 13, fontWeight: 600,
+                }}
+              >
+                {replySending ? 'Sending…' : 'Send'}
+              </button>
+            </div>
+          )}
+          {replyDoneSlug === row.slug && (
+            <div style={{ padding: '0 16px 10px', fontSize: 11, color: 'var(--cv6-accent-success)' }}>
+              Reply sent. The room will pick it up on its next check.
+            </div>
+          )}
+         </div>
         )
       })}
     </div>
