@@ -2974,7 +2974,7 @@ export default function HomeView({
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
                     {t.svg}
                   </svg>
-                  <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap' }}>{t.label}</span>
+                  <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap', color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)' }}>{t.label}</span>
                 </button>
               ))}
             </div>
