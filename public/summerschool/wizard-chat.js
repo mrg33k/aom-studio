@@ -1690,14 +1690,17 @@
         // the day ledger + yesterday's ledger). No hardcoded fallback message.
         await requestWizardGreeting();
       }
-    } else if (hadHistory) {
-      // Back in a project room — resume its thread and highlight it in the bar.
+    } else if (hadHistory && isDayComplete()) {
+      // Back in a project room AND school is finished for the day — resume the
+      // project thread and highlight it in the bar.
       appState.projectActive = roomProjectName(appState.activeRoom);
       appState.resumeBanner = appState.projectActive;
       render();
     } else {
-      // Project room came back empty (e.g. cleared data) — never leave him on a
-      // blank screen. Fall back to School and bootstrap the day there.
+      // Either the project room came back empty (e.g. cleared data), OR school
+      // isn't finished yet (Patrik 2026-06-17: school before the fun — never land
+      // him in a project on an unfinished day). Fall back to School and bootstrap
+      // the day there.
       appState.activeRoom = 'school';
       appState.projectActive = null;
       try { localStorage.setItem('wizard-active-room', 'school'); } catch (_) {}
