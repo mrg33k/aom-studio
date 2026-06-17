@@ -848,11 +848,44 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const [draftTemplate, setDraftTemplate] = useState('bugs')
   const [isNarrow, setIsNarrow] = useState(false)
   const [mobilePane, setMobilePane] = useState('list')
+  // Space Rising real tracker (admin_tickets) — live via /api/dashboard/admin-tickets.
+  const [srStatus, setSrStatus] = useState(null) // null|loading|connected|needs_key|error
   useEffect(() => {
     if (typeof window === 'undefined') return
     const check = () => setIsNarrow(window.innerWidth < 720)
     check(); window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
+  }, [])
+
+  // Pull the live Space Rising ticket tracker. Renders in OUR CV6 design (data only).
+  // Refreshes every 30s so Patrik sees new tickets in near real time.
+  useEffect(() => {
+    let active = true
+    const statusMap = { needs_fix: 'Open', working: 'In progress', in_review: 'In progress', done: 'Done' }
+    const pull = async () => {
+      try {
+        const r = await authFetch('/api/dashboard/admin-tickets?status=needs_fix,working,in_review')
+        if (!active) return
+        if (r.status === 503) { setSrStatus('needs_key'); return }
+        if (!r.ok) { setSrStatus('error'); return }
+        const d = await r.json()
+        const tickets = Array.isArray(d.tickets) ? d.tickets : []
+        setSrStatus('connected')
+        const rows = tickets.map(t => ({
+          Item: t.title || '(untitled)',
+          Priority: (t.priority || '').replace(/^\w/, c => c.toUpperCase()),
+          Status: statusMap[t.status] || 'Open',
+          Area: t.area || '',
+          Owner: t.owner || '',
+        }))
+        const srTracker = { id: 'sr-tickets', name: 'Space Rising — Tickets', scope: 'Space Rising', template: 'bugs', columns: ['Item', 'Priority', 'Status', 'Area', 'Owner'], rows, on: false, live: true }
+        setTrackers(prev => [srTracker, ...prev.filter(t => t.id !== 'sr-tickets')])
+        setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'sr-tickets' : prev)
+      } catch { if (active) setSrStatus('error') }
+    }
+    pull()
+    const t = setInterval(pull, 30000)
+    return () => { active = false; clearInterval(t) }
   }, [])
 
   const sel = trackers.find(t => t.id === selId)
@@ -964,6 +997,12 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   )
 
   return (
+   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+    {srStatus === 'needs_key' && (
+      <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '8px', padding: '10px 14px' }}>
+        Space Rising live tracker is wired and ready. It needs its data key added to the dashboard settings to switch on.
+      </div>
+    )}
     <div style={{ height: isNarrow ? '64vh' : '440px', minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : '230px 1fr' }}>
       {isNarrow ? (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -976,6 +1015,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         </div>
       ) : (<><Selector /><Sheet /></>)}
     </div>
+   </div>
   )
 }
 
