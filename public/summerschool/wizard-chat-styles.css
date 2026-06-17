@@ -143,6 +143,25 @@ body {
 /* Side nav (Build R13) — Corner-style left bar: School + his Projects + add. */
 .side-nav { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; }
 
+/* "How am I doing?" progress recap action under School (Build R26) */
+.nav-progress-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 4px 8px;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  color: var(--color-gold-soft);
+  opacity: 0.8;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+.nav-progress-btn:hover { opacity: 1; color: var(--color-gold); }
+.nav-progress-icon { font-size: 12px; }
+
 /* Mobile drawer trigger + backdrop (Build R21) — hidden on desktop, shown <=900px */
 .nav-toggle { display: none; }
 .nav-backdrop { display: none; }

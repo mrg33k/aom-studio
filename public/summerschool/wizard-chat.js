@@ -583,6 +583,7 @@
           <span class="nav-item-icon">&#9876;</span>
           <span class="nav-item-label">Summer School${subj ? ` <span class="nav-item-sub">on ${escapeHtml(subj)}</span>` : ''}</span>
         </button>
+        ${schoolActive ? `<button type="button" class="nav-progress-btn" onclick="window.__wizardChat.progressRecap()"><span class="nav-progress-icon">&#10022;</span> How am I doing?</button>` : ''}
         <div class="nav-section-label">My Projects</div>
         <div class="nav-list">${projectItems}</div>
         ${addBlock}
@@ -977,6 +978,7 @@
       if (opts.practiceWord) payload.practice_word = opts.practiceWord;
       if (opts.readingFocus) payload.reading_focus = opts.readingFocus;
       if (opts.mathFocus) payload.math_focus = true;
+      if (opts.progressSummary) payload.progress_summary = opts.progressSummary;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1361,6 +1363,27 @@
       if (!current) return;
       const spot = current.spot ? ` I'm at: ${current.spot}.` : '';
       sendMessage(`Let's pick up my book "${current.title}".${spot} Can we read together — ask me what's happened so far or what I think happens next, then help me keep going?`, { readingFocus: current.title });
+    },
+    // "How am I doing?" — a warm, accurate progress recap from the Wizard, tied
+    // to Kenilworth. Builds his REAL numbers client-side and hands them to the
+    // Wizard so the recap is true, not invented.
+    progressRecap: () => {
+      if (appState.isLoading) return;
+      appState.navOpen = false; // close the mobile drawer
+      const g = gameStats();
+      const totalDone = (appState.baseDone || 0) + (appState.doneCount || 0);
+      const mastered = (appState.spellbook || []).filter((w) => (w.status || '').toLowerCase() === 'mastered').length;
+      const books = (appState.reading || []).filter((b) => (b.status || '').toLowerCase() === 'finished').length;
+      const days = daysUntilSchool();
+      const parts = [];
+      if (g.todayTotal) parts.push(`${g.todayDone} of ${g.todayTotal} subjects done today`);
+      if (totalDone) parts.push(`${totalDone} subjects completed in total`);
+      if (g.streak > 1) parts.push(`a ${g.streak}-day streak`);
+      if (mastered) parts.push(`${mastered} spelling word${mastered === 1 ? '' : 's'} mastered`);
+      if (books) parts.push(`${books} book${books === 1 ? '' : 's'} finished`);
+      if (days != null && days >= 0) parts.push(`${days} days until Kenilworth`);
+      const summary = parts.join(', ') || 'just getting started today';
+      sendMessage(`How am I doing so far?`, { progressSummary: summary });
     },
     // Math challenge: pull a 7th-grade-prep problem from the Wizard (his strength
     // + Kenilworth focus). Stays in School and leads the turn.
