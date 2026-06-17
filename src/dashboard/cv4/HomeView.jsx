@@ -196,6 +196,13 @@ function Chevron({ collapsed }) {
 }
 
 // ── CV6 Support Tool Overlay ─ 3-column clean layout with real data ──────────────
+// R88: staged-draft tag the agent embeds when it has a reply ready to send.
+const SUPPORT_STAGED_RE = /\[staged_draft:([^|\]\s]+)\|conn:([^\]\s]+)\]/
+function parseSupportStaged(msg) {
+  const m = SUPPORT_STAGED_RE.exec(msg || '')
+  return m ? { draftId: m[1], connectionId: m[2] } : null
+}
+
 function SupportToolOverlay({ worldId }) {
   const { wishes, mailboxes } = useSupportData(worldId)
   const items = buildItems(wishes, mailboxes)
@@ -207,39 +214,37 @@ function SupportToolOverlay({ worldId }) {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  // Map items to 3 columns: Needs You (amber) | In Progress (green) | Handled (blue)
-  const needsYou = items.filter(it => it.status === 'needs_you' || it.ready)
-  const inProgress = items.filter(it => it.status === 'working' || it.status === 'heard')
-  // 'resolved' wishes + 'responded' emails (already replied) both belong in Handled.
-  const handled = items.filter(it => it.status === 'resolved' || it.status === 'responded')
+  // R88 (Patrik's chosen model): Send / Decide / Done. The agent answers most,
+  // so the board leads with replies it already drafted (one tap to send), then
+  // the few that need Patrik's judgment, then what's finished. Spam is already
+  // filtered out in buildItems.
+  const readyToSend = items.filter(it => it.ready)
+  const needsDecision = items.filter(it => !it.ready && it.status !== 'resolved' && it.status !== 'responded')
+  const done = items.filter(it => it.status === 'resolved' || it.status === 'responded')
 
-  // Mobile: the three columns stack vertically so cards stay full-width and readable.
   return (
     <div style={{ display: isNarrow ? 'flex' : 'grid', flexDirection: isNarrow ? 'column' : undefined, gridTemplateColumns: isNarrow ? undefined : '1fr 1fr 1fr', gap: '16px', height: isNarrow ? 'auto' : '100%', flex: 1 }}>
-      {/* NEEDS YOU Column — Amber (#F59E0B) */}
-      <SupportColumn title="Needs You" status="needs_you" items={needsYou} accentColor="#F59E0B" />
-
-      {/* IN PROGRESS Column — Green (#10B981) */}
-      <SupportColumn title="In Progress" status="working" items={inProgress} accentColor="#10B981" />
-
-      {/* HANDLED Column — Blue (#0066FF) */}
-      <SupportColumn title="Handled" status="resolved" items={handled} accentColor="#0066FF" />
+      <SupportColumn title="Ready to send" column="ready" items={readyToSend} accentColor="#10B981" />
+      <SupportColumn title="Needs a decision" column="decision" items={needsDecision} accentColor="#F59E0B" />
+      <SupportColumn title="Done" column="done" items={done} accentColor="#5A6F8C" />
     </div>
   )
 }
 
 // ── Support Column Component ────────────────────────────────────────────────────
-function SupportColumn({ title, status, items, accentColor }) {
+function SupportColumn({ title, column, items, accentColor }) {
   return (
     // R32: minWidth:0 stops a long email/word from stretching this column past its 1fr share
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-      {/* Column Header */}
+      {/* Column Header with count badge */}
       <div style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
         fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em',
         color: 'var(--cv6-text-secondary)', marginBottom: '12px', paddingBottom: '12px',
         borderBottom: `2px solid ${accentColor}`,
       }}>
-        {title}
+        <span>{title}</span>
+        <span style={{ fontSize: '11px', fontWeight: '700', color: accentColor, background: `${accentColor}1f`, borderRadius: '10px', padding: '1px 8px', letterSpacing: 0 }}>{items.length}</span>
       </div>
 
       {/* Cards List */}
@@ -250,7 +255,7 @@ function SupportColumn({ title, status, items, accentColor }) {
           </div>
         ) : (
           items.map(item => (
-            <SupportCard key={item.key} item={item} accentColor={accentColor} />
+            <SupportCard key={item.key} item={item} accentColor={accentColor} column={column} />
           ))
         )}
       </div>
@@ -259,9 +264,12 @@ function SupportColumn({ title, status, items, accentColor }) {
 }
 
 // ── Support Card Component ──────────────────────────────────────────────────────
-function SupportCard({ item, accentColor }) {
+function SupportCard({ item, accentColor, column }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [resolving, setResolving] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+  const staged = item.wish ? parseSupportStaged(item.wish.message) : null
 
   const handleResolve = async (e) => {
     e.stopPropagation()
@@ -284,11 +292,43 @@ function SupportCard({ item, accentColor }) {
     }
   }
 
+  // Send the agent's staged reply. This sends a real email, so it only fires on
+  // Patrik's explicit click (never automatically).
+  const handleSend = async (e) => {
+    e.stopPropagation()
+    if (!item.wish || !staged) return
+    setSending(true)
+    try {
+      const r = await authFetch('/api/support/send-staged', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'send', wish_id: item.wish.id, draft_id: staged.draftId, connection_id: staged.connectionId }),
+      })
+      const d = await r.json()
+      if (r.ok && d.ok) setSent(true)
+    } catch (e) {
+      console.error('Send failed:', e)
+    } finally {
+      setSending(false)
+    }
+  }
+
   const handleOpenMail = () => {
     if (item.link) {
       window.open(item.link, '_blank')
     }
   }
+
+  // Plain-words "how long they've waited" for the decision column.
+  const waitedLabel = (() => {
+    if (!item.date) return null
+    const mins = Math.floor((Date.now() - item.date) / 60000)
+    if (mins < 60) return `${Math.max(1, mins)}m waiting`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h waiting`
+    return `${Math.floor(hrs / 24)}d waiting`
+  })()
+  const overdue = item.date && (Date.now() - item.date) > 10 * 60 * 1000
 
   return (
     <button
@@ -333,6 +373,9 @@ function SupportCard({ item, accentColor }) {
             </div>
           )}
         </div>
+        {column === 'decision' && waitedLabel && (
+          <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap', color: overdue ? '#ef4444' : 'var(--cv6-text-tertiary)' }}>{overdue ? '! ' : ''}{waitedLabel}</span>
+        )}
       </div>
 
       {/* Preview Text (collapsed to 2 lines, expanded to many) */}
@@ -346,44 +389,37 @@ function SupportCard({ item, accentColor }) {
         </p>
       )}
 
-      {/* Actions (if expanded) */}
+      {/* Expanded: the thread (what they wrote + what we replied) and actions. */}
       {isExpanded && (
-        <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--cv6-divider)', display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
-          {item.wish && item.status === 'needs_you' && (
-            <button
-              onClick={handleResolve}
-              disabled={resolving}
-              style={{
-                fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
-                padding: '6px 12px', borderRadius: '4px',
-                background: accentColor, color: '#ffffff', border: 'none', cursor: resolving ? 'default' : 'pointer',
-                opacity: resolving ? 0.6 : 1, transition: 'opacity 120ms ease',
-              }}
-            >
-              {resolving ? '…' : 'Resolve'}
-            </button>
+        <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--cv6-divider)', display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+          {item.original && (
+            <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.5', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{item.original}</div>
           )}
-          {item.link && (
-            <button
-              onClick={handleOpenMail}
-              style={{
-                fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em',
-                padding: '6px 12px', borderRadius: '4px',
-                background: 'transparent', color: accentColor, border: `1px solid ${accentColor}`,
-                cursor: 'pointer', transition: 'all 120ms ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = accentColor
-                e.currentTarget.style.color = '#ffffff'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'transparent'
-                e.currentTarget.style.color = accentColor
-              }}
-            >
-              Open in Gmail
-            </button>
+          {item.reply && (
+            <div style={{ padding: '8px 10px', background: 'rgba(16,185,129,0.10)', borderLeft: '2px solid #10B981', borderRadius: '4px' }}>
+              <div style={{ fontSize: '9px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#10B981' }}>We replied</div>
+              <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4', marginTop: '3px', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{item.reply}</div>
+            </div>
           )}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {column === 'ready' && staged && (
+              <button onClick={handleSend} disabled={sending || sent} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 14px', borderRadius: '4px', background: sent ? 'transparent' : '#10B981', color: sent ? '#10B981' : '#ffffff', border: sent ? '1px solid #10B981' : 'none', cursor: (sending || sent) ? 'default' : 'pointer', opacity: sending ? 0.6 : 1 }}>
+                {sent ? 'Sent ✓' : sending ? 'Sending…' : 'Send reply'}
+              </button>
+            )}
+            {column === 'ready' && item.link && (
+              <button onClick={handleOpenMail} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', borderRadius: '4px', background: 'transparent', color: 'var(--cv6-text-secondary)', border: '1px solid var(--cv6-divider)', cursor: 'pointer' }}>Edit in Gmail</button>
+            )}
+            {column === 'decision' && item.link && (
+              <button onClick={handleOpenMail} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', borderRadius: '4px', background: accentColor, color: '#ffffff', border: 'none', cursor: 'pointer' }}>Open in Gmail</button>
+            )}
+            {column === 'decision' && item.wish && (
+              <button onClick={handleResolve} disabled={resolving} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', borderRadius: '4px', background: 'transparent', color: 'var(--cv6-text-secondary)', border: '1px solid var(--cv6-divider)', cursor: resolving ? 'default' : 'pointer', opacity: resolving ? 0.6 : 1 }}>{resolving ? '…' : 'Mark done'}</button>
+            )}
+            {column === 'done' && item.link && (
+              <button onClick={handleOpenMail} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', borderRadius: '4px', background: 'transparent', color: 'var(--cv6-text-secondary)', border: '1px solid var(--cv6-divider)', cursor: 'pointer' }}>Open in Gmail</button>
+            )}
+          </div>
         </div>
       )}
     </button>
