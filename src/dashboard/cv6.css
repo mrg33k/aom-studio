@@ -957,6 +957,20 @@
   line-height: 1.5;
 }
 
+/* cv5 forces the serif display font on h1/h2/h3 with !important
+   (`[data-cv5] h1 { font-family: var(--cv5-display) !important }`). The /cvg
+   shell carries data-cv5, so the cv6 hero rendered as a serif — but the gallery
+   (no data-cv5) renders it in Inter. Counter cv5's !important with a higher-
+   specificity !important scoped to the cv6 home so headings + the welcome spans
+   inherit the cv6 base (Inter), matching the gallery exactly. */
+[data-cv6][data-cv4-home] h1,
+[data-cv6][data-cv4-home] h2,
+[data-cv6][data-cv4-home] h3,
+[data-cv6][data-cv4-home] .hm-welcome .hm-l1,
+[data-cv6][data-cv4-home] .hm-welcome .hm-l2 {
+  font-family: inherit !important;
+}
+
 [data-cv6] p,
 [data-cv6] span,
 [data-cv6] div {
