@@ -1370,6 +1370,42 @@ export default function CornerVG() {
     }
   }, [agents, projectRooms, worldId, currentUser])
 
+  // Real send for the CV6 Chat tool on /cvg. Routes by room kind and ALWAYS
+  // carries the Gemini surface model (surfaceModel()) so /cvg turns run on the
+  // Gemini lane — keeps billing separate from the Claude /dashboard.
+  const handleCvgChatSend = useCallback(async (sel, text) => {
+    const t = (text || '').trim()
+    if (!sel || !t) return
+    const sm = surfaceModel()
+    try {
+      if (sel.kind === 'project') {
+        const projectObj = (projectRooms || []).find(p => p?.slug === sel.slug) || { slug: sel.slug }
+        const agentKey = getProjectEA(projectObj, agents) || 'elon'
+        const clientId = projectObj.isShared ? `shared:${sel.slug}` : worldId
+        await authFetch('/api/dashboard/chat-bridge', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: agentKey, message: t, room: `project:${sel.slug}`, project: sel.slug,
+            client_id: clientId, user_id: currentUser?.id || null, user_name: currentUser?.email || null,
+            metadata: { source: 'cvg-chat-tool', ...(sm ? { model: sm } : {}) },
+          }),
+        })
+      } else {
+        await authFetch('/api/dashboard/supabase-messages', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agent: sel.slug, text: t, role: 'user', source: 'cvg-chat-tool',
+            client_id: worldId, world_id: worldId, user_id: currentUser?.id || null,
+            user_name: currentUser?.email || null,
+            ...(sm ? { metadata: { model: sm } } : {}),
+          }),
+        })
+      }
+    } catch (err) {
+      console.error('[cvg chat-tool send] failed', err)
+    }
+  }, [agents, projectRooms, worldId, currentUser])
+
   // ── Nav heights ───────────────────────────────────────────────────────────
 
   const ROW1_H = 44
@@ -2858,6 +2894,7 @@ export default function CornerVG() {
                 agents={agents}
                 projectRooms={projectRooms}
                 needsYou={homeNeedsYou}
+                onChatSend={handleCvgChatSend}
                 onSelectAgent={(agent) => {
                   setSelectedAgent(agent)
                   setConversationTarget({ name: agent.name, type: 'agent' })

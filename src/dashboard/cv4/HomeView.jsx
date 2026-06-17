@@ -1114,7 +1114,7 @@ function FilesToolOverlay({ projects }) {
 
 // R40: CHAT tool — the old 3-pane room view rebuilt inside the new tool window.
 // LEFT rooms list + inline create form · MIDDLE the room's full chat · RIGHT the room's files.
-function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission }) {
+function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission, onSend }) {
   const rooms = useMemo(() => {
     const ag = (agents || []).map(a => ({ kind: 'agent', slug: a.slug, name: a.name || a.slug }))
     const pr = (projects || []).map(p => ({ kind: 'project', slug: p.slug, name: p.name || p.slug }))
@@ -1184,7 +1184,10 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     const t = draft.trim(); if (!t || !sel) return
     setThread(prev => ({ ...prev, [sel.slug]: [...(prev[sel.slug] || seedThread(sel)), { from: 'me', text: t }] }))
     setDraft('')
-    console.log('[chat-send]', sel.kind, sel.slug, t) // API persist wires next round
+    // Optimistic UI above; real send via onSend (provided on /cvg + /dashboard).
+    // No onSend (e.g. the no-backend gallery) → stays optimistic.
+    if (onSend) onSend(sel, t)
+    else console.log('[chat-send]', sel.kind, sel.slug, t)
   }
   function commitProject() {
     const name = npName.trim(); if (!name) { setCreating(null); setNpName(''); return }
@@ -1456,6 +1459,7 @@ export default function HomeView({
   // click target is real, so every row here is one tap from acting.
   needsYou = [],
   cv6, // R7: gate for CV6 design system (keyboard nav, missions-primary, inline actions, happening now)
+  onChatSend, // real send for the CV6 Chat tool (agent/project routing + Gemini lane on /cvg). Omit → optimistic only (gallery).
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -2501,6 +2505,7 @@ export default function HomeView({
                     initialRoom={chatInitialRoom}
                     onCreateProject={persistCreateProject}
                     onCreateMission={persistCreateMission}
+                    onSend={onChatSend}
                   />
                 )}
               </div>
