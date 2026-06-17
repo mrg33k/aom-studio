@@ -44,12 +44,15 @@ const EXTENSIONS = {
   copy: ['.md', '.txt'],
   code: ['.js', '.jsx', '.ts', '.tsx', '.py', '.go', '.rs', '.java'],
 };
+// Returns the type for a reviewable artifact, or null for data/log/system files
+// (.json, .jsonl, .log, .lock, etc.) which a person does not "review" — those
+// must never clutter the queue.
 function detectType(filename) {
   const ext = path.extname(filename || '').toLowerCase();
   for (const [key, exts] of Object.entries(EXTENSIONS)) {
     if (exts.includes(ext)) return TYPE_MAP[key];
   }
-  return TYPE_MAP.doc;
+  return null;
 }
 
 // List the project slugs that belong to this world.
@@ -78,6 +81,8 @@ async function walkProjectViaTunnel(slug, now) {
     const pushFrom = (files, mission) => {
       for (const f of files || []) {
         if (!f || EXCLUDE_KINDS.has(f.kind)) continue;
+        const type = detectType(f.name);
+        if (!type) continue;        // skip data/log/system files (.json, .jsonl, .log…)
         const ts = f.last_modified ? new Date(f.last_modified).getTime() : 0;
         if (!ts || now - ts > THREE_DAYS_MS) continue;
         out.push({
@@ -86,7 +91,7 @@ async function walkProjectViaTunnel(slug, now) {
           project: slug,
           mission: mission || null,
           kind: f.kind || 'deliverable',
-          type: detectType(f.name),
+          type,
           last_modified: new Date(ts).toISOString(),
         });
       }
@@ -132,8 +137,10 @@ function collectViaDisk(world, now) {
         const d = path.join(delivAbs, missionSlug, sub);
         if (!fs.existsSync(d)) continue;
         for (const f of walk(d)) {
+          const type = detectType(f.name);
+          if (!type) continue;
           if (now - f.mtime.getTime() > THREE_DAYS_MS) continue;
-          items.push({ name: f.name, path: f.path, project: projSlug, mission: missionSlug, kind: 'deliverable', type: detectType(f.name), last_modified: f.mtime.toISOString() });
+          items.push({ name: f.name, path: f.path, project: projSlug, mission: missionSlug, kind: 'deliverable', type, last_modified: f.mtime.toISOString() });
         }
       }
     }
