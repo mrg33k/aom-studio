@@ -1286,8 +1286,8 @@ export default function HomeView({
               </button>
             </div>
           ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: cv6 ? '-6px' : 0, marginBottom: cv6 ? '14px' : '32px' }}>
-            <h1 className="hm-welcome" style={{ margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: cv6 ? '-6px' : 0, marginBottom: cv6 ? '10px' : '32px' }}>
+            <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1 }}>
               <span className="hm-l1">{greeting}</span>{' '}
               <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
             </h1>
@@ -1366,8 +1366,8 @@ export default function HomeView({
             const missionHits = (allMissionsForCV6 || []).filter(m => match(m.mission?.name || m.mission?.slug)).slice(0, 8)
             const groups = [
               { key: 'tools', title: 'Tools', rows: toolList.map(t => ({ label: t.label, onClick: () => { setShowSearch(false); setSearchText(''); setSelectedTool(t.key) } })) },
-              { key: 'projects', title: 'Projects', rows: projectHits.map(p => ({ label: p.name || p.slug, onClick: () => { setShowSearch(false); setSearchText(''); handleProjectSelect(p, null) } })) },
-              { key: 'missions', title: 'Missions', rows: missionHits.map(m => ({ label: m.mission.name || m.mission.slug, sub: m.project?.name || m.project?.slug, onClick: () => { setShowSearch(false); setSearchText(''); handleProjectSelect(m.project, m.mission) } })) },
+              { key: 'projects', title: 'Projects', rows: projectHits.map(p => ({ label: p.name || p.slug, onClick: () => { setShowSearch(false); setSearchText(''); selectByItem('project', p.slug); handleProjectSelect(p, null) } })) },
+              { key: 'missions', title: 'Missions', rows: missionHits.map(m => ({ label: m.mission.name || m.mission.slug, sub: m.project?.name || m.project?.slug, onClick: () => { setShowSearch(false); setSearchText(''); selectByItem('mission', m.mission.slug); handleProjectSelect(m.project, m.mission) } })) },
               { key: 'files', title: 'Files', rows: [] },
               { key: 'review', title: 'Review', rows: [] },
               { key: 'tracker', title: 'Tracker', rows: [] },
