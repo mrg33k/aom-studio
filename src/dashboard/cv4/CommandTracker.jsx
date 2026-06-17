@@ -137,10 +137,17 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       }
 
       // Load claude sessions (both blocked/stalled sessions and all active workers)
+      // workers is the real LIVE array: all currently active terminal sessions
       const sRes = await authFetch('/api/dashboard/claude-sessions')
       const stuckData = sRes?.ok ? await sRes.json() : { sessions: [], workers: [] }
       const blockedSessions = Array.isArray(stuckData.sessions) ? stuckData.sessions.filter((s) => s && typeof s === 'object') : []
       const workers = Array.isArray(stuckData.workers) ? stuckData.workers.filter((w) => w && typeof w === 'object') : []
+
+      // Build a worker lookup by name so we can match them to room-goal rows
+      const workersByName = {}
+      workers.forEach((w) => {
+        if (w && w.name) workersByName[w.name] = w
+      })
 
       // Load routines
       const rRes = await authFetch(`/api/dashboard/routines?client_id=${encodeURIComponent(worldId)}`)
@@ -189,34 +196,49 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       const tableRows = []
 
       // First pass: emit room-goal rows (with optional attached worker)
+      const usedWorkerNames = new Set()  // Track which workers we've attached
       Array.from(roomSlugs)
         .sort()
         .forEach((slug) => {
           const roomGoal = (goals.rooms || {})[slug] || {}
-          // Workers don't have a 'room' field; match by name pattern or presence of any worker
-          // For now, rooms-without-attached-workers show IDLE status
-          const liveWorker = null  // TODO: implement name matching if we have a room->session map
 
-          // Derive LIVE NOW: worker's intent / what it's actively doing
+          // Try to find a live worker for this room by name matching
+          // Worker names may contain the room slug or mission name; look for any worker
+          // that mentions this slug or mission in their name
+          let liveWorker = null
+          const mission = slug.includes(':') ? slug.split(':').pop() : null
+          for (const [workerName, w] of Object.entries(workersByName)) {
+            if (!usedWorkerNames.has(workerName)) {
+              // Match if worker name contains the full slug or the mission name
+              if (workerName.includes(slug) || (mission && workerName.includes(mission))) {
+                liveWorker = w
+                usedWorkerNames.add(workerName)
+                break
+              }
+            }
+          }
+
+          // Derive LIVE NOW: the worker's short current-status line (detail),
+          // falling back to its intent. GOAL NOW carries the longer goal below.
           let liveNow = '—'
-          if (liveWorker && liveWorker.intent) {
-            liveNow = liveWorker.intent
+          if (liveWorker) {
+            liveNow = liveWorker.detail || liveWorker.intent || '—'
           }
 
           // Derive status from worker recency + staleness
-          // WORKING if worker touched recently
-          // BLOCKED if worker has blocked state
-          // IDLE if no worker OR worker is stale (>30 min)
+          // WORKING if worker touched recently and state is 'working'
+          // BLOCKED if worker has blocked/error state
+          // IDLE if no worker OR worker is stale (>30 min) OR last activity is old
           let status = 'idle'
           if (liveWorker) {
             const ageMs = (liveWorker.ageSeconds || 0) * 1000
             const thirtyMinMs = 30 * 60 * 1000
             const isRecent = ageMs < thirtyMinMs
 
-            if (liveWorker.state === 'blocked') {
+            if (liveWorker.state === 'blocked' || liveWorker.state === 'error') {
               status = 'blocked'
-            } else if (liveWorker.state === 'working') {
-              status = isRecent ? 'active' : 'idle'
+            } else if (liveWorker.state === 'working' && isRecent) {
+              status = 'active'
             } else {
               status = 'idle'
             }
@@ -255,21 +277,18 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           })
         })
 
-      // Second pass: emit active workers NOT already in room-goals
+      // Second pass: emit active workers NOT already attached to a room-goal row
       // These are terminal sessions working on something not explicitly in room-goals
-      const roomSlugsSet = new Set(roomSlugs)
       workers.forEach((w) => {
-        if (!w || !w.name) return
+        if (!w || !w.name || usedWorkerNames.has(w.name)) return  // Skip if already attached to a room-goal
         const isRecent = (w.ageSeconds || 0) < (30 * 60)  // < 30 min
         const isWorking = w.state === 'working' || w.state === 'blocked'
         if (!isRecent && !isWorking) return  // Skip old inactive workers
 
-        // Only emit if not already covered by a room-goal row
-        // Workers don't have a room slug; we'd need a name->room mapping
-        // For now, emit all workers (future: implement deduplication)
+        // Emit as standalone worker row
         const display = roomDisplay(w.name, map)
         let status = 'idle'
-        if (w.state === 'blocked') {
+        if (w.state === 'blocked' || w.state === 'error') {
           status = 'blocked'
         } else if (w.state === 'working') {
           status = isRecent ? 'active' : 'idle'
@@ -279,12 +298,14 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         const workerLastActivity = typeof w.ageSeconds === 'number'
           ? new Date(Date.now() - w.ageSeconds * 1000).toISOString()
           : null
+        // intent = the goal/task (long); detail = the short current-status line.
+        // GOAL NOW = goal (truncated), LIVE NOW = live status.
         tableRows.push({
           slug: `workers:${w.name}`,
           display: { name: w.name, tag: 'Terminal' },
-          goal: w.detail || w.intent || '',
+          goal: (w.intent || w.detail || '').substring(0, 80),
           status,
-          liveNow: w.intent || '—',
+          liveNow: w.detail || w.intent || '—',
           lastActivity: workerLastActivity,
           routineId: null,
           isWorkerRow: true,
