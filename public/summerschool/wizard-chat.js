@@ -1465,10 +1465,13 @@
     // the cursor at the end, so he just finishes the thought instead of freezing.
     useStarter: (text) => {
       if (appState.isLoading) return;
+      // Set the textarea directly (not via render): render() reads the live
+      // textarea value back into essayInput at its top, so a render here would
+      // clobber the starter with the still-empty box. Writing the DOM value keeps
+      // it, and essayInput stays in sync for the next real render.
       appState.essayInput = text;
-      render();
       const el = document.querySelector('.essay-input');
-      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+      if (el) { el.value = text; el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
     },
     addSentence: (text) => {
       const t = (text || '').trim();
