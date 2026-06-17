@@ -129,7 +129,7 @@ img{display:block;max-width:100%}
 }
 .hero-sub::before{
   content:"";position:absolute;left:0;top:0;width:54px;height:2px;
-  background:linear-gradient(90deg,var(--amber),rgba(229,148,42,0));
+  background:linear-gradient(90deg,var(--amber),transparent);
 }
 .hero-sub strong{
   display:block;margin-bottom:6px;font-weight:600;
