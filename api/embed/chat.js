@@ -1352,6 +1352,14 @@ export default async function handler(req, res) {
         if (mathFocus) {
           systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED FOR A MATH CHALLENGE ===\nGive him ONE math problem RIGHT NOW at a 7th-grade-prep level. He is strong at math and heading to Kenilworth, so make it genuinely challenging but fair — a word problem, fractions/ratios, percentages, or pre-algebra. State the problem clearly, then ask him to solve it and show his thinking. Do NOT redirect to another subject, even if one was mid-way. Next turn, check his answer and walk through it if he misses. Keep it encouraging and a little competitive — he likes a real challenge. Math leads this turn.`
         }
+        // Writing Desk (Build R29) — when Ethan deliberately types a sentence into
+        // his essay surface, work on his WRITING this turn instead of deflecting
+        // him back to the current lesson subject (the Desk stays available after
+        // the Writing subject, so this kept getting redirected). Same override
+        // pattern as opening a project / tapping a spelling word.
+        if (essayMode) {
+          systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN IS WRITING IN HIS WRITING DESK ===\nThe message he just sent is a sentence he typed into his Writing Desk (his essay so far is shown above). Work on his WRITING with him this turn: react specifically and genuinely to what he just wrote, then warmly nudge his next sentence. Do NOT deflect to another subject or say "we'll get to Writing later" — when he chooses to write, you write with him right now.`
+        }
         // Progress recap tap (Build R26) — warm, accurate "how am I doing".
         if (progressSummary) {
           systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN ASKED HOW HE'S DOING ===\nGive him a warm, short progress recap RIGHT NOW. Use ONLY these real numbers, do NOT invent any others: ${progressSummary}. Call out the specific wins, connect them to getting ready for 7th grade at Kenilworth, and end with a little encouragement or a light challenge. Keep it brief and genuine — a few sentences. Do NOT redirect to a lesson. The recap leads this turn.`
