@@ -403,8 +403,24 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
   const [mobileCol, setMobileCol] = useState(0)          // 0 projects → 1 missions → 2 preview
   const [isNarrow, setIsNarrow] = useState(false)
 
-  useEffect(() => { setProjects(projectsProp || []) }, [projectsProp])
-  useEffect(() => { setMissionsMap(missionsByProject || {}) }, [missionsByProject])
+  // Merge new prop data in WITHOUT wiping local creates/moves (prop array is a fresh
+  // reference every parent render, so a plain reset would erase optimistic changes).
+  useEffect(() => {
+    setProjects(prev => {
+      const have = new Set(prev.map(p => p.slug))
+      const additions = (projectsProp || []).filter(p => !have.has(p.slug))
+      return additions.length ? [...prev, ...additions] : prev
+    })
+  }, [projectsProp])
+  useEffect(() => {
+    setMissionsMap(prev => {
+      const next = { ...prev }
+      for (const k of Object.keys(missionsByProject || {})) {
+        if (!next[k]) next[k] = missionsByProject[k]
+      }
+      return next
+    })
+  }, [missionsByProject])
   useEffect(() => {
     if (typeof window === 'undefined') return
     const check = () => setIsNarrow(window.innerWidth < 720)
@@ -509,19 +525,40 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
     <div style={{ ...colStyle, borderRight: 'none' }}>
       <div style={headStyle}>Preview</div>
       {selMission && selProj ? (
-        <div style={{ padding: '16px' }}>
-          <div style={{ width: '44px', height: '44px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '12px' }}>
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <div style={{ padding: '18px' }}>
+          <div style={{ width: '52px', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '14px' }}>
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           </div>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{selMission.name || selMission.slug}</div>
-          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>in {selProj.name || selProj.slug}</div>
-          <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>
-            <div>Status: {selMission.status === 'running' ? 'Working' : 'Idle'}</div>
-            <button onClick={() => onOpen && onOpen(selProj, selMission)} style={{ marginTop: '6px', alignSelf: 'flex-start', padding: '8px 14px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>Open room</button>
+          <div style={{ fontSize: '17px', fontWeight: '700', color: 'var(--cv6-text-primary)', letterSpacing: '-0.01em' }}>{selMission.name || selMission.slug}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: selMission.status === 'running' ? '#10B981' : 'var(--cv6-text-tertiary)' }} />
+            <span style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{selMission.status === 'running' ? 'Working now' : 'Idle'} · in {selProj.name || selProj.slug}</span>
           </div>
+          {/* R38 r2: small room description */}
+          <p style={{ marginTop: '14px', fontSize: '13px', lineHeight: 1.5, color: 'var(--cv6-text-secondary)' }}>
+            {selMission.description || selMission.summary || `Part of ${selProj.name || selProj.slug}. ${selMission.status === 'running' ? 'An agent is actively pushing this forward.' : 'Open it to pick up where it left off.'}`}
+          </p>
+          <div style={{ marginTop: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px' }}>
+            <div style={{ padding: '10px', borderRadius: '8px', background: 'var(--cv6-surface-hover)' }}>
+              <div style={{ color: 'var(--cv6-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: '700', fontSize: '10px' }}>Status</div>
+              <div style={{ color: 'var(--cv6-text-primary)', fontWeight: '600', marginTop: '3px', fontSize: '13px' }}>{selMission.status === 'running' ? 'Working' : 'Idle'}</div>
+            </div>
+            <div style={{ padding: '10px', borderRadius: '8px', background: 'var(--cv6-surface-hover)' }}>
+              <div style={{ color: 'var(--cv6-text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: '700', fontSize: '10px' }}>Last active</div>
+              <div style={{ color: 'var(--cv6-text-primary)', fontWeight: '600', marginTop: '3px', fontSize: '13px' }}>{selMission.last_message_at ? relativeTime(selMission.last_message_at) : 'recently'}</div>
+            </div>
+          </div>
+          <button onClick={() => onOpen && onOpen(selProj, selMission)} style={{ marginTop: '16px', width: '100%', padding: '10px 14px', borderRadius: '8px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>Open room</button>
         </div>
       ) : selProj ? (
-        <div style={{ padding: '16px', fontSize: '13px', color: 'var(--cv6-text-secondary)' }}>{selProj.name || selProj.slug} · {(missionsMap[selProj.slug] || []).length} missions. Select a mission to preview.</div>
+        <div style={{ padding: '18px' }}>
+          <div style={{ width: '52px', height: '52px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `hsla(${hue(selProj.slug)}, 60%, 50%, 0.14)`, color: `hsl(${hue(selProj.slug)}, 60%, 50%)`, marginBottom: '14px' }}>
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <div style={{ fontSize: '17px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{selProj.name || selProj.slug}</div>
+          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '5px' }}>{(missionsMap[selProj.slug] || []).length} missions</div>
+          <p style={{ marginTop: '14px', fontSize: '13px', lineHeight: 1.5, color: 'var(--cv6-text-secondary)' }}>{selProj.description || `A project room holding ${(missionsMap[selProj.slug] || []).length} missions. Pick a mission to see its details, or drag missions between projects to reorganize.`}</p>
+        </div>
       ) : emptyHint('Select a project, then a mission')}
     </div>
   )
