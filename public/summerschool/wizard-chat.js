@@ -705,10 +705,24 @@
           .join(' ')}</div>
          <div class="essay-count">${sentences.length} sentence${sentences.length === 1 ? '' : 's'} written</div>`
       : `<div class="essay-empty">Your essay starts here. Type your first sentence below &mdash; one at a time, and watch it grow into a whole paragraph.</div>`;
+    // Blank-page helper (Build R30): Ethan's documented #1 writing problem is the
+    // blank-page freeze. When the essay is still empty, offer a few sentence
+    // starters — tap one and it drops into the box so he's finishing a sentence,
+    // not staring at nothing. Only on the empty state; momentum carries after.
+    const starterHtml = sentences.length
+      ? ''
+      : `<div class="essay-starters">
+          <span class="essay-starters-label">Stuck on the first word? Tap one to start:</span>
+          <div class="essay-starter-row">
+            ${['I think', 'One time', 'My favorite', 'It all started when'].map((s) =>
+              `<button type="button" class="essay-starter" onclick="window.__wizardChat.useStarter('${s} ')">${s}&hellip;</button>`).join('')}
+          </div>
+        </div>`;
     return `
       <div class="writing-desk">
         <div class="action-title">&#9998; My Writing Desk</div>
         ${bodyHtml}
+        ${starterHtml}
         <div class="essay-input-row">
           <textarea
             class="essay-input"
@@ -1446,6 +1460,15 @@
     closeWorld: () => {
       appState.worldOpen = false;
       render();
+    },
+    // Blank-page helper (Build R30): drop a sentence starter into the box and put
+    // the cursor at the end, so he just finishes the thought instead of freezing.
+    useStarter: (text) => {
+      if (appState.isLoading) return;
+      appState.essayInput = text;
+      render();
+      const el = document.querySelector('.essay-input');
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
     },
     addSentence: (text) => {
       const t = (text || '').trim();
