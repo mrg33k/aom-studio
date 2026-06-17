@@ -292,8 +292,9 @@ function SupportCard({ item, accentColor }) {
       onClick={() => setIsExpanded(!isExpanded)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', width: '100%', textAlign: 'left',
+        // R53: THE CARD paradigm — surface bg, 1px border, 8px radius, 14px pad, no shadow (see cv6.css)
         background: 'var(--cv6-surface)', border: `1px solid ${isExpanded ? accentColor : 'var(--cv6-divider)'}`,
-        borderRadius: '6px', padding: '12px 14px', minHeight: '56px', justifyContent: 'center',
+        borderRadius: 'var(--cv6-card-radius)', padding: 'var(--cv6-card-pad)', minHeight: '56px', justifyContent: 'center',
         cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit',
       }}
       onMouseEnter={(e) => {
@@ -2077,46 +2078,12 @@ export default function HomeView({
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
               marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid var(--cv6-divider)',
             }}>
-              {/* Primary group (left): Explorer, Files, Home, Theme */}
+              {/* Primary group (left): Theme only.
+                  R50 removed the Home icon (duplicated Tools→Home).
+                  R53 removed Explorer (duplicated the projects/missions tree on the Home body)
+                  and Files (duplicated the Files tool in the Tools row) — both were unlabeled
+                  duplicate destinations. No mystery glyphs remain in the header. */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* Explorer — R23: folder-tree/sidebar icon (clearer "explore/browse" intent) */}
-                <button
-                  title="Open Explorer"
-                  onClick={() => onOpenDrawer?.('explorer')}
-                  style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
-                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M15 3H9a6 6 0 0 0-6 6v6a6 6 0 0 0 6 6h6a6 6 0 0 0 6-6V9a6 6 0 0 0-6-6z"/><path d="M9 10h2"/><path d="M9 14h2"/><path d="M13 10h2"/><path d="M13 14h2"/>
-                  </svg>
-                </button>
-
-                {/* Files */}
-                <button
-                  title="Open Files"
-                  onClick={() => onOpenDrawer?.('files')}
-                  style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
-                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-                  </svg>
-                </button>
-
-                {/* R50: Home icon removed from the top nav — Home already lives in the Tools row (Patrik: drop the duplicate). */}
-
                 {/* Theme toggle */}
                 <button
                   title="Toggle theme"

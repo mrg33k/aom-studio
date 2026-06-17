@@ -29,6 +29,24 @@
   --cv6-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.12);
   --cv6-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.16);
   --cv6-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.14);
+
+  /* ── THE CARD — ONE PARADIGM (R53) ───────────────────────────────
+     A "card" is a bordered surface that holds ONE actionable unit
+     (a support item, a project, etc.). There is exactly one card look
+     in CV6 — every card uses these tokens so the set reads as one family:
+       resting : surface bg · 1px divider border · 8px radius · 14px pad · NO shadow (calm)
+       hover   : border-color → accent-primary · bg → surface-hover (no glow, no lift)
+     NOT a card (do not give these the card look — they are their own
+     consistent families):
+       • ROWS   — transparent hover-fill list items (6px, no border): agent rows,
+                  project/mission/file/room rows. Hierarchy: rows are flatter than cards.
+       • TABLES — Review / Command Deck / Tracker are tables (single 8px bordered
+                  panel wrapping borderless rows), NOT stacks of cards.
+       • PREVIEW TILES — the type-colored media placeholders in Review/Files (12px)
+                  are a preview surface, kept consistent across both, not content cards.
+     ───────────────────────────────────────────────────────────────── */
+  --cv6-card-radius: 8px;
+  --cv6-card-pad: 14px;
 }
 
 [data-cv6][data-theme="dark"],
@@ -549,31 +567,23 @@
   opacity: 1 !important;
 }
 
-/* Project card: container with subtle border + shadow */
+/* Project card — THE CARD paradigm (R53): flat bordered surface, no shadow,
+   hover signals via border→accent + surface-hover (matches SupportCard). */
 [data-cv6] [data-cv4-home] .hm-proj {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 14px;
+  padding: var(--cv6-card-pad) !important;
   background: var(--cv6-surface) !important;
   border: 1px solid var(--cv6-divider) !important;
-  border-radius: 8px !important;
+  border-radius: var(--cv6-card-radius) !important;
   margin-bottom: 12px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease-out;
 }
 
-[data-cv6][data-theme="dark"] [data-cv4-home] .hm-proj {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
 [data-cv6] [data-cv4-home] .hm-proj:hover {
-  border-color: var(--cv6-accent-primary);
-  box-shadow: 0 2px 8px rgba(0, 102, 255, 0.1);
-}
-
-[data-cv6][data-theme="dark"] [data-cv4-home] .hm-proj:hover {
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  border-color: var(--cv6-accent-primary) !important;
+  background: var(--cv6-surface-hover) !important;
 }
 
 [data-cv6] [data-cv4-home] .hm-proj:last-of-type {
