@@ -25,8 +25,7 @@ export default function HeroSection({ openBrief }) {
               </p>
             </div>
             <h1 className="font-display-serif text-[14vw] md:text-[80px] lg:text-[96px] xl:text-[120px] leading-[0.88] tracking-[-0.03em] max-w-[700px]">
-              A creative team<br />
-              you can <em className="font-display-italic italic font-medium text-[#E85D26]">hire.</em>
+              Welcome
             </h1>
             <p className="font-body text-[16px] md:text-[18px] text-[#F0ECE6]/85 mt-8 leading-[1.55] max-w-xl">
               Brand films, websites, and ads for real businesses. Hire us online by sending a few files. Or hire us in person. We reply within 24 hours.
