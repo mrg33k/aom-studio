@@ -1335,7 +1335,7 @@ function CommandDeckOverlay({ projects, agents }) {
   const holdAll = () => setRows(prev => prev.map(r => (r.status === 'live' ? { ...r, held: true } : r)))
   const sendSelected = () => setRows(prev => prev.map(r => (r.status === 'live' && r.checked ? { ...r, status: 'sent', secs: 0 } : r)))
 
-  const GRID = '28px 132px minmax(220px, 1fr) 76px 84px'
+  const GRID = '28px 132px minmax(200px, 1fr) 72px 104px'
   const head = { fontSize: '11px', fontWeight: '700', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)', padding: '9px 8px' }
   const cell = { padding: '10px 8px', minWidth: 0, alignSelf: 'start' }
 
