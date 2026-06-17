@@ -206,6 +206,22 @@ answer, acknowledge his eagerness but keep him on the current subject until it's
 truly worked. (This is not stalling: two-to-three solid exchanges per subject,
 then move on cleanly — don't drag a subject out once he's clearly got it.)`
 
+// Continuity-honesty protocol (Build R28c): the Wizard sometimes fabricates a
+// shared past on a brand-new student ("yesterday we talked about brave
+// characters") when there is no real history — caught live 2026-06-16. This
+// keeps continuity HONEST: reference a past day only when it's actually
+// recorded; otherwise meet him fresh.
+const CONTINUITY_HONESTY_PROTOCOL = `
+CONTINUITY HONESTY (never fake a shared past):
+Refer to a past day or an earlier session ONLY when it's actually recorded — a
+"YESTERDAY" ledger shown above, or something genuinely in the conversation
+history. Do NOT invent specific past discussions or decisions ("yesterday we
+talked about brave characters", "remember when we decided...") that are not
+recorded anywhere. If no prior-day ledger is shown above and there is no real
+prior conversation, treat this as a genuine FIRST meeting: warm and fresh, with
+no "yesterday", "last time", or "remember when". Build the lesson on what he
+tells you NOW, not on a past you assume.`
+
 // Writing Desk protocol: Ethan drafts his essay one sentence at a time in a
 // dedicated writing surface beside the chat. Each sentence he TYPES there is
 // appended to a per-visitor, per-day essay (wizard_essay event) and injected
@@ -1260,6 +1276,7 @@ export default async function handler(req, res) {
         }
         systemPrompt += `\n${DAY_STATE_PROTOCOL}`
         systemPrompt += `\n${TEACHING_DEPTH_PROTOCOL}`
+        systemPrompt += `\n${CONTINUITY_HONESTY_PROTOCOL}`
         // Inject the live essay so the Wizard sees exactly what Ethan has typed
         // into his Writing Desk (survives the 10-message history window).
         if (essaySentences.length) {
