@@ -16,6 +16,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import './cv5.css'
+import './cv6.css'  // CV6 design tokens — needed when cv6 mode is on (?cv6=1). Scoped to [data-cv6], inert otherwise.
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import skillsData from '../data/skills.json'
 import { supabase } from './lib/supabase.js'
@@ -135,6 +136,9 @@ export default function CornerVG() {
   const [worldId, setWorldId]           = useState(null)
   const [tab, setTab]                   = useState('chat')
   const [deckTab, setDeckTab]           = useState('chat') // 'chat' | 'deck' — Command Deck in Elon's room (ported from CornerV4)
+  // CV6 surface gate: /cvg?cv6=1 turns on the CV6 design while it's being built,
+  // so the default /cvg stays the working cv4 surface until CV6 is verified.
+  const cv6Mode = (typeof window !== 'undefined') && new URLSearchParams(window.location.search).get('cv6') === '1'
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
@@ -2727,11 +2731,12 @@ export default function CornerVG() {
           so the eye doesn't have to dart left/right when both drawers are
           collapsed. Mobile/tablet still uses the tab toggle in ContextNav. */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
-        {isDesktop && !showSupportInbox && (
+        {isDesktop && !showSupportInbox && !cv6Mode && (
           /* R23: animated wrapper — collapses to a 14px hover gutter after
              10s without hover; hovering the gutter slides the drawer back
              open. The drawer keeps its fixed 300px width inside so the
-             collapse reads as a smooth slide, not a squish. */
+             collapse reads as a smooth slide, not a squish.
+             cv6Mode hides this rail — CV6 uses its own single-column tools layout. */
           <div
             data-cv4-left-rail-wrap
             onMouseEnter={() => { setLeftRailHover(true); if (!drawerOpen) setDrawerOpen(true) }}
@@ -2847,6 +2852,7 @@ export default function CornerVG() {
               <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
             ) : isHomeMode ? (
               <HomeView
+                cv6={cv6Mode}
                 user={currentUser}
                 worldId={worldId}
                 agents={agents}
@@ -2890,10 +2896,11 @@ export default function CornerVG() {
             )}
           </div>
         </div>
-        {isDesktop && !showSupportInbox && (
+        {isDesktop && !showSupportInbox && !cv6Mode && (
           /* R23: animated wrapper — same idle-close / hover-reopen behavior
              as the left rail. Inner aside keeps its fixed clamp width so the
-             collapse slides instead of squishing. */
+             collapse slides instead of squishing.
+             cv6Mode hides this rail — CV6 uses its own single-column tools layout. */
           <div
             data-cv4-right-rail-wrap
             onMouseEnter={() => { setRightRailHover(true); if (!tasksDrawerOpen) setTasksDrawerOpen(true) }}
