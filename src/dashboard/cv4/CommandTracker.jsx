@@ -113,7 +113,9 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         body: JSON.stringify({ action: 'edit_goal', room: slug, goal: g, world: worldId }),
       })
       if (res?.ok) {
-        setRows((prev) => prev.map((r) => r.slug === slug ? { ...r, goal: g } : r))
+        // Editing the goal counts as activity, so bump recency to re-sort the row.
+        const nowIso = new Date().toISOString()
+        setRows((prev) => prev.map((r) => r.slug === slug ? { ...r, goal: g, lastActivity: nowIso } : r))
         setEditingGoalSlug(null)
       }
     } finally {
@@ -132,11 +134,19 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         setReplyOpenSlug(null)
         setReplyDoneSlug(slug)
         setTimeout(() => setReplyDoneSlug(null), 4000)
+        // Restart the room's check-in timer (Patrik: replying resets when it gets
+        // checked) and bubble it to the top now without waiting for the next poll.
+        const nowIso = new Date().toISOString()
+        setRows((prev) => prev.map((r) => r.slug === slug ? { ...r, lastActivity: nowIso, liveNow: t.slice(0, 90) } : r))
+        authFetch('/api/dashboard/command-deck-action', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'touch_room', room: slug, world: worldId }),
+        }).catch(() => {})
       }
     } finally {
       setReplySending(false)
     }
-  }, [replyText, onReplyToRoom])
+  }, [replyText, onReplyToRoom, worldId])
 
   const load = useCallback(async () => {
     try {

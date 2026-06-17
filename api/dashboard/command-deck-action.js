@@ -118,7 +118,7 @@ export default async function handler(req, res) {
   const callKey = callId || lineMatch;
 
   // ── Validate action ────────────────────────────────────────────────────────
-  if (!action || !['mark_call_done', 'answer_question', 'keeper_decision', 'set_room_status', 'dismiss', 'edit_goal'].includes(action)) {
+  if (!action || !['mark_call_done', 'answer_question', 'keeper_decision', 'set_room_status', 'dismiss', 'edit_goal', 'touch_room'].includes(action)) {
     return res.status(400).json({ error: 'Invalid action' });
   }
 
@@ -139,6 +139,10 @@ export default async function handler(req, res) {
     } else if (action === 'edit_goal') {
       // Patrik edits the room's one-line goal directly in the Command Center.
       return await editGoal(room, goal, res);
+    } else if (action === 'touch_room') {
+      // A quick reply in the Command Center counts as just-touched: bump the
+      // room's timer so its check-in countdown restarts and it sorts to the top.
+      return await touchRoom(room, res);
     } else if (action === 'dismiss') {
       // Generalized "clear it from the deck" across card types. Where a real
       // server-side state exists (hard call, question, keeper) we persist it so
@@ -338,17 +342,45 @@ async function editGoal(room, goal, res) {
     const goals = JSON.parse(goalsContent);
     if (!goals.rooms) goals.rooms = {};
     if (!goals.rooms[room]) goals.rooms[room] = {};
+    const now = new Date().toISOString();
     goals.rooms[room] = {
       ...goals.rooms[room],
       goal: clean,
       goal_source: 'patrik',
-      goal_edited_at: new Date().toISOString(),
+      goal_edited_at: now,
+      last_touched: now, // editing the goal counts as activity so the row re-sorts
     };
     const ok = await writeDeliverable('room-goals.json', JSON.stringify(goals, null, 2) + '\n');
     if (!ok) return res.status(500).json({ error: 'Failed to write room-goals.json' });
     return res.status(200).json({ success: true, action: 'edit_goal', room, goal: clean });
   } catch (err) {
     console.error('[editGoal] Error:', err);
+    throw err;
+  }
+}
+
+// A quick reply in the Command Center restarts the room's check-in timer: bump
+// last_touched + last_reviewed so the loop's countdown resets and the row sorts
+// to the top of its status tier on the next poll.
+async function touchRoom(room, res) {
+  if (!room || typeof room !== 'string') {
+    return res.status(400).json({ error: 'room required' });
+  }
+  try {
+    let goalsContent = await readDeliverable('room-goals.json');
+    if (goalsContent == null) {
+      return res.status(404).json({ error: 'room-goals.json not found' });
+    }
+    const goals = JSON.parse(goalsContent);
+    if (!goals.rooms) goals.rooms = {};
+    if (!goals.rooms[room]) goals.rooms[room] = {};
+    const now = new Date().toISOString();
+    goals.rooms[room] = { ...goals.rooms[room], last_touched: now, last_reviewed: now };
+    const ok = await writeDeliverable('room-goals.json', JSON.stringify(goals, null, 2) + '\n');
+    if (!ok) return res.status(500).json({ error: 'Failed to write room-goals.json' });
+    return res.status(200).json({ success: true, action: 'touch_room', room });
+  } catch (err) {
+    console.error('[touchRoom] Error:', err);
     throw err;
   }
 }
