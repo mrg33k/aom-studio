@@ -941,6 +941,7 @@
       if (opts.essayMode) payload.essay_mode = true;
       if (isAfterSchoolNow()) payload.after_school = true;
       if (opts.projectFocus) payload.project_focus = opts.projectFocus;
+      if (opts.practiceWord) payload.practice_word = opts.practiceWord;
       const response = await fetch('/api/embed/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1312,7 +1313,7 @@
       const list = appState.spellbook || [];
       const w = list[i];
       if (!w || appState.isLoading) return;
-      sendMessage(`Can you quiz me on spelling the word "${w.word}"? Say it, use it in a sentence, ask me to spell it out loud, then check my answer and give me a quick tip if I miss it.`);
+      sendMessage(`Can you quiz me on spelling the word "${w.word}"? Say it, use it in a sentence, ask me to spell it out loud, then check my answer and give me a quick tip if I miss it.`, { practiceWord: w.word });
     },
     completeItem: (kind, i) => {
       // spellbook items key on .word and finish as 'mastered'; the rest key on

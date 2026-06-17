@@ -1035,6 +1035,10 @@ export default async function handler(req, res) {
   // right now. Behavior-only — a focus hint on top of the normal prompt; no
   // session/data change, so it can't lose his place.
   const projectFocus = typeof body.project_focus === 'string' ? body.project_focus.slice(0, 120).trim() : ''
+  // Spellbook practice (Build R22): when Ethan taps a spelling word, the widget
+  // sends practice_word so the Wizard runs the spelling check on THAT word this
+  // turn instead of redirecting him to the lesson. Behavior-only prompt hint.
+  const practiceWord = typeof body.practice_word === 'string' ? body.practice_word.slice(0, 60).trim() : ''
   // Which conversation room this turn belongs to (Build R19). The widget sends
   // an explicit `room` ('school' or 'project:<slug>'); if absent, derive it from
   // project_focus so older clients still land project turns in the project room.
@@ -1276,6 +1280,11 @@ export default async function handler(req, res) {
         // above — when Ethan taps a project, working on it IS this turn.
         if (projectFocus) {
           systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN JUST OPENED HIS PROJECT: "${projectFocus}" ===\nHe tapped this project to work on it with you RIGHT NOW. This overrides the lesson flow for THIS reply. Do NOT continue or restart any subject, warm-up, or communication question — even if one was mid-way. Set the lesson aside; you can return to it later. Be his teammate, not his teacher: get genuinely excited about "${projectFocus}", ask what he wants to do next on it, and help him take ONE concrete next step on the project today. If a quick skill fits the project naturally (writing a piece of it, the math his build needs, planning the next part), weave it in there. The project leads. This is HIS thing.`
+        }
+        // Spellbook practice tap (Build R22) — outranks the lesson for this turn,
+        // like opening a project. He asked to drill THIS word; do it now.
+        if (practiceWord) {
+          systemPrompt += `\n\n=== HIGHEST PRIORITY THIS TURN — ETHAN TAPPED A SPELLING WORD TO PRACTICE: "${practiceWord}" ===\nHe wants to practice spelling THIS word RIGHT NOW. Do it immediately for THIS reply. Do NOT redirect him back to the lesson, the warm-up, or any other subject, even if one was mid-way. Run a quick, friendly spelling check: say the word clearly, use it in a natural sentence, then ask him to spell it out for you. Next turn, confirm his answer and give a short memory tip if he misses it. Keep it light and encouraging — spelling is something he's building, so make a small win feel good. Spelling leads this turn.`
         }
         const rawReply = await callGeminiWithRetry(
           systemPrompt,
