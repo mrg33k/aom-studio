@@ -791,6 +791,54 @@ html.dark-theme .spell-word--learning { color: var(--color-gold); }
   background: rgba(212, 175, 55, 0.18);
 }
 .math-skill--learning:disabled { cursor: default; opacity: 0.6; box-shadow: none; }
+
+/* My Stories (Build R92) — writing is the top priority, so his finished pieces
+   stack here as a growing, re-readable shelf (like the Bookshelf for books).
+   Each title is a tappable button that expands the piece inline. */
+.story-panel { margin-top: 18px; }
+.story-count {
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--color-gold-soft);
+  margin-left: 8px;
+}
+.story-hint {
+  font-size: 11px;
+  color: var(--color-gold-soft);
+  opacity: 0.85;
+  margin: 2px 0 8px;
+  line-height: 1.4;
+}
+.story-list { display: flex; flex-direction: column; gap: 6px; }
+.story-item { display: flex; flex-direction: column; }
+.story-title {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  color: var(--color-gold);
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 8px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.story-title:hover { background: rgba(212, 175, 55, 0.16); }
+.story-caret { display: inline-block; width: 12px; opacity: 0.8; }
+.story-text {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-ink, #322a55);
+  background: #fff;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin: 5px 0 2px;
+  white-space: pre-wrap;
+}
+html.dark-theme .story-text { color: var(--color-bone, #efe7d6); background: rgba(255,255,255,0.05); }
 .math-skill--mastered {
   border: 1px solid #b08f25;
   background: linear-gradient(180deg, var(--color-gold), var(--color-gold-soft));

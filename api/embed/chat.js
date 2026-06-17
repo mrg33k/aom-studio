@@ -251,7 +251,14 @@ When you run the Writing lesson:
 - React to the sentence he actually typed (shown below as "essay so far"),
   then guide the very next single sentence. Keep going sentence by sentence
   until he has a real paragraph he wrote himself.
-- Never paste the whole essay back at him and never count talk as writing.`
+- Never paste the whole essay back at him and never count talk as writing.
+- When he FINISHES a piece (a real paragraph he wrote himself, and he is done
+  with it), celebrate it warmly, then add it to his Stories shelf so it stacks
+  up as an achievement and he can re-read it later. Do this with ONE machine-only
+  line, never shown, placed just before the <<DAY:>> line (which stays last):
+  <<STORY: a short title for his piece>>
+  Emit it once per finished piece, only when his Writing Desk actually holds his
+  writing. Do NOT invent a title for a piece he has not written.`
 
 // Latest essay snapshot for this visitor on the given Phoenix day.
 async function fetchEssay(embedId, visitorId, daysAgo = 0) {
@@ -295,6 +302,69 @@ async function saveEssay(embedId, visitorId, sentences) {
   } catch (_) {
     /* non-fatal — the Desk re-syncs on the next turn / reload */
   }
+}
+
+// --- My Stories (Build R92) — writing is the council's TOP priority, but the
+// Writing Desk essay is date-keyed (resets each day), so his finished pieces
+// vanished at midnight. Spelling stacks in the Spellbook, reading in the
+// Bookshelf, math in the Math Lab — writing had nowhere to accumulate. This is
+// his Stories shelf: when he FINISHES a piece, the Wizard emits <<STORY: title>>
+// and the server snapshots that day's Writing Desk text onto a permanent,
+// re-readable shelf (per visitor, NOT date-keyed) — a growing achievement.
+// Strip ALL <<STORY: ...>> markers anywhere; returns { text, story }.
+function extractStory(replyText) {
+  const m = replyText.match(/<<STORY:([\s\S]*?)>>/i)
+  const cleaned = replyText.replace(/<<STORY:[\s\S]*?>>/gi, '').trim()
+  return { text: cleaned, story: m ? m[1].trim().slice(0, 80) : null }
+}
+
+// Append a finished piece; dedupe by title (latest text wins); newest last; cap 12.
+function mergeStories(title, text, priorList) {
+  const out = []
+  const seen = new Set()
+  for (const s of priorList) {
+    const k = (s.title || '').toLowerCase()
+    if (k && !seen.has(k)) { seen.add(k); out.push(s) }
+  }
+  const key = (title || '').toLowerCase()
+  const piece = { title: title || 'My story', text: text || '', date: phoenixDate() }
+  const idx = out.findIndex((s) => (s.title || '').toLowerCase() === key)
+  if (idx >= 0) out[idx] = piece
+  else out.push(piece)
+  return out.slice(-12)
+}
+
+async function fetchStories(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_stories')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
+async function saveStories(embedId, visitorId, items) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/events`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({
+        agent: 'wizard-stories',
+        event_type: 'wizard_stories',
+        payload: { embed_id: embedId, visitor_id: visitorId || '', items },
+      }),
+    })
+  } catch (_) { /* non-fatal */ }
 }
 
 async function fetchDayState(embedId, visitorId, daysAgo = 0) {
@@ -1326,10 +1396,11 @@ export default async function handler(req, res) {
     let latestSpellbook = null
     let latestReading = null
     let latestMathlab = null
+    let latestStories = null
     let latestMissions = null
     if (aiServed) {
       try {
-        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading, priorMathlab, priorMissions] = await Promise.all([
+        const [history, councilNotes, dayState, priorEssay, priorAssignments, priorProjects, priorReminders, priorSpellbook, priorReading, priorMathlab, priorStories, priorMissions] = await Promise.all([
           fetchHistory(cfg, visitor_id || null, 10, room),
           fetchWizardContext(embed_id),
           fetchDayState(embed_id, visitor_id || null),
@@ -1340,6 +1411,7 @@ export default async function handler(req, res) {
           fetchSpellbook(embed_id, visitor_id || null),
           fetchReading(embed_id, visitor_id || null),
           fetchMathlab(embed_id, visitor_id || null),
+          fetchStories(embed_id, visitor_id || null),
           fetchMissions(embed_id, visitor_id || null),
         ])
 
@@ -1392,6 +1464,13 @@ export default async function handler(req, res) {
           }
         }
         systemPrompt += `\n${WRITING_DESK_PROTOCOL}`
+        // Inject his Stories shelf (titles only) so the Wizard can reference past
+        // pieces and doesn't have him re-write the same one — writing continuity.
+        const priorStoryList = Array.isArray(priorStories) ? priorStories : []
+        if (priorStoryList.length) {
+          systemPrompt += `\n\n=== ETHAN'S STORIES SHELF (finished writing pieces he's proud of — reference them, build on them, never re-assign one) ===\n` +
+            priorStoryList.map((s) => `- "${s.title}"`).join('\n')
+        }
         // Inject the running assignments list so the Wizard can follow up.
         const priorAssignList = Array.isArray(priorAssignments) ? priorAssignments : []
         if (priorAssignList.length) {
@@ -1488,7 +1567,8 @@ export default async function handler(req, res) {
         const spellExtract = extractSpellbook(reminderExtract.text)
         const readExtract = extractReading(spellExtract.text)
         const mathExtract = extractMathlab(readExtract.text)
-        const missionExtract = extractMissions(mathExtract.text)
+        const storyExtract = extractStory(mathExtract.text)
+        const missionExtract = extractMissions(storyExtract.text)
         const dayExtract = extractDayState(missionExtract.text)
         const newDayState = dayExtract.state
         const replyText = dayExtract.text
@@ -1553,6 +1633,16 @@ export default async function handler(req, res) {
           await saveMathlab(embed_id, visitor_id || null, canonicalMathlab)
         }
         latestMathlab = canonicalMathlab
+
+        // Snapshot a finished writing piece onto his Stories shelf. Only when the
+        // Wizard declared one done AND his Writing Desk actually holds his text,
+        // so we never shelve an empty or invented "story".
+        let canonicalStories = priorStoryList
+        if (storyExtract.story && essaySentences.length) {
+          canonicalStories = mergeStories(storyExtract.story, essaySentences.join(' '), priorStoryList)
+          await saveStories(embed_id, visitor_id || null, canonicalStories)
+        }
+        latestStories = canonicalStories
 
         // Merge + persist missions (parts of his projects) if updated this turn.
         let canonicalMissions = priorMissionList
@@ -1632,6 +1722,8 @@ export default async function handler(req, res) {
       reading: latestReading,
       // Ethan's Math Lab (skills he's mastering) for his board — Kenilworth focus.
       mathlab: latestMathlab,
+      // Ethan's Stories shelf (finished writing pieces) — writing is top priority.
+      stories: latestStories,
       // Missions (the parts of his projects) so the left bar nests them.
       missions: latestMissions,
       // Widget polls /api/embed/messages?since=<timestamp> for agent replies.

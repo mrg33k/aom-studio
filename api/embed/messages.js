@@ -120,6 +120,26 @@ async function fetchSpellbook(embedId, visitorId) {
   } catch (_) { return [] }
 }
 
+// Ethan's Stories shelf for this visitor (finished writing pieces, carries across days).
+async function fetchStories(embedId, visitorId) {
+  const params = new URLSearchParams()
+  params.set('select', 'payload')
+  params.set('event_type', 'eq.wizard_stories')
+  params.set('payload->>embed_id', `eq.${embedId}`)
+  params.set('payload->>visitor_id', `eq.${visitorId || ''}`)
+  params.set('order', 'timestamp.desc')
+  params.set('limit', '1')
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/events?${params.toString()}`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    })
+    if (!r.ok) return []
+    const rows = await r.json()
+    const items = rows?.[0]?.payload?.items
+    return Array.isArray(items) ? items : []
+  } catch (_) { return [] }
+}
+
 // Ethan's Math Lab for this visitor (math skills he's mastering, carries across days).
 async function fetchMathlab(embedId, visitorId) {
   const params = new URLSearchParams()
@@ -459,7 +479,7 @@ export default async function handler(req, res) {
     // panel renders the real state immediately (chat POSTs keep it fresh).
     // Also seed the Writing Desk (today's essay) and the Game HUD base
     // (all-time/today completions + streak) — both only on page load.
-    const [dayState, essay, progress, assignments, projects, reminders, spellbook, reading, mathlab, missions] = historyMode
+    const [dayState, essay, progress, assignments, projects, reminders, spellbook, reading, mathlab, stories, missions] = historyMode
       ? await Promise.all([
           fetchDayState(embedId, visitorId),
           fetchEssay(embedId, visitorId),
@@ -470,9 +490,10 @@ export default async function handler(req, res) {
           fetchSpellbook(embedId, visitorId),
           fetchReading(embedId, visitorId),
           fetchMathlab(embedId, visitorId),
+          fetchStories(embedId, visitorId),
           fetchMissions(embedId, visitorId),
         ])
-      : [null, null, null, null, null, null, null, null, null, null]
+      : [null, null, null, null, null, null, null, null, null, null, null]
     return res.status(200).json({
       day_state: dayState,
       essay,
@@ -483,6 +504,7 @@ export default async function handler(req, res) {
       spellbook,
       reading,
       mathlab,
+      stories,
       missions,
       messages: filtered.map((row) => ({
         id: row.id,

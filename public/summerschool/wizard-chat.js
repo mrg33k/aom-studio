@@ -32,6 +32,8 @@
     spellbook: null, // [{word, status}] spelling + vocab he's mastering (Build R10)
     reading: null, // [{title, status, spot}] his book + where he is (Build R11)
     mathlab: null, // [{skill, status}] math skills he's mastering, Kenilworth focus (Build R90)
+    stories: null, // [{title, text, date}] finished writing pieces, writing top priority (Build R92)
+    storyOpen: null, // index of the story expanded in the My Stories card (client-only)
     progress: null, // { totalDone, todayDone, streak, activeDays } base from page load
     baseDone: 0, // all-time subjects done BEFORE today (today is tracked live)
     doneCount: null, // today's completed-subject count (live; null until baseline set)
@@ -483,6 +485,32 @@
       </div>`;
   }
 
+  // --- My Stories (Build R92) — writing is the council's TOP priority, but his
+  // Writing Desk essay reset every day, so finished pieces vanished. This shelf
+  // stacks the stories he's finished as a growing, re-readable collection (like
+  // the Bookshelf stacks finished books). Tap a title to re-read it inline.
+  // Loaded on page load + every turn, so a refresh keeps his place.
+  function renderStories() {
+    const items = appState.stories || [];
+    if (!items.length) return '';
+    const open = appState.storyOpen;
+    const list = items.map((s, i) => {
+      const isOpen = open === i;
+      const body = isOpen && s.text ? `<div class="story-text">${escapeHtml(s.text)}</div>` : '';
+      return `<div class="story-item">
+          <button type="button" class="story-title" aria-expanded="${isOpen}" onclick="window.__wizardChat.toggleStory(${i})">
+            <span class="story-caret">${isOpen ? '&#9662;' : '&#9656;'}</span> ${escapeHtml(s.title)}
+          </button>
+          ${body}
+        </div>`;
+    }).join('');
+    return `<div class="story-panel">
+        <div class="action-title">&#128221; My Stories <span class="story-count">${items.length} written</span></div>
+        <div class="story-hint">Tap a title to read it again.</div>
+        <div class="story-list">${list}</div>
+      </div>`;
+  }
+
   // --- Project rail (Build R19) — the right panel inside a project room ------
   // In a project room the school quest board is hidden (it's school's). The rail
   // instead focuses on the open project: its parts (missions) to work on,
@@ -849,6 +877,7 @@
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
       if (Array.isArray(data.mathlab)) appState.mathlab = data.mathlab;
+      if (Array.isArray(data.stories)) appState.stories = data.stories;
       if (Array.isArray(data.missions)) appState.missions = data.missions;
       applyProgress(data.progress);
       if (!Array.isArray(data.messages) || data.messages.length === 0) return false;
@@ -908,6 +937,7 @@
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
       if (Array.isArray(data.mathlab)) appState.mathlab = data.mathlab;
+      if (Array.isArray(data.stories)) appState.stories = data.stories;
       if (Array.isArray(data.missions)) appState.missions = data.missions;
       if (appState.doneCount == null) appState.doneCount = countDoneNow();
       // Advance sinceTs so the poll picks up from after the greeting was inserted.
@@ -1069,6 +1099,7 @@
       if (Array.isArray(data.spellbook)) appState.spellbook = data.spellbook;
       if (Array.isArray(data.reading)) appState.reading = data.reading;
       if (Array.isArray(data.mathlab)) appState.mathlab = data.mathlab;
+      if (Array.isArray(data.stories)) appState.stories = data.stories;
       if (Array.isArray(data.missions)) appState.missions = data.missions;
         checkCompletion();
         // Use the server's since_ts so we poll from after the user message
@@ -1287,6 +1318,7 @@
             ${renderQuestsPanel()}
             ${isWritingActive() ? renderWritingDesk() : ''}
             ${renderPracticeRow()}
+            ${renderStories()}
             ${renderBookshelf()}
             ${renderMathLab()}
             ${renderSpellbook()}
@@ -1466,6 +1498,12 @@
       const s = list[i];
       if (!s || appState.isLoading) return;
       sendMessage(`Can you give me a problem to practice "${s.skill}"? Make it a good one for 7th grade, then check my answer.`, { mathFocus: true, mathSkill: s.skill });
+    },
+    // My Stories (Build R92): expand/collapse a finished piece to re-read it
+    // inline. Pure client-side toggle, no server round-trip.
+    toggleStory: (i) => {
+      appState.storyOpen = appState.storyOpen === i ? null : i;
+      render();
     },
     // Quick-start chip: practice the first word he hasn't mastered yet.
     practiceSpellStart: () => {
