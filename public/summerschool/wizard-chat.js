@@ -358,12 +358,19 @@
     const mastered = items.filter((w) => (w.status || '').toLowerCase() === 'mastered').length;
     const words = items.map((w, i) => {
       const isMast = (w.status || '').toLowerCase() === 'mastered';
+      // Learning word = two actions: tap the word to PRACTICE it with the Wizard
+      // (active spelling, his #1 gap), tap the check when he's got it. Mastered
+      // words stay lit as an achievement.
       return isMast
         ? `<span class="spell-word spell-word--mastered" title="Mastered">&#10004; ${escapeHtml(w.word)}</span>`
-        : `<button type="button" class="spell-word spell-word--learning" title="Tap when you've got it" onclick="window.__wizardChat.completeItem('spell', ${i})">${escapeHtml(w.word)}</button>`;
+        : `<span class="spell-word spell-word--learning">
+            <button type="button" class="spell-practice" title="Practice this word with the Wizard" onclick="window.__wizardChat.practiceSpell(${i})">${escapeHtml(w.word)}</button>
+            <button type="button" class="spell-got" title="I've got it" onclick="window.__wizardChat.completeItem('spell', ${i})">&#10003;</button>
+          </span>`;
     }).join('');
     return `<div class="spell-panel">
         <div class="action-title">&#128214; Spellbook <span class="spell-count">${mastered}/${items.length} mastered</span></div>
+        <div class="spell-hint">Tap a word to practice it. Tap the check when you&rsquo;ve got it.</div>
         <div class="spell-words">${words}</div>
       </div>`;
   }
@@ -1298,6 +1305,14 @@
       appState.navOpen = false; // close the mobile drawer
       render();
       if (name && project) sendMessage(`Add a mission to my project ${project}: ${name}`, { projectFocus: project });
+    },
+    // Spellbook: tap a word to actually PRACTICE it — the Wizard runs a quick
+    // spelling check in the chat (active recall on his #1 gap). Stays in School.
+    practiceSpell: (i) => {
+      const list = appState.spellbook || [];
+      const w = list[i];
+      if (!w || appState.isLoading) return;
+      sendMessage(`Can you quiz me on spelling the word "${w.word}"? Say it, use it in a sentence, ask me to spell it out loud, then check my answer and give me a quick tip if I miss it.`);
     },
     completeItem: (kind, i) => {
       // spellbook items key on .word and finish as 'mastered'; the rest key on

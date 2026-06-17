@@ -673,6 +673,13 @@ html.dark-theme .world-card--remind .world-card-icon { color: var(--color-gold);
   color: var(--color-gold-soft);
   margin-left: 8px;
 }
+.spell-hint {
+  font-size: 11px;
+  color: var(--color-gold-soft);
+  opacity: 0.85;
+  margin: 2px 0 8px;
+  line-height: 1.4;
+}
 .spell-words { display: flex; flex-wrap: wrap; gap: 7px; }
 .spell-word {
   font-family: inherit;
@@ -683,20 +690,37 @@ html.dark-theme .world-card--remind .world-card-icon { color: var(--color-gold);
   border-radius: 999px;
 }
 /* Learning = still working it: punchy 2px gold outline so it reads from across
-   the room, like the quest cards. */
+   the room, like the quest cards. Now a two-part pill: tap the word to practice
+   it, tap the check to master it. */
 .spell-word--learning {
-  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 2px solid var(--color-gold);
   background: rgba(212, 175, 55, 0.10);
   color: var(--color-gold);
-  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+  padding: 4px 9px 4px 12px;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
 }
 .spell-word--learning:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.35);
-  background: rgba(212, 175, 55, 0.20);
+  box-shadow: 0 3px 8px rgba(212, 175, 55, 0.30);
+  background: rgba(212, 175, 55, 0.18);
 }
-.spell-word--learning:active { transform: translateY(0); }
+.spell-practice {
+  background: none; border: none; padding: 0; margin: 0;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+  color: inherit; cursor: pointer; line-height: 1.2;
+}
+.spell-got {
+  background: none; border: none; margin: 0;
+  padding: 0 0 0 7px;
+  border-left: 1px solid rgba(212, 175, 55, 0.4);
+  color: var(--color-gold-soft); cursor: pointer;
+  font-size: 12px; line-height: 1;
+  transition: color 0.15s ease, transform 0.1s ease;
+}
+.spell-got:hover { color: var(--color-gold); }
+.spell-got:active { transform: scale(0.88); }
 /* Mastered = earned: full gold fill + dark indigo text, exactly like the "NOW"
    pill, so it lights up as an achievement. */
 .spell-word--mastered {
