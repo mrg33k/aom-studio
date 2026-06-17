@@ -2187,7 +2187,16 @@ export default function HomeView({
   }, [cv6, visibleAgents, allMissionsForCV6])
 
   // R7: keyboard navigation state for CV6 (defined after all dependencies are ready)
-  const [selectedIndex, setSelectedIndex] = useState(-1)
+  // Patrik's model: arrows move the LIST (default = first agent); Tab moves the
+  // TOOLS row; Enter/Right activates whichever lane is focused.
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const [toolsFocused, setToolsFocused] = useState(false)
+  const [toolNavIndex, setToolNavIndex] = useState(0)
+  const TOOL_TABS = useMemo(() => ([
+    { key: 'home', label: 'Home' }, { key: 'chat', label: 'Chat' }, { key: 'projects', label: 'Projects' },
+    { key: 'files', label: 'Files' }, { key: 'review', label: 'Review' }, { key: 'support', label: 'Support' },
+    { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
+  ]), [])
   const replyInputRef = useRef(null)
   // R22: per-instance ref for the Home region so keyboard nav wires to THIS instance
   // (the gallery renders Home twice; document.querySelector grabbed only the first).
@@ -2388,15 +2397,9 @@ export default function HomeView({
     if (!cv6) return []
     try {
       const items = []
-      // R56 (Patrik keyboard model): the Tools row is selectable too, first (it sits at the top).
-      // Tab/arrows cycle through these; Right/Enter opens the tool.
-      const KB_TOOLS = [
-        { key: 'home', label: 'Home' }, { key: 'chat', label: 'Chat' }, { key: 'projects', label: 'Projects' },
-        { key: 'files', label: 'Files' }, { key: 'review', label: 'Review' }, { key: 'support', label: 'Support' },
-        { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
-      ]
-      KB_TOOLS.forEach((t) => items.push({ type: 'tool', item: t }))
-      // R18: then Agents (top left), then cascades down
+      // Patrik's model: the arrow list is agents -> active work -> needs-you ->
+      // projects, starting on the first agent. The Tools row is NOT in this list;
+      // it is driven separately by Tab.
       if (Array.isArray(visibleAgents)) {
         visibleAgents.forEach((a) => {
           if (a?.slug) items.push({ type: 'agent', item: a })
@@ -2433,16 +2436,9 @@ export default function HomeView({
     // (tools, agents, missions, needs-you, projects). Enter behaves EXACTLY like Right:
     // both "activate" the selected thing — open a tool, or two-press a room (quick view → open).
     const activate = () => {
-      if (selectedIndex < 0) {
-        // R55 fix: Right/Enter from default home (no selection) opens CV6 Chat tool
-        openTool('chat')
-        return
-      }
-      if (selectedIndex >= selectableItems.length) return
+      if (selectedIndex < 0 || selectedIndex >= selectableItems.length) return
       const sel = selectableItems[selectedIndex]
-      if (sel.type === 'tool') {
-        openTool(sel.item.key) // Right/Enter opens tools too
-      } else if (sel.type === 'needsyou') {
+      if (sel.type === 'needsyou') {
         sel.item.onOpen && sel.item.onOpen()
       } else if (sel.type === 'mission') {
         // R88 (Patrik): first activate = quick view; second activate opens the
@@ -2460,20 +2456,30 @@ export default function HomeView({
         else { openChatToolForRoom({ agent: sel.item }) }
       }
     }
-    if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+    if (e.key === 'Tab') {
+      // Tab lane = the Tools row.
       e.preventDefault()
+      setToolsFocused(true)
+      setToolNavIndex(prev => e.shiftKey ? (prev - 1 + TOOL_TABS.length) % TOOL_TABS.length : (prev + 1) % TOOL_TABS.length)
+    } else if (e.key === 'ArrowDown') {
+      // Arrow lane = the list. First arrow from the tools lane returns to the list.
+      e.preventDefault()
+      if (toolsFocused) { setToolsFocused(false); return }
       setSelectedIndex(prev => (prev + 1) % selectableItems.length)
-    } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+    } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setSelectedIndex(prev => prev === -1 ? selectableItems.length - 1 : (prev - 1 + selectableItems.length) % selectableItems.length)
+      if (toolsFocused) { setToolsFocused(false); return }
+      setSelectedIndex(prev => prev <= 0 ? selectableItems.length - 1 : (prev - 1))
     } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
       e.preventDefault()
+      if (toolsFocused) { openTool(TOOL_TABS[toolNavIndex].key); return }
       activate()
     } else if (e.key === 'ArrowLeft') {
-      // PUNCH-LIST #2: ArrowLeft back-to-home hook (room-side implementation pending)
+      // From a quick-view room, Left steps back out to the list selection.
       e.preventDefault()
+      if (selectedRoom) setSelectedRoom(null)
     }
-  }, [cv6, selectableItems, selectedIndex, onSelectAgent, selectedRoom, onSelectProject, openTool, selectedTool, openChatToolForRoom])
+  }, [cv6, selectableItems, selectedIndex, toolsFocused, toolNavIndex, TOOL_TABS, selectedRoom, openTool, selectedTool, openChatToolForRoom, recordVisit])
 
   useEffect(() => {
     if (!cv6) return
@@ -2977,7 +2983,7 @@ export default function HomeView({
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
                     padding: '12px 16px', borderRadius: '6px', border: selectedTool === t.key ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                     // R56: ring the tool the keyboard cursor is on (Tab/arrows), distinct from the open tool
-                    boxShadow: (selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'tool' && selectableItems[selectedIndex]?.item?.key === t.key) ? '0 0 0 2px var(--cv6-accent-primary)' : 'none',
+                    boxShadow: (toolsFocused && TOOL_TABS[toolNavIndex]?.key === t.key) ? '0 0 0 2px var(--cv6-accent-primary)' : 'none',
                     background: selectedTool === t.key ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                     color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)',
                     cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
@@ -3116,7 +3122,7 @@ export default function HomeView({
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
               <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '16px' }}>
                 {visibleAgents.map((a, idx) => {
-                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+                  const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
                   const agentStatus = a.slug === 'bobby' ? 'building components'
                     : a.slug === 'steffen' ? 'refining brand'
                     : a.slug === 'cleo' ? 'editing video'
@@ -3261,7 +3267,7 @@ export default function HomeView({
                       }).map((item, idx) => {
                         if (item.type === 'mission') {
                           const m = item
-                          const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
+                          const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
                           return (
                             <button
                               key={`mission-${m.mission.slug}`}
@@ -3323,7 +3329,7 @@ export default function HomeView({
                           )
                         } else if (item.type === 'project') {
                           const p = item.project
-                          const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'project' && selectableItems[selectedIndex]?.item?.slug === p.slug
+                          const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'project' && selectableItems[selectedIndex]?.item?.slug === p.slug
                           return (
                             <button
                               key={`project-${p.slug}`}
@@ -3670,7 +3676,7 @@ export default function HomeView({
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 {needsYou.map((n, idx) => {
-                  const isSelected = cv6 && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
+                  const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
                   const roomColorHash = n.roomSlug ? `hsl(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 60%)` : 'var(--cv6-accent-warn)'
                   return (
                   <button
