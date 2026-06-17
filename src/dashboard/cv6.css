@@ -976,3 +976,21 @@
 [data-cv6][data-cv4-home] .hm-welcome .hm-l2 {
   font-family: inherit !important;
 }
+
+/* ROOT-CAUSE FIX (R67): cv5 carries `[data-cv5] * { font-family: var(--cv5-body)
+   !important }` — a UNIVERSAL !important that forces Figtree onto every element
+   under the /cvg shell, the entire cv6 home included. (The /cv6 gallery has no
+   [data-cv5], so it keeps the cv6 fonts — which is why the gallery looked right
+   and /cvg didn't.) Non-!important cv6 rules can never win against it. Override
+   with a home-scoped !important Inter base. cv6's own mono rules are already
+   [data-cv4-home]-scoped !important at (0,3,0) (.hm-search-hint/.hm-agent-meta/
+   .hm-mage/.hm-needs-detail), so they out-rank this (0,2,0) rule and keep their
+   mono. The section labels are the one mono element lacking that protection — add
+   it. This is what finally makes /cvg's fonts an exact copy of the gallery. */
+[data-cv6][data-cv4-home],
+[data-cv6] [data-cv4-home] :where(*) {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+[data-cv6] [data-cv4-home] .hm-section-label {
+  font-family: 'JetBrains Mono', monospace !important;
+}
