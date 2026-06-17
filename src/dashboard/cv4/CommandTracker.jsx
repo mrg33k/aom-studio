@@ -369,11 +369,19 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             tableRows.filter(r => !r.isWorkerRow && r.slug && r.slug.includes(':'))
               .map(r => `shared:${r.slug.split(':')[0]}`)
           ))
-          const clientIds = [worldId, ...sharedIds]
+          // Capture EVERY room in this world. Project-room messages are stored with
+          // client_id=<project slug> (NOT the worldId), so .in('client_id',[worldId,...])
+          // misses them entirely. world_id scopes to the whole world and catches them all;
+          // we keep the client_id paths for legacy rows that predate world_id stamping.
+          const orParts = [
+            `world_id.eq.${worldId}`,
+            `client_id.eq.${worldId}`,
+            ...sharedIds.map((s) => `client_id.eq.${s}`),
+          ]
           const { data: msgs } = await supabase
             .from('messages')
-            .select('agent,project,text,role,sender,timestamp,metadata,client_id')
-            .in('client_id', clientIds)
+            .select('agent,project,text,role,sender,timestamp,metadata,client_id,world_id')
+            .or(orParts.join(','))
             .order('timestamp', { ascending: false })
             .limit(600)
           const byRoom = {}        // slug -> { ts, lastUserText }
