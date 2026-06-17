@@ -691,7 +691,38 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{items.filter(it => it.ready && !done[it.id]).length} ready for review · {items.length} in the pipeline</div>
-      {/* Inventory table — horizontal scroll on mobile */}
+      {/* Mobile: card per item so the review action (eye) is always visible — no horizontal scroll. */}
+      {isNarrow ? (
+        <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+          <div style={{ maxHeight: '64vh', overflowY: 'auto' }}>
+            {items.map(it => {
+              const isDone = done[it.id]
+              const clickable = it.ready && !isDone
+              return (
+                <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', background: isDone ? 'var(--cv6-surface-hover)' : 'transparent' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.item}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{it.project} · {it.mission}</div>
+                    <span style={{ display: 'inline-block', marginTop: '6px', fontSize: '11px', fontWeight: '700', color: it.type.color, background: `${it.type.color}1f`, padding: '3px 8px', borderRadius: '5px' }}>{it.type.label}</span>
+                  </div>
+                  <button
+                    onClick={() => { if (clickable) { setOpenItem(it); setReviewText('') } }}
+                    disabled={!clickable}
+                    title={isDone ? 'Reviewed' : it.ready ? 'Review' : 'Not ready yet'}
+                    style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '9px', border: 'none', cursor: clickable ? 'pointer' : 'default',
+                      background: isDone ? 'rgba(16,185,129,0.14)' : clickable ? 'var(--cv6-text-primary)' : 'transparent',
+                      color: isDone ? '#10B981' : clickable ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: it.ready ? 1 : 0.45 }}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              )
+            })}
+            {items.length === 0 && <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Nothing in the review pipeline yet</div>}
+          </div>
+        </div>
+      ) : (
+      /* Desktop: inventory table */
       <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
         <div style={{ overflowX: 'auto' }}>
           <div style={{ minWidth: '560px' }}>
@@ -730,6 +761,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onPushToRoom }) {
           </div>
         </div>
       </div>
+      )}
 
       {/* Full review modal — covers the list. Item on left, review column on right. */}
       {openItem && (
