@@ -2427,8 +2427,9 @@ export default function CornerVG() {
       {/* ── NAV BAR (R5.1 Phase F: slim top row — logo + bell + avatar) ───
           Chat/Tasks toggle, drawer toggle, and the title all live in the
           second-row ContextNav below. Mic + phone removed (not useful here).
-          World switching lives inside the avatar dropdown. */}
-      <nav
+          World switching lives inside the avatar dropdown.
+          cv6Mode: hidden — the CV6 home carries its own top (clock, avatar, search). */}
+      {!cv6Mode && (<nav
         aria-label="Main navigation"
         style={{
           width: '100%',
@@ -2699,7 +2700,7 @@ export default function CornerVG() {
             )}
           />
         </div>
-      </nav>
+      </nav>)}
 
       {/* ── CV4 CONTEXT NAV (second row: hamburger + title · Chat|Tasks · slot) */}
       {!cv6Mode && <CV4ContextNav
