@@ -407,7 +407,17 @@ const SCREENS = [
       { label: 'Light', render: () => <ScreenFrame theme="light" label="Tracker · CV6"><HomeView {...SCREEN_PROPS} initialTool="tracker" /></ScreenFrame> },
     ],
   },
-  // NEXT: Files tool, Chat thread + left/right menu — tracked in cv4/COMPONENT-MANIFEST.md.
+  {
+    id: 'screen-files',
+    name: 'Files tool',
+    purpose: 'Finder/Dropbox 3-column file browser for a project. Folders → subfolders → file preview.',
+    wide: true,
+    states: [
+      { label: 'Dark', render: () => <ScreenFrame theme="dark" label="Files · CV6"><HomeView {...SCREEN_PROPS} initialTool="files" /></ScreenFrame> },
+      { label: 'Light', render: () => <ScreenFrame theme="light" label="Files · CV6"><HomeView {...SCREEN_PROPS} initialTool="files" /></ScreenFrame> },
+    ],
+  },
+  // NEXT: Chat thread + left/right menu — tracked in cv4/COMPONENT-MANIFEST.md.
 ]
 
 // Screens first, then pieces. One flat list for lookup + feedback.

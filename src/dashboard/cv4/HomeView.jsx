@@ -930,6 +930,132 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   )
 }
 
+// ── Files Tool — Finder/Dropbox 3-column file browser for a project (R38 r5) ───────
+const FILE_TYPE_COLOR = { image: '#8B5CF6', video: '#EC4899', doc: '#0066FF', code: '#10B981', audio: '#F59E0B' }
+function buildFileTree(proj) {
+  if (!proj) return []
+  return [
+    { name: 'Brand', type: 'folder', children: [
+      { name: 'Logos', type: 'folder', children: [
+        { name: 'logo-primary.svg', type: 'file', fileType: 'image' },
+        { name: 'logo-mark.svg', type: 'file', fileType: 'image' },
+      ] },
+      { name: 'guidelines.pdf', type: 'file', fileType: 'doc' },
+      { name: 'palette.png', type: 'file', fileType: 'image' },
+    ] },
+    { name: 'Deliverables', type: 'folder', children: [
+      { name: 'hero-v2.png', type: 'file', fileType: 'image' },
+      { name: 'launch-teaser.mp4', type: 'file', fileType: 'video' },
+      { name: 'one-pager.pdf', type: 'file', fileType: 'doc' },
+    ] },
+    { name: 'Research', type: 'folder', children: [
+      { name: 'competitors.md', type: 'file', fileType: 'doc' },
+      { name: 'interview-notes.md', type: 'file', fileType: 'doc' },
+    ] },
+    { name: 'voiceover.mp3', type: 'file', fileType: 'audio' },
+    { name: 'README.md', type: 'file', fileType: 'doc' },
+  ]
+}
+
+function FilesToolOverlay({ projects }) {
+  const [proj, setProj] = useState((projects || [])[0] || null)
+  const [sel1, setSel1] = useState(null)
+  const [sel2, setSel2] = useState(null)
+  const [isNarrow, setIsNarrow] = useState(false)
+  const [mobileCol, setMobileCol] = useState(0)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsNarrow(window.innerWidth < 720)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  useEffect(() => { setSel1(null); setSel2(null); setMobileCol(0) }, [proj])
+
+  const tree = useMemo(() => buildFileTree(proj), [proj])
+  const col2items = sel1 && sel1.type === 'folder' ? (sel1.children || []) : []
+  const col3node = sel2
+
+  const colStyle = { display: 'flex', flexDirection: 'column', minWidth: 0, borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto' }
+  const headStyle = { flexShrink: 0, fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)', padding: '10px 14px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', borderBottom: '1px solid var(--cv6-divider)', zIndex: 1 }
+  const emptyHint = (t) => <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>{t}</div>
+
+  const FileRow = ({ node, active, onClick }) => {
+    const isFolder = node.type === 'folder'
+    const color = isFolder ? 'var(--cv6-text-secondary)' : (FILE_TYPE_COLOR[node.fileType] || 'var(--cv6-text-secondary)')
+    return (
+      <button onClick={onClick} draggable style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '8px 12px', margin: '2px 6px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'hsla(220,90%,55%,0.10)' : 'transparent', transition: 'background 120ms ease' }}
+        onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+        <span style={{ flexShrink: 0, color, display: 'inline-flex' }}>
+          {isFolder
+            ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>}
+        </span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{node.name}</span>
+        {isFolder && <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>}
+      </button>
+    )
+  }
+
+  const FilePreview = ({ node }) => {
+    if (!node) return emptyHint('Select a file to preview')
+    if (node.type === 'folder') return (
+      <div>
+        <div style={headStyle}>{node.name}</div>
+        {(node.children || []).length ? (node.children || []).map((c, i) => <FileRow key={i} node={c} active={false} onClick={() => {}} />) : emptyHint('Empty folder')}
+      </div>
+    )
+    const color = FILE_TYPE_COLOR[node.fileType] || 'var(--cv6-text-secondary)'
+    return (
+      <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '12px' }}>
+        <div style={{ width: '100%', aspectRatio: '4/3', borderRadius: '12px', border: `1px solid ${color}40`, background: `${color}12`, color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">{node.fileType === 'video' ? <polygon points="5 3 19 12 5 21 5 3"/> : node.fileType === 'image' ? <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></> : node.fileType === 'audio' ? <><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></> : <><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></>}</svg>
+        </div>
+        <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', wordBreak: 'break-word' }}>{node.name}</div>
+        <span style={{ fontSize: '11px', fontWeight: '700', color, background: `${color}1f`, padding: '3px 8px', borderRadius: '5px', textTransform: 'uppercase' }}>{node.fileType}</span>
+      </div>
+    )
+  }
+
+  const Col1 = () => (
+    <div style={colStyle}><div style={headStyle}>{proj ? (proj.name || proj.slug) : 'Files'}</div>
+      {tree.length ? tree.map((n, i) => <FileRow key={i} node={n} active={sel1 === n} onClick={() => { setSel1(n); setSel2(null); if (isNarrow && n.type === 'folder') setMobileCol(1) }} />) : emptyHint('No files')}
+    </div>
+  )
+  const Col2 = () => (
+    <div style={colStyle}><div style={headStyle}>{sel1 && sel1.type === 'folder' ? sel1.name : 'Contents'}</div>
+      {!sel1 ? emptyHint('Select a folder') : (sel1.type === 'file' ? <FilePreview node={sel1} /> : (col2items.length ? col2items.map((n, i) => <FileRow key={i} node={n} active={sel2 === n} onClick={() => { setSel2(n); if (isNarrow) setMobileCol(2) }} />) : emptyHint('Empty folder')))}
+    </div>
+  )
+  const Col3 = () => (
+    <div style={{ ...colStyle, borderRight: 'none' }}><div style={headStyle}>Preview</div><FilePreview node={col3node} /></div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+        <select value={proj ? proj.slug : ''} onChange={e => setProj((projects || []).find(p => p.slug === e.target.value) || null)} style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
+          {(projects || []).map(p => <option key={p.slug} value={p.slug}>{p.name || p.slug}</option>)}
+        </select>
+        <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>Click a folder to open it · drag files to organize</span>
+      </div>
+      {isNarrow ? (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '62vh', minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+          {mobileCol > 0 && (
+            <button onClick={() => setMobileCol(mobileCol - 1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-accent-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>{mobileCol === 1 ? (proj?.name || 'Files') : (sel1?.name || 'Back')}
+            </button>
+          )}
+          <div style={{ flex: 1, overflowY: 'auto' }}>{mobileCol === 0 ? <Col1 /> : mobileCol === 1 ? <Col2 /> : <Col3 />}</div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: '420px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+          <Col1 /><Col2 /><Col3 />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function HomeView({
   user,
   worldId,
@@ -1980,9 +2106,7 @@ export default function HomeView({
                 )}
 
                 {selectedTool === 'files' && (
-                  <div style={{ color: 'var(--cv6-text-secondary)', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>
-                    Files coming soon
-                  </div>
+                  <FilesToolOverlay projects={[...(recentProjects || []), ...(allProjects || [])]} />
                 )}
               </div>
             </div>
