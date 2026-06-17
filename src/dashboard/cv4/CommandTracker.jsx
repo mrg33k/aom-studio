@@ -378,12 +378,15 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             `client_id.eq.${worldId}`,
             ...sharedIds.map((s) => `client_id.eq.${s}`),
           ]
-          const { data: msgs } = await supabase
+          const { data: msgs, error: msgsErr } = await supabase
             .from('messages')
             .select('agent,project,text,role,sender,timestamp,metadata,client_id,world_id')
             .or(orParts.join(','))
             .order('timestamp', { ascending: false })
             .limit(600)
+          // TEMP R87 debug
+          // eslint-disable-next-line no-console
+          console.log('[cmdtracker-debug] or=', orParts.join(','), 'rows=', (msgs||[]).length, 'err=', msgsErr && msgsErr.message, 'loopMsgs=', (msgs||[]).filter(m=>/loop-test/.test((m.project||'')+(m.client_id||''))).map(m=>({p:m.project,c:m.client_id,w:m.world_id,ms:m.metadata&&m.metadata.mission_slug})))
           const byRoom = {}        // slug -> { ts, lastUserText }
           const isUserMsg = (m) => m.role === 'user' || m.agent === 'user' || m.sender === 'user'
           for (const m of (msgs || [])) {
