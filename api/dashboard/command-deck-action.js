@@ -95,7 +95,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { action, callId, lineMatch, room, answer, world, proposalId, kind, status } = req.body || {};
+  const { action, callId, lineMatch, room, answer, world, proposalId, kind, status, goal } = req.body || {};
 
   // ── Verify tenant ──────────────────────────────────────────────────────────
   // The master-loop deliverables live in the 'aom' world; the caller passes its
@@ -118,7 +118,7 @@ export default async function handler(req, res) {
   const callKey = callId || lineMatch;
 
   // ── Validate action ────────────────────────────────────────────────────────
-  if (!action || !['mark_call_done', 'answer_question', 'keeper_decision', 'set_room_status', 'dismiss'].includes(action)) {
+  if (!action || !['mark_call_done', 'answer_question', 'keeper_decision', 'set_room_status', 'dismiss', 'edit_goal'].includes(action)) {
     return res.status(400).json({ error: 'Invalid action' });
   }
 
@@ -136,6 +136,9 @@ export default async function handler(req, res) {
       // This flips a room's status + bumps last_reviewed so the loop sees the
       // steer next tick. `answer` (optional) records a short note inline.
       return await setRoomStatus(room, status, answer, res);
+    } else if (action === 'edit_goal') {
+      // Patrik edits the room's one-line goal directly in the Command Center.
+      return await editGoal(room, goal, res);
     } else if (action === 'dismiss') {
       // Generalized "clear it from the deck" across card types. Where a real
       // server-side state exists (hard call, question, keeper) we persist it so
@@ -313,6 +316,39 @@ async function setRoomStatus(room, status, note, res) {
     return res.status(200).json({ success: true, action: 'set_room_status', room, status });
   } catch (err) {
     console.error('[setRoomStatus] Error:', err);
+    throw err;
+  }
+}
+
+// Patrik edits a room's one-line goal directly from the Command Center spreadsheet.
+// Read-modify-write room-goals.json so the loop sees the new goal next tick.
+async function editGoal(room, goal, res) {
+  if (!room || typeof room !== 'string') {
+    return res.status(400).json({ error: 'room required' });
+  }
+  if (typeof goal !== 'string') {
+    return res.status(400).json({ error: 'goal required' });
+  }
+  const clean = goal.replace(/\s+/g, ' ').trim().slice(0, 280);
+  try {
+    let goalsContent = await readDeliverable('room-goals.json');
+    if (goalsContent == null) {
+      return res.status(404).json({ error: 'room-goals.json not found' });
+    }
+    const goals = JSON.parse(goalsContent);
+    if (!goals.rooms) goals.rooms = {};
+    if (!goals.rooms[room]) goals.rooms[room] = {};
+    goals.rooms[room] = {
+      ...goals.rooms[room],
+      goal: clean,
+      goal_source: 'patrik',
+      goal_edited_at: new Date().toISOString(),
+    };
+    const ok = await writeDeliverable('room-goals.json', JSON.stringify(goals, null, 2) + '\n');
+    if (!ok) return res.status(500).json({ error: 'Failed to write room-goals.json' });
+    return res.status(200).json({ success: true, action: 'edit_goal', room, goal: clean });
+  } catch (err) {
+    console.error('[editGoal] Error:', err);
     throw err;
   }
 }

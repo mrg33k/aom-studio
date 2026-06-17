@@ -99,6 +99,28 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   const [replySending, setReplySending] = useState(false)
   const [replyDoneSlug, setReplyDoneSlug] = useState(null)
 
+  // Inline editable goal (Patrik: edit the one-line goal right in the spreadsheet)
+  const [editingGoalSlug, setEditingGoalSlug] = useState(null)
+  const [goalDraft, setGoalDraft] = useState('')
+  const [savingGoal, setSavingGoal] = useState(false)
+
+  const saveGoal = useCallback(async (slug) => {
+    const g = (goalDraft || '').trim()
+    setSavingGoal(true)
+    try {
+      const res = await authFetch('/api/dashboard/command-deck-action', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'edit_goal', room: slug, goal: g, world: worldId }),
+      })
+      if (res?.ok) {
+        setRows((prev) => prev.map((r) => r.slug === slug ? { ...r, goal: g } : r))
+        setEditingGoalSlug(null)
+      }
+    } finally {
+      setSavingGoal(false)
+    }
+  }, [goalDraft, worldId])
+
   const sendInlineReply = useCallback(async (slug) => {
     const t = (replyText || '').trim()
     if (!t || !slug || !onReplyToRoom) return
@@ -647,19 +669,40 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               )}
             </div>
 
-            {/* GOAL NOW */}
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--cv6-text-secondary)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                minWidth: 0,
-              }}
-            >
-              {(typeof row.goal === 'string' && row.goal) ? row.goal : '—'}
-            </div>
+            {/* GOAL NOW — click to edit (room rows) */}
+            {editingGoalSlug === row.slug && !isWorkerRow ? (
+              <input
+                autoFocus
+                value={goalDraft}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setGoalDraft(e.target.value)}
+                onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter') saveGoal(row.slug); if (e.key === 'Escape') setEditingGoalSlug(null) }}
+                onBlur={() => saveGoal(row.slug)}
+                disabled={savingGoal}
+                placeholder="One-line goal…"
+                style={{
+                  fontSize: 12, minWidth: 0, width: '100%', padding: '4px 8px', borderRadius: 5,
+                  border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-ground)',
+                  color: 'var(--cv6-text-primary)', fontFamily: 'inherit', outline: 'none',
+                }}
+              />
+            ) : (
+              <div
+                onClick={(e) => { if (!isWorkerRow) { e.stopPropagation(); setEditingGoalSlug(row.slug); setGoalDraft(typeof row.goal === 'string' ? row.goal : '') } }}
+                title={isWorkerRow ? undefined : 'Click to edit the goal'}
+                style={{
+                  fontSize: 12,
+                  color: 'var(--cv6-text-secondary)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  minWidth: 0,
+                  cursor: isWorkerRow ? 'default' : 'text',
+                }}
+              >
+                {(typeof row.goal === 'string' && row.goal) ? row.goal : '—'}
+              </div>
+            )}
 
             {/* STATUS */}
             <div
