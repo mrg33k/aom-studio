@@ -232,13 +232,18 @@ html[data-theme="glass"] body {
   color: rgba(15, 22, 38, 0.5) !important;
 }
 
-/* Catch Up cards: the away-summary must read crisply, so on glass give them a
-   near-opaque fill (per light/dark variant) instead of the 0.72 surface token.
+/* Catch Up cards + room rows: these carry the away-summary and the room list, so
+   on glass give them a near-opaque fill (per light/dark variant) instead of the
+   0.72 surface token, or the busy photo bleeds through and the text goes pale.
    Other themes keep their own opaque surface — this only touches glass. */
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-catchup-card {
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-catchup-card,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-rooms-scroll .hm-card,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-card {
   background: rgba(255, 255, 255, 0.93) !important;
 }
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-card {
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-card,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scroll .hm-card,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-card {
   background: rgba(18, 26, 42, 0.9) !important;
 }
 
