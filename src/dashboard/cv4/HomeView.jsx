@@ -1857,8 +1857,16 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
         const m = payload.new
         setThread(prev => {
           const cur = prev[k] || []
+          const incoming = toMsg(m)
+          // Dedup by id; and reconcile an optimistic id-less echo of the user's
+          // own just-sent message (same side + text) so it doesn't show twice.
           if (cur.some(x => x.id && x.id === m.id)) return prev
-          return { ...prev, [k]: [...cur, toMsg(m)] }
+          const optIdx = cur.findIndex(x => !x.id && x.from === incoming.from && x.text === incoming.text)
+          if (optIdx !== -1) {
+            const next = cur.slice(); next[optIdx] = incoming
+            return { ...prev, [k]: next }
+          }
+          return { ...prev, [k]: [...cur, incoming] }
         })
         // An assistant reply ends the in-flight turn → hide the step indicator.
         const isUser = m.role === 'user' || m.agent === 'user' || m.sender === 'user'
