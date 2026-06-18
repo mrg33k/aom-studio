@@ -210,7 +210,31 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       const sRes = await authFetch('/api/dashboard/claude-sessions')
       const stuckData = sRes?.ok ? await sRes.json() : { sessions: [], workers: [] }
       const blockedSessions = Array.isArray(stuckData.sessions) ? stuckData.sessions.filter((s) => s && typeof s === 'object') : []
-      const workers = Array.isArray(stuckData.workers) ? stuckData.workers.filter((w) => w && typeof w === 'object') : []
+      let workers = Array.isArray(stuckData.workers) ? stuckData.workers.filter((w) => w && typeof w === 'object') : []
+      
+      // cc-3: if live fetch failed and workers array is empty, try to reconstruct from goal-ledger sessions
+      // (local fallback: show terminal sessions even when the live feed is unavailable)
+      if (!sRes?.ok && workers.length === 0 && goals && goals.rooms) {
+        const fallbackWorkers = []
+        Object.values(goals.rooms).forEach((room) => {
+          if (Array.isArray(room.sessions)) {
+            room.sessions.forEach((s) => {
+              if (s && typeof s === 'object' && s.name) {
+                // Convert ledger session format to worker format
+                fallbackWorkers.push({
+                  name: s.name,
+                  state: s.state || 'idle',
+                  intent: s.intent || s.goal || '',
+                  detail: s.detail || '',
+                  ageSeconds: typeof s.age_seconds === 'number' ? s.age_seconds : (Date.now() - (s.last_active ? new Date(s.last_active).getTime() : 0)) / 1000,
+                  updatedAt: s.last_active || new Date().toISOString(),
+                })
+              }
+            })
+          }
+        })
+        workers = fallbackWorkers
+      }
 
       // Build a worker lookup by name so we can match them to room-goal rows
       const workersByName = {}
