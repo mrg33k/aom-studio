@@ -3,7 +3,7 @@
 // A dense grid view of all projects/rooms: status, live activity, master-loop toggle.
 // Replaces the card-style Command Deck with a single scannable table Patrik can steer from.
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { authFetch } from '../lib/authFetch.js'
 import { supabase } from '../lib/supabase.js'
 
@@ -753,6 +753,36 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
     )
   }
 
+  // R99 — the global master-loop control. The Command Center is meant to be the
+  // master view Patrik steers everything from, so the main loop that pushes every
+  // room forward gets one prominent On/Off at the very top — not just buried in the
+  // per-room column. Pick the system-kind master-loop routine (the real one), and
+  // fall back to any routine whose name carries "master-loop".
+  const masterLoop = useMemo(() => {
+    const all = Object.values(routineMap || {}).filter((r) => r && typeof r === 'object' && r.id)
+    return (
+      all.find((r) => r.kind === 'system' && (r.name || '').includes('master-loop')) ||
+      all.find((r) => (r.mission_slug === 'master-loop') && (r.name || '').includes('master-loop')) ||
+      all.find((r) => (r.name || '').includes('master-loop')) ||
+      null
+    )
+  }, [routineMap])
+  const mlOn = masterLoop?.status === 'running'
+  const mlToggling = masterLoop?.id ? toggling[masterLoop.id] : undefined
+  const mlBusy = typeof mlToggling === 'boolean'
+  const mlShownOn = mlBusy ? mlToggling : mlOn
+  const fmtAgo = (ts) => {
+    if (!ts) return null
+    try {
+      const diff = Date.now() - new Date(ts).getTime()
+      if (diff < 0) return `in ${Math.max(1, Math.round(-diff / 60000))}m`
+      if (diff < 60000) return 'just now'
+      if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`
+      if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`
+      return `${Math.floor(diff / 86400000)}d ago`
+    } catch { return null }
+  }
+
   return (
     <div
       style={{
@@ -766,6 +796,79 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         fontFamily: 'Inter, sans-serif',
       }}
     >
+      {/* R99 — global master-loop control. The one switch that runs (or stops) the
+          assistant pushing every room forward on its own. */}
+      {masterLoop && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '11px 16px',
+            background: 'var(--cv6-surface)',
+            borderBottom: '1px solid var(--cv6-divider)',
+          }}
+        >
+          <span
+            style={{
+              flexShrink: 0,
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: mlShownOn ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)',
+              boxShadow: mlShownOn ? '0 0 8px var(--cv6-accent-success)' : 'none',
+            }}
+          />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--cv6-text-primary)' }}>Master loop</span>
+              <span
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  color: mlShownOn ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)',
+                }}
+              >
+                {mlShownOn ? 'Running' : 'Off'}
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--cv6-text-tertiary)', marginTop: 1 }}>
+              {mlShownOn
+                ? `Pushing every room forward${masterLoop.interval_minutes ? ` · every ${masterLoop.interval_minutes}m` : ''}${fmtAgo(masterLoop.last_run_at) ? ` · last ran ${fmtAgo(masterLoop.last_run_at)}` : ''}`
+                : 'Paused — rooms only move when you ask'}
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={mlBusy || !masterLoop.id}
+            onClick={() => masterLoop.id && toggleRoutine(masterLoop.id, !mlOn)}
+            title={mlShownOn ? 'Turn the master loop off' : 'Turn the master loop on'}
+            style={{
+              flexShrink: 0,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '6px 13px',
+              borderRadius: 7,
+              cursor: mlBusy ? 'default' : 'pointer',
+              fontFamily: 'inherit',
+              fontSize: 12,
+              fontWeight: 700,
+              border: '1px solid',
+              borderColor: mlShownOn ? 'var(--cv6-divider)' : 'color-mix(in srgb, var(--cv6-accent-success) 50%, transparent)',
+              background: mlShownOn ? 'transparent' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
+              color: mlShownOn ? 'var(--cv6-text-secondary)' : 'var(--cv6-accent-success)',
+              opacity: mlBusy ? 0.6 : 1,
+            }}
+          >
+            {mlBusy ? '…' : mlShownOn ? 'Turn off' : 'Turn on'}
+          </button>
+        </div>
+      )}
+
       {/* Header row — hidden on mobile (rows become self-labeling cards) */}
       <div
         style={{
