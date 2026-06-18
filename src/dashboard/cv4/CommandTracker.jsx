@@ -351,7 +351,11 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           // from this — truncating here used to silently shorten a room's goal
           // to 80 chars (and strip path-like substrings) the moment Patrik
           // clicked to edit it. cc-7.
-          const goal = (typeof roomGoal.goal === 'string' ? roomGoal.goal : '')
+          // cc-7: curated ledger goal wins. When a room has no goal set yet but a
+          // terminal is actively working it, surface that worker's real intent as the
+          // current goal (real data from the live session, NOT a fabricated stub).
+          const curatedGoal = (typeof roomGoal.goal === 'string' && roomGoal.goal.trim()) ? roomGoal.goal : ''
+          const goal = curatedGoal || (liveWorker ? (liveWorker.intent || liveWorker.detail || '') : '')
 
           // Find routine for this project (by project_slug match, looking for one with master-loop in the name)
           let routineId = null
