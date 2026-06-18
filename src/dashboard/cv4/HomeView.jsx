@@ -1694,6 +1694,11 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   }, [initialRoom])
   const [draft, setDraft] = useState('')
   const [thread, setThread] = useState({})            // slug -> [{ from, text }]
+  // Step indicator: while a turn is in flight, show the assistant's current step
+  // (real step events from /api/dashboard/message-steps) or "Working…". Ported
+  // from CvgChatSurface so the in-page chat tool gets the same live feedback.
+  const [awaitingReply, setAwaitingReply] = useState(false)
+  const [stepText, setStepText] = useState('')
   const [creating, setCreating] = useState(null)      // 'project' | 'mission'
   const [npName, setNpName] = useState('')
   const [nmProj, setNmProj] = useState((projects || [])[0]?.slug || '')
@@ -1849,15 +1854,43 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
       .channel(`cv6-chattool-${worldId}-${Date.now()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` }, (payload) => {
         if (!active || !matches(payload.new)) return
+        const m = payload.new
         setThread(prev => {
           const cur = prev[k] || []
-          if (cur.some(x => x.id && x.id === payload.new.id)) return prev
-          return { ...prev, [k]: [...cur, toMsg(payload.new)] }
+          if (cur.some(x => x.id && x.id === m.id)) return prev
+          return { ...prev, [k]: [...cur, toMsg(m)] }
         })
+        // An assistant reply ends the in-flight turn → hide the step indicator.
+        const isUser = m.role === 'user' || m.agent === 'user' || m.sender === 'user'
+        if (!isUser) { setAwaitingReply(false); setStepText('') }
       })
       .subscribe()
     return () => { active = false; try { supabase.removeChannel(channel) } catch (_) {} }
   }, [sel && keyOf(sel), worldId, hasBackend])
+  // While awaiting a reply, poll the real step events for this room and show the
+  // assistant's current step; "Working…" until one lands. 60s safety net.
+  useEffect(() => {
+    if (!awaitingReply || !hasBackend || !sel) return
+    let active = true
+    const qs = new URLSearchParams({ client_id: worldId, limit: '20' })
+    if (sel.kind === 'agent') qs.set('agent', sel.slug)
+    else qs.set('project', sel.slug)
+    const poll = async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/message-steps?${qs.toString()}`)
+        if (!r.ok || !active) return
+        const d = await r.json()
+        const steps = Array.isArray(d.steps) ? d.steps : []
+        const sorted = steps.slice().sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+        const live = sorted.find(s => s.status === 'in_progress') || sorted[0]
+        if (active && live && live.text) setStepText(live.text)
+      } catch (_) { /* keep last */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    const safety = setTimeout(() => { if (active) { setAwaitingReply(false); setStepText('') } }, 60000)
+    return () => { active = false; clearInterval(t); clearTimeout(safety) }
+  }, [awaitingReply, hasBackend, worldId, sel && keyOf(sel)])
   const loadedThread = sel ? thread[keyOf(sel)] : null
   // Real backend: show the loaded thread (empty array = a real, empty room).
   // Gallery only: fall back to the demo seed so it isn't blank.
@@ -1869,6 +1902,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     const k = keyOf(sel)
     setThread(prev => ({ ...prev, [k]: [...(prev[k] || []), { from: 'me', text: t }] }))
     setDraft('')
+    if (hasBackend) { setAwaitingReply(true); setStepText('Working…') }
     // Optimistic UI above; real send via onSend (provided on /cvg + /dashboard).
     // No onSend (e.g. the no-backend gallery) → stays optimistic.
     if (onSend) onSend(sel, t)
@@ -2007,6 +2041,17 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
         {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => (
           <div key={i} style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: m.from === 'me' ? roomSolid(keyOf(sel)) : 'var(--cv6-surface-hover)', color: m.from === 'me' ? '#fff' : 'var(--cv6-text-primary)' }}>{m.text}</div>
         ))}
+        {sel && awaitingReply && (
+          <div style={{ alignSelf: 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <style>{`@keyframes cv6-step-pulse{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}.cv6-step-dot{width:5px;height:5px;border-radius:50%;background:var(--cv6-text-tertiary);display:inline-block;animation:cv6-step-pulse 1s infinite ease-in-out}`}</style>
+            <span style={{ display: 'inline-flex', gap: '3px' }}>
+              <span className="cv6-step-dot" style={{ animationDelay: '0ms' }} />
+              <span className="cv6-step-dot" style={{ animationDelay: '160ms' }} />
+              <span className="cv6-step-dot" style={{ animationDelay: '320ms' }} />
+            </span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stepText || 'Working…'}</span>
+          </div>
+        )}
       </div>
       {sel && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: '10px 12px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
