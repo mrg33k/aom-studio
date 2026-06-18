@@ -3230,7 +3230,14 @@ export default function HomeView({
       >
         <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${roomHue(a.slug)}, 60%, 55%)`, boxShadow: `0 0 8px ${roomGlow(a.slug)}`, flexShrink: 0 }}></span>
         <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
-        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>AGENT</span>
+        {/* DELTA 3: live status label — render ONLY when a REAL status exists on the
+            agent object. No fake placeholder (project rule: real data only). Wire from
+            the worker / command-ledger status source as a follow-up. */}
+        {a.status && (
+          <span style={{ fontSize: '11.5px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+            {a.status}
+          </span>
+        )}
       </button>
     )
   }
@@ -3352,76 +3359,142 @@ export default function HomeView({
             </div>
           )
         }
+        // DELTA 2: Desktop = swipe deck (same as mobile, but positioned cards instead of carousel)
         return (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {top.map((n) => {
-              const human = n.senderType === 'human'
-              const ask = isAsk(n.messagePreview)
-              const hasAttachment = !!(n.attachment || (n.attachments && n.attachments.length))
-              const open = () => onCatchupOpenRoom && onCatchupOpenRoom(n)
-              const dismiss = (e) => {
-                e.stopPropagation()
-                setDismissedCatchup(prev => { const next = new Set(prev); next.add(n.id); return next })
-                onCatchupDismiss && onCatchupDismiss(n)
-              }
-              // R98: harvested the mobile triage card — the card body opens the room, and a
-              // quiet action row lets you clear it without leaving Home (Slack-style triage).
-              return (
-                <div key={n.id} className="hm-card" role="button" tabIndex={0} onClick={open}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}
-                  style={{ display: 'flex', flexDirection: 'column', gap: '9px', padding: '12px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'left', background: 'var(--cv6-surface)', border: '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 140ms ease, border-color 140ms ease' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '11px' }}>
-                    <span style={{ flexShrink: 0, width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700',
-                      background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
-                      color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.senderName}</span>
-                        {ask && <span title="Waiting on you" style={{ flexShrink: 0, fontSize: '9px', fontWeight: '700', letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '1px 5px', lineHeight: 1.5 }}>ASK</span>}
-                        <span style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, marginLeft: 'auto', whiteSpace: 'nowrap' }}>{n.timeAgo}</span>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* Stacked card deck container */}
+            <div style={{
+              position: 'relative',
+              height: '128px',
+              marginBottom: '14px',
+            }}>
+              {/* Cards loop — top 3 visible (rest hidden behind) */}
+              {top.map((n, i) => {
+                const human = n.senderType === 'human'
+                const ask = isAsk(n.messagePreview)
+                const open = () => onCatchupOpenRoom && onCatchupOpenRoom(n)
+                const dismiss = (e) => { e.stopPropagation(); setDismissedCatchup(prev => { const next = new Set(prev); next.add(n.id); return next }); onCatchupDismiss && onCatchupDismiss(n) }
+
+                // Transform for stacking effect
+                let tf, op, trans, pe
+                if (i === 0) {
+                  // Top card: draggable (placeholder for future drag state)
+                  const dragX = 0
+                  tf = `translateX(${dragX}px) rotate(${(dragX * 0.025).toFixed(2)}deg)`
+                  op = Math.max(0, 1 - Math.abs(dragX) / 300)
+                  trans = 'transform .4s cubic-bezier(.22,1,.36,1),opacity .3s ease'
+                  pe = 'auto'
+                } else {
+                  // Behind cards: parallax scale/translate
+                  tf = `translateY(${i * 10}px) scale(${(1 - i * 0.04).toFixed(3)})`
+                  op = i === 1 ? 0.9 : 0.74
+                  trans = 'transform .4s cubic-bezier(.22,1,.36,1),opacity .3s ease'
+                  pe = 'none'
+                }
+
+                return (
+                  <div key={n.id}
+                    className="glassy hm-catchup-card"
+                    style={{
+                      position: 'absolute',
+                      left: 0, right: 0, top: 0,
+                      height: '118px',
+                      overflow: 'hidden',
+                      background: 'var(--cv6-surface)',
+                      border: '1px solid var(--cv6-divider)',
+                      borderRadius: '16px',
+                      padding: '14px',
+                      boxShadow: '0 14px 36px -14px rgba(0,0,0,.5)',
+                      touchAction: 'none',
+                      cursor: i === 0 ? 'grab' : 'default',
+                      transition: trans,
+                      transform: tf,
+                      opacity: op,
+                      zIndex: 30 - i,
+                      pointerEvents: pe,
+                    }}>
+                    {/* Card header */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '50%',
+                        background: 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)',
+                        color: 'var(--cv6-accent-primary)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '11px', fontWeight: '700', flex: 'none',
+                      }}>
+                        {n.senderInitials || (n.senderName || '?')[0]}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '1px' }}>
-                        <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.roomName}</span>
-                        {n._roomCount > 1 && <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '700', color: 'var(--cv6-accent-success)' }}>{n._roomCount} new</span>}
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
+                          {n.senderName}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {n.roomName}
+                        </div>
                       </div>
-                      <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', lineHeight: 1.45, marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.messagePreview}</div>
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>
+                        {n.timeAgo}
+                      </div>
+                    </div>
+                    {/* Card body — render message through ChatMessageRenderer for markdown */}
+                    <div style={{
+                      fontSize: '13.5px', lineHeight: 1.45, color: 'var(--cv6-text-primary)',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                    }}>
+                      {n.messagePreview || 'New update'}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '41px' }}>
-                    <button onClick={(e) => { e.stopPropagation(); open() }}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)' }}>
-                      Open in chat
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                    </button>
-                    {hasAttachment && (
-                      // R109 (Patrik: "review links should surface on attachments which takes us
-                      // to the review view") — the Review button opens the Review tool, not the chat
-                      // room. The room is still one tap away via "Open in chat".
-                      <button onClick={(e) => { e.stopPropagation(); openTool('review') }} title="Open the Review view"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'transparent', border: '1px solid var(--cv6-divider)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', color: 'var(--cv6-text-secondary)' }}>
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
-                        Review
-                      </button>
-                    )}
-                    <button onClick={dismiss} title="Mark handled" aria-label="Mark handled"
-                      style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '7px', background: 'transparent', border: '1px solid var(--cv6-divider)', cursor: 'pointer', color: 'var(--cv6-text-tertiary)', transition: 'background 140ms ease, color 140ms ease, border-color 140ms ease' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)'; e.currentTarget.style.color = 'var(--cv6-accent-success)'; e.currentTarget.style.borderColor = 'transparent' }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-tertiary)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' }}>
-                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
-                    </button>
+                )
+              })}
+              {/* "All caught up" state when remaining.length === 0 */}
+              {top.length === 0 && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  borderRadius: '16px', border: '1px solid var(--cv6-divider)',
+                  background: 'var(--cv6-surface)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                }}>
+                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--cv6-accent-success-weak)', color: 'var(--cv6-accent-success)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
                   </div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>You're all caught up</div>
                 </div>
-              )
-            })}
-            {overflow > 0 && (
-              <button onClick={() => onCatchupViewAll && onCatchupViewAll()}
-                style={{ marginTop: '2px', padding: '9px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'center', background: 'transparent', border: '1px dashed var(--cv6-divider)', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', color: 'var(--cv6-text-secondary)', transition: 'background 140ms ease, color 140ms ease' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>
-                View all {catchupNotifications.length}
-              </button>
+              )}
+            </div>
+
+            {/* TODO(cv6): wire smart-reply source for catch-up quick replies — currently no per-card reply data in catchupNotifications */}
+
+            {/* Action row — only if cards remain */}
+            {top.length > 0 && (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => { top.length > 0 && onCatchupOpenRoom && onCatchupOpenRoom(top[0]) }}
+                  style={{
+                    flex: 1, height: '44px', borderRadius: '12px',
+                    border: 'none',
+                    background: 'var(--cv6-accent-primary)',
+                    color: '#fff',
+                    fontSize: '13.5px', fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    fontFamily: 'inherit',
+                  }}>
+                  Open in chat
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </button>
+                <button onClick={() => { top.length > 0 && setDismissedCatchup(prev => { const next = new Set(prev); next.add(top[0].id); return next }); onCatchupDismiss && onCatchupDismiss(top[0]) }}
+                  style={{
+                    width: '44px', height: '44px', flex: 'none',
+                    borderRadius: '12px',
+                    border: '1px solid var(--cv6-accent-success-weak)',
+                    background: 'var(--cv6-accent-success-weak)',
+                    color: 'var(--cv6-accent-success)',
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: 'inherit',
+                  }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+                </button>
+              </div>
             )}
           </div>
         )
@@ -3823,7 +3896,7 @@ export default function HomeView({
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
           <div className="hm-tools-block" style={{ marginTop: '-4px', marginBottom: '8px' }}>
             <div className="hm-tools-heading" style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
-            <div className="hm-tools-row" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'wrap', rowGap: '12px' }}>
+            <div className="hm-tools-row" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'nowrap', rowGap: '12px' }}>
               {/* R48: Home pinned first, then tools in recency order (most-recently-used next to Home), then the rest in default order. Mobile: one scrollable row (cv6.css .hm-tools-row). */}
               {(() => {
                 const TOOLS = [
@@ -3859,7 +3932,7 @@ export default function HomeView({
                     background: selectedTool === t.key ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                     color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-secondary)',
                     cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                    minWidth: '120px', minHeight: '78px',
+                    minWidth: '88px', minHeight: '78px',
                   }}
                   onMouseEnter={(e) => { if (selectedTool !== t.key) { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)' } }}
                   onMouseLeave={(e) => { if (selectedTool !== t.key) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' } }}
@@ -4323,11 +4396,9 @@ export default function HomeView({
                                 </div>
                                 <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>{projectSub}</div>
                               </div>
-                              {/* Chevron icon */}
-                              <span style={{ display: 'inline-flex', flexShrink: 0, color: isSelected ? 'rgba(255,255,255,0.5)' : 'var(--cv6-text-tertiary)' }}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
-                                  <path d="m9 6 6 6-6 6"/>
-                                </svg>
+                              {/* DELTA 3: Mission count on the right (per design) */}
+                              <span style={{ fontSize: '11.5px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', flexShrink: 0 }}>
+                                {missionCount}
                               </span>
                             </button>
                           )
