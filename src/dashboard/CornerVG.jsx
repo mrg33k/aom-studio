@@ -130,6 +130,22 @@ function TaskCompletionToast({ message, visible, onDismiss }) {
   )
 }
 
+// corner:corner-ui-cv6 R89 — this same CV6 surface now serves two routes:
+//   /cvg       -> Gemini brain (surfaceModel() returns a Gemini model on /cvg)
+//   /dashboard?cv6=1 -> Claude brain (surfaceModel() returns '' off /cvg, so no
+//                       model override leaks -> the room's Claude pref stands)
+// In-app navigation must stay on whichever surface the user came in on, so the
+// base path is derived from the live pathname instead of pinned to /cvg.
+function surfaceBase() {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) return '/dashboard'
+  return '/cvg'
+}
+// The Gemini-only chrome (spend badge, GEMINI pill) must NOT show on the Claude
+// /dashboard mount. It only belongs on /cvg.
+function isGeminiSurface() {
+  return typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')
+}
+
 export default function CornerVG() {
   const navigate = useNavigate()
   const { projectId: routeProjectId } = useParams()
@@ -333,27 +349,31 @@ export default function CornerVG() {
     if (typeof document === 'undefined') return
     // Keep the cv4 shell scope so all [data-shell="cv4"] CSS applies here too.
     document.documentElement.setAttribute('data-shell', 'cv4')
-    // CVG delta: persistent surface badge so it's always obvious this is the
-    // Gemini workbench, not the live dashboard.
-    const style = document.createElement('style')
-    style.id = 'cvg-badge-styles'
-    style.textContent = '@keyframes cvg-dot-pulse{0%,100%{opacity:1}50%{opacity:.4}}'
-    document.head.appendChild(style)
-    const badge = document.createElement('div')
-    badge.id = 'cvg-surface-badge'
-    badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;margin-right:7px;animation:cvg-dot-pulse 2s ease-in-out infinite;vertical-align:middle"></span><span>GEMINI 3.5 FLASH</span>'
-    // CV6-native: calm glass pill (surface + 1px hairline, no loud amber), mono label.
-    badge.style.cssText = 'position:fixed;bottom:14px;right:14px;z-index:99999;' +
-      'font:500 10px/1.35 "JetBrains Mono",monospace;letter-spacing:.08em;' +
-      'color:#E8EBEF;background:rgba(20,21,24,0.82);' +
-      'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' +
-      'border:1px solid rgba(255,255,255,0.10);padding:7px 11px;border-radius:8px;' +
-      'pointer-events:none;display:flex;align-items:center;'
-    document.body.appendChild(badge)
+    // CVG delta: persistent GEMINI surface badge so it's always obvious this is
+    // the Gemini workbench. ONLY on /cvg — the /dashboard?cv6=1 mount runs the
+    // Claude brain and must not wear Gemini chrome. R89.
+    let style = null, badge = null
+    if (isGeminiSurface()) {
+      style = document.createElement('style')
+      style.id = 'cvg-badge-styles'
+      style.textContent = '@keyframes cvg-dot-pulse{0%,100%{opacity:1}50%{opacity:.4}}'
+      document.head.appendChild(style)
+      badge = document.createElement('div')
+      badge.id = 'cvg-surface-badge'
+      badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;margin-right:7px;animation:cvg-dot-pulse 2s ease-in-out infinite;vertical-align:middle"></span><span>GEMINI 3.5 FLASH</span>'
+      // CV6-native: calm glass pill (surface + 1px hairline, no loud amber), mono label.
+      badge.style.cssText = 'position:fixed;bottom:14px;right:14px;z-index:99999;' +
+        'font:500 10px/1.35 "JetBrains Mono",monospace;letter-spacing:.08em;' +
+        'color:#E8EBEF;background:rgba(20,21,24,0.82);' +
+        'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' +
+        'border:1px solid rgba(255,255,255,0.10);padding:7px 11px;border-radius:8px;' +
+        'pointer-events:none;display:flex;align-items:center;'
+      document.body.appendChild(badge)
+    }
     return () => {
       try { document.documentElement.removeAttribute('data-shell') } catch (_) {}
-      try { badge.remove() } catch (_) {}
-      try { style.remove() } catch (_) {}
+      try { if (badge) badge.remove() } catch (_) {}
+      try { if (style) style.remove() } catch (_) {}
     }
   }, [])
   const [toast, setToast] = useState({ visible: false, message: '' })
@@ -364,9 +384,10 @@ export default function CornerVG() {
     console.log('CornerV4 mounted')
   }, [])
 
-  // gemini-workers: show month-to-date Gemini spend in the surface badge footer
+  // gemini-workers: show month-to-date Gemini spend in the surface badge footer.
+  // /cvg only — the Claude /dashboard mount has no Gemini spend to show. R89.
   useEffect(() => {
-    if (!worldId) return
+    if (!worldId || !isGeminiSurface()) return
     authFetch(`/api/dashboard/gemini-spend?client_id=${encodeURIComponent(worldId)}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
@@ -577,7 +598,7 @@ export default function CornerVG() {
       if (proj) {
         setConversationTarget({ name: proj.name || proj.slug, slug: proj.slug, type: 'project' })
         try {
-          const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
+          const basePath = surfaceBase()
           navigate(basePath + '/project/' + proj.slug)
         } catch (_) {}
         return
@@ -610,7 +631,7 @@ export default function CornerVG() {
     if (hasMissionParam) return
     const accessible = projectRooms.some(p => p?.slug === routeProjectId)
     if (!accessible) {
-      const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
+      const basePath = surfaceBase()
       console.warn('[tenant-isolation] blocked URL-route to inaccessible project; redirecting', { routeProjectId, accessibleSlugs: projectRooms.map(p => p?.slug) })
       navigate(basePath, { replace: true })
     }
@@ -846,7 +867,7 @@ export default function CornerVG() {
     setUnreadChat(0)
     // R7.21: Preserve the entry-point base path (/dashboard or /cv4) so the
     // URL bar doesn't snap from /dashboard → /cv4 when the user navigates.
-    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
+    const basePath = surfaceBase()
     // Clear any project route so ChatPanel renders the agent thread (not project chat).
     if (routeProjectId) navigate(basePath)
   }, [navigate, routeProjectId, cv6Mode])
@@ -898,7 +919,7 @@ export default function CornerVG() {
     setTab('chat')
     setUnreadChat(0)
     if (canonicalSlug) {
-      const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
+      const basePath = surfaceBase()
       navigate(`${basePath}/project/${canonicalSlug}`)
     }
   }, [navigate, resolveCanonicalProject, cv6Mode])
@@ -979,7 +1000,7 @@ export default function CornerVG() {
     setAttachedMission(null)
     setTab('chat')
     setUnreadChat(0)
-    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
+    const basePath = surfaceBase()
     navigate(`${basePath}/project/${canonicalProjectSlug}?mission=${encodeURIComponent(mission.slug)}`)
   }, [navigate, resolveCanonicalProject, cv6Mode])
 
@@ -1235,7 +1256,7 @@ export default function CornerVG() {
     setConversationTarget(null)
     setTab('chat')
     setUnreadChat(0)
-    const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
+    const basePath = surfaceBase()
     if (routeProjectId) navigate(basePath)
   }, [navigate, routeProjectId])
 
@@ -1280,7 +1301,7 @@ export default function CornerVG() {
     setSelectedAgent(null)
     setConversationTarget(null)
     if (routeProjectId) {
-      const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
+      const basePath = surfaceBase()
       navigate(basePath)
     }
     if (wasTaskRoom) {
@@ -2577,7 +2598,7 @@ export default function CornerVG() {
               setConversationTarget(null)
               setActiveTool(null)
               try {
-                const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
+                const basePath = surfaceBase()
                 navigate(basePath)
               } catch (_) {}
             }}
