@@ -788,13 +788,9 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
 
   return (
     <div
-      // R99 — make the tracker a proper frosted panel in glass mode. Without this
-      // the canvas is transparent (--cv6-ground) and the bright backdrop photo
-      // bleeds straight through the table, washing out the top rows + the new
-      // master-loop bar. data-cv6-tool-surface is a no-op in light/dark themes and
-      // gives the panel a readable --cv6-surface scrim (+ dark text in light-glass)
-      // in glass mode. Fixes the glass-1 wash-out for the Command Center.
-      data-cv6-tool-surface=""
+      // R100 — the glass scrim now lives on the shared tool-overlay wrapper in
+      // HomeView (covers every tool), so the tracker root no longer needs its own
+      // data-cv6-tool-surface tag.
       style={{
         flex: 1,
         display: 'flex',
