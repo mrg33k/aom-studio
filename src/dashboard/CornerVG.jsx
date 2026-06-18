@@ -33,6 +33,7 @@ import { useDataPipe } from './hooks/useDataPipe'
 import { useCurrentUserSlug } from './hooks/useCurrentUserSlug'
 import useTelephone from './hooks/useTelephone'
 import { useThemeMode } from './hooks/useThemeMode.js'
+import GlassBackdrop from './cv4/GlassBackdrop.jsx'
 import { C } from './lib/cv3Colors.js'
 import { AomLogo } from './components/cv3/icons.jsx'
 import { Badge, Tab, BellIcon } from './components/cv3/shared.jsx'
@@ -322,7 +323,7 @@ export default function CornerVG() {
   // override). `setTheme(...)` here is wired to the hook so the legacy
   // moon-toggle button keeps working and the CSS-vars repaint
   // (cv3Colors.js) responds.
-  const { mode: theme, setTheme: setThemeHook } = useThemeMode()
+  const { mode: theme, setTheme: setThemeHook, cycleTheme } = useThemeMode()
   const setTheme = useCallback((next) => {
     const resolved = typeof next === 'function' ? next(theme) : next
     setThemeHook(resolved)
@@ -1543,6 +1544,9 @@ export default function CornerVG() {
       overflow: 'hidden',
       fontFamily: "'Hanken Grotesk', sans-serif",
     }}>
+      {/* Glass theme (3rd mode): cycling Corner backdrop behind the frosted UI.
+          Only mounted in glass mode, so light/dark pay nothing. */}
+      {theme === 'glass' && <GlassBackdrop />}
       {/* R5.1 CV4 scoped styles. Everything keyed to [data-shell="cv4"] so the
           shared cv3/ components stay unchanged on /dashboard. */}
       <style>{`
@@ -2547,18 +2551,28 @@ export default function CornerVG() {
           <button
             type="button"
             data-cv4-theme-toggle
-            aria-label={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
-            title={theme === 'light' ? 'Dark mode' : 'Light mode'}
-            onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
+            data-theme-mode={theme}
+            aria-label={theme === 'light' ? 'Switch to dark theme' : theme === 'dark' ? 'Switch to glass theme' : 'Switch to light theme'}
+            title={theme === 'light' ? 'Light · tap for Dark' : theme === 'dark' ? 'Dark · tap for Glass' : 'Glass · tap for Light'}
+            onClick={() => cycleTheme()}
           >
             {theme === 'light' ? (
+              /* Light → sun (current mode) */
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            ) : theme === 'dark' ? (
+              /* Dark → crescent moon (current mode) */
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             ) : (
+              /* Glass → crystal orb on a stand with an inner shine (current mode) */
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                <circle cx="12" cy="10" r="7" />
+                <path d="M8.4 7.6a4.6 4.6 0 0 1 3-1.9" opacity="0.85" />
+                <path d="M9 17.4h6M9.6 17.4l-1 3.1M14.4 17.4l1 3.1" />
               </svg>
             )}
           </button>

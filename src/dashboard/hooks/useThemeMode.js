@@ -36,7 +36,7 @@ function readStored() {
   try {
     const userSet = window.localStorage?.getItem(KEY_USER_SET) === '1'
     const theme = window.localStorage?.getItem(KEY_THEME)
-    if (userSet && (theme === 'light' || theme === 'dark')) return { theme, userSet: true }
+    if (userSet && (theme === 'light' || theme === 'dark' || theme === 'glass')) return { theme, userSet: true }
     return { theme: theme === 'light' ? 'light' : 'dark', userSet: false }
   } catch {
     return { theme: 'dark', userSet: false }
@@ -44,7 +44,8 @@ function readStored() {
 }
 
 function resolve({ theme, userSet }) {
-  if (userSet && (theme === 'light' || theme === 'dark')) return theme
+  if (userSet && (theme === 'light' || theme === 'dark' || theme === 'glass')) return theme
+  // Auto-seed only ever picks light/dark — glass is opt-in (user cycles into it).
   return arizonaModeNow()
 }
 
@@ -52,7 +53,10 @@ function syncDom(mode) {
   if (typeof document === 'undefined') return
   document.documentElement.setAttribute('data-theme', mode)
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', mode === 'light' ? '#F6F2E9' : '#06090F')
+  if (meta) {
+    const color = mode === 'light' ? '#F6F2E9' : mode === 'glass' ? '#0B0D12' : '#06090F'
+    meta.setAttribute('content', color)
+  }
 }
 
 export function useThemeMode() {
@@ -90,7 +94,7 @@ export function useThemeMode() {
   }, [])
 
   const setTheme = useCallback((next) => {
-    if (next !== 'light' && next !== 'dark') return
+    if (next !== 'light' && next !== 'dark' && next !== 'glass') return
     try {
       window.localStorage?.setItem(KEY_THEME, next)
       window.localStorage?.setItem(KEY_USER_SET, '1')
@@ -110,9 +114,18 @@ export function useThemeMode() {
     window.dispatchEvent(new Event('cv4-theme-changed'))
   }, [])
 
+  // Cycle the toggle through the full theme library: light → dark → glass →
+  // light. Each click advances to the next; the icon reflects the CURRENT mode.
+  const cycleTheme = useCallback(() => {
+    const next = mode === 'light' ? 'dark' : mode === 'dark' ? 'glass' : 'light'
+    setTheme(next)
+  }, [mode, setTheme])
+
+  // Legacy: light → dark → auto (kept for any caller still on the 2-mode model).
   const cycleOverride = useCallback(() => {
     if (!stored.userSet) { setTheme('light'); return }
     if (mode === 'light') { setTheme('dark'); return }
+    if (mode === 'dark') { setTheme('glass'); return }
     clearOverride()
   }, [stored.userSet, mode, setTheme, clearOverride])
 
@@ -122,9 +135,11 @@ export function useThemeMode() {
     mode,
     override,
     isLight: mode === 'light',
+    isGlass: mode === 'glass',
     setTheme,
     setOverride: setTheme,
     clearOverride,
+    cycleTheme,
     cycleOverride,
   }
 }
