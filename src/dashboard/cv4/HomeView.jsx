@@ -1669,6 +1669,35 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const [mobileCol, setMobileCol] = useState(0)       // 0 rooms · 1 chat · 2 files
   const [listFocused, setListFocused] = useState(false) // R57: room list is the active column (Left from empty input)
   const chatNavRef = useRef(null)
+  // R61 (Patrik): the "all rooms" column is a single-column Dropbox-style drill-through —
+  // root shows agents + projects; clicking a project pushes INTO its missions (one column,
+  // the view changes as you click, with a back affordance). browseProj = the project we're
+  // drilled into (null = root). navIdx = the keyboard-highlighted row in the visible list.
+  const [browseProj, setBrowseProj] = useState(null)
+  const [navIdx, setNavIdx] = useState(0)
+  useEffect(() => { setNavIdx(0) }, [browseProj])
+  // R61: rooms + files columns collapse to a slim pillar (same move as the Tracker), so the
+  // chat itself can be the focus. Desktop only — mobile is already one column at a time.
+  const [roomsCollapsed, setRoomsCollapsed] = useState(false)
+  const [filesCollapsed, setFilesCollapsed] = useState(false)
+  const keyOf = (r) => r ? (r.roomKey || r.slug) : ''
+  const missionsFor = (slug) => (missionsByProject && missionsByProject[slug]) || []
+  // The rows currently visible in the drill-through left column. Drives BOTH the render and
+  // the keyboard nav so they never disagree. Root = agents then projects (projects drill in);
+  // drilled = the project's own room then each of its missions (all openable chat rooms).
+  const visibleRooms = useMemo(() => {
+    if (browseProj) {
+      const projRoom = { kind: 'project', type: 'project', slug: browseProj.slug, name: browseProj.name || browseProj.slug, isProjectRoom: true }
+      const ms = missionsFor(browseProj.slug).map(m => ({
+        kind: 'mission', type: 'project', slug: browseProj.slug, missionSlug: m.slug,
+        name: m.name || m.slug, roomKey: `${browseProj.slug}:${m.slug}`, status: m.status,
+      }))
+      return [projRoom, ...ms]
+    }
+    const ag = (agents || []).map(a => ({ kind: 'agent', slug: a.slug, name: a.name || a.slug }))
+    const pr = (localProjects || []).map(p => ({ kind: 'projectNav', slug: p.slug, name: p.name || p.slug, drill: p }))
+    return [...ag, ...pr]
+  }, [browseProj, agents, localProjects, missionsByProject])
   // R56 (Patrik): inside the Chat tool, Down/Up move the room selection and Right opens that
   // room (mobile → chat column; desktop → focus the message box, the chat is already shown).
   // Document-level so it works without juggling focus; ignores input/textarea targets so the
@@ -1677,25 +1706,27 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     const onKey = (e) => {
       const tag = e.target?.tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA') return
-      if (!rooms.length) return
-      const idx = Math.max(0, rooms.findIndex(r => sel && r.kind === sel.kind && r.slug === sel.slug))
-      if (e.key === 'ArrowDown') { e.preventDefault(); setListFocused(true); setSel(rooms[(idx + 1) % rooms.length]) }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); setListFocused(true); setSel(rooms[(idx - 1 + rooms.length) % rooms.length]) }
+      if (!visibleRooms.length) return
+      if (e.key === 'ArrowDown') { e.preventDefault(); setListFocused(true); setNavIdx(i => (i + 1) % visibleRooms.length) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setListFocused(true); setNavIdx(i => (i - 1 + visibleRooms.length) % visibleRooms.length) }
       else if (e.key === 'ArrowRight' || e.key === 'Enter') {
         e.preventDefault()
-        setListFocused(false)
-        if (isNarrow) setMobileCol(1)
-        else chatNavRef.current?.querySelector('textarea')?.focus()
+        const row = visibleRooms[Math.min(navIdx, visibleRooms.length - 1)]
+        if (!row) return
+        // A project row drills IN (Dropbox-style); any real room opens its chat.
+        if (row.kind === 'projectNav') { setBrowseProj(row.drill); setListFocused(true) }
+        else { setSel(row); setListFocused(false); if (isNarrow) setMobileCol(1); else chatNavRef.current?.querySelector('textarea')?.focus() }
       }
       else if (e.key === 'ArrowLeft') {
-        // R57: Left while the room list is focused (not in the input) → back to Home.
+        // R61: Left drills OUT of a project back to the root list; at the root it goes Home.
         e.preventDefault()
-        onClose && onClose()
+        if (browseProj) setBrowseProj(null)
+        else onClose && onClose()
       }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [rooms, sel, isNarrow, onClose])
+  }, [visibleRooms, navIdx, isNarrow, onClose, browseProj])
   // R57: opening the Chat tool means "I'm in the room" — focus the message box (desktop) so
   // the keyboard flow is input → Left → room list → Left → Home, matching the home rail.
   useEffect(() => {
@@ -1723,12 +1754,13 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     { from: 'me', text: 'Great. Push it as far as you can and flag anything you need.' },
     { from: 'them', text: 'Will do. First pass is ready for you to look at whenever.' },
   ])
-  const msgs = sel ? (thread[sel.slug] || seedThread(sel)) : []
-  const files = useMemo(() => buildFileTree(sel ? { slug: sel.slug } : null), [sel])
+  const msgs = sel ? (thread[keyOf(sel)] || seedThread(sel)) : []
+  const files = useMemo(() => buildFileTree(sel ? { slug: keyOf(sel) } : null), [sel])
 
   function send() {
     const t = draft.trim(); if (!t || !sel) return
-    setThread(prev => ({ ...prev, [sel.slug]: [...(prev[sel.slug] || seedThread(sel)), { from: 'me', text: t }] }))
+    const k = keyOf(sel)
+    setThread(prev => ({ ...prev, [k]: [...(prev[k] || seedThread(sel)), { from: 'me', text: t }] }))
     setDraft('')
     // Optimistic UI above; real send via onSend (provided on /cvg + /dashboard).
     // No onSend (e.g. the no-backend gallery) → stays optimistic.
@@ -1762,9 +1794,41 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const projGlyph = <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
   const fileGlyph = <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
 
-  const RoomsCol = () => (
+  // Collapsed pillar — a slim bar so the chat is the focus; click to expand (Tracker move).
+  const RoomsCollapsedBar = () => (
+    <div onClick={() => setRoomsCollapsed(false)} title="Show rooms" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '10px 0', borderRight: '1px solid var(--cv6-divider)', height: '100%', cursor: 'pointer', background: 'var(--cv6-surface)' }}>
+      <button title="Show rooms" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--cv6-text-secondary)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', marginTop: '4px' }}>Rooms</span>
+    </div>
+  )
+  const roomRowStyle = (active, hi, r) => ({
+    display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '10px 12px', margin: '2px 6px', borderRadius: '6px',
+    border: hi ? '2px solid var(--cv6-accent-primary)' : '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit',
+    background: active ? `hsla(${hue(keyOf(r))}, 60%, 48%, 0.12)` : 'transparent',
+  })
+  const folderGlyph = (slug) => <span style={{ flexShrink: 0, color: `hsl(${hue(slug)}, 60%, 52%)`, display: 'inline-flex' }}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
+  const chevronRight = <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><polyline points="9 18 15 12 9 6"/></svg>
+  const RoomsCol = () => {
+    if (roomsCollapsed && !isNarrow) return <RoomsCollapsedBar />
+    return (
     <div style={colStyle}>
-      <div style={headStyle}>All Rooms</div>
+      <div style={headStyle}>
+        {browseProj ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+            <button onClick={() => setBrowseProj(null)} title="All rooms" style={{ flexShrink: 0, width: '26px', height: '26px', marginLeft: '-4px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--cv6-accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <span style={{ textTransform: 'none', fontSize: '13px', fontWeight: '700', color: 'var(--cv6-text-primary)', letterSpacing: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{browseProj.name || browseProj.slug}</span>
+          </span>
+        ) : <span>All Rooms</span>}
+        {!isNarrow && (
+          <button onClick={() => setRoomsCollapsed(true)} title="Collapse rooms" style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+        )}
+      </div>
       <div style={{ display: 'flex', gap: '6px', padding: '8px 10px', borderBottom: '1px solid var(--cv6-divider)' }}>
         <button onClick={() => setCreating(creating === 'project' ? null : 'project')} style={{ flex: 1, padding: '7px 8px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: creating === 'project' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)', color: creating === 'project' ? '#fff' : 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>+ Project</button>
         <button onClick={() => setCreating(creating === 'mission' ? null : 'mission')} style={{ flex: 1, padding: '7px 8px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: creating === 'mission' ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)', color: creating === 'mission' ? '#fff' : 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>+ Mission</button>
@@ -1786,37 +1850,55 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
           <button onClick={commitMission} style={{ padding: '8px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Save</button>
         </div>
       )}
-      {rooms.map(r => {
-        const active = sel?.slug === r.slug && sel?.kind === r.kind
+      {visibleRooms.map((r, i) => {
+        const hi = listFocused && navIdx === i
+        // Project rows at the root drill IN (Finder/Dropbox forward step), not open a chat.
+        if (r.kind === 'projectNav') {
+          const count = missionsFor(r.slug).length
+          return (
+            <button key={'pnav-' + r.slug} onClick={() => { setBrowseProj(r.drill); setNavIdx(0); setListFocused(true) }} style={roomRowStyle(false, hi, r)}
+              onMouseEnter={(e) => { if (!hi) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (!hi) e.currentTarget.style.background = 'transparent' }}>
+              {folderGlyph(r.slug)}
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
+                <span style={{ display: 'block', fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{count} mission{count === 1 ? '' : 's'}</span>
+              </span>
+              {chevronRight}
+            </button>
+          )
+        }
+        const active = sel && keyOf(sel) === keyOf(r)
+        const tag = r.isProjectRoom ? 'Room' : r.kind === 'agent' ? 'Agent' : (r.status === 'running' ? 'Working' : 'Mission')
         return (
-          <button key={r.kind + r.slug} onClick={() => { setSel(r); setListFocused(true); if (isNarrow) setMobileCol(1) }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '10px 12px', margin: '2px 6px', borderRadius: '6px', border: (active && listFocused) ? '2px solid var(--cv6-accent-primary)' : '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit', background: active ? `hsla(${hue(r.slug)}, 60%, 48%, 0.12)` : 'transparent' }}
-            onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}>
-            <span style={{ flexShrink: 0, width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(r.slug)}, 65%, 55%)` }} />
+          <button key={r.kind + '-' + keyOf(r)} onClick={() => { setSel(r); setNavIdx(i); setListFocused(true); if (isNarrow) setMobileCol(1) }} style={roomRowStyle(active, hi || (active && listFocused), r)}
+            onMouseEnter={(e) => { if (!active && !hi) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (!active && !hi) e.currentTarget.style.background = 'transparent' }}>
+            <span style={{ flexShrink: 0, width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(keyOf(r))}, 65%, 55%)` }} />
             <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-            <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)' }}>{r.kind === 'agent' ? 'Agent' : 'Project'}</span>
+            <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)' }}>{tag}</span>
           </button>
         )
       })}
     </div>
-  )
+    )
+  }
 
   const ChatCol = ({ mobile } = {}) => (
     <div style={{ ...colStyle, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', height: mobile ? '100%' : undefined }}>
       {/* Secondary nav: (mobile) back + dot + name on the left, room Projects/Files icons on the right */}
-      <div style={{ ...headStyle, borderBottom: sel ? `2px solid hsl(${hue(sel.slug)}, 70%, 60%)` : '1px solid var(--cv6-divider)' }}>
+      <div style={{ ...headStyle, borderBottom: sel ? `2px solid hsl(${hue(keyOf(sel))}, 70%, 60%)` : '1px solid var(--cv6-divider)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, textTransform: 'none', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', letterSpacing: 0 }}>
           {mobile && (
             <button onClick={() => setMobileCol(0)} title="Back to rooms" style={{ flexShrink: 0, width: '30px', height: '30px', marginLeft: '-4px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--cv6-accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
           )}
-          {sel ? <><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(sel.slug)}, 70%, 60%)`, flexShrink: 0 }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sel.name}</span></> : 'Select a room'}
+          {sel ? <><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(keyOf(sel))}, 70%, 60%)`, flexShrink: 0 }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sel.name}</span></> : 'Select a room'}
         </span>
         {sel && <span style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>{iconBtn('Projects', () => { if (isNarrow) setMobileCol(2) }, projGlyph)}{iconBtn('Files', () => { if (isNarrow) setMobileCol(2) }, fileGlyph)}</span>}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => (
-          <div key={i} style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: m.from === 'me' ? roomSolid(sel.slug) : 'var(--cv6-surface-hover)', color: m.from === 'me' ? '#fff' : 'var(--cv6-text-primary)' }}>{m.text}</div>
+          <div key={i} style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: m.from === 'me' ? roomSolid(keyOf(sel)) : 'var(--cv6-surface-hover)', color: m.from === 'me' ? '#fff' : 'var(--cv6-text-primary)' }}>{m.text}</div>
         ))}
       </div>
       {sel && (
@@ -1836,9 +1918,23 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     </div>
   )
 
-  const FilesCol = () => (
+  const FilesCollapsedBar = () => (
+    <div onClick={() => setFilesCollapsed(false)} title="Show files" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '10px 0', borderLeft: '1px solid var(--cv6-divider)', height: '100%', cursor: 'pointer', background: 'var(--cv6-surface)' }}>
+      <button title="Show files" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--cv6-text-secondary)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', marginTop: '4px' }}>Files</span>
+    </div>
+  )
+  const FilesCol = () => {
+    if (filesCollapsed && !isNarrow) return <FilesCollapsedBar />
+    return (
     <div style={{ ...colStyle, borderRight: 'none' }}>
-      <div style={headStyle}><span>Files</span></div>
+      <div style={headStyle}><span>Files</span>{!isNarrow && (
+        <button onClick={() => setFilesCollapsed(true)} title="Collapse files" style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      )}</div>
       {!sel ? <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>No room selected</div> : files.map((n, i) => {
         const isFolder = n.type === 'folder'
         const color = isFolder ? 'var(--cv6-text-secondary)' : (FILE_TYPE_COLOR[n.fileType] || 'var(--cv6-text-secondary)')
@@ -1854,7 +1950,8 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
         )
       })}
     </div>
-  )
+    )
+  }
 
   if (isNarrow) {
     // R49: mobile chat is a FULL room. Chat view fills the tool area (own secondary nav with
@@ -1870,9 +1967,10 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
       </div>
     )
   }
+  const gridCols = `${roomsCollapsed ? '40px' : '230px'} 1.4fr ${filesCollapsed ? '40px' : '0.9fr'}`
   return (
     <ResizableBox minHeight={460} storageKey="chat-tool">
-      <div ref={chatNavRef} style={{ display: 'grid', gridTemplateColumns: '230px 1.4fr 0.9fr', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+      <div ref={chatNavRef} style={{ display: 'grid', gridTemplateColumns: gridCols, height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', transition: 'grid-template-columns 160ms ease' }}>
         <RoomsCol /><ChatCol /><FilesCol />
       </div>
     </ResizableBox>
