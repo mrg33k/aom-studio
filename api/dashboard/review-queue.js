@@ -77,16 +77,26 @@ function detectType(filename) {
   return null;
 }
 
-// List the project slugs that belong to this world.
+// List the project slugs whose deliverables this world may review.
+//
+// AOM is the super-admin world and sees every room (mirrors missions-tree.js,
+// which leaves allowedProjectSlugs=null for aom). The narrow client_id=eq.aom
+// query misses every project that lives under its own client_id, so the review
+// queue came back empty even with hundreds of recent deliverables across rooms.
+// For aom: list ALL project slugs. Every other world stays scoped to its own
+// client_id so tenant isolation is preserved.
 async function listProjectSlugs(world) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
   try {
-    const url = `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(world)}&select=slug`;
+    const url = world === 'aom'
+      ? `${SUPABASE_URL}/rest/v1/projects?select=slug`
+      : `${SUPABASE_URL}/rest/v1/projects?client_id=eq.${encodeURIComponent(world)}&select=slug`;
     const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
     if (!r.ok) return [];
     const rows = await r.json();
     if (!Array.isArray(rows)) return [];
-    return rows.map((x) => x.slug).filter((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s));
+    const slugs = rows.map((x) => x.slug).filter((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s));
+    return [...new Set(slugs)];
   } catch {
     return [];
   }
