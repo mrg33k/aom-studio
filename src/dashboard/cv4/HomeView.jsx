@@ -3740,7 +3740,15 @@ export default function HomeView({
           {/* R23: Full-screen tool app container — rolls in above the 3-column band, above What Needs You */}
           {/* R48: key on selectedTool so the roll-in replays every time a DIFFERENT tool opens (not just the first) */}
           {selectedTool && selectedTool !== 'home' && (
-            <div key={selectedTool} style={{
+            <div key={selectedTool}
+              // R100 — every tool renders inside this one wrapper, so this is where
+              // the glass scrim belongs. Without it the tool canvas is transparent
+              // and a bright glass backdrop bleeds through, washing out dense panels
+              // (the Command table, Tracker, etc). data-cv6-tool-surface gives the
+              // whole tool area the frosted --cv6-surface scrim (+ dark text in
+              // light-glass) and is a no-op in light/dark themes. Closes glass-1.
+              data-cv6-tool-surface=""
+              style={{
               animation: 'cv6-tool-roll-in 300ms ease-out',
               marginBottom: '24px', borderRadius: '8px', border: 'none',
               background: 'transparent', overflow: 'hidden', minHeight: '72vh',
