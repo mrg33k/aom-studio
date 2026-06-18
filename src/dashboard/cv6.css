@@ -693,6 +693,13 @@ html[data-theme="glass"] body {
   [data-cv6] .hm-more-backdrop { display: block !important; }
   [data-cv6] .hm-tools-row { justify-content: space-around; }
   [data-cv6] .hm-tools-row > button { flex: 1 1 0; min-width: 0 !important; }
+  /* R146: the /cvg GEMINI spend badge is a fixed bottom-right pill appended to
+     <body> (id, outside the [data-cv6] scope). At its inline bottom:14px it lands
+     inside the fixed bottom tab bar's band and visually covers the two rightmost
+     tabs (Review + More) — and More holds Support/Tracker/Command/Live Scribe, so
+     5 tools become invisible on mobile /cvg. Lift the pill above the dock so every
+     tab stays visible. ID + !important beats the element's inline bottom. */
+  #cvg-surface-badge { bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important; }
   /* keep page content clear of the fixed dock.
      !important: the max-width:767px block below sets `padding: 16px` (shorthand),
      which is later in source and same specificity, so it would otherwise reset
