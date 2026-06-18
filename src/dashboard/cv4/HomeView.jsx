@@ -2462,6 +2462,21 @@ export default function HomeView({
   useEffect(() => { writeStored(PIN_PROJECTS_KEY + ':' + userId, pinnedProjects) }, [pinnedProjects, userId])
   useEffect(() => { writeStored(EXPANDED_PROJECTS_KEY + ':' + userId, expandedProjects) }, [expandedProjects, userId])
 
+  // persist-1: keep pins in sync across browser tabs. A `storage` event fires only
+  // in OTHER tabs when this user's pin keys change, so adopt the new value instead of
+  // letting a stale tab overwrite it on its next write.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onStorage = (e) => {
+      if (!e.key) return
+      if (e.key === PIN_AGENTS_KEY + ':' + userId) setPinnedAgents(readStored(PIN_AGENTS_KEY + ':' + userId, []))
+      else if (e.key === PIN_PROJECTS_KEY + ':' + userId) setPinnedProjects(readStored(PIN_PROJECTS_KEY + ':' + userId, []))
+      else if (e.key === EXPANDED_PROJECTS_KEY + ':' + userId) setExpandedProjects(readStored(EXPANDED_PROJECTS_KEY + ':' + userId, {}))
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [userId])
+
   // Default: pin the EA if user has no pins yet.
   const visibleAgents = useMemo(() => {
     if (!agents || agents.length === 0) return []
