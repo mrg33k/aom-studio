@@ -1801,7 +1801,11 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   }, [isNarrow])
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const check = () => setIsNarrow(window.innerWidth < 720)
+    // Tablet/iPad (<=1024) uses the readable full-screen drill-in chat (rooms -> tap ->
+    // full-width conversation) instead of the 3-pane desktop layout, which crushed the
+    // conversation to ~90px and wrapped message text one word per line.
+    // (2026-06-18, Patrik: "messages still hard to read".) Desktop (1025+) keeps 3-pane.
+    const check = () => setIsNarrow(window.innerWidth <= 1024)
     check(); window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
