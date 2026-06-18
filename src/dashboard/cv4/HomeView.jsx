@@ -1015,6 +1015,8 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const [sortCol, setSortCol] = useState(null) // R88: click a header to sort by that column
   const [sortDir, setSortDir] = useState(1)
   const [selectorCollapsed, setSelectorCollapsed] = useState(false) // collapse Trackers list to a slim bar so the sheet is the focus
+  const [sheetFocused, setSheetFocused] = useState(false) // u-mqil0bc9: freeze sort while user is reading/typing to prevent list jumping
+
   // Space Rising real tracker (admin_tickets) — live via /api/dashboard/admin-tickets.
   const [srStatus, setSrStatus] = useState(null) // null|loading|connected|needs_key|error
   useEffect(() => {
@@ -1077,10 +1079,19 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         Owner: b.owner || '',
       }))
       const cv6Tracker = { id: 'cv6-bugs', name: 'CV6 Bugs', scope: 'Corner CV6', template: 'bugs', columns: ['Priority', 'Page', 'Bug', 'Expected', 'Severity', 'Status', 'Owner'], rows, on: true, live: true }
-      setTrackers(prev => [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')])
+      // u-mqil0bc9: if user is focused on sheet, don't refresh the entire tracker list (which causes re-sort jump).
+      setTrackers(prev => {
+        const hasCV6 = prev.some(t => t.id === 'cv6-bugs')
+        if (hasCV6 && sheetFocused) {
+          // User is reading; silently update the rows in place without re-inserting
+          return prev.map(t => t.id !== 'cv6-bugs' ? t : { ...t, rows })
+        }
+        // User is not focused; safe to refresh the whole list
+        return [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')]
+      })
       setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'cv6-bugs' : prev)
     } catch { /* best-effort */ }
-  }, [])
+  }, [sheetFocused])
   useEffect(() => {
     pullBugs()
     const t = setInterval(pullBugs, 30000)
@@ -1248,7 +1259,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
           <button onClick={() => setAddingBug(false)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>Cancel</button>
         </div>
       )}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div style={{ flex: 1, overflow: 'auto' }} onMouseEnter={() => setSheetFocused(true)} onMouseLeave={() => setSheetFocused(false)}>
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1 }}>
             {sel.columns.map(c => (
