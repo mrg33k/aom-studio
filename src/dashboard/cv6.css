@@ -177,6 +177,14 @@
   color: #ffffff !important;
 }
 
+/* EXCEPTION: the Catch Up card's "Open in chat" link uses accent-primary as TEXT
+   on a transparent background — not a filled accent button — so the white-fill
+   rule above must not flatten it (it went white-on-white on the light glass card).
+   Higher specificity (adds .hm-catchup-card) re-asserts the accent text color. */
+[data-theme="glass"] [data-cv6] .hm-catchup-card button[style*="var(--cv6-accent-primary)"] {
+  color: var(--cv6-accent-primary) !important;
+}
+
 /* html/body transparent so the fixed backdrop shows through. */
 html[data-theme="glass"],
 html[data-theme="glass"] body {
