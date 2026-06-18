@@ -267,6 +267,30 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
   text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
+/* R210: All-rooms container on glass theme — frosted backing for readability over photo.
+   The rows inside are transparent (R207), so the container itself needs the frosted panel.
+   Light glass = white frosted; dark glass = dark frosted. Same pattern as hm-catchup-card. */
+html[data-glass-card="light"] [data-cv6] .hm-rooms-scroll {
+  background: rgba(255, 255, 255, 0.88) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border-radius: 16px !important;
+  padding: 12px 0 !important;
+  margin: 0 -12px !important;
+  margin-left: -8px !important;
+  margin-right: -4px !important;
+}
+html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scroll {
+  background: rgba(18, 26, 42, 0.72) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border-radius: 16px !important;
+  padding: 12px 0 !important;
+  margin: 0 -12px !important;
+  margin-left: -8px !important;
+  margin-right: -4px !important;
+}
+
 /* ─────────────────────────────────────────────────────────────────
    Typography base (Inter + Space Mono)
    ───────────────────────────────────────────────────────────────── */
