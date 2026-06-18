@@ -44,10 +44,31 @@ const EXTENSIONS = {
   copy: ['.md', '.txt'],
   code: ['.js', '.jsx', '.ts', '.tsx', '.py', '.go', '.rs', '.java'],
 };
+// Process / canon / handoff docs are NOT deliverables a person reviews — they are
+// internal plumbing (mission canon, agent handoffs, support-ask notes). They were
+// leaking into the queue as "copy" because they are .md. Skip them by name so the
+// queue only shows real finished work. Real copy deliverables (an article, a
+// script) still pass.
+const PROCESS_DOC_NAMES = new Set([
+  'context.md', 'vision.md', 'build.md', 'research.md', 'last-conversation.md',
+  'readme.md', 'plan.md', 'index.md', 'punchlist.md', 'incoming-tasks.md',
+  'claude.md', 'agent.md', 'notes.md', 'todo.md',
+]);
+function isProcessDoc(filename) {
+  const base = (filename || '').toLowerCase().trim();
+  if (PROCESS_DOC_NAMES.has(base)) return true;
+  // agent handoffs (corner-<mission>-<date>-<time>.md), *-handoff.md, *.handoff.md
+  if (/(^|[-.])handoff\.md$/.test(base) || /-handoff\.md$/.test(base)) return true;
+  if (/^corner-.*-\d{4}-?\d{2}-?\d{2}/.test(base)) return true;
+  // support-ask / triage notes
+  if (/^support-ask-/.test(base) || /^triage-/.test(base)) return true;
+  return false;
+}
 // Returns the type for a reviewable artifact, or null for data/log/system files
-// (.json, .jsonl, .log, .lock, etc.) which a person does not "review" — those
-// must never clutter the queue.
+// (.json, .jsonl, .log, .lock, etc.) and process/canon docs which a person does
+// not "review" — those must never clutter the queue.
 function detectType(filename) {
+  if (isProcessDoc(filename)) return null;
   const ext = path.extname(filename || '').toLowerCase();
   for (const [key, exts] of Object.entries(EXTENSIONS)) {
     if (exts.includes(ext)) return TYPE_MAP[key];
