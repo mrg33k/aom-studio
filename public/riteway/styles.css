@@ -141,11 +141,23 @@ body {
     position: absolute;
     inset: 0;
     z-index: 0;
+    background-image: url('/riteway/assets/hero-poster.jpg?v=20260618');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+.hero-poster::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(15, 15, 15, 0.7) 0%, rgba(15, 15, 15, 0.85) 50%, rgba(15, 15, 15, 0.9) 100%);
+    z-index: 1;
 }
 
 .hero-inner {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     max-width: 900px;
     margin: 0 auto;
     padding: 4rem 2rem;
@@ -191,7 +203,37 @@ body {
     font-weight: 700;
 }
 
+.hero-standfirst {
+    margin: 2.5rem auto 3rem;
+    max-width: 650px;
+}
+
+.standfirst-rule {
+    width: 60px;
+    height: 3px;
+    background: var(--riteway-red);
+    margin: 0 auto 1.5rem;
+    border-radius: 1.5px;
+}
+
+.standfirst-key {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+}
+
+.standfirst-support {
+    font-size: 1.0625rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    line-height: 1.7;
+}
+
 .cta-primary {
+    position: relative;
     display: inline-block;
     background: var(--riteway-red);
     color: white;
@@ -205,6 +247,7 @@ body {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 8px 24px rgba(208, 38, 30, 0.3);
+    overflow: hidden;
 }
 
 .cta-primary:hover {
@@ -478,6 +521,15 @@ body {
     padding: 1rem;
 }
 
+.service-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 2px;
+    margin-bottom: 1.5rem;
+    display: block;
+}
+
 .service-card h3 {
     font-size: 1.25rem;
     font-weight: 700;
@@ -610,6 +662,31 @@ body {
         transform: scale(1.3);
         opacity: 0;
     }
+}
+
+@keyframes shine {
+    0% {
+        left: -100%;
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        left: 100%;
+        opacity: 0;
+    }
+}
+
+.cta-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shine 3s ease-in-out infinite;
 }
 
 .audit-drawer {

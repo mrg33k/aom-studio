@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@500;600;700;800;900&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/riteway/styles.css?v=20260617a">
+    <link rel="stylesheet" href="/riteway/styles.css?v=20260618">
 </head>
 <body>
 
@@ -38,7 +38,7 @@
 
 <!-- Hero -->
 <section class="hero">
-    <div class="hero-poster" style="background: linear-gradient(135deg, #0D2244 0%, #1a1a1a 100%);"></div>
+    <div class="hero-poster"></div>
     <div class="hero-inner">
         <div class="hero-content">
             <span class="hero-kicker">Tucson, Arizona</span>
@@ -47,7 +47,11 @@
                 Our team.<br>
                 <em>Done right.</em>
             </h1>
-            <p class="hero-sub"><strong>60 years keeping Tucson comfortable.</strong> One call. One crew. Problems solved.</p>
+            <div class="hero-standfirst">
+                <div class="standfirst-rule"></div>
+                <p class="standfirst-key">60 years keeping Tucson comfortable.</p>
+                <p class="standfirst-support">One call. One crew. Problems solved.</p>
+            </div>
             <button class="cta-primary" onclick="openScopingTool()">Book Service Now</button>
         </div>
         <div class="hero-accent-bar"></div>
@@ -105,33 +109,33 @@
             <!-- HVAC -->
             <div class="service-card" data-stagger="0">
                 <div class="service-number">01</div>
-                <div class="service-image-placeholder">Heating & AC Installation</div>
+                <img class="service-image" src="/riteway/assets/service-01-heating.jpg?v=20260618" alt="Rite Way HVAC heating system installation">
                 <h3>Heating & Cooling</h3>
-                <p>Installation, repair, tune-ups, and emergency service. We handle everything from emergency AC failures to new system installation with the latest energy-efficient tech.</p>
+                <p>AC out at midnight in July? Our crew shows up same-day with parts in the truck. Install, repair, tune-up, emergency service — we handle it all. Tucson heat doesn't wait. Neither do we.</p>
             </div>
 
             <!-- Plumbing -->
             <div class="service-card" data-stagger="1">
                 <div class="service-number">02</div>
-                <div class="service-image-placeholder">Plumbing & Drain Services</div>
+                <img class="service-image" src="/riteway/assets/service-03-plumbing.jpg?v=20260618" alt="Rite Way professional plumbing drain service">
                 <h3>Plumbing & Drains</h3>
-                <p>Leak detection, drain cleaning, sewer repair, and emergency plumbing. We find problems fast and fix them right, with minimal disruption to your home.</p>
+                <p>Burst pipe at 2 AM. Backed-up drain. Sewer smell in the yard. We find the problem fast and fix it right — with minimal mess, minimal cost, guaranteed. No surprises.</p>
+            </div>
+
+            <!-- Sewer/Septic -->
+            <div class="service-card" data-stagger="2">
+                <div class="service-number">03</div>
+                <img class="service-image" src="/riteway/assets/service-04-sewer.jpg?v=20260618" alt="Rite Way septic and sewer system repair">
+                <h3>Septic & Sewer</h3>
+                <p>From Tucson homes to rural properties, we know every inch of what's underground. Maintenance, pumping, repair, replacement — we've been doing this for 65 years.</p>
             </div>
 
             <!-- Electrical -->
-            <div class="service-card" data-stagger="2">
-                <div class="service-number">03</div>
-                <div class="service-image-placeholder">Electrical Repair & Service</div>
-                <h3>Electrical Service</h3>
-                <p>Repairs, installations, code inspections, and 24/7 emergency electrical work. Safety first. Every wire, every circuit, backed by our guarantee.</p>
-            </div>
-
-            <!-- Septic -->
             <div class="service-card" data-stagger="3">
                 <div class="service-number">04</div>
-                <div class="service-image-placeholder">Septic System Maintenance</div>
-                <h3>Septic & Sewer</h3>
-                <p>Maintenance, repair, pumping, and septic tank replacement. Rural Tucson relies on us. We know every inch of the desert.</p>
+                <img class="service-image" src="/riteway/assets/service-06-electrical.jpg?v=20260618" alt="Rite Way electrical repair and installation">
+                <h3>Electrical Service</h3>
+                <p>No power. Tripped breaker. Flickering lights. Upgrade to smart home wiring. Every job—repair or install, routine or emergency — backed by our 65-year guarantee.</p>
             </div>
         </div>
     </div>
