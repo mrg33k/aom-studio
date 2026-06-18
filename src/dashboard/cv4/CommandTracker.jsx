@@ -271,6 +271,10 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               last_touched: lg.last_touched || base.last_touched || null,
               last_touched_by: lg.last_touched_by || null,
               last_touched_label: lg.last_touched_label || null,
+              // cc-12: the open question this room is waiting on Patrik to answer
+              // (carried in the ledger; the old Command Deck surfaced these as
+              // Decide/Answer cards). Surfacing it as a NEEDS YOU status.
+              open_question: lg.open_question || base.open_question || null,
               sessions: Array.isArray(lg.sessions) ? lg.sessions : [],
             }
           })
@@ -450,6 +454,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             lastActivity: lastTouched,
             routineId,
             autopilot: roomGoal.autopilot !== false, // default ON; only explicit false reads as off
+            openQuestion: roomGoal.open_question || null, // cc-12: room waiting on Patrik's answer
             isWorkerRow: false,
           })
         })
@@ -929,8 +934,12 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           : null
         const routineOn = routine?.status === 'running'
         const isToggling = row.routineId && toggling[row.routineId]
-        const color = statusColor(row.status)
-        const label = statusLabel(row.status)
+        // cc-12: a room with an unanswered open question is waiting on Patrik —
+        // surface it as a NEEDS YOU status (amber, the brand accent) so the
+        // Command Center carries the old Command Deck's decisions capability.
+        const needsYou = !!(row.openQuestion && String(row.openQuestion).trim())
+        const color = needsYou ? 'var(--cv6-accent-primary)' : statusColor(row.status)
+        const label = needsYou ? 'NEEDS YOU' : statusLabel(row.status)
 
         const isHovered = hoveredRoutineId === row.routineId
         // Worker rows are read-only (no routine toggle)
@@ -1080,6 +1089,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
 
             {/* STATUS */}
             <div
+              title={needsYou ? `Waiting on your answer: ${cleanCell(row.openQuestion)}` : undefined}
               style={{
                 display: 'flex',
                 alignItems: 'center',
