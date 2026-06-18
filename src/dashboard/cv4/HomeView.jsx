@@ -3846,9 +3846,9 @@ export default function HomeView({
                   onClick={() => openTool(t.key)}
                   title={t.label}
                   style={{
-                    flex: '0 0 auto',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                    padding: '12px 16px', borderRadius: '6px', border: selectedTool === t.key ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                    flex: '1 1 0',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '9px',
+                    padding: '15px 8px', borderRadius: '14px', border: selectedTool === t.key ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                     // R56: ring the tool the keyboard cursor is on (Tab/arrows), distinct from the open tool
                     boxShadow: (toolsFocused && TOOL_TABS[toolNavIndex]?.key === t.key) ? '0 0 0 2px var(--cv6-accent-primary)' : 'none',
                     // kbd-tool-ring: the glass frost rule sets box-shadow !important on tool
@@ -3857,17 +3857,17 @@ export default function HomeView({
                     outline: (toolsFocused && TOOL_TABS[toolNavIndex]?.key === t.key) ? '2px solid var(--cv6-accent-primary)' : 'none',
                     outlineOffset: '2px',
                     background: selectedTool === t.key ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                    color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)',
+                    color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-secondary)',
                     cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
-                    minWidth: '64px', minHeight: '56px',
+                    minWidth: '120px', minHeight: '78px',
                   }}
                   onMouseEnter={(e) => { if (selectedTool !== t.key) { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)' } }}
                   onMouseLeave={(e) => { if (selectedTool !== t.key) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' } }}
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '22px', height: '22px' }}>
                     {t.svg}
                   </svg>
-                  <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap', color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)' }}>{t.label}</span>
+                  <span style={{ fontSize: '13px', fontWeight: '600', textAlign: 'center', whiteSpace: 'nowrap', color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-secondary)' }}>{t.label}</span>
                 </button>
               ))}
               {/* R137 (mobile only — hidden on desktop via cv6.css): the 5th tab.
