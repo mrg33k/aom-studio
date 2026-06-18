@@ -118,6 +118,16 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   const [goalDraft, setGoalDraft] = useState('')
   const [savingGoal, setSavingGoal] = useState(false)
 
+  // R78: mobile — the 6-column table is unreadable on a phone (room name + goal
+  // collapse to zero width). Below 768px each row renders as a stacked card.
+  const [isNarrow, setIsNarrow] = useState(false)
+  useEffect(() => {
+    const check = () => setIsNarrow(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   const saveGoal = useCallback(async (slug) => {
     const g = (goalDraft || '').trim()
     setSavingGoal(true)
@@ -683,10 +693,10 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         fontFamily: 'Inter, sans-serif',
       }}
     >
-      {/* Header row */}
+      {/* Header row — hidden on mobile (rows become self-labeling cards) */}
       <div
         style={{
-          display: 'grid',
+          display: isNarrow ? 'none' : 'grid',
           gridTemplateColumns: '1fr 2fr 80px 1.5fr 100px 60px',
           gap: '12px',
           padding: '12px 16px',
@@ -736,9 +746,10 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             onClick={() => !isWorkerRow && onJumpToRoom?.(row.slug)}
             style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 2fr 80px 1.5fr 100px 60px',
-              gap: '12px',
-              padding: '11px 16px',
+              gridTemplateColumns: isNarrow ? 'auto 1fr auto' : '1fr 2fr 80px 1.5fr 100px 60px',
+              gridTemplateAreas: isNarrow ? '"room room toggle" "goal goal goal" "status live last"' : undefined,
+              gap: isNarrow ? '7px 10px' : '12px',
+              padding: isNarrow ? '14px 16px' : '11px 16px',
               background: isWorkerRow ? 'rgba(255,255,255,0.01)' : (isHovered ? 'var(--cv6-surface-hover)' : 'var(--cv6-surface)'),
               cursor: isWorkerRow ? 'default' : 'pointer',
               transition: 'background 120ms ease',
@@ -749,7 +760,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             onMouseLeave={() => !isWorkerRow && setHoveredRoutineId(null)}
           >
             {/* ROOM / WORKER NAME */}
-            <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 6, gridArea: isNarrow ? 'room' : undefined }}>
               <div style={{ minWidth: 0, flex: 1 }}>
               <div
                 style={{
@@ -809,6 +820,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                   fontSize: 12, minWidth: 0, width: '100%', padding: '4px 8px', borderRadius: 5,
                   border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-ground)',
                   color: 'var(--cv6-text-primary)', fontFamily: 'inherit', outline: 'none',
+                  gridArea: isNarrow ? 'goal' : undefined,
                 }}
               />
             ) : (
@@ -818,11 +830,15 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 style={{
                   fontSize: 12,
                   color: 'var(--cv6-text-secondary)',
-                  whiteSpace: 'nowrap',
+                  whiteSpace: isNarrow ? 'normal' : 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
+                  display: isNarrow ? '-webkit-box' : undefined,
+                  WebkitLineClamp: isNarrow ? 3 : undefined,
+                  WebkitBoxOrient: isNarrow ? 'vertical' : undefined,
                   minWidth: 0,
                   cursor: isWorkerRow ? 'default' : 'text',
+                  gridArea: isNarrow ? 'goal' : undefined,
                 }}
               >
                 {cleanCell(row.goal) || '—'}
@@ -835,7 +851,8 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                justifyContent: 'center',
+                justifyContent: isNarrow ? 'flex-start' : 'center',
+                gridArea: isNarrow ? 'status' : undefined,
               }}
             >
               <div
@@ -870,6 +887,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 minWidth: 0,
+                gridArea: isNarrow ? 'live' : undefined,
               }}
             >
               {cleanCell(row.liveNow) || '—'}
@@ -882,6 +900,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 color: 'var(--cv6-text-tertiary)',
                 textAlign: 'right',
                 whiteSpace: 'nowrap',
+                gridArea: isNarrow ? 'last' : undefined,
               }}
             >
               {relativeTime(row.lastActivity)}
@@ -892,8 +911,9 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               onClick={(e) => e.stopPropagation()}
               style={{
                 display: 'flex',
-                justifyContent: 'center',
+                justifyContent: isNarrow ? 'flex-end' : 'center',
                 alignItems: 'center',
+                gridArea: isNarrow ? 'toggle' : undefined,
               }}
             >
               {!isWorkerRow ? (
