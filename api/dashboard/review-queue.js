@@ -53,6 +53,7 @@ const PROCESS_DOC_NAMES = new Set([
   'context.md', 'vision.md', 'build.md', 'research.md', 'last-conversation.md',
   'readme.md', 'plan.md', 'index.md', 'punchlist.md', 'incoming-tasks.md',
   'claude.md', 'agent.md', 'notes.md', 'todo.md',
+  'open-questions.md', 'open_questions.md', 'questions.md',
 ]);
 function isProcessDoc(filename) {
   const base = (filename || '').toLowerCase().trim();
