@@ -3573,7 +3573,7 @@ export default function HomeView({
         /* R21: Mobile responsive — stack 3-column grid to single column on mobile (390px) */
         @media (max-width: 768px) {
           [data-cv4-home] .hm-three-column-grid { grid-template-columns: 1fr; }
-          [data-cv4-home] .hm-shell { padding: 48px 20px 80px; }
+          [data-cv4-home] .hm-shell { padding: calc(env(safe-area-inset-top, 0px) + 10px) 16px calc(80px + env(safe-area-inset-bottom, 0px)); }
         }
       `}</style>}
 
@@ -3584,7 +3584,7 @@ export default function HomeView({
           {cv6 && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
-              marginBottom: '16px', paddingBottom: '14px', borderBottom: '1px solid var(--cv6-divider)',
+              height: '54px', marginBottom: '8px',
             }}>
               {/* Primary group (left): Search + Theme + Info.
                   R50 removed the Home icon (duplicated Tools→Home).
@@ -3592,21 +3592,21 @@ export default function HomeView({
                   and Files (duplicated the Files tool in the Tools row) — both were unlabeled
                   duplicate destinations. CV6 R71: readded Search, Theme, and Help/Info icons. */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* Search icon */}
+                {/* Search icon — design TopBar: 38x38, radius 11, chip bg */}
                 <button
                   title="Open search"
                   onClick={() => setShowSearch(true)}
                   style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
-                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    width: '38px', height: '38px', borderRadius: '11px', border: 'none',
+                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-primary)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                    transition: 'all 120ms ease', padding: 0,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; }}
                 >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
                   </svg>
                 </button>
 
@@ -3618,13 +3618,13 @@ export default function HomeView({
                   data-theme-mode={themeMode}
                   onClick={() => cycleTheme()}
                   style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
-                    background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
+                    width: '38px', height: '38px', borderRadius: '11px', border: 'none',
+                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-primary)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0, fontWeight: 'bold',
+                    transition: 'all 120ms ease', padding: 0,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; }}
                 >
                   {themeMode === 'light' ? (
                     /* Sun — current mode is light */
@@ -3651,85 +3651,45 @@ export default function HomeView({
               {/* Divider */}
               <div style={{ flex: 1 }}></div>
 
-              {/* Secondary group (right): date/time + Notifications + Avatar — R32: Support icon removed (Support lives in the Tools row); CV6 R71: readded Notifications icon */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {/* R35: live date + time, greeting font; click to change timezone */}
-                <div style={{ position: 'relative' }}>
-                  <button
-                    onClick={() => setShowTzPicker(v => !v)}
-                    title="Change timezone"
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1px',
-                      background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px 6px',
-                      borderRadius: '6px', fontFamily: 'inherit', transition: 'background 120ms ease', lineHeight: 1.1,
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
-                  >
-                    <span style={{ fontSize: '15px', fontWeight: '700', letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)' }}>{fmtTime(now, timezone)}</span>
-                    <span style={{ fontSize: '11px', fontWeight: '500', color: 'var(--cv6-text-secondary)' }}>{fmtDate(now, timezone)}</span>
-                  </button>
-                  {showTzPicker && (
-                    <div style={{
-                      position: 'absolute', top: '100%', right: 0, marginTop: '6px', zIndex: 20,
-                      background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '8px',
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.16)', padding: '6px', minWidth: '150px',
-                    }}>
-                      {TZ_OPTIONS.map(tz => (
-                        <button
-                          key={tz.zone}
-                          onClick={() => { setTimezone(tz.zone); setShowTzPicker(false) }}
-                          style={{
-                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', width: '100%',
-                            padding: '8px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                            fontSize: '13px', textAlign: 'left',
-                            background: timezone === tz.zone ? 'var(--cv6-surface-hover)' : 'transparent',
-                            color: timezone === tz.zone ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-primary)',
-                            fontWeight: timezone === tz.zone ? '600' : '500',
-                          }}
-                          onMouseEnter={(e) => { if (timezone !== tz.zone) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
-                          onMouseLeave={(e) => { if (timezone !== tz.zone) e.currentTarget.style.background = 'transparent' }}
-                        >
-                          <span>{tz.label}</span>
-                          <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>{fmtTime(now, tz.zone)}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {/* Notifications bell icon */}
+              {/* Secondary group (right): Notifications + Avatar. R208b (Patrik): matched to
+                  TopBar.dc.html one-for-one — no in-app clock (the iOS status bar shows time in
+                  the PWA), bell 38px transparent with an unread dot, gradient avatar with initial. */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {/* Notifications bell — transparent, 38x38, unread accent dot */}
                 <button
                   title="Notifications"
                   onClick={() => { if (cv6) setSelectedTool('home'); else window.location.href = '/dashboard?view=notifications' }}
                   style={{
-                    width: '40px', height: '40px', borderRadius: '8px', border: 'none',
+                    width: '38px', height: '38px', borderRadius: '11px', border: 'none',
                     background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
                     transition: 'all 120ms ease', padding: 0,
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
                 >
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>
                   </svg>
+                  {catchupNotifications.length > 0 && (
+                    <span style={{ position: 'absolute', top: '7px', right: '8px', width: '7px', height: '7px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '2px solid var(--cv6-ground)' }} />
+                  )}
                 </button>
-                {/* Avatar */}
+                {/* Avatar — gradient circle with the user's initial */}
                 <button
                   title="User settings"
                   onClick={() => window.location.href = '/dashboard?view=settings'}
                   style={{
-                    width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--cv6-divider)',
-                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0,
+                    width: '38px', height: '38px', borderRadius: '50%', border: 'none',
+                    background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', cursor: 'pointer', color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none',
+                    fontSize: '14px', fontWeight: 600, fontFamily: 'inherit',
+                    transition: 'transform 120ms ease', padding: 0,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.color = 'var(--cv6-accent-primary)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                 >
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-                  </svg>
+                  {(displayName(user) || 'U').trim().charAt(0).toUpperCase()}
                 </button>
               </div>
             </div>
