@@ -88,6 +88,85 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   GLASS theme (3rd mode) — Apple "Liquid Glass" over a cycling Corner
+   backdrop (GlassBackdrop.jsx). Tokens go translucent so the imagery
+   refracts through every surface; the actual frost (backdrop-filter)
+   is applied to the surface elements below this block. Same cascade
+   selectors as dark so it reaches a themeless [data-cv6] on /cvg.
+   ───────────────────────────────────────────────────────────────── */
+[data-cv6][data-theme="glass"],
+[data-cv6].glass,
+[data-cv6][data-theme="glass"] [data-cv6]:not([data-theme]):not(.glass),
+[data-theme="glass"] [data-cv6]:not([data-theme]):not(.glass),
+.glass [data-cv6]:not([data-theme]):not(.glass) {
+  --cv6-ground: transparent;          /* let the backdrop show through the canvas */
+  --cv6-surface: rgba(255, 255, 255, 0.10);
+  --cv6-surface-hover: rgba(255, 255, 255, 0.17);
+  --cv6-divider: rgba(255, 255, 255, 0.22);
+  --cv6-hover: rgba(255, 255, 255, 0.10);
+
+  --cv6-text-primary: #f4f6fb;
+  --cv6-text-secondary: rgba(255, 255, 255, 0.74);
+  --cv6-text-tertiary: rgba(255, 255, 255, 0.52);
+
+  --cv6-accent-primary: #7cc0ff;
+  --cv6-accent-primary-hover: #a6d4ff;
+  --cv6-accent-primary-active: #4a93e6;
+  --cv6-accent-success: #5ee0b0;
+  --cv6-accent-warn: #fbbf24;
+  --cv6-accent-error: #fb7185;
+
+  --cv6-shadow-sm: 0 8px 32px rgba(2, 6, 18, 0.30);
+  --cv6-shadow-md: 0 12px 40px rgba(2, 6, 18, 0.42);
+  --cv6-shadow-hover: 0 10px 30px rgba(2, 6, 18, 0.40);
+}
+
+/* Frost: turn every glass surface into Apple-style liquid glass so the
+   cycling Corner backdrop blurs through it. Scoped to [data-theme="glass"]
+   so light + dark are byte-for-byte untouched. The canvas/home root stays
+   transparent (token above) — only the cards/inputs/panels frost. */
+[data-theme="glass"] [data-cv6] .hm-search input,
+[data-theme="glass"] [data-cv6] .hm-proj,
+[data-theme="glass"] [data-cv6] .hm-mission,
+[data-theme="glass"] [data-cv6] .hm-needs-card,
+[data-theme="glass"] [data-cv6] .hm-needs-row,
+[data-theme="glass"] [data-cv6] .hm-tool,
+[data-theme="glass"] [data-cv6] .hm-card,
+[data-theme="glass"] [data-cv6] [data-cv6-card],
+[data-theme="glass"] [data-cv6] [data-cv6-panel],
+[data-theme="glass"] [data-cv6] [data-cv6-tool-surface] {
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+  box-shadow:
+    0 8px 32px rgba(2, 6, 18, 0.28),
+    inset 0 1px 1px rgba(255, 255, 255, 0.30) !important;
+}
+
+/* The liquid "shine" highlight — a soft inset glint along the top-left
+   edge of each frosted card, the signature of Apple's Liquid Glass. */
+[data-theme="glass"] [data-cv6] .hm-proj,
+[data-theme="glass"] [data-cv6] .hm-mission,
+[data-theme="glass"] [data-cv6] .hm-needs-card,
+[data-theme="glass"] [data-cv6] [data-cv6-card] {
+  position: relative;
+}
+[data-theme="glass"] [data-cv6] .hm-proj::after,
+[data-theme="glass"] [data-cv6] .hm-mission::after,
+[data-theme="glass"] [data-cv6] .hm-needs-card::after,
+[data-theme="glass"] [data-cv6] [data-cv6-card]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.45),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.06);
+  opacity: 0.7;
+}
+
+/* ─────────────────────────────────────────────────────────────────
    Typography base (Inter + Space Mono)
    ───────────────────────────────────────────────────────────────── */
 

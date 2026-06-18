@@ -23,6 +23,7 @@ import { authFetch } from '../lib/authFetch.js'
 import { supabase } from '../lib/supabase.js'
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
+import { useThemeMode } from '../hooks/useThemeMode.js'
 import { useSupportData, buildItems } from './SupportDashboard.jsx'
 import LiveScribe from '../../pages/LiveScribe.jsx'
 
@@ -2146,6 +2147,10 @@ export default function HomeView({
   const [showSearch, setShowSearch] = useState(false)
   const greeting = useMemo(() => pickGreeting(), [])
 
+  // Theme cycle for the home top-bar toggle: light → dark → glass → light.
+  // Owned by useThemeMode so it persists + drives the parent's GlassBackdrop.
+  const { mode: themeMode, cycleTheme } = useThemeMode()
+
   // Live recents: track the last time the user visited each project room.
   // Written immediately when they click a project, so even 1 second ago shows up.
   const [recentVisits, setRecentVisits] = useState(() =>
@@ -3081,16 +3086,13 @@ export default function HomeView({
                   </svg>
                 </button>
 
-                {/* Theme toggle */}
+                {/* Theme cycle: sun (light) → moon (dark) → glass orb (glass).
+                    Owned by useThemeMode so it persists + mounts the GlassBackdrop. */}
                 <button
-                  title="Toggle theme"
-                  onClick={(e) => {
-                    // R49: flip the cv6/shell container THIS button lives in (closest), so it works
-                    // reliably even when several frames are on the page (gallery). Fall back to the doc shell.
-                    const shell = e.currentTarget.closest('[data-cv6]') || e.currentTarget.closest('[data-shell="cv4"]') || document.querySelector('[data-shell="cv4"]')
-                    const isDark = shell?.getAttribute('data-theme') === 'dark'
-                    shell?.setAttribute('data-theme', isDark ? 'light' : 'dark')
-                  }}
+                  title={themeMode === 'light' ? 'Light · tap for Dark' : themeMode === 'dark' ? 'Dark · tap for Glass' : 'Glass · tap for Light'}
+                  aria-label={themeMode === 'light' ? 'Switch to dark theme' : themeMode === 'dark' ? 'Switch to glass theme' : 'Switch to light theme'}
+                  data-theme-mode={themeMode}
+                  onClick={() => cycleTheme()}
                   style={{
                     width: '40px', height: '40px', borderRadius: '8px', border: 'none',
                     background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
@@ -3100,9 +3102,24 @@ export default function HomeView({
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
                 >
-                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                  </svg>
+                  {themeMode === 'light' ? (
+                    /* Sun — current mode is light */
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                  ) : themeMode === 'dark' ? (
+                    /* Crescent moon — current mode is dark */
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                  ) : (
+                    /* Crystal/glass orb on a stand with an inner shine — current mode is glass */
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="10" r="7"/>
+                      <path d="M8.4 7.6a4.6 4.6 0 0 1 3-1.9" opacity="0.85"/>
+                      <path d="M9 17.4h6M9.6 17.4l-1 3.1M14.4 17.4l1 3.1"/>
+                    </svg>
+                  )}
                 </button>
                 {/* R88: Help/documentation icon removed (Patrik 2026-06-17) — not used. */}
               </div>
