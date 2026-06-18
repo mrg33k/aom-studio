@@ -159,10 +159,21 @@
   color: #0f1626;
 }
 
+/* Contrast rule: any button sitting on a SURFACE background (avatar, top-bar
+   search/icon buttons, etc.) follows its surface — dark icon on the white
+   light-glass surface, not the on-photo white. Catches inline var(--cv6-surface)
+   backgrounds (icons use currentColor, so the colour flows to the svg). */
+[data-theme="glass"][data-glass-card="light"] [data-cv6] button[style*="var(--cv6-surface)"] {
+  --cv6-text-primary: #0f1626;
+  color: #0f1626 !important;
+}
+
 /* The SELECTED tool tile (inline accent background) keeps white text + icon in
-   BOTH glass styles so the active tool reads on its blue fill. */
+   BOTH glass styles so the active tool reads on its blue fill. This wins over
+   the surface rule above. */
 [data-theme="glass"] [data-cv6] .hm-tools-row button[style*="accent-primary"],
-[data-theme="glass"] [data-cv6] .hm-tools-block button[style*="accent-primary"] {
+[data-theme="glass"] [data-cv6] .hm-tools-block button[style*="accent-primary"],
+[data-theme="glass"] [data-cv6] button[style*="var(--cv6-accent-primary)"] {
   color: #ffffff !important;
 }
 
