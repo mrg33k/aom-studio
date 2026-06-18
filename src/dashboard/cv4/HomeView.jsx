@@ -2718,6 +2718,12 @@ export default function HomeView({
     { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
   ]), [])
   const replyInputRef = useRef(null)
+  // R137 (mobile): the 4 overflow tools live behind a "More" sheet on phones.
+  // Home/Chat/Organize/Review stay as the 5-tab bottom bar (5th = More). Desktop
+  // is untouched — the overflow tools and More toggle swap purely via cv6.css at
+  // <=720px. MOBILE_MORE_KEYS = the tools that move into the sheet.
+  const MOBILE_MORE_KEYS = useMemo(() => new Set(['support', 'tracker', 'command', 'scribe']), [])
+  const [moreOpen, setMoreOpen] = useState(false)
   // R22: per-instance ref for the Home region so keyboard nav wires to THIS instance
   // (the gallery renders Home twice; document.querySelector grabbed only the first).
   const homeRef = useRef(null)
@@ -3716,6 +3722,7 @@ export default function HomeView({
               })().map(t => (
                 <button
                   key={t.key}
+                  className={MOBILE_MORE_KEYS.has(t.key) ? 'hm-tool hm-tool-overflow' : 'hm-tool hm-tool-primary'}
                   onClick={() => openTool(t.key)}
                   title={t.label}
                   style={{
@@ -3738,8 +3745,61 @@ export default function HomeView({
                   <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap', color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)' }}>{t.label}</span>
                 </button>
               ))}
+              {/* R137 (mobile only — hidden on desktop via cv6.css): the 5th tab.
+                  Opens a sheet holding Support / Tracker / Command / Live Scribe. */}
+              <button
+                className="hm-tool hm-tool-more"
+                onClick={() => setMoreOpen(v => !v)}
+                title="More"
+                aria-label="More tools"
+                style={{
+                  flex: '0 0 auto', display: 'none', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  padding: '12px 16px', borderRadius: '6px',
+                  border: (moreOpen || MOBILE_MORE_KEYS.has(selectedTool)) ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                  background: (moreOpen || MOBILE_MORE_KEYS.has(selectedTool)) ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                  color: (moreOpen || MOBILE_MORE_KEYS.has(selectedTool)) ? '#ffffff' : 'var(--cv6-text-primary)',
+                  cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500', minWidth: '64px', minHeight: '56px',
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+                  <circle cx="5" cy="12" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="19" cy="12" r="1.6" />
+                </svg>
+                <span style={{ fontSize: '10px', fontWeight: '500', textAlign: 'center', whiteSpace: 'nowrap', color: (moreOpen || MOBILE_MORE_KEYS.has(selectedTool)) ? '#ffffff' : 'var(--cv6-text-primary)' }}>More</span>
+              </button>
             </div>
           </div>
+
+          {/* R137 (mobile only) — the More sheet: the 4 overflow tools as a bottom sheet
+              above the 5-tab bar. Hidden on desktop (cv6.css). Tap a tool to open it. */}
+          {moreOpen && (
+            <div className="hm-more-backdrop" onClick={() => setMoreOpen(false)}
+              style={{ display: 'none', position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(0,0,0,0.4)' }}>
+              <div className="hm-more-sheet" onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: 'absolute', left: 0, right: 0, bottom: 0,
+                  background: 'var(--cv6-surface)', borderTopLeftRadius: '16px', borderTopRightRadius: '16px',
+                  padding: '8px 12px calc(16px + env(safe-area-inset-bottom, 0px))',
+                  boxShadow: '0 -8px 32px rgba(0,0,0,0.32)',
+                }}>
+                <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'var(--cv6-divider)', margin: '8px auto 12px' }} />
+                {[
+                  { key: 'support', label: 'Support' }, { key: 'tracker', label: 'Tracker' },
+                  { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
+                ].map(t => (
+                  <button key={t.key} onClick={() => { setMoreOpen(false); openTool(t.key) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '12px', width: '100%', textAlign: 'left',
+                      padding: '14px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer',
+                      background: selectedTool === t.key ? 'var(--cv6-accent-primary)' : 'transparent',
+                      color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)',
+                      fontFamily: 'inherit', fontSize: '16px', fontWeight: '500',
+                    }}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* R23: Full-screen tool app container — rolls in above the 3-column band, above What Needs You */}
           {/* R48: key on selectedTool so the roll-in replays every time a DIFFERENT tool opens (not just the first) */}
