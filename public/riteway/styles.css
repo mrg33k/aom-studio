@@ -940,6 +940,13 @@ body {
     display: block;
 }
 
+.reveal-after img {
+    width: 100%;
+    height: auto;
+    border-radius: 2px;
+    display: block;
+}
+
 .reveal-after-content {
     background: rgba(208, 38, 30, 0.1);
     padding: 1.5rem;
