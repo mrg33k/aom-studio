@@ -26,6 +26,49 @@ import { supabase } from '../lib/supabase.js'
 import { authFetch } from '../lib/authFetch.js'
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx'
 
+// chat-4 / parity: pull image + file attachments off a message the same way the
+// cv4 thread does — explicit metadata.attachments[] first, then the single
+// metadata.attachment, then the top-level attachment_url column.
+function getAttachments(msg) {
+  const meta = (msg && msg.metadata) || {}
+  if (Array.isArray(meta.attachments) && meta.attachments.length) return meta.attachments
+  if (meta.attachment && meta.attachment.url) return [meta.attachment]
+  if (msg && msg.attachment_url) return [{ url: msg.attachment_url, mime: msg.file_mime_type, name: msg.file_name }]
+  return []
+}
+
+function isImageAtt(att) {
+  if (!att) return false
+  if (att.mime && String(att.mime).startsWith('image/')) return true
+  return /\.(png|jpe?g|gif|webp|svg|bmp|heic)$/i.test(att.url || att.name || '')
+}
+
+// An image attachment that, if it fails to load (dead URL, failed generation),
+// shows a clear in-conversation message instead of a silent broken icon. chat-4.
+function ChatImageAttachment({ att }) {
+  const [broken, setBroken] = useState(false)
+  if (broken || !att.url) {
+    return (
+      <div style={{
+        fontSize: 13, color: '#EF4444', padding: '10px 12px',
+        border: '1px solid var(--cv6-divider)', borderRadius: 8,
+        background: 'var(--cv6-surface)',
+      }}>
+        We couldn't show this image. The image may have failed to generate.
+      </div>
+    )
+  }
+  return (
+    <img
+      src={att.url}
+      alt={att.name || 'image'}
+      onError={() => setBroken(true)}
+      onClick={() => window.open(att.url, '_blank', 'noopener')}
+      style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, display: 'block', cursor: 'pointer' }}
+    />
+  )
+}
+
 // Helper: filter messages by mission scope (same logic as cv3 useChatMessages)
 function makeMissionMatcher(missionSlug) {
   return (m) => {
@@ -473,7 +516,33 @@ export default function CvgChatSurface({
               }}
             >
               {/* CV4 chat renderer: clean markdown (lists, bold, links), no raw symbols */}
-              <ChatMessageRenderer content={msg.text || msg.content} />
+              {(msg.text || msg.content) && <ChatMessageRenderer content={msg.text || msg.content} />}
+              {/* chat-4 / parity: render image + file attachments, and surface a
+                  failed image as a clear message instead of nothing. */}
+              {(() => {
+                const atts = getAttachments(msg)
+                const imgErr = msg.metadata?.image_error
+                if (!atts.length && !imgErr) return null
+                return (
+                  <div style={{ marginTop: (msg.text || msg.content) ? 8 : 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {atts.map((att, i) => (
+                      isImageAtt(att)
+                        ? <ChatImageAttachment key={i} att={att} />
+                        : (att.url ? (
+                            <a key={i} href={att.url} target="_blank" rel="noreferrer"
+                               style={{ fontSize: 13, color: isUser ? 'white' : 'var(--cv6-accent-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                              {att.name || 'Attachment'}
+                            </a>
+                          ) : null)
+                    ))}
+                    {imgErr && (
+                      <div style={{ fontSize: 13, color: '#EF4444' }}>
+                        Image generation failed: {String(imgErr).slice(0, 200)}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           </div>
           )
