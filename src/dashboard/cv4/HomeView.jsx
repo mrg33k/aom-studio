@@ -4360,6 +4360,9 @@ export default function HomeView({
                           )
                         } else if (item.type === 'project') {
                           const p = item.project
+                          // Folder rows read like the Mobile Handoff: show what's inside (mission count).
+                          const missionCount = Array.isArray(allMissionsForCV6) ? allMissionsForCV6.filter(x => (x.project?.slug || x.project?.id) === (p.slug || p.id)).length : 0
+                          const projectSub = missionCount > 0 ? `${missionCount} mission${missionCount === 1 ? '' : 's'}` : 'Project'
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'project' && selectableItems[selectedIndex]?.item?.slug === p.slug
                           return (
                             <button
@@ -4417,7 +4420,7 @@ export default function HomeView({
                                     flexShrink: 0,
                                   }}/>
                                 </div>
-                                <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>Project</div>
+                                <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>{projectSub}</div>
                               </div>
                               <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(p.last_message_at)}</span>
                             </button>
