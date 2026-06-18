@@ -124,7 +124,9 @@
   --cv6-shadow-hover: 0 10px 30px rgba(2, 6, 18, 0.40);
 }
 
-/* Light glass — white fill, dark text (stronger 2nd/3rd levels). */
+/* Light glass — white fill. Everything on the BARE PHOTO (greeting, headings,
+   clock, top-bar icons) is WHITE via these root tokens (Patrik). The white card
+   surfaces override to dark text in the rule below. */
 [data-cv6][data-theme="glass"][data-glass-card="light"],
 [data-theme="glass"][data-glass-card="light"] [data-cv6]:not([data-theme]):not(.glass),
 .glass[data-glass-card="light"] [data-cv6]:not([data-theme]):not(.glass) {
@@ -133,9 +135,46 @@
   --cv6-divider: transparent;
   --cv6-hover: rgba(0, 0, 0, 0.05);
 
+  --cv6-text-primary: #f6f8fc;
+  --cv6-text-secondary: rgba(255, 255, 255, 0.9);
+  --cv6-text-tertiary: rgba(255, 255, 255, 0.74);
+}
+
+/* Light glass: the white surfaces (cards, tool tiles, search) carry DARK text,
+   scoped so the bare-photo chrome above stays white. */
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-proj,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-mission,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-needs-card,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-needs-row,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-card,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-card],
+[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-panel],
+[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-tool-surface],
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-tools-row button,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-tools-block button,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] input {
   --cv6-text-primary: #0f1626;
   --cv6-text-secondary: rgba(15, 22, 38, 0.86);
   --cv6-text-tertiary: rgba(15, 22, 38, 0.62);
+  color: #0f1626;
+}
+
+/* Contrast rule: any button sitting on a SURFACE background (avatar, top-bar
+   search/icon buttons, etc.) follows its surface — dark icon on the white
+   light-glass surface, not the on-photo white. Catches inline var(--cv6-surface)
+   backgrounds (icons use currentColor, so the colour flows to the svg). */
+[data-theme="glass"][data-glass-card="light"] [data-cv6] button[style*="var(--cv6-surface)"] {
+  --cv6-text-primary: #0f1626;
+  color: #0f1626 !important;
+}
+
+/* The SELECTED tool tile (inline accent background) keeps white text + icon in
+   BOTH glass styles so the active tool reads on its blue fill. This wins over
+   the surface rule above. */
+[data-theme="glass"] [data-cv6] .hm-tools-row button[style*="accent-primary"],
+[data-theme="glass"] [data-cv6] .hm-tools-block button[style*="accent-primary"],
+[data-theme="glass"] [data-cv6] button[style*="var(--cv6-accent-primary)"] {
+  color: #ffffff !important;
 }
 
 /* html/body transparent so the fixed backdrop shows through. */
