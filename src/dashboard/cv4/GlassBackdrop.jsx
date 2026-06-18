@@ -12,10 +12,19 @@ import { useEffect } from 'react'
 // The image list is data-driven on purpose — it is the exact seam the future
 // Settings tool will repoint at the user's own approved photos.
 
+// Bright, colourful photos first (the dark-glass card style needs the contrast),
+// then the two procedural favourites. Keep in sync with GLASS_BACKDROP_COUNT in
+// hooks/useThemeMode.js. This list is the seam the future Settings tool repoints
+// at the user's own photos.
 export const CORNER_GLASS_BACKDROPS = [
+  '/corner-glass/us-fuji.jpg',
+  '/corner-glass/us-ocean.jpg',
+  '/corner-glass/us-blinds.jpg',
+  '/corner-glass/us-clock.jpg',
+  '/corner-glass/us-laptop.jpg',
+  '/corner-glass/us-lambo.jpg',
   '/corner-glass/glass-nebula.jpg',
   '/corner-glass/glass-aurora.jpg',
-  '/corner-glass/glass-sunset.jpg',
 ]
 
 const FADE_MS = 1100       // crossfade duration when the user steps backdrop

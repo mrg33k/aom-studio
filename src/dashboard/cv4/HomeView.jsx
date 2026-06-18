@@ -2149,12 +2149,12 @@ export default function HomeView({
 
   // Theme cycle for the home top-bar toggle: light → dark → glass[0..N-1] → light.
   // Owned by useThemeMode so it persists + drives the parent's GlassBackdrop.
-  const { mode: themeMode, cycleTheme, glassIndex, glassCount } = useThemeMode()
-  const onLastGlass = themeMode === 'glass' && glassIndex >= glassCount - 1
+  const { mode: themeMode, cycleTheme, glassIndex, glassVariantCount, glassCard } = useThemeMode()
+  const onLastGlass = themeMode === 'glass' && glassIndex >= glassVariantCount - 1
   const themeTitle = themeMode === 'light' ? 'Light · tap for Dark'
     : themeMode === 'dark' ? 'Dark · tap for Glass'
-    : onLastGlass ? `Glass ${glassIndex + 1}/${glassCount} · tap for Light`
-    : `Glass ${glassIndex + 1}/${glassCount} · tap for next backdrop`
+    : onLastGlass ? `Glass ${glassIndex + 1}/${glassVariantCount} (${glassCard}) · tap for Light`
+    : `Glass ${glassIndex + 1}/${glassVariantCount} (${glassCard}) · tap for next`
 
   // Live recents: track the last time the user visited each project room.
   // Written immediately when they click a project, so even 1 second ago shows up.
