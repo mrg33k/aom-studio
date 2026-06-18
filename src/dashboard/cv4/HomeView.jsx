@@ -2058,11 +2058,13 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const ChatCol = ({ mobile } = {}) => (
     <div style={{ ...colStyle, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', height: mobile ? '100%' : undefined }}>
       {/* Secondary nav: (mobile) back + dot + name on the left, room Projects/Files icons on the right */}
-      <div style={{ ...headStyle, borderBottom: sel ? `2px solid hsl(${hue(keyOf(sel))}, 70%, 60%)` : '1px solid var(--cv6-divider)' }}>
+      <div style={{ ...headStyle, paddingTop: mobile ? 'calc(10px + env(safe-area-inset-top, 0px))' : headStyle.padding, borderBottom: sel ? `2px solid hsl(${hue(keyOf(sel))}, 70%, 60%)` : '1px solid var(--cv6-divider)' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, textTransform: 'none', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', letterSpacing: 0 }}>
           {mobile && (
-            <button onClick={() => setMobileCol(0)} title="Back to rooms" style={{ flexShrink: 0, width: '30px', height: '30px', marginLeft: '-4px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--cv6-accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            // R187: this is the single header for the full-screen room — back exits to Home
+            // (where Catch Up lives), top-left. The room list is reached via the Chat tab.
+            <button onClick={() => onClose && onClose()} title="Back" aria-label="Back" style={{ flexShrink: 0, width: '34px', height: '34px', marginLeft: '-4px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--cv6-accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
           )}
           {sel ? <><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(keyOf(sel))}, 70%, 60%)`, flexShrink: 0 }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sel.name}</span></> : 'Select a room'}
@@ -3916,29 +3918,24 @@ export default function HomeView({
             }}>
               {/* Tool header — desktop/other tools: title + X close (right).
                   Mobile Chat (R185): back arrow (top-left) + title, for the full-screen room. */}
-              {(() => { const fsChat = isNarrowHV && selectedTool === 'chat'; return (
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                justifyContent: fsChat ? 'flex-start' : 'space-between',
-                padding: fsChat ? 'calc(8px + env(safe-area-inset-top, 0px)) 12px 8px' : '16px 20px',
-                borderBottom: '1px solid var(--cv6-divider)', flexShrink: 0,
-              }}>
-                {fsChat && (
-                  <button onClick={() => setSelectedTool('home')} title="Back" aria-label="Back"
-                    style={{ width: '38px', height: '38px', marginLeft: '-6px', flexShrink: 0, borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--cv6-accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ width: '22px', height: '22px' }}><path d="M15 18l-6-6 6-6"/></svg>
-                  </button>
-                )}
-                <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', textTransform: 'capitalize', flex: fsChat ? 1 : 'none', minWidth: 0 }}>
-                  {selectedTool === 'support' && 'Support'}
-                  {selectedTool === 'command' && 'Command Center'}
-                  {selectedTool === 'scribe' && 'Live Scribe'}
-                  {selectedTool === 'review' && 'Review'}
-                  {selectedTool === 'tracker' && 'Tracker'}
-                  {selectedTool === 'organize' && `Organize — ${organizeSubtool === 'projects' ? 'Projects' : 'Files'}`}
-                  {selectedTool === 'chat' && 'Chat'}
-                </div>
-                {!fsChat && (
+              {/* R187 (Patrik: "too much space above, not a box"): on mobile Chat we DROP this
+                  generic tool header entirely — the chat column's own room-name bar (back +
+                  room + tools) becomes the single slim header, so the conversation sits right
+                  at the top with no stacked chrome. Desktop / other tools keep title + X close. */}
+              {!(isNarrowHV && selectedTool === 'chat') && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '16px 20px', borderBottom: '1px solid var(--cv6-divider)',
+                }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', textTransform: 'capitalize' }}>
+                    {selectedTool === 'support' && 'Support'}
+                    {selectedTool === 'command' && 'Command Center'}
+                    {selectedTool === 'scribe' && 'Live Scribe'}
+                    {selectedTool === 'review' && 'Review'}
+                    {selectedTool === 'tracker' && 'Tracker'}
+                    {selectedTool === 'organize' && `Organize — ${organizeSubtool === 'projects' ? 'Projects' : 'Files'}`}
+                    {selectedTool === 'chat' && 'Chat'}
+                  </div>
                   <button
                     onClick={() => setSelectedTool('home')}
                     title="Close"
@@ -3961,9 +3958,8 @@ export default function HomeView({
                       <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
                   </button>
-                )}
-              </div>
-              )})()}
+                </div>
+              )}
 
               {/* Tool content — R85 (tools-1): drag the bottom edge to resize. Native CSS
                   resize gives a grip at the bottom with no JS; works for every tool uniformly.
