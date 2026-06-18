@@ -143,6 +143,10 @@ export default function CornerVG() {
   const [unreadChat, setUnreadChat]     = useState(0)
   const [selectedAgent, setSelectedAgent] = useState(null)
   const [conversationTarget, setConversationTarget] = useState(null) // { name, type: 'agent'|'project' }
+  // R62 (Patrik): in CV6 we stop opening the old full-screen chat surface. Picking a room
+  // anywhere (notification, catchup, command tracker, room links) instead opens the in-page
+  // Chat tool. This carries the room to HomeView, which opens the Chat tool preselected.
+  const [cv6ChatRequest, setCv6ChatRequest] = useState(null) // { kind, slug, name, missionSlug?, nonce }
   const [prefillMessage, setPrefillMessage] = useState(null)
   // R6.2: mission clicked from the drawer is "attached" to the composer
   // and rendered as a context chip. Cleared on send by useChatSend.
@@ -787,21 +791,26 @@ export default function CornerVG() {
     setSelectedMail(null)
     setActiveTool(null)
     setShowSupportInbox(false)
-    setSelectedAgent(agent)
-    setConversationTarget({ name: agent.name, type: 'agent' })
-    setTab('chat')
-    setUnreadChat(0)
     if (agent?.slug) {
       // corner:notifications R2 — opening the 1:1 agent thread clears its
       // notification dot (roomKey = 'agent:<slug>' per useDataPipe roomKey logic).
       setNotifReadAt(prev => ({ ...prev, [`agent:${agent.slug}`]: new Date().toISOString() }))
     }
+    if (cv6Mode) {
+      // R62: open the in-page Chat tool, not the full-screen surface. Stay in home mode.
+      setCv6ChatRequest({ kind: 'agent', slug: agent.slug, name: agent.name, nonce: Date.now() })
+      return
+    }
+    setSelectedAgent(agent)
+    setConversationTarget({ name: agent.name, type: 'agent' })
+    setTab('chat')
+    setUnreadChat(0)
     // R7.21: Preserve the entry-point base path (/dashboard or /cv4) so the
     // URL bar doesn't snap from /dashboard → /cv4 when the user navigates.
     const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
     // Clear any project route so ChatPanel renders the agent thread (not project chat).
     if (routeProjectId) navigate(basePath)
-  }, [navigate, routeProjectId])
+  }, [navigate, routeProjectId, cv6Mode])
 
   // R21c: notifications carry `item.project` from a message's `project` column,
   // which is sometimes the display name (e.g. "aheadofmarket.com") instead of
@@ -835,18 +844,25 @@ export default function CornerVG() {
     setSelectedMail(null)
     setActiveTool(null)
     setShowSupportInbox(false)
+    if (canonicalSlug) {
+      // corner:notifications R2 — opening the project room clears its
+      // project-level notification dot (roomKey = project slug).
+      setNotifReadAt(prev => ({ ...prev, [canonicalSlug]: new Date().toISOString() }))
+    }
+    if (cv6Mode) {
+      // R62: open the in-page Chat tool drilled to this project, not the full-screen surface.
+      setCv6ChatRequest({ kind: 'project', slug: canonicalSlug, name: canonicalName, nonce: Date.now() })
+      return
+    }
     setSelectedAgent(null)
     setConversationTarget({ name: canonicalName, slug: canonicalSlug, type: 'project' })
     setTab('chat')
     setUnreadChat(0)
     if (canonicalSlug) {
-      // corner:notifications R2 — opening the project room clears its
-      // project-level notification dot (roomKey = project slug).
-      setNotifReadAt(prev => ({ ...prev, [canonicalSlug]: new Date().toISOString() }))
       const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
       navigate(`${basePath}/project/${canonicalSlug}`)
     }
-  }, [navigate, resolveCanonicalProject])
+  }, [navigate, resolveCanonicalProject, cv6Mode])
 
   // R78-p9 corner:new-projects — self-serve creation. The "+ New project"
   // door in the drawer opens a name popup; on submit we create the room and
@@ -904,6 +920,14 @@ export default function CornerVG() {
     setSelectedMail(null)
     setShowSupportInbox(false)
     setActiveTool(null)
+    // corner:notifications R2 — opening the mission room clears that mission's
+    // notification dot (roomKey = full mission_slug "project:mission").
+    setNotifReadAt(prev => ({ ...prev, [`${canonicalProjectSlug}:${mission.slug}`]: new Date().toISOString() }))
+    if (cv6Mode) {
+      // R62: open the in-page Chat tool on this mission room, not the full-screen surface.
+      setCv6ChatRequest({ kind: 'mission', slug: canonicalProjectSlug, missionSlug: mission.slug, name: mission.name || mission.slug, nonce: Date.now() })
+      return
+    }
     setSelectedAgent(null)
     setConversationTarget({
       name: mission.name || mission.slug,
@@ -916,12 +940,9 @@ export default function CornerVG() {
     setAttachedMission(null)
     setTab('chat')
     setUnreadChat(0)
-    // corner:notifications R2 — opening the mission room clears that mission's
-    // notification dot (roomKey = full mission_slug "project:mission").
-    setNotifReadAt(prev => ({ ...prev, [`${canonicalProjectSlug}:${mission.slug}`]: new Date().toISOString() }))
     const basePath = (typeof window !== 'undefined' && window.location.pathname.startsWith('/cvg')) ? '/cvg' : '/cvg'
     navigate(`${basePath}/project/${canonicalProjectSlug}?mission=${encodeURIComponent(mission.slug)}`)
-  }, [navigate, resolveCanonicalProject])
+  }, [navigate, resolveCanonicalProject, cv6Mode])
 
   // R78-p9b corner:new-projects — self-serve mission creation. The "New mission"
   // row in an expanded project triggers a name popup; on submit we scaffold the
@@ -2907,28 +2928,26 @@ export default function CornerVG() {
                 needsYou={homeNeedsYou}
                 onChatSend={handleCvgChatSend}
                 onReplyToRoom={postReplyToRoom}
+                openChatRequest={cv6ChatRequest}
                 commandDeckSlot={cv6Mode ? (
                   <CommandTracker
                     worldId={worldId}
                     basePath={'/cvg/project'}
                     onReplyToRoom={postReplyToRoom}
                     onJumpToRoom={(room) => {
+                      // R62: jump into the in-page Chat tool, not the full-screen surface.
                       if (room.includes(':')) {
                         const parts = room.split(':')
                         const mission = parts.pop()
                         const proj = parts[parts.length - 1]
-                        navigate(`/cvg/project/${proj}?mission=${encodeURIComponent(mission)}`)
+                        setCv6ChatRequest({ kind: 'mission', slug: proj, missionSlug: mission, name: mission, nonce: Date.now() })
                       } else {
-                        setSelectedAgent({ slug: room, name: room })
-                        setConversationTarget({ name: room, type: 'agent' })
+                        setCv6ChatRequest({ kind: 'agent', slug: room, name: room, nonce: Date.now() })
                       }
                     }}
                   />
                 ) : undefined}
-                onSelectAgent={(agent) => {
-                  setSelectedAgent(agent)
-                  setConversationTarget({ name: agent.name, type: 'agent' })
-                }}
+                onSelectAgent={handleSelectAgent}
                 onSelectProject={(proj, mission) => {
                   if (mission && mission.slug) {
                     handleSelectMission(mission, proj)

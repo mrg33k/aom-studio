@@ -1656,7 +1656,17 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   // real room object; fall back to the passed room, then the first room).
   const matchInitial = () => initialRoom ? (rooms.find(r => r.kind === initialRoom.kind && r.slug === initialRoom.slug) || initialRoom) : null
   const [sel, setSel] = useState(matchInitial() || rooms[0] || null)
-  useEffect(() => { const m = matchInitial(); if (m) setSel(m) }, [initialRoom])
+  useEffect(() => {
+    const m = matchInitial(); if (m) setSel(m)
+    // R62: when opened on a mission, drill the left column into its project so the
+    // browser shows that project's missions in context; agent/project open at the root.
+    if (initialRoom && initialRoom.kind === 'mission') {
+      const p = (projects || []).find(x => x.slug === initialRoom.slug)
+      setBrowseProj({ slug: initialRoom.slug, name: (p && (p.name || p.slug)) || initialRoom.slug })
+    } else if (initialRoom) {
+      setBrowseProj(null)
+    }
+  }, [initialRoom])
   const [draft, setDraft] = useState('')
   const [thread, setThread] = useState({})            // slug -> [{ from, text }]
   const [creating, setCreating] = useState(null)      // 'project' | 'mission'
@@ -2112,6 +2122,7 @@ export default function HomeView({
   onChatSend, // real send for the CV6 Chat tool (agent/project routing + Gemini lane on /cvg). Omit → optimistic only (gallery).
   onReplyToRoom, // real reply function for Review tool (posts notes to rooms). Omit → review notes are optimistic only.
   commandDeckSlot, // real goal-ledger CommandDeck element (passed from CornerVG). When present the Command tool renders the LIVE ledger instead of the sample deck (gallery has none → sample).
+  openChatRequest, // R62: { kind:'agent'|'project'|'mission', slug, name, missionSlug?, nonce } — opens the in-page Chat tool preselected (replaces the old full-screen chat).
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -2470,6 +2481,18 @@ export default function HomeView({
     setChatInitialRoom(initial)
     setSelectedTool('chat')
   }, [])
+  // R62 (Patrik): a room picked anywhere in CV6 (notification, catchup, command tracker,
+  // room links) opens THIS in-page Chat tool, preselected — never the old full-screen chat.
+  // CornerVG bumps openChatRequest.nonce; we translate it to a Chat-tool room and open.
+  useEffect(() => {
+    if (!openChatRequest || !openChatRequest.slug) return
+    let initial = null
+    if (openChatRequest.kind === 'agent') initial = { kind: 'agent', slug: openChatRequest.slug, name: openChatRequest.name || openChatRequest.slug }
+    else if (openChatRequest.kind === 'mission' && openChatRequest.missionSlug) initial = { kind: 'mission', type: 'project', slug: openChatRequest.slug, missionSlug: openChatRequest.missionSlug, name: openChatRequest.name || openChatRequest.missionSlug, roomKey: `${openChatRequest.slug}:${openChatRequest.missionSlug}` }
+    else initial = { kind: 'project', type: 'project', slug: openChatRequest.slug, name: openChatRequest.name || openChatRequest.slug }
+    setChatInitialRoom(initial)
+    setSelectedTool('chat')
+  }, [openChatRequest?.nonce])
   const [conversationMessages, setConversationMessages] = useState([])
 
   // Quick-reply from the home conversation preview. Routes a REAL send through
