@@ -148,6 +148,7 @@ export default function CornerVG() {
   // anywhere (notification, catchup, command tracker, room links) instead opens the in-page
   // Chat tool. This carries the room to HomeView, which opens the Chat tool preselected.
   const [cv6ChatRequest, setCv6ChatRequest] = useState(null) // { kind, slug, name, missionSlug?, nonce }
+  const [cv6ToolRequest, setCv6ToolRequest] = useState(null) // R82: { tool, nonce } — agent opens a tool on the user's screen
   const [prefillMessage, setPrefillMessage] = useState(null)
   // R6.2: mission clicked from the drawer is "attached" to the composer
   // and rendered as a context chip. Cleared on send by useChatSend.
@@ -784,11 +785,10 @@ export default function CornerVG() {
     const ch = supabase
       .channel(`cv6-view-${worldId}`)
       .on('broadcast', { event: 'navigate' }, ({ payload }) => {
-        console.log('[cv6-view] navigate received', payload)
         if (!payload || typeof payload !== 'object') return
         try {
           if (payload.tool) {
-            setActiveTool(payload.tool)
+            setCv6ToolRequest({ tool: payload.tool, nonce: Date.now() })
           }
           if (payload.kind && payload.slug) {
             setCv6ChatRequest({
@@ -801,7 +801,7 @@ export default function CornerVG() {
           }
         } catch (e) { console.warn('[cv6-view] bad navigate payload', e) }
       })
-      .subscribe((status) => { console.log('[cv6-view] channel status', status, 'world', worldId) })
+      .subscribe()
     return () => { supabase.removeChannel(ch) }
   }, [worldId])
 
@@ -2976,6 +2976,7 @@ export default function CornerVG() {
                 onChatSend={handleCvgChatSend}
                 onReplyToRoom={postReplyToRoom}
                 openChatRequest={cv6ChatRequest}
+                openToolRequest={cv6ToolRequest}
                 catchupNotifications={buildCatchupNotifications(notifItems)}
                 onCatchupOpenRoom={handleCatchupOpenRoom}
                 onCatchupViewAll={() => setCatchupOpen(true)}
