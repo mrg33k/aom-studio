@@ -1113,6 +1113,9 @@ html[data-theme="glass"] body {
   [data-cv6] .hm-three-column-grid .hm-card { max-width:100%; }
   /* long tokens (filenames, slugs) wrap instead of forcing horizontal overflow */
   [data-cv6] .hm-three-column-grid .hm-card div { overflow-wrap:anywhere; }
+  /* lift the 328px nested-scroll cap on the rooms list — let it flow into the page
+     scroll on mobile (a tiny inner scroll window inside a phone is the worst UX). */
+  [data-cv6] .hm-rooms-scroll { max-height:none !important; overflow:visible !important; }
   /* clear the fixed mobile bottom nav so the last rows aren't hidden behind it */
   [data-cv6][data-cv4-home] { padding-bottom:120px !important; }
 }

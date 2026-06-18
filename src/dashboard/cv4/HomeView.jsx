@@ -3800,8 +3800,10 @@ export default function HomeView({
               />
               {allMissionsForCV6.length > 0 || (recentProjects && recentProjects.length > 0) ? (
                 <>
-                  {/* Scrollable container: shows 5 visible items with internal scroll */}
-                  <div style={{
+                  {/* Scrollable container: shows 5 visible items with internal scroll.
+                      On mobile (R76) the cap is lifted in cv6.css so rooms flow into the
+                      page scroll instead of a cramped 328px nested-scroll window. */}
+                  <div className="hm-rooms-scroll" style={{
                     display: 'flex', flexDirection: 'column', gap: '8px',
                     flex: 1, // Grow to fill column
                     overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
