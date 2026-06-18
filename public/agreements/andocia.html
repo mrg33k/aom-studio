@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="googlebot" content="noindex, nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Work-for-Hire Agreement — Andocia × AOM In-House LLC</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --grn: #1BA94E;
+      --grn-deep: #0F7E37;
+      --grn-soft: #E6F6EC;
+      --grn-tint: #F3FBF6;
+      --ink: #0E1619;
+      --ink-2: #172327;
+      --slate: #475569;
+      --slate-soft: #6B7280;
+      --line: #E3E8E6;
+      --line-soft: #F0F2F1;
+      --bg: #FFFFFF;
+      --bg-soft: #FAFBFC;
+      --accent-text: #0F7E37;
+    }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, sans-serif;
+      font-weight: 400;
+      font-size: 16px;
+      line-height: 1.65;
+    }
+
+    .topbar { background: var(--ink); color: #fff; padding: 14px 0; }
+    .topbar-inner {
+      max-width: 920px; margin: 0 auto; padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; letter-spacing: 0.04em;
+    }
+    .topbar-brand {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px;
+    }
+    .topbar-brand .pulse {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--grn); box-shadow: 0 0 0 4px rgba(27,169,78,0.22);
+    }
+    .topbar-meta {
+      font-weight: 500; opacity: 0.85; letter-spacing: 0.04em;
+      text-transform: uppercase; font-size: 11px;
+    }
+
+    .wrap { max-width: 920px; margin: 0 auto; padding: 64px 32px 96px; }
+
+    .doc-meta {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 6px 14px; background: var(--grn-soft); color: var(--accent-text);
+      border-radius: 999px; font-size: 12px; font-weight: 600;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px;
+    }
+    .doc-meta-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--grn); }
+    h1.title {
+      font-weight: 700; font-size: clamp(36px, 5vw, 52px); line-height: 1.08;
+      letter-spacing: -0.02em; color: var(--ink); margin-bottom: 12px;
+    }
+    .subtitle { color: var(--slate); font-size: 19px; max-width: 640px; line-height: 1.5; margin-bottom: 36px; }
+
+    .meta-card {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 0;
+      border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 48px;
+    }
+    .meta-row { padding: 18px 22px; border-bottom: 1px solid var(--line-soft); border-right: 1px solid var(--line-soft); }
+    .meta-row:nth-child(2n) { border-right: none; }
+    .meta-row:nth-last-child(-n+2) { border-bottom: none; }
+    .meta-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate-soft); margin-bottom: 6px; }
+    .meta-value { font-size: 16px; font-weight: 600; color: var(--ink); }
+    .meta-value.amount { color: var(--grn-deep); font-size: 20px; }
+
+    section { margin-bottom: 44px; }
+    h2 {
+      font-weight: 700; font-size: 23px; letter-spacing: -0.01em; color: var(--ink);
+      margin-bottom: 14px; padding-bottom: 12px; border-bottom: 2px solid var(--grn); display: inline-block;
+    }
+    h2 .num { color: var(--grn-deep); font-weight: 800; margin-right: 8px; }
+    h3 { font-weight: 600; font-size: 16px; letter-spacing: -0.005em; color: var(--ink-2); margin: 22px 0 8px; }
+    p { color: var(--ink-2); margin-bottom: 14px; max-width: 760px; }
+    p.lead { font-size: 17px; line-height: 1.65; color: var(--ink-2); }
+
+    ol, ul { padding-left: 0; list-style: none; margin: 12px 0 0; }
+    ol li, ul li { position: relative; padding: 10px 0 10px 32px; color: var(--ink-2); font-size: 15.5px; border-bottom: 1px solid var(--line-soft); }
+    ol li:last-child, ul li:last-child { border-bottom: none; }
+    ol { counter-reset: step; }
+    ol li::before {
+      counter-increment: step; content: counter(step); position: absolute; left: 0; top: 10px;
+      width: 22px; height: 22px; border-radius: 50%; background: var(--grn); color: #fff;
+      font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    ul li::before { content: ""; position: absolute; left: 6px; top: 19px; width: 6px; height: 6px; border-radius: 50%; background: var(--grn); }
+    li strong { color: var(--ink); font-weight: 600; }
+
+    .preamble {
+      background: var(--bg-soft); border: 1px solid var(--line); border-left: 3px solid var(--grn);
+      border-radius: 8px; padding: 22px 26px; margin-bottom: 48px;
+    }
+    .preamble p { font-size: 14px; line-height: 1.62; color: var(--slate); margin-bottom: 12px; max-width: none; }
+    .preamble p:last-child { margin-bottom: 0; }
+    .preamble strong { color: var(--ink-2); font-weight: 600; }
+
+    /* Payment schedule */
+    .pay-table { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 14px; }
+    .pay-row { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--line-soft); align-items: center; }
+    .pay-row:last-child { border-bottom: none; }
+    .pay-row.total { background: var(--grn-tint); }
+    .pay-when { font-weight: 600; color: var(--ink); font-size: 15px; }
+    .pay-when span { display: block; font-weight: 400; color: var(--slate); font-size: 13.5px; margin-top: 2px; }
+    .pay-amt { font-weight: 700; color: var(--ink); font-size: 18px; white-space: nowrap; }
+    .pay-row.total .pay-amt { color: var(--grn-deep); font-size: 20px; font-weight: 800; }
+
+    .remit {
+      margin-top: 18px; background: #fff; border: 1px dashed var(--grn);
+      border-radius: 8px; padding: 18px 20px;
+    }
+    .remit .remit-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grn-deep); margin-bottom: 6px; }
+    .remit p { font-size: 14px; color: var(--slate); margin: 0; max-width: none; }
+
+    .invest { background: var(--grn-tint); border: 1px solid var(--grn-soft); border-left: 4px solid var(--grn); border-radius: 8px; padding: 22px 26px; }
+    .invest-label { font-size: 14px; color: var(--slate); line-height: 1.5; }
+    .invest-label strong { color: var(--ink); font-weight: 600; }
+
+    /* Signature section */
+    .sig-section { margin-top: 80px; padding-top: 48px; border-top: 1px solid var(--line); }
+    .sig-intro { font-size: 16px; color: var(--ink-2); margin-bottom: 36px; max-width: 760px; }
+    .sig-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 0 56px; margin-bottom: 40px; }
+    .sig-party-heading { font-size: 15px; font-weight: 700; color: var(--ink); letter-spacing: -0.005em; padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--grn); }
+    .sig-party-fields { display: flex; flex-direction: column; gap: 22px; }
+    .sig-field-wrap { display: flex; flex-direction: column; }
+    .sig-label { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate-soft); margin-bottom: 8px; }
+    .sig-field { border-bottom: 1.5px solid var(--ink-2); padding-bottom: 6px; min-height: 56px; display: flex; align-items: flex-end; }
+    .sig-field .sig-value { font-size: 16px; font-weight: 500; color: var(--ink); line-height: 1.2; padding-bottom: 5px; }
+    .sig-field.is-sign { min-height: 104px; }
+    .sig-field .sig-ink { height: 92px; width: auto; max-width: 100%; display: block; margin: 0 0 -6px -4px; pointer-events: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Client interactive inputs */
+    .sig-input { width: 100%; border: none; border-bottom: 1.5px solid var(--ink-2); background: transparent; font-family: inherit; font-size: 16px; font-weight: 500; color: var(--ink); padding: 6px 2px; }
+    .sig-input:focus { outline: none; border-bottom-color: var(--grn); }
+    .sign-pad-wrap { border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg-soft); overflow: hidden; }
+    .sign-tabs { display: flex; border-bottom: 1px solid var(--line); }
+    .sign-tab { flex: 1; padding: 9px 0; font-family: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--slate-soft); background: #fff; border: none; cursor: pointer; }
+    .sign-tab.active { color: var(--grn-deep); background: var(--grn-soft); }
+    .sign-type-row { display: none; padding: 8px 14px; align-items: center; }
+    .sign-type-row.show { display: flex; }
+    .sign-type-input { width: 100%; border: none; background: transparent; outline: none; font-family: 'Caveat', cursive; font-size: 38px; line-height: 1.1; color: var(--ink); padding: 6px 2px; }
+    .sign-type-input::placeholder { font-family: 'Inter', sans-serif; font-size: 14px; color: var(--slate-soft); }
+    .sign-draw-row { display: none; position: relative; }
+    .sign-draw-row.show { display: block; }
+    #sigCanvas { display: block; width: 100%; height: 120px; touch-action: none; cursor: crosshair; background: #fff; }
+    .sign-clear { position: absolute; top: 8px; right: 10px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--slate-soft); background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 4px 9px; cursor: pointer; }
+    .sign-rendered { display: none; min-height: 104px; align-items: flex-end; border-bottom: 1.5px solid var(--ink-2); padding-bottom: 6px; }
+    .sign-rendered.show { display: flex; }
+    .sign-rendered .typed { font-family: 'Caveat', cursive; font-size: 40px; line-height: 1; color: var(--ink); }
+    .sign-rendered img { height: 92px; width: auto; max-width: 100%; }
+
+    .cta-wrap { margin-top: 56px; text-align: center; }
+    .btn-download { display: inline-flex; align-items: center; gap: 12px; padding: 18px 36px; background: var(--grn); color: #fff; font-family: inherit; font-size: 16px; font-weight: 600; letter-spacing: 0.02em; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 16px rgba(27,169,78,0.24); transition: all 160ms ease; }
+    .btn-download:hover { background: var(--grn-deep); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(27,169,78,0.32); }
+    .btn-download:active { transform: translateY(0); }
+    .btn-download svg { width: 18px; height: 18px; }
+    .cta-hint { margin-top: 14px; font-size: 13px; color: var(--slate-soft); }
+
+    footer { margin-top: 72px; padding-top: 28px; border-top: 1px solid var(--line-soft); text-align: center; font-size: 13px; color: var(--slate-soft); }
+    footer a { color: var(--grn-deep); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .draft-note { background: #FFF8E6; border: 1px solid #F2D98A; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #7A5B12; margin-bottom: 36px; }
+
+    @media (max-width: 640px) {
+      .wrap { padding: 40px 22px 72px; }
+      .topbar-inner { padding: 0 22px; }
+      .meta-card { grid-template-columns: 1fr; }
+      .meta-row { border-right: none; }
+      .meta-row:nth-last-child(-n+2) { border-bottom: 1px solid var(--line-soft); }
+      .meta-row:last-child { border-bottom: none; }
+      .sig-parties { grid-template-columns: 1fr; gap: 40px 0; }
+      h1.title { font-size: 34px; }
+    }
+
+    @media print {
+      @page { size: letter; margin: 0.6in; }
+      body { font-size: 11pt; line-height: 1.5; color: #000; }
+      .topbar { background: var(--ink) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 10px 0; }
+      .topbar-inner { max-width: none; padding: 0 0.4in; }
+      .wrap { max-width: none; padding: 24px 0 0; }
+      .cta-wrap, .cta-hint, .btn-download, .draft-note, .sign-tabs, .sign-clear { display: none !important; }
+      .doc-meta { background: var(--grn-soft) !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      h1.title { font-size: 24pt; }
+      .subtitle { font-size: 13pt; }
+      h2 { font-size: 15pt; border-bottom: 2px solid var(--grn); -webkit-print-color-adjust: exact; print-color-adjust: exact; page-break-after: avoid; }
+      h3 { font-size: 12pt; page-break-after: avoid; }
+      section { page-break-inside: avoid; margin-bottom: 22px; }
+      .meta-card, .invest, .pay-table, .pay-row.total { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sig-section { page-break-before: always; margin-top: 0; padding-top: 28px; }
+      .sig-party-heading { border-bottom: 2px solid var(--grn); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .sign-pad-wrap { border: none; background: transparent; }
+      .sign-type-row, .sign-draw-row { display: none !important; }
+      .sign-rendered { display: flex !important; }
+      a { color: var(--grn-deep); text-decoration: none; }
+      ol li::before, ul li::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <span class="topbar-brand"><span class="pulse"></span>Andocia × AOM In-House LLC</span>
+      <span class="topbar-meta">Work-for-Hire Agreement</span>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <span class="doc-meta"><span class="doc-meta-dot"></span>Independent Contractor Agreement</span>
+    <h1 class="title">Work-for-Hire Agreement</h1>
+    <p class="subtitle">AOM In-House LLC to build Andocia its own AI platform, the same system Ahead of Market runs on, shaped around your agency.</p>
+
+    <div class="draft-note">Draft for review. Final payment remittance details and any client legal-entity name to be confirmed before signature.</div>
+
+    <div class="meta-card">
+      <div class="meta-row">
+        <div class="meta-label">Prepared by</div>
+        <div class="meta-value">AOM In-House LLC</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Client</div>
+        <div class="meta-value">Andocia</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Effective date</div>
+        <div class="meta-value" id="eff-date">June 18, 2026</div>
+      </div>
+      <div class="meta-row">
+        <div class="meta-label">Total investment</div>
+        <div class="meta-value amount">$117,000</div>
+      </div>
+    </div>
+
+    <div class="preamble">
+      <p>This Work-for-Hire Agreement (the "Agreement") is entered into as of the Effective Date above by and between <strong>AOM In-House LLC</strong> ("Consultant," "AOM"), and <strong>Andocia</strong> ("Client"). Consultant and Client are each a "Party" and together the "Parties."</p>
+      <p>Client wishes to engage Consultant to design, build, and support a dedicated artificial-intelligence platform for Client's agency, and Consultant agrees to provide those services on the terms set out below.</p>
+    </div>
+
+    <section>
+      <h2><span class="num">1</span>Scope of Work</h2>
+      <p class="lead">Consultant will build Client its own AI platform, the same system Consultant runs Ahead of Market on, configured for how Client's agency operates.</p>
+      <ul>
+        <li><strong>Your own platform, on your own infrastructure.</strong> A dedicated instance built around Client's accounts, team, and workflow.</li>
+        <li><strong>Custom tools</strong> for Client's accounts, with Client's whole team working in one system.</li>
+        <li><strong>Onboarding of Client's first accounts</strong> and team, so the platform is doing real account work.</li>
+        <li><strong>Client's way of working built in</strong>, so the system runs the way the agency already does.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="num">2</span>Kickoff &amp; Timeline</h2>
+      <p>The engagement begins with a <strong>two-day kickoff</strong>. In-person is recommended to move fastest (travel expenses billed separately and not included in the fee), and may be conducted virtually if Client prefers.</p>
+      <p>Following kickoff, Consultant will build Client's instance to an <strong>operational state within approximately four (4) weeks</strong> (roughly sixteen hours per week of dedicated build time), at which point the platform is live and running Client's first accounts.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">3</span>Support Term</h2>
+      <p>For the <strong>thirteen (13) month term</strong> of this Agreement, Consultant will provide ongoing support of <strong>up to four (4) hours per week</strong>, plus phone availability, to keep the platform running and improving for Client.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">4</span>Fees &amp; Payment</h2>
+      <div class="invest">
+        <div class="invest-label">Total fee for the build and a full year of support: <strong>$117,000</strong>. A founding-partner rate. Travel for any in-person time is billed separately.</div>
+      </div>
+      <div class="pay-table">
+        <div class="pay-row">
+          <div class="pay-when">On signing<span>Due upon execution of this Agreement.</span></div>
+          <div class="pay-amt">$58,500</div>
+        </div>
+        <div class="pay-row">
+          <div class="pay-when">At week four<span>Due once Client's instance is operational and running its accounts.</span></div>
+          <div class="pay-amt">$58,500</div>
+        </div>
+        <div class="pay-row total">
+          <div class="pay-when">Total</div>
+          <div class="pay-amt">$117,000</div>
+        </div>
+      </div>
+      <div class="remit">
+        <div class="remit-label">Remittance</div>
+        <p>Payment instructions (bank / ACH details) to be provided here by AOM In-House LLC. Invoices are due within fifteen (15) days of receipt.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="num">5</span>Ownership</h2>
+      <p>Upon Consultant's receipt of full payment, <strong>Client owns its instance and the deliverables, configurations, and custom code Consultant creates specifically for Client</strong> under this Agreement. That work product is Client's to keep.</p>
+      <p>Consultant retains all right, title, and interest in its <strong>pre-existing platform, underlying software, tools, frameworks, and general know-how</strong>, including any general improvements not specific to Client. Consultant grants Client a perpetual, non-exclusive license to use that underlying technology to the extent needed to operate Client's instance.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">6</span>Confidentiality</h2>
+      <p>Each Party may receive confidential information of the other. Each Party will use the other's confidential information only to perform under this Agreement, will protect it with reasonable care, and will not disclose it to third parties without consent, except as required by law. This obligation survives termination.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">7</span>Independent Contractor</h2>
+      <p>Consultant is an independent contractor, not an employee, partner, or agent of Client. Consultant controls the manner and means of performing the services, is responsible for its own taxes and expenses, and is not entitled to Client employee benefits.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">8</span>Term &amp; Termination</h2>
+      <p>This Agreement runs for thirteen (13) months from the Effective Date unless terminated earlier. Either Party may terminate for the other's material breach that remains uncured fifteen (15) days after written notice. The on-signing payment is earned upon execution; fees for work completed through the termination date are non-refundable. Sections 5, 6, 9, and 10 survive termination.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">9</span>Warranty &amp; Liability</h2>
+      <p>Consultant will perform the services in a professional and workmanlike manner. Except as stated, the services are provided "as is" without other warranties. Neither Party is liable for indirect or consequential damages, and each Party's total liability under this Agreement will not exceed the total fees paid by Client.</p>
+    </section>
+
+    <section>
+      <h2><span class="num">10</span>General</h2>
+      <p>This Agreement is governed by the laws of the State of Arizona. It is the entire agreement between the Parties on its subject and may be amended only in writing signed by both Parties. If any provision is unenforceable, the rest remains in effect. Neither Party may assign this Agreement without the other's written consent.</p>
+    </section>
+
+    <div class="sig-section">
+      <h2>Agreement &amp; Authorization</h2>
+      <p class="sig-intro">By signing below, both Parties agree to the scope, timeline, support, fees, and terms set out in this Agreement.</p>
+
+      <div class="sig-parties">
+        <div class="sig-party">
+          <div class="sig-party-heading">AOM In-House LLC</div>
+          <div class="sig-party-fields">
+            <div class="sig-field-wrap">
+              <div class="sig-label">Name</div>
+              <div class="sig-field"><span class="sig-value">Anthony Matheson</span></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Signature</div>
+              <div class="sig-field is-sign"><img class="sig-ink" src="anthony-matheson-signature.png" alt="Anthony Matheson signature" /></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Title</div>
+              <div class="sig-field"><span class="sig-value">Owner</span></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Date</div>
+              <div class="sig-field"><span class="sig-value" id="aom-date">June 18, 2026</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sig-party">
+          <div class="sig-party-heading">Andocia</div>
+          <div class="sig-party-fields">
+            <div class="sig-field-wrap">
+              <div class="sig-label">Name</div>
+              <input class="sig-input" id="cl-name" type="text" placeholder="William Host" data-key="clName" autocomplete="off" />
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Signature</div>
+              <div class="sign-pad-wrap">
+                <div class="sign-tabs">
+                  <button type="button" class="sign-tab active" data-mode="type">Type</button>
+                  <button type="button" class="sign-tab" data-mode="draw">Draw</button>
+                </div>
+                <div class="sign-type-row show" id="typeRow">
+                  <input class="sign-type-input" id="typeInput" type="text" placeholder="Type your full name to sign" data-key="typeSig" autocomplete="off" />
+                </div>
+                <div class="sign-draw-row" id="drawRow">
+                  <canvas id="sigCanvas"></canvas>
+                  <button type="button" class="sign-clear" id="clearCanvas">Clear</button>
+                </div>
+              </div>
+              <div class="sign-rendered" id="sigRendered"></div>
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Title</div>
+              <input class="sig-input" id="cl-title" type="text" placeholder="CEO" data-key="clTitle" autocomplete="off" />
+            </div>
+            <div class="sig-field-wrap">
+              <div class="sig-label">Date</div>
+              <input class="sig-input" id="cl-date" type="text" placeholder="Today" data-key="clDate" autocomplete="off" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-wrap">
+        <button class="btn-download" onclick="prepPrint()" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Download Signed Agreement (PDF)
+        </button>
+        <div class="cta-hint">Sign above, then download. Use your browser's "Save as PDF" destination in the print dialog and return the signed copy by email.</div>
+      </div>
+    </div>
+
+    <footer>
+      Prepared by AOM In-House LLC &nbsp;·&nbsp; <a href="mailto:hello@aom-inhouse.com">hello@aom-inhouse.com</a>
+    </footer>
+  </main>
+
+  <script>
+    // Auto-fill today's date where blank
+    (function () {
+      var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      var clDate = document.getElementById('cl-date');
+      if (clDate && !clDate.value) clDate.placeholder = today;
+    })();
+
+    var STORE = 'agreement_andocia_v1';
+    function saveAll() {
+      var data = {};
+      document.querySelectorAll('[data-key]').forEach(function (el) { data[el.dataset.key] = el.value; });
+      try { localStorage.setItem(STORE, JSON.stringify(data)); } catch (e) {}
+    }
+    function loadAll() {
+      var saved = {};
+      try { saved = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) {}
+      Object.keys(saved).forEach(function (k) {
+        var el = document.querySelector('[data-key="' + k + '"]');
+        if (el) el.value = saved[k];
+      });
+    }
+    document.querySelectorAll('[data-key]').forEach(function (el) {
+      el.addEventListener('input', saveAll);
+    });
+
+    // Signature tabs
+    var typeRow = document.getElementById('typeRow');
+    var drawRow = document.getElementById('drawRow');
+    var mode = 'type';
+    document.querySelectorAll('.sign-tab').forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        document.querySelectorAll('.sign-tab').forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        mode = tab.dataset.mode;
+        typeRow.classList.toggle('show', mode === 'type');
+        drawRow.classList.toggle('show', mode === 'draw');
+        if (mode === 'draw') sizeCanvas();
+      });
+    });
+
+    // Draw pad
+    var canvas = document.getElementById('sigCanvas');
+    var ctx = canvas.getContext('2d');
+    var drawing = false, hasDrawn = false;
+    function sizeCanvas() {
+      var rect = canvas.getBoundingClientRect();
+      if (rect.width === 0) return;
+      var ratio = window.devicePixelRatio || 1;
+      var data = hasDrawn ? canvas.toDataURL() : null;
+      canvas.width = rect.width * ratio;
+      canvas.height = rect.height * ratio;
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0E1619';
+      if (data) { var img = new Image(); img.onload = function () { ctx.drawImage(img, 0, 0, rect.width, rect.height); }; img.src = data; }
+    }
+    function pos(e) {
+      var rect = canvas.getBoundingClientRect();
+      var p = e.touches ? e.touches[0] : e;
+      return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+    }
+    function start(e) { drawing = true; var p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+    function move(e) { if (!drawing) return; var p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); hasDrawn = true; e.preventDefault(); }
+    function end() { drawing = false; saveAll(); }
+    canvas.addEventListener('mousedown', start); canvas.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+    canvas.addEventListener('touchstart', start, { passive: false }); canvas.addEventListener('touchmove', move, { passive: false }); canvas.addEventListener('touchend', end);
+    document.getElementById('clearCanvas').addEventListener('click', function () {
+      ctx.clearRect(0, 0, canvas.width, canvas.height); hasDrawn = false; saveAll();
+    });
+
+    // Build the rendered (print-ready) signature
+    function prepPrint() {
+      var rendered = document.getElementById('sigRendered');
+      rendered.innerHTML = '';
+      if (mode === 'type') {
+        var v = document.getElementById('typeInput').value.trim();
+        if (v) { var s = document.createElement('span'); s.className = 'typed'; s.textContent = v; rendered.appendChild(s); }
+      } else if (hasDrawn) {
+        var img = document.createElement('img'); img.src = canvas.toDataURL('image/png'); rendered.appendChild(img);
+      }
+      rendered.classList.toggle('show', rendered.children.length > 0);
+      // Fill the date if still blank
+      var clDate = document.getElementById('cl-date');
+      if (clDate && !clDate.value) { clDate.value = clDate.placeholder; saveAll(); }
+      setTimeout(function () { window.print(); }, 60);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () { loadAll(); });
+    window.addEventListener('resize', function () { if (mode === 'draw') sizeCanvas(); });
+  </script>
+</body>
+</html>
