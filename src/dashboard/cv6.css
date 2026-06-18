@@ -1101,8 +1101,13 @@ html[data-theme="glass"] body {
 
 /* Happening-now + 3-col grid */
 [data-cv6] .hm-happening-now { color:var(--cv6-text-secondary); }
+[data-cv6] .hm-three-column-grid { display:grid; grid-template-columns:1fr 1.2fr 1.2fr; min-height:400px; }
 @media (max-width: 768px) {
-  [data-cv6] .hm-three-column-grid { grid-template-columns: 1fr; }
+  /* R76 (Patrik): mobile = ONE bulletproof stacked column with generous vertical rhythm.
+     gap uses !important so it beats the component's inline gap (stylesheet !important
+     is the one case that overrides an inline style). */
+  [data-cv6] .hm-three-column-grid { grid-template-columns:1fr; gap:30px !important; min-height:0; }
+  [data-cv6] .hm-three-column-grid > .hm-section { margin-bottom:0 !important; }
 }
 
 /* Re-anchor the CV6 base typography on the home ROOT (data-cv6 + data-cv4-home).

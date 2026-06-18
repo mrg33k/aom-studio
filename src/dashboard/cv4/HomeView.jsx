@@ -3767,7 +3767,10 @@ export default function HomeView({
           {/* R39: home body (columns, what-needs-you, ideas) hides while a tool is open — tools get the full screen */}
           {selectedTool === 'home' && (<>
           {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
-          <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '18px', minHeight: '400px' }}>
+          {/* R76 (Patrik): grid layout lives in cv6.css so the ≤768px media query can
+              collapse it to ONE stacked column on mobile. Inline display/columns used to
+              override the media query, which is why mobile rendered 3 cramped columns. */}
+          <div className="hm-three-column-grid" style={{ gap: '24px', marginBottom: '18px' }}>
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
