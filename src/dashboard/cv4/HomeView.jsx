@@ -3311,7 +3311,7 @@ export default function HomeView({
                   return (
                     <div key={n.id} role="button" tabIndex={0} onClick={open}
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}
-                      style={{ flex: 'none', width: '296px', boxSizing: 'border-box', scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: '11px', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '16px', padding: '15px', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.10)', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+                      style={{ flex: 'none', width: '296px', boxSizing: 'border-box', scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: '11px', background: 'var(--cv6-surface)', backdropFilter: 'blur(22px) saturate(1.3)', WebkitBackdropFilter: 'blur(22px) saturate(1.3)', border: '1px solid var(--cv6-divider)', borderRadius: '16px', padding: '15px', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.10)', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
                         <span style={{ width: '38px', height: '38px', borderRadius: '50%', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12.5px', fontWeight: 700,
                           background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
