@@ -641,11 +641,13 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
         </div>
       ) : (
         /* Desktop: three Finder/Dropbox columns */
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: '420px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
-          <ProjectsCol />
-          <MissionsCol />
-          <PreviewCol />
-        </div>
+        <ResizableBox minHeight={420} storageKey="projects-tool">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+            <ProjectsCol />
+            <MissionsCol />
+            <PreviewCol />
+          </div>
+        </ResizableBox>
       )}
 
       {/* macOS-style move confirmation: source mission → arrow → destination project */}
@@ -1587,10 +1589,49 @@ function FilesToolOverlay({ projects }) {
           <div style={{ flex: 1, overflowY: 'auto' }}>{mobileCol === 0 ? <Col1 /> : mobileCol === 1 ? <Col2 /> : <Col3 />}</div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: '420px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
-          <Col1 /><Col2 /><Col3 />
-        </div>
+        <ResizableBox minHeight={420} storageKey="files-tool">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+            <Col1 /><Col2 /><Col3 />
+          </div>
+        </ResizableBox>
       )}
+    </div>
+  )
+}
+
+// R60 (Patrik): every tool surface (and the quick chat) keeps its designed height by
+// default but can be dragged TALLER from the bottom edge — never shorter than the design.
+// The child fills 100% height; we own the height and a grab handle at the bottom.
+function ResizableBox({ minHeight = 320, storageKey, style, children }) {
+  const key = storageKey ? 'cv6-rh-' + storageKey : null
+  const [h, setH] = useState(() => {
+    if (key && typeof window !== 'undefined') { const v = parseInt(window.localStorage.getItem(key) || '', 10); if (v >= minHeight) return v }
+    return minHeight
+  })
+  // Keep at least the designed minimum even if the design grows later.
+  useEffect(() => { setH(prev => Math.max(prev, minHeight)) }, [minHeight])
+  const start = useRef(null)
+  const onDown = (e) => {
+    e.preventDefault()
+    start.current = { y: e.clientY, h }
+    const move = (ev) => {
+      const next = Math.max(minHeight, Math.round(start.current.h + (ev.clientY - start.current.y)))
+      setH(next)
+      if (key) { try { window.localStorage.setItem(key, String(next)) } catch (_) { /* ignore */ } }
+    }
+    const up = () => {
+      document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up)
+      document.body.style.userSelect = ''
+    }
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', move); document.addEventListener('mouseup', up)
+  }
+  return (
+    <div style={{ position: 'relative', height: h + 'px', ...style }}>
+      {children}
+      <div onMouseDown={onDown} title="Drag to make taller" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: '12px', cursor: 'ns-resize', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '3px', zIndex: 3 }}>
+        <div style={{ width: '44px', height: '4px', borderRadius: '2px', background: 'var(--cv6-divider)' }} />
+      </div>
     </div>
   )
 }
@@ -1822,9 +1863,11 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     )
   }
   return (
-    <div ref={chatNavRef} style={{ display: 'grid', gridTemplateColumns: '230px 1.4fr 0.9fr', height: '460px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
-      <RoomsCol /><ChatCol /><FilesCol />
-    </div>
+    <ResizableBox minHeight={460} storageKey="chat-tool">
+      <div ref={chatNavRef} style={{ display: 'grid', gridTemplateColumns: '230px 1.4fr 0.9fr', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+        <RoomsCol /><ChatCol /><FilesCol />
+      </div>
+    </ResizableBox>
   )
 }
 
