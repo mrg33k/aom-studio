@@ -16,9 +16,21 @@ import { useEffect, useState, useCallback } from 'react'
 
 const KEY_THEME = 'cv4-theme'
 const KEY_USER_SET = 'cv4-theme-user-set'
+const KEY_GLASS_INDEX = 'cv4-glass-index'
+// How many glass backdrops the cycle steps through before returning to light.
+// Keep in sync with CORNER_GLASS_BACKDROPS in cv4/GlassBackdrop.jsx.
+export const GLASS_BACKDROP_COUNT = 3
 const AZ_OFFSET_MINUTES = -7 * 60
 const LIGHT_START_MIN = 6 * 60 + 30
 const LIGHT_END_MIN   = 19 * 60 + 30
+
+function readGlassIndex() {
+  if (typeof window === 'undefined') return 0
+  try {
+    const n = parseInt(window.localStorage?.getItem(KEY_GLASS_INDEX) ?? '0', 10)
+    return Number.isFinite(n) && n >= 0 && n < GLASS_BACKDROP_COUNT ? n : 0
+  } catch { return 0 }
+}
 
 function arizonaMinutesNow() {
   const now = new Date()
@@ -62,6 +74,9 @@ function syncDom(mode) {
 export function useThemeMode() {
   const [stored, setStored] = useState(readStored)
   const [mode, setMode] = useState(() => resolve(readStored()))
+  // Which glass backdrop is showing (0..GLASS_BACKDROP_COUNT-1). The toggle
+  // steps this on each click while in glass mode, then rolls over to light.
+  const [glassIndex, setGlassIndexState] = useState(readGlassIndex)
 
   useEffect(() => {
     setMode(resolve(stored))
@@ -84,7 +99,7 @@ export function useThemeMode() {
   // CornerV4 moon toggle (which writes localStorage directly).
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const onChange = () => setStored(readStored())
+    const onChange = () => { setStored(readStored()); setGlassIndexState(readGlassIndex()) }
     window.addEventListener('storage', onChange)
     window.addEventListener('cv4-theme-changed', onChange)
     return () => {
@@ -114,12 +129,25 @@ export function useThemeMode() {
     window.dispatchEvent(new Event('cv4-theme-changed'))
   }, [])
 
-  // Cycle the toggle through the full theme library: light → dark → glass →
-  // light. Each click advances to the next; the icon reflects the CURRENT mode.
+  const setGlassIndex = useCallback((i) => {
+    const idx = ((i % GLASS_BACKDROP_COUNT) + GLASS_BACKDROP_COUNT) % GLASS_BACKDROP_COUNT
+    try { window.localStorage?.setItem(KEY_GLASS_INDEX, String(idx)) } catch { /* ignore */ }
+    setGlassIndexState(idx)
+    window.dispatchEvent(new Event('cv4-theme-changed'))
+  }, [])
+
+  // Cycle the toggle through the full theme library:
+  //   light → dark → glass[0] → glass[1] → … → glass[N-1] → light.
+  // Backdrops do NOT auto-drift; each click of the crystal-ball steps to the
+  // next backdrop, and after the last one it rolls over to light.
   const cycleTheme = useCallback(() => {
-    const next = mode === 'light' ? 'dark' : mode === 'dark' ? 'glass' : 'light'
-    setTheme(next)
-  }, [mode, setTheme])
+    if (mode === 'light') { setTheme('dark'); return }
+    if (mode === 'dark') { setGlassIndex(0); setTheme('glass'); return }
+    // mode === 'glass' — step the backdrop, or roll over to light after the last.
+    if (glassIndex < GLASS_BACKDROP_COUNT - 1) { setGlassIndex(glassIndex + 1); return }
+    setGlassIndex(0)
+    setTheme('light')
+  }, [mode, glassIndex, setTheme, setGlassIndex])
 
   // Legacy: light → dark → auto (kept for any caller still on the 2-mode model).
   const cycleOverride = useCallback(() => {
@@ -136,6 +164,9 @@ export function useThemeMode() {
     override,
     isLight: mode === 'light',
     isGlass: mode === 'glass',
+    glassIndex,
+    glassCount: GLASS_BACKDROP_COUNT,
+    setGlassIndex,
     setTheme,
     setOverride: setTheme,
     clearOverride,

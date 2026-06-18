@@ -2147,9 +2147,14 @@ export default function HomeView({
   const [showSearch, setShowSearch] = useState(false)
   const greeting = useMemo(() => pickGreeting(), [])
 
-  // Theme cycle for the home top-bar toggle: light → dark → glass → light.
+  // Theme cycle for the home top-bar toggle: light → dark → glass[0..N-1] → light.
   // Owned by useThemeMode so it persists + drives the parent's GlassBackdrop.
-  const { mode: themeMode, cycleTheme } = useThemeMode()
+  const { mode: themeMode, cycleTheme, glassIndex, glassCount } = useThemeMode()
+  const onLastGlass = themeMode === 'glass' && glassIndex >= glassCount - 1
+  const themeTitle = themeMode === 'light' ? 'Light · tap for Dark'
+    : themeMode === 'dark' ? 'Dark · tap for Glass'
+    : onLastGlass ? `Glass ${glassIndex + 1}/${glassCount} · tap for Light`
+    : `Glass ${glassIndex + 1}/${glassCount} · tap for next backdrop`
 
   // Live recents: track the last time the user visited each project room.
   // Written immediately when they click a project, so even 1 second ago shows up.
@@ -3089,8 +3094,8 @@ export default function HomeView({
                 {/* Theme cycle: sun (light) → moon (dark) → glass orb (glass).
                     Owned by useThemeMode so it persists + mounts the GlassBackdrop. */}
                 <button
-                  title={themeMode === 'light' ? 'Light · tap for Dark' : themeMode === 'dark' ? 'Dark · tap for Glass' : 'Glass · tap for Light'}
-                  aria-label={themeMode === 'light' ? 'Switch to dark theme' : themeMode === 'dark' ? 'Switch to glass theme' : 'Switch to light theme'}
+                  title={themeTitle}
+                  aria-label={themeMode === 'light' ? 'Switch to dark theme' : themeMode === 'dark' ? 'Switch to glass theme' : onLastGlass ? 'Switch to light theme' : 'Next glass backdrop'}
                   data-theme-mode={themeMode}
                   onClick={() => cycleTheme()}
                   style={{
