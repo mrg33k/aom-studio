@@ -215,7 +215,7 @@ function SupportToolOverlay({ worldId }) {
   const [isNarrow, setIsNarrow] = useState(false)
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const check = () => setIsNarrow(window.innerWidth < 720)
+    const check = () => setIsNarrow(window.innerWidth <= 1024)
     check(); window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
@@ -473,7 +473,7 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
   }, [missionsByProject])
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const check = () => setIsNarrow(window.innerWidth < 720)
+    const check = () => setIsNarrow(window.innerWidth <= 1024)
     check(); window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
@@ -785,7 +785,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const check = () => setIsNarrow(window.innerWidth < 720)
+    const check = () => setIsNarrow(window.innerWidth <= 1024)
     check(); window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
@@ -1055,7 +1055,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const [srStatus, setSrStatus] = useState(null) // null|loading|connected|needs_key|error
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const check = () => setIsNarrow(window.innerWidth < 720)
+    const check = () => setIsNarrow(window.innerWidth <= 1024)
     check(); window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
@@ -1560,7 +1560,7 @@ function FilesToolOverlay({ projects }) {
   const [tree, setTree] = useState([])
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const check = () => setIsNarrow(window.innerWidth < 720)
+    const check = () => setIsNarrow(window.innerWidth <= 1024)
     check(); window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
