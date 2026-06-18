@@ -323,7 +323,7 @@ export default function CornerVG() {
   // override). `setTheme(...)` here is wired to the hook so the legacy
   // moon-toggle button keeps working and the CSS-vars repaint
   // (cv3Colors.js) responds.
-  const { mode: theme, setTheme: setThemeHook, cycleTheme } = useThemeMode()
+  const { mode: theme, setTheme: setThemeHook, cycleTheme, glassIndex } = useThemeMode()
   const setTheme = useCallback((next) => {
     const resolved = typeof next === 'function' ? next(theme) : next
     setThemeHook(resolved)
@@ -1544,9 +1544,9 @@ export default function CornerVG() {
       overflow: 'hidden',
       fontFamily: "'Hanken Grotesk', sans-serif",
     }}>
-      {/* Glass theme (3rd mode): cycling Corner backdrop behind the frosted UI.
-          Only mounted in glass mode, so light/dark pay nothing. */}
-      {theme === 'glass' && <GlassBackdrop />}
+      {/* Glass theme (3rd mode): the backdrop behind the frosted UI. The toggle
+          steps glassIndex; it holds (no auto-drift). Only mounted in glass mode. */}
+      {theme === 'glass' && <GlassBackdrop index={glassIndex} />}
       {/* R5.1 CV4 scoped styles. Everything keyed to [data-shell="cv4"] so the
           shared cv3/ components stay unchanged on /dashboard. */}
       <style>{`
