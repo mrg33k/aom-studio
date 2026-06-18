@@ -3309,7 +3309,7 @@ export default function HomeView({
                   const open = () => onCatchupOpenRoom && onCatchupOpenRoom(n)
                   const dismiss = (e) => { e.stopPropagation(); setDismissedCatchup(prev => { const next = new Set(prev); next.add(n.id); return next }); onCatchupDismiss && onCatchupDismiss(n) }
                   return (
-                    <div key={n.id} role="button" tabIndex={0} onClick={open}
+                    <div key={n.id} role="button" tabIndex={0} onClick={open} className="hm-catchup-card"
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}
                       style={{ flex: 'none', width: '296px', boxSizing: 'border-box', scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: '11px', background: 'var(--cv6-surface)', backdropFilter: 'blur(22px) saturate(1.3)', WebkitBackdropFilter: 'blur(22px) saturate(1.3)', border: '1px solid var(--cv6-divider)', borderRadius: '16px', padding: '15px', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.10)', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
