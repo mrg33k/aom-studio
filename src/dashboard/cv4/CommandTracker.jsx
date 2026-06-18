@@ -220,8 +220,15 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           goals.rooms = goals.rooms || {}
           Object.entries(ledgerGoals).forEach(([slug, lg]) => {
             const base = goals.rooms[slug] || {}
+            const baseGoal = (typeof base.goal === 'string' && base.goal.trim()) ? base.goal : ''
             goals.rooms[slug] = {
               ...base,
+              // cc-7: if the room has no explicit goal, fall back to the ledger's
+              // doc-derived one-line goal so GOAL NOW is never blank for a real
+              // room. An explicit (Patrik/loop) goal always wins.
+              goal: baseGoal || (lg.goal || ''),
+              // cc-6/cc-7 provenance: where this goal came from (user | loop | doc).
+              goalSource: baseGoal ? (base.source || lg.goal_source || 'user') : (lg.goal ? (lg.goal_source || 'doc') : null),
               last_touched: lg.last_touched || base.last_touched || null,
               last_touched_by: lg.last_touched_by || null,
               last_touched_label: lg.last_touched_label || null,
@@ -397,7 +404,8 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             slug,
             display: roomDisplay(slug, map),
             goal,
-            goalCurated: !!curatedGoal, // cc-7: Patrik/loop goal shows verbatim; terminal fallback gets a one-line synth
+            goalCurated: !!curatedGoal, // cc-7: Patrik/loop/doc goal shows verbatim; terminal fallback gets a one-line synth
+            goalSource: curatedGoal ? (roomGoal.goalSource || 'user') : (liveWorker ? 'session' : null), // cc-6 provenance
             status,
             liveNow,
             lastActivity: lastTouched,
