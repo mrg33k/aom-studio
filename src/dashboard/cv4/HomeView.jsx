@@ -2807,6 +2807,98 @@ export default function HomeView({
   const roomGlow = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.30)`
   const roomTint = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.10)`  // hover wash, text stays dark
 
+  // R64: a single agent row, reused so Agents can sit stacked above Active Work in the
+  // middle column (Patrik) without duplicating markup. Same click/keyboard behavior as before.
+  const renderAgentRow = (a, idx) => {
+    const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+    const agentStatus = a.slug === 'bobby' ? 'building components'
+      : a.slug === 'steffen' ? 'refining brand'
+      : a.slug === 'cleo' ? 'editing video'
+      : a.slug === 'tony' ? 'scheduling posts'
+      : a.slug === 'elon' ? 'routing work'
+      : 'Ready'
+    return (
+      <button
+        key={a.slug}
+        className="hm-card"
+        data-cv6-sel={isSelected ? 'true' : undefined}
+        onClick={() => {
+          if (cv6) { selectByItem('agent', a.slug); setSelectedRoom({ agent: a, project: null, mission: null }); homeRef.current?.focus() }
+          else { onSelectAgent && onSelectAgent(a) }
+        }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '8px', minHeight: '56px',
+          boxSizing: 'border-box', width: '100%', position: 'relative', overflow: 'hidden',
+          background: isSelected ? roomFill(a.slug) : 'var(--cv6-surface)',
+          color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+          border: isSelected ? `1px solid ${roomFill(a.slug)}` : '1px solid transparent',
+          boxShadow: isSelected ? `0 3px 14px ${roomGlow(a.slug)}` : 'none',
+          transform: isSelected ? 'translateY(-1px)' : 'none',
+          borderRadius: '6px', cursor: 'pointer',
+          transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
+          fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+        }}
+        onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.background = roomTint(a.slug); e.currentTarget.style.borderColor = roomFill(a.slug) } }}
+        onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' } }}
+      >
+        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : `hsl(${roomHue(a.slug)}, 60%, 55%)`, animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
+          <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentStatus}</div>
+        </div>
+        <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
+        {agentStatus !== 'Ready' && (
+          <div className="hm-progress" style={{ position: 'absolute', left: '10px', right: '10px', bottom: '6px', color: isSelected ? 'rgba(255,255,255,0.85)' : `hsl(${roomHue(a.slug)}, 60%, 55%)` }} />
+        )}
+      </button>
+    )
+  }
+
+  // R64: the home Catch-up column (Patrik) — lives where Agents used to be. A polished,
+  // simple list of what landed while you were away; tap a row to open that room's chat.
+  const renderCatchupColumn = () => (
+    <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
+        <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Catch up</span>
+        {catchupNotifications.length > 0 && (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
+        )}
+      </div>
+      {catchupNotifications.length === 0 ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', textAlign: 'center', padding: '24px', minHeight: '220px' }}>
+          <div style={{ width: '72px', height: '72px', borderRadius: '20px', background: 'var(--cv6-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px var(--cv6-divider)' }}>
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="var(--cv6-accent-success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-secondary)', maxWidth: '200px' }}>You're all caught up.</div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {catchupNotifications.map((n) => {
+            const human = n.senderType === 'human'
+            return (
+              <button key={n.id} className="hm-card" onClick={() => onCatchupOpenRoom && onCatchupOpenRoom(n)}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', padding: '12px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'left', background: 'var(--cv6-surface)', border: '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 140ms ease, border-color 140ms ease' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' }}>
+                <span style={{ flexShrink: 0, width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700',
+                  background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
+                  color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.senderName}</span>
+                    <span style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, marginLeft: 'auto', whiteSpace: 'nowrap' }}>{n.timeAgo}</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{n.roomName}</div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', lineHeight: 1.45, marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.messagePreview}</div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+
   // R34: clean idea chips under the greeting. Real version reads the ledger for the
   // user's top 3 goals + 2 aspirational ("things they'd want but haven't named yet").
   // Here we seed from their most-active rooms so the chips are real + clickable; the
@@ -3452,80 +3544,18 @@ export default function HomeView({
           {selectedTool === 'home' && (<>
           {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
           <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '18px', minHeight: '400px' }}>
-            {/* R14: LEFT COLUMN — COLLABORATORS */}
-            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
-              <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '16px' }}>
-                {visibleAgents.map((a, idx) => {
-                  const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
-                  const agentStatus = a.slug === 'bobby' ? 'building components'
-                    : a.slug === 'steffen' ? 'refining brand'
-                    : a.slug === 'cleo' ? 'editing video'
-                    : a.slug === 'tony' ? 'scheduling posts'
-                    : a.slug === 'elon' ? 'routing work'
-                    : 'Ready'
-                  return (
-                    <button
-                      key={a.slug}
-                      className="hm-card"
-                      data-cv6-sel={isSelected ? 'true' : undefined}
-                      onClick={() => {
-                        if (cv6) {
-                          // R31: match the mission card — click pulls the agent's
-                          // conversation into the quick-view column AND moves the cursor here.
-                          selectByItem('agent', a.slug)
-                          setSelectedRoom({ agent: a, project: null, mission: null })
-                          homeRef.current?.focus()
-                        } else {
-                          onSelectAgent && onSelectAgent(a)
-                        }
-                      }}
-                      style={{
-                        // R31/R32: single-row card, full width, room-color highlight when selected
-                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '8px', minHeight: '56px',
-                        boxSizing: 'border-box', width: '100%', position: 'relative', overflow: 'hidden',
-                        background: isSelected ? roomFill(a.slug) : 'var(--cv6-surface)',
-                        color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                        border: isSelected ? `1px solid ${roomFill(a.slug)}` : '1px solid transparent',
-                        boxShadow: isSelected ? `0 3px 14px ${roomGlow(a.slug)}` : 'none',
-                        transform: isSelected ? 'translateY(-1px)' : 'none',
-                        borderRadius: '6px', cursor: 'pointer',
-                        transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
-                        fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.background = roomTint(a.slug)
-                          e.currentTarget.style.borderColor = roomFill(a.slug)
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.background = 'var(--cv6-surface)'
-                          e.currentTarget.style.borderColor = 'transparent'
-                        }
-                      }}
-                    >
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : `hsl(${roomHue(a.slug)}, 60%, 55%)`, animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
-                        <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentStatus}</div>
-                      </div>
-                      <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
-                      {/* R32: smooth motion line on agents that are actively working */}
-                      {agentStatus !== 'Ready' && (
-                        <div className="hm-progress" style={{ position: 'absolute', left: '10px', right: '10px', bottom: '6px', color: isSelected ? 'rgba(255,255,255,0.85)' : `hsl(${roomHue(a.slug)}, 60%, 55%)` }} />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
+            {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
+            {renderCatchupColumn()}
 
-            </div>
-
-            {/* R14: MIDDLE COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
+            {/* R14/R64: MIDDLE COLUMN — AGENTS stacked above ACTIVE WORK (same column, Patrik) */}
             {/* R30b: Combined missions AND projects list, ordered by recency */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+              {visibleAgents.length > 0 && (
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
+                  <div>{visibleAgents.map((a, idx) => renderAgentRow(a, idx))}</div>
+                </div>
+              )}
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
               {/* R23: Search input for Active Work filtering */}
               <input
