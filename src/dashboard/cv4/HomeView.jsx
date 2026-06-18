@@ -505,16 +505,25 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
       })
     }
   }
+  // create-2: never reuse an existing slug. length+1 can collide when a row was
+  // removed elsewhere but local state still holds the same count, so bump the
+  // suffix until it is actually free against the given taken-set.
+  const uniqueSlug = (name, startN, taken) => {
+    let n = startN
+    let s = slugify(name, n)
+    while (taken.has(s)) { n += 1; s = slugify(name, n) }
+    return s
+  }
   function commitCreate() {
     const name = draftName.trim(); if (!name) { setCreating(null); return }
     if (creating === 'project') {
-      const slug = slugify(name, projects.length + 1)
+      const slug = uniqueSlug(name, projects.length + 1, new Set(projects.map(p => p.slug)))
       const p = { slug, name }
       setProjects(prev => [p, ...prev]); setMissionsMap(prev => ({ ...prev, [slug]: [] }))
       setSelProj(p); setSelMission(null); if (isNarrow) setMobileCol(1)
       onCreateProject && onCreateProject(slug, name)
     } else if (creating === 'mission' && selProj) {
-      const slug = slugify(name, (missionsMap[selProj.slug] || []).length + 1)
+      const slug = uniqueSlug(name, (missionsMap[selProj.slug] || []).length + 1, new Set((missionsMap[selProj.slug] || []).map(m => m.slug)))
       const m = { slug, name, status: 'idle' }
       setMissionsMap(prev => ({ ...prev, [selProj.slug]: [m, ...(prev[selProj.slug] || [])] }))
       setSelMission(m); if (isNarrow) setMobileCol(2)
@@ -2936,10 +2945,11 @@ export default function HomeView({
           if (m?.mission?.slug) items.push({ type: 'mission', item: m.mission, project: m.project })
         })
       }
-      // Then actionable stats
+      // Then actionable stats. kb-8: only include needs-you items that actually
+      // have an onOpen handler, so keyboard Enter never lands on a dead no-op item.
       if (Array.isArray(needsYou)) {
         needsYou.forEach((n) => {
-          if (n?.key) items.push({ type: 'needsyou', item: n })
+          if (n?.key && typeof n.onOpen === 'function') items.push({ type: 'needsyou', item: n })
         })
       }
       // Projects last
