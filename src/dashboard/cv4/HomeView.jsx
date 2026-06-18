@@ -1733,6 +1733,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   useEffect(() => { if (initialRoom) setMobileCol(1) }, [initialRoom])
   const [listFocused, setListFocused] = useState(false) // R57: room list is the active column (Left from empty input)
   const chatNavRef = useRef(null)
+  const taRef = useRef(null)   // composer textarea — focused by the command button
   // R61 (Patrik): the "all rooms" column is a single-column Dropbox-style drill-through —
   // root shows agents + projects; clicking a project pushes INTO its missions (one column,
   // the view changes as you click, with a back affordance). browseProj = the project we're
@@ -1929,7 +1930,10 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const loadedThread = sel ? thread[keyOf(sel)] : null
   // Real backend: show the loaded thread (empty array = a real, empty room).
   // Gallery only: fall back to the demo seed so it isn't blank.
-  const msgs = sel ? (loadedThread != null ? loadedThread : (hasBackend ? [] : seedThread(sel))) : []
+  // Collapse identical (sender+time+text) rows — real threads arrive duplicated across client_id
+  // scopes; each message should read once (matches the handoff: one message, one block).
+  const _rawMsgs = sel ? (loadedThread != null ? loadedThread : (hasBackend ? [] : seedThread(sel))) : []
+  const msgs = (() => { const seen = new Set(), out = []; for (const m of _rawMsgs) { const key = `${m.from}|${m.ts || ''}|${m.text}`; if (seen.has(key)) continue; seen.add(key); out.push(m) } return out })()
   const files = useMemo(() => buildFileTree(sel ? { slug: keyOf(sel) } : null), [sel])
 
   function send() {
@@ -2065,8 +2069,6 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const titleCase = (s) => (s || '').replace(/\b([a-z])/g, (m, c) => c.toUpperCase())
   const dayKey = (ts) => { try { return new Date(ts).toDateString() } catch (_) { return '' } }
   const dayLabel = (ts) => { try { const d = new Date(ts), now = new Date(); const isToday = d.toDateString() === now.toDateString(); const y = new Date(now); y.setDate(now.getDate() - 1); const isY = d.toDateString() === y.toDateString(); return `${isToday ? 'Today' : isY ? 'Yesterday' : d.toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${fmtTime(ts)}` } catch (_) { return '' } }
-  // Real messages arrive duplicated across client_id scopes; collapse identical (sender+time+text) so each reads once (matches the handoff: one message, one block).
-  const dedupeMsgs = (arr) => { const seen = new Set(), out = []; for (const m of (arr || [])) { const key = `${m.from}|${m.ts || ''}|${m.text}`; if (seen.has(key)) continue; seen.add(key); out.push(m) } return out }
   // Agents post task reports in a fixed shape ("Task failed: <title>. Reason: <why>. <options>. I'm on it — retry or different angle?").
   // Typeset them like the handoff: a status pill, a Reason callout, the body, and inline actions — instead of one runon paragraph.
   const parseAgentReport = (text) => {
@@ -2107,25 +2109,53 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
       <div style={{ flex: 1, overflowY: 'auto', padding: '18px 0 14px', display: 'flex', flexDirection: 'column' }}>
         {/* Chat Detail (2026-06-18): agent output typeset full-column (no box); user replies are right-aligned accent bubbles. */}
         <style>{`@keyframes cv6-step-pulse{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}@keyframes cv6-indet{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}.cv6-step-dot{width:6px;height:6px;border-radius:50%;background:var(--cv6-accent-primary);display:inline-block;animation:cv6-step-pulse 1.2s infinite ease-in-out}`}</style>
-        {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => (
-          m.from === 'me' ? (
-            <div key={i} style={{ padding: '0 18px', marginBottom: '22px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-              <div style={{ maxWidth: '82%', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '14.5px', lineHeight: 1.5, padding: '11px 15px', borderRadius: '18px 18px 5px 18px', wordBreak: 'break-word' }}>{m.text}</div>
-              {m.ts && <span style={{ fontFamily: monoFont, fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', marginTop: '5px' }}>{fmtTime(m.ts)} · seen</span>}
+        {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => {
+          const prev = msgs[i - 1]
+          const showDay = m.ts && (!prev || !prev.ts || dayKey(prev.ts) !== dayKey(m.ts))
+          const divider = showDay ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', margin: '4px 0 20px' }}>
+              <span style={{ flex: 1, height: '1px', background: 'var(--cv6-divider)', maxWidth: '70px' }} />
+              <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)' }}>{dayLabel(m.ts)}</span>
+              <span style={{ flex: 1, height: '1px', background: 'var(--cv6-divider)', maxWidth: '70px' }} />
             </div>
-          ) : (
-            <div key={i} style={{ padding: '0 18px', marginBottom: '24px' }}>
+          ) : null
+          if (m.from === 'me') {
+            return (<Fragment key={i}>{divider}
+              <div style={{ padding: '0 18px', marginBottom: '22px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <div style={{ maxWidth: '82%', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '14.5px', lineHeight: 1.5, padding: '11px 15px', borderRadius: '18px 18px 5px 18px', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>{m.text}</div>
+                {m.ts && <span style={{ fontFamily: monoFont, fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', marginTop: '5px' }}>{fmtTime(m.ts)} · seen</span>}
+              </div>
+            </Fragment>)
+          }
+          const rep = parseAgentReport(m.text)
+          const pill = rep.status === 'failed' ? { label: 'Task failed', col: 'var(--cv6-accent-error)' } : rep.status === 'done' ? { label: 'Task done', col: 'var(--cv6-accent-success)' } : null
+          return (<Fragment key={i}>{divider}
+            <div style={{ padding: '0 18px', marginBottom: '24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
                 <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `hsla(${hue(keyOf(sel))}, 60%, 50%, 0.18)`, color: `hsl(${hue(keyOf(sel))}, 65%, 62%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{initials(m.who || sel.name)}</div>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>{m.who || sel.name}</span>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>{titleCase(m.who || sel.name)}</span>
                 {m.ts && <span style={{ fontFamily: monoFont, fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>{fmtTime(m.ts)}</span>}
+                {pill && <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 600, color: pill.col, background: `color-mix(in srgb, ${pill.col} 16%, transparent)`, padding: '4px 9px', borderRadius: '6px', flexShrink: 0 }}>{pill.label}</span>}
               </div>
+              {rep.reason && (
+                <div style={{ margin: '0 0 12px', padding: '12px 14px', background: 'var(--cv6-surface-hover)', borderRadius: '10px', borderLeft: `2px solid ${pill ? pill.col : 'var(--cv6-accent-primary)'}` }}>
+                  <div style={{ fontSize: '10.5px', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: pill ? pill.col : 'var(--cv6-accent-primary)', marginBottom: '6px' }}>Reason</div>
+                  <div style={{ fontSize: '14px', lineHeight: 1.55, color: 'var(--cv6-text-secondary)' }}>{rep.reason}</div>
+                </div>
+              )}
               <div className="cv6-article" style={{ fontSize: '15px', lineHeight: 1.62, color: 'var(--cv6-text-primary)' }}>
-                <ChatMessageRenderer content={m.text} />
+                <ChatMessageRenderer content={rep.body || m.text} />
               </div>
+              {rep.hasRetry && (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
+                  <button onClick={() => { if (onSend) onSend(sel, 'Retry that.'); setAwaitingReply(true); setStepText('Working…') }} style={{ height: '38px', padding: '0 15px', borderRadius: '10px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>Retry</button>
+                  <button onClick={() => { if (onSend) onSend(sel, 'Try a different angle.'); setAwaitingReply(true); setStepText('Working…') }} style={{ height: '38px', padding: '0 15px', borderRadius: '10px', border: '1px solid var(--cv6-divider)', background: 'transparent', color: 'var(--cv6-text-primary)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>Different angle</button>
+                  <button onClick={() => { if (isNarrow) setMobileCol(2); else setFilesCollapsed(false) }} style={{ height: '38px', padding: '0 13px', borderRadius: '10px', border: 'none', background: 'transparent', color: 'var(--cv6-text-secondary)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>Logs</button>
+                </div>
+              )}
             </div>
-          )
-        ))}
+          </Fragment>)
+        })}
         {sel && awaitingReply && (
           <div style={{ padding: '0 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
@@ -2151,11 +2181,11 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
       </div>
       {sel && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: mobile ? '10px 14px calc(16px + env(safe-area-inset-bottom, 0px))' : '12px 14px', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-          {/* Plus opens this room's files (real action, no dead button) */}
-          <button onClick={() => { if (isNarrow) setMobileCol(2); else setFilesCollapsed(false) }} title="Files" style={{ flexShrink: 0, width: '42px', height: '42px', borderRadius: '50%', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          {/* CV4 command button (crystal ball) — replaces the plus. Begins a slash command. */}
+          <button onClick={() => { setDraft(d => (d && d.trim()) ? d : '/'); setTimeout(() => taRef.current?.focus(), 0) }} title="Command" style={{ flexShrink: 0, width: '44px', height: '44px', borderRadius: '50%', border: 'none', background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(124,58,237,0.28)' }}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9.5" r="6.5"/><path d="M6.5 19h11"/><path d="M9.5 19l1-3M14.5 19l-1-3"/><path d="M9.4 7.6a3 3 0 0 1 2.6-1.6"/></svg>
           </button>
-          <textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => {
+          <textarea ref={taRef} value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); return }
             // R57: Left in an empty input → step back to the room list (which then takes Up/Down).
             if (e.key === 'ArrowLeft' && !draft) { e.preventDefault(); setListFocused(true); e.target.blur() }
@@ -2209,7 +2239,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     // R49: mobile chat is a FULL room. Chat view fills the tool area (own secondary nav with
     // back + name + room icons via ChatCol mobile); only Rooms/Files keep a plain back bar.
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '70vh', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '70vh', height: '100%', border: 'none', borderRadius: 0, overflow: 'hidden', background: 'var(--cv6-ground)' }}>
         {mobileCol === 2 && (
           <button onClick={() => setMobileCol(1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-accent-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>{sel?.name || 'Chat'}
@@ -3990,7 +4020,7 @@ export default function HomeView({
               // just above the bottom tools dock (so the dock stays visible "below"), with its
               // own back-arrow header. Other tools + desktop keep the in-page panel.
               ...((isNarrowHV && selectedTool === 'chat')
-                ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 'calc(68px + env(safe-area-inset-bottom, 0px))', zIndex: 120, margin: 0, borderRadius: 0, border: 'none', background: 'var(--cv6-ground)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }
+                ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 120, margin: 0, borderRadius: 0, border: 'none', background: 'var(--cv6-ground)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }
                 : { marginBottom: '24px', borderRadius: '8px', border: 'none', background: 'transparent', overflow: 'hidden', minHeight: '72vh' }),
             }}>
               {/* Tool header — desktop/other tools: title + X close (right).
