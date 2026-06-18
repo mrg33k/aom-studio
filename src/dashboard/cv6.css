@@ -225,6 +225,13 @@ html[data-theme="glass"] body {
 [data-theme="glass"] [data-cv6] input {
   color: var(--cv6-text-primary) !important;
 }
+
+/* R207: All-rooms rows (agents, missions, projects) are flat divided lists,
+   NOT cards — exempt them from the glass-theme card background override so
+   they stay transparent with hairline dividers. */
+[data-theme="glass"] [data-cv6] .hm-room-row {
+  background: transparent !important;
+}
 [data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] input::placeholder {
   color: rgba(255, 255, 255, 0.6) !important;
 }
