@@ -2134,7 +2134,8 @@ export default function HomeView({
   onReplyToRoom, // real reply function for Review tool (posts notes to rooms). Omit → review notes are optimistic only.
   commandDeckSlot, // real goal-ledger CommandDeck element (passed from CornerVG). When present the Command tool renders the LIVE ledger instead of the sample deck (gallery has none → sample).
   openChatRequest, // R62: { kind:'agent'|'project'|'mission', slug, name, missionSlug?, nonce } — opens the in-page Chat tool preselected (replaces the old full-screen chat).
-  onOpenNotifications, // R63: open notifications IN-PLACE on this surface (CornerVG opens the Catchup modal). Omit → falls back to the cross-surface link (gallery only).
+  catchupNotifications = [], // R64: unread items for the home Catch-up column (CornerVG builds them).
+  onCatchupOpenRoom, // R64: open a catch-up item's room (routes to the in-page Chat tool via CornerVG handleSelect*).
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -3158,7 +3159,7 @@ export default function HomeView({
                 {/* Notifications bell icon */}
                 <button
                   title="Notifications"
-                  onClick={() => { if (onOpenNotifications) onOpenNotifications(); else window.location.href = '/dashboard?view=notifications' }}
+                  onClick={() => { if (cv6) setSelectedTool('home'); else window.location.href = '/dashboard?view=notifications' }}
                   style={{
                     width: '40px', height: '40px', borderRadius: '8px', border: 'none',
                     background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',

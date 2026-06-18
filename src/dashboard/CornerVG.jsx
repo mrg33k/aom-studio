@@ -2929,7 +2929,8 @@ export default function CornerVG() {
                 onChatSend={handleCvgChatSend}
                 onReplyToRoom={postReplyToRoom}
                 openChatRequest={cv6ChatRequest}
-                onOpenNotifications={() => { setNotifOpen(false); setCatchupOpen(true) }}
+                catchupNotifications={buildCatchupNotifications(notifItems)}
+                onCatchupOpenRoom={handleCatchupOpenRoom}
                 commandDeckSlot={cv6Mode ? (
                   <CommandTracker
                     worldId={worldId}
