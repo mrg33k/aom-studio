@@ -1671,7 +1671,7 @@ function ResizableBox({ minHeight = 320, storageKey, style, children }) {
 
 // R40: CHAT tool — the old 3-pane room view rebuilt inside the new tool window.
 // LEFT rooms list + inline create form · MIDDLE the room's full chat · RIGHT the room's files.
-function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission, onSend, onClose }) {
+function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission, onSend, onClose, worldId }) {
   const rooms = useMemo(() => {
     const ag = (agents || []).map(a => ({ kind: 'agent', slug: a.slug, name: a.name || a.slug }))
     const pr = (projects || []).map(p => ({ kind: 'project', slug: p.slug, name: p.name || p.slug }))
@@ -1694,6 +1694,11 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   }, [initialRoom])
   const [draft, setDraft] = useState('')
   const [thread, setThread] = useState({})            // slug -> [{ from, text }]
+  // Step indicator: while a turn is in flight, show the assistant's current step
+  // (real step events from /api/dashboard/message-steps) or "Working…". Ported
+  // from CvgChatSurface so the in-page chat tool gets the same live feedback.
+  const [awaitingReply, setAwaitingReply] = useState(false)
+  const [stepText, setStepText] = useState('')
   const [creating, setCreating] = useState(null)      // 'project' | 'mission'
   const [npName, setNpName] = useState('')
   const [nmProj, setNmProj] = useState((projects || [])[0]?.slug || '')
@@ -1784,19 +1789,120 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   }, [projects])
 
   const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
+  // Gallery-only fallback (no backend): a tiny demo thread so /cv6 isn't blank.
   const seedThread = (room) => ([
     { from: 'them', text: `On it. Picking up ${room.name} where we left off.` },
     { from: 'me', text: 'Great. Push it as far as you can and flag anything you need.' },
     { from: 'them', text: 'Will do. First pass is ready for you to look at whenever.' },
   ])
-  const msgs = sel ? (thread[keyOf(sel)] || seedThread(sel)) : []
+  const hasBackend = !!(supabase && worldId)
+  // Load the SELECTED room's REAL Supabase thread (was showing a hardcoded
+  // demo for every room — chat-tool conversations were never wired). Mirrors the
+  // home quick-chat preview. Streams new messages in live.
+  useEffect(() => {
+    if (!sel || !hasBackend) return
+    const k = keyOf(sel)
+    let active = true
+    const toMsg = (m) => ({
+      id: m.id,
+      from: (m.role === 'user' || m.agent === 'user' || m.sender === 'user') ? 'me' : 'them',
+      text: m.text || m.content || '',
+    })
+    const isView = (m) => m && m.metadata && m.metadata.view_command
+    const load = async () => {
+      try {
+        let rows = []
+        if (sel.kind === 'agent') {
+          const { data } = await supabase.from('messages').select('*')
+            .eq('client_id', worldId).eq('agent', sel.slug)
+            .or('project.is.null,project.eq.')
+            .order('timestamp', { ascending: true }).limit(50)
+          rows = data || []
+        } else {
+          const projSlug = sel.slug
+          const sharedCid = `shared:${projSlug}`
+          const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
+          const missionSlug = sel.missionSlug || null
+          const { data } = await supabase.from('messages').select('*')
+            .in('client_id', clientIds)
+            .or(`project.eq.${projSlug},agent.eq.project:${projSlug}`)
+            .order('timestamp', { ascending: true }).limit(50)
+          rows = (data || []).filter((m) => {
+            const tag = (m && m.metadata && m.metadata.mission_slug) || ''
+            if (!missionSlug) return true
+            if (!tag) return true
+            return tag === missionSlug || tag.endsWith(':' + missionSlug)
+          })
+        }
+        if (!active) return
+        setThread(prev => ({ ...prev, [k]: rows.filter(m => !isView(m)).map(toMsg) }))
+      } catch (_) { if (active) setThread(prev => ({ ...prev, [k]: prev[k] || [] })) }
+    }
+    load()
+    const matches = (m) => {
+      if (!m || m.client_id !== worldId || isView(m)) return false
+      if (sel.kind === 'agent') return m.agent === sel.slug && !m.project
+      const projSlug = sel.slug
+      const isRoom = m.project === projSlug || m.agent === `project:${projSlug}`
+      if (!isRoom) return false
+      const missionSlug = sel.missionSlug || null
+      const tag = (m.metadata && m.metadata.mission_slug) || ''
+      if (!missionSlug || !tag) return true
+      return tag === missionSlug || tag.endsWith(':' + missionSlug)
+    }
+    const channel = supabase
+      .channel(`cv6-chattool-${worldId}-${Date.now()}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` }, (payload) => {
+        if (!active || !matches(payload.new)) return
+        const m = payload.new
+        setThread(prev => {
+          const cur = prev[k] || []
+          if (cur.some(x => x.id && x.id === m.id)) return prev
+          return { ...prev, [k]: [...cur, toMsg(m)] }
+        })
+        // An assistant reply ends the in-flight turn → hide the step indicator.
+        const isUser = m.role === 'user' || m.agent === 'user' || m.sender === 'user'
+        if (!isUser) { setAwaitingReply(false); setStepText('') }
+      })
+      .subscribe()
+    return () => { active = false; try { supabase.removeChannel(channel) } catch (_) {} }
+  }, [sel && keyOf(sel), worldId, hasBackend])
+  // While awaiting a reply, poll the real step events for this room and show the
+  // assistant's current step; "Working…" until one lands. 60s safety net.
+  useEffect(() => {
+    if (!awaitingReply || !hasBackend || !sel) return
+    let active = true
+    const qs = new URLSearchParams({ client_id: worldId, limit: '20' })
+    if (sel.kind === 'agent') qs.set('agent', sel.slug)
+    else qs.set('project', sel.slug)
+    const poll = async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/message-steps?${qs.toString()}`)
+        if (!r.ok || !active) return
+        const d = await r.json()
+        const steps = Array.isArray(d.steps) ? d.steps : []
+        const sorted = steps.slice().sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+        const live = sorted.find(s => s.status === 'in_progress') || sorted[0]
+        if (active && live && live.text) setStepText(live.text)
+      } catch (_) { /* keep last */ }
+    }
+    poll()
+    const t = setInterval(poll, 2000)
+    const safety = setTimeout(() => { if (active) { setAwaitingReply(false); setStepText('') } }, 60000)
+    return () => { active = false; clearInterval(t); clearTimeout(safety) }
+  }, [awaitingReply, hasBackend, worldId, sel && keyOf(sel)])
+  const loadedThread = sel ? thread[keyOf(sel)] : null
+  // Real backend: show the loaded thread (empty array = a real, empty room).
+  // Gallery only: fall back to the demo seed so it isn't blank.
+  const msgs = sel ? (loadedThread != null ? loadedThread : (hasBackend ? [] : seedThread(sel))) : []
   const files = useMemo(() => buildFileTree(sel ? { slug: keyOf(sel) } : null), [sel])
 
   function send() {
     const t = draft.trim(); if (!t || !sel) return
     const k = keyOf(sel)
-    setThread(prev => ({ ...prev, [k]: [...(prev[k] || seedThread(sel)), { from: 'me', text: t }] }))
+    setThread(prev => ({ ...prev, [k]: [...(prev[k] || []), { from: 'me', text: t }] }))
     setDraft('')
+    if (hasBackend) { setAwaitingReply(true); setStepText('Working…') }
     // Optimistic UI above; real send via onSend (provided on /cvg + /dashboard).
     // No onSend (e.g. the no-backend gallery) → stays optimistic.
     if (onSend) onSend(sel, t)
@@ -1935,6 +2041,17 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
         {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => (
           <div key={i} style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: m.from === 'me' ? roomSolid(keyOf(sel)) : 'var(--cv6-surface-hover)', color: m.from === 'me' ? '#fff' : 'var(--cv6-text-primary)' }}>{m.text}</div>
         ))}
+        {sel && awaitingReply && (
+          <div style={{ alignSelf: 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <style>{`@keyframes cv6-step-pulse{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}.cv6-step-dot{width:5px;height:5px;border-radius:50%;background:var(--cv6-text-tertiary);display:inline-block;animation:cv6-step-pulse 1s infinite ease-in-out}`}</style>
+            <span style={{ display: 'inline-flex', gap: '3px' }}>
+              <span className="cv6-step-dot" style={{ animationDelay: '0ms' }} />
+              <span className="cv6-step-dot" style={{ animationDelay: '160ms' }} />
+              <span className="cv6-step-dot" style={{ animationDelay: '320ms' }} />
+            </span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stepText || 'Working…'}</span>
+          </div>
+        )}
       </div>
       {sel && (
         <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: '10px 12px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
@@ -3591,6 +3708,7 @@ export default function HomeView({
                     onCreateMission={persistCreateMission}
                     onSend={onChatSend}
                     onClose={() => setSelectedTool('home')}
+                    worldId={worldId}
                   />
                 )}
               </div>
