@@ -2335,6 +2335,10 @@ export default function HomeView({
   // left-menu; every action is a forward-advance into the project screen (navigate + confirm).
   const [cardMenu, setCardMenu] = useState(null) // { x, y, type:'mission'|'project', item, project }
 
+  // create-1: guard against double-submit on project/mission creation
+  const [creatingProject, setCreatingProject] = useState(false)
+  const [creatingMission, setCreatingMission] = useState(false)
+
   // R35: live clock + timezone for the top-right display (greeting font, click to change zone)
   const [now, setNow] = useState(() => new Date())
   const [timezone, setTimezone] = useState(() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone } catch (_) { return 'America/Los_Angeles' } })
@@ -2506,6 +2510,9 @@ export default function HomeView({
     return fallback
   }
   const persistCreateProject = useCallback(async (slug, name) => {
+    if (creatingProject) return false
+    if (!slug || !name) return false
+    setCreatingProject(true)
     try {
       const res = await authFetch('/api/dashboard/create-project-from-chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2518,9 +2525,14 @@ export default function HomeView({
     } catch {
       showToast('Could not create that project. Check your connection and try again.', 'error', 6000)
       return false
+    } finally {
+      setCreatingProject(false)
     }
-  }, [worldId, fetchMissions, showToast])
+  }, [worldId, fetchMissions, showToast, creatingProject])
   const persistCreateMission = useCallback(async (parentSlug, missionSlug, name) => {
+    if (creatingMission) return false
+    if (!parentSlug || !missionSlug || !name) return false
+    setCreatingMission(true)
     try {
       const res = await authFetch('/api/dashboard/create-mission-from-drawer', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -2533,8 +2545,10 @@ export default function HomeView({
     } catch {
       showToast('Could not create that mission. Check your connection and try again.', 'error', 6000)
       return false
+    } finally {
+      setCreatingMission(false)
     }
-  }, [worldId, fetchMissions, showToast])
+  }, [worldId, fetchMissions, showToast, creatingMission])
   const persistMoveFile = useCallback(async (slug, from, to) => {
     try {
       await authFetch('/api/dashboard/project-file-move', {
@@ -2898,7 +2912,7 @@ export default function HomeView({
       // Then Active Work (missions)
       if (Array.isArray(allMissionsForCV6)) {
         allMissionsForCV6.forEach((m) => {
-          if (m?.mission) items.push({ type: 'mission', item: m.mission, project: m.project })
+          if (m?.mission?.slug) items.push({ type: 'mission', item: m.mission, project: m.project })
         })
       }
       // Then actionable stats
@@ -2928,6 +2942,7 @@ export default function HomeView({
     const activate = () => {
       if (selectedIndex < 0 || selectedIndex >= selectableItems.length) return
       const sel = selectableItems[selectedIndex]
+      if (!sel) return
       if (sel.type === 'needsyou') {
         sel.item.onOpen && sel.item.onOpen()
       } else if (sel.type === 'mission') {
@@ -2956,10 +2971,12 @@ export default function HomeView({
       // Arrow lane = the list. First arrow from the tools lane returns to the list.
       e.preventDefault()
       if (toolsFocused) { setToolsFocused(false); return }
+      if (selectableItems.length === 0) return
       setSelectedIndex(prev => (prev + 1) % selectableItems.length)
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       if (toolsFocused) { setToolsFocused(false); return }
+      if (selectableItems.length === 0) return
       setSelectedIndex(prev => prev <= 0 ? selectableItems.length - 1 : (prev - 1))
     } else if (e.key === 'Enter' || e.key === 'ArrowRight') {
       e.preventDefault()
@@ -2986,6 +3003,10 @@ export default function HomeView({
     if (!cv6) return
     if (selectedTool === 'home') homeRef.current?.focus()
   }, [cv6, selectedTool])
+  // kb-4: clamp selectedIndex when selectableItems.length shrinks
+  useEffect(() => {
+    setSelectedIndex(prev => Math.min(prev, selectableItems.length - 1))
+  }, [selectableItems.length])
 
   // R31: Clicking a card moves the keyboard cursor to that card, so Up/Down
   // resume from where the user clicked instead of snapping back to Agents (top).
@@ -3081,7 +3102,7 @@ export default function HomeView({
         // cap at FIVE. Overflow lives behind "View all" → the full Catch Up modal.
         const byRoom = new Map()
         for (const n of catchupNotifications) {
-          const key = n._roomKey || n.roomName || n.id
+          const key = n._roomKey || (n.roomName && n.projectSlug ? `${n.roomName}_${n.projectSlug}` : n.roomName) || n.id
           const prev = byRoom.get(key)
           const tNew = new Date(n.timestamp || 0).getTime() || 0
           const tPrev = prev ? (new Date(prev.timestamp || 0).getTime() || 0) : -1
