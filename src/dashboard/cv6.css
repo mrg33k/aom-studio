@@ -531,10 +531,10 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scr
 
 /* ── Welcome + Search: Hero zone (spans full width on small, 2 cols on larger) */
 [data-cv6] [data-cv4-home] .hm-welcome {
-  font-size: 36px !important;
+  font-size: 26px !important;    /* match the design mockup's in-app greeting (Home desktop.dc.html: 26px/700) */
   font-weight: 700 !important;
   line-height: 1.1 !important;   /* R39: hug the text so the search button aligns on its row */
-  letter-spacing: -0.015em !important;
+  letter-spacing: -0.02em !important;
   margin: 0 !important;          /* R39: spacing controlled by the row, not a fixed 20px */
   color: var(--cv6-text-primary) !important;
   grid-column: 1 / -1;
@@ -1174,8 +1174,8 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scr
 /* DELTA 4: Desktop 3-column layout with fixed widths (360px catch-up, flex middle, 420px conversation) */
 [data-cv6] .hm-three-column-grid { display:flex; gap:24px; min-height:auto; }
 [data-cv6] .hm-three-column-grid > div:nth-child(1) {
-  width:360px;
-  flex:none;
+  flex:0 1 360px;          /* shrinkable so sub-1440 laptops never overflow horizontally */
+  min-width:0;
   overflow-y:auto;
   padding:18px 20px;
   border-right:1px solid var(--cv6-divider);
@@ -1188,11 +1188,21 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scr
   border-right:1px solid var(--cv6-divider);
 }
 [data-cv6] .hm-three-column-grid > div:nth-child(3) {
-  width:420px;
-  flex:none;
+  flex:0 1 420px;          /* shrinkable so sub-1440 laptops never overflow horizontally */
+  min-width:0;
   display:flex;
   flex-direction:column;
   border-left:1px solid var(--cv6-divider);
+}
+/* Tablet / iPad (769-1024): the design collapses the right sidebar to a 2-column
+   layout. Hide the conversation column and let Catch Up + All Rooms fill, and let
+   the 8 tool tiles shrink to fit, so Home never scrolls horizontally (fixes the
+   iPad over-scroll / zoomed feel). The conversation is one tap away via a room. */
+@media (min-width: 769px) and (max-width: 1024px) {
+  [data-cv6] .hm-three-column-grid > div:nth-child(1) { flex:0 1 320px; min-width:0; }
+  [data-cv6] .hm-three-column-grid > div:nth-child(2) { flex:1 1 0; min-width:0; }
+  [data-cv6] .hm-three-column-grid > div:nth-child(3) { display:none; }
+  [data-cv6] .hm-tools-row > button { min-width:0 !important; }
 }
 @media (max-width: 768px) {
   /* R76 (Patrik): mobile = ONE bulletproof stacked column with generous vertical rhythm.

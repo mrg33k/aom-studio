@@ -2205,37 +2205,74 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     </div>
   )
 
-  const FilesCollapsedBar = () => (
-    <div onClick={() => setFilesCollapsed(false)} title="Show files" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '10px 0', borderLeft: '1px solid var(--cv6-divider)', height: '100%', cursor: 'pointer', background: 'var(--cv6-surface)' }}>
-      <button title="Show files" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+  const ContextCollapsedBar = () => (
+    <div onClick={() => setFilesCollapsed(false)} title="Show context" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', padding: '10px 0', borderLeft: '1px solid var(--cv6-divider)', height: '100%', cursor: 'pointer', background: 'var(--cv6-surface)' }}>
+      <button title="Show context" style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
-      <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--cv6-text-secondary)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', marginTop: '4px' }}>Files</span>
+      <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--cv6-text-secondary)', writingMode: 'vertical-rl', transform: 'rotate(180deg)', marginTop: '4px' }}>Context</span>
     </div>
   )
-  const FilesCol = () => {
-    if (filesCollapsed && !isNarrow) return <FilesCollapsedBar />
+  const ContextCol = () => {
+    if (filesCollapsed && !isNarrow) return <ContextCollapsedBar />
     return (
-    <div style={{ ...colStyle, borderRight: 'none' }}>
-      <div style={headStyle}><span>Files</span>{!isNarrow && (
-        <button onClick={() => setFilesCollapsed(true)} title="Collapse files" style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-      )}</div>
-      {!sel ? <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>No room selected</div> : files.map((n, i) => {
-        const isFolder = n.type === 'folder'
-        const color = isFolder ? 'var(--cv6-text-secondary)' : (FILE_TYPE_COLOR[n.fileType] || 'var(--cv6-text-secondary)')
-        return (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', margin: '2px 6px', borderRadius: '6px' }}>
-            <span style={{ flexShrink: 0, color, display: 'inline-flex' }}>
-              {isFolder
-                ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>}
-            </span>
-            <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
-          </div>
-        )
-      })}
+    <div style={{ ...colStyle, borderRight: 'none', display: 'flex', flexDirection: 'column' }}>
+      <div style={headStyle}>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+          <span>Mission goals</span>
+          {!isNarrow && (
+            <button onClick={() => setFilesCollapsed(true)} title="Collapse context" style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          )}
+        </span>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        {!sel ? (
+          <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>No room selected</div>
+        ) : (
+          <>
+            {/* Mission goal — the room-goals store holds ONE real goal line per room; there is
+                NO multi-step goal history in the data, so we never fabricate done/pending steps
+                (project rule: real data only). Show the room's real current goal if present.
+                The full multi-step checklist + a wired Agent-on toggle need real sources
+                (room-goals.json + room-autopilot) — queued as a follow-up, not faked here. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>Current goal</span>
+              {sel.goal
+                ? <div style={{ fontSize: '13.5px', lineHeight: 1.5, color: 'var(--cv6-text-primary)' }}>{sel.goal}</div>
+                : <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>No goal set yet.</div>}
+            </div>
+
+            {/* Add a goal input */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', height: '40px', border: '1.5px dashed var(--cv6-divider)', borderRadius: '11px', padding: '0 12px', cursor: 'text', color: 'var(--cv6-text-tertiary)' }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              <span style={{ fontSize: '13px' }}>Add a goal…</span>
+            </div>
+
+            {/* Files section */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '8px', borderTop: '1px solid var(--cv6-divider)' }}>
+              <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>Files</span>
+              {files.map((n, i) => {
+                const isFolder = n.type === 'folder'
+                const color = isFolder ? 'var(--cv6-text-secondary)' : (FILE_TYPE_COLOR[n.fileType] || 'var(--cv6-text-secondary)')
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '8px' }}>
+                    <span style={{ flexShrink: 0, color, display: 'inline-flex' }}>
+                      {isFolder
+                        ? <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        : <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>}
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.name}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </div>
     </div>
     )
   }
@@ -2250,15 +2287,15 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>{sel?.name || 'Chat'}
           </button>
         )}
-        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>{mobileCol === 0 ? <RoomsCol /> : mobileCol === 1 ? <ChatCol mobile /> : <FilesCol />}</div>
+        <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>{mobileCol === 0 ? <RoomsCol /> : mobileCol === 1 ? <ChatCol mobile /> : <ContextCol />}</div>
       </div>
     )
   }
-  const gridCols = `${roomsCollapsed ? '40px' : '230px'} 1.4fr ${filesCollapsed ? '40px' : '0.9fr'}`
+  const gridCols = `${roomsCollapsed ? '40px' : '300px'} 1fr ${filesCollapsed ? '40px' : '320px'}`
   return (
     <ResizableBox minHeight={460} storageKey="chat-tool">
       <div ref={chatNavRef} style={{ display: 'grid', gridTemplateColumns: gridCols, height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', transition: 'grid-template-columns 160ms ease' }}>
-        <RoomsCol /><ChatCol /><FilesCol />
+        <RoomsCol /><ChatCol /><ContextCol />
       </div>
     </ResizableBox>
   )
