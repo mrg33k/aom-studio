@@ -17,9 +17,14 @@ import { useEffect, useState, useCallback } from 'react'
 const KEY_THEME = 'cv4-theme'
 const KEY_USER_SET = 'cv4-theme-user-set'
 const KEY_GLASS_INDEX = 'cv4-glass-index'
-// How many glass backdrops the cycle steps through before returning to light.
-// Keep in sync with CORNER_GLASS_BACKDROPS in cv4/GlassBackdrop.jsx.
-export const GLASS_BACKDROP_COUNT = 3
+// How many glass backdrops there are. Keep in sync with CORNER_GLASS_BACKDROPS
+// in cv4/GlassBackdrop.jsx.
+export const GLASS_BACKDROP_COUNT = 8
+// Each backdrop has two card styles: dark glass + light glass. The toggle steps
+// through every (backdrop × style) combination, so the cycle has 2×backdrops
+// glass stops. Even index = dark glass, odd index = light glass; backdrop =
+// floor(index / 2).
+export const GLASS_VARIANT_COUNT = GLASS_BACKDROP_COUNT * 2
 const AZ_OFFSET_MINUTES = -7 * 60
 const LIGHT_START_MIN = 6 * 60 + 30
 const LIGHT_END_MIN   = 19 * 60 + 30
@@ -28,7 +33,7 @@ function readGlassIndex() {
   if (typeof window === 'undefined') return 0
   try {
     const n = parseInt(window.localStorage?.getItem(KEY_GLASS_INDEX) ?? '0', 10)
-    return Number.isFinite(n) && n >= 0 && n < GLASS_BACKDROP_COUNT ? n : 0
+    return Number.isFinite(n) && n >= 0 && n < GLASS_VARIANT_COUNT ? n : 0
   } catch { return 0 }
 }
 
@@ -61,15 +66,25 @@ function resolve({ theme, userSet }) {
   return arizonaModeNow()
 }
 
-function syncDom(mode) {
+function syncDom(mode, glassCard) {
   if (typeof document === 'undefined') return
-  document.documentElement.setAttribute('data-theme', mode)
+  const root = document.documentElement
+  root.setAttribute('data-theme', mode)
+  // data-glass-card drives whether the frosted cards are light or dark glass.
+  if (mode === 'glass') root.setAttribute('data-glass-card', glassCard)
+  else root.removeAttribute('data-glass-card')
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) {
-    const color = mode === 'light' ? '#F6F2E9' : mode === 'glass' ? '#0B0D12' : '#06090F'
+    const color = mode === 'light' ? '#F6F2E9'
+      : mode === 'glass' ? (glassCard === 'light' ? '#E9ECF5' : '#0B0D12')
+      : '#06090F'
     meta.setAttribute('content', color)
   }
 }
+
+// A glass step encodes both which backdrop is showing and the card style.
+function backdropOf(glassIndex) { return Math.floor(glassIndex / 2) % GLASS_BACKDROP_COUNT }
+function cardStyleOf(glassIndex) { return glassIndex % 2 === 0 ? 'dark' : 'light' }
 
 export function useThemeMode() {
   const [stored, setStored] = useState(readStored)
@@ -92,7 +107,7 @@ export function useThemeMode() {
     return () => { if (id) window.clearTimeout(id) }
   }, [stored])
 
-  useEffect(() => { syncDom(mode) }, [mode])
+  useEffect(() => { syncDom(mode, cardStyleOf(glassIndex)) }, [mode, glassIndex])
 
   // Sync across handlers: storage events fire for cross-tab changes; the
   // `cv4-theme-changed` custom event covers in-tab changes from the
@@ -130,21 +145,23 @@ export function useThemeMode() {
   }, [])
 
   const setGlassIndex = useCallback((i) => {
-    const idx = ((i % GLASS_BACKDROP_COUNT) + GLASS_BACKDROP_COUNT) % GLASS_BACKDROP_COUNT
+    const idx = ((i % GLASS_VARIANT_COUNT) + GLASS_VARIANT_COUNT) % GLASS_VARIANT_COUNT
     try { window.localStorage?.setItem(KEY_GLASS_INDEX, String(idx)) } catch { /* ignore */ }
     setGlassIndexState(idx)
     window.dispatchEvent(new Event('cv4-theme-changed'))
   }, [])
 
   // Cycle the toggle through the full theme library:
-  //   light → dark → glass[0] → glass[1] → … → glass[N-1] → light.
-  // Backdrops do NOT auto-drift; each click of the crystal-ball steps to the
-  // next backdrop, and after the last one it rolls over to light.
+  //   light → dark → glass[0..2N-1] → light.
+  // Each glass step is one (backdrop × card-style) combo: even = dark glass,
+  // odd = light glass, so every photo appears with both a dark and a light card
+  // style. Backdrops do NOT auto-drift; each crystal-ball click steps once, and
+  // after the last glass combo it rolls over to light.
   const cycleTheme = useCallback(() => {
     if (mode === 'light') { setTheme('dark'); return }
     if (mode === 'dark') { setGlassIndex(0); setTheme('glass'); return }
-    // mode === 'glass' — step the backdrop, or roll over to light after the last.
-    if (glassIndex < GLASS_BACKDROP_COUNT - 1) { setGlassIndex(glassIndex + 1); return }
+    // mode === 'glass' — step to the next combo, or roll over to light.
+    if (glassIndex < GLASS_VARIANT_COUNT - 1) { setGlassIndex(glassIndex + 1); return }
     setGlassIndex(0)
     setTheme('light')
   }, [mode, glassIndex, setTheme, setGlassIndex])
@@ -158,6 +175,8 @@ export function useThemeMode() {
   }, [stored.userSet, mode, setTheme, clearOverride])
 
   const override = stored.userSet ? mode : 'auto'
+  const backdropIndex = backdropOf(glassIndex)
+  const glassCard = cardStyleOf(glassIndex)
 
   return {
     mode,
@@ -165,7 +184,10 @@ export function useThemeMode() {
     isLight: mode === 'light',
     isGlass: mode === 'glass',
     glassIndex,
-    glassCount: GLASS_BACKDROP_COUNT,
+    glassVariantCount: GLASS_VARIANT_COUNT,
+    backdropIndex,
+    backdropCount: GLASS_BACKDROP_COUNT,
+    glassCard,           // 'dark' | 'light'
     setGlassIndex,
     setTheme,
     setOverride: setTheme,

@@ -130,10 +130,10 @@ html[data-theme="glass"] body {
   background: transparent !important;
 }
 
-/* Glass surface recipe (Patrik 2026-06-17, experimental — may revert):
-   milkier liquid glass — brighter fill, heavier blur, a bright inner glow, and
-   1px edge-highlight lines along the top (::before) and left (::after).
-   Scoped to [data-theme="glass"] so light + dark are byte-for-byte untouched. */
+/* Glass surface — ui.glass recipe (Patrik 2026-06-17). Shared frost; the fill,
+   border, and card text switch by data-glass-card on <html>: dark glass (navy
+   fill, light text) or light glass (white fill, dark text). The toggle shows
+   each photo backdrop in BOTH styles as it steps. */
 [data-theme="glass"] [data-cv6] .hm-search input,
 [data-theme="glass"] [data-cv6] .hm-proj,
 [data-theme="glass"] [data-cv6] .hm-mission,
@@ -141,62 +141,73 @@ html[data-theme="glass"] body {
 [data-theme="glass"] [data-cv6] .hm-needs-row,
 [data-theme="glass"] [data-cv6] .hm-tool,
 [data-theme="glass"] [data-cv6] .hm-card,
-/* Tool tiles in the TOOLS row are classless inline-styled buttons — match them
-   to the cards so every surface reads as the same glass. */
 [data-theme="glass"] [data-cv6] .hm-tools-row button,
 [data-theme="glass"] [data-cv6] .hm-tools-block button,
 [data-theme="glass"] [data-cv6] [data-cv6-card],
 [data-theme="glass"] [data-cv6] [data-cv6-panel],
 [data-theme="glass"] [data-cv6] [data-cv6-tool-surface] {
-  background: rgba(255, 255, 255, 0.4) !important;
-  -webkit-backdrop-filter: blur(27px);
-  backdrop-filter: blur(27px);
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-    inset 0 0 32px 16px rgba(255, 255, 255, 1) !important;
-  position: relative;
+  -webkit-backdrop-filter: blur(8px) saturate(200%);
+  backdrop-filter: blur(8px) saturate(200%);
+  border-radius: 12px !important;
 }
 
-/* Edge-highlight lines. Inputs can't carry ::before/::after, so the pseudo
-   rules below target only the card/tile surfaces. */
-[data-theme="glass"] [data-cv6] .hm-proj::before,
-[data-theme="glass"] [data-cv6] .hm-mission::before,
-[data-theme="glass"] [data-cv6] .hm-needs-card::before,
-[data-theme="glass"] [data-cv6] .hm-needs-row::before,
-[data-theme="glass"] [data-cv6] .hm-tools-row button::before,
-[data-theme="glass"] [data-cv6] .hm-tools-block button::before,
-[data-theme="glass"] [data-cv6] [data-cv6-card]::before,
-[data-theme="glass"] [data-cv6] [data-cv6-panel]::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
-  pointer-events: none;
-}
-[data-theme="glass"] [data-cv6] .hm-proj::after,
-[data-theme="glass"] [data-cv6] .hm-mission::after,
-[data-theme="glass"] [data-cv6] .hm-needs-card::after,
-[data-theme="glass"] [data-cv6] .hm-needs-row::after,
-[data-theme="glass"] [data-cv6] .hm-tools-row button::after,
-[data-theme="glass"] [data-cv6] .hm-tools-block button::after,
-[data-theme="glass"] [data-cv6] [data-cv6-card]::after,
-[data-theme="glass"] [data-cv6] [data-cv6-panel]::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 1px; height: 100%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), transparent, rgba(255, 255, 255, 0.3));
-  pointer-events: none;
+/* Dark glass (default): navy fill + faint white hairline. Light text via the
+   root glass tokens. */
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-search input,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-proj,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-mission,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-needs-card,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-needs-row,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-tool,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-card,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-tools-row button,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-tools-block button,
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv6-card],
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv6-panel],
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv6-tool-surface] {
+  background: rgba(17, 25, 40, 0.68) !important;
+  border: 1px solid rgba(255, 255, 255, 0.125) !important;
 }
 
-/* Keep placeholder text readable over the darkest backdrop frames (Steffen):
-   lift it above the tertiary token so it never dips toward illegible. */
+/* Light glass: white fill + soft gray hairline. Dark card text, scoped ON the
+   card so on-photo labels keep their light colour. */
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-search input,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-proj,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-mission,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-needs-card,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-needs-row,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-tool,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-card,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-tools-row button,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-tools-block button,
+[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-card],
+[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-panel],
+[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-tool-surface] {
+  background: rgba(255, 255, 255, 0.68) !important;
+  border: 1px solid rgba(209, 213, 219, 0.3) !important;
+  --cv6-text-primary: #11192a;
+  --cv6-text-secondary: rgba(17, 25, 40, 0.72);
+  --cv6-text-tertiary: rgba(17, 25, 40, 0.5);
+  --cv6-divider: rgba(17, 25, 40, 0.14);
+  color: #11192a;
+}
+
+/* On-photo text (greeting + section labels) sits on the backdrop, not on a
+   card — keep it light with a soft shadow so it reads in BOTH glass styles over
+   any photo. */
+[data-theme="glass"] [data-cv6] .hm-welcome .hm-l1,
+[data-theme="glass"] [data-cv6] .hm-welcome .hm-l2,
+[data-theme="glass"] [data-cv6] .hm-section-label {
+  color: #f4f6fb !important;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Placeholder: light over dark glass, dark over light glass. */
 [data-theme="glass"] [data-cv6] input::placeholder {
   color: rgba(255, 255, 255, 0.66) !important;
+}
+[data-theme="glass"][data-glass-card="light"] [data-cv6] input::placeholder {
+  color: rgba(17, 25, 40, 0.5) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────
