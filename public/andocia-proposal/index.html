@@ -108,7 +108,9 @@ em{font-style:normal;color:var(--green)}
 .band .by{font-family:var(--body);font-size:15px;color:#9fb2b5;margin-top:22px;max-width:50ch;line-height:1.55}
 
 /* who's building this — personal note */
-.who{max-width:60ch;border-left:3px solid var(--green);padding:6px 0 6px 30px}
+.who{display:grid;grid-template-columns:auto 1fr;gap:34px;align-items:start;max-width:74ch}
+.who-photo{width:172px;height:206px;object-fit:cover;object-position:50% 22%;border-radius:16px;display:block;flex:0 0 auto}
+.who-text{border-left:3px solid var(--green);padding:2px 0 2px 28px}
 .who-lab{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--green);font-weight:600}
 .who-note{font-family:var(--disp);font-weight:500;font-size:clamp(22px,3vw,30px);line-height:1.3;letter-spacing:-.018em;color:var(--ink-2);margin-top:16px}
 .who-note em{color:var(--green);font-style:normal}
@@ -215,6 +217,8 @@ em{font-style:normal;color:var(--green)}
   .opts{grid-template-columns:1fr}
   .sprint{grid-template-columns:1fr;gap:8px}
   .sprint-when{padding-top:0}
+  .who{grid-template-columns:1fr;gap:22px}
+  .who-photo{width:132px;height:158px}
 }
 </style>
 </head>
@@ -293,10 +297,13 @@ em{font-style:normal;color:var(--green)}
 <section class="sec">
   <div class="wrap">
     <div class="who rv">
-      <span class="who-lab">Who's building this</span>
-      <p class="who-note">I'm a family man, dedicated to my projects, and relentless at solving problems. There's <em>no stone I'll leave unturned</em> getting this to the finish line.</p>
-      <p class="who-by">You work directly with me on this, start to finish.</p>
-      <p class="who-sig">Patrik Matheson</p>
+      <img class="who-photo" src="/andocia-proposal/assets/patrik.jpg" alt="Patrik Matheson, Ahead of Market" width="172" height="206">
+      <div class="who-text">
+        <span class="who-lab">Who's building this</span>
+        <p class="who-note">I'm a family man, dedicated to my projects, and relentless at solving problems. There's <em>no stone I'll leave unturned</em> getting this to the finish line.</p>
+        <p class="who-by">You work directly with me on this, start to finish.</p>
+        <p class="who-sig">Patrik Matheson</p>
+      </div>
     </div>
   </div>
 </section>
