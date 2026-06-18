@@ -3318,7 +3318,7 @@ export default function HomeView({
                         {ask && <span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '2px 5px' }}>ASK</span>}
                         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>{n.timeAgo}</span>
                       </div>
-                      <div style={{ fontSize: '14px', lineHeight: 1.45, color: 'var(--cv6-text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '40px' }}>{n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')}</div>
+                      <div style={{ fontSize: '14px', lineHeight: 1.45, color: 'var(--cv6-text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '40px' }}>{(n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')).replace(/[*_~\x60]|^#+\s?/gm, '')}</div>
                       {/* R205 (Patrik): match the Claude design's Catch Up card — the primary
                           action is a FILLED accent button (not a text link), with a green
                           "mark handled" check beside it. Ref: mobile-refinement design rowA.png
@@ -3436,12 +3436,13 @@ export default function HomeView({
                         {n.timeAgo}
                       </div>
                     </div>
-                    {/* Card body — render message through ChatMessageRenderer for markdown */}
+                    {/* Card body — plain 2-line preview; strip markdown markers so raw
+                        **bold** / `code` / # never leak (design card previews are plain). */}
                     <div style={{
                       fontSize: '13.5px', lineHeight: 1.45, color: 'var(--cv6-text-primary)',
                       display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                     }}>
-                      {n.messagePreview || 'New update'}
+                      {(n.messagePreview || 'New update').replace(/[*_~\x60]|^#+\s?/gm, '')}
                     </div>
                   </div>
                 )
