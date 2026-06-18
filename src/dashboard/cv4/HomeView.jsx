@@ -2166,6 +2166,8 @@ export default function HomeView({
 
   // R21: Tools box state — which tool is open in full-screen mode
   const [selectedTool, setSelectedTool] = useState(initialTool || 'home') // R26: Home default; R38: gallery can open a tool
+  const [organizeSubtool, setOrganizeSubtool] = useState('projects') // 'projects' | 'files' for Organize tool (u-mqir8cr7)
+
   const [toolRecency, setToolRecency] = useState([]) // R48: most-recently-used tools sit next to Home
   // R48: open a tool AND record it as most-recent so the row reorders into recency order.
   const openTool = useCallback((key) => {
@@ -2466,8 +2468,7 @@ export default function HomeView({
   const [toolsFocused, setToolsFocused] = useState(false)
   const [toolNavIndex, setToolNavIndex] = useState(0)
   const TOOL_TABS = useMemo(() => ([
-    { key: 'home', label: 'Home' }, { key: 'chat', label: 'Chat' }, { key: 'projects', label: 'Projects' },
-    { key: 'files', label: 'Files' }, { key: 'review', label: 'Review' }, { key: 'support', label: 'Support' },
+    { key: 'organize', label: 'Organize' },
     { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
   ]), [])
   const replyInputRef = useRef(null)
@@ -3256,8 +3257,7 @@ export default function HomeView({
                 const TOOLS = [
                   { key: 'home', label: 'Home', svg: (<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>) },
                   { key: 'chat', label: 'Chat', svg: (<><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></>) },
-                  { key: 'projects', label: 'Projects', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>) },
-                  { key: 'files', label: 'Files', svg: (<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>) },
+                  { key: 'organize', label: 'Organize', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></>) },
                   { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
                   { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>) },
                   { key: 'tracker', label: 'Tracker', svg: (<><rect x="9" y="8" width="6" height="9" rx="3"/><path d="M9 12h6"/><path d="M10 6l-1-2M14 6l1-2"/><path d="M4 9l3 2M20 9l-3 2M4 16l3-2M20 16l-3-2"/></>) },
@@ -3314,8 +3314,7 @@ export default function HomeView({
                   {selectedTool === 'scribe' && 'Live Scribe'}
                   {selectedTool === 'review' && 'Review'}
                   {selectedTool === 'tracker' && 'Tracker'}
-                  {selectedTool === 'projects' && 'Projects'}
-                  {selectedTool === 'files' && 'Files'}
+                  {selectedTool === 'organize' && `Organize — ${organizeSubtool === 'projects' ? 'Projects' : 'Files'}`}
                   {selectedTool === 'chat' && 'Chat'}
                 </div>
                 <button
@@ -3361,15 +3360,60 @@ export default function HomeView({
                   <LiveScribe embedded />
                 )}
 
-                {selectedTool === 'projects' && (
-                  <ProjectsToolOverlay
-                    projects={[...(recentProjects || []), ...(allProjects || [])]}
-                    missionsByProject={missionsByProject}
-                    onOpen={handleProjectSelect}
-                    onCreateProject={persistCreateProject}
-                    onCreateMission={persistCreateMission}
-                    onMoveFile={persistMoveFile}
-                  />
+                {selectedTool === 'organize' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
+                    {/* Switcher in header style (u-mqir8cr7) */}
+                    <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--cv6-divider)', paddingBottom: '12px', marginBottom: '8px' }}>
+                      <button
+                        onClick={() => setOrganizeSubtool('projects')}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          border: organizeSubtool === 'projects' ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                          background: organizeSubtool === 'projects' ? 'var(--cv6-accent-primary)' : 'transparent',
+                          color: organizeSubtool === 'projects' ? '#fff' : 'var(--cv6-text-primary)',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        Projects
+                      </button>
+                      <button
+                        onClick={() => setOrganizeSubtool('files')}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          border: organizeSubtool === 'files' ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                          background: organizeSubtool === 'files' ? 'var(--cv6-accent-primary)' : 'transparent',
+                          color: organizeSubtool === 'files' ? '#fff' : 'var(--cv6-text-primary)',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        Files
+                      </button>
+                    </div>
+                    {/* Tool content */}
+                    <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                      {organizeSubtool === 'projects' && (
+                        <ProjectsToolOverlay
+                          projects={[...(recentProjects || []), ...(allProjects || [])]}
+                          missionsByProject={missionsByProject}
+                          onOpen={handleProjectSelect}
+                          onCreateProject={persistCreateProject}
+                          onCreateMission={persistCreateMission}
+                          onMoveFile={persistMoveFile}
+                        />
+                      )}
+                      {organizeSubtool === 'files' && (
+                        <FilesToolOverlay projects={[...(recentProjects || []), ...(allProjects || [])]} />
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 {selectedTool === 'review' && (
@@ -3388,11 +3432,7 @@ export default function HomeView({
                   />
                 )}
 
-                {selectedTool === 'files' && (
-                  <FilesToolOverlay projects={[...(recentProjects || []), ...(allProjects || [])]} />
-                )}
-
-                {selectedTool === 'chat' && (
+{selectedTool === 'chat' && (
                   <ChatToolOverlay
                     projects={[...(recentProjects || []), ...(allProjects || [])]}
                     missionsByProject={missionsByProject}
