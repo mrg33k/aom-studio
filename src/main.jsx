@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { onAuthStateChange, isTempPassword } from './dashboard/lib/auth.js'
 import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
@@ -67,6 +67,22 @@ const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
 // corner:gemini-workers R10 — /cvg Gemini workbench (CornerV4 duplicate).
 const CornerVG = lazy(() => import('./dashboard/CornerVG.jsx'))
+
+// corner:corner-ui-cv6 R89 — the /dashboard port, behind a hidden flag.
+// /dashboard?cv6=1 renders the proven CV6 surface (CornerVG) on the CLAUDE brain
+// (surfaceModel() returns '' off /cvg, so no Gemini override leaks). Default
+// /dashboard stays CornerV4 untouched until Patrik flips the switch. The cv6
+// flag is sticky per session (sessionStorage) so in-app navigation that drops
+// the query string keeps the surface.
+function DashboardSurface() {
+  const loc = useLocation()
+  let cv6 = new URLSearchParams(loc.search).get('cv6') === '1'
+  try {
+    if (cv6) sessionStorage.setItem('cv6Dashboard', '1')
+    else if (sessionStorage.getItem('cv6Dashboard') === '1') cv6 = true
+  } catch { /* private mode: fall back to query string only */ }
+  return cv6 ? <CornerVG /> : <CornerV4 />
+}
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
 // components on one page as the design surface for the CV6 redesign.
 const CV6Gallery = lazy(() => import('./dashboard/CV6Gallery.jsx'))
@@ -488,13 +504,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               so links & worker phonebooks that still point at /cv4 keep
               working through the transition. /dashboard/cv3 also keeps
               CornerV3 mounted as a sub-route escape hatch. */}
-          <Route path="/dashboard" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          <Route path="/dashboard" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
           <Route path="/dashboard/welcome" element={<AuthGuard><DashboardWelcome /></AuthGuard>} />
           <Route path="/dashboard/settings/invites" element={<AuthGuard><DashboardSettingsInvites /></AuthGuard>} />
-          <Route path="/dashboard/project/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          <Route path="/dashboard/project/:projectId" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
           {/* R21a: canonical per-project chat URL ("/dashboard/projects/<slug>/chat"). */}
-          <Route path="/dashboard/projects/:projectId/chat" element={<AuthGuard><CornerV4 /></AuthGuard>} />
-          <Route path="/dashboard/projects/:projectId" element={<AuthGuard><CornerV4 /></AuthGuard>} />
+          <Route path="/dashboard/projects/:projectId/chat" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
+          <Route path="/dashboard/projects/:projectId" element={<AuthGuard><DashboardSurface /></AuthGuard>} />
           {/* corner:mission-rooms R3b — mission-as-clickable-unit. Standalone
               page (not CornerV4) so the surface lands without risk to the
               live chat machinery. R4 promotes missions to the drawer. */}
