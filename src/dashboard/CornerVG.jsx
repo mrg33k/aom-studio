@@ -1628,6 +1628,12 @@ export default function CornerVG() {
         @supports (height: 100svh) {
           [data-shell="cv4"] { height: 100svh !important; }
         }
+        /* R198: in the INSTALLED PWA (no browser URL bar) svh undershoots and
+           leaves a ~50-100px dead band below the tab bar on iPhone. There the
+           dynamic viewport equals the full screen, so fill it. Safari keeps svh. */
+        @media all and (display-mode: standalone) {
+          [data-shell="cv4"] { height: 100dvh !important; }
+        }
         [data-shell="cv4"] [data-role="composer-actions"] { order: -1; margin-right: 4px; }
         [data-shell="cv4"] [data-role="thread-header"] { display: none !important; }
         /* R7.18: Project chats were leaking the cv3 ProjectChatHeader on top of
