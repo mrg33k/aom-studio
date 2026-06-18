@@ -1099,6 +1099,16 @@ export default function CornerVG() {
       // all-canned chips feel worse than no chips at all.
       const suggestedReplies = []
 
+      // R99 — the card already shows a Review affordance for attachments, so the
+      // agent's inline "Attached file: <raw-hash-name>.md" line is redundant noise
+      // that leaks an under-the-hood filename into the user's world. Strip just that
+      // one pattern; leave all other message text untouched.
+      const hasAttach = !!(item.metadata?.attachment || (item.metadata?.attachments && item.metadata.attachments.length))
+      const cleanedPreview = ((item.text || '')
+        .replace(/^\s*Attached(?:\s+file)?:\s*.+$/gim, '')
+        .replace(/\n{2,}/g, '\n')
+        .trim()) || (hasAttach ? 'Shared a file for you to review' : '')
+
       return {
         id: item.id,
         senderName,
@@ -1107,7 +1117,7 @@ export default function CornerVG() {
         roomName,
         timeAgo,
         badgeType: 'message',
-        messagePreview: item.text || '',
+        messagePreview: cleanedPreview,
         suggestedReplies,
         // R5 — pass image attachments so the card can render them
         attachment: item.metadata?.attachment || null,
