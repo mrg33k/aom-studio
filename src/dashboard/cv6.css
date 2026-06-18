@@ -121,6 +121,15 @@
   --cv6-shadow-hover: 0 10px 30px rgba(2, 6, 18, 0.40);
 }
 
+/* The page chrome (html/body) carries an opaque dark ground that would paint
+   OVER the z-index:-1 GlassBackdrop and hide it. In glass mode only, make the
+   document chrome transparent so the fixed backdrop shows through. The backdrop
+   covers the full viewport, so nothing underneath is ever exposed. */
+html[data-theme="glass"],
+html[data-theme="glass"] body {
+  background: transparent !important;
+}
+
 /* Frost: turn every glass surface into Apple-style liquid glass so the
    cycling Corner backdrop blurs through it. Scoped to [data-theme="glass"]
    so light + dark are byte-for-byte untouched. The canvas/home root stays
