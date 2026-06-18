@@ -3474,17 +3474,6 @@ export default function HomeView({
       fontFamily: cv6 ? 'inherit' : "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
       outline: 'none',
     }} tabIndex={cv6 ? 0 : -1}>
-      {/* SAFE-AREA PROBE (temporary, 2026-06-18) — co-design with Patrik to agree the visible area on his
-          iPhone 17 Pro PWA (viewport-fit=cover + black-translucent status bar = web runs under the clock +
-          home indicator). Red bands = status bar / home indicator zones; red outline = the usable area we
-          both build to. Remove once Patrik confirms. */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 2147483000, pointerEvents: 'none' }} aria-hidden="true">
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 'env(safe-area-inset-top, 0px)', background: 'rgba(255,0,0,0.30)' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 'env(safe-area-inset-bottom, 0px)', background: 'rgba(255,0,0,0.30)' }} />
-        <div style={{ position: 'absolute', top: 'env(safe-area-inset-top, 0px)', bottom: 'env(safe-area-inset-bottom, 0px)', left: 'env(safe-area-inset-left, 0px)', right: 'env(safe-area-inset-right, 0px)', border: '3px solid #ff2222', boxSizing: 'border-box' }} />
-        <div style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 6px)', left: '8px', fontSize: '11px', fontWeight: 700, color: '#ff2222', background: 'rgba(255,255,255,0.88)', padding: '2px 6px', borderRadius: '4px' }}>VISIBLE AREA — top</div>
-        <div style={{ position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)', left: '8px', fontSize: '11px', fontWeight: 700, color: '#ff2222', background: 'rgba(255,255,255,0.88)', padding: '2px 6px', borderRadius: '4px' }}>VISIBLE AREA — bottom</div>
-      </div>
       {/* cv4 home style block — gated OFF in cv6 mode. CV6 owns its home styles in
           cv6.css (ported 2026-06-17), so cv4's dark-ground colors never bleed in. */}
       {!cv6 && <style>{`
