@@ -701,6 +701,23 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
     }
   }, [worldId, rows])
 
+  // R99 — the global master-loop control. The Command Center is meant to be the
+  // master view Patrik steers everything from, so the main loop that pushes every
+  // room forward gets one prominent On/Off at the very top — not just buried in the
+  // per-room column. Pick the system-kind master-loop routine (the real one), and
+  // fall back to any routine whose name carries "master-loop".
+  // NOTE: this hook must stay ABOVE the early returns below — calling it
+  // conditionally trips React's rules-of-hooks (error #310).
+  const masterLoop = useMemo(() => {
+    const all = Object.values(routineMap || {}).filter((r) => r && typeof r === 'object' && r.id)
+    return (
+      all.find((r) => r.kind === 'system' && (r.name || '').includes('master-loop')) ||
+      all.find((r) => (r.mission_slug === 'master-loop') && (r.name || '').includes('master-loop')) ||
+      all.find((r) => (r.name || '').includes('master-loop')) ||
+      null
+    )
+  }, [routineMap])
+
   if (loading) {
     return (
       <div style={{
@@ -753,20 +770,6 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
     )
   }
 
-  // R99 — the global master-loop control. The Command Center is meant to be the
-  // master view Patrik steers everything from, so the main loop that pushes every
-  // room forward gets one prominent On/Off at the very top — not just buried in the
-  // per-room column. Pick the system-kind master-loop routine (the real one), and
-  // fall back to any routine whose name carries "master-loop".
-  const masterLoop = useMemo(() => {
-    const all = Object.values(routineMap || {}).filter((r) => r && typeof r === 'object' && r.id)
-    return (
-      all.find((r) => r.kind === 'system' && (r.name || '').includes('master-loop')) ||
-      all.find((r) => (r.mission_slug === 'master-loop') && (r.name || '').includes('master-loop')) ||
-      all.find((r) => (r.name || '').includes('master-loop')) ||
-      null
-    )
-  }, [routineMap])
   const mlOn = masterLoop?.status === 'running'
   const mlToggling = masterLoop?.id ? toggling[masterLoop.id] : undefined
   const mlBusy = typeof mlToggling === 'boolean'
