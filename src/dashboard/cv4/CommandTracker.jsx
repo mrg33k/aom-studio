@@ -50,6 +50,22 @@ function cleanCell(s) {
     .trim()
 }
 
+// cc-7: terminal launch-prompts are long, multi-sentence blocks (the raw prompt
+// the Claude Code harness was started with). The ledger's GOAL NOW wants a clean
+// one-liner, so for any goal that was NOT explicitly curated by Patrik or the
+// loop we synthesize the first readable clause — real text from the live
+// session, just shortened, never fabricated. A Patrik/loop-set goal is shown
+// verbatim (cleanCell only) so editing always seeds from the whole thing.
+function synthGoal(s) {
+  const clean = cleanCell(s)
+  if (!clean) return ''
+  // First sentence: up to the first . ! or ? that is followed by a space or end.
+  const m = clean.match(/^.*?[.!?](?=\s|$)/)
+  let first = (m ? m[0] : clean).trim()
+  if (first.length > 120) first = first.slice(0, 117).trimEnd() + '…'
+  return first.charAt(0).toUpperCase() + first.slice(1)
+}
+
 function statusColor(status) {
   // Returns a CSS custom property; all are cv6 tokens
   if (status === 'active' || status === 'working') return 'var(--cv6-accent-success)'
@@ -381,6 +397,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             slug,
             display: roomDisplay(slug, map),
             goal,
+            goalCurated: !!curatedGoal, // cc-7: Patrik/loop goal shows verbatim; terminal fallback gets a one-line synth
             status,
             liveNow,
             lastActivity: lastTouched,
@@ -835,8 +852,8 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               />
             ) : (
               <div
-                onClick={(e) => { if (!isWorkerRow) { e.stopPropagation(); setEditingGoalSlug(row.slug); setGoalDraft(cleanCell(row.goal)) } }}
-                title={isWorkerRow ? (cleanCell(row.goal) || undefined) : 'Click to edit the goal'}
+                onClick={(e) => { if (!isWorkerRow) { e.stopPropagation(); setEditingGoalSlug(row.slug); setGoalDraft(row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) } }}
+                title={row.goalCurated ? (isWorkerRow ? undefined : 'Click to edit the goal') : (cleanCell(row.goal) || undefined)}
                 style={{
                   fontSize: 12,
                   color: 'var(--cv6-text-secondary)',
@@ -851,7 +868,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                   gridArea: isNarrow ? 'goal' : undefined,
                 }}
               >
-                {cleanCell(row.goal) || '—'}
+                {(row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) || '—'}
               </div>
             )}
 
