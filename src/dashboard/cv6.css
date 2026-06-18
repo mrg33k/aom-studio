@@ -684,6 +684,15 @@ html[data-theme="glass"] body {
   [data-cv6] .hm-tools-row::-webkit-scrollbar { display: none; }
   /* compact dock tiles */
   [data-cv6] .hm-tools-row > button { min-width: 58px !important; min-height: 50px !important; padding: 8px 12px !important; }
+  /* R137: native 5-tab bottom bar. Home/Chat/Organize/Review + More; the other
+     4 tools (Support/Tracker/Command/Live Scribe) move into the More sheet. The
+     overflow buttons + More toggle + sheet are display:none inline (desktop), so
+     mobile flips them on here with !important. 5 tabs fill the bar evenly. */
+  [data-cv6] .hm-tools-row .hm-tool-overflow { display: none !important; }
+  [data-cv6] .hm-tools-row .hm-tool-more { display: flex !important; }
+  [data-cv6] .hm-more-backdrop { display: block !important; }
+  [data-cv6] .hm-tools-row { justify-content: space-around; }
+  [data-cv6] .hm-tools-row > button { flex: 1 1 0; min-width: 0 !important; }
   /* keep page content clear of the fixed dock.
      !important: the max-width:767px block below sets `padding: 16px` (shorthand),
      which is later in source and same specificity, so it would otherwise reset
