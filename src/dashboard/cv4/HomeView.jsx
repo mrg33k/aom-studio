@@ -2062,6 +2062,26 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const monoFont = 'ui-monospace, "Space Mono", monospace'
   const fmtTime = (ts) => { try { return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) } catch (_) { return '' } }
   const initials = (name) => (name || '?').trim().split(/[\s-]+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?'
+  const titleCase = (s) => (s || '').replace(/\b([a-z])/g, (m, c) => c.toUpperCase())
+  const dayKey = (ts) => { try { return new Date(ts).toDateString() } catch (_) { return '' } }
+  const dayLabel = (ts) => { try { const d = new Date(ts), now = new Date(); const isToday = d.toDateString() === now.toDateString(); const y = new Date(now); y.setDate(now.getDate() - 1); const isY = d.toDateString() === y.toDateString(); return `${isToday ? 'Today' : isY ? 'Yesterday' : d.toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${fmtTime(ts)}` } catch (_) { return '' } }
+  // Real messages arrive duplicated across client_id scopes; collapse identical (sender+time+text) so each reads once (matches the handoff: one message, one block).
+  const dedupeMsgs = (arr) => { const seen = new Set(), out = []; for (const m of (arr || [])) { const key = `${m.from}|${m.ts || ''}|${m.text}`; if (seen.has(key)) continue; seen.add(key); out.push(m) } return out }
+  // Agents post task reports in a fixed shape ("Task failed: <title>. Reason: <why>. <options>. I'm on it — retry or different angle?").
+  // Typeset them like the handoff: a status pill, a Reason callout, the body, and inline actions — instead of one runon paragraph.
+  const parseAgentReport = (text) => {
+    const t = (text || '').trim()
+    const mStatus = /^Task (failed|done)\s*:\s*/i.exec(t)
+    if (!mStatus) return { status: null, body: t }
+    const status = mStatus[1].toLowerCase() === 'done' ? 'done' : 'failed'
+    let rest = t.slice(mStatus[0].length)
+    let reason = null
+    const mReason = /(?:^|\.\s*)Reason\s*:\s*([^]*?)(?:\.\s*(?=[A-Z(])|$)/.exec(rest)
+    if (mReason) { reason = mReason[1].trim().replace(/\.+$/, ''); rest = (rest.slice(0, mReason.index) + ' ' + rest.slice(mReason.index + mReason[0].length)).trim() }
+    const hasRetry = /retry|different angle/i.test(t)
+    rest = rest.replace(/\s*I'?m on it\s*[—-]?\s*want me to retry( or try a different angle)?\??/i, '').replace(/\s{2,}/g, ' ').trim()
+    return { status, reason, body: rest, hasRetry }
+  }
   const ChatCol = ({ mobile } = {}) => (
     <div style={{ ...colStyle, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', height: mobile ? '100%' : undefined }}>
       {/* Secondary nav: (mobile) back + dot + name on the left, room Projects/Files icons on the right */}
@@ -3419,6 +3439,17 @@ export default function HomeView({
       fontFamily: cv6 ? 'inherit' : "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
       outline: 'none',
     }} tabIndex={cv6 ? 0 : -1}>
+      {/* SAFE-AREA PROBE (temporary, 2026-06-18) — co-design with Patrik to agree the visible area on his
+          iPhone 17 Pro PWA (viewport-fit=cover + black-translucent status bar = web runs under the clock +
+          home indicator). Red bands = status bar / home indicator zones; red outline = the usable area we
+          both build to. Remove once Patrik confirms. */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 2147483000, pointerEvents: 'none' }} aria-hidden="true">
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 'env(safe-area-inset-top, 0px)', background: 'rgba(255,0,0,0.30)' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 'env(safe-area-inset-bottom, 0px)', background: 'rgba(255,0,0,0.30)' }} />
+        <div style={{ position: 'absolute', top: 'env(safe-area-inset-top, 0px)', bottom: 'env(safe-area-inset-bottom, 0px)', left: 'env(safe-area-inset-left, 0px)', right: 'env(safe-area-inset-right, 0px)', border: '3px solid #ff2222', boxSizing: 'border-box' }} />
+        <div style={{ position: 'absolute', top: 'calc(env(safe-area-inset-top, 0px) + 6px)', left: '8px', fontSize: '11px', fontWeight: 700, color: '#ff2222', background: 'rgba(255,255,255,0.88)', padding: '2px 6px', borderRadius: '4px' }}>VISIBLE AREA — top</div>
+        <div style={{ position: 'absolute', bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)', left: '8px', fontSize: '11px', fontWeight: 700, color: '#ff2222', background: 'rgba(255,255,255,0.88)', padding: '2px 6px', borderRadius: '4px' }}>VISIBLE AREA — bottom</div>
+      </div>
       {/* cv4 home style block — gated OFF in cv6 mode. CV6 owns its home styles in
           cv6.css (ported 2026-06-17), so cv4's dark-ground colors never bleed in. */}
       {!cv6 && <style>{`
