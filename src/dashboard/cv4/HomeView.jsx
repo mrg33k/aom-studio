@@ -1933,7 +1933,7 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   // Collapse identical (sender+time+text) rows — real threads arrive duplicated across client_id
   // scopes; each message should read once (matches the handoff: one message, one block).
   const _rawMsgs = sel ? (loadedThread != null ? loadedThread : (hasBackend ? [] : seedThread(sel))) : []
-  const msgs = (() => { const seen = new Set(), out = []; for (const m of _rawMsgs) { const key = `${m.from}|${m.ts || ''}|${m.text}`; if (seen.has(key)) continue; seen.add(key); out.push(m) } return out })()
+  const msgs = (() => { const seen = new Set(), out = []; for (const m of _rawMsgs) { const key = `${m.from}|${(m.text || '').trim()}`; if (seen.has(key)) continue; seen.add(key); out.push(m) } return out })()
   const files = useMemo(() => buildFileTree(sel ? { slug: keyOf(sel) } : null), [sel])
 
   function send() {
