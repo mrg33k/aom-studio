@@ -1831,6 +1831,9 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
       id: m.id,
       from: (m.role === 'user' || m.agent === 'user' || m.sender === 'user') ? 'me' : 'them',
       text: m.text || m.content || '',
+      // Chat Detail (2026-06-18): agent rows show an author + Space Mono time, so carry them through.
+      ts: m.timestamp || m.created_at || null,
+      who: m.agent_name || (m.agent && m.agent !== 'user' ? m.agent : null) || (sel && sel.name) || '',
     })
     const isView = (m) => m && m.metadata && m.metadata.view_command
     const load = async () => {
@@ -2055,6 +2058,10 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     )
   }
 
+  // Chat Detail (2026-06-18): agent rows carry an author avatar + Space Mono time.
+  const monoFont = 'ui-monospace, "Space Mono", monospace'
+  const fmtTime = (ts) => { try { return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) } catch (_) { return '' } }
+  const initials = (name) => (name || '?').trim().split(/[\s-]+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?'
   const ChatCol = ({ mobile } = {}) => (
     <div style={{ ...colStyle, borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', height: mobile ? '100%' : undefined }}>
       {/* Secondary nav: (mobile) back + dot + name on the left, room Projects/Files icons on the right */}
@@ -2067,34 +2074,73 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
               <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
           )}
-          {sel ? <><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(keyOf(sel))}, 70%, 60%)`, flexShrink: 0 }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sel.name}</span></> : 'Select a room'}
+          {sel ? <>
+            <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${hue(keyOf(sel))}, 70%, 60%)`, flexShrink: 0, boxShadow: `0 0 8px hsla(${hue(keyOf(sel))}, 70%, 60%, 0.6)` }} />
+            <span style={{ minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: mobile ? '16px' : '15px', fontWeight: 600, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.2 }}>{sel.name}</span>
+              <span style={{ fontSize: '12px', fontWeight: 400, color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sel.isProjectRoom || sel.kind === 'project' ? 'Project room' : sel.kind === 'mission' ? `Mission${sel.status === 'running' ? ' · working' : ''}` : 'Direct chat'}</span>
+            </span>
+          </> : 'Select a room'}
         </span>
         {sel && <span style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>{iconBtn('Projects', () => { if (isNarrow) setMobileCol(2) }, projGlyph)}{iconBtn('Files', () => { if (isNarrow) setMobileCol(2) }, fileGlyph)}</span>}
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '18px 0 14px', display: 'flex', flexDirection: 'column' }}>
+        {/* Chat Detail (2026-06-18): agent output typeset full-column (no box); user replies are right-aligned accent bubbles. */}
+        <style>{`@keyframes cv6-step-pulse{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}@keyframes cv6-indet{0%{transform:translateX(-110%)}100%{transform:translateX(300%)}}.cv6-step-dot{width:6px;height:6px;border-radius:50%;background:var(--cv6-accent-primary);display:inline-block;animation:cv6-step-pulse 1.2s infinite ease-in-out}`}</style>
         {!sel ? <div style={{ margin: 'auto', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Pick a room on the left to open its chat.</div> : msgs.map((m, i) => (
-          <div key={i} style={{ alignSelf: m.from === 'me' ? 'flex-end' : 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: m.from === 'me' ? roomSolid(keyOf(sel)) : 'var(--cv6-surface-hover)', color: m.from === 'me' ? '#fff' : 'var(--cv6-text-primary)' }}>{m.text}</div>
+          m.from === 'me' ? (
+            <div key={i} style={{ padding: '0 18px', marginBottom: '22px', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <div style={{ maxWidth: '82%', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '14.5px', lineHeight: 1.5, padding: '11px 15px', borderRadius: '18px 18px 5px 18px', wordBreak: 'break-word' }}>{m.text}</div>
+              {m.ts && <span style={{ fontFamily: monoFont, fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', marginTop: '5px' }}>{fmtTime(m.ts)} · seen</span>}
+            </div>
+          ) : (
+            <div key={i} style={{ padding: '0 18px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
+                <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `hsla(${hue(keyOf(sel))}, 60%, 50%, 0.18)`, color: `hsl(${hue(keyOf(sel))}, 65%, 62%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{initials(m.who || sel.name)}</div>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>{m.who || sel.name}</span>
+                {m.ts && <span style={{ fontFamily: monoFont, fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>{fmtTime(m.ts)}</span>}
+              </div>
+              <div className="cv6-article" style={{ fontSize: '15px', lineHeight: 1.62, color: 'var(--cv6-text-primary)' }}>
+                <ChatMessageRenderer content={m.text} />
+              </div>
+            </div>
+          )
         ))}
         {sel && awaitingReply && (
-          <div style={{ alignSelf: 'flex-start', maxWidth: '76%', padding: '9px 13px', borderRadius: '12px', fontSize: '13px', lineHeight: 1.45, background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <style>{`@keyframes cv6-step-pulse{0%,100%{opacity:.3;transform:translateY(0)}50%{opacity:1;transform:translateY(-2px)}}.cv6-step-dot{width:5px;height:5px;border-radius:50%;background:var(--cv6-text-tertiary);display:inline-block;animation:cv6-step-pulse 1s infinite ease-in-out}`}</style>
-            <span style={{ display: 'inline-flex', gap: '3px' }}>
-              <span className="cv6-step-dot" style={{ animationDelay: '0ms' }} />
-              <span className="cv6-step-dot" style={{ animationDelay: '160ms' }} />
-              <span className="cv6-step-dot" style={{ animationDelay: '320ms' }} />
-            </span>
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stepText || 'Working…'}</span>
+          <div style={{ padding: '0 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
+              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `hsla(${hue(keyOf(sel))}, 60%, 50%, 0.18)`, color: `hsl(${hue(keyOf(sel))}, 65%, 62%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{initials(sel.name)}</div>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>{sel.name}</span>
+              <span style={{ fontSize: '12px', color: 'var(--cv6-text-tertiary)' }}>working…</span>
+            </div>
+            <div style={{ background: 'var(--cv6-surface-hover)', borderRadius: '12px', padding: '14px 15px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <span style={{ display: 'inline-flex', gap: '3px' }}>
+                  <span className="cv6-step-dot" style={{ animationDelay: '0ms' }} />
+                  <span className="cv6-step-dot" style={{ animationDelay: '200ms' }} />
+                  <span className="cv6-step-dot" style={{ animationDelay: '400ms' }} />
+                </span>
+                <span style={{ fontSize: '14px', color: 'var(--cv6-text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stepText || 'Working…'}</span>
+              </div>
+              <div style={{ height: '3px', borderRadius: '2px', background: 'var(--cv6-divider)', overflow: 'hidden', marginTop: '12px' }}>
+                <div style={{ height: '100%', width: '40%', borderRadius: '2px', background: 'var(--cv6-accent-primary)', animation: 'cv6-indet 1.4s ease-in-out infinite' }} />
+              </div>
+            </div>
           </div>
         )}
       </div>
       {sel && (
-        <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: '10px 12px', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+        <div style={{ flexShrink: 0, borderTop: '1px solid var(--cv6-divider)', padding: mobile ? '10px 14px calc(16px + env(safe-area-inset-bottom, 0px))' : '12px 14px', display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+          {/* Plus opens this room's files (real action, no dead button) */}
+          <button onClick={() => { if (isNarrow) setMobileCol(2); else setFilesCollapsed(false) }} title="Files" style={{ flexShrink: 0, width: '42px', height: '42px', borderRadius: '50%', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
           <textarea value={draft} onChange={e => setDraft(e.target.value)} onKeyDown={e => {
             if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); return }
             // R57: Left in an empty input → step back to the room list (which then takes Up/Down).
             if (e.key === 'ArrowLeft' && !draft) { e.preventDefault(); setListFocused(true); e.target.blur() }
-          }} placeholder={`Message ${sel.name}…`} rows={1} style={{ flex: 1, resize: 'none', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none', maxHeight: '110px' }} />
-          <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '8px', border: 'none', background: draft.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          }} placeholder={`Message ${sel.name}…`} rows={1} style={{ flex: 1, resize: 'none', padding: '11px 16px', borderRadius: '22px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '15px', lineHeight: 1.4, outline: 'none', maxHeight: '110px', minHeight: '44px', boxSizing: 'border-box' }} />
+          <button onClick={send} title={draft.trim() ? 'Send' : 'Voice'} style={{ flexShrink: 0, width: '44px', height: '44px', borderRadius: '50%', border: 'none', background: draft.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface-hover)', color: draft.trim() ? '#fff' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {draft.trim()
               ? <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               : <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>}
