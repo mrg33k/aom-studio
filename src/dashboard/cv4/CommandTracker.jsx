@@ -546,8 +546,18 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
     }
   }, [worldId])
 
+  // R81 (Patrik: "the command deck has to keep up with what is actually happening
+  // on the system"): the deck used to load ONCE and go stale — a terminal could
+  // start or finish and the deck wouldn't know until you reopened it. Now it
+  // refreshes every 10s WHILE OPEN (this overlay only mounts when the tool is open,
+  // so the poll is bounded to when you're actually watching — not a background poll).
+  // Terminal sessions live on disk (via the tunnel), not Supabase, so realtime alone
+  // can't see them; a short poll is the only way to reflect them within Patrik's
+  // "no delay longer than ~10s" tolerance.
   useEffect(() => {
     load()
+    const t = setInterval(load, 10000)
+    return () => clearInterval(t)
   }, [load])
 
   const toggleRoutine = useCallback(async (routineId, wantOn) => {
