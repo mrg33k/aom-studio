@@ -3906,15 +3906,30 @@ export default function HomeView({
               data-cv6-tool-surface=""
               style={{
               animation: 'cv6-tool-roll-in 300ms ease-out',
-              marginBottom: '24px', borderRadius: '8px', border: 'none',
-              background: 'transparent', overflow: 'hidden', minHeight: '72vh',
+              // R185 (Patrik: open room on mobile = full-screen chat, tools below, back top-left):
+              // on phones the Chat tool becomes a fixed full-screen layer from the top down to
+              // just above the bottom tools dock (so the dock stays visible "below"), with its
+              // own back-arrow header. Other tools + desktop keep the in-page panel.
+              ...((isNarrowHV && selectedTool === 'chat')
+                ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 'calc(68px + env(safe-area-inset-bottom, 0px))', zIndex: 120, margin: 0, borderRadius: 0, border: 'none', background: 'var(--cv6-ground)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }
+                : { marginBottom: '24px', borderRadius: '8px', border: 'none', background: 'transparent', overflow: 'hidden', minHeight: '72vh' }),
             }}>
-              {/* Tool header with close control */}
+              {/* Tool header — desktop/other tools: title + X close (right).
+                  Mobile Chat (R185): back arrow (top-left) + title, for the full-screen room. */}
+              {(() => { const fsChat = isNarrowHV && selectedTool === 'chat'; return (
               <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '16px 20px', borderBottom: '1px solid var(--cv6-divider)',
+                display: 'flex', alignItems: 'center', gap: '8px',
+                justifyContent: fsChat ? 'flex-start' : 'space-between',
+                padding: fsChat ? 'calc(8px + env(safe-area-inset-top, 0px)) 12px 8px' : '16px 20px',
+                borderBottom: '1px solid var(--cv6-divider)', flexShrink: 0,
               }}>
-                <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', textTransform: 'capitalize' }}>
+                {fsChat && (
+                  <button onClick={() => setSelectedTool('home')} title="Back" aria-label="Back"
+                    style={{ width: '38px', height: '38px', marginLeft: '-6px', flexShrink: 0, borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--cv6-accent-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ width: '22px', height: '22px' }}><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                )}
+                <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', textTransform: 'capitalize', flex: fsChat ? 1 : 'none', minWidth: 0 }}>
                   {selectedTool === 'support' && 'Support'}
                   {selectedTool === 'command' && 'Command Center'}
                   {selectedTool === 'scribe' && 'Live Scribe'}
@@ -3923,33 +3938,40 @@ export default function HomeView({
                   {selectedTool === 'organize' && `Organize — ${organizeSubtool === 'projects' ? 'Projects' : 'Files'}`}
                   {selectedTool === 'chat' && 'Chat'}
                 </div>
-                <button
-                  onClick={() => setSelectedTool('home')}
-                  title="Close"
-                  style={{
-                    width: '32px', height: '32px', borderRadius: '6px', border: 'none',
-                    background: 'transparent', color: 'var(--cv6-text-secondary)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                    e.currentTarget.style.color = 'var(--cv6-text-primary)'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = 'var(--cv6-text-secondary)'
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '18px', height: '18px' }}>
-                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                  </svg>
-                </button>
+                {!fsChat && (
+                  <button
+                    onClick={() => setSelectedTool('home')}
+                    title="Close"
+                    style={{
+                      width: '32px', height: '32px', borderRadius: '6px', border: 'none',
+                      background: 'transparent', color: 'var(--cv6-text-secondary)',
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 120ms ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+                      e.currentTarget.style.color = 'var(--cv6-text-primary)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'transparent'
+                      e.currentTarget.style.color = 'var(--cv6-text-secondary)'
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '18px', height: '18px' }}>
+                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </button>
+                )}
               </div>
+              )})()}
 
               {/* Tool content — R85 (tools-1): drag the bottom edge to resize. Native CSS
-                  resize gives a grip at the bottom with no JS; works for every tool uniformly. */}
-              <div style={{ padding: '16px 20px', minHeight: '45vh', maxHeight: 'calc(100vh - 140px)', height: '64vh', overflow: 'auto', resize: 'vertical', display: 'flex', flexDirection: 'column' }}>
+                  resize gives a grip at the bottom with no JS; works for every tool uniformly.
+                  R185: mobile Chat fills the full-screen layer (no fixed height / resize) so the
+                  conversation and message box use all the space down to the dock. */}
+              <div style={(isNarrowHV && selectedTool === 'chat')
+                ? { padding: '0', flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }
+                : { padding: '16px 20px', minHeight: '45vh', maxHeight: 'calc(100vh - 140px)', height: '64vh', overflow: 'auto', resize: 'vertical', display: 'flex', flexDirection: 'column' }}>
                 {selectedTool === 'support' && (
                   <SupportToolOverlay worldId={worldId || 'aom'} />
                 )}
