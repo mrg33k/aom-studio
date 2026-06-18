@@ -3324,20 +3324,24 @@ export default function HomeView({
                         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>{n.timeAgo}</span>
                       </div>
                       <div style={{ fontSize: '14px', lineHeight: 1.45, color: 'var(--cv6-text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '40px' }}>{n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')}</div>
+                      {/* R205 (Patrik): match the Claude design's Catch Up card — the primary
+                          action is a FILLED accent button (not a text link), with a green
+                          "mark handled" check beside it. Ref: mobile-refinement design rowA.png
+                          + Corner Mobile.dc.html line 150. */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <button onClick={(e) => { e.stopPropagation(); open() }}
-                          style={{ flex: 1, background: 'none', border: 'none', color: 'var(--cv6-accent-primary)', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 0', minHeight: '40px' }}>
-                          Open in chat<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                          style={{ flex: 1, height: '46px', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
+                          Open in chat<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                         </button>
                         {hasAttachment && (
                           <button onClick={(e) => { e.stopPropagation(); openTool('review') }} title="Open the Review view"
-                            style={{ height: '40px', padding: '0 11px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'transparent', color: 'var(--cv6-text-primary)', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            style={{ height: '46px', padding: '0 13px', borderRadius: '13px', border: '1px solid var(--cv6-divider)', background: 'transparent', color: 'var(--cv6-text-primary)', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Review
                           </button>
                         )}
                         <button onClick={dismiss} title="Mark handled" aria-label="Mark handled"
-                          style={{ width: '40px', height: '40px', flex: 'none', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'transparent', color: 'var(--cv6-text-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+                          style={{ width: '46px', height: '46px', flex: 'none', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-success)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
                         </button>
                       </div>
                     </div>
