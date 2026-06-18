@@ -29,6 +29,10 @@ import LiveScribe from '../../pages/LiveScribe.jsx'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
+// R83 (proj-3): missions-tree marks newly-created / agent_status missions 'in-progress',
+// and task-derived ones 'running'. The home used to treat ONLY 'running' as active, so a
+// brand-new mission rendered grey ("idle"). Honor every active status the backend emits.
+const MISSION_ACTIVE_STATUSES = new Set(['running', 'active', 'in-progress', 'working'])
 const EXPANDED_PROJECTS_KEY = 'cv4_expanded_projects'
 // Tracks when user last visited each project room (keyed by slug, value = timestamp ms)
 const RECENT_VISITS_KEY = 'cv4_recent_visits'
@@ -3909,7 +3913,7 @@ export default function HomeView({
                               }}
                             >
                               {/* R18: Per-item icon from stable set */}
-                              <span style={{ color: isSelected ? '#ffffff' : (m.mission.status === 'running' ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}>
+                              <span style={{ color: isSelected ? '#ffffff' : (MISSION_ACTIVE_STATUSES.has(m.mission.status) ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}>
                                 {getMissionIcon(m.mission.slug).svg}
                               </span>
                               <div style={{ flex: 1, minWidth: 0 }}>
@@ -4553,7 +4557,7 @@ export default function HomeView({
                           onContextMenu={(e) => { e.preventDefault(); setCardMenu({ x: e.clientX, y: e.clientY, type: 'mission', item: m, project: p }) }}
                         >
                           <span style={{ color: '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
-                          <StatusDot state={m.status === 'running' || m.status === 'active' ? 'running' : 'idle'} size={6} />
+                          <StatusDot state={MISSION_ACTIVE_STATUSES.has(m.status) ? 'running' : 'idle'} size={6} />
                           <span className="hm-mname">{m.name || m.slug}</span>
                           <span className="hm-mage">{relativeTime(m.last_message_at)}</span>
                         </button>
