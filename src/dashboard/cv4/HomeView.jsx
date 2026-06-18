@@ -3208,7 +3208,10 @@ export default function HomeView({
                       <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </button>
                     {hasAttachment && (
-                      <button onClick={(e) => { e.stopPropagation(); open() }} title="Review the attachment"
+                      // R109 (Patrik: "review links should surface on attachments which takes us
+                      // to the review view") — the Review button opens the Review tool, not the chat
+                      // room. The room is still one tap away via "Open in chat".
+                      <button onClick={(e) => { e.stopPropagation(); openTool('review') }} title="Open the Review view"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'transparent', border: '1px solid var(--cv6-divider)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', color: 'var(--cv6-text-secondary)' }}>
                         <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
                         Review
