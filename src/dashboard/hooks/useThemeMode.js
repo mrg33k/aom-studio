@@ -84,7 +84,8 @@ function syncDom(mode, glassCard) {
 
 // A glass step encodes both which backdrop is showing and the card style.
 function backdropOf(glassIndex) { return Math.floor(glassIndex / 2) % GLASS_BACKDROP_COUNT }
-function cardStyleOf(glassIndex) { return glassIndex % 2 === 0 ? 'dark' : 'light' }
+// Per photo: LIGHT card first, then dark (Patrik prefers light before dark).
+function cardStyleOf(glassIndex) { return glassIndex % 2 === 0 ? 'light' : 'dark' }
 
 export function useThemeMode() {
   const [stored, setStored] = useState(readStored)
