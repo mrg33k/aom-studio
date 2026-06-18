@@ -445,6 +445,7 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
   const [selMission, setSelMission] = useState(null)
   const [dragMission, setDragMission] = useState(null)   // { mission, fromSlug }
   const [dropProj, setDropProj] = useState(null)         // slug hovered as drop target
+  const [invalidDrop, setInvalidDrop] = useState(null)   // dnd-1: source project hovered (can't drop on self)
   const [confirmMove, setConfirmMove] = useState(null)   // { mission, fromProj, toProj }
   const [creating, setCreating] = useState(null)         // 'project' | 'mission'
   const [draftName, setDraftName] = useState('')
@@ -526,19 +527,20 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
   const headStyle = { flexShrink: 0, fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)', padding: '10px 14px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', borderBottom: '1px solid var(--cv6-divider)', zIndex: 1 }
   const emptyHint = (t) => <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>{t}</div>
 
-  const Row = ({ label, sub, slug, active, onClick, chevron, dnd, dropActive }) => (
+  const Row = ({ label, sub, slug, active, onClick, chevron, dnd, dropActive, dropInvalid }) => (
     <button
       onClick={onClick}
       {...(dnd || {})}
+      title={dropInvalid ? "Already in this project" : undefined}
       style={{
         display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left',
-        padding: '9px 12px', borderRadius: '6px', margin: '2px 6px', cursor: 'pointer', fontFamily: 'inherit',
-        border: dropActive ? '2px dashed var(--cv6-accent-primary)' : '2px solid transparent',
-        background: dropActive ? 'hsla(220,90%,55%,0.10)' : active ? `hsla(${hue(slug)}, 60%, 48%, 0.12)` : 'transparent',
+        padding: '9px 12px', borderRadius: '6px', margin: '2px 6px', cursor: dropInvalid ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+        border: dropInvalid ? '2px dashed var(--cv6-accent-error, #EF4444)' : dropActive ? '2px dashed var(--cv6-accent-primary)' : '2px solid transparent',
+        background: dropInvalid ? 'hsla(0,80%,55%,0.08)' : dropActive ? 'hsla(220,90%,55%,0.10)' : active ? `hsla(${hue(slug)}, 60%, 48%, 0.12)` : 'transparent',
         transition: 'background 120ms ease',
       }}
-      onMouseEnter={(e) => { if (!active && !dropActive) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
-      onMouseLeave={(e) => { if (!active && !dropActive) e.currentTarget.style.background = 'transparent' }}
+      onMouseEnter={(e) => { if (!active && !dropActive && !dropInvalid) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+      onMouseLeave={(e) => { if (!active && !dropActive && !dropInvalid) e.currentTarget.style.background = 'transparent' }}
     >
       <span style={{ flexShrink: 0, color: `hsl(${hue(slug)}, 60%, 52%)`, display: 'inline-flex' }}>
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -553,13 +555,17 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
 
   const missionDnd = (m) => ({
     draggable: true,
-    onDragStart: (e) => { setDragMission({ mission: m, fromSlug: selProj.slug }); e.dataTransfer.effectAllowed = 'move' },
-    onDragEnd: () => { setDragMission(null); setDropProj(null) },
+    onDragStart: (e) => { setDragMission({ mission: m, fromSlug: selProj.slug }); setDropProj(null); setInvalidDrop(null); e.dataTransfer.effectAllowed = 'move' },
+    onDragEnd: () => { setDragMission(null); setDropProj(null); setInvalidDrop(null) },
   })
   const projectDrop = (p) => ({
-    onDragOver: (e) => { if (dragMission && dragMission.fromSlug !== p.slug) { e.preventDefault(); setDropProj(p.slug) } },
-    onDragLeave: () => setDropProj(d => (d === p.slug ? null : d)),
-    onDrop: (e) => { e.preventDefault(); if (dragMission && dragMission.fromSlug !== p.slug) { const fromProj = projects.find(x => x.slug === dragMission.fromSlug); setConfirmMove({ mission: dragMission.mission, fromProj, toProj: p }) } setDragMission(null); setDropProj(null) },
+    onDragOver: (e) => {
+      if (!dragMission) return
+      if (dragMission.fromSlug !== p.slug) { e.preventDefault(); setDropProj(p.slug); setInvalidDrop(null) }
+      else { setInvalidDrop(p.slug); setDropProj(null) }   // dnd-1: hovering the source project — show "can't drop here"
+    },
+    onDragLeave: () => { setDropProj(d => (d === p.slug ? null : d)); setInvalidDrop(d => (d === p.slug ? null : d)) },
+    onDrop: (e) => { e.preventDefault(); if (dragMission && dragMission.fromSlug !== p.slug) { const fromProj = projects.find(x => x.slug === dragMission.fromSlug); setConfirmMove({ mission: dragMission.mission, fromProj, toProj: p }) } setDragMission(null); setDropProj(null); setInvalidDrop(null) },
   })
 
   const ProjectsCol = () => (
@@ -569,7 +575,7 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
         <input autoFocus value={draftName} onChange={e => setDraftName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') commitCreate(); if (e.key === 'Escape') { setCreating(null); setDraftName('') } }} onBlur={commitCreate} placeholder="Project name…" style={{ margin: '4px 8px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
       )}
       {projects.length ? projects.map(p => (
-        <Row key={p.slug} label={p.name || p.slug} sub={`${(missionsMap[p.slug] || []).length} missions`} slug={p.slug} active={selProj?.slug === p.slug} chevron dropActive={dropProj === p.slug} dnd={projectDrop(p)} onClick={() => { setSelProj(p); setSelMission(null); if (isNarrow) setMobileCol(1) }} />
+        <Row key={p.slug} label={p.name || p.slug} sub={`${(missionsMap[p.slug] || []).length} missions`} slug={p.slug} active={selProj?.slug === p.slug} chevron dropActive={dropProj === p.slug} dropInvalid={invalidDrop === p.slug} dnd={projectDrop(p)} onClick={() => { setSelProj(p); setSelMission(null); if (isNarrow) setMobileCol(1) }} />
       )) : emptyHint('No projects')}
     </div>
   )
@@ -2936,6 +2942,10 @@ export default function HomeView({
   const handleKeyDown = useCallback((e) => {
     if (!cv6 || selectableItems.length === 0) return
     if (selectedTool && selectedTool !== 'home') return // R56: when a tool is open, its own nav takes over
+    // input-1: while the user is typing in the quick-reply (or any editable field),
+    // arrows/Enter belong to that field — don't hijack focus into list navigation.
+    const ae = (typeof document !== 'undefined') ? document.activeElement : null
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT' || ae.isContentEditable)) return
     // R56 (Patrik keyboard model): Tab + Down/Up move the selection across EVERYTHING
     // (tools, agents, missions, needs-you, projects). Enter behaves EXACTLY like Right:
     // both "activate" the selected thing — open a tool, or two-press a room (quick view → open).
@@ -3002,6 +3012,9 @@ export default function HomeView({
   useEffect(() => {
     if (!cv6) return
     if (selectedTool === 'home') homeRef.current?.focus()
+    // kb-6: leaving home into a tool drops the home quick-view room so it can't
+    // linger as a stale ArrowLeft target after the tool is closed.
+    else if (selectedRoom) setSelectedRoom(null)
   }, [cv6, selectedTool])
   // kb-4: clamp selectedIndex when selectableItems.length shrinks
   useEffect(() => {
