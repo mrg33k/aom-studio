@@ -2135,7 +2135,12 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
                 <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: `hsla(${hue(keyOf(sel))}, 60%, 50%, 0.18)`, color: `hsl(${hue(keyOf(sel))}, 65%, 62%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, flexShrink: 0 }}>{initials(m.who || sel.name)}</div>
                 <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>{titleCase(m.who || sel.name)}</span>
                 {m.ts && <span style={{ fontFamily: monoFont, fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>{fmtTime(m.ts)}</span>}
-                {pill && <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 600, color: pill.col, background: `color-mix(in srgb, ${pill.col} 16%, transparent)`, padding: '4px 9px', borderRadius: '6px', flexShrink: 0 }}>{pill.label}</span>}
+                {pill && <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 600, color: pill.col, background: `color-mix(in srgb, ${pill.col} 16%, transparent)`, padding: '4px 9px', borderRadius: '6px', flexShrink: 0 }}>
+                  {rep.status === 'done'
+                    ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                    : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.5"/></svg>}
+                  {pill.label}
+                </span>}
               </div>
               {rep.reason && (
                 <div style={{ margin: '0 0 12px', padding: '12px 14px', background: 'var(--cv6-surface-hover)', borderRadius: '10px', borderLeft: `2px solid ${pill ? pill.col : 'var(--cv6-accent-primary)'}` }}>
