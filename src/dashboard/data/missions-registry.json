@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-17T13:07:08.977Z",
+  "generated_at": "2026-06-18T15:25:38.202Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -2760,6 +2760,20 @@
       "path": "corner/users/aom/projects/ambition-mechanical/missions/website-v2"
     },
     {
+      "slug": "andocia-deal:corner-proposal",
+      "raw_slug": "corner-proposal",
+      "folder_name": "corner-proposal",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "andocia-deal",
+      "workstream": null,
+      "name": "Corner Proposal",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/andocia-deal/missions/corner-proposal"
+    },
+    {
       "slug": "artlink:brand-page",
       "raw_slug": "brand-page",
       "folder_name": "brand-page",
@@ -3637,6 +3651,12 @@
       "slug": "ambition-mechanical",
       "total": 7,
       "in_flight": 7,
+      "done": 0
+    },
+    {
+      "slug": "andocia-deal",
+      "total": 1,
+      "in_flight": 1,
       "done": 0
     },
     {
