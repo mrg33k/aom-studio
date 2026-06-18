@@ -51,7 +51,8 @@ em{font-style:normal;color:var(--green)}
 .nav-in{max-width:var(--maxw);margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between}
 .nav.solid{background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .co{display:flex;align-items:center;gap:14px}
-.co img{height:24px;width:auto;display:block}
+.co img{height:24px;width:auto;display:block;transition:filter .3s}
+.nav:not(.solid) .co img{filter:brightness(0) invert(1)}
 .co .x{color:var(--slate-2);font-size:13px;opacity:0}
 .co .aom{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:-.01em;color:var(--ink-2);opacity:0}
 .nav.solid .co .x,.nav.solid .co .aom{opacity:1;transition:opacity .3s}
@@ -71,7 +72,10 @@ em{font-style:normal;color:var(--green)}
 .hero h1 .l2{color:#7e9aa2}
 .hero-sub{margin-top:26px;font-size:clamp(17px,2.3vw,21px);color:#c4d2d4;max-width:50ch;line-height:1.55}
 .hero-sub b{color:#fff;font-weight:600}
-.hero-actions{margin-top:40px;display:flex;gap:14px;flex-wrap:wrap}
+.hero-phases{margin-top:28px;display:flex;flex-wrap:wrap;gap:10px}
+.hero-phases .chip{display:inline-flex;gap:7px;align-items:baseline;font-size:13.5px;color:#cfe0d6;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.13);padding:9px 15px;border-radius:999px}
+.hero-phases .chip b{color:#fff;font-weight:600}
+.hero-actions{margin-top:34px;display:flex;gap:14px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--body);font-weight:600;font-size:15px;padding:15px 26px;border-radius:999px;cursor:pointer;text-decoration:none;border:1px solid transparent;transition:transform .2s,background .2s,border-color .2s}
 .btn-green{background:var(--green);color:#fff}
 .btn-green:hover{transform:translateY(-2px);background:var(--green-soft)}
@@ -182,6 +186,13 @@ em{font-style:normal;color:var(--green)}
 .foot .wrap{display:flex;flex-wrap:wrap;justify-content:space-between;gap:16px;align-items:center}
 .foot a{color:#cfe9d8;text-decoration:none}
 
+/* sticky mobile CTA */
+.mcta{display:none}
+@media(max-width:860px){
+  .mcta{display:flex;position:fixed;left:14px;right:14px;bottom:14px;z-index:60;align-items:center;justify-content:center;gap:8px;background:var(--green);color:#fff;font-family:var(--body);font-weight:600;font-size:15px;padding:15px;border-radius:999px;text-decoration:none;box-shadow:0 12px 30px -8px rgba(27,169,78,.6);transform:translateY(150%);transition:transform .35s cubic-bezier(.2,.7,.2,1)}
+  .mcta.show{transform:none}
+}
+
 @media(max-width:860px){
   .cards{grid-template-columns:1fr}
   .rocks{grid-template-columns:1fr;gap:30px}
@@ -210,10 +221,15 @@ em{font-style:normal;color:var(--green)}
   <div class="wrap">
     <span class="hero-tag rv"><span class="dot"></span>Prepared for William Host &middot; Andocia</span>
     <h1 class="rv d1">Andocia, running<br>on <span class="l2">its own</span> Corner.</h1>
-    <p class="hero-sub rv d2">The same system that runs Ahead of Market, built for your agency and your accounts. <b>This page lays out what it takes, what it costs, and how we start</b> &mdash; so the next step is an easy yes.</p>
-    <div class="hero-actions rv d3">
-      <a class="btn btn-green" href="#shape">See the plan <span class="arr">&rarr;</span></a>
-      <a class="btn btn-ghost" href="#start">Let's start</a>
+    <p class="hero-sub rv d2">The same system that runs Ahead of Market, built for your agency and your accounts. Two focused days gets us started. Then the real build begins.</p>
+    <div class="hero-phases rv d3">
+      <span class="chip"><b>2 days</b> to launch</span>
+      <span class="chip"><b>3 months</b> to build</span>
+      <span class="chip"><b>1 year</b> on hand</span>
+    </div>
+    <div class="hero-actions rv d4">
+      <a class="btn btn-ghost" href="#shape">See the plan</a>
+      <a class="btn btn-green" href="#start">Let's start <span class="arr">&rarr;</span></a>
     </div>
   </div>
 </header>
@@ -231,7 +247,7 @@ em{font-style:normal;color:var(--green)}
 <section class="sec">
   <div class="wrap">
     <div class="sec-head">
-      <span class="kicker rv">What you're getting</span>
+      <span class="kicker rv">Built for how Andocia runs</span>
       <h2 class="rv d1">Not a tool you log into.<br>The operating system for your agency.</h2>
       <p class="lead rv d2">Corner is the system that runs Ahead of Market end to end. We build Andocia your own version of it, shaped around how your team works and the accounts you run.</p>
     </div>
@@ -394,7 +410,7 @@ em{font-style:normal;color:var(--green)}
   <div class="wrap">
     <span class="kicker rv">Getting started</span>
     <h2 class="rv d1">You said you like to <em>date to marry.</em><br>Let's get started.</h2>
-    <p class="rv d2">You've seen what it does and what it costs. The next step is simple: pick our two kickoff days and tell me which accounts you want first. I'll handle the rest.</p>
+    <p class="rv d2">You've seen what it does and what it costs. The next step is simple: pick our two kickoff days and tell me the accounts you want first. I'll handle the rest, and I'm ready to start whenever you are.</p>
     <div class="close-actions rv d3">
       <a class="btn btn-green" href="mailto:patrikmatheson@gmail.com?subject=Let's%20start%20%E2%80%94%20Andocia%20%2B%20Corner&body=Patrik%2C%20let's%20get%20started.%20Here%20are%20a%20couple%20of%20days%20that%20work%20for%20our%20kickoff%3A">Reply: let's start <span class="arr">&rarr;</span></a>
       <a class="btn btn-ghost" href="tel:+16023732164">Call Patrik &middot; (602) 373-2164</a>
@@ -410,11 +426,22 @@ em{font-style:normal;color:var(--green)}
   </div>
 </footer>
 
+<a class="mcta" href="#start" aria-label="Let's start">Let's start &rarr;</a>
+
 <script>
-// nav solidify
+// nav solidify + sticky mobile CTA
 (function(){
   var nav=document.getElementById('nav');
-  function s(){ if(window.scrollY>40)nav.classList.add('solid');else nav.classList.remove('solid'); }
+  var mcta=document.querySelector('.mcta');
+  var start=document.getElementById('start');
+  function s(){
+    var y=window.scrollY;
+    if(y>40)nav.classList.add('solid');else nav.classList.remove('solid');
+    if(mcta){
+      var nearClose=start && (start.getBoundingClientRect().top < window.innerHeight*0.9);
+      if(y>window.innerHeight*0.9 && !nearClose)mcta.classList.add('show');else mcta.classList.remove('show');
+    }
+  }
   window.addEventListener('scroll',s,{passive:true}); s();
 })();
 // reveal on scroll
