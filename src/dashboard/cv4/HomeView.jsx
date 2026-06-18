@@ -1427,7 +1427,7 @@ if (typeof document !== 'undefined' && !document.getElementById('cv6-article-sty
   .cv6-article .cmr-content li > ul, .cv6-article .cmr-content li > ol { margin: .35em 0; }
   .cv6-article .cmr-content blockquote { margin: 0 0 1em; padding-left: 1em; border-left: 3px solid var(--cv6-divider); color: var(--cv6-text-secondary); }
   .cv6-article .cmr-content table { border-collapse: collapse; width: 100%; margin: 0 0 1.2em; font-size: 0.95em; }
-  .cv6-article .cmr-content th, .cv6-article .cmr-content td { border: 1px solid var(--cv6-divider); padding: 7px 10px; text-align: left; vertical-align: top; }
+  .cv6-article .cmr-content th, .cv6-article .cmr-content td { border: 1px solid var(--cv6-divider); padding: 7px 10px; text-align: left; vertical-align: top; word-break: normal; overflow-wrap: normal; }
   .cv6-article .cmr-content th { background: var(--cv6-surface-hover); font-weight: 700; }
   .cv6-article .cmr-content hr { border: none; border-top: 1px solid var(--cv6-divider); margin: 1.6em 0; }
   .cv6-article .cmr-content code { font-size: 0.9em; }
@@ -1488,7 +1488,7 @@ function FilePreviewPanel({ node }) {
       {/* R58/R59 (Patrik): text/markdown reads like an article — roomy type, a comfortable
           measure, and the heading/list/table hierarchy from the injected .cv6-article CSS. */}
       {data.state === 'text' && (
-        <article className="cv6-article" style={{ color: 'var(--cv6-text-primary)', wordBreak: 'break-word', maxWidth: '72ch' }}>
+        <article className="cv6-article" style={{ color: 'var(--cv6-text-primary)', overflowWrap: 'break-word', maxWidth: '72ch' }}>
           <ChatMessageRenderer content={data.text || '(empty file)'} />
         </article>
       )}
