@@ -758,8 +758,13 @@ export default function CornerVG() {
     // Reset unread when switching worlds
     setUnreadChat(0)
 
+    // chat-5: unique per-mount topic so a fast workspace switch (or a double
+    // effect run) can never leave two same-named channels both delivering the
+    // same INSERT (double-counted unread). Cleanup removes this exact instance.
+    // NOTE: only safe for postgres_changes (local topic); the cv6-view broadcast
+    // channel below must keep its fixed name so the sender's topic still matches.
     const channel = supabase
-      .channel(`cornerv3-messages-${worldId}`)
+      .channel(`cornerv3-messages-${worldId}-${Date.now()}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` },
