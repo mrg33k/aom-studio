@@ -525,16 +525,20 @@ export default function CvgChatSurface({
                 if (!atts.length && !imgErr) return null
                 return (
                   <div style={{ marginTop: (msg.text || msg.content) ? 8 : 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {atts.map((att, i) => (
-                      isImageAtt(att)
-                        ? <ChatImageAttachment key={i} att={att} />
-                        : (att.url ? (
-                            <a key={i} href={att.url} target="_blank" rel="noreferrer"
-                               style={{ fontSize: 13, color: isUser ? 'white' : 'var(--cv6-accent-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
-                              {att.name || 'Attachment'}
-                            </a>
-                          ) : null)
-                    ))}
+                    {atts.map((att, i) => {
+                      const isVideo = (att.mime || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(att.url || att.name || '')
+                      if (isImageAtt(att)) return <ChatImageAttachment key={i} att={att} />
+                      if (isVideo && att.url) return (
+                        <video key={i} controls preload="metadata" src={att.url}
+                               style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, display: 'block', background: '#000' }} />
+                      )
+                      return att.url ? (
+                        <a key={i} href={att.url} target="_blank" rel="noreferrer"
+                           style={{ fontSize: 13, color: isUser ? 'white' : 'var(--cv6-accent-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                          {att.name || 'Attachment'}
+                        </a>
+                      ) : null
+                    })}
                     {imgErr && (
                       <div style={{ fontSize: 13, color: '#EF4444' }}>
                         Image generation failed: {String(imgErr).slice(0, 200)}
