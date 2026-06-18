@@ -3203,12 +3203,6 @@ export default function HomeView({
   // middle column (Patrik) without duplicating markup. Same click/keyboard behavior as before.
   const renderAgentRow = (a, idx) => {
     const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
-    const agentStatus = a.slug === 'bobby' ? 'building components'
-      : a.slug === 'steffen' ? 'refining brand'
-      : a.slug === 'cleo' ? 'editing video'
-      : a.slug === 'tony' ? 'scheduling posts'
-      : a.slug === 'elon' ? 'routing work'
-      : 'Ready'
     return (
       <button
         key={a.slug}
@@ -3220,29 +3214,23 @@ export default function HomeView({
         }}
         onContextMenu={cv6 ? (e) => { e.preventDefault(); selectByItem('agent', a.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'agent', item: a, project: null }) } : undefined}
         style={{
-          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '8px', minHeight: '56px',
+          display: 'flex', alignItems: 'center', gap: '12px', padding: '0 15px', height: '52px',
           boxSizing: 'border-box', width: '100%', position: 'relative', overflow: 'hidden',
-          background: isSelected ? roomFill(a.slug) : 'var(--cv6-surface)',
+          background: isSelected ? roomFill(a.slug) : 'transparent',
           color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
           border: isSelected ? `1px solid ${roomFill(a.slug)}` : '1px solid transparent',
           boxShadow: isSelected ? `0 3px 14px ${roomGlow(a.slug)}` : 'none',
-          transform: isSelected ? 'translateY(-1px)' : 'none',
-          borderRadius: '6px', cursor: 'pointer',
-          transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
-          fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+          borderRadius: '0', cursor: 'pointer',
+          transition: 'background 220ms ease, border-color 160ms ease, transform 200ms ease',
+          fontFamily: 'inherit', textAlign: 'left', fontSize: '14.5px', fontWeight: '600',
+          borderBottom: isSelected ? 'none' : '1px solid var(--cv6-divider)',
         }}
-        onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.background = roomTint(a.slug); e.currentTarget.style.borderColor = roomFill(a.slug) } }}
-        onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' } }}
+        onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.background = 'var(--cv6-surface-hover)' } }}
+        onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.background = 'transparent' } }}
       >
-        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : `hsl(${roomHue(a.slug)}, 60%, 55%)`, animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
-          <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentStatus}</div>
-        </div>
-        <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
-        {agentStatus !== 'Ready' && (
-          <div className="hm-progress" style={{ position: 'absolute', left: '10px', right: '10px', bottom: '6px', color: isSelected ? 'rgba(255,255,255,0.85)' : `hsl(${roomHue(a.slug)}, 60%, 55%)` }} />
-        )}
+        <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: `hsl(${roomHue(a.slug)}, 60%, 55%)`, boxShadow: `0 0 8px ${roomGlow(a.slug)}`, flexShrink: 0 }}></span>
+        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
+        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap', textTransform: 'uppercase' }}>AGENT</span>
       </button>
     )
   }
@@ -4194,15 +4182,15 @@ export default function HomeView({
                 (right-click an agent to unpin), then the most-recent missions + projects
                 (right-click a project to pin/unpin). No more Agents / Active work split. */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              {/* R98 (Patrik): heading row — label left, a search icon on the right (above the
-                  divider). The search field is hidden until the icon is clicked, then drops in below. */}
+              {/* R206 (Claude): heading row — label left, "See all" link on the right (Claude design).
+                  The search field is hidden until the icon is clicked, then drops in below. */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '26px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
-                <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>All rooms</span>
-                <button onClick={() => setRoomSearchOpen(v => !v)} title={roomSearchOpen ? 'Hide search' : 'Search rooms'} aria-label="Search rooms"
-                  style={{ flexShrink: 0, width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: roomSearchOpen ? 'var(--cv6-surface-hover)' : 'transparent', color: roomSearchOpen ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 120ms ease, color 120ms ease' }}
-                  onMouseEnter={(e) => { if (!roomSearchOpen) e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}
-                  onMouseLeave={(e) => { if (!roomSearchOpen) e.currentTarget.style.color = 'var(--cv6-text-tertiary)' }}>
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                <span style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)' }}>All rooms</span>
+                <button onClick={() => setRoomSearchOpen(v => !v)} title={roomSearchOpen ? 'Hide search' : 'See all rooms'} aria-label="See all rooms"
+                  style={{ flexShrink: 0, fontSize: '12.5px', fontWeight: '600', color: 'var(--cv6-accent-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: '0', transition: 'opacity 120ms ease' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}>
+                  See all
                 </button>
               </div>
               {visibleAgents.length > 0 && (
@@ -4355,7 +4343,7 @@ export default function HomeView({
                           const p = item.project
                           // Folder rows read like the Mobile Handoff: show what's inside (mission count).
                           const missionCount = Array.isArray(allMissionsForCV6) ? allMissionsForCV6.filter(x => (x.project?.slug || x.project?.id) === (p.slug || p.id)).length : 0
-                          const projectSub = missionCount > 0 ? `${missionCount} mission${missionCount === 1 ? '' : 's'}` : 'Project'
+                          const projectSub = `${missionCount} mission${missionCount === 1 ? '' : 's'}`
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'project' && selectableItems[selectedIndex]?.item?.slug === p.slug
                           return (
                             <button
@@ -4372,50 +4360,38 @@ export default function HomeView({
                               onDoubleClick={() => openChatToolForRoom({ project: p, mission: null })}
                               onContextMenu={(e) => { e.preventDefault(); selectByItem('project', p.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '0 15px', height: '60px',
                                 boxSizing: 'border-box', width: '100%',
-                                background: isSelected ? roomFill(p.slug) : 'var(--cv6-surface)',
+                                background: isSelected ? roomFill(p.slug) : 'transparent',
                                 color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
                                 border: isSelected ? `1px solid ${roomFill(p.slug)}` : '1px solid transparent',
                                 boxShadow: isSelected ? `0 3px 14px ${roomGlow(p.slug)}` : 'none',
-                                transform: isSelected ? 'translateY(-1px)' : 'none',
-                                borderRadius: '6px', cursor: 'pointer',
-                                transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
-                                fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                                flex: '0 0 auto', minHeight: '56px',
+                                borderRadius: '0', cursor: 'pointer',
+                                transition: 'background 220ms ease, border-color 160ms ease',
+                                fontFamily: 'inherit', textAlign: 'left', fontSize: '14.5px', fontWeight: '600',
+                                borderBottom: isSelected ? 'none' : '1px solid var(--cv6-divider)',
                               }}
-                              onMouseEnter={(e) => {
-                                if (!isSelected) {
-                                  e.currentTarget.style.background = roomTint(p.slug)
-                                  e.currentTarget.style.borderColor = roomFill(p.slug)
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isSelected) {
-                                  e.currentTarget.style.background = 'var(--cv6-surface)'
-                                  e.currentTarget.style.borderColor = 'transparent'
-                                }
-                              }}
+                              onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.background = 'var(--cv6-surface-hover)' } }}
+                              onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.background = 'transparent' } }}
                             >
-                              {/* Project folder icon */}
-                              <span style={{ color: isSelected ? '#ffffff' : '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16">
-                                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                              {/* Project folder icon — use per-project color stroke */}
+                              <span style={{ display: 'inline-flex', flexShrink: 0, color: roomFill(p.slug) }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="19" height="19">
+                                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
                                 </svg>
                               </span>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontSize: '14.5px', fontWeight: '600', color: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {p.name || p.slug}
-                                  {/* R18: Subtle room color dot */}
-                                  <span style={{
-                                    width: '6px', height: '6px', borderRadius: '50%',
-                                    background: isSelected ? 'rgba(255,255,255,0.5)' : `hsl(${(p.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
-                                    flexShrink: 0,
-                                  }}/>
                                 </div>
-                                <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>{projectSub}</div>
+                                <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>{projectSub}</div>
                               </div>
-                              <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(p.last_message_at)}</span>
+                              {/* Chevron icon */}
+                              <span style={{ display: 'inline-flex', flexShrink: 0, color: isSelected ? 'rgba(255,255,255,0.5)' : 'var(--cv6-text-tertiary)' }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="17" height="17">
+                                  <path d="m9 6 6 6-6 6"/>
+                                </svg>
+                              </span>
                             </button>
                           )
                         }
