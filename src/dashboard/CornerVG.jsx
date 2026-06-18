@@ -784,6 +784,7 @@ export default function CornerVG() {
     const ch = supabase
       .channel(`cv6-view-${worldId}`)
       .on('broadcast', { event: 'navigate' }, ({ payload }) => {
+        console.log('[cv6-view] navigate received', payload)
         if (!payload || typeof payload !== 'object') return
         try {
           if (payload.tool) {
@@ -800,7 +801,7 @@ export default function CornerVG() {
           }
         } catch (e) { console.warn('[cv6-view] bad navigate payload', e) }
       })
-      .subscribe()
+      .subscribe((status) => { console.log('[cv6-view] channel status', status, 'world', worldId) })
     return () => { supabase.removeChannel(ch) }
   }, [worldId])
 
