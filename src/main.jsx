@@ -5,6 +5,7 @@ import { onAuthStateChange, isTempPassword } from './dashboard/lib/auth.js'
 import { supabase } from './dashboard/lib/supabase.js'
 import App from './App.jsx'
 import { injectThemeVars } from './dashboard/lib/cv3Colors.js'
+import { SystemToastProvider } from './dashboard/SystemToast.jsx' // R84: mount toasts on the real app entry (/cvg, /dashboard) so create-failure warnings actually render
 
 // Bind CSS-variable palettes before first paint so every `C.bg` etc.
 // resolves. The active palette is keyed off <html data-theme>, which
@@ -368,6 +369,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <TestModeBanner />
+      <SystemToastProvider>
       <Suspense fallback={<div className="min-h-screen bg-[#0C0C0C] flex items-center justify-center text-[#8A847C] font-body text-sm">Loading...</div>}>
         <Routes>
           <Route path="/" element={<App />} />
@@ -530,6 +532,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/cv3/projects/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
         </Routes>
       </Suspense>
+      </SystemToastProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

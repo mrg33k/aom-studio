@@ -24,6 +24,7 @@ import { supabase } from '../lib/supabase.js'
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx'
 import { FolderIcon, MissionIcon, StatusDot } from './lib/uiKit.jsx'
 import { useThemeMode } from '../hooks/useThemeMode.js'
+import { useSystemToast } from '../SystemToast.jsx'
 import { useSupportData, buildItems } from './SupportDashboard.jsx'
 import LiveScribe from '../../pages/LiveScribe.jsx'
 
@@ -2496,26 +2497,44 @@ export default function HomeView({
 
   // R43: real persistence for the tool actions. Optimistic UI updates first; these
   // fire the actual backend write. In the gallery (no auth) they no-op gracefully.
+  const { showToast } = useSystemToast()
+  // proj-2: surface create failures. The create row appears optimistically; if the
+  // server rejects it, the user must be told (silent failure = a ghost project that
+  // vanishes on refresh). Returns true/false so the overlay can revert the optimistic row.
+  const errText = async (res, fallback) => {
+    try { const e = await res.json(); if (e?.error) return `${fallback}: ${e.error}` } catch {}
+    return fallback
+  }
   const persistCreateProject = useCallback(async (slug, name) => {
     try {
-      await authFetch('/api/dashboard/create-project-from-chat', {
+      const res = await authFetch('/api/dashboard/create-project-from-chat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug, name, client_id: worldId || 'aom', agent_slug: 'ea' }),
       })
+      if (!res.ok) { showToast(await errText(res, 'Could not create that project'), 'error', 6000); return false }
       // R88: refresh now so the new project's missions show in real time, not in 60s.
       fetchMissions()
-    } catch { /* optimistic UI already reflects it; surfacing handled elsewhere */ }
-  }, [worldId, fetchMissions])
+      return true
+    } catch {
+      showToast('Could not create that project. Check your connection and try again.', 'error', 6000)
+      return false
+    }
+  }, [worldId, fetchMissions, showToast])
   const persistCreateMission = useCallback(async (parentSlug, missionSlug, name) => {
     try {
-      await authFetch('/api/dashboard/create-mission-from-drawer', {
+      const res = await authFetch('/api/dashboard/create-mission-from-drawer', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ parent_slug: parentSlug, mission_slug: missionSlug, name, client_id: worldId || 'aom' }),
       })
+      if (!res.ok) { showToast(await errText(res, 'Could not create that mission'), 'error', 6000); return false }
       // R88: refresh now so the new mission appears in Active Work within seconds.
       fetchMissions()
-    } catch { /* optimistic */ }
-  }, [worldId, fetchMissions])
+      return true
+    } catch {
+      showToast('Could not create that mission. Check your connection and try again.', 'error', 6000)
+      return false
+    }
+  }, [worldId, fetchMissions, showToast])
   const persistMoveFile = useCallback(async (slug, from, to) => {
     try {
       await authFetch('/api/dashboard/project-file-move', {
