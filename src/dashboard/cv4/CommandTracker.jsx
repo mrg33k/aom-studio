@@ -66,6 +66,20 @@ function synthGoal(s) {
   return first.charAt(0).toUpperCase() + first.slice(1)
 }
 
+// cc-6: room-goals stores raw source tags (patrik, inferred, …) and the ledger
+// adds doc/session — normalize them all to the three buckets Patrik asked to
+// see: you (he set it), loop (the system inferred/advanced it), doc (the mission
+// canon). null = don't show a chip.
+function normGoalSource(s) {
+  if (!s) return null
+  const v = String(s).toLowerCase()
+  if (['patrik', 'user', 'manual', 'me'].includes(v)) return 'user'
+  if (['inferred', 'loop', 'loop-review', 'system', 'auto'].includes(v)) return 'loop'
+  if (v === 'doc' || v.startsWith('doc') || v.startsWith('vision') || v.startsWith('context')) return 'doc'
+  if (['session', 'terminal', 'live'].includes(v)) return 'session'
+  return null
+}
+
 function statusColor(status) {
   // Returns a CSS custom property; all are cv6 tokens
   if (status === 'active' || status === 'working') return 'var(--cv6-accent-success)'
@@ -405,7 +419,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             display: roomDisplay(slug, map),
             goal,
             goalCurated: !!curatedGoal, // cc-7: Patrik/loop/doc goal shows verbatim; terminal fallback gets a one-line synth
-            goalSource: curatedGoal ? (roomGoal.goalSource || 'user') : (liveWorker ? 'session' : null), // cc-6 provenance
+            goalSource: curatedGoal ? (normGoalSource(roomGoal.goalSource) || 'user') : (liveWorker ? 'session' : null), // cc-6 provenance
             status,
             liveNow,
             lastActivity: lastTouched,
@@ -442,6 +456,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           slug: `workers:${w.name}`,
           display: { name: w.name, tag: 'Terminal' },
           goal: (w.intent || w.detail || ''),
+          goalSource: 'session', // cc-6: terminal-derived goal → LIVE chip
           status,
           liveNow: w.detail || w.intent || '—',
           lastActivity: workerLastActivity,
