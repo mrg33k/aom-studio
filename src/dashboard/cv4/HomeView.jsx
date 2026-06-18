@@ -433,7 +433,7 @@ function SupportCard({ item, accentColor, column }) {
 export { SupportToolOverlay }
 
 // ── Projects Tool — Finder/Dropbox 3-column browser, drag-to-move + confirm + live create + mobile (R38 r2) ──
-function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen, onCreateProject, onCreateMission, onMoveFile }) {
+function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen, onCreateProject, onCreateMission, onMoveFile, onMoveMission }) {
   const [projects, setProjects] = useState(projectsProp || [])
   const [missionsMap, setMissionsMap] = useState(missionsByProject || {})
   const [selProj, setSelProj] = useState(null)
@@ -477,14 +477,27 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
   const slugify = (name, n) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') + '-' + n
 
   function doMove(mission, fromSlug, toSlug) {
+    // Optimistic: move it in the local tree right away so the UI feels instant.
     setMissionsMap(prev => {
       const next = { ...prev }
       next[fromSlug] = (next[fromSlug] || []).filter(m => m.slug !== mission.slug)
       next[toSlug] = [...(next[toSlug] || []).filter(m => m.slug !== mission.slug), mission]
       return next
     })
-    // Mission reparent is optimistic-only: there is no mission-move backend endpoint
-    // yet (project-file-move handles files, not mission rows). Gap noted in BUILD.md.
+    // Persist: reparent the mission folder on disk + re-register it in Supabase
+    // via /api/dashboard/mission-move (proj-1). Revert the optimistic move on failure.
+    if (onMoveMission) {
+      Promise.resolve(onMoveMission(mission, fromSlug, toSlug)).then(ok => {
+        if (ok === false) {
+          setMissionsMap(prev => {
+            const next = { ...prev }
+            next[toSlug] = (next[toSlug] || []).filter(m => m.slug !== mission.slug)
+            next[fromSlug] = [...(next[fromSlug] || []).filter(m => m.slug !== mission.slug), mission]
+            return next
+          })
+        }
+      })
+    }
   }
   function commitCreate() {
     const name = draftName.trim(); if (!name) { setCreating(null); return }
@@ -2372,6 +2385,26 @@ export default function HomeView({
       })
     } catch { /* optimistic */ }
   }, [])
+  // proj-1: reparent a mission to another project (folder move on disk +
+  // Supabase re-register). Returns true on success, false so the caller can
+  // revert its optimistic move.
+  const persistMoveMission = useCallback(async (mission, fromSlug, toSlug) => {
+    try {
+      const r = await authFetch('/api/dashboard/mission-move', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          world: worldId || 'aom',
+          project_slug: fromSlug,
+          mission_slug: mission.slug,
+          new_project_slug: toSlug,
+        }),
+      })
+      if (!r || !r.ok) return false
+      // Reconcile real state so the move sticks across the next refresh.
+      fetchMissions()
+      return true
+    } catch { return false }
+  }, [worldId, fetchMissions])
 
   function toggleAgentPin(slug) {
     setPinnedAgents(prev => prev.includes(slug) ? prev.filter(s => s !== slug) : [...prev, slug])
@@ -3517,6 +3550,7 @@ export default function HomeView({
                           onCreateProject={persistCreateProject}
                           onCreateMission={persistCreateMission}
                           onMoveFile={persistMoveFile}
+                          onMoveMission={persistMoveMission}
                         />
                       )}
                       {organizeSubtool === 'files' && (
