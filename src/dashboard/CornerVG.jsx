@@ -3007,6 +3007,7 @@ export default function CornerVG() {
                 catchupNotifications={buildCatchupNotifications(notifItems)}
                 onCatchupOpenRoom={handleCatchupOpenRoom}
                 onCatchupViewAll={() => setCatchupOpen(true)}
+                onCatchupDismiss={handleCatchupSkip}
                 commandDeckSlot={cv6Mode ? (
                   <CommandTracker
                     worldId={worldId}

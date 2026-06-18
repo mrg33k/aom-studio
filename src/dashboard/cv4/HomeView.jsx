@@ -2297,6 +2297,7 @@ export default function HomeView({
   catchupNotifications = [], // R64: unread items for the home Catch-up column (CornerVG builds them).
   onCatchupOpenRoom, // R64: open a catch-up item's room (routes to the in-page Chat tool via CornerVG handleSelect*).
   onCatchupViewAll, // R75: open the full Catch Up modal (the home column is a 5-card quick tool; overflow lives here).
+  onCatchupDismiss, // R98: mark a catch-up item handled (clears it from the board) — harvested from the mobile triage design.
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -2708,6 +2709,9 @@ export default function HomeView({
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [toolsFocused, setToolsFocused] = useState(false)
   const [toolNavIndex, setToolNavIndex] = useState(0)
+  // R98: catch-up cards a user has cleared this session (optimistic — the parent also
+  // marks them read, but hide instantly so the triage feels immediate).
+  const [dismissedCatchup, setDismissedCatchup] = useState(() => new Set())
   const TOOL_TABS = useMemo(() => ([
     { key: 'organize', label: 'Organize' },
     { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
@@ -3156,34 +3160,66 @@ export default function HomeView({
           s += (new Date(n.timestamp || 0).getTime() || 0) / 1e10 // recency tiebreaker
           return s
         }
-        const top = [...byRoom.values()].sort((a, b) => score(b) - score(a)).slice(0, 5)
+        const top = [...byRoom.values()].filter(n => !dismissedCatchup.has(n.id)).sort((a, b) => score(b) - score(a)).slice(0, 5)
         const overflow = catchupNotifications.length - top.length
         return (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {top.map((n) => {
               const human = n.senderType === 'human'
               const ask = isAsk(n.messagePreview)
+              const hasAttachment = !!(n.attachment || (n.attachments && n.attachments.length))
+              const open = () => onCatchupOpenRoom && onCatchupOpenRoom(n)
+              const dismiss = (e) => {
+                e.stopPropagation()
+                setDismissedCatchup(prev => { const next = new Set(prev); next.add(n.id); return next })
+                onCatchupDismiss && onCatchupDismiss(n)
+              }
+              // R98: harvested the mobile triage card — the card body opens the room, and a
+              // quiet action row lets you clear it without leaving Home (Slack-style triage).
               return (
-                <button key={n.id} className="hm-card" onClick={() => onCatchupOpenRoom && onCatchupOpenRoom(n)}
-                  style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', padding: '12px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'left', background: 'var(--cv6-surface)', border: '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 140ms ease, border-color 140ms ease' }}
+                <div key={n.id} className="hm-card" role="button" tabIndex={0} onClick={open}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '9px', padding: '12px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'left', background: 'var(--cv6-surface)', border: '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 140ms ease, border-color 140ms ease' }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' }}>
-                  <span style={{ flexShrink: 0, width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700',
-                    background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
-                    color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.senderName}</span>
-                      {ask && <span title="Waiting on you" style={{ flexShrink: 0, fontSize: '9px', fontWeight: '700', letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '1px 5px', lineHeight: 1.5 }}>ASK</span>}
-                      <span style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, marginLeft: 'auto', whiteSpace: 'nowrap' }}>{n.timeAgo}</span>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '11px' }}>
+                    <span style={{ flexShrink: 0, width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700',
+                      background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
+                      color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.senderName}</span>
+                        {ask && <span title="Waiting on you" style={{ flexShrink: 0, fontSize: '9px', fontWeight: '700', letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '1px 5px', lineHeight: 1.5 }}>ASK</span>}
+                        <span style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, marginLeft: 'auto', whiteSpace: 'nowrap' }}>{n.timeAgo}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '1px' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.roomName}</span>
+                        {n._roomCount > 1 && <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '700', color: 'var(--cv6-accent-success)' }}>{n._roomCount} new</span>}
+                      </div>
+                      <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', lineHeight: 1.45, marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.messagePreview}</div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '1px' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.roomName}</span>
-                      {n._roomCount > 1 && <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '700', color: 'var(--cv6-accent-success)' }}>{n._roomCount} new</span>}
-                    </div>
-                    <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', lineHeight: 1.45, marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.messagePreview}</div>
                   </div>
-                </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '41px' }}>
+                    <button onClick={(e) => { e.stopPropagation(); open() }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', padding: '2px 0', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)' }}>
+                      Open in chat
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </button>
+                    {hasAttachment && (
+                      <button onClick={(e) => { e.stopPropagation(); open() }} title="Review the attachment"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: 'transparent', border: '1px solid var(--cv6-divider)', borderRadius: '6px', padding: '3px 9px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', color: 'var(--cv6-text-secondary)' }}>
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+                        Review
+                      </button>
+                    )}
+                    <button onClick={dismiss} title="Mark handled" aria-label="Mark handled"
+                      style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '7px', background: 'transparent', border: '1px solid var(--cv6-divider)', cursor: 'pointer', color: 'var(--cv6-text-tertiary)', transition: 'background 140ms ease, color 140ms ease, border-color 140ms ease' }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)'; e.currentTarget.style.color = 'var(--cv6-accent-success)'; e.currentTarget.style.borderColor = 'transparent' }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-tertiary)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' }}>
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+                    </button>
+                  </div>
+                </div>
               )
             })}
             {overflow > 0 && (
