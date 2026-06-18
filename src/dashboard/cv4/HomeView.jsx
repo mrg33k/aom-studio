@@ -2713,6 +2713,18 @@ export default function HomeView({
   // R98: catch-up cards a user has cleared this session (optimistic — the parent also
   // marks them read, but hide instantly so the triage feels immediate).
   const [dismissedCatchup, setDismissedCatchup] = useState(() => new Set())
+  // R183 (Patrik: "catch up + mobile matching the Claude design files"): a mobile
+  // flag so the Catch Up cards size to the design spec on phones — body text never
+  // below 16px (prevents iOS zoom), 44px touch targets — without touching the dense
+  // desktop column. Breakpoint 720 matches the rest of the file's mobile swap.
+  const [isNarrowHV, setIsNarrowHV] = useState(false)
+  useEffect(() => {
+    const check = () => setIsNarrowHV(typeof window !== 'undefined' && window.innerWidth <= 720)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  // R183: active card index for the mobile Catch Up carousel (drives the dots).
+  const [catchupIdx, setCatchupIdx] = useState(0)
   const TOOL_TABS = useMemo(() => ([
     { key: 'organize', label: 'Organize' },
     { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
@@ -3137,6 +3149,9 @@ export default function HomeView({
         {catchupNotifications.length > 0 && (
           <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
         )}
+        {isNarrowHV && catchupNotifications.length > 1 && (
+          <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>swipe →</span>
+        )}
       </div>
       {catchupNotifications.length === 0 ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', textAlign: 'center', padding: '24px', minHeight: '220px' }}>
@@ -3170,6 +3185,74 @@ export default function HomeView({
         }
         const top = [...byRoom.values()].filter(n => !dismissedCatchup.has(n.id)).sort((a, b) => score(b) - score(a)).slice(0, 5)
         const overflow = catchupNotifications.length - top.length
+        // R183 (Patrik top priority — Mobile Handoff): on phones, Catch Up is a
+        // horizontal snap carousel of 296px cards (matches Corner Mobile.dc.html
+        // Direction A, themed by the live light/dark/glass picker). Desktop keeps
+        // the dense vertical list below. swipe → hint + pagination dots.
+        if (isNarrowHV) {
+          const STEP = 308 // 296 card + 12 gap
+          return (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div onScroll={(e) => { const i = Math.max(0, Math.round(e.currentTarget.scrollLeft / STEP)); if (i !== catchupIdx) setCatchupIdx(i) }}
+                style={{ display: 'flex', gap: '12px', overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x mandatory', padding: '2px 2px 4px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+                {top.map((n) => {
+                  const human = n.senderType === 'human'
+                  const ask = isAsk(n.messagePreview)
+                  const hasAttachment = !!(n.attachment || (n.attachments && n.attachments.length))
+                  const open = () => onCatchupOpenRoom && onCatchupOpenRoom(n)
+                  const dismiss = (e) => { e.stopPropagation(); setDismissedCatchup(prev => { const next = new Set(prev); next.add(n.id); return next }); onCatchupDismiss && onCatchupDismiss(n) }
+                  return (
+                    <div key={n.id} role="button" tabIndex={0} onClick={open}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}
+                      style={{ flex: 'none', width: '296px', boxSizing: 'border-box', scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: '11px', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '16px', padding: '15px', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.10)', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+                        <span style={{ width: '38px', height: '38px', borderRadius: '50%', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12.5px', fontWeight: 700,
+                          background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
+                          color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.senderName}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.roomName}{n._roomCount > 1 ? ` · ${n._roomCount} new` : ''}</div>
+                        </div>
+                        {ask && <span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '2px 5px' }}>ASK</span>}
+                        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>{n.timeAgo}</span>
+                      </div>
+                      <div style={{ fontSize: '14px', lineHeight: 1.45, color: 'var(--cv6-text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '40px' }}>{n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button onClick={(e) => { e.stopPropagation(); open() }}
+                          style={{ flex: 1, background: 'none', border: 'none', color: 'var(--cv6-accent-primary)', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 0', minHeight: '40px' }}>
+                          Open in chat<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </button>
+                        {hasAttachment && (
+                          <button onClick={(e) => { e.stopPropagation(); openTool('review') }} title="Open the Review view"
+                            style={{ height: '40px', padding: '0 11px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'transparent', color: 'var(--cv6-text-primary)', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Review
+                          </button>
+                        )}
+                        <button onClick={dismiss} title="Mark handled" aria-label="Mark handled"
+                          style={{ width: '40px', height: '40px', flex: 'none', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'transparent', color: 'var(--cv6-text-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+                {overflow > 0 && (
+                  <button onClick={() => onCatchupViewAll && onCatchupViewAll()}
+                    style={{ flex: 'none', width: '132px', scrollSnapAlign: 'start', background: 'transparent', border: '1px dashed var(--cv6-divider)', borderRadius: '16px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '8px' }}>
+                    View all {catchupNotifications.length}
+                  </button>
+                )}
+              </div>
+              {top.length > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
+                  {top.map((_, i) => (
+                    <span key={i} style={{ height: '6px', borderRadius: '3px', width: i === catchupIdx ? '18px' : '6px', background: i === catchupIdx ? 'var(--cv6-accent-primary)' : 'var(--cv6-divider)', transition: 'width .25s ease, background .25s ease' }} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        }
         return (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {top.map((n) => {
