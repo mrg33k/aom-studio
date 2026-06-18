@@ -876,7 +876,27 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                   gridArea: isNarrow ? 'goal' : undefined,
                 }}
               >
-                {(row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) || '—'}
+                {(() => {
+                  const goalText = (row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) || '—'
+                  // cc-6: where did this goal come from — you, the loop, or the mission doc.
+                  const prov = goalText === '—' ? null : ({
+                    user: { t: 'YOU', c: 'var(--cv6-accent-primary)' },
+                    loop: { t: 'LOOP', c: 'var(--cv6-accent-success)' },
+                    doc: { t: 'DOC', c: 'var(--cv6-text-tertiary)' },
+                    session: { t: 'LIVE', c: 'var(--cv6-text-tertiary)' },
+                  })[row.goalSource]
+                  return (<>
+                    {prov && (
+                      <span style={{
+                        fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
+                        color: prov.c, border: `1px solid ${prov.c}`, borderRadius: 4,
+                        padding: '1px 4px', marginRight: 6, opacity: 0.75,
+                        textTransform: 'uppercase', whiteSpace: 'nowrap', flexShrink: 0,
+                      }}>{prov.t}</span>
+                    )}
+                    {goalText}
+                  </>)
+                })()}
               </div>
             )}
 
