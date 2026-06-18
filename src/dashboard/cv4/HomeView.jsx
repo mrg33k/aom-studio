@@ -3687,8 +3687,9 @@ export default function HomeView({
                 </button>
               </div>
 
-              {/* Tool content */}
-              <div style={{ padding: '16px 20px', minHeight: '64vh', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+              {/* Tool content — R85 (tools-1): drag the bottom edge to resize. Native CSS
+                  resize gives a grip at the bottom with no JS; works for every tool uniformly. */}
+              <div style={{ padding: '16px 20px', minHeight: '45vh', maxHeight: 'calc(100vh - 140px)', height: '64vh', overflow: 'auto', resize: 'vertical', display: 'flex', flexDirection: 'column' }}>
                 {selectedTool === 'support' && (
                   <SupportToolOverlay worldId={worldId || 'aom'} />
                 )}
