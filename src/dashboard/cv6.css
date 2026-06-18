@@ -1105,9 +1105,16 @@ html[data-theme="glass"] body {
 @media (max-width: 768px) {
   /* R76 (Patrik): mobile = ONE bulletproof stacked column with generous vertical rhythm.
      gap uses !important so it beats the component's inline gap (stylesheet !important
-     is the one case that overrides an inline style). */
-  [data-cv6] .hm-three-column-grid { grid-template-columns:1fr; gap:30px !important; min-height:0; }
-  [data-cv6] .hm-three-column-grid > .hm-section { margin-bottom:0 !important; }
+     is the one case that overrides an inline style).
+     minmax(0,1fr) (not 1fr) so a long unbreakable string — e.g. an attached filename —
+     can't blow the track wider than the viewport and clip cards off the right edge. */
+  [data-cv6] .hm-three-column-grid { grid-template-columns:minmax(0,1fr); gap:30px !important; min-height:0; }
+  [data-cv6] .hm-three-column-grid > .hm-section { margin-bottom:0 !important; min-width:0; }
+  [data-cv6] .hm-three-column-grid .hm-card { max-width:100%; }
+  /* long tokens (filenames, slugs) wrap instead of forcing horizontal overflow */
+  [data-cv6] .hm-three-column-grid .hm-card div { overflow-wrap:anywhere; }
+  /* clear the fixed mobile bottom nav so the last rows aren't hidden behind it */
+  [data-cv6][data-cv4-home] { padding-bottom:120px !important; }
 }
 
 /* Re-anchor the CV6 base typography on the home ROOT (data-cv6 + data-cv4-home).
