@@ -1671,7 +1671,7 @@ function ResizableBox({ minHeight = 320, storageKey, style, children }) {
 
 // R40: CHAT tool — the old 3-pane room view rebuilt inside the new tool window.
 // LEFT rooms list + inline create form · MIDDLE the room's full chat · RIGHT the room's files.
-function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission, onSend, onClose }) {
+function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onCreateProject, onCreateMission, onSend, onClose, worldId }) {
   const rooms = useMemo(() => {
     const ag = (agents || []).map(a => ({ kind: 'agent', slug: a.slug, name: a.name || a.slug }))
     const pr = (projects || []).map(p => ({ kind: 'project', slug: p.slug, name: p.name || p.slug }))
@@ -1784,18 +1784,90 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   }, [projects])
 
   const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
+  // Gallery-only fallback (no backend): a tiny demo thread so /cv6 isn't blank.
   const seedThread = (room) => ([
     { from: 'them', text: `On it. Picking up ${room.name} where we left off.` },
     { from: 'me', text: 'Great. Push it as far as you can and flag anything you need.' },
     { from: 'them', text: 'Will do. First pass is ready for you to look at whenever.' },
   ])
-  const msgs = sel ? (thread[keyOf(sel)] || seedThread(sel)) : []
+  const hasBackend = !!(supabase && worldId)
+  // Load the SELECTED room's REAL Supabase thread (was showing a hardcoded
+  // demo for every room — chat-tool conversations were never wired). Mirrors the
+  // home quick-chat preview. Streams new messages in live.
+  useEffect(() => {
+    if (!sel || !hasBackend) return
+    const k = keyOf(sel)
+    let active = true
+    const toMsg = (m) => ({
+      id: m.id,
+      from: (m.role === 'user' || m.agent === 'user' || m.sender === 'user') ? 'me' : 'them',
+      text: m.text || m.content || '',
+    })
+    const isView = (m) => m && m.metadata && m.metadata.view_command
+    const load = async () => {
+      try {
+        let rows = []
+        if (sel.kind === 'agent') {
+          const { data } = await supabase.from('messages').select('*')
+            .eq('client_id', worldId).eq('agent', sel.slug)
+            .or('project.is.null,project.eq.')
+            .order('timestamp', { ascending: true }).limit(50)
+          rows = data || []
+        } else {
+          const projSlug = sel.slug
+          const sharedCid = `shared:${projSlug}`
+          const clientIds = worldId === sharedCid ? [sharedCid] : [worldId, sharedCid]
+          const missionSlug = sel.missionSlug || null
+          const { data } = await supabase.from('messages').select('*')
+            .in('client_id', clientIds)
+            .or(`project.eq.${projSlug},agent.eq.project:${projSlug}`)
+            .order('timestamp', { ascending: true }).limit(50)
+          rows = (data || []).filter((m) => {
+            const tag = (m && m.metadata && m.metadata.mission_slug) || ''
+            if (!missionSlug) return true
+            if (!tag) return true
+            return tag === missionSlug || tag.endsWith(':' + missionSlug)
+          })
+        }
+        if (!active) return
+        setThread(prev => ({ ...prev, [k]: rows.filter(m => !isView(m)).map(toMsg) }))
+      } catch (_) { if (active) setThread(prev => ({ ...prev, [k]: prev[k] || [] })) }
+    }
+    load()
+    const matches = (m) => {
+      if (!m || m.client_id !== worldId || isView(m)) return false
+      if (sel.kind === 'agent') return m.agent === sel.slug && !m.project
+      const projSlug = sel.slug
+      const isRoom = m.project === projSlug || m.agent === `project:${projSlug}`
+      if (!isRoom) return false
+      const missionSlug = sel.missionSlug || null
+      const tag = (m.metadata && m.metadata.mission_slug) || ''
+      if (!missionSlug || !tag) return true
+      return tag === missionSlug || tag.endsWith(':' + missionSlug)
+    }
+    const channel = supabase
+      .channel(`cv6-chattool-${worldId}-${Date.now()}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `client_id=eq.${worldId}` }, (payload) => {
+        if (!active || !matches(payload.new)) return
+        setThread(prev => {
+          const cur = prev[k] || []
+          if (cur.some(x => x.id && x.id === payload.new.id)) return prev
+          return { ...prev, [k]: [...cur, toMsg(payload.new)] }
+        })
+      })
+      .subscribe()
+    return () => { active = false; try { supabase.removeChannel(channel) } catch (_) {} }
+  }, [sel && keyOf(sel), worldId, hasBackend])
+  const loadedThread = sel ? thread[keyOf(sel)] : null
+  // Real backend: show the loaded thread (empty array = a real, empty room).
+  // Gallery only: fall back to the demo seed so it isn't blank.
+  const msgs = sel ? (loadedThread != null ? loadedThread : (hasBackend ? [] : seedThread(sel))) : []
   const files = useMemo(() => buildFileTree(sel ? { slug: keyOf(sel) } : null), [sel])
 
   function send() {
     const t = draft.trim(); if (!t || !sel) return
     const k = keyOf(sel)
-    setThread(prev => ({ ...prev, [k]: [...(prev[k] || seedThread(sel)), { from: 'me', text: t }] }))
+    setThread(prev => ({ ...prev, [k]: [...(prev[k] || []), { from: 'me', text: t }] }))
     setDraft('')
     // Optimistic UI above; real send via onSend (provided on /cvg + /dashboard).
     // No onSend (e.g. the no-backend gallery) → stays optimistic.
@@ -3591,6 +3663,7 @@ export default function HomeView({
                     onCreateMission={persistCreateMission}
                     onSend={onChatSend}
                     onClose={() => setSelectedTool('home')}
+                    worldId={worldId}
                   />
                 )}
               </div>
