@@ -108,9 +108,13 @@ em{font-style:normal;color:var(--green)}
 .band .by{font-family:var(--body);font-size:15px;color:#9fb2b5;margin-top:22px;max-width:50ch;line-height:1.55}
 
 /* who's building this — personal note */
-.who{display:grid;grid-template-columns:auto 1fr;gap:34px;align-items:start;max-width:74ch}
-.who-photo{width:172px;height:206px;object-fit:cover;object-position:50% 22%;border-radius:16px;display:block;flex:0 0 auto}
-.who-text{border-left:3px solid var(--green);padding:2px 0 2px 28px}
+.who{display:grid;grid-template-columns:auto 1fr;gap:44px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:20px;padding:40px 46px;box-shadow:0 36px 70px -50px rgba(14,22,25,.5);max-width:880px}
+.who-photo-wrap{text-align:center;flex:0 0 auto}
+.who-photo{width:200px;height:240px;object-fit:cover;object-position:50% 22%;border-radius:14px;display:block;border:1px solid var(--line)}
+.who-id{margin-top:18px}
+.who-id b{display:block;font-family:var(--disp);font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.who-id span{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate-2);margin-top:6px}
+.who-text{padding-left:44px;border-left:1px solid var(--line)}
 .who-lab{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--green);font-weight:600}
 .who-note{font-family:var(--disp);font-weight:500;font-size:clamp(22px,3vw,30px);line-height:1.3;letter-spacing:-.018em;color:var(--ink-2);margin-top:16px}
 .who-note em{color:var(--green);font-style:normal}
@@ -217,8 +221,9 @@ em{font-style:normal;color:var(--green)}
   .opts{grid-template-columns:1fr}
   .sprint{grid-template-columns:1fr;gap:8px}
   .sprint-when{padding-top:0}
-  .who{grid-template-columns:1fr;gap:22px}
-  .who-photo{width:132px;height:158px}
+  .who{grid-template-columns:1fr;gap:26px;padding:30px 26px}
+  .who-photo{width:160px;height:192px}
+  .who-text{border-left:none;padding-left:0;border-top:1px solid var(--line);padding-top:26px}
 }
 </style>
 </head>
@@ -297,12 +302,17 @@ em{font-style:normal;color:var(--green)}
 <section class="sec">
   <div class="wrap">
     <div class="who rv">
-      <img class="who-photo" src="/andocia-proposal/assets/patrik.jpg" alt="Patrik Matheson, Ahead of Market" width="172" height="206">
+      <div class="who-photo-wrap">
+        <img class="who-photo" src="/andocia-proposal/assets/patrik.jpg" alt="Patrik Matheson, Founder of Ahead of Market" width="200" height="240">
+        <div class="who-id">
+          <b>Patrik Matheson</b>
+          <span>Founder &middot; Ahead of Market</span>
+        </div>
+      </div>
       <div class="who-text">
         <span class="who-lab">Who's building this</span>
         <p class="who-note">I'm a family man, dedicated to my projects, and relentless at solving problems. There's <em>no stone I'll leave unturned</em> getting this to the finish line.</p>
-        <p class="who-by">You work directly with me on this, start to finish.</p>
-        <p class="who-sig">Patrik Matheson</p>
+        <p class="who-by">You work directly with me on this, start to finish. The same person who runs Ahead of Market is the one building yours.</p>
       </div>
     </div>
   </div>
