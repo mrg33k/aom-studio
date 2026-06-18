@@ -346,7 +346,12 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           }
 
           const lastTouched = roomGoal.last_touched || (liveWorker && liveWorker.updatedAt) || null
-          const goal = (typeof roomGoal.goal === 'string' ? roomGoal.goal : '').substring(0, 80)
+          // Keep the FULL goal text on the row: the cell uses CSS ellipsis for
+          // display, hover shows the whole thing, and the inline editor seeds
+          // from this — truncating here used to silently shorten a room's goal
+          // to 80 chars (and strip path-like substrings) the moment Patrik
+          // clicked to edit it. cc-7.
+          const goal = (typeof roomGoal.goal === 'string' ? roomGoal.goal : '')
 
           // Find routine for this project (by project_slug match, looking for one with master-loop in the name)
           let routineId = null
@@ -397,7 +402,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         tableRows.push({
           slug: `workers:${w.name}`,
           display: { name: w.name, tag: 'Terminal' },
-          goal: (w.intent || w.detail || '').substring(0, 80),
+          goal: (w.intent || w.detail || ''),
           status,
           liveNow: w.detail || w.intent || '—',
           lastActivity: workerLastActivity,
