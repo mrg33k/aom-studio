@@ -692,6 +692,11 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
   const [checklist, setChecklist] = useState([])
   const [newStep, setNewStep] = useState('')
   const [savingStep, setSavingStep] = useState(false)
+  // R59 (Patrik): every review's "agent acts on changes" switch is ON by default — a
+  // change you add goes into effect (the agent looks into it) unless you flip it off.
+  const [agentActs, setAgentActs] = useState(true)
+  useEffect(() => { setAgentActs(true) }, [openItem?.id])
+  const roomSlugFor = useCallback((it) => (it && it.mission && it.mission !== '(root)') ? `${it.project}:${it.mission}` : (it && it.project) || '', [])
   const loadChecklist = useCallback(async (deliverable) => {
     if (!deliverable) { setChecklist([]); return }
     try {
@@ -713,8 +718,14 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
         body: JSON.stringify({ action: 'add', world: worldId || 'aom', deliverable: openItem.id, text }),
       })
       if (r?.ok) await loadChecklist(openItem.id)
+      // R59: when "agent acts" is on, the change goes into effect — drop it into the
+      // deliverable's room so the agent picks it up. Off = recorded only, agent stays put.
+      if (agentActs && onReplyToRoom) {
+        const slug = roomSlugFor(openItem)
+        if (slug) onReplyToRoom(slug, `Review change on "${openItem.item}": ${text}`)
+      }
     } finally { setSavingStep(false) }
-  }, [newStep, openItem, worldId, loadChecklist])
+  }, [newStep, openItem, worldId, loadChecklist, agentActs, onReplyToRoom, roomSlugFor])
   const toggleStep = useCallback(async (id) => {
     if (!openItem) return
     setChecklist(prev => prev.map(it => it.id === id ? { ...it, done: !it.done } : it))
@@ -892,25 +903,27 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
             <div style={{ padding: '24px', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isNarrow ? '240px' : 'auto', overflow: 'auto' }}>
               <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} style={{ width: '100%', maxWidth: '520px' }} />
             </div>
-            {/* What's next — a clean checklist for THIS deliverable (Uber-style). */}
-            <div style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--cv6-surface)', minHeight: 0 }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>What's next</div>
-              {/* Add a step — big calm input, Enter to add */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid var(--cv6-divider)', borderRadius: '12px', padding: '4px 6px 4px 14px', background: 'var(--cv6-ground)' }}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <input
-                  value={newStep}
-                  onChange={e => setNewStep(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addStep() } }}
-                  placeholder="Add a next step…"
-                  style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '15px', outline: 'none' }}
-                />
-                <button onClick={addStep} disabled={savingStep || !newStep.trim()} title="Add" style={{ flexShrink: 0, padding: '9px 16px', borderRadius: '9px', border: 'none', background: newStep.trim() ? 'var(--cv6-text-primary)' : 'var(--cv6-surface-hover)', color: newStep.trim() ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)', cursor: newStep.trim() ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '14px', fontWeight: '700' }}>Add</button>
+            {/* Changes — the list of change items for THIS deliverable. Header + agent
+                switch on top, the list (or empty state) fills the middle, and the input
+                sits pinned at the bottom (Patrik R59). */}
+            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--cv6-surface)', minHeight: 0 }}>
+              {/* Header row: title + "agent acts" switch (on by default) */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Changes</div>
+                <button onClick={() => setAgentActs(v => !v)} title={agentActs ? 'Agent acts on your changes' : 'Agent will not act — changes are recorded only'} style={{ display: 'flex', alignItems: 'center', gap: '8px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                  <span style={{ fontSize: '11px', fontWeight: '600', color: agentActs ? 'var(--cv6-text-secondary)' : 'var(--cv6-text-tertiary)' }}>Agent acts</span>
+                  <span style={{ flexShrink: 0, width: '36px', height: '20px', borderRadius: '10px', background: agentActs ? 'var(--cv6-accent-success)' : 'var(--cv6-divider)', position: 'relative', transition: 'background 200ms ease' }}>
+                    <span style={{ position: 'absolute', top: '2px', left: agentActs ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 200ms ease' }} />
+                  </span>
+                </button>
               </div>
-              {/* The list */}
-              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: '120px' }}>
+              {/* The list — fills the space; empty state centered with a list icon */}
+              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: '160px' }}>
                 {checklist.length === 0 ? (
-                  <div style={{ fontSize: '13.5px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '28px 12px', lineHeight: 1.5 }}>No steps yet. Add the first thing the agent should do on this.</div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', textAlign: 'center', color: 'var(--cv6-text-tertiary)', padding: '24px' }}>
+                    <div style={{ fontSize: '13.5px', lineHeight: 1.55, maxWidth: '230px' }}>Your detailed change items will appear here.</div>
+                    <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.45 }}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                  </div>
                 ) : (
                   checklist.map(step => (
                     <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '13px', padding: '13px 4px', borderBottom: '1px solid var(--cv6-divider)' }}>
@@ -925,9 +938,18 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
                   ))
                 )}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--cv6-text-tertiary)' }}>{checklist.filter(s => s.done).length} of {checklist.length} done</span>
-                <button onClick={() => { setOpenItem(null); setNewStep('') }} style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>Close</button>
+              {checklist.length > 0 && <span style={{ fontSize: '12px', color: 'var(--cv6-text-tertiary)' }}>{checklist.filter(s => s.done).length} of {checklist.length} done</span>}
+              {/* Input pinned at the bottom */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid var(--cv6-divider)', borderRadius: '12px', padding: '4px 6px 4px 14px', background: 'var(--cv6-ground)' }}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <input
+                  value={newStep}
+                  onChange={e => setNewStep(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addStep() } }}
+                  placeholder="Add a change…"
+                  style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '15px', outline: 'none' }}
+                />
+                <button onClick={addStep} disabled={savingStep || !newStep.trim()} title="Send" style={{ flexShrink: 0, padding: '9px 16px', borderRadius: '9px', border: 'none', background: newStep.trim() ? 'var(--cv6-text-primary)' : 'var(--cv6-surface-hover)', color: newStep.trim() ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)', cursor: newStep.trim() ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '14px', fontWeight: '700' }}>Send</button>
               </div>
             </div>
           </div>
@@ -1389,9 +1411,35 @@ function previewKind(node) {
   return 'text'
 }
 
+// R59 (Patrik): make text/markdown read like an article — inject the typographic
+// rules once. Targets the markdown the ChatMessageRenderer emits inside .cv6-article.
+if (typeof document !== 'undefined' && !document.getElementById('cv6-article-style')) {
+  const s = document.createElement('style')
+  s.id = 'cv6-article-style'
+  s.textContent = `
+  .cv6-article .cmr-content { font-size: 15px; line-height: 1.72; }
+  .cv6-article .cmr-content h1 { font-size: 1.7em; font-weight: 700; line-height: 1.2; margin: 0 0 .5em; letter-spacing: -0.01em; }
+  .cv6-article .cmr-content h2 { font-size: 1.32em; font-weight: 700; line-height: 1.25; margin: 1.5em 0 .5em; }
+  .cv6-article .cmr-content h3 { font-size: 1.12em; font-weight: 700; margin: 1.3em 0 .4em; }
+  .cv6-article .cmr-content p { margin: 0 0 1em; }
+  .cv6-article .cmr-content ul, .cv6-article .cmr-content ol { margin: 0 0 1em; padding-left: 1.4em; }
+  .cv6-article .cmr-content li { margin: .35em 0; }
+  .cv6-article .cmr-content li > ul, .cv6-article .cmr-content li > ol { margin: .35em 0; }
+  .cv6-article .cmr-content blockquote { margin: 0 0 1em; padding-left: 1em; border-left: 3px solid var(--cv6-divider); color: var(--cv6-text-secondary); }
+  .cv6-article .cmr-content table { border-collapse: collapse; width: 100%; margin: 0 0 1.2em; font-size: 0.95em; }
+  .cv6-article .cmr-content th, .cv6-article .cmr-content td { border: 1px solid var(--cv6-divider); padding: 7px 10px; text-align: left; vertical-align: top; }
+  .cv6-article .cmr-content th { background: var(--cv6-surface-hover); font-weight: 700; }
+  .cv6-article .cmr-content hr { border: none; border-top: 1px solid var(--cv6-divider); margin: 1.6em 0; }
+  .cv6-article .cmr-content code { font-size: 0.9em; }
+  `
+  document.head.appendChild(s)
+}
+
 function FilePreviewPanel({ node }) {
   const [data, setData] = useState({ state: 'idle' })
+  const [zoom, setZoom] = useState(false)
   const kind = previewKind(node)
+  useEffect(() => { setZoom(false) }, [node && node.path])
   useEffect(() => {
     if (!node || node.type === 'folder' || !node.path) { setData({ state: 'idle' }); return }
     let active = true; let objUrl = null
@@ -1419,19 +1467,28 @@ function FilePreviewPanel({ node }) {
       </div>
       {data.state === 'loading' && hint('Loading…')}
       {data.state === 'error' && <div style={{ fontSize: '13px', color: '#ef4444' }}>Could not open this file.</div>}
-      {data.state === 'media' && kind === 'image' && <img src={data.url} alt={node.name} style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
+      {data.state === 'media' && kind === 'image' && (
+        <>
+          <img src={data.url} alt={node.name} onClick={() => setZoom(true)} title="Click to zoom" style={{ maxWidth: '100%', borderRadius: '8px', display: 'block', cursor: 'zoom-in' }} />
+          {zoom && (
+            <div onClick={() => setZoom(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', padding: '24px' }}>
+              <img src={data.url} alt={node.name} style={{ maxWidth: '96vw', maxHeight: '94vh', objectFit: 'contain', borderRadius: '6px' }} />
+            </div>
+          )}
+        </>
+      )}
       {data.state === 'media' && kind === 'video' && <video src={data.url} controls style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
       {data.state === 'media' && kind === 'audio' && <audio src={data.url} controls style={{ width: '100%' }} />}
       {data.state === 'media' && kind === 'pdf' && (
         <div>
-          <iframe src={data.url} title={node.name} style={{ width: '100%', height: '70vh', border: '1px solid var(--cv6-divider)', borderRadius: '8px', background: '#fff', display: 'block' }} />
-          <a href={data.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: 'var(--cv6-accent-primary)', textDecoration: 'none' }}>Open full size →</a>
+          <iframe src={`${data.url}#zoom=page-width`} title={node.name} style={{ width: '100%', height: '74vh', border: '1px solid var(--cv6-divider)', borderRadius: '8px', background: '#fff', display: 'block' }} />
+          <a href={data.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: 'var(--cv6-accent-primary)', textDecoration: 'none' }}>Open full size (zoom) →</a>
         </div>
       )}
-      {/* R58 (Patrik): text/markdown should read like an article — roomier type, a
-          comfortable measure, and the markdown heading hierarchy from .cmr-content. */}
+      {/* R58/R59 (Patrik): text/markdown reads like an article — roomy type, a comfortable
+          measure, and the heading/list/table hierarchy from the injected .cv6-article CSS. */}
       {data.state === 'text' && (
-        <article style={{ fontSize: '15px', lineHeight: 1.72, color: 'var(--cv6-text-primary)', wordBreak: 'break-word', maxWidth: '70ch' }}>
+        <article className="cv6-article" style={{ color: 'var(--cv6-text-primary)', wordBreak: 'break-word', maxWidth: '72ch' }}>
           <ChatMessageRenderer content={data.text || '(empty file)'} />
         </article>
       )}
