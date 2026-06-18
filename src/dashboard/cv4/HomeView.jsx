@@ -2275,6 +2275,7 @@ export default function HomeView({
   openChatRequest, // R62: { kind:'agent'|'project'|'mission', slug, name, missionSlug?, nonce } — opens the in-page Chat tool preselected (replaces the old full-screen chat).
   catchupNotifications = [], // R64: unread items for the home Catch-up column (CornerVG builds them).
   onCatchupOpenRoom, // R64: open a catch-up item's room (routes to the in-page Chat tool via CornerVG handleSelect*).
+  onCatchupViewAll, // R75: open the full Catch Up modal (the home column is a 5-card quick tool; overflow lives here).
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -2995,6 +2996,7 @@ export default function HomeView({
           if (cv6) { selectByItem('agent', a.slug); setSelectedRoom({ agent: a, project: null, mission: null }); homeRef.current?.focus() }
           else { onSelectAgent && onSelectAgent(a) }
         }}
+        onContextMenu={cv6 ? (e) => { e.preventDefault(); selectByItem('agent', a.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'agent', item: a, project: null }) } : undefined}
         style={{
           display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '8px', minHeight: '56px',
           boxSizing: 'border-box', width: '100%', position: 'relative', overflow: 'hidden',
@@ -3040,31 +3042,70 @@ export default function HomeView({
           </div>
           <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-secondary)', maxWidth: '200px' }}>You're all caught up.</div>
         </div>
-      ) : (
-        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {catchupNotifications.map((n) => {
-            const human = n.senderType === 'human'
-            return (
-              <button key={n.id} className="hm-card" onClick={() => onCatchupOpenRoom && onCatchupOpenRoom(n)}
-                style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', padding: '12px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'left', background: 'var(--cv6-surface)', border: '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 140ms ease, border-color 140ms ease' }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' }}>
-                <span style={{ flexShrink: 0, width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700',
-                  background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
-                  color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.senderName}</span>
-                    <span style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, marginLeft: 'auto', whiteSpace: 'nowrap' }}>{n.timeAgo}</span>
+      ) : (() => {
+        // Patrik (R75): Catch up is a QUICK TOOL, not a feed. Collapse the firehose to
+        // ONE card per room (latest message wins, with an "N new" count), rank by what
+        // most deserves attention (human > attachment > a question/ask > recency), and
+        // cap at FIVE. Overflow lives behind "View all" → the full Catch Up modal.
+        const byRoom = new Map()
+        for (const n of catchupNotifications) {
+          const key = n._roomKey || n.roomName || n.id
+          const prev = byRoom.get(key)
+          const tNew = new Date(n.timestamp || 0).getTime() || 0
+          const tPrev = prev ? (new Date(prev.timestamp || 0).getTime() || 0) : -1
+          if (!prev || tNew >= tPrev) byRoom.set(key, { ...n, _roomCount: (prev?._roomCount || 0) + 1 })
+          else byRoom.set(key, { ...prev, _roomCount: (prev._roomCount || 0) + 1 })
+        }
+        const isAsk = (s) => /\?\s*$/.test((s || '').trim()) || /\?/.test(s || '')
+        const score = (n) => {
+          let s = 0
+          if (n.senderType === 'human') s += 1000
+          if (n.attachment || (n.attachments && n.attachments.length)) s += 60
+          if (isAsk(n.messagePreview)) s += 40
+          s += (new Date(n.timestamp || 0).getTime() || 0) / 1e10 // recency tiebreaker
+          return s
+        }
+        const top = [...byRoom.values()].sort((a, b) => score(b) - score(a)).slice(0, 5)
+        const overflow = catchupNotifications.length - top.length
+        return (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {top.map((n) => {
+              const human = n.senderType === 'human'
+              const ask = isAsk(n.messagePreview)
+              return (
+                <button key={n.id} className="hm-card" onClick={() => onCatchupOpenRoom && onCatchupOpenRoom(n)}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', padding: '12px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'left', background: 'var(--cv6-surface)', border: '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 140ms ease, border-color 140ms ease' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' }}>
+                  <span style={{ flexShrink: 0, width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700',
+                    background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
+                    color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.senderName}</span>
+                      {ask && <span title="Waiting on you" style={{ flexShrink: 0, fontSize: '9px', fontWeight: '700', letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '1px 5px', lineHeight: 1.5 }}>ASK</span>}
+                      <span style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, marginLeft: 'auto', whiteSpace: 'nowrap' }}>{n.timeAgo}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '1px' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.roomName}</span>
+                      {n._roomCount > 1 && <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '700', color: 'var(--cv6-accent-success)' }}>{n._roomCount} new</span>}
+                    </div>
+                    <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', lineHeight: 1.45, marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.messagePreview}</div>
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{n.roomName}</div>
-                  <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', lineHeight: 1.45, marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.messagePreview}</div>
-                </div>
+                </button>
+              )
+            })}
+            {overflow > 0 && (
+              <button onClick={() => onCatchupViewAll && onCatchupViewAll()}
+                style={{ marginTop: '2px', padding: '9px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'center', background: 'transparent', border: '1px dashed var(--cv6-divider)', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600', color: 'var(--cv6-text-secondary)', transition: 'background 140ms ease, color 140ms ease' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>
+                View all {catchupNotifications.length}
               </button>
-            )
-          })}
-        </div>
-      )}
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 
@@ -3730,17 +3771,17 @@ export default function HomeView({
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
-            {/* R14/R64: MIDDLE COLUMN — AGENTS stacked above ACTIVE WORK (same column, Patrik) */}
-            {/* R30b: Combined missions AND projects list, ordered by recency */}
+            {/* R75 (Patrik): ONE column — "All rooms". Agents always pinned on top
+                (right-click an agent to unpin), then the most-recent missions + projects
+                (right-click a project to pin/unpin). No more Agents / Active work split. */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>All rooms</div>
               {visibleAgents.length > 0 && (
-                <div style={{ marginBottom: '18px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
+                <div style={{ marginBottom: '14px' }}>
                   <div>{visibleAgents.map((a, idx) => renderAgentRow(a, idx))}</div>
                 </div>
               )}
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
-              {/* R23: Search input for Active Work filtering */}
+              {/* R23: Search input for filtering the rooms list */}
               <input
                 type="text"
                 placeholder="Search missions & projects..."
@@ -4325,9 +4366,18 @@ export default function HomeView({
           {/* R37: right-click menu for active-work cards — mirrors the left-menu; each action advances into the project screen */}
           {cardMenu && (() => {
             const isM = cardMenu.type === 'mission'
-            const opts = [
+            const isAgent = cardMenu.type === 'agent'
+            const isProject = cardMenu.type === 'project'
+            // R75 (Patrik): agents pin to the top of All rooms (right-click to unpin); projects pin too.
+            const agentPinned = isAgent && (pinnedAgents.includes(cardMenu.item.slug) || (pinnedAgents.length === 0 && cardMenu.item.is_ea))
+            const projectPinned = isProject && pinnedProjects.includes(cardMenu.item.slug)
+            const opts = isAgent ? [
+              { key: 'brief-me', label: 'Brief me' },
+              { key: 'toggle-agent-pin', label: agentPinned ? 'Unpin from top' : 'Pin to top' },
+            ] : [
               { key: 'brief-me', label: 'Brief me' },
               ...(isM ? [{ key: 'whats-next', label: "What's next" }] : []),
+              ...(isProject ? [{ key: 'toggle-project-pin', label: projectPinned ? 'Unpin from top' : 'Pin to top' }] : []),
               { key: 'rename', label: 'Rename' },
               { key: 'create-subfolder', label: 'Create subfolder…' },
               { key: 'move-to-folder', label: 'Move to subfolder…' },
@@ -4335,6 +4385,9 @@ export default function HomeView({
               { key: 'delete', label: 'Delete', danger: true },
             ]
             const advance = (key) => {
+              if (key === 'toggle-agent-pin') { toggleAgentPin(cardMenu.item.slug); setCardMenu(null); return }
+              if (key === 'toggle-project-pin') { toggleProjectPin(cardMenu.item.slug); setCardMenu(null); return }
+              if (isAgent) { setSelectedRoom({ agent: cardMenu.item, project: null, mission: null }); homeRef.current?.focus(); setCardMenu(null); return }
               // Forward-advance: open the room (the move happens on the project screen + is shown there)
               console.log('[card-action]', key, cardMenu.type, cardMenu.item.slug)
               handleProjectSelect(cardMenu.project, isM ? cardMenu.item : null)
@@ -4435,6 +4488,7 @@ export default function HomeView({
                     <button
                       className="hm-proj-name"
                       onClick={() => handleProjectSelect(p, null)}
+                      onContextMenu={(e) => { e.preventDefault(); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
                     >{p.name || p.slug}</button>
                     {missions.some(m => m.status === 'running') && <StatusDot state="running" size={6} title="An agent is working in here" />}
                     <span className="hm-agent-meta">{(() => {
@@ -4485,6 +4539,7 @@ export default function HomeView({
                           key={m.slug}
                           className="hm-mission"
                           onClick={() => handleProjectSelect(p, m)}
+                          onContextMenu={(e) => { e.preventDefault(); setCardMenu({ x: e.clientX, y: e.clientY, type: 'mission', item: m, project: p }) }}
                         >
                           <span style={{ color: '#5A6F8C', display: 'inline-flex', flexShrink: 0 }}><MissionIcon /></span>
                           <StatusDot state={m.status === 'running' || m.status === 'active' ? 'running' : 'idle'} size={6} />
