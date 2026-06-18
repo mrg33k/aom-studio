@@ -70,14 +70,20 @@ export default function GlassBackdrop({ images = CORNER_GLASS_BACKDROPS, index =
           }}
         />
       ))}
-      {/* Scrim: darken + cool the imagery so frosted glass cards and light
-          text stay readable over any backdrop. */}
+      {/* Scrim: darken the imagery down to the design's moody-dark glass ground
+          (Home desktop.dc.html → glass --ground: near-black #0c1218→#05080b with
+          faint teal/amber glows). The photo stays a dim texture beneath so the
+          transparent rows (All Rooms) read like the mockup instead of washing out
+          over a bright photo. (2026-06-18, Patrik: match the design.) */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
           background:
-            'radial-gradient(120% 120% at 50% 0%, rgba(8,11,20,0.30) 0%, rgba(8,11,20,0.52) 55%, rgba(6,9,15,0.68) 100%)',
+            'linear-gradient(180deg, rgba(7,10,17,0.82) 0%, rgba(6,9,14,0.90) 100%),' +
+            'radial-gradient(58% 42% at 22% 12%, rgba(74,116,148,0.20), transparent 62%),' +
+            'radial-gradient(52% 38% at 86% 20%, rgba(206,148,70,0.12), transparent 58%),' +
+            'radial-gradient(48% 36% at 72% 88%, rgba(46,96,128,0.16), transparent 64%)',
         }}
       />
     </div>
