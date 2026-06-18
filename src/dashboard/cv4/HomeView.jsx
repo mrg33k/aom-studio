@@ -2420,7 +2420,10 @@ export default function HomeView({
             slug: m.raw_slug || m.slug,
             name: m.name || m.raw_slug || m.slug,
             last_message_at: m.last_message_at || m.last_updated || null,
-            status: hasRunning ? 'running' : hasQueued ? 'queued' : 'idle',
+            // proj-3: tasks win when present; otherwise keep the backend status
+            // (missions-tree marks fresh/agent_status missions 'in-progress') instead
+            // of forcing 'idle' — that's why brand-new missions always looked dead.
+            status: hasRunning ? 'running' : hasQueued ? 'queued' : (m.status || 'idle'),
             depth: typeof m.depth === 'number' ? m.depth : 0,
           }
         })
