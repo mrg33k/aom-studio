@@ -170,7 +170,16 @@ em{font-style:normal;color:var(--green)}
 .opt.feat li{color:#cdd9da}
 .opt li svg{flex:0 0 auto;width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:2.2;margin-top:3px}
 .opt .foot-note{margin-top:auto;padding-top:18px;font-size:13px;color:var(--slate-2)}
-.opt .opt-foot{margin-top:14px;font-size:13.5px;color:#9fb2b5;text-align:right}
+/* payment — milestone-tied, risk-reversed */
+.pay{margin-top:24px;border-top:1px solid rgba(255,255,255,.14);padding-top:22px;display:flex;flex-direction:column;gap:18px}
+.pay-row{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:baseline}
+.pay-amt{font-family:var(--disp);font-size:25px;font-weight:700;color:#fff;letter-spacing:-.02em;white-space:nowrap}
+.pay-for b{display:block;color:#fff;font-weight:600;font-size:15px}
+.pay-for span{display:block;color:#9fb2b5;font-size:13.5px;margin-top:3px;line-height:1.5}
+.pay-total{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid rgba(255,255,255,.14);padding-top:18px}
+.pay-total span{color:#fff;font-weight:600;font-size:12px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.pay-total b{font-family:var(--disp);font-size:32px;font-weight:800;color:var(--green-soft);letter-spacing:-.025em}
+.opt .pay-note{margin-top:14px;font-size:13.5px;color:#9fb2b5;line-height:1.5}
 .math{margin-top:22px;font-size:14.5px;color:var(--slate);background:rgba(27,169,78,.06);border:1px solid rgba(27,169,78,.2);border-radius:12px;padding:16px 20px}
 .math b{color:var(--ink-2)}
 .value{margin-top:20px;border-top:1px solid rgba(255,255,255,.14);padding-top:16px;display:grid;grid-template-columns:1fr auto;gap:10px 14px;font-size:13.5px;color:#9fb2b5;align-items:baseline}
@@ -225,8 +234,7 @@ em{font-style:normal;color:var(--green)}
 <!-- HERO -->
 <header class="hero">
   <div class="wrap">
-    <div class="eyebrow rv">Proposal for Andocia &middot; Prepared by Patrik Matheson, Ahead of Market</div>
-    <h1 class="rv d1">Andocia, running on<br>its <span class="l2">own</span> AI system.</h1>
+    <h1 class="rv">Andocia, running on<br>its <span class="l2">own</span> AI system.</h1>
     <p class="hero-sub rv d2">Will, this is the same system I run Ahead of Market on, built into your own for your agency. <b>Here is how we'd do it, and what it costs.</b></p>
     <div class="meta-row rv d3">
       <span><b>Two-day</b> onsite kickoff</span><span class="d"></span>
@@ -371,11 +379,18 @@ em{font-style:normal;color:var(--green)}
           <li><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>13 months of support, up to 4 hrs/week, plus phone</li>
           <li><svg viewBox="0 0 24 24"><path d="M4 12l5 5L20 6"/></svg>Your L10 scorecard and Rocks built in</li>
         </ul>
-        <div class="value">
-          <span>On signing</span><b>$58,500</b>
-          <span>At week 4, once your instance is operational</span><b>$58,500</b>
-          <span class="lab2 tot">Total</span><b class="tot">$117,000</b>
+        <div class="pay">
+          <div class="pay-row">
+            <div class="pay-amt">$58,500</div>
+            <div class="pay-for"><b>To begin</b><span>The onsite kickoff and the build to a working system.</span></div>
+          </div>
+          <div class="pay-row">
+            <div class="pay-amt">$58,500</div>
+            <div class="pay-for"><b>When it's live</b><span>Paid once your system is up and running your accounts. Not before.</span></div>
+          </div>
+          <div class="pay-total"><span>Total</span><b>$117,000</b></div>
         </div>
+        <p class="pay-note">You only pay the second half once it is built and working for you.</p>
       </div>
     </div>
   </div>
