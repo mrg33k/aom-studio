@@ -2273,6 +2273,7 @@ export default function HomeView({
   onReplyToRoom, // real reply function for Review tool (posts notes to rooms). Omit → review notes are optimistic only.
   commandDeckSlot, // real goal-ledger CommandDeck element (passed from CornerVG). When present the Command tool renders the LIVE ledger instead of the sample deck (gallery has none → sample).
   openChatRequest, // R62: { kind:'agent'|'project'|'mission', slug, name, missionSlug?, nonce } — opens the in-page Chat tool preselected (replaces the old full-screen chat).
+  openToolRequest, // R82: { tool, nonce } — an agent (via the cv6-view channel) opens a tool on the user's screen.
   catchupNotifications = [], // R64: unread items for the home Catch-up column (CornerVG builds them).
   onCatchupOpenRoom, // R64: open a catch-up item's room (routes to the in-page Chat tool via CornerVG handleSelect*).
   onCatchupViewAll, // R75: open the full Catch Up modal (the home column is a 5-card quick tool; overflow lives here).
@@ -2676,6 +2677,11 @@ export default function HomeView({
     setChatInitialRoom(initial)
     setSelectedTool('chat')
   }, [openChatRequest?.nonce])
+  // R82: an agent opens a tool on the user's screen (cv6-view channel → CornerVG → here).
+  useEffect(() => {
+    if (!openToolRequest || !openToolRequest.tool) return
+    setSelectedTool(openToolRequest.tool)
+  }, [openToolRequest?.nonce])
   const [conversationMessages, setConversationMessages] = useState([])
 
   // Quick-reply from the home conversation preview. Routes a REAL send through
