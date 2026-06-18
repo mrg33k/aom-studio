@@ -11,6 +11,7 @@
 [data-cv6] {
   --cv6-ground: #f5f5f5;
   --cv6-surface: #ffffff;
+  --cv6-surface2: #f0f0f2;
   --cv6-surface-hover: #f8f8f8;
   --cv6-divider: rgba(0, 0, 0, 0.10);
   --cv6-hover: rgba(0, 0, 0, 0.04);
@@ -67,6 +68,7 @@
 .dark [data-cv6]:not([data-theme]):not(.dark) {
   --cv6-ground: #0a0a0b;
   --cv6-surface: #1a1a1b;
+  --cv6-surface2: #1c1c21;
   --cv6-surface-hover: #242427;
   --cv6-divider: rgba(255, 255, 255, 0.06);
   --cv6-hover: rgba(255, 255, 255, 0.04);
@@ -107,6 +109,7 @@
      surface + blur(22) saturate(1.3) (applied below), a lighter blue accent, and
      bright text — matching Home desktop.dc.html. */
   --cv6-surface: rgba(22, 26, 33, 0.55);
+  --cv6-surface2: rgba(28, 28, 33, 0.65);
   --cv6-surface-hover: rgba(40, 46, 58, 0.66);
   --cv6-divider: transparent;
   --cv6-hover: rgba(255, 255, 255, 0.08);
@@ -1199,9 +1202,12 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scr
    the 8 tool tiles shrink to fit, so Home never scrolls horizontally (fixes the
    iPad over-scroll / zoomed feel). The conversation is one tap away via a room. */
 @media (min-width: 769px) and (max-width: 1024px) {
-  [data-cv6] .hm-three-column-grid > div:nth-child(1) { flex:0 1 320px; min-width:0; }
-  [data-cv6] .hm-three-column-grid > div:nth-child(2) { flex:1 1 0; min-width:0; }
-  [data-cv6] .hm-three-column-grid > div:nth-child(3) { display:none; }
+  /* The column divs carry INLINE styles (colStyle: display:flex), so these MUST be
+     !important to win — otherwise the conversation column stays visible and All Rooms
+     gets crushed to a sliver (the cramped / "weird glass window" look on iPad). */
+  [data-cv6] .hm-three-column-grid > div:nth-child(1) { flex:0 1 300px !important; min-width:0 !important; }
+  [data-cv6] .hm-three-column-grid > div:nth-child(2) { flex:1 1 0 !important; min-width:0 !important; }
+  [data-cv6] .hm-three-column-grid > div:nth-child(3) { display:none !important; }
   [data-cv6] .hm-tools-row > button { min-width:0 !important; }
 }
 @media (max-width: 768px) {

@@ -4129,20 +4129,23 @@ export default function HomeView({
 
                 {selectedTool === 'organize' && (
                   <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
-                    {/* Switcher in header style (u-mqir8cr7) */}
-                    <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--cv6-divider)', paddingBottom: '12px', marginBottom: '8px' }}>
+                    {/* Switcher in segmented button style per CV6 mockup */}
+                    <div style={{ display: 'flex', gap: '4px', background: 'var(--cv6-surface2)', borderRadius: '11px', padding: '4px', marginBottom: '8px' }}>
                       <button
                         onClick={() => setOrganizeSubtool('projects')}
                         style={{
-                          padding: '8px 14px',
-                          borderRadius: '6px',
-                          border: organizeSubtool === 'projects' ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                          flex: 1,
+                          height: '36px',
+                          padding: '0',
+                          borderRadius: '8px',
+                          border: organizeSubtool === 'projects' ? '1px solid var(--cv6-accent-primary)' : 'none',
                           background: organizeSubtool === 'projects' ? 'var(--cv6-accent-primary)' : 'transparent',
                           color: organizeSubtool === 'projects' ? '#fff' : 'var(--cv6-text-primary)',
                           cursor: 'pointer',
                           fontFamily: 'inherit',
-                          fontSize: '12px',
+                          fontSize: '13.5px',
                           fontWeight: '600',
+                          transition: 'all 120ms ease',
                         }}
                       >
                         Projects
@@ -4150,15 +4153,18 @@ export default function HomeView({
                       <button
                         onClick={() => setOrganizeSubtool('files')}
                         style={{
-                          padding: '8px 14px',
-                          borderRadius: '6px',
-                          border: organizeSubtool === 'files' ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                          flex: 1,
+                          height: '36px',
+                          padding: '0',
+                          borderRadius: '8px',
+                          border: organizeSubtool === 'files' ? '1px solid var(--cv6-accent-primary)' : 'none',
                           background: organizeSubtool === 'files' ? 'var(--cv6-accent-primary)' : 'transparent',
                           color: organizeSubtool === 'files' ? '#fff' : 'var(--cv6-text-primary)',
                           cursor: 'pointer',
                           fontFamily: 'inherit',
-                          fontSize: '12px',
+                          fontSize: '13.5px',
                           fontWeight: '600',
+                          transition: 'all 120ms ease',
                         }}
                       >
                         Files
