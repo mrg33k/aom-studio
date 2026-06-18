@@ -3731,6 +3731,11 @@ export default function HomeView({
                     padding: '12px 16px', borderRadius: '6px', border: selectedTool === t.key ? '2px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
                     // R56: ring the tool the keyboard cursor is on (Tab/arrows), distinct from the open tool
                     boxShadow: (toolsFocused && TOOL_TABS[toolNavIndex]?.key === t.key) ? '0 0 0 2px var(--cv6-accent-primary)' : 'none',
+                    // kbd-tool-ring: the glass frost rule sets box-shadow !important on tool
+                    // tiles, masking the ring above. outline is not overridden by box-shadow,
+                    // so the keyboard cursor stays visible on every theme (incl. glass).
+                    outline: (toolsFocused && TOOL_TABS[toolNavIndex]?.key === t.key) ? '2px solid var(--cv6-accent-primary)' : 'none',
+                    outlineOffset: '2px',
                     background: selectedTool === t.key ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
                     color: selectedTool === t.key ? '#ffffff' : 'var(--cv6-text-primary)',
                     cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit', fontWeight: '500',
