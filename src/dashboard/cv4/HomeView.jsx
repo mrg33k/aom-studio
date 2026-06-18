@@ -1566,9 +1566,9 @@ function FilesToolOverlay({ projects }) {
   }, [])
   useEffect(() => { setSel1(null); setSel2(null); setMobileCol(0) }, [proj])
 
-  // R88: load the REAL file tree for the selected project and refresh every 12s
-  // so files an agent lands on disk appear live. Falls back to sample data on
-  // the no-backend gallery (project without a slug).
+  // R88/R107: load the REAL file tree for the selected project and refresh every
+  // 10s so files an agent lands on disk appear live within Patrik's "10 or so is
+  // fine" bar (was 12s). Falls back to sample data on the no-backend gallery.
   useEffect(() => {
     if (!proj || !proj.slug) { setTree(buildFileTree(proj)); return }
     let active = true
@@ -1582,7 +1582,7 @@ function FilesToolOverlay({ projects }) {
       } catch { if (active) setTree([]) }
     }
     load()
-    const t = setInterval(load, 12000)
+    const t = setInterval(load, 10000)
     return () => { active = false; clearInterval(t) }
   }, [proj])
   const col2items = sel1 && sel1.type === 'folder' ? (sel1.children || []) : []
@@ -2462,9 +2462,10 @@ export default function HomeView({
 
   useEffect(() => {
     fetchMissions()
-    // R88: refresh every 20s so a mission an agent creates lands within seconds
-    // (user-created ones refresh immediately via persistCreateMission).
-    const timer = setInterval(fetchMissions, 20000)
+    // R107: refresh every 10s so a mission an agent creates lands within Patrik's
+    // "no delay longer than a few seconds (10 or so is fine)" bar (was 20s, which
+    // doubled it). User-created ones still refresh immediately via persistCreateMission.
+    const timer = setInterval(fetchMissions, 10000)
     return () => clearInterval(timer)
   }, [fetchMissions])
 
