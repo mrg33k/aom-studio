@@ -1490,6 +1490,7 @@ export default function CornerVG() {
       }
     } catch (err) {
       console.error('[cvg chat-tool send] failed', err)
+      throw err
     }
   }, [agents, projectRooms, worldId, currentUser])
 

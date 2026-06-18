@@ -218,7 +218,13 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       let goals = { rooms: {} }
       let loadError = false
       if (gRes?.ok) {
-        try { goals = JSON.parse(await gRes.text()) } catch { goals = { rooms: {} } }
+        try {
+          const parsed = JSON.parse(await gRes.text())
+          // Ensure parsed goals is an object with a rooms property
+          goals = (parsed && typeof parsed === 'object' && parsed.rooms && typeof parsed.rooms === 'object')
+            ? parsed
+            : { rooms: {} }
+        } catch { goals = { rooms: {} } }
       } else {
         loadError = true
       }
@@ -228,9 +234,14 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         try {
           const ledger = JSON.parse(await lgRes.text())
           const ledgerGoals = {}
-          Object.values(ledger.users || {}).forEach((u) => {
-            Object.entries(u.goals || {}).forEach(([slug, g]) => { ledgerGoals[slug] = g })
-          })
+          // Defensively guard: ledger might be malformed, ensure it's an object with users
+          if (ledger && typeof ledger === 'object') {
+            Object.values(ledger.users || {}).forEach((u) => {
+              if (u && typeof u === 'object') {
+                Object.entries(u.goals || {}).forEach(([slug, g]) => { ledgerGoals[slug] = g })
+              }
+            })
+          }
           goals.rooms = goals.rooms || {}
           Object.entries(ledgerGoals).forEach(([slug, lg]) => {
             const base = goals.rooms[slug] || {}
@@ -261,10 +272,10 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       
       // cc-3: if live fetch failed and workers array is empty, try to reconstruct from goal-ledger sessions
       // (local fallback: show terminal sessions even when the live feed is unavailable)
-      if (!sRes?.ok && workers.length === 0 && goals && goals.rooms) {
+      if (!sRes?.ok && workers.length === 0 && goals && typeof goals === 'object' && goals.rooms && typeof goals.rooms === 'object') {
         const fallbackWorkers = []
         Object.values(goals.rooms).forEach((room) => {
-          if (Array.isArray(room.sessions)) {
+          if (room && typeof room === 'object' && Array.isArray(room.sessions)) {
             room.sessions.forEach((s) => {
               if (s && typeof s === 'object' && s.name) {
                 // Convert ledger session format to worker format
@@ -596,9 +607,13 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   // "no delay longer than ~10s" tolerance.
   useEffect(() => {
     load()
-    const t = setInterval(load, 10000)
+    const t = setInterval(() => {
+      // Skip periodic load if user is actively editing, saving, or sending
+      if (editingGoalSlug || savingGoal || replySending) return
+      load()
+    }, 10000)
     return () => clearInterval(t)
-  }, [load])
+  }, [load, editingGoalSlug, savingGoal, replySending])
 
   const toggleRoutine = useCallback(async (routineId, wantOn) => {
     if (!routineId || typeof routineId !== 'string') {
@@ -657,6 +672,8 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   const toggleAutopilot = useCallback(async (slug, wantOn) => {
     const key = String(slug || '').split(':').pop().trim() || String(slug || '')
     if (!key) return
+    // Capture current state before optimistic update so we can revert on failure
+    const currentState = rows.find(r => r && !r.isWorkerRow && String(r.slug || '').split(':').pop().trim() === key)?.autopilot
     setAutopilotBusy((prev) => ({ ...prev, [key]: wantOn }))
     try {
       const res = await authFetch('/api/dashboard/room-autopilot', {
@@ -670,13 +687,19 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           ? { ...r, autopilot: wantOn } : r))
       } else {
         console.error('Failed to toggle autopilot:', res?.status)
+        // Revert optimistic update on error
+        setRows((prev) => prev.map((r) => (r && !r.isWorkerRow && String(r.slug || '').split(':').pop().trim() === key)
+          ? { ...r, autopilot: currentState } : r))
       }
     } catch (err) {
       console.error('Error toggling autopilot:', err)
+      // Revert optimistic update on error
+      setRows((prev) => prev.map((r) => (r && !r.isWorkerRow && String(r.slug || '').split(':').pop().trim() === key)
+        ? { ...r, autopilot: currentState } : r))
     } finally {
       setAutopilotBusy((prev) => { const next = { ...prev }; delete next[key]; return next })
     }
-  }, [worldId])
+  }, [worldId, rows])
 
   if (loading) {
     return (

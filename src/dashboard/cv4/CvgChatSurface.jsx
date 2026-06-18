@@ -29,9 +29,13 @@ import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx'
 // chat-4 / parity: pull image + file attachments off a message the same way the
 // cv4 thread does — explicit metadata.attachments[] first, then the single
 // metadata.attachment, then the top-level attachment_url column.
+// Filter to entries that are objects with usable string url/name fields to prevent
+// crashes on malformed entries (undefined.startsWith crashes the render).
 function getAttachments(msg) {
   const meta = (msg && msg.metadata) || {}
-  if (Array.isArray(meta.attachments) && meta.attachments.length) return meta.attachments
+  if (Array.isArray(meta.attachments) && meta.attachments.length) {
+    return meta.attachments.filter(a => a && typeof a === 'object' && (typeof a.url === 'string' || typeof a.name === 'string'))
+  }
   if (meta.attachment && meta.attachment.url) return [meta.attachment]
   if (msg && msg.attachment_url) return [{ url: msg.attachment_url, mime: msg.file_mime_type, name: msg.file_name }]
   return []
@@ -40,7 +44,8 @@ function getAttachments(msg) {
 function isImageAtt(att) {
   if (!att) return false
   if (att.mime && String(att.mime).startsWith('image/')) return true
-  return /\.(png|jpe?g|gif|webp|svg|bmp|heic)$/i.test(att.url || att.name || '')
+  const urlOrName = String(att.url || att.name || '')
+  return /\.(png|jpe?g|gif|webp|svg|bmp|heic)$/i.test(urlOrName)
 }
 
 // An image attachment that, if it fails to load (dead URL, failed generation),
@@ -63,7 +68,7 @@ function ChatImageAttachment({ att }) {
       src={att.url}
       alt={att.name || 'image'}
       onError={() => setBroken(true)}
-      onClick={() => window.open(att.url, '_blank', 'noopener')}
+      onClick={() => { if (typeof att.url === 'string') window.open(att.url, '_blank', 'noopener') }}
       style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, display: 'block', cursor: 'pointer' }}
     />
   )
@@ -205,6 +210,7 @@ export default function CvgChatSurface({
 
     const handleInsert = (payload) => {
       const msg = payload.new
+      if (!msg || !msg.id) return
       if (!active) return
       if (msg.client_id !== worldId) return
       if (isHiddenLoopCue(msg)) return
@@ -279,8 +285,11 @@ export default function CvgChatSurface({
     else if (target?.type === 'project') qs.set('project', target.slug)
 
     const poll = async () => {
+      if (!active) return
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 8000)
       try {
-        const r = await authFetch(`/api/dashboard/message-steps?${qs.toString()}`)
+        const r = await authFetch(`/api/dashboard/message-steps?${qs.toString()}`, { signal: controller.signal })
         if (!r.ok || !active) return
         const d = await r.json()
         const steps = Array.isArray(d.steps) ? d.steps : []
@@ -288,7 +297,12 @@ export default function CvgChatSurface({
         const sorted = steps.slice().sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
         const live = sorted.find(s => s.status === 'in_progress') || sorted[0]
         if (active && live && live.text) setStepText(live.text)
-      } catch (_) { /* keep last */ }
+      } catch (e) {
+        // Ignore aborts; keep last step text
+        if (e?.name !== 'AbortError') { /* keep last */ }
+      } finally {
+        clearTimeout(timeoutId)
+      }
     }
     poll()
     const t = setInterval(poll, 2000)
@@ -526,7 +540,8 @@ export default function CvgChatSurface({
                 return (
                   <div style={{ marginTop: (msg.text || msg.content) ? 8 : 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {atts.map((att, i) => {
-                      const isVideo = (att.mime || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(att.url || att.name || '')
+                      const urlOrName = String(att.url || att.name || '')
+                      const isVideo = (att.mime || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(urlOrName)
                       if (isImageAtt(att)) return <ChatImageAttachment key={i} att={att} />
                       if (isVideo && att.url) return (
                         <video key={i} controls preload="metadata" src={att.url}
