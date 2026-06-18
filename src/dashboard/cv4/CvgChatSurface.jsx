@@ -508,6 +508,13 @@ export default function CvgChatSurface({
             }}
           >
             <div
+              /* Assistant bubbles are surface-coloured, so on the light-glass theme
+                 they inherit the on-photo WHITE text token and render white-on-white
+                 (illegible). Tagging the bubble as a card pulls it into the approved
+                 glass-card rule (cv6.css) that flips text to dark on light surfaces —
+                 same treatment every other card already uses. User bubbles ride the
+                 accent fill + white text, so they stay untagged. */
+              data-cv6-card={!isUser ? '' : undefined}
               style={{
                 maxWidth: 'min(720px, 85%)',
                 padding: '12px 14px',
