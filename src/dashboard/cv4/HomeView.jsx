@@ -900,15 +900,16 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
           </div>
-          <div style={{ flex: 1, display: isNarrow ? 'block' : 'grid', gridTemplateColumns: '1.6fr 1fr', overflow: 'auto', minHeight: 0 }}>
-            {/* Item in full — show real preview via FilePreviewPanel */}
-            <div style={{ padding: '24px', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isNarrow ? '240px' : 'auto', overflow: 'auto' }}>
+          <div style={{ flex: 1, display: isNarrow ? 'block' : 'grid', gridTemplateColumns: '1.6fr 1fr', overflow: isNarrow ? 'auto' : 'hidden', minHeight: 0 }}>
+            {/* Item in full — show real preview via FilePreviewPanel. Top-aligned and
+                self-scrolling so the top of long markdown is always visible (Patrik R60). */}
+            <div style={{ padding: '24px', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', display: 'flex', alignItems: isNarrow ? 'center' : 'flex-start', justifyContent: 'center', minHeight: isNarrow ? '240px' : 0, overflowY: 'auto' }}>
               <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} style={{ width: '100%', maxWidth: '520px' }} />
             </div>
             {/* Changes — the list of change items for THIS deliverable. Header + agent
                 switch on top, the list (or empty state) fills the middle, and the input
                 sits pinned at the bottom (Patrik R59). */}
-            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--cv6-surface)', minHeight: 0 }}>
+            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--cv6-surface)', minHeight: 0, overflow: 'hidden' }}>
               {/* Header row: title + "agent acts" switch (on by default) */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
                 <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Changes</div>
@@ -922,9 +923,11 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
               {/* The list — fills the space; empty state centered with a list icon */}
               <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: '160px' }}>
                 {checklist.length === 0 ? (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', textAlign: 'center', color: 'var(--cv6-text-tertiary)', padding: '24px' }}>
-                    <div style={{ fontSize: '13.5px', lineHeight: 1.55, maxWidth: '230px' }}>Your detailed change items will appear here.</div>
-                    <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.45 }}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', textAlign: 'center', padding: '24px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: '700', lineHeight: 1.5, maxWidth: '250px', color: 'var(--cv6-text-secondary)' }}>Your detailed change items will appear here.</div>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '22px', background: 'var(--cv6-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px var(--cv6-divider)' }}>
+                      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                    </div>
                   </div>
                 ) : (
                   checklist.map(step => (
