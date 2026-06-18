@@ -1016,6 +1016,8 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const [sortCol, setSortCol] = useState(null) // R88: click a header to sort by that column
   const [sortDir, setSortDir] = useState(1)
   const [selectorCollapsed, setSelectorCollapsed] = useState(false) // collapse Trackers list to a slim bar so the sheet is the focus
+  const [sheetFocused, setSheetFocused] = useState(false) // u-mqil0bc9: freeze sort while user is reading/typing to prevent list jumping
+
   // Space Rising real tracker (admin_tickets) — live via /api/dashboard/admin-tickets.
   const [srStatus, setSrStatus] = useState(null) // null|loading|connected|needs_key|error
   useEffect(() => {
@@ -1078,10 +1080,19 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         Owner: b.owner || '',
       }))
       const cv6Tracker = { id: 'cv6-bugs', name: 'CV6 Bugs', scope: 'Corner CV6', template: 'bugs', columns: ['Priority', 'Page', 'Bug', 'Expected', 'Severity', 'Status', 'Owner'], rows, on: true, live: true }
-      setTrackers(prev => [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')])
+      // u-mqil0bc9: if user is focused on sheet, don't refresh the entire tracker list (which causes re-sort jump).
+      setTrackers(prev => {
+        const hasCV6 = prev.some(t => t.id === 'cv6-bugs')
+        if (hasCV6 && sheetFocused) {
+          // User is reading; silently update the rows in place without re-inserting
+          return prev.map(t => t.id !== 'cv6-bugs' ? t : { ...t, rows })
+        }
+        // User is not focused; safe to refresh the whole list
+        return [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')]
+      })
       setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'cv6-bugs' : prev)
     } catch { /* best-effort */ }
-  }, [])
+  }, [sheetFocused])
   useEffect(() => {
     pullBugs()
     const t = setInterval(pullBugs, 30000)
@@ -1249,7 +1260,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
           <button onClick={() => setAddingBug(false)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>Cancel</button>
         </div>
       )}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div style={{ flex: 1, overflow: 'auto' }} onMouseEnter={() => setSheetFocused(true)} onMouseLeave={() => setSheetFocused(false)}>
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1 }}>
             {sel.columns.map(c => (
@@ -2124,7 +2135,8 @@ export default function HomeView({
   onReplyToRoom, // real reply function for Review tool (posts notes to rooms). Omit → review notes are optimistic only.
   commandDeckSlot, // real goal-ledger CommandDeck element (passed from CornerVG). When present the Command tool renders the LIVE ledger instead of the sample deck (gallery has none → sample).
   openChatRequest, // R62: { kind:'agent'|'project'|'mission', slug, name, missionSlug?, nonce } — opens the in-page Chat tool preselected (replaces the old full-screen chat).
-  onOpenNotifications, // R63: open notifications IN-PLACE on this surface (CornerVG opens the Catchup modal). Omit → falls back to the cross-surface link (gallery only).
+  catchupNotifications = [], // R64: unread items for the home Catch-up column (CornerVG builds them).
+  onCatchupOpenRoom, // R64: open a catch-up item's room (routes to the in-page Chat tool via CornerVG handleSelect*).
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -2160,6 +2172,8 @@ export default function HomeView({
 
   // R21: Tools box state — which tool is open in full-screen mode
   const [selectedTool, setSelectedTool] = useState(initialTool || 'home') // R26: Home default; R38: gallery can open a tool
+  const [organizeSubtool, setOrganizeSubtool] = useState('projects') // 'projects' | 'files' for Organize tool (u-mqir8cr7)
+
   const [toolRecency, setToolRecency] = useState([]) // R48: most-recently-used tools sit next to Home
   // R48: open a tool AND record it as most-recent so the row reorders into recency order.
   const openTool = useCallback((key) => {
@@ -2460,8 +2474,7 @@ export default function HomeView({
   const [toolsFocused, setToolsFocused] = useState(false)
   const [toolNavIndex, setToolNavIndex] = useState(0)
   const TOOL_TABS = useMemo(() => ([
-    { key: 'home', label: 'Home' }, { key: 'chat', label: 'Chat' }, { key: 'projects', label: 'Projects' },
-    { key: 'files', label: 'Files' }, { key: 'review', label: 'Review' }, { key: 'support', label: 'Support' },
+    { key: 'organize', label: 'Organize' },
     { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
   ]), [])
   const replyInputRef = useRef(null)
@@ -2800,6 +2813,98 @@ export default function HomeView({
   const roomGlow = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.30)`
   const roomTint = (slug) => `hsla(${roomHue(slug)}, 60%, 48%, 0.10)`  // hover wash, text stays dark
 
+  // R64: a single agent row, reused so Agents can sit stacked above Active Work in the
+  // middle column (Patrik) without duplicating markup. Same click/keyboard behavior as before.
+  const renderAgentRow = (a, idx) => {
+    const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+    const agentStatus = a.slug === 'bobby' ? 'building components'
+      : a.slug === 'steffen' ? 'refining brand'
+      : a.slug === 'cleo' ? 'editing video'
+      : a.slug === 'tony' ? 'scheduling posts'
+      : a.slug === 'elon' ? 'routing work'
+      : 'Ready'
+    return (
+      <button
+        key={a.slug}
+        className="hm-card"
+        data-cv6-sel={isSelected ? 'true' : undefined}
+        onClick={() => {
+          if (cv6) { selectByItem('agent', a.slug); setSelectedRoom({ agent: a, project: null, mission: null }); homeRef.current?.focus() }
+          else { onSelectAgent && onSelectAgent(a) }
+        }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '8px', minHeight: '56px',
+          boxSizing: 'border-box', width: '100%', position: 'relative', overflow: 'hidden',
+          background: isSelected ? roomFill(a.slug) : 'var(--cv6-surface)',
+          color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
+          border: isSelected ? `1px solid ${roomFill(a.slug)}` : '1px solid transparent',
+          boxShadow: isSelected ? `0 3px 14px ${roomGlow(a.slug)}` : 'none',
+          transform: isSelected ? 'translateY(-1px)' : 'none',
+          borderRadius: '6px', cursor: 'pointer',
+          transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
+          fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
+        }}
+        onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.background = roomTint(a.slug); e.currentTarget.style.borderColor = roomFill(a.slug) } }}
+        onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' } }}
+      >
+        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : `hsl(${roomHue(a.slug)}, 60%, 55%)`, animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
+          <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentStatus}</div>
+        </div>
+        <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
+        {agentStatus !== 'Ready' && (
+          <div className="hm-progress" style={{ position: 'absolute', left: '10px', right: '10px', bottom: '6px', color: isSelected ? 'rgba(255,255,255,0.85)' : `hsl(${roomHue(a.slug)}, 60%, 55%)` }} />
+        )}
+      </button>
+    )
+  }
+
+  // R64: the home Catch-up column (Patrik) — lives where Agents used to be. A polished,
+  // simple list of what landed while you were away; tap a row to open that room's chat.
+  const renderCatchupColumn = () => (
+    <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
+        <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Catch up</span>
+        {catchupNotifications.length > 0 && (
+          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
+        )}
+      </div>
+      {catchupNotifications.length === 0 ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', textAlign: 'center', padding: '24px', minHeight: '220px' }}>
+          <div style={{ width: '72px', height: '72px', borderRadius: '20px', background: 'var(--cv6-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px var(--cv6-divider)' }}>
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="var(--cv6-accent-success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-secondary)', maxWidth: '200px' }}>You're all caught up.</div>
+        </div>
+      ) : (
+        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {catchupNotifications.map((n) => {
+            const human = n.senderType === 'human'
+            return (
+              <button key={n.id} className="hm-card" onClick={() => onCatchupOpenRoom && onCatchupOpenRoom(n)}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: '11px', padding: '12px 13px', width: '100%', boxSizing: 'border-box', textAlign: 'left', background: 'var(--cv6-surface)', border: '1px solid transparent', borderRadius: '8px', cursor: 'pointer', fontFamily: 'inherit', transition: 'background 140ms ease, border-color 140ms ease' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'transparent' }}>
+                <span style={{ flexShrink: 0, width: '30px', height: '30px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700',
+                  background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
+                  color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.senderName}</span>
+                    <span style={{ fontSize: '10px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, marginLeft: 'auto', whiteSpace: 'nowrap' }}>{n.timeAgo}</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{n.roomName}</div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', lineHeight: 1.45, marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{n.messagePreview}</div>
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+
   // R34: clean idea chips under the greeting. Real version reads the ledger for the
   // user's top 3 goals + 2 aspirational ("things they'd want but haven't named yet").
   // Here we seed from their most-active rooms so the chips are real + clickable; the
@@ -3071,7 +3176,7 @@ export default function HomeView({
                 {/* Notifications bell icon */}
                 <button
                   title="Notifications"
-                  onClick={() => { if (onOpenNotifications) onOpenNotifications(); else window.location.href = '/dashboard?view=notifications' }}
+                  onClick={() => { if (cv6) setSelectedTool('home'); else window.location.href = '/dashboard?view=notifications' }}
                   style={{
                     width: '40px', height: '40px', borderRadius: '8px', border: 'none',
                     background: 'transparent', cursor: 'pointer', color: 'var(--cv6-text-secondary)',
@@ -3262,8 +3367,7 @@ export default function HomeView({
                 const TOOLS = [
                   { key: 'home', label: 'Home', svg: (<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>) },
                   { key: 'chat', label: 'Chat', svg: (<><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></>) },
-                  { key: 'projects', label: 'Projects', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>) },
-                  { key: 'files', label: 'Files', svg: (<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>) },
+                  { key: 'organize', label: 'Organize', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></>) },
                   { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
                   { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>) },
                   { key: 'tracker', label: 'Tracker', svg: (<><rect x="9" y="8" width="6" height="9" rx="3"/><path d="M9 12h6"/><path d="M10 6l-1-2M14 6l1-2"/><path d="M4 9l3 2M20 9l-3 2M4 16l3-2M20 16l-3-2"/></>) },
@@ -3320,8 +3424,7 @@ export default function HomeView({
                   {selectedTool === 'scribe' && 'Live Scribe'}
                   {selectedTool === 'review' && 'Review'}
                   {selectedTool === 'tracker' && 'Tracker'}
-                  {selectedTool === 'projects' && 'Projects'}
-                  {selectedTool === 'files' && 'Files'}
+                  {selectedTool === 'organize' && `Organize — ${organizeSubtool === 'projects' ? 'Projects' : 'Files'}`}
                   {selectedTool === 'chat' && 'Chat'}
                 </div>
                 <button
@@ -3367,15 +3470,60 @@ export default function HomeView({
                   <LiveScribe embedded />
                 )}
 
-                {selectedTool === 'projects' && (
-                  <ProjectsToolOverlay
-                    projects={[...(recentProjects || []), ...(allProjects || [])]}
-                    missionsByProject={missionsByProject}
-                    onOpen={handleProjectSelect}
-                    onCreateProject={persistCreateProject}
-                    onCreateMission={persistCreateMission}
-                    onMoveFile={persistMoveFile}
-                  />
+                {selectedTool === 'organize' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
+                    {/* Switcher in header style (u-mqir8cr7) */}
+                    <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--cv6-divider)', paddingBottom: '12px', marginBottom: '8px' }}>
+                      <button
+                        onClick={() => setOrganizeSubtool('projects')}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          border: organizeSubtool === 'projects' ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                          background: organizeSubtool === 'projects' ? 'var(--cv6-accent-primary)' : 'transparent',
+                          color: organizeSubtool === 'projects' ? '#fff' : 'var(--cv6-text-primary)',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        Projects
+                      </button>
+                      <button
+                        onClick={() => setOrganizeSubtool('files')}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          border: organizeSubtool === 'files' ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                          background: organizeSubtool === 'files' ? 'var(--cv6-accent-primary)' : 'transparent',
+                          color: organizeSubtool === 'files' ? '#fff' : 'var(--cv6-text-primary)',
+                          cursor: 'pointer',
+                          fontFamily: 'inherit',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                        }}
+                      >
+                        Files
+                      </button>
+                    </div>
+                    {/* Tool content */}
+                    <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                      {organizeSubtool === 'projects' && (
+                        <ProjectsToolOverlay
+                          projects={[...(recentProjects || []), ...(allProjects || [])]}
+                          missionsByProject={missionsByProject}
+                          onOpen={handleProjectSelect}
+                          onCreateProject={persistCreateProject}
+                          onCreateMission={persistCreateMission}
+                          onMoveFile={persistMoveFile}
+                        />
+                      )}
+                      {organizeSubtool === 'files' && (
+                        <FilesToolOverlay projects={[...(recentProjects || []), ...(allProjects || [])]} />
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 {selectedTool === 'review' && (
@@ -3394,11 +3542,7 @@ export default function HomeView({
                   />
                 )}
 
-                {selectedTool === 'files' && (
-                  <FilesToolOverlay projects={[...(recentProjects || []), ...(allProjects || [])]} />
-                )}
-
-                {selectedTool === 'chat' && (
+{selectedTool === 'chat' && (
                   <ChatToolOverlay
                     projects={[...(recentProjects || []), ...(allProjects || [])]}
                     missionsByProject={missionsByProject}
@@ -3418,80 +3562,18 @@ export default function HomeView({
           {selectedTool === 'home' && (<>
           {/* R14: THREE-COLUMN LAYOUT — Collaborators (left) | Active Work (middle) | Conversation+Quick Reply (right) */}
           <div className="hm-three-column-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr 1.2fr', gap: '24px', marginBottom: '18px', minHeight: '400px' }}>
-            {/* R14: LEFT COLUMN — COLLABORATORS */}
-            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
-              <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', marginBottom: '16px' }}>
-                {visibleAgents.map((a, idx) => {
-                  const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
-                  const agentStatus = a.slug === 'bobby' ? 'building components'
-                    : a.slug === 'steffen' ? 'refining brand'
-                    : a.slug === 'cleo' ? 'editing video'
-                    : a.slug === 'tony' ? 'scheduling posts'
-                    : a.slug === 'elon' ? 'routing work'
-                    : 'Ready'
-                  return (
-                    <button
-                      key={a.slug}
-                      className="hm-card"
-                      data-cv6-sel={isSelected ? 'true' : undefined}
-                      onClick={() => {
-                        if (cv6) {
-                          // R31: match the mission card — click pulls the agent's
-                          // conversation into the quick-view column AND moves the cursor here.
-                          selectByItem('agent', a.slug)
-                          setSelectedRoom({ agent: a, project: null, mission: null })
-                          homeRef.current?.focus()
-                        } else {
-                          onSelectAgent && onSelectAgent(a)
-                        }
-                      }}
-                      style={{
-                        // R31/R32: single-row card, full width, room-color highlight when selected
-                        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '8px', minHeight: '56px',
-                        boxSizing: 'border-box', width: '100%', position: 'relative', overflow: 'hidden',
-                        background: isSelected ? roomFill(a.slug) : 'var(--cv6-surface)',
-                        color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                        border: isSelected ? `1px solid ${roomFill(a.slug)}` : '1px solid transparent',
-                        boxShadow: isSelected ? `0 3px 14px ${roomGlow(a.slug)}` : 'none',
-                        transform: isSelected ? 'translateY(-1px)' : 'none',
-                        borderRadius: '6px', cursor: 'pointer',
-                        transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
-                        fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.background = roomTint(a.slug)
-                          e.currentTarget.style.borderColor = roomFill(a.slug)
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isSelected) {
-                          e.currentTarget.style.background = 'var(--cv6-surface)'
-                          e.currentTarget.style.borderColor = 'transparent'
-                        }
-                      }}
-                    >
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: isSelected ? '#ffffff' : `hsl(${roomHue(a.slug)}, 60%, 55%)`, animation: 'hm-breathe 2s ease-in-out infinite', flexShrink: 0 }}></span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name || a.slug}</div>
-                        <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{agentStatus}</div>
-                      </div>
-                      <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(a.last_message_at)}</span>
-                      {/* R32: smooth motion line on agents that are actively working */}
-                      {agentStatus !== 'Ready' && (
-                        <div className="hm-progress" style={{ position: 'absolute', left: '10px', right: '10px', bottom: '6px', color: isSelected ? 'rgba(255,255,255,0.85)' : `hsl(${roomHue(a.slug)}, 60%, 55%)` }} />
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
+            {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
+            {renderCatchupColumn()}
 
-            </div>
-
-            {/* R14: MIDDLE COLUMN — ACTIVE WORK with visible "+N more" affordance, clear scroll indicator */}
+            {/* R14/R64: MIDDLE COLUMN — AGENTS stacked above ACTIVE WORK (same column, Patrik) */}
             {/* R30b: Combined missions AND projects list, ordered by recency */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+              {visibleAgents.length > 0 && (
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Agents</div>
+                  <div>{visibleAgents.map((a, idx) => renderAgentRow(a, idx))}</div>
+                </div>
+              )}
               <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Active work</div>
               {/* R23: Search input for Active Work filtering */}
               <input
