@@ -3206,7 +3206,7 @@ export default function HomeView({
     return (
       <button
         key={a.slug}
-        className="hm-card"
+        className="hm-card hm-room-row"
         data-cv6-sel={isSelected ? 'true' : undefined}
         onClick={() => {
           if (cv6) { selectByItem('agent', a.slug); setSelectedRoom({ agent: a, project: null, mission: null }); homeRef.current?.focus() }
@@ -4283,7 +4283,7 @@ export default function HomeView({
                           return (
                             <button
                               key={`mission-${m.mission.slug}`}
-                              className="hm-card"
+                              className="hm-card hm-room-row"
                               data-cv6-sel={isSelected ? 'true' : undefined}
                               onClick={() => {
                                 // R88 (Patrik): single click opens the conversation + quick reply in the
@@ -4295,28 +4295,27 @@ export default function HomeView({
                               onDoubleClick={() => openChatToolForRoom({ project: m.project, mission: m.mission })}
                               onContextMenu={(e) => { e.preventDefault(); selectByItem('mission', m.mission.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'mission', item: m.mission, project: m.project }) }}
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', marginBottom: '0',
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '0 15px', marginBottom: '0',
                                 boxSizing: 'border-box', width: '100%',
-                                background: isSelected ? roomFill(m.project.slug) : 'var(--cv6-surface)',
+                                background: isSelected ? roomFill(m.project.slug) : 'transparent',
                                 color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
                                 border: isSelected ? `1px solid ${roomFill(m.project.slug)}` : '1px solid transparent',
                                 boxShadow: isSelected ? `0 3px 14px ${roomGlow(m.project.slug)}` : 'none',
                                 transform: isSelected ? 'translateY(-1px)' : 'none',
-                                borderRadius: '6px', cursor: 'pointer',
-                                transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
+                                borderRadius: '0', cursor: 'pointer',
+                                transition: 'background 220ms ease, border-color 160ms ease, transform 200ms ease',
                                 fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                                flex: '0 0 auto', minHeight: '56px',
+                                flex: '0 0 auto', minHeight: '52px',
+                                borderBottom: isSelected ? 'none' : '1px solid var(--cv6-divider)',
                               }}
                               onMouseEnter={(e) => {
                                 if (!isSelected) {
-                                  e.currentTarget.style.background = roomTint(m.project.slug)
-                                  e.currentTarget.style.borderColor = roomFill(m.project.slug)
+                                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
                                 }
                               }}
                               onMouseLeave={(e) => {
                                 if (!isSelected) {
-                                  e.currentTarget.style.background = 'var(--cv6-surface)'
-                                  e.currentTarget.style.borderColor = 'transparent'
+                                  e.currentTarget.style.background = 'transparent'
                                 }
                               }}
                             >
@@ -4348,7 +4347,7 @@ export default function HomeView({
                           return (
                             <button
                               key={`project-${p.slug}`}
-                              className="hm-card"
+                              className="hm-card hm-room-row"
                               data-cv6-sel={isSelected ? 'true' : undefined}
                               onClick={() => {
                                 // R88 (Patrik): single click opens the conversation + quick reply in the
