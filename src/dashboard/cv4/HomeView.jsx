@@ -1727,6 +1727,10 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const [localProjects, setLocalProjects] = useState(projects || [])
   const [isNarrow, setIsNarrow] = useState(false)
   const [mobileCol, setMobileCol] = useState(0)       // 0 rooms · 1 chat · 2 files
+  // R184 (Patrik: "click open room on mobile → be IN the room the next second"):
+  // opening from a room / catch-up tap jumps straight to the chat column on phones,
+  // not the room list. Desktop ignores mobileCol (it shows all columns at once).
+  useEffect(() => { if (initialRoom) setMobileCol(1) }, [initialRoom])
   const [listFocused, setListFocused] = useState(false) // R57: room list is the active column (Left from empty input)
   const chatNavRef = useRef(null)
   // R61 (Patrik): the "all rooms" column is a single-column Dropbox-style drill-through —
