@@ -2777,6 +2777,7 @@ export default function HomeView({
 
   // R23: Active Work search filtering
   const [activeworkSearchText, setActiveworkSearchText] = useState('')
+  const [roomSearchOpen, setRoomSearchOpen] = useState(false) // R98 (Patrik): search hidden behind an icon on the All rooms heading row
 
   // Sample conversation thread for CV6 gallery demo
   const sampleConversation = [
@@ -3124,7 +3125,7 @@ export default function HomeView({
   // simple list of what landed while you were away; tap a row to open that room's chat.
   const renderCatchupColumn = () => (
     <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
         <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Catch up</span>
         {catchupNotifications.length > 0 && (
           <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
@@ -3906,26 +3907,40 @@ export default function HomeView({
                 (right-click an agent to unpin), then the most-recent missions + projects
                 (right-click a project to pin/unpin). No more Agents / Active work split. */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>All rooms</div>
+              {/* R98 (Patrik): heading row — label left, a search icon on the right (above the
+                  divider). The search field is hidden until the icon is clicked, then drops in below. */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '26px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>All rooms</span>
+                <button onClick={() => setRoomSearchOpen(v => !v)} title={roomSearchOpen ? 'Hide search' : 'Search rooms'} aria-label="Search rooms"
+                  style={{ flexShrink: 0, width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: roomSearchOpen ? 'var(--cv6-surface-hover)' : 'transparent', color: roomSearchOpen ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 120ms ease, color 120ms ease' }}
+                  onMouseEnter={(e) => { if (!roomSearchOpen) e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}
+                  onMouseLeave={(e) => { if (!roomSearchOpen) e.currentTarget.style.color = 'var(--cv6-text-tertiary)' }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                </button>
+              </div>
               {visibleAgents.length > 0 && (
                 <div style={{ marginBottom: '14px' }}>
                   <div>{visibleAgents.map((a, idx) => renderAgentRow(a, idx))}</div>
                 </div>
               )}
-              {/* R23: Search input for filtering the rooms list */}
-              <input
-                type="text"
-                placeholder="Search missions & projects..."
-                value={activeworkSearchText || ''}
-                onChange={(e) => setActiveworkSearchText(e.target.value)}
-                style={{
-                  marginBottom: '12px', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
-                  background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '13px',
-                  fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
-                }}
-                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
-                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
-              />
+              {/* R23 + R98: Search input for filtering the rooms list — hidden until the heading icon is clicked. */}
+              {roomSearchOpen && (
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder="Search missions & projects..."
+                  value={activeworkSearchText || ''}
+                  onChange={(e) => setActiveworkSearchText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') { setActiveworkSearchText(''); setRoomSearchOpen(false) } }}
+                  style={{
+                    marginBottom: '12px', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
+                    background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '13px',
+                    fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
+                  }}
+                  onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
+                  onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
+                />
+              )}
               {allMissionsForCV6.length > 0 || (recentProjects && recentProjects.length > 0) ? (
                 <>
                   {/* Scrollable container: shows 5 visible items with internal scroll.
@@ -4135,7 +4150,7 @@ export default function HomeView({
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
                 fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em',
-                marginBottom: '12px', paddingBottom: '12px',
+                minHeight: '26px', marginBottom: '12px', paddingBottom: '12px',
                 borderBottom: selectedRoom ? (selectedRoom.agent
                   ? `2px solid hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`
                   : `2px solid hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`)
@@ -4175,7 +4190,7 @@ export default function HomeView({
                       title="This room's files"
                       onClick={() => onOpenDrawer?.('files')}
                       style={{
-                        width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'transparent',
+                        width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: 'transparent',
                         color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'all 120ms ease', padding: 0,
                       }}
@@ -4190,7 +4205,7 @@ export default function HomeView({
                       title="This room's explorer"
                       onClick={() => onOpenDrawer?.('explorer')}
                       style={{
-                        width: '28px', height: '28px', borderRadius: '6px', border: 'none', background: 'transparent',
+                        width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: 'transparent',
                         color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'all 120ms ease', padding: 0,
                       }}

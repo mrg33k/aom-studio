@@ -101,9 +101,9 @@ function ToggleSwitch({ on, onChange, disabled = false }) {
       onClick={() => !disabled && onChange(!on)}
       disabled={disabled}
       style={{
-        width: 44,
-        height: 24,
-        borderRadius: 12,
+        width: 30,
+        height: 14,
+        borderRadius: 7,
         border: 'none',
         background: on ? 'var(--cv6-accent-success)' : 'var(--cv6-divider)',
         cursor: disabled ? 'default' : 'pointer',
@@ -115,12 +115,12 @@ function ToggleSwitch({ on, onChange, disabled = false }) {
     >
       <div
         style={{
-          width: 20,
-          height: 20,
+          width: 10,
+          height: 10,
           borderRadius: '50%',
           background: 'var(--cv6-surface)',
           position: 'absolute',
-          left: on ? 22 : 2,
+          left: on ? 18 : 2,
           top: 2,
           transition: 'left 200ms ease',
         }}
