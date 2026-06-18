@@ -236,10 +236,17 @@ html[data-theme="glass"] body {
    on glass give them a near-opaque fill (per light/dark variant) instead of the
    0.72 surface token, or the busy photo bleeds through and the text goes pale.
    Other themes keep their own opaque surface — this only touches glass. */
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-catchup-card {
+/* Anchored on <html> because data-glass-card lives ONLY on html (data-theme is on
+   html AND the inner container, so a non-html anchor matched both rules and the
+   dark one always won). Light-glass = white card + dark text to match the room
+   rows; dark-glass = dark card (card keeps its light text). */
+html[data-glass-card="light"] [data-cv6] .hm-catchup-card {
   background: rgba(255, 255, 255, 0.93) !important;
+  --cv6-text-primary: #0f1626;
+  --cv6-text-secondary: rgba(15, 22, 38, 0.64);
+  --cv6-text-tertiary: rgba(15, 22, 38, 0.5);
 }
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-card {
+html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-card {
   background: rgba(18, 26, 42, 0.9) !important;
 }
 
