@@ -83,16 +83,22 @@ export default async function handler(req, res) {
   const source_path = `corner/users/${w}/projects/${project_slug}/missions/${mission_slug}`;
   const dest_path = `corner/users/${w}/projects/${new_project_slug}/missions/${mission_slug}`;
 
-  // 1. Move the folder on disk via the tunnel.
-  let moveResp;
+  // 1. Move the folder on disk via the tunnel. A mission with no materialized
+  // folder yet (brand new, record-only) has nothing on disk — that is NOT a
+  // failure: we skip the folder move and still re-register it below.
+  let folderMoved = false;
   try {
     const r = await fetch(`${RAG_TUNNEL_URL}/command-deck-move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'User-Agent': 'aom-vercel-proxy' },
       body: JSON.stringify({ source_path, dest_path }),
     });
-    moveResp = await r.json().catch(() => ({}));
-    if (!r.ok || !moveResp?.ok) {
+    const moveResp = await r.json().catch(() => ({}));
+    if (r.ok && moveResp?.ok) {
+      folderMoved = true;
+    } else if (r.status === 404 && /source mission not found/i.test(moveResp?.error || '')) {
+      folderMoved = false; // no folder yet — record-only mission, fall through to re-register
+    } else {
       return res.status(r.status === 200 ? 500 : r.status).json({ error: moveResp?.error || 'disk move failed' });
     }
   } catch (err) {
@@ -109,6 +115,7 @@ export default async function handler(req, res) {
     mission_slug,
     from_project: project_slug,
     to_project: new_project_slug,
+    folder_moved: folderMoved,
     reregistered: reKeyed,
   });
 }
