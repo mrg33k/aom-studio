@@ -102,20 +102,23 @@
 [data-cv6][data-theme="glass"] [data-cv6]:not([data-theme]):not(.glass),
 [data-theme="glass"] [data-cv6]:not([data-theme]):not(.glass),
 .glass [data-cv6]:not([data-theme]):not(.glass) {
-  --cv6-ground: transparent;          /* let the backdrop show through the canvas */
-  --cv6-surface: rgba(17, 25, 40, 0.68);
-  --cv6-surface-hover: rgba(30, 41, 64, 0.82);
+  --cv6-ground: transparent;          /* let the backdrop photo show through the canvas */
+  /* Design glass (2026-06-18, Patrik): one uniform translucent dark-frosted
+     surface + blur(22) saturate(1.3) (applied below), a lighter blue accent, and
+     bright text — matching Home desktop.dc.html. */
+  --cv6-surface: rgba(22, 26, 33, 0.55);
+  --cv6-surface-hover: rgba(40, 46, 58, 0.66);
   --cv6-divider: transparent;
   --cv6-hover: rgba(255, 255, 255, 0.08);
 
-  --cv6-text-primary: #f6f8fc;
-  --cv6-text-secondary: rgba(255, 255, 255, 0.86);   /* stronger 2nd level */
-  --cv6-text-tertiary: rgba(255, 255, 255, 0.66);    /* stronger 3rd level */
+  --cv6-text-primary: #f3f4f6;
+  --cv6-text-secondary: #c0c4cc;
+  --cv6-text-tertiary: rgba(255, 255, 255, 0.55);
 
-  --cv6-accent-primary: #3b82f6;       /* solid blue so the selected tool reads */
-  --cv6-accent-primary-hover: #60a5fa;
+  --cv6-accent-primary: #5b9bff;       /* design glass accent (lighter blue) */
+  --cv6-accent-primary-hover: #7db0ff;
   --cv6-accent-primary-active: #2563eb;
-  --cv6-accent-success: #34d399;
+  --cv6-accent-success: #46e0a8;
   --cv6-accent-warn: #fbbf24;
   --cv6-accent-error: #fb7185;
 
@@ -196,8 +199,8 @@ html[data-theme="glass"] body {
 [data-theme="glass"] [data-cv6] [data-cv6-card],
 [data-theme="glass"] [data-cv6] [data-cv6-panel],
 [data-theme="glass"] [data-cv6] [data-cv6-tool-surface] {
-  -webkit-backdrop-filter: blur(8px) saturate(200%);
-  backdrop-filter: blur(8px) saturate(200%);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  backdrop-filter: blur(22px) saturate(1.3);
   border: none !important;
   border-radius: 12px !important;
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22) !important;
@@ -254,7 +257,9 @@ html[data-glass-card="light"] [data-cv6] .hm-catchup-card {
   --cv6-text-tertiary: rgba(15, 22, 38, 0.5);
 }
 html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-card {
-  background: rgba(18, 26, 42, 0.9) !important;
+  background: rgba(22, 26, 33, 0.62) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  backdrop-filter: blur(22px) saturate(1.3);
 }
 
 /* On-photo text (greeting + section labels) sits on the backdrop, not on a card
@@ -281,9 +286,9 @@ html[data-glass-card="light"] [data-cv6] .hm-rooms-scroll {
   margin-right: -4px !important;
 }
 html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scroll {
-  background: rgba(18, 26, 42, 0.72) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  backdrop-filter: blur(20px) saturate(1.2);
+  background: rgba(22, 26, 33, 0.55) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  backdrop-filter: blur(22px) saturate(1.3);
   border-radius: 16px !important;
   padding: 12px 0 !important;
   margin: 0 -12px !important;

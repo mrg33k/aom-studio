@@ -20,11 +20,12 @@ const KEY_GLASS_INDEX = 'cv4-glass-index'
 // How many glass backdrops there are. Keep in sync with CORNER_GLASS_BACKDROPS
 // in cv4/GlassBackdrop.jsx.
 export const GLASS_BACKDROP_COUNT = 8
-// Each backdrop has two card styles: dark glass + light glass. The toggle steps
-// through every (backdrop × style) combination, so the cycle has 2×backdrops
-// glass stops. Even index = dark glass, odd index = light glass; backdrop =
-// floor(index / 2).
-export const GLASS_VARIANT_COUNT = GLASS_BACKDROP_COUNT * 2
+// One uniform dark-frosted glass card style (2026-06-18, Patrik: "listen to the
+// design" — the design is a single translucent dark-frosted glass, no white
+// light-card variant). The cycle is one stop per backdrop photo; the card style
+// is always 'dark'. (Was 2×backdrops with an alternating light/dark card style,
+// which left some panels light and some dark on the same screen.)
+export const GLASS_VARIANT_COUNT = GLASS_BACKDROP_COUNT
 const AZ_OFFSET_MINUTES = -7 * 60
 const LIGHT_START_MIN = 6 * 60 + 30
 const LIGHT_END_MIN   = 19 * 60 + 30
@@ -82,10 +83,10 @@ function syncDom(mode, glassCard) {
   }
 }
 
-// A glass step encodes both which backdrop is showing and the card style.
-function backdropOf(glassIndex) { return Math.floor(glassIndex / 2) % GLASS_BACKDROP_COUNT }
-// Per photo: LIGHT card first, then dark (Patrik prefers light before dark).
-function cardStyleOf(glassIndex) { return glassIndex % 2 === 0 ? 'light' : 'dark' }
+// One stop per backdrop photo (1:1 now that the light-card style is retired).
+function backdropOf(glassIndex) { return glassIndex % GLASS_BACKDROP_COUNT }
+// Uniform dark-frosted glass (2026-06-18, Patrik). Light-card variant retired.
+function cardStyleOf() { return 'dark' }
 
 export function useThemeMode() {
   const [stored, setStored] = useState(readStored)
@@ -153,11 +154,10 @@ export function useThemeMode() {
   }, [])
 
   // Cycle the toggle through the full theme library:
-  //   light → dark → glass[0..2N-1] → light.
-  // Each glass step is one (backdrop × card-style) combo: even = dark glass,
-  // odd = light glass, so every photo appears with both a dark and a light card
-  // style. Backdrops do NOT auto-drift; each crystal-ball click steps once, and
-  // after the last glass combo it rolls over to light.
+  //   light → dark → glass[0..N-1] → light.
+  // Each glass step is one backdrop photo (uniform dark-frosted card style).
+  // Backdrops do NOT auto-drift; each crystal-ball click steps once, and after
+  // the last photo it rolls over to light.
   const cycleTheme = useCallback(() => {
     if (mode === 'light') { setTheme('dark'); return }
     if (mode === 'dark') { setGlassIndex(0); setTheme('glass'); return }
