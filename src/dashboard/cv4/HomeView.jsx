@@ -2901,7 +2901,11 @@ export default function HomeView({
     if (typeof window !== 'undefined' && window.innerWidth < 768) return
     let initial = null
     if (room.agent) initial = { kind: 'agent', slug: room.agent.slug, name: room.agent.name || room.agent.slug }
-    else if (room.project) initial = { kind: 'project', slug: room.project.slug, name: room.project.name || room.project.slug }
+    // A MISSION room must preselect the MISSION, not its parent project (Patrik: Right-arrow
+    // from a mission quick-chat opened the project's chat). Mirror the openChatRequest mission
+    // shape so the Chat tool resolves the exact room (roomKey project:mission).
+    else if (room.project && room.mission) initial = { kind: 'mission', type: 'project', slug: room.project.slug, missionSlug: room.mission.slug, name: room.mission.name || room.mission.slug, roomKey: `${room.project.slug}:${room.mission.slug}` }
+    else if (room.project) initial = { kind: 'project', type: 'project', slug: room.project.slug, name: room.project.name || room.project.slug }
     if (!initial) return
     setChatInitialRoom(initial)
     setSelectedTool('chat')
