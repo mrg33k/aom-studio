@@ -888,9 +888,13 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
       </div>
       )}
 
-      {/* Full review modal — covers ONLY the review tool area (absolute inside it), never the whole screen. */}
+      {/* Full review modal — a viewport-bounded card (R60). It is centred and capped at
+          90vh so the top of long markdown AND the change input are always on screen, no
+          matter how long the pipeline table behind it is. Click the dim backdrop to close. */}
       {openItem && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 60, borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', display: 'flex', flexDirection: 'column' }}>
+        <>
+        <div onClick={() => { setOpenItem(null); setReviewText('') }} style={{ position: 'fixed', inset: 0, zIndex: 59, background: 'rgba(0,0,0,0.55)' }} />
+        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(1080px, 94vw)', height: 'min(860px, 90vh)', maxHeight: '90vh', zIndex: 60, borderRadius: '12px', overflow: 'hidden', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', boxShadow: '0 24px 70px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)' }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{openItem.item}</div>
@@ -959,6 +963,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
             </div>
           </div>
         </div>
+        </>
       )}
     </div>
   )
