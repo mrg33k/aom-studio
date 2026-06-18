@@ -142,6 +142,20 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   const [replyText, setReplyText] = useState('')
   const [replySending, setReplySending] = useState(false)
   const [replyDoneSlug, setReplyDoneSlug] = useState(null)
+  // R110 (Patrik: "user can choose what they want the ea to move forward") — one-tap
+  // push per row: tells that room's assistant to make real progress now. Same intent
+  // as the Home "Move X forward" chips, but right here in the deck he steers from.
+  const [movedSlug, setMovedSlug] = useState(null)
+  const moveForward = useCallback(async (row) => {
+    const slug = row && row.slug
+    if (!slug || !onReplyToRoom) return
+    const name = (row.display && row.display.name) || slug
+    setMovedSlug(slug)
+    try {
+      await onReplyToRoom(slug, `Let's make real progress on ${name}. What's the single highest-value next step, and can you start it now?`)
+    } catch (_) { /* optimistic; the send path reports its own errors */ }
+    setTimeout(() => setMovedSlug((s) => (s === slug ? null : s)), 2500)
+  }, [onReplyToRoom])
 
   // Inline editable goal (Patrik: edit the one-line goal right in the spreadsheet)
   const [editingGoalSlug, setEditingGoalSlug] = useState(null)
@@ -970,6 +984,23 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 </div>
               )}
               </div>
+              {/* R110: one-tap "move this forward" (room rows only) */}
+              {!isWorkerRow && onReplyToRoom && (
+                <button
+                  title="Tell the assistant to move this room forward"
+                  onClick={(e) => { e.stopPropagation(); moveForward(row) }}
+                  style={{
+                    flexShrink: 0, width: 24, height: 24, borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: movedSlug === row.slug ? 'color-mix(in srgb, var(--cv6-accent-success) 18%, transparent)' : 'transparent',
+                    color: movedSlug === row.slug ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {movedSlug === row.slug
+                    ? <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    : <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>}
+                </button>
+              )}
               {/* Inline reply trigger (room rows only) */}
               {!isWorkerRow && onReplyToRoom && (
                 <button
