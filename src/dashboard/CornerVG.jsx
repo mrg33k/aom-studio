@@ -772,6 +772,38 @@ export default function CornerVG() {
     return () => { supabase.removeChannel(channel) }
   }, [worldId])
 
+  // R82 (Patrik: "agents can control the view of the user"): a live broadcast
+  // channel an agent (terminal / loop) can push to so the user's screen follows.
+  // An agent sends a Supabase Realtime broadcast on topic `cv6-view-<world>`,
+  // event `navigate`, with a payload that either opens a room or opens a tool:
+  //   { kind:'project'|'mission'|'agent', slug, missionSlug?, name? }  -> opens the room
+  //   { tool:'command'|'chat'|'organize'|'review'|'support'|'tracker'|'scribe' } -> opens the tool
+  // Cheap + serverless: no table, no polling — broadcast is ephemeral and instant.
+  useEffect(() => {
+    if (!supabase || !worldId) return
+    const ch = supabase
+      .channel(`cv6-view-${worldId}`)
+      .on('broadcast', { event: 'navigate' }, ({ payload }) => {
+        if (!payload || typeof payload !== 'object') return
+        try {
+          if (payload.tool) {
+            setActiveTool(payload.tool)
+          }
+          if (payload.kind && payload.slug) {
+            setCv6ChatRequest({
+              kind: payload.kind,
+              slug: payload.slug,
+              missionSlug: payload.missionSlug || undefined,
+              name: payload.name || payload.slug,
+              nonce: Date.now(),
+            })
+          }
+        } catch (e) { console.warn('[cv6-view] bad navigate payload', e) }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [worldId])
+
   // Clear unread when switching to chat; clear conversation only when tapping
   // Chat tab while already on chat (the "back to home" gesture). When returning
   // from Tasks, preserve the agent/project the user was in.
