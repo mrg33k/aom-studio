@@ -68,20 +68,23 @@ const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
 // corner:gemini-workers R10 — /cvg Gemini workbench (CornerV4 duplicate).
 const CornerVG = lazy(() => import('./dashboard/CornerVG.jsx'))
 
-// corner:corner-ui-cv6 R89 — the /dashboard port, behind a hidden flag.
-// /dashboard?cv6=1 renders the proven CV6 surface (CornerVG) on the CLAUDE brain
-// (surfaceModel() returns '' off /cvg, so no Gemini override leaks). Default
-// /dashboard stays CornerV4 untouched until Patrik flips the switch. The cv6
-// flag is sticky per session (sessionStorage) so in-app navigation that drops
-// the query string keeps the surface.
+// corner:corner-ui-cv6 R90 — CV6 is now the DEFAULT /dashboard surface for every
+// client, on the CLAUDE brain (Patrik flipped it on 2026-06-17 to finish it off
+// on the real surface). surfaceModel() returns '' off /cvg, so no Gemini override
+// leaks -> the dashboard runs on the room's Claude pref, no billing crossover.
+// ?cv4=1 is a sticky escape hatch back to the old CornerV4 surface; ?cv6=1 forces
+// the new one. Sticky per session so in-app navigation that drops the query
+// string keeps whichever surface you chose.
 function DashboardSurface() {
   const loc = useLocation()
-  let cv6 = new URLSearchParams(loc.search).get('cv6') === '1'
+  const params = new URLSearchParams(loc.search)
+  let cv4 = params.get('cv4') === '1'
   try {
-    if (cv6) sessionStorage.setItem('cv6Dashboard', '1')
-    else if (sessionStorage.getItem('cv6Dashboard') === '1') cv6 = true
-  } catch { /* private mode: fall back to query string only */ }
-  return cv6 ? <CornerVG /> : <CornerV4 />
+    if (cv4) sessionStorage.setItem('cv4Dashboard', '1')
+    else if (sessionStorage.getItem('cv4Dashboard') === '1') cv4 = true
+    if (params.get('cv6') === '1') { sessionStorage.removeItem('cv4Dashboard'); cv4 = false }
+  } catch { /* private mode: query string only */ }
+  return cv4 ? <CornerV4 /> : <CornerVG />
 }
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
 // components on one page as the design surface for the CV6 redesign.
