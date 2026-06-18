@@ -94,25 +94,28 @@
    is applied to the surface elements below this block. Same cascade
    selectors as dark so it reaches a themeless [data-cv6] on /cvg.
    ───────────────────────────────────────────────────────────────── */
+/* GLASS theme — dark glass (default). Fills, text, and accents are driven by
+   TOKENS so the active tool tile (inline accent bg) stays "selected" and every
+   surface recolours per variant. No borders (Patrik). */
 [data-cv6][data-theme="glass"],
 [data-cv6].glass,
 [data-cv6][data-theme="glass"] [data-cv6]:not([data-theme]):not(.glass),
 [data-theme="glass"] [data-cv6]:not([data-theme]):not(.glass),
 .glass [data-cv6]:not([data-theme]):not(.glass) {
   --cv6-ground: transparent;          /* let the backdrop show through the canvas */
-  --cv6-surface: rgba(255, 255, 255, 0.10);
-  --cv6-surface-hover: rgba(255, 255, 255, 0.17);
-  --cv6-divider: rgba(255, 255, 255, 0.22);
-  --cv6-hover: rgba(255, 255, 255, 0.10);
+  --cv6-surface: rgba(17, 25, 40, 0.68);
+  --cv6-surface-hover: rgba(30, 41, 64, 0.82);
+  --cv6-divider: transparent;
+  --cv6-hover: rgba(255, 255, 255, 0.08);
 
-  --cv6-text-primary: #f4f6fb;
-  --cv6-text-secondary: rgba(255, 255, 255, 0.74);
-  --cv6-text-tertiary: rgba(255, 255, 255, 0.52);
+  --cv6-text-primary: #f6f8fc;
+  --cv6-text-secondary: rgba(255, 255, 255, 0.86);   /* stronger 2nd level */
+  --cv6-text-tertiary: rgba(255, 255, 255, 0.66);    /* stronger 3rd level */
 
-  --cv6-accent-primary: #7cc0ff;
-  --cv6-accent-primary-hover: #a6d4ff;
-  --cv6-accent-primary-active: #4a93e6;
-  --cv6-accent-success: #5ee0b0;
+  --cv6-accent-primary: #3b82f6;       /* solid blue so the selected tool reads */
+  --cv6-accent-primary-hover: #60a5fa;
+  --cv6-accent-primary-active: #2563eb;
+  --cv6-accent-success: #34d399;
   --cv6-accent-warn: #fbbf24;
   --cv6-accent-error: #fb7185;
 
@@ -121,19 +124,27 @@
   --cv6-shadow-hover: 0 10px 30px rgba(2, 6, 18, 0.40);
 }
 
-/* The page chrome (html/body) carries an opaque dark ground that would paint
-   OVER the z-index:-1 GlassBackdrop and hide it. In glass mode only, make the
-   document chrome transparent so the fixed backdrop shows through. The backdrop
-   covers the full viewport, so nothing underneath is ever exposed. */
+/* Light glass — white fill, dark text (stronger 2nd/3rd levels). */
+[data-cv6][data-theme="glass"][data-glass-card="light"],
+[data-theme="glass"][data-glass-card="light"] [data-cv6]:not([data-theme]):not(.glass),
+.glass[data-glass-card="light"] [data-cv6]:not([data-theme]):not(.glass) {
+  --cv6-surface: rgba(255, 255, 255, 0.72);
+  --cv6-surface-hover: rgba(255, 255, 255, 0.86);
+  --cv6-divider: transparent;
+  --cv6-hover: rgba(0, 0, 0, 0.05);
+
+  --cv6-text-primary: #0f1626;
+  --cv6-text-secondary: rgba(15, 22, 38, 0.86);
+  --cv6-text-tertiary: rgba(15, 22, 38, 0.62);
+}
+
+/* html/body transparent so the fixed backdrop shows through. */
 html[data-theme="glass"],
 html[data-theme="glass"] body {
   background: transparent !important;
 }
 
-/* Glass surface — ui.glass recipe (Patrik 2026-06-17). Shared frost; the fill,
-   border, and card text switch by data-glass-card on <html>: dark glass (navy
-   fill, light text) or light glass (white fill, dark text). The toggle shows
-   each photo backdrop in BOTH styles as it steps. */
+/* Frost on every glass surface. No borders; a soft drop shadow gives depth. */
 [data-theme="glass"] [data-cv6] .hm-search input,
 [data-theme="glass"] [data-cv6] .hm-proj,
 [data-theme="glass"] [data-cv6] .hm-mission,
@@ -148,66 +159,48 @@ html[data-theme="glass"] body {
 [data-theme="glass"] [data-cv6] [data-cv6-tool-surface] {
   -webkit-backdrop-filter: blur(8px) saturate(200%);
   backdrop-filter: blur(8px) saturate(200%);
+  border: none !important;
   border-radius: 12px !important;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.22) !important;
 }
 
-/* Dark glass (default): navy fill + faint white hairline. Light text via the
-   root glass tokens. */
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-search input,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-proj,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-mission,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-needs-card,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-needs-row,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-tool,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-card,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-tools-row button,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-tools-block button,
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv6-card],
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv6-panel],
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv6-tool-surface] {
-  background: rgba(17, 25, 40, 0.68) !important;
-  border: 1px solid rgba(255, 255, 255, 0.125) !important;
+/* Card + input fills come from the per-variant --cv6-surface token. Tool tiles
+   are intentionally NOT listed here: they keep their own inline background —
+   var(--cv6-surface) when idle, var(--cv6-accent-primary) when SELECTED — so the
+   active tool stands out in both glass styles. */
+[data-theme="glass"] [data-cv6] .hm-search input,
+[data-theme="glass"] [data-cv6] .hm-proj,
+[data-theme="glass"] [data-cv6] .hm-mission,
+[data-theme="glass"] [data-cv6] .hm-needs-card,
+[data-theme="glass"] [data-cv6] .hm-needs-row,
+[data-theme="glass"] [data-cv6] .hm-card,
+[data-theme="glass"] [data-cv6] [data-cv6-card],
+[data-theme="glass"] [data-cv6] [data-cv6-panel],
+[data-theme="glass"] [data-cv6] [data-cv6-tool-surface],
+[data-theme="glass"] [data-cv6] input {
+  background: var(--cv6-surface) !important;
 }
 
-/* Light glass: white fill + soft gray hairline. Dark card text, scoped ON the
-   card so on-photo labels keep their light colour. */
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-search input,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-proj,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-mission,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-needs-card,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-needs-row,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-tool,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-card,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-tools-row button,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] .hm-tools-block button,
-[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-card],
-[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-panel],
-[data-theme="glass"][data-glass-card="light"] [data-cv6] [data-cv6-tool-surface] {
-  background: rgba(255, 255, 255, 0.68) !important;
-  border: 1px solid rgba(209, 213, 219, 0.3) !important;
-  --cv6-text-primary: #11192a;
-  --cv6-text-secondary: rgba(17, 25, 40, 0.72);
-  --cv6-text-tertiary: rgba(17, 25, 40, 0.5);
-  --cv6-divider: rgba(17, 25, 40, 0.14);
-  color: #11192a;
+/* Inputs: readable text + placeholder in BOTH styles (fixes light-glass search
+   being unreadable). */
+[data-theme="glass"] [data-cv6] input {
+  color: var(--cv6-text-primary) !important;
+}
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] input::placeholder {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+[data-theme="glass"][data-glass-card="light"] [data-cv6] input::placeholder {
+  color: rgba(15, 22, 38, 0.5) !important;
 }
 
-/* On-photo text (greeting + section labels) sits on the backdrop, not on a
-   card — keep it light with a soft shadow so it reads in BOTH glass styles over
-   any photo. */
+/* On-photo text (greeting + section labels) sits on the backdrop, not on a card
+   — keep it light with a soft shadow so it reads in BOTH glass styles over any
+   photo. */
 [data-theme="glass"] [data-cv6] .hm-welcome .hm-l1,
 [data-theme="glass"] [data-cv6] .hm-welcome .hm-l2,
 [data-theme="glass"] [data-cv6] .hm-section-label {
-  color: #f4f6fb !important;
+  color: #f6f8fc !important;
   text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-/* Placeholder: light over dark glass, dark over light glass. */
-[data-theme="glass"] [data-cv6] input::placeholder {
-  color: rgba(255, 255, 255, 0.66) !important;
-}
-[data-theme="glass"][data-glass-card="light"] [data-cv6] input::placeholder {
-  color: rgba(17, 25, 40, 0.5) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────
