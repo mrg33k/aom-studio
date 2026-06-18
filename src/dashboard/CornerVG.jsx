@@ -2569,10 +2569,11 @@ export default function CornerVG() {
         }
       `}</style>
 
-      {/* ── NAV BAR (R5.1 Phase F: slim top row — logo + bell + avatar) ───
-          Chat/Tasks toggle, drawer toggle, and the title all live in the
-          second-row ContextNav below. Mic + phone removed (not useful here).
-          World switching lives inside the avatar dropdown.
+      {/* ── NAV BAR (R208: CV6 mobile refinement — search + theme LEFT, bell + avatar RIGHT) ───
+          Corner:corner-ui-cv6 R208: Top nav redesigned to match TopBar.dc.html one-for-one.
+          LEFT: search magnifier (19px) + theme toggle moon (18px, filled), both 38x38 with subtle chip bg.
+          RIGHT: bell (19px, transparent, unread dot when unread) + avatar (38x38 circle).
+          Safe-area-inset-top padding ensures the bar sits below iOS status bar in PWA.
           cv6Mode: hidden — the CV6 home carries its own top (clock, avatar, search). */}
       {!cv6Mode && (<nav
         aria-label="Main navigation"
@@ -2584,206 +2585,145 @@ export default function CornerVG() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '8px 16px',
-          paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))',
+          height: 'calc(54px + env(safe-area-inset-top, 0px))',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          padding: '0 16px',
           position: 'sticky',
           top: 0,
           zIndex: 100,
           gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          <AomLogo />
-        </div>
+        {/* LEFT GROUP: search + theme toggle (gap 8px, 38x38 buttons with chip bg) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {/* Search button: 38x38, magnifier 19px, chip bg */}
           <button
             type="button"
-            data-cv4-home-toggle
-            data-active={isHomeMode ? 'true' : 'false'}
-            aria-label="Go to home"
-            title="Home"
+            aria-label="Search"
+            title="Search"
             onClick={() => {
-              // Record the project being left so it surfaces at the top of RECENTS on home
-              if (conversationTarget?.slug && conversationTarget?.type === 'project') {
-                try {
-                  const key = 'cv4_recent_visits:' + currentUser?.id
-                  const existing = JSON.parse(localStorage.getItem(key) || '{}')
-                  localStorage.setItem(key, JSON.stringify({ ...existing, [conversationTarget.slug]: Date.now() }))
-                } catch (_) {}
-              }
-              setSelectedAgent(null)
-              setConversationTarget(null)
-              setActiveTool(null)
-              try {
-                const basePath = surfaceBase()
-                navigate(basePath)
-              } catch (_) {}
+              // Wire to HomeView's search if available; for now placeholder
             }}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 11,
+              border: 'none',
+              background: 'var(--cv6-surface, rgba(255,255,255,.05))',
+              color: 'var(--cv6-text-primary, #E5E5E5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'transform .12s ease, background .15s ease',
+              padding: 0,
+            }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(.94)' }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
-              <path d="M12 2 L2 11 H5 V21 H10 V14 H14 V21 H19 V11 H22 Z"/>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
             </svg>
           </button>
+
+          {/* Theme toggle button: 38x38, moon 18px filled, chip bg */}
           <button
             type="button"
-            data-cv4-theme-toggle
-            data-theme-mode={theme}
             aria-label={theme === 'light' ? 'Switch to dark theme' : theme === 'dark' ? 'Switch to glass theme' : 'Switch to light theme'}
             title={theme === 'light' ? 'Light · tap for Dark' : theme === 'dark' ? 'Dark · tap for Glass' : 'Glass · tap for Light'}
             onClick={() => cycleTheme()}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 11,
+              border: 'none',
+              background: 'var(--cv6-surface, rgba(255,255,255,.05))',
+              color: 'var(--cv6-text-primary, #E5E5E5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'transform .12s ease, background .15s ease',
+              padding: 0,
+            }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(.94)' }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
           >
-            {theme === 'light' ? (
-              /* Light → sun (current mode) */
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
-              </svg>
-            ) : theme === 'dark' ? (
-              /* Dark → crescent moon (current mode) */
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            ) : (
-              /* Glass → crystal orb on a stand with an inner shine (current mode) */
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="10" r="7" />
-                <path d="M8.4 7.6a4.6 4.6 0 0 1 3-1.9" opacity="0.85" />
-                <path d="M9 17.4h6M9.6 17.4l-1 3.1M14.4 17.4l1 3.1" />
-              </svg>
+            {/* Filled moon SVG, 18px */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true">
+              <path d="M12 3a9 9 0 1 0 9 9c-5 0-9-4-9-9Z" />
+            </svg>
+          </button>
+        </div>
+
+        {/* RIGHT GROUP: bell + avatar (gap 10px) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, marginLeft: 'auto' }}>
+          {/* Bell button: 38x38, transparent bg, bell 19px, muted color, unread dot when unread */}
+          <button
+            type="button"
+            aria-label={`Notifications${totalUnread > 0 ? ` (${totalUnread} unread)` : ''}`}
+            title="Notifications"
+            onClick={() => setNotifOpen(o => !o)}
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 11,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--cv6-text-secondary, #A3A3A3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              position: 'relative',
+              transition: 'transform .12s ease',
+              padding: 0,
+            }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(.94)' }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+          >
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+            </svg>
+            {/* Unread dot: 7x7, shown only when unread > 0 */}
+            {totalUnread > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: 8,
+                right: 9,
+                width: 7,
+                height: 7,
+                borderRadius: '50%',
+                background: 'var(--cv6-accent-primary, #3B82F6)',
+                border: '2px solid var(--cv6-ground, #0A0A0B)',
+              }}/>
             )}
           </button>
-          {/* corner:support N1 — Support Inbox button, Patrik workspace only */}
-          {worldId === 'aom' && (
-            <button
-              type="button"
-              data-cv4-support-inbox-toggle
-              data-active={showSupportInbox ? 'true' : 'false'}
-              aria-label="Support Inbox"
-              title="Support Inbox"
-              style={{ position: 'relative' }}
-              onClick={() => {
-                setShowSupportInbox(s => !s)
-                if (!showSupportInbox) {
-                  setSelectedMail(null)
-                  setActiveTool(null)
-                }
+
+          {/* Notifications panel (existing, stays same) */}
+          {notifOpen && (
+            <NotificationsPanel
+              items={notifItems}
+              agents={agents}
+              onSelectNotification={handleSelectNotification}
+              onSelectAgent={handleSelectAgent}
+              onMarkAllRead={() => {
+                const now = new Date().toISOString()
+                setNotifReadAt(prev => {
+                  const next = { ...prev }
+                  for (const item of notifItems) next[item.roomKey || item.agent] = now
+                  return next
+                })
+                setNotifOpen(false)
               }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
-                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
-              </svg>
-              {supportPending > 0 && (
-                <span style={{ position: 'absolute', top: -2, right: -2, minWidth: 15, height: 15,
-                  padding: '0 4px', borderRadius: 8, background: '#F59E0B', color: '#1A1206',
-                  fontSize: 9, fontWeight: 800, lineHeight: '15px', textAlign: 'center',
-                  fontFamily: '"JetBrains Mono", ui-monospace, monospace' }}>{supportPending}</span>
-              )}
-            </button>
+              onClose={() => setNotifOpen(false)}
+            />
           )}
 
-          {/* corner:support N3 — Support button moved LEFT of the notifications
-              bell so it sits beside the other tenant-action controls instead of
-              crowding the avatar. Non-Patrik tenants only. */}
-          {worldId && worldId !== 'aom' && (
-            <button
-              type="button"
-              aria-label="Open Support chat"
-              title="Get support"
-              onClick={() => setSupportOpen(o => !o)}
-              data-cv4-support-toggle
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 10px',
-                background: 'rgba(16,185,129,0.12)',
-                border: '1px solid rgba(16,185,129,0.25)',
-                borderRadius: 20,
-                color: '#34D399',
-                cursor: 'pointer',
-                fontSize: 12, fontWeight: 700,
-                fontFamily: "'JetBrains Mono', monospace",
-                letterSpacing: '0.04em',
-                transition: 'background 0.15s, border-color 0.15s',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(16,185,129,0.2)'
-                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.45)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(16,185,129,0.12)'
-                e.currentTarget.style.borderColor = 'rgba(16,185,129,0.25)'
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-              Support
-            </button>
-          )}
-
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 4 }}>
-            {/* corner:notifications-catchup R3 — "Catch up" REPLACES the bell
-                when unread ≥ 3 (instead of sitting beside it). The bell is the
-                low-traffic surface; the catch-up pill is the high-traffic one
-                and earns the slot on its own when there's that much to catch
-                up on. <3 unread → bell only. ≥3 → catch-up only. */}
-            {totalUnread >= 3 ? (
-              <button
-                onClick={() => { setNotifOpen(false); setCatchupOpen(true) }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '5px 10px',
-                  background: 'rgba(16,185,129,0.1)',
-                  border: '1px solid rgba(16,185,129,0.25)',
-                  borderRadius: 20,
-                  color: '#34D399',
-                  cursor: 'pointer',
-                  fontSize: 11, fontWeight: 700,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  letterSpacing: '0.03em',
-                  whiteSpace: 'nowrap',
-                  transition: 'background 0.15s, border-color 0.15s',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(16,185,129,0.2)'
-                  e.currentTarget.style.borderColor = 'rgba(16,185,129,0.45)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(16,185,129,0.1)'
-                  e.currentTarget.style.borderColor = 'rgba(16,185,129,0.25)'
-                }}
-                aria-label={`Catch up on ${totalUnread} notifications`}
-              >
-                Catch up →
-              </button>
-            ) : (
-              <BellIcon
-                count={totalUnread}
-                onClick={() => setNotifOpen(o => !o)}
-              />
-            )}
-            {notifOpen && (
-              <NotificationsPanel
-                items={notifItems}
-                agents={agents}
-                onSelectNotification={handleSelectNotification}
-                onSelectAgent={handleSelectAgent}
-                onMarkAllRead={() => {
-                  const now = new Date().toISOString()
-                  setNotifReadAt(prev => {
-                    const next = { ...prev }
-                    for (const item of notifItems) next[item.roomKey || item.agent] = now
-                    return next
-                  })
-                  setNotifOpen(false)
-                }}
-                onClose={() => setNotifOpen(false)}
-              />
-            )}
-          </div>
-
+          {/* Avatar: 38x38 circle, existing UserAvatar component */}
           <UserAvatar
             user={currentUser}
             onUserUpdate={setCurrentUser}

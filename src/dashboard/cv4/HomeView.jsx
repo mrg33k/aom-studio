@@ -3769,28 +3769,6 @@ export default function HomeView({
               <span className="hm-l1">{greeting}</span>{' '}
               <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
             </h1>
-            {/* R14: Search icon button (collapse to icon only) — same row as greeting */}
-            <button
-              onClick={() => setShowSearch(true)}
-              style={{
-                width: '40px', height: '40px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                transition: 'all 120ms ease', fontFamily: 'inherit', flexShrink: 0,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--cv6-surface)'
-                e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-              }}
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-            </button>
           </div>
           ))}
 
