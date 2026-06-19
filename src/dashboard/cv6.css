@@ -343,6 +343,20 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-hom
   text-decoration-color: rgba(255, 255, 255, 0.55) !important;
 }
 
+/* R-QA 2026-06-19 (Patrik: "blue messages have black text"). The user bubble fills
+   with the blue accent and sets white text inline, but the ChatMessageRenderer body
+   (.chat-message-container is display:contents, so its <p>/.cmr-content inherit the
+   theme's dark --cv6-text-primary) was overriding it — black text on a blue bubble in
+   light/glass. Force the bubble AND every renderer descendant white in every theme. */
+[data-cv6] .hm-user-bubble,
+[data-cv6] .hm-user-bubble .chat-message-container,
+[data-cv6] .hm-user-bubble .cmr-content,
+[data-cv6] .hm-user-bubble .message-content,
+[data-cv6] .hm-user-bubble .cmr-content *,
+[data-cv6] .hm-user-bubble .message-content * {
+  color: #ffffff !important;
+}
+
 /* R-QA 2026-06-19: the conversation column is also a .hm-section but the photo
    still bled around the message bubble (the .hm-section frost above did not reach
    it / it did not fill the column). Give it its OWN frosted backing, scoped
