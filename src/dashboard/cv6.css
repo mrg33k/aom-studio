@@ -296,32 +296,26 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
   text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-/* R210: All-rooms container on glass theme — frosted backing for readability over photo.
-   The rows inside are transparent (R207), so the container itself needs the frosted panel.
-   Light glass = white frosted; dark glass = dark frosted. Same pattern as hm-catchup-card. */
-html[data-glass-card="light"] [data-cv6] .hm-rooms-scroll {
-  background: rgba(255, 255, 255, 0.88) !important;
+/* R-QA 2026-06-18: All-Rooms readability on glass. The earlier R210 rule targeted
+   `.hm-rooms-scroll`, a class that is NOT in the markup — so it did nothing and the
+   photo bled straight through the rooms rail (Patrik: "glass All rooms hard to read
+   with no dark glass background"). The real groups are the `.hm-section` blocks
+   (Where you left off, Agents) inside `.hm-shell`; they have transparent backgrounds.
+   Frost each section so its rows read over the photo. Light glass = white frosted;
+   dark glass = dark frosted, solid enough to read but still slightly translucent. */
+html[data-glass-card="light"] [data-cv6] [data-cv4-home] .hm-section {
+  background: rgba(255, 255, 255, 0.86) !important;
   -webkit-backdrop-filter: blur(20px) saturate(1.2);
   backdrop-filter: blur(20px) saturate(1.2);
-  border-radius: 16px !important;
-  padding: 12px 0 !important;
-  margin: 0 -12px !important;
-  margin-left: -8px !important;
-  margin-right: -4px !important;
+  border-radius: 14px !important;
+  padding: 10px 12px !important;
 }
-html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scroll {
-  /* R-QA 2026-06-18: 0.55 let the photo bleed through so the All Rooms list was
-     unreadable (Patrik: "glass All rooms hard to read with no dark glass
-     background"). 0.82 gives a solid-enough dark panel while staying slightly
-     translucent so the glass look survives. */
-  background: rgba(22, 26, 33, 0.82) !important;
+html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-home] .hm-section {
+  background: rgba(20, 24, 31, 0.80) !important;
   -webkit-backdrop-filter: blur(22px) saturate(1.3);
   backdrop-filter: blur(22px) saturate(1.3);
-  border-radius: 16px !important;
-  padding: 12px 0 !important;
-  margin: 0 -12px !important;
-  margin-left: -8px !important;
-  margin-right: -4px !important;
+  border-radius: 14px !important;
+  padding: 10px 12px !important;
 }
 
 /* ─────────────────────────────────────────────────────────────────
