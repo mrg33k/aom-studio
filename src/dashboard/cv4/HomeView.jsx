@@ -3324,6 +3324,11 @@ export default function HomeView({
   const [expandedProjects, setExpandedProjects] = useState(() => readStored(EXPANDED_PROJECTS_KEY + ':' + userId, {}))
   const [searchText, setSearchText] = useState('')
   const [showSearch, setShowSearch] = useState(false)
+  // All Rooms column-scoped search (distinct from the global top-bar search above).
+  // Filters the Recents + Agents + Projects lists inside the middle column only.
+  const [colQuery, setColQuery] = useState('')
+  // Plus-button create menu (anchored popover): null | 'open'
+  const [roomCreateMenu, setRoomCreateMenu] = useState(false)
   const greeting = useMemo(() => pickGreeting(), [])
 
   // Theme cycle for the home top-bar toggle: light → dark → glass[0..N-1] → light.
@@ -3680,6 +3685,31 @@ export default function HomeView({
       return []
     }
   }, [cv6, projectRooms, missionsByProject])
+
+  // RECENTS (Patrik 2026-06-19): the 3 most recently active rooms — projects OR missions,
+  // mixed — pinned to the top of the All Rooms column. Effective activity = max(user visit,
+  // last message). A room they just opened jumps to the front because recordVisit writes the
+  // visit timestamp immediately. Only rooms with real activity (ts > 0) qualify, so a brand
+  // new world doesn't show arbitrary "recents".
+  const recentRooms = useMemo(() => {
+    if (!cv6) return []
+    const cands = []
+    for (const p of (projectRooms || [])) {
+      if (!p?.slug) continue
+      const visitTs = recentVisits[p.slug] || 0
+      const projTs = p.last_message_at ? new Date(p.last_message_at).getTime() : 0
+      cands.push({ type: 'project', project: p, mission: null, ts: Math.max(visitTs, projTs), key: p.slug })
+    }
+    for (const m of (allMissionsForCV6 || [])) {
+      const proj = m.project, mis = m.mission
+      if (!proj?.slug || !mis?.slug) continue
+      const vk = 'm:' + proj.slug + '/' + mis.slug
+      const visitTs = recentVisits[vk] || 0
+      const msgTs = mis.last_message_at ? new Date(mis.last_message_at).getTime() : 0
+      cands.push({ type: 'mission', project: proj, mission: mis, ts: Math.max(visitTs, msgTs), key: vk })
+    }
+    return cands.filter(c => c.ts > 0).sort((a, b) => b.ts - a.ts).slice(0, 3)
+  }, [cv6, projectRooms, allMissionsForCV6, recentVisits])
 
   // R7: compute "happening now" section — agents with recent activity + active tasks
   const happeningNow = useMemo(() => {
@@ -4071,9 +4101,11 @@ export default function HomeView({
         if (!inQuickView) { recordVisit(sel.project.slug, sel.item.slug); setSelectedRoom({ project: sel.project, mission: sel.item }) }
         else { openChatToolForRoom({ project: sel.project, mission: sel.item }) }
       } else if (sel.type === 'project') {
-        const inQuickView = selectedRoom && !selectedRoom.mission && selectedRoom.project?.slug === sel.item.slug
-        if (!inQuickView) { recordVisit(sel.item.slug, null); setSelectedRoom({ project: sel.item, mission: null }) }
-        else { openChatToolForRoom({ project: sel.item, mission: null }) }
+        // Right/Enter on a folder drills into its missions in the middle column
+        // (Patrik 2026-06-19): a project is a folder, so activating it changes the
+        // column to its sub-missions — matching the row click + the chevron affordance.
+        recordVisit(sel.item.slug, null)
+        setBrowsingProject(sel.item)
       } else if (sel.type === 'agent') {
         const inQuickView = selectedRoom && selectedRoom.agent && selectedRoom.agent.slug === sel.item.slug
         if (!inQuickView) { setSelectedRoom({ agent: sel.item, project: null, mission: null }) }
@@ -5146,13 +5178,67 @@ export default function HomeView({
             {/* Design spec (lines 104–118): THREE stacked sections — Agents, Projects, nothing else.
                 No missions list, no combined view. Just agent status + all projects (scrollable).
                 R2: Drill-through mode: click project → see its missions + back arrow */}
-            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              {/* "All rooms" header (11px uppercase muted). Design: a plain label, NO
-                  underline (Patrik 2026-06-19: the border-bottom here didn't belong —
-                  only the conversation column header carries a divider). */}
-              <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)', marginBottom: '14px' }}>
-                All rooms
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              {/* "All rooms" header row (Patrik 2026-06-19): label on the left, a search
+                  icon + a plus icon on the right. The plain label keeps NO underline (only
+                  the conversation column header carries a divider). */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)' }}>
+                  All rooms
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                  {/* Search this column */}
+                  <button
+                    title="Search rooms"
+                    onClick={() => { setRoomCreateMenu(false); setRoomSearchOpen(v => { const n = !v; if (!n) setColQuery(''); return n }) }}
+                    style={{ width: '28px', height: '28px', borderRadius: '8px', border: 'none', background: roomSearchOpen ? 'var(--cv6-accent-weak)' : 'transparent', color: roomSearchOpen ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 120ms ease' }}
+                    onMouseEnter={(e) => { if (!roomSearchOpen) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                    onMouseLeave={(e) => { if (!roomSearchOpen) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                  </button>
+                  {/* Add a new project or mission */}
+                  <button
+                    title="New project or mission"
+                    onClick={() => { setRoomSearchOpen(false); setRoomCreateMenu(v => !v) }}
+                    style={{ width: '28px', height: '28px', borderRadius: '8px', border: 'none', background: roomCreateMenu ? 'var(--cv6-accent-weak)' : 'transparent', color: roomCreateMenu ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 120ms ease' }}
+                    onMouseEnter={(e) => { if (!roomCreateMenu) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                    onMouseLeave={(e) => { if (!roomCreateMenu) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                  </button>
+                  {/* Plus popover: New project / New mission → open the Projects tool (its
+                      create UI is the real, tested surface). */}
+                  {roomCreateMenu && (
+                    <div style={{ position: 'absolute', top: '32px', right: 0, zIndex: 30, minWidth: '168px', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-hair)', borderRadius: '10px', boxShadow: '0 8px 24px rgba(0,0,0,.18)', padding: '6px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      {[{ label: 'New project', sub: 'A new room with its own missions' }, { label: 'New mission', sub: 'A workstream inside a project' }].map(opt => (
+                        <button key={opt.label}
+                          onClick={() => { setRoomCreateMenu(false); setSelectedTool('projects') }}
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '1px', padding: '8px 10px', background: 'transparent', border: 'none', borderRadius: '7px', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                        >
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>{opt.label}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{opt.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Column-scoped search bar (revealed by the search icon). Filters Recents +
+                  Agents + Projects below by name. */}
+              {roomSearchOpen && !browsingProject && (
+                <input
+                  autoFocus
+                  value={colQuery}
+                  onChange={(e) => setColQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') { setColQuery(''); setRoomSearchOpen(false) } }}
+                  placeholder="Search rooms"
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '8px 12px', marginBottom: '12px', fontSize: '13px', fontFamily: 'inherit', color: 'var(--cv6-text-primary)', background: 'var(--cv6-surface-hover)', border: '1px solid var(--cv6-hair)', borderRadius: '9px', outline: 'none' }}
+                />
+              )}
 
               {/* R2: If browsing a project, show back arrow + its missions */}
               {browsingProject ? (
@@ -5218,14 +5304,73 @@ export default function HomeView({
                     ))}
                   </div>
                 </div>
-              ) : (
+              ) : (() => {
+                const colQ = (colQuery || '').trim().toLowerCase()
+                const colMatch = (n) => !colQ || (n || '').toLowerCase().includes(colQ)
+                const searching = colQ.length > 0
+                const filteredAgents = (visibleAgents || []).filter(a => colMatch(a.name || a.slug))
+                // The FULL room list (recent first, then the alphabetical rest) — this is the
+                // fix for "only a few projects show / barely scroll": previously only the 5
+                // recents rendered. Now every project renders in a bounded, scrollable list.
+                const allRoomsProjects = [...(recentProjects || []), ...(allProjects || [])]
+                const filteredProjects = allRoomsProjects.filter(p => colMatch(p.name || p.slug))
+                return (
                 <>
+                  {/* SECTION 0: RECENTS — 3 most recent rooms (projects or missions), pinned to
+                      the top. Hidden while searching (the filtered results take over). */}
+                  {!searching && recentRooms.length > 0 && (
+                    <div style={{ marginBottom: '18px' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Recents</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {recentRooms.map((r) => {
+                          const isMission = r.type === 'mission'
+                          const openRoom = () => {
+                            recordVisit(r.project.slug, isMission ? r.mission.slug : null)
+                            setSelectedRoom({ project: r.project, mission: isMission ? r.mission : null })
+                            homeRef.current?.focus()
+                          }
+                          return (
+                            <button key={r.key}
+                              className="hm-card hm-room-row"
+                              onClick={openRoom}
+                              onDoubleClick={() => openChatToolForRoom({ project: r.project, mission: isMission ? r.mission : null })}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', marginBottom: '0',
+                                boxSizing: 'border-box', width: '100%',
+                                background: 'transparent', color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                                cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'background 120ms ease',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                            >
+                              <span style={{ display: 'inline-flex', flexShrink: 0, color: isMission ? 'var(--cv6-text-secondary)' : `hsl(${roomHue(r.project.slug)}, 65%, 60%)` }}>
+                                {isMission ? getMissionIcon(r.mission.slug).svg : (
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
+                                )}
+                              </span>
+                              <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {isMission ? (r.mission.name || r.mission.slug) : (r.project.name || r.project.slug)}
+                                </span>
+                                {isMission && (
+                                  <span style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {r.project.name || r.project.slug}
+                                  </span>
+                                )}
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* SECTION 1: Agents (10.5px uppercase faint label) + rows */}
-                  {visibleAgents.length > 0 && (
+                  {filteredAgents.length > 0 && (
                     <div style={{ marginBottom: '18px' }}>
                       <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Agents</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                        {visibleAgents.map((a) => {
+                        {filteredAgents.map((a) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
                           // R-PIXEL-LOOP R4: case-insensitive status → dot color (teal working / lime idle /
                           // amber waiting), with idle/unknown defaulting to a VISIBLE lime so every agent
@@ -5276,12 +5421,14 @@ export default function HomeView({
                     </div>
                   )}
 
-                  {/* SECTION 2: Projects (10.5px uppercase faint label) + rows — show ALL projects, scrollable */}
-                  {recentProjects && recentProjects.length > 0 && (
-                    <div>
-                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Projects</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: 'calc(100% - 100px)', overflowY: 'auto' }}>
-                        {recentProjects.map((p) => {
+                  {/* SECTION 2: Projects — the FULL list (recent first, then alphabetical),
+                      in a flex-bounded scroll area so ~5 show before it scrolls and every
+                      project is reachable. */}
+                  {filteredProjects.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px', flexShrink: 0 }}>{searching ? 'Projects' : 'All rooms'}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minHeight: 0, flex: 1, overflowY: 'auto' }}>
+                        {filteredProjects.map((p) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === p.slug && selectableItems[selectedIndex]?.type === 'project'
                           const missionCount = Array.isArray(allMissionsForCV6) ? allMissionsForCV6.filter(x => (x.project?.slug || x.project?.id) === (p.slug || p.id)).length : 0
                           return (
@@ -5328,8 +5475,16 @@ export default function HomeView({
                       </div>
                     </div>
                   )}
+
+                  {/* Empty state when a column search matches nothing */}
+                  {searching && filteredAgents.length === 0 && filteredProjects.length === 0 && (
+                    <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', padding: '8px 12px' }}>
+                      No rooms match "{colQuery.trim()}"
+                    </div>
+                  )}
                 </>
-              )}
+                )
+              })()}
             </div>
 
             {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity
