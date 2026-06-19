@@ -1109,7 +1109,15 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
           Owner: t.owner || '',
         }))
         const srTracker = { id: 'sr-tickets', name: 'Space Rising — Tickets', scope: 'Space Rising', template: 'bugs', columns: ['Item', 'Priority', 'Status', 'Area', 'Owner'], rows, on: false, live: true }
-        setTrackers(prev => [srTracker, ...prev.filter(t => t.id !== 'sr-tickets')])
+        // STABLE SORT FIX: update Space Rising tracker in place to preserve list order (no re-insert on refresh)
+        setTrackers(prev => {
+          const hasSR = prev.some(t => t.id === 'sr-tickets')
+          if (hasSR) {
+            return prev.map(t => t.id !== 'sr-tickets' ? t : { ...t, rows })
+          }
+          // First load; insert at top
+          return [srTracker, ...prev.filter(t => t.id !== 'sr-tickets')]
+        })
         setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'sr-tickets' : prev)
       } catch { if (active) setSrStatus('error') }
     }
@@ -1140,14 +1148,16 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         Owner: b.owner || '',
       }))
       const cv6Tracker = { id: 'cv6-bugs', name: 'CV6 Bugs', scope: 'Corner CV6', template: 'bugs', columns: ['Priority', 'Page', 'Bug', 'Expected', 'Severity', 'Status', 'Owner'], rows, on: true, live: true }
-      // u-mqil0bc9: if user is focused on sheet, don't refresh the entire tracker list (which causes re-sort jump).
+      // STABLE SORT FIX: never re-insert cv6Tracker on refresh; always update in place to preserve list order.
+      // This prevents the tracker list from jumping when viewing. Background updates merge new rows by __id,
+      // keeping the current sort order stable (rows within the tracker update; tracker position unchanged).
       setTrackers(prev => {
         const hasCV6 = prev.some(t => t.id === 'cv6-bugs')
-        if (hasCV6 && sheetFocused) {
-          // User is reading; silently update the rows in place without re-inserting
+        if (hasCV6) {
+          // Tracker exists; update rows in place, preserve position in list
           return prev.map(t => t.id !== 'cv6-bugs' ? t : { ...t, rows })
         }
-        // User is not focused; safe to refresh the whole list
+        // First load; insert cv6Tracker at top
         return [cv6Tracker, ...prev.filter(t => t.id !== 'cv6-bugs')]
       })
       setSelId(prev => (prev === 't1' || prev === 'sr-tickets') ? 'cv6-bugs' : prev)
@@ -4059,7 +4069,7 @@ export default function HomeView({
           {!showSearch && (<>
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
           <div className="hm-tools-block" style={{ marginTop: '-4px', marginBottom: '8px' }}>
-            <div className="hm-tools-heading" style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
+            <div className="hm-tools-heading" style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div className="hm-tools-row" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'nowrap', rowGap: '12px' }}>
               {/* R48: Home pinned first, then tools in recency order (most-recently-used next to Home), then the rest in default order. Mobile: one scrollable row (cv6.css .hm-tools-row). */}
               {(() => {
@@ -4184,50 +4194,9 @@ export default function HomeView({
                 ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 120, margin: 0, borderRadius: 0, border: 'none', background: 'var(--cv6-ground)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }
                 : { marginBottom: '24px', borderRadius: '8px', border: 'none', background: 'transparent', overflow: 'hidden', minHeight: '72vh' }),
             }}>
-              {/* Tool header — desktop/other tools: title + X close (right).
-                  Mobile Chat (R185): back arrow (top-left) + title, for the full-screen room. */}
-              {/* R187 (Patrik: "too much space above, not a box"): on mobile Chat we DROP this
-                  generic tool header entirely — the chat column's own room-name bar (back +
-                  room + tools) becomes the single slim header, so the conversation sits right
-                  at the top with no stacked chrome. Desktop / other tools keep title + X close. */}
-              {!(isNarrowHV && selectedTool === 'chat') && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '16px 20px', borderBottom: '1px solid var(--cv6-divider)',
-                }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', textTransform: 'capitalize' }}>
-                    {selectedTool === 'support' && 'Support'}
-                    {selectedTool === 'command' && 'Command Center'}
-                    {selectedTool === 'scribe' && 'Live Scribe'}
-                    {selectedTool === 'review' && 'Review'}
-                    {selectedTool === 'tracker' && 'Tracker'}
-                    {selectedTool === 'organize' && `Organize — ${organizeSubtool === 'projects' ? 'Projects' : 'Files'}`}
-                    {selectedTool === 'chat' && 'Chat'}
-                  </div>
-                  <button
-                    onClick={() => setSelectedTool('home')}
-                    title="Close"
-                    style={{
-                      width: '32px', height: '32px', borderRadius: '6px', border: 'none',
-                      background: 'transparent', color: 'var(--cv6-text-secondary)',
-                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      transition: 'all 120ms ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                      e.currentTarget.style.color = 'var(--cv6-text-primary)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent'
-                      e.currentTarget.style.color = 'var(--cv6-text-secondary)'
-                    }}
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '18px', height: '18px' }}>
-                      <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                  </button>
-                </div>
-              )}
+              {/* Tool header removed per CV6 design: tool button row is the only header.
+                  Content flows directly below with 1px divider already in place between tools row and content.
+                  Mobile Chat (R185) uses its own room-name bar instead. Close via Home button in tool row. */}
 
               {/* Tool content — R85 (tools-1): drag the bottom edge to resize. Native CSS
                   resize gives a grip at the bottom with no JS; works for every tool uniformly.
