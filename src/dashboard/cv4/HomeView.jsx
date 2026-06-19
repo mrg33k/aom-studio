@@ -5354,7 +5354,7 @@ export default function HomeView({
                   {/* SECTION 0: RECENTS — 3 most recent rooms (projects or missions), pinned to
                       the top. Hidden while searching (the filtered results take over). */}
                   {!searching && recentRooms.length > 0 && (
-                    <div style={{ marginBottom: '10px' }}>
+                    <div style={{ marginBottom: '4px' }}>
                       <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '6px' }}>Recents</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {recentRooms.map((r) => {
@@ -5406,8 +5406,8 @@ export default function HomeView({
 
                   {/* SECTION 1: Agents (10.5px uppercase faint label) + rows */}
                   {filteredAgents.length > 0 && (
-                    <div style={{ marginBottom: '10px' }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '6px' }}>Agents</div>
+                    <div style={{ marginBottom: '4px' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '3px' }}>Agents</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {filteredAgents.map((a) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
