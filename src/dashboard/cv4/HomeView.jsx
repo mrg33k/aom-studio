@@ -5148,10 +5148,9 @@ export default function HomeView({
               <div style={{
                 display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px',
                 marginBottom: '12px', paddingBottom: '12px',
-                borderBottom: selectedRoom ? (selectedRoom.agent
-                  ? `2px solid hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`
-                  : `2px solid hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`)
-                  : '1px solid var(--cv6-divider)',
+                // Design: the header underline is a plain neutral hairline (no room-hue color),
+                // flush like the other columns. The old room-hue border was the green line Patrik flagged.
+                borderBottom: '1px solid var(--cv6-divider)',
                 transition: 'border-color 200ms ease',
               }}>
                 {selectedRoom ? (
@@ -5326,30 +5325,13 @@ export default function HomeView({
                         </svg>
                       </button>
 
-                      {/* Input field with icons INSIDE: attachment (left) + text + master-loop quick icon (right) */}
+                      {/* Input field — design: placeholder "Message {name}…" + a single paperclip (attach) on the right.
+                          (Was a refresh-glyph "attach" on the left + a second refresh "master-loop" icon — neither matched the design.) */}
                       <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-                        {/* R7: Attachment icon (LEFT inside input) */}
-                        <button
-                          onClick={() => onOpenDrawer?.('files')}
-                          style={{
-                            position: 'absolute', left: '8px', width: '20px', height: '20px',
-                            background: 'none', border: 'none', color: 'var(--cv6-text-secondary)',
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            padding: 0, transition: 'color 120ms ease',
-                          }}
-                          title="Attach files"
-                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                        >
-                          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 2.2"/>
-                          </svg>
-                        </button>
-
                         <input
                           ref={replyInputRef}
                           type="text"
-                          placeholder="Message…"
+                          placeholder={`Message ${(selectedRoom && (selectedRoom.agent ? (selectedRoom.agent.name || selectedRoom.agent.slug) : (selectedRoom.project.name || selectedRoom.project.slug))) || ''}…`}
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                           onKeyDown={(e) => {
@@ -5364,7 +5346,7 @@ export default function HomeView({
                             }
                           }}
                           style={{
-                            width: '100%', height: '100%', boxSizing: 'border-box', padding: '0 40px 0 32px',
+                            width: '100%', height: '100%', boxSizing: 'border-box', padding: '0 38px 0 14px',
                             borderRadius: '11px', border: '1px solid var(--cv6-divider)',
                             background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '14px',
                             fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
@@ -5373,24 +5355,21 @@ export default function HomeView({
                           onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
                         />
 
-                        {/* R7: Master-loop quick icon (RIGHT inside input) */}
+                        {/* Attach (paperclip) — RIGHT inside the input, matches the design */}
                         <button
-                          onClick={() => {
-                            console.log('[master-loop quick icon clicked]')
-                            // TODO: wire to master-loop quick action
-                          }}
+                          onClick={() => onOpenDrawer?.('files')}
                           style={{
-                            position: 'absolute', right: '8px', width: '20px', height: '20px',
+                            position: 'absolute', right: '10px', width: '20px', height: '20px',
                             background: 'none', border: 'none', color: 'var(--cv6-text-secondary)',
                             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             padding: 0, transition: 'color 120ms ease',
                           }}
-                          title="Master loop quick action"
+                          title="Attach files"
                           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
                         >
                           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"/>
+                            <path d="M21.4 11 12.25 20.2a5 5 0 0 1-7.07-7.07l9.2-9.19a3 3 0 0 1 4.24 4.24l-9.2 9.19a1 1 0 0 1-1.41-1.41l8.49-8.49"/>
                           </svg>
                         </button>
                       </div>
