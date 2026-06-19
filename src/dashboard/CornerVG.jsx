@@ -2408,26 +2408,28 @@ export default function CornerVG() {
           background: #f5f5f5 !important;
           color: #2A2620;
         }
-        /* Surfaces (page bg, drawer bg, cards) → warm paper tones */
+        /* Surfaces (page bg, drawer bg, cards) → NEUTRAL grey tiers (Patrik 2026-06-19:
+           "neutral for sure, not warm" — was warm paper/beige, which still peeked behind
+           containers in CV6 light mode). Same light→dark tiering, just neutralized. */
         [data-shell="cv4"][data-theme="light"] [style*="#06090F"],
         [data-shell="cv4"][data-theme="light"] [style*="rgb(6, 9, 15)"] {
-          background-color: #EFEAE0 !important;
+          background-color: #f5f5f5 !important;
         }
         [data-shell="cv4"][data-theme="light"] [style*="#0B1018"],
         [data-shell="cv4"][data-theme="light"] [style*="rgb(11, 16, 24)"] {
-          background-color: #F4EFE3 !important;
+          background-color: #f2f2f2 !important;
         }
         [data-shell="cv4"][data-theme="light"] [style*="#111827"],
         [data-shell="cv4"][data-theme="light"] [style*="rgb(17, 24, 39)"] {
-          background-color: #EBE5D7 !important;
+          background-color: #ededed !important;
         }
         [data-shell="cv4"][data-theme="light"] [style*="#1A2035"],
         [data-shell="cv4"][data-theme="light"] [style*="rgb(26, 32, 53)"] {
-          background-color: #E5DECD !important;
+          background-color: #e8e8e8 !important;
         }
         [data-shell="cv4"][data-theme="light"] [style*="#222942"],
         [data-shell="cv4"][data-theme="light"] [style*="rgb(34, 41, 66)"] {
-          background-color: #DDD5C0 !important;
+          background-color: #e2e2e2 !important;
         }
         /* Body text → warm near-black */
         [data-shell="cv4"][data-theme="light"] [style*="#F1F5F9"],
