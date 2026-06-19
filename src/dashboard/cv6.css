@@ -302,10 +302,14 @@ html[data-glass-card="light"] [data-cv6] .hm-catchup-card {
   --cv6-text-secondary: rgba(15, 22, 38, 0.64);
   --cv6-text-tertiary: rgba(15, 22, 38, 0.5);
 }
+/* R-GLASS-STRUCT 2026-06-19: the grid is one opaque frosted panel now, so the
+   catch-up cards no longer need their own photo-frost (which read lighter/busier than
+   the panel). A faint white raise gives the subtle card lift dark/light have, with no
+   photo bleed. */
 html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-card {
-  background: rgba(22, 26, 33, 0.62) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  backdrop-filter: blur(22px) saturate(1.3);
+  background: rgba(255, 255, 255, 0.05) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 /* On-photo text (greeting + section labels) sits on the backdrop, not on a card
@@ -318,26 +322,33 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
   text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
-/* R-QA 2026-06-18: All-Rooms readability on glass. The earlier R210 rule targeted
-   `.hm-rooms-scroll`, a class that is NOT in the markup — so it did nothing and the
-   photo bled straight through the rooms rail (Patrik: "glass All rooms hard to read
-   with no dark glass background"). The real groups are the `.hm-section` blocks
-   (Where you left off, Agents) inside `.hm-shell`; they have transparent backgrounds.
-   Frost each section so its rows read over the photo. Light glass = white frosted;
-   dark glass = dark frosted, solid enough to read but still slightly translucent. */
-html[data-glass-card="light"] [data-cv6] [data-cv4-home] .hm-section {
-  background: rgba(255, 255, 255, 0.86) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  backdrop-filter: blur(20px) saturate(1.2);
-  border-radius: 14px !important;
-  padding: 10px 12px !important;
+/* R-GLASS-STRUCT 2026-06-19 (Patrik: "the glass ui follows a different structure
+   than the light and dark, we have to fix that"). The earlier readability fix wrapped
+   EACH .hm-section + the convo column in its own rounded frosted card, so glass became
+   floating padded cards with gaps — a different layout from light/dark, which are flat
+   flush columns separated by hairline dividers. The fix: frost the WHOLE three-column
+   grid as ONE continuous panel (below), keep the same column dividers, and let the
+   sections sit flat inside it. So here the sections go transparent + flat again. */
+[data-theme="glass"] [data-cv6] [data-cv4-home] .hm-section {
+  background: transparent !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-radius: 0 !important;
 }
-html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-home] .hm-section {
+
+/* The one continuous frosted panel behind all three columns (replaces the per-card
+   frosting). Flat rectangle, no rounding — matches the flat light/dark grid. Glass is
+   always dark-glass now (useThemeMode cardStyleOf() === 'dark'); light-glass retired. */
+[data-theme="glass"] [data-cv6] .hm-three-column-grid {
   background: rgba(20, 24, 31, 0.80) !important;
   -webkit-backdrop-filter: blur(22px) saturate(1.3);
   backdrop-filter: blur(22px) saturate(1.3);
-  border-radius: 14px !important;
-  padding: 10px 12px !important;
+  border-top-color: rgba(255, 255, 255, 0.10) !important;
+}
+/* Restore the column dividers light/dark have (glass --cv6-divider is transparent). */
+[data-theme="glass"] [data-cv6] .hm-three-column-grid > div:nth-child(1),
+[data-theme="glass"] [data-cv6] .hm-three-column-grid > div:nth-child(2) {
+  border-right-color: rgba(255, 255, 255, 0.10) !important;
 }
 
 /* R-QA 2026-06-19: links inside the blue user bubble were the default link blue
@@ -364,26 +375,14 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-hom
   color: #ffffff !important;
 }
 
-/* R-QA 2026-06-19: the conversation column is also a .hm-section but the photo
-   still bled around the message bubble (the .hm-section frost above did not reach
-   it / it did not fill the column). Give it its OWN frosted backing, scoped
-   without [data-cv4-home] so it definitely applies, and let it fill the column so
-   nothing bleeds below the messages. Matches the All Rooms + Catch Up panels. */
-[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-convo-col {
-  background: rgba(20, 24, 31, 0.80) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  backdrop-filter: blur(22px) saturate(1.3);
-  border-radius: 14px !important;
-  padding: 12px 14px !important;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-[data-glass-card="light"] [data-cv6] .hm-convo-col {
-  background: rgba(255, 255, 255, 0.86) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  backdrop-filter: blur(20px) saturate(1.2);
-  border-radius: 14px !important;
-  padding: 12px 14px !important;
+/* R-GLASS-STRUCT 2026-06-19: the conversation column also went flat — the continuous
+   grid panel above is its frosted backing now, so it no longer needs its own rounded
+   card. Transparent + flat, keep only the structural flex sizing. */
+[data-theme="glass"] [data-cv6] .hm-convo-col {
+  background: transparent !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-radius: 0 !important;
   flex: 1 1 auto;
   min-height: 0;
 }
