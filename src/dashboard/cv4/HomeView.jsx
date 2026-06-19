@@ -5775,7 +5775,10 @@ export default function HomeView({
                 alt="Corner"
                 style={{ height: '30px', width: '30px', display: 'block', objectFit: 'contain', flexShrink: 0 }}
               />
-              <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '22px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>
+              {/* font-size 44px sets the cap height equal to the 30px mark (Bricolage cap
+                  ratio 0.674), so the wordmark reads the same height as the logo, centered
+                  against it (Patrik 2026-06-19). */}
+              <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '44px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>
                 Corner
               </span>
             </div>
