@@ -5529,14 +5529,14 @@ export default function HomeView({
             {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity
                 R5: More top padding so room name isn't jammed against border
                 iPad fix: when no room selected, the heading aligns top with catch-up/all-rooms */}
-            <div className="hm-section hm-convo-col" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', paddingTop: selectedRoom ? '22px' : '22px' }}>
+            <div className="hm-section hm-convo-col" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', paddingTop: '6px' }}>
               {/* R19: Room identifier header with color tinting */}
               {/* R30b: Support agent rooms in addition to project/mission rooms */}
               {/* ONE-line header (Patrik 2026-06-19): green dot + name + muted subname all on
                   the same row as the Files button, to give the conversation more height. */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
-                marginBottom: '12px', paddingBottom: '12px',
+                marginBottom: '8px', paddingBottom: '8px',
                 // Patrik 2026-06-19: inset the column's items 20px from the left divider so they
                 // breathe; the border-bottom still spans the full column width (padding is inside
                 // the box) so the header underline stays connected to the middle column.
