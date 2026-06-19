@@ -5036,7 +5036,7 @@ export default function HomeView({
           {/* R76 (Patrik): grid layout lives in cv6.css so the ≤768px media query can
               collapse it to ONE stacked column on mobile. Inline display/columns used to
               override the media query, which is why mobile rendered 3 cramped columns. */}
-          <div className="hm-three-column-grid" style={{ gap: '24px', marginBottom: '18px' }}>
+          <div className="hm-three-column-grid" style={{ gap: '0', height: '566px', marginBottom: '18px' }}>
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 

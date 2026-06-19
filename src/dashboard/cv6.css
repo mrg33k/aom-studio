@@ -1267,7 +1267,9 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-hom
    hairline dividers (no 24px gutter that left the agent-name underline floating away
    from the middle column) and all three are the SAME height (each scrolls internally,
    like the design's 566px panels) instead of growing to their own content height. */
-[data-cv6] .hm-three-column-grid { display:flex; gap:0; height:566px; border-top:1px solid var(--cv6-divider); }
+[data-cv6] .hm-three-column-grid { display:flex; gap:0; min-height:auto; border-top:1px solid var(--cv6-divider); }
+/* NB: the SAME class is reused by the search-results dropdown (inline display:grid),
+   so the fixed home-body height lives on the home grid's INLINE style, not here. */
 [data-cv6] .hm-three-column-grid > div { margin:0 !important; }
 [data-cv6] .hm-three-column-grid > div:nth-child(1) {
   flex:0 1 360px;          /* shrinkable so sub-1440 laptops never overflow horizontally */
