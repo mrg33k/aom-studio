@@ -5070,7 +5070,11 @@ export default function HomeView({
                           <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-end', animation: 'cv6-msg-float-in 300ms ease-out' }}>
                             <div style={{
                               maxWidth: '75%', padding: '10px 13px', borderRadius: '16px 16px 4px 16px',
-                              background: roomSolid((selectedRoom.agent || selectedRoom.project).slug),
+                              // R-QA: user bubble = the design's single blue accent, NOT roomSolid(slug).
+                              // roomSolid maps the room hue to an hsl color, which for green-band rooms
+                              // returned a saturated green bubble — the "green chat bubble" Patrik flagged.
+                              // The Claude design shows user messages in one consistent blue. (2026-06-18)
+                              background: 'var(--cv6-accent-primary)',
                               color: '#ffffff', fontSize: '14px', lineHeight: '1.55', wordWrap: 'break-word',
                             }}>
                               <ChatMessageRenderer content={msg.text} />
