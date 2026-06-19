@@ -4517,10 +4517,12 @@ export default function HomeView({
             )}
 
             {/* Corner lockup pinned to the bottom of the catch-up column (Patrik 2026-06-19):
-                cards, options, then breathing space, then the logo at the bottom. */}
-            <div style={{ marginTop: 'auto', paddingTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <img src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'} alt="Corner" style={{ height: '30px', width: '30px', display: 'block', objectFit: 'contain', flexShrink: 0 }} />
-              <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '30px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>Corner</span>
+                cards, options, then breathing space, then the logo at the bottom. Faint grey
+                (container opacity fades the mark + wordmark together so they match in both
+                themes) and shrunk 20% (30 -> 24px). */}
+            <div style={{ marginTop: 'auto', paddingTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.4 }}>
+              <img src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'} alt="Corner" style={{ height: '24px', width: '24px', display: 'block', objectFit: 'contain', flexShrink: 0 }} />
+              <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '24px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>Corner</span>
             </div>
           </div>
         )
