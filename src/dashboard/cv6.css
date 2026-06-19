@@ -728,6 +728,11 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scr
   50% { opacity: 0.5; }
 }
 
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
 @keyframes cv6-tool-roll-in {
   0% {
     opacity: 0;

@@ -162,6 +162,9 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   const [goalDraft, setGoalDraft] = useState('')
   const [savingGoal, setSavingGoal] = useState(false)
 
+  // CV6 master-detail: selecting a row opens the detail panel on the right
+  const [selectedRowSlug, setSelectedRowSlug] = useState(null)
+
   // R78: mobile — the 6-column table is unreadable on a phone (room name + goal
   // collapse to zero width). Below 768px each row renders as a stacked card.
   const [isNarrow, setIsNarrow] = useState(false)
@@ -805,6 +808,9 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
     } catch { return null }
   }
 
+  // Find the selected row for the detail panel
+  const selectedRow = selectedRowSlug ? rows.find((r) => r.slug === selectedRowSlug) : null
+
   return (
     <div
       // R100 — the glass scrim now lives on the shared tool-overlay wrapper in
@@ -894,39 +900,44 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         </div>
       )}
 
-      {/* Header row — matches CV6 design: ROOM, CURRENT GOAL, SET BY, STATUS (170px, flex, 130px, 110px) */}
-      <div
-        style={{
-          display: isNarrow ? 'none' : 'grid',
-          gridTemplateColumns: '170px 1fr 130px 110px',
-          gap: '12px',
-          padding: '12px 24px',
-          background: 'var(--cv6-surface)',
-          borderBottom: '1px solid var(--cv6-divider)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-        }}
-      >
-        {['ROOM', 'CURRENT GOAL', 'SET BY', 'STATUS'].map((col) => (
+      {/* Master-detail split: ledger on left, detail on right */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, borderTop: '1px solid var(--cv6-divider)' }}>
+        {/* Ledger column (left) */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Header row — matches CV6 design: ROOM, CURRENT GOAL, SET BY, STATUS (170px, flex, 130px, 110px) */}
           <div
-            key={col}
             style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase',
-              color: 'var(--cv6-text-tertiary)',
+              display: isNarrow ? 'none' : 'grid',
+              gridTemplateColumns: '170px 1fr 130px 110px',
+              gap: '12px',
+              padding: '12px 24px',
+              background: 'var(--cv6-surface)',
+              borderBottom: '1px solid var(--cv6-divider)',
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
             }}
           >
-            {col}
+            {['ROOM', 'CURRENT GOAL', 'SET BY', 'STATUS'].map((col) => (
+              <div
+                key={col}
+                style={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  color: 'var(--cv6-text-tertiary)',
+                }}
+              >
+                {col}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Rows */}
-      {rows.map((row, idx) => {
+          {/* Rows container */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            {rows.map((row, idx) => {
         // Look up routine status by the routineId (room-goal rows only)
         const routine = row.routineId && typeof routineMap[row.routineId] === 'object'
           ? routineMap[row.routineId]
@@ -947,7 +958,13 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         return (
          <div key={row.slug || `row-${idx}`} style={{ borderBottom: '1px solid var(--cv6-divider)' }}>
           <div
-            onClick={() => !isWorkerRow && onJumpToRoom?.(row.slug)}
+            onClick={() => {
+              if (!isWorkerRow) {
+                setSelectedRowSlug(row.slug)
+                setReplyOpenSlug(null)
+                onJumpToRoom?.(row.slug)
+              }
+            }}
             style={{
               display: 'grid',
               gridTemplateColumns: isNarrow ? 'auto 1fr auto' : '170px 1fr 130px 110px',
@@ -1115,7 +1132,144 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           )}
          </div>
         )
-      })}
+            })}
+          </div>
+        </div>
+
+        {/* Detail panel (right) — CV6 master-detail split */}
+        {selectedRow && (
+          <div
+            style={{
+              width: 420,
+              flexShrink: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              borderLeft: '1px solid var(--cv6-divider)',
+              overflowY: 'auto',
+              padding: '22px 22px 28px',
+              background: 'var(--cv6-ground)',
+            }}
+          >
+            {/* Room name + status chip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <span style={{ width: 9, height: 9, borderRadius: '50%', background: statusColor(selectedRow.status), flexShrink: 0 }} />
+              <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--cv6-text-primary)', flex: 1 }}>
+                {(selectedRow.display && selectedRow.display.name) || selectedRow.slug || '(unnamed)'}
+              </span>
+              <span
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  fontSize: 10.5,
+                  fontWeight: 600,
+                  color: statusColor(selectedRow.status),
+                  background: statusColor(selectedRow.status).includes('success') ? 'var(--cv6-accent-success-weak)' : 'var(--cv6-surface2)',
+                  padding: '4px 9px',
+                  borderRadius: 6,
+                }}
+              >
+                {statusColor(selectedRow.status).includes('success') && (
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cv6-accent-success)', animation: 'livePulse 1.8s infinite' }} />
+                )}
+                {statusLabel(selectedRow.status)}
+              </span>
+            </div>
+
+            {/* Current goal label */}
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)', marginBottom: 8 }}>
+              Current goal
+            </div>
+
+            {/* Goal text */}
+            <div style={{ fontSize: 17, lineHeight: 1.4, fontWeight: 600, color: 'var(--cv6-text-primary)', marginBottom: 16 }}>
+              {(selectedRow.goalCurated ? cleanCell(selectedRow.goal) : synthGoal(selectedRow.goal)) || '—'}
+            </div>
+
+            {/* Live activity indicator (if applicable) */}
+            {selectedRow.liveNow && (
+              <div style={{ background: 'var(--cv6-surface2)', borderRadius: 11, padding: '12px 14px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8, fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--cv6-accent-success)' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="5 7 10 12 5 17" /><line x1="13" y1="17" x2="19" y2="17" /></svg>
+                {selectedRow.liveNow.slice(0, 60)}
+              </div>
+            )}
+
+            {/* Checklist section — real data has no per-goal steps yet, so show an
+                honest empty state (no fabricated steps). TODO(cv6: real checklist source). */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-tertiary)' }}>
+                Checklist
+              </span>
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--cv6-text-tertiary)', marginBottom: 16 }}>
+              No steps yet — the loop breaks this goal into steps as it works it.
+            </div>
+
+            {/* Info box: master-loop queue verification */}
+            <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start', background: 'var(--cv6-surface2)', borderRadius: 10, padding: '11px 13px', marginBottom: 22 }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 16v-4M12 8v.5" />
+              </svg>
+              <span style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--cv6-text-tertiary)' }}>
+                Finished steps join the <strong style={{ color: 'var(--cv6-text-primary)', fontWeight: 600 }}>master-loop queue</strong> — the loop verifies each before it's marked done.
+              </span>
+            </div>
+
+            {/* Autopilot toggle (real toggleAutopilot handler) + Re-task quick action */}
+            <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+              <button
+                onClick={() => toggleAutopilot(selectedRow.slug, !selectedRow.autopilot)}
+                title={selectedRow.autopilot ? 'Autopilot on — the loop keeps pushing this room forward' : 'Autopilot off — this room moves only when you ask'}
+                style={{
+                  flex: 'none',
+                  height: 42,
+                  padding: '0 14px',
+                  borderRadius: 11,
+                  border: 'none',
+                  background: selectedRow.autopilot ? 'var(--cv6-accent-success-weak)' : 'var(--cv6-surface2)',
+                  color: selectedRow.autopilot ? 'var(--cv6-accent-success)' : 'var(--cv6-text-secondary)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: 'Inter',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: selectedRow.autopilot ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)' }} />
+                Autopilot {selectedRow.autopilot ? 'On' : 'Off'}
+              </button>
+              <button
+                onClick={() => onReplyToRoom?.(selectedRow.slug, `Let's make real progress on ${(selectedRow.display && selectedRow.display.name) || selectedRow.slug}. What's the single highest-value next step, and can you start it now?`)}
+                style={{
+                  flex: 1,
+                  height: 42,
+                  borderRadius: 11,
+                  border: 'none',
+                  background: 'var(--cv6-accent-primary)',
+                  color: '#fff',
+                  fontSize: 13.5,
+                  fontWeight: 600,
+                  fontFamily: 'Inter',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 7,
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                </svg>
+                Re-task
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
