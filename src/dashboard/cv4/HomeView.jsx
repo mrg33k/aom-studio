@@ -5222,7 +5222,7 @@ export default function HomeView({
               quick reply sits just above the bottom and the section never gets cut off. No upper
               cap — the columns keep extending as the user grows the window height, holding the
               same ~110px bottom offset. A 480px floor protects very short windows. */}
-          <div className="hm-three-column-grid" style={{ gap: '0', height: 'max(480px, calc(var(--app-height, 100dvh) - 110px))', marginBottom: '18px', position: 'relative' }}>
+          <div className="hm-three-column-grid" style={{ gap: '0', height: 'max(480px, calc(var(--app-height, 100dvh) - 150px))', marginBottom: '18px', position: 'relative' }}>
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
