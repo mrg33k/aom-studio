@@ -57,39 +57,14 @@ function writeStored(key, value) {
 // each reload or new time they come to home". Each variant ends in a period
 // (or question mark when phrased as one) so the welcome reads as a complete
 // sentence under the brutalist treatment.
+// Single-word time phrases (Patrik 2026-06-19): the greeting is "[word], Name." so
+// it stays two words and never runs behind the centered tool bar. A couple of
+// natural variants per slot keeps it from feeling robotic.
 const GREETINGS = {
-  morning: [
-    'Good morning,',
-    'Morning,',
-    "Coffee's on,",
-    "What's the play,",
-    'Up early,',
-    'Fresh start,',
-  ],
-  afternoon: [
-    'Good afternoon,',
-    'Afternoon,',
-    'Back at it,',
-    'Mid-day check,',
-    'Still rolling,',
-    'Long lunch,',
-  ],
-  evening: [
-    'Good evening,',
-    'Evening,',
-    'Welcome back,',
-    'Last stretch,',
-    'Final push,',
-    'Almost there,',
-  ],
-  late: [
-    'Burning the midnight oil,',
-    'Late night,',
-    'Workshop hours,',
-    'Still going,',
-    "Couldn't sleep,",
-    "It's that hour,",
-  ],
+  morning: ['Morning,', 'Sunrise,'],
+  afternoon: ['Afternoon,', 'Midday,'],
+  evening: ['Evening,', 'Sundown,'],
+  late: ['Midnight,', 'Late,'],
 }
 
 function pickGreeting(date = new Date()) {
