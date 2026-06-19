@@ -4783,7 +4783,7 @@ export default function HomeView({
             {/* Cell 1 — Corner mark + greeting, over the Catch Up column (mirrors its 360px width).
                 The mark is theme-aware (Patrik 2026-06-19): white on dark/glass surfaces, dark
                 ink on light. Medium size, sitting just left of the greeting. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: cv6 ? '14px' : '0', ...(cv6 ? { flex: '0 1 360px', minWidth: 0 } : {}) }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: cv6 ? '14px' : '0', ...(cv6 ? { flex: '0 0 auto', minWidth: '360px' } : {}) }}>
               {cv6 && (
                 <img
                   src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'}
@@ -4801,10 +4801,12 @@ export default function HomeView({
                 the section/header indicator. Big tile row is hidden on home desktop (cv6.css)
                 and stays as the mobile dock + the tool-screen nav. */}
             {cv6 && (<>
-              {/* flexible spacers on each side keep the tools centered between the greeting
-                  cell and the icons cell (= centered in the All Rooms span when wide), while
-                  the tools cell itself never shrinks (flex 0 0 auto) so all 8 always show. */}
-              <div style={{ flex: 1, minWidth: 0 }} />
+              {/* Flexible spacers each side keep the tools centered between the greeting and the
+                  icons. The greeting cell sizes to its content (min 360px = the catch-up column
+                  width) and GROWS if a longer name ever lands, pushing the tools right; the 32px
+                  min on this spacer guarantees a gap so the tools can never collide with the
+                  greeting (Patrik 2026-06-19). The tools cell never shrinks (flex 0 0 auto). */}
+              <div style={{ flex: 1, minWidth: '32px' }} />
               <div style={{ flex: '0 0 auto', display: 'flex', minWidth: 0 }}>
                 <div className="hm-greeting-tools" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {HOME_TOOLS.map(t => {
@@ -4833,7 +4835,7 @@ export default function HomeView({
                   })}
                 </div>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }} />
+              <div style={{ flex: 1, minWidth: '32px' }} />
             </>)}
             {/* Cell 3 — global icons (search, theme, notifications, avatar), over the
                 conversation column on the right. Smaller than the tool tiles; the bell gets a
