@@ -3604,13 +3604,20 @@ export default function HomeView({
                         {n.timeAgo}
                       </div>
                     </div>
-                    {/* Card body — plain 2-line preview; strip markdown markers so raw
-                        **bold** / `code` / # never leak (design card previews are plain). */}
+                    {/* Card body — plain 2-line preview; attachment-aware text.
+                        When the message is a file/image, show "Attached file: <name>" or "Sent an image".
+                        TODO(cv6: attachment field): use real message.attachments array when available. */}
                     <div style={{
                       fontSize: '13.5px', lineHeight: 1.45, color: 'var(--cv6-text-primary)',
                       display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                     }}>
-                      {(n.messagePreview || 'New update').replace(/[*_~\x60]|^#+\s?/gm, '')}
+                      {(() => {
+                        if (n.attachment || (n.attachments && n.attachments.length)) {
+                          const fname = n.attachment?.name || (n.attachments?.[0]?.name) || 'attachment'
+                          return `Attached file: ${fname}`
+                        }
+                        return (n.messagePreview || 'New update').replace(/[*_~\x60]|^#+\s?/gm, '')
+                      })()}
                     </div>
                   </div>
                 )
@@ -4329,308 +4336,171 @@ export default function HomeView({
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
-            {/* R75 (Patrik): ONE column — "All rooms". Agents always pinned on top
-                (right-click an agent to unpin), then the most-recent missions + projects
-                (right-click a project to pin/unpin). No more Agents / Active work split. */}
+            {/* Design spec (lines 104–118): THREE stacked sections — Agents, Projects, nothing else.
+                No missions list, no combined view. Just agent status + 5 most recent active projects. */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              {/* R206 (Claude): heading row — label left, "See all" link on the right (Claude design).
-                  The search field is hidden until the icon is clicked, then drops in below. */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: '26px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
-                <span style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)' }}>All rooms</span>
-                <button onClick={() => setRoomSearchOpen(v => !v)} title={roomSearchOpen ? 'Hide search' : 'See all rooms'} aria-label="See all rooms"
-                  style={{ flexShrink: 0, fontSize: '12.5px', fontWeight: '600', color: 'var(--cv6-accent-primary)', background: 'none', border: 'none', cursor: 'pointer', padding: '0', transition: 'opacity 120ms ease' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}>
-                  See all
-                </button>
+              {/* "All rooms" header (11px uppercase muted) */}
+              <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
+                All rooms
               </div>
+
+              {/* SECTION 1: Agents (10.5px uppercase faint label) + rows */}
               {visibleAgents.length > 0 && (
-                <div style={{ marginBottom: '14px' }}>
-                  <div>{visibleAgents.map((a, idx) => renderAgentRow(a, idx))}</div>
+                <div style={{ marginBottom: '18px' }}>
+                  <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Agents</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    {visibleAgents.map((a) => {
+                      const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+                      const dotColor = a.status === 'routing work' ? '#10B981' : (a.status === 'idle' ? '#A3E635' : 'var(--cv6-warn)')
+                      const dotGlow = a.status === 'routing work' ? '0 0 8px rgba(16,185,129,.6)' : 'none'
+                      return (
+                        <button key={a.slug}
+                          className="hm-card hm-room-row"
+                          data-cv6-sel={isSelected ? 'true' : undefined}
+                          onClick={() => { selectByItem('agent', a.slug); setSelectedRoom({ agent: a, project: null, mission: null }); homeRef.current?.focus() }}
+                          onContextMenu={(e) => { e.preventDefault(); selectByItem('agent', a.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'agent', item: a, project: null }) }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', marginBottom: '0',
+                            boxSizing: 'border-box', width: '100%',
+                            background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
+                            color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                            cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                            transition: 'background 120ms ease',
+                          }}
+                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                        >
+                          {/* 8px color dot (active=green glow / idle=lime / warn) */}
+                          <span style={{
+                            width: '8px', height: '8px', borderRadius: '50%',
+                            background: dotColor, boxShadow: dotGlow,
+                            flexShrink: 0,
+                          }}/>
+                          {/* Agent name (14px 600 when active, 500 when idle) */}
+                          <span style={{ flex: 1, fontSize: '14px', fontWeight: a.status === 'routing work' ? 600 : 500, color: 'var(--cv6-text-primary)' }}>
+                            {a.name || a.slug}
+                          </span>
+                          {/* Activity text right (11.5px muted): "routing work" / "idle" / "waiting on review" */}
+                          {a.status && (
+                            <span style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                              {a.status}
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
-              {/* R23 + R98: Search input for filtering the rooms list — hidden until the heading icon is clicked. */}
-              {roomSearchOpen && (
-                <input
-                  type="text"
-                  autoFocus
-                  placeholder="Search missions & projects..."
-                  value={activeworkSearchText || ''}
-                  onChange={(e) => setActiveworkSearchText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Escape') { setActiveworkSearchText(''); setRoomSearchOpen(false) } }}
-                  style={{
-                    marginBottom: '12px', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--cv6-divider)',
-                    background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '13px',
-                    fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
-                />
-              )}
-              {allMissionsForCV6.length > 0 || (recentProjects && recentProjects.length > 0) ? (
-                <>
-                  {/* Scrollable container: shows 5 visible items with internal scroll.
-                      On mobile (R76) the cap is lifted in cv6.css so rooms flow into the
-                      page scroll instead of a cramped 328px nested-scroll window. */}
-                  <div className="hm-rooms-scroll" style={{
-                    display: 'flex', flexDirection: 'column', gap: '8px',
-                    flex: 1, // Grow to fill column
-                    overflow: 'hidden', overflowY: 'auto', paddingRight: '4px',
-                    scrollBehavior: 'smooth',
-                    // R20: grey container removed — cards fall clean against the page (Patrik 2026-06-16)
-                    maxHeight: '328px', // R18: Cap at 5 visible items (56px each + 8px gaps + 16px padding)
-                  }}>
-                    {/* R30b: Combined missions + projects list, sorted by recency */}
-                    {(() => {
-                      // Build combined list: missions + projects
-                      const combined = []
-                      // Add missions
-                      if (Array.isArray(allMissionsForCV6)) {
-                        allMissionsForCV6.forEach(m => {
-                          combined.push({ type: 'mission', mission: m.mission, project: m.project, timestamp: m.mission.last_message_at })
-                        })
-                      }
-                      // Add projects
-                      if (Array.isArray(recentProjects)) {
-                        recentProjects.forEach(p => {
-                          combined.push({ type: 'project', project: p, timestamp: p.last_message_at })
-                        })
-                      }
-                      // Sort by recency (most recent first).
-                      // R32: when searching, a project whose NAME matches floats above its missions.
-                      const search = activeworkSearchText.trim().toLowerCase()
-                      const nameMatchRank = (item) => {
-                        if (!search) return 0
-                        if (item.type === 'project') {
-                          const pn = (item.project.name || item.project.slug).toLowerCase()
-                          return pn.includes(search) ? -1 : 0  // matched project leads
-                        }
-                        return 0
-                      }
-                      combined.sort((a, b) => {
-                        const r = nameMatchRank(a) - nameMatchRank(b)
-                        if (r !== 0) return r
-                        const aTime = new Date(a.timestamp || 0).getTime()
-                        const bTime = new Date(b.timestamp || 0).getTime()
-                        return bTime - aTime
-                      })
-                      // Filter by search text
-                      return combined.filter(item => {
-                        if (!activeworkSearchText.trim()) return true
-                        const searchLower = activeworkSearchText.toLowerCase()
-                        if (item.type === 'mission') {
-                          const missionName = (item.mission.name || item.mission.slug).toLowerCase()
-                          const projectName = (item.project.name || item.project.slug).toLowerCase()
-                          return missionName.includes(searchLower) || projectName.includes(searchLower)
-                        } else if (item.type === 'project') {
-                          const projectName = (item.project.name || item.project.slug).toLowerCase()
-                          return projectName.includes(searchLower)
-                        }
-                        return true
-                      }).map((item, idx) => {
-                        if (item.type === 'mission') {
-                          const m = item
-                          const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.mission.slug
-                          return (
-                            <button
-                              key={`mission-${m.mission.slug}`}
-                              className="hm-card hm-room-row"
-                              data-cv6-sel={isSelected ? 'true' : undefined}
-                              onClick={() => {
-                                // R88 (Patrik): single click opens the conversation + quick reply in the
-                                // right column (matches the agent card). Double click opens the Chat tool.
-                                selectByItem('mission', m.mission.slug) // cursor follows the click
-                                setSelectedRoom({ project: m.project, mission: m.mission })
-                                homeRef.current?.focus()
-                              }}
-                              onDoubleClick={() => openChatToolForRoom({ project: m.project, mission: m.mission })}
-                              onContextMenu={(e) => { e.preventDefault(); selectByItem('mission', m.mission.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'mission', item: m.mission, project: m.project }) }}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '12px', padding: '0 15px', marginBottom: '0',
-                                boxSizing: 'border-box', width: '100%',
-                                background: isSelected ? roomFill(m.project.slug) : 'transparent',
-                                color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                                border: isSelected ? `1px solid ${roomFill(m.project.slug)}` : '1px solid transparent',
-                                boxShadow: isSelected ? `0 3px 14px ${roomGlow(m.project.slug)}` : 'none',
-                                transform: isSelected ? 'translateY(-1px)' : 'none',
-                                borderRadius: '0', cursor: 'pointer',
-                                transition: 'background 220ms ease, border-color 160ms ease, transform 200ms ease',
-                                fontFamily: 'inherit', textAlign: 'left', fontSize: '14px', fontWeight: '500',
-                                flex: '0 0 auto', minHeight: '52px',
-                                borderBottom: isSelected ? 'none' : '1px solid var(--cv6-divider)',
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!isSelected) {
-                                  e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isSelected) {
-                                  e.currentTarget.style.background = 'transparent'
-                                }
-                              }}
-                            >
-                              {/* R18: Per-item icon from stable set */}
-                              <span style={{ color: isSelected ? '#ffffff' : (MISSION_ACTIVE_STATUSES.has(m.mission.status) ? '#10B981' : '#5A6F8C'), display: 'inline-flex', flexShrink: 0 }}>
-                                {getMissionIcon(m.mission.slug).svg}
-                              </span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {m.mission.name || m.mission.slug}
-                                  {/* R18: Subtle room color dot */}
-                                  <span style={{
-                                    width: '6px', height: '6px', borderRadius: '50%',
-                                    background: isSelected ? 'rgba(255,255,255,0.5)' : `hsl(${(m.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
-                                    flexShrink: 0,
-                                  }}/>
-                                </div>
-                                <div style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>in {m.project.name || m.project.slug}</div>
-                              </div>
-                              <span style={{ fontSize: '11px', color: isSelected ? 'rgba(255,255,255,0.6)' : 'var(--cv6-text-tertiary)', flexShrink: 0, whiteSpace: 'nowrap' }}>{relativeTime(m.mission.last_message_at)}</span>
-                            </button>
-                          )
-                        } else if (item.type === 'project') {
-                          const p = item.project
-                          // Folder rows read like the Mobile Handoff: show what's inside (mission count).
-                          const missionCount = Array.isArray(allMissionsForCV6) ? allMissionsForCV6.filter(x => (x.project?.slug || x.project?.id) === (p.slug || p.id)).length : 0
-                          const projectSub = `${missionCount} mission${missionCount === 1 ? '' : 's'}`
-                          const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'project' && selectableItems[selectedIndex]?.item?.slug === p.slug
-                          return (
-                            <button
-                              key={`project-${p.slug}`}
-                              className="hm-card hm-room-row"
-                              data-cv6-sel={isSelected ? 'true' : undefined}
-                              onClick={() => {
-                                // R88 (Patrik): single click opens the conversation + quick reply in the
-                                // right column. Double click opens the Chat tool.
-                                selectByItem('project', p.slug) // cursor follows the click
-                                setSelectedRoom({ project: p, mission: null })
-                                homeRef.current?.focus()
-                              }}
-                              onDoubleClick={() => openChatToolForRoom({ project: p, mission: null })}
-                              onContextMenu={(e) => { e.preventDefault(); selectByItem('project', p.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: '12px', padding: '0 15px', height: '60px',
-                                boxSizing: 'border-box', width: '100%',
-                                background: isSelected ? roomFill(p.slug) : 'transparent',
-                                color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                                border: isSelected ? `1px solid ${roomFill(p.slug)}` : '1px solid transparent',
-                                boxShadow: isSelected ? `0 3px 14px ${roomGlow(p.slug)}` : 'none',
-                                borderRadius: '0', cursor: 'pointer',
-                                transition: 'background 220ms ease, border-color 160ms ease',
-                                fontFamily: 'inherit', textAlign: 'left', fontSize: '14.5px', fontWeight: '600',
-                                borderBottom: isSelected ? 'none' : '1px solid var(--cv6-divider)',
-                              }}
-                              onMouseEnter={(e) => { if (!isSelected) { e.currentTarget.style.background = 'var(--cv6-surface-hover)' } }}
-                              onMouseLeave={(e) => { if (!isSelected) { e.currentTarget.style.background = 'transparent' } }}
-                            >
-                              {/* Project folder icon — use per-project color stroke */}
-                              <span style={{ display: 'inline-flex', flexShrink: 0, color: roomFill(p.slug) }}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="19" height="19">
-                                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
-                                </svg>
-                              </span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '14.5px', fontWeight: '600', color: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {p.name || p.slug}
-                                </div>
-                                <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', marginTop: '2px' }}>{projectSub}</div>
-                              </div>
-                              {/* DELTA 3: Mission count on the right (per design) */}
-                              <span style={{ fontSize: '11.5px', color: isSelected ? 'rgba(255,255,255,0.7)' : 'var(--cv6-text-secondary)', flexShrink: 0 }}>
-                                {missionCount}
-                              </span>
-                            </button>
-                          )
-                        }
-                      })
-                    })()}
+
+              {/* SECTION 2: Projects (10.5px uppercase faint label) + rows — show 5 most recent active projects */}
+              {recentProjects && recentProjects.length > 0 && (
+                <div>
+                  <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Projects</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    {recentProjects.slice(0, 5).map((p) => {
+                      const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === p.slug && selectableItems[selectedIndex]?.type === 'project'
+                      const missionCount = Array.isArray(allMissionsForCV6) ? allMissionsForCV6.filter(x => (x.project?.slug || x.project?.id) === (p.slug || p.id)).length : 0
+                      return (
+                        <button key={p.slug}
+                          className="hm-card hm-room-row"
+                          data-cv6-sel={isSelected ? 'true' : undefined}
+                          onClick={() => { selectByItem('project', p.slug); setSelectedRoom({ project: p, mission: null }); homeRef.current?.focus() }}
+                          onContextMenu={(e) => { e.preventDefault(); selectByItem('project', p.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
+                          onDoubleClick={() => openChatToolForRoom({ project: p, mission: null })}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: '11px', padding: '11px 12px', marginBottom: '0',
+                            boxSizing: 'border-box', width: '100%',
+                            background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
+                            color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                            cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                            transition: 'background 120ms ease',
+                          }}
+                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                        >
+                          {/* Colored folder icon (per-project color) */}
+                          <span style={{ display: 'inline-flex', flexShrink: 0, color: roomFill(p.slug) }}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
+                            </svg>
+                          </span>
+                          {/* Project name (14px 500) */}
+                          <span style={{ flex: 1, fontSize: '14px', fontWeight: 500, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {p.name || p.slug}
+                          </span>
+                          {/* Mission count right (11.5px muted) */}
+                          <span style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', flexShrink: 0 }}>
+                            {missionCount}
+                          </span>
+                        </button>
+                      )
+                    })}
                   </div>
-                  {(allMissionsForCV6.length + (recentProjects?.length || 0) > 5) && (
-                    <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--cv6-accent-primary)', marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--cv6-divider)', textAlign: 'center' }}>
-                      ↓ +{(allMissionsForCV6.length + (recentProjects?.length || 0)) - 5} more (scroll within)
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)', padding: '16px', textAlign: 'center' }}>No active work</div>
+                </div>
               )}
             </div>
 
-            {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity */}
-            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
+            {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity
+                iPad fix: when no room selected, the heading aligns top with catch-up/all-rooms (18px padding) */}
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', paddingTop: selectedRoom ? '0' : '18px' }}>
               {/* R19: Room identifier header with color tinting */}
               {/* R30b: Support agent rooms in addition to project/mission rooms */}
+              {/* R19 + Design spec: TWO-line header — line 1: green dot + name (15px 600),
+                  line 2: room · mode subtext (11.5px muted) + Files button on the right */}
               <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
-                fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em',
-                minHeight: '26px', marginBottom: '12px', paddingBottom: '12px',
+                display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px',
+                marginBottom: '12px', paddingBottom: '12px',
                 borderBottom: selectedRoom ? (selectedRoom.agent
                   ? `2px solid hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`
                   : `2px solid hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`)
                   : '1px solid var(--cv6-divider)',
-                color: 'var(--cv6-text-secondary)',
                 transition: 'border-color 200ms ease',
               }}>
                 {selectedRoom ? (
-                  selectedRoom.agent ? (
-                    // Agent room header
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                    {/* Line 1: green dot + name (15px/600) */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden', marginBottom: '2px' }}>
                       <span style={{
                         width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-                        background: `hsl(${(selectedRoom.agent.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
+                        background: 'var(--cv6-accent-success)',
+                        boxShadow: '0 0 8px rgba(52,211,153,.6)',
                       }}/>
-                      {selectedRoom.agent.name || selectedRoom.agent.slug}
-                    </span>
-                  ) : (
-                    // Project/mission room header
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <span style={{
-                        width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-                        background: `hsl(${(selectedRoom.project.slug.charCodeAt(0) * 137) % 360}, 70%, 60%)`,
-                      }}/>
-                      {selectedRoom.project.name || selectedRoom.project.slug} • {selectedRoom.mission?.name || 'Select a mission'}
-                    </span>
-                  )
+                      <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {selectedRoom.agent ? (selectedRoom.agent.name || selectedRoom.agent.slug) : (selectedRoom.project.name || selectedRoom.project.slug)}
+                      </span>
+                    </div>
+                    {/* Line 2: room · mode subtext (11.5px muted) */}
+                    <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {selectedRoom.agent ? 'Agent' : (selectedRoom.mission ? `${selectedRoom.project.slug} · /chat` : selectedRoom.project.slug)}
+                    </div>
+                  </div>
                 ) : (
-                  'Conversation'
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>Conversation</div>
+                  </div>
                 )}
 
-                {/* R31: room-scoped Files + Explorer — same glyphs as the top nav, but for THIS room.
-                    Buttons are present + ready; the room-scoped menus get designed in a later phase. */}
+                {/* R31: room-scoped Files button (right side) — 1px hair border, file icon */}
                 {selectedRoom && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                    <button
-                      title="This room's files"
-                      onClick={() => onOpenDrawer?.('files')}
-                      style={{
-                        width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: 'transparent',
-                        color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 120ms ease', padding: 0,
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                    >
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
-                      </svg>
-                    </button>
-                    <button
-                      title="This room's explorer"
-                      onClick={() => onOpenDrawer?.('explorer')}
-                      style={{
-                        width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: 'transparent',
-                        color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        transition: 'all 120ms ease', padding: 0,
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
-                    >
-                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M15 3H9a6 6 0 0 0-6 6v6a6 6 0 0 0 6 6h6a6 6 0 0 0 6-6V9a6 6 0 0 0-6-6z"/><path d="M9 10h2"/><path d="M9 14h2"/><path d="M13 10h2"/><path d="M13 14h2"/>
-                      </svg>
-                    </button>
-                  </span>
+                  <button
+                    title="This room's files"
+                    onClick={() => onOpenDrawer?.('files')}
+                    style={{
+                      flexShrink: 0, height: '34px', padding: '0 12px', borderRadius: '9px', border: '1px solid var(--cv6-hair)',
+                      background: 'transparent', color: 'var(--cv6-text-secondary)', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                      fontSize: '12.5px', fontWeight: '600', fontFamily: 'inherit',
+                      transition: 'all 120ms ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>
+                    </svg>
+                    Files
+                  </button>
                 )}
               </div>
 
@@ -4715,98 +4585,97 @@ export default function HomeView({
                         ))}
                       </div>
                     )}
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', height: '42px' }}>
-                      {/* R30: Command button (left) — purple gradient + crystal-ball icon, height matches input */}
+                    {/* Design spec (line 128–134): voice button (left) + input with ONE attach icon inside + send button (right) */}
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', height: '40px' }}>
+                      {/* Voice button (40×40, left) — accent color */}
                       <button
-                        onClick={() => console.log('Command menu (placeholder)')}
+                        onClick={() => {
+                          if (!replyText.trim()) {
+                            console.log('Voice message (placeholder)')
+                          }
+                        }}
                         style={{
-                          width: '42px', height: '100%', flexShrink: 0, borderRadius: '6px', border: 'none',
-                          background: 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)', color: '#ffffff',
+                          width: '40px', height: '40px', flexShrink: 0, borderRadius: '11px', border: 'none',
+                          background: 'var(--cv6-accent-primary)', color: '#ffffff',
                           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          transition: 'all 120ms ease', boxShadow: '0 2px 8px rgba(124,58,237,0.28)',
+                          transition: 'all 120ms ease', boxShadow: '0 0 0 4px var(--cv6-accent-weak)',
                           padding: 0, fontFamily: 'inherit',
                         }}
-                        title="Command menu"
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #6D28D9 0%, #9333EA 100%)'
-                          e.currentTarget.style.transform = 'translateY(-1px)'
-                          e.currentTarget.style.boxShadow = '0 4px 14px rgba(124,58,237,0.42)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'linear-gradient(135deg, #7C3AED 0%, #A855F7 100%)'
-                          e.currentTarget.style.transform = 'translateY(0)'
-                          e.currentTarget.style.boxShadow = '0 2px 8px rgba(124,58,237,0.28)'
-                        }}
+                        title="Voice message"
+                        onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(0.92)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
-                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9.5" r="6.5"/><path d="M6.5 19h11"/><path d="M9.5 19l1-3M14.5 19l-1-3"/><path d="M9.4 7.6a3 3 0 0 1 2.6-1.6"/></svg>
+                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17v.01"/></svg>
                       </button>
 
-                      {/* Text input (flex) */}
-                      <input
-                        ref={replyInputRef}
-                        type="text"
-                        placeholder="Reply..."
-                        value={replyText}
-                        onChange={(e) => setReplyText(e.target.value)}
-                        onKeyDown={(e) => {
-                          // R55: empty input + Right arrow → jump into the full Chat tool (desktop/iPad). Huge speed move.
-                          if (e.key === 'ArrowRight' && !replyText.trim()) {
-                            e.preventDefault()
-                            openChatToolForRoom(selectedRoom)
-                            return
-                          }
-                          if (e.key === 'Enter' && replyText.trim()) {
-                            sendQuickReply(replyText)
-                            setReplyText('')
-                          }
-                        }}
-                        style={{
-                          flex: 1, height: '100%', boxSizing: 'border-box', padding: '0 14px', borderRadius: '6px', border: '1px solid var(--cv6-divider)',
-                          background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontSize: '14px',
-                          fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
-                        }}
-                        onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
-                        onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
-                      />
+                      {/* Input field with ONE attach icon INSIDE (right side of input) */}
+                      <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <input
+                          ref={replyInputRef}
+                          type="text"
+                          placeholder="Message…"
+                          value={replyText}
+                          onChange={(e) => setReplyText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'ArrowRight' && !replyText.trim()) {
+                              e.preventDefault()
+                              openChatToolForRoom(selectedRoom)
+                              return
+                            }
+                            if (e.key === 'Enter' && replyText.trim()) {
+                              sendQuickReply(replyText)
+                              setReplyText('')
+                            }
+                          }}
+                          style={{
+                            width: '100%', height: '100%', boxSizing: 'border-box', padding: '0 12px 0 12px',
+                            borderRadius: '11px', border: '1px solid var(--cv6-divider)',
+                            background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '14px',
+                            fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
+                          }}
+                          onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
+                          onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
+                        />
+                        {/* Files icon inside the input (right side) — opens the room Files drawer (real handler) */}
+                        <button
+                          onClick={() => onOpenDrawer?.('files')}
+                          style={{
+                            position: 'absolute', right: '8px', width: '20px', height: '20px',
+                            background: 'none', border: 'none', color: 'var(--cv6-text-secondary)',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            padding: 0, transition: 'color 120ms ease',
+                          }}
+                          title="Attach files"
+                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                        >
+                          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 2.2"/>
+                          </svg>
+                        </button>
+                      </div>
 
-                      {/* R32: Mic by default (voice), turns into Send once the user types */}
+                      {/* Send button (40×40, right) — accent color, arrow up icon */}
                       <button
                         onClick={() => {
                           if (replyText.trim()) {
                             sendQuickReply(replyText)
                             setReplyText('')
-                          } else {
-                            // Voice conversation entry point (placeholder until wired)
-                            console.log('Voice message (placeholder)')
                           }
                         }}
                         style={{
-                          width: '42px', height: '100%', flexShrink: 0, borderRadius: '6px', background: 'var(--cv6-accent-primary)', color: '#ffffff',
-                          border: 'none', cursor: 'pointer', fontFamily: 'inherit',
-                          transition: 'all 120ms ease',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+                          width: '40px', height: '40px', flexShrink: 0, borderRadius: '11px', border: 'none',
+                          background: 'var(--cv6-accent-primary)', color: '#ffffff',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 120ms ease', padding: 0, fontFamily: 'inherit',
                         }}
-                        title={replyText.trim() ? 'Send' : 'Voice message'}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.filter = 'brightness(0.92)'
-                          e.currentTarget.style.transform = 'translateY(-2px)'
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.3)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.filter = 'none'
-                          e.currentTarget.style.transform = 'translateY(0)'
-                          e.currentTarget.style.boxShadow = 'none'
-                        }}
+                        title="Send"
+                        onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(0.92)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
-                        {replyText.trim() ? (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                          </svg>
-                        ) : (
-                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/>
-                          </svg>
-                        )}
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 19V5M5 12l7-7 7 7"/>
+                        </svg>
                       </button>
                     </div>
                   </div>
