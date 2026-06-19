@@ -637,6 +637,16 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
     return () => clearInterval(t)
   }, [load, editingGoalSlug, savingGoal, replySending])
 
+  // Open the detail pane on the first room by default (the CV6 design shows it
+  // open, not blank, until you pick another). Desktop only; mobile starts on the list.
+  useEffect(() => {
+    if (isNarrow) return
+    if (selectedRowSlug) return
+    if (!Array.isArray(rows) || rows.length === 0) return
+    const first = rows.find((r) => !r.isWorkerRow) || rows[0]
+    if (first?.slug) setSelectedRowSlug(first.slug)
+  }, [rows, selectedRowSlug, isNarrow])
+
   const toggleRoutine = useCallback(async (routineId, wantOn) => {
     if (!routineId || typeof routineId !== 'string') {
       console.warn('toggleRoutine called with invalid routineId:', routineId)
@@ -811,6 +821,14 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   // Find the selected row for the detail panel
   const selectedRow = selectedRowSlug ? rows.find((r) => r.slug === selectedRowSlug) : null
 
+  // Header counts for the "Command / Goal ledger · N rooms · N live" title + the
+  // live/idle/blocked pills (matches the CV6 design header). Real counts off the
+  // ledger rows (rooms only, not worker rows).
+  const roomRows = rows.filter((r) => !r.isWorkerRow)
+  const cLive = roomRows.filter((r) => r.status === 'active' || r.status === 'working').length
+  const cIdle = roomRows.filter((r) => r.status === 'idle').length
+  const cBlocked = roomRows.filter((r) => r.status === 'blocked' || r.status === 'error').length
+
   return (
     <div
       // R100 — the glass scrim now lives on the shared tool-overlay wrapper in
@@ -904,6 +922,28 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
       <div style={{ display: 'flex', flex: 1, minHeight: 0, borderTop: '1px solid var(--cv6-divider)' }}>
         {/* Ledger column (left) */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Title header — "Command / Goal ledger · N rooms · N live" + live/idle/blocked pills (CV6 design) */}
+          {!isNarrow && (
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: '18px 24px 14px' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)' }}>Command</div>
+                <div style={{ fontSize: 12.5, color: 'var(--cv6-text-secondary)', marginTop: 3 }}>Goal ledger · {roomRows.length} {roomRows.length === 1 ? 'room' : 'rooms'} · {cLive} live</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                {cLive > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 600, color: 'var(--cv6-accent-success)', background: 'var(--cv6-accent-success-weak)', padding: '4px 10px', borderRadius: 13 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cv6-accent-success)' }} />{cLive} live
+                  </span>
+                )}
+                {cIdle > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 11.5, fontWeight: 600, color: 'var(--cv6-text-secondary)', background: 'var(--cv6-surface2)', padding: '4px 10px', borderRadius: 13 }}>{cIdle} idle</span>
+                )}
+                {cBlocked > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 11.5, fontWeight: 600, color: 'var(--cv6-accent-error)', background: 'var(--cv6-accent-error-weak)', padding: '4px 10px', borderRadius: 13 }}>{cBlocked} blocked</span>
+                )}
+              </div>
+            </div>
+          )}
           {/* Header row — matches CV6 design: ROOM, CURRENT GOAL, SET BY, STATUS (170px, flex, 130px, 110px) */}
           <div
             style={{
