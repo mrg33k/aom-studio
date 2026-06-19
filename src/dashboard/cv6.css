@@ -304,10 +304,10 @@ html[data-glass-card="light"] [data-cv6] .hm-catchup-card {
 }
 /* R-GLASS-STRUCT 2026-06-19: the grid is one opaque frosted panel now, so the
    catch-up cards no longer need their own photo-frost (which read lighter/busier than
-   the panel). A faint white raise gives the subtle card lift dark/light have, with no
-   photo bleed. */
+   the panel). Give them a solid raised dark card (Patrik: the 0.05 raise was too
+   transparent) so they read clearly as cards over the panel, like the dark theme. */
 html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-card {
-  background: rgba(255, 255, 255, 0.05) !important;
+  background: rgba(42, 48, 59, 0.94) !important;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
