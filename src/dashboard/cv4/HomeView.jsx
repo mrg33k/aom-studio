@@ -3512,7 +3512,7 @@ export default function HomeView({
             <div style={{
               position: 'relative',
               height: '128px',
-              marginBottom: '14px',
+              marginBottom: '22px',
             }}>
               {/* Cards loop — top 3 visible (rest hidden behind) */}
               {top.map((n, i) => {
@@ -3611,9 +3611,10 @@ export default function HomeView({
 
             {/* TODO(cv6): wire smart-reply source for catch-up quick replies — currently no per-card reply data in catchupNotifications */}
 
-            {/* Action row — only if cards remain */}
+            {/* Action row — only if cards remain. position+zIndex so the top card's actions
+                sit ABOVE the stacked cards + their drop shadow (Patrik: buttons were buried). */}
             {top.length > 0 && (
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', position: 'relative', zIndex: 40 }}>
                 <button onClick={() => { top.length > 0 && onCatchupOpenRoom && onCatchupOpenRoom(top[0]) }}
                   style={{
                     flex: 1, height: '44px', borderRadius: '12px',

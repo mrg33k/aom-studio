@@ -1195,7 +1195,8 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scr
   min-width:0;
   display:flex;
   flex-direction:column;
-  border-left:1px solid var(--cv6-divider);
+  /* no border-left — col2's border-right is already the single divider between
+     All Rooms and Conversation (Patrik: the left line on Conversation doubled it). */
 }
 /* Tablet / iPad (769-1024): the design collapses the right sidebar to a 2-column
    layout. Hide the conversation column and let Catch Up + All Rooms fill, and let
