@@ -305,17 +305,17 @@ export default function LiveScribe({ embedded = false }) {
         .ls-btn:active { transform:translateY(1px); }
         .ls-rec-dot { width:10px; height:10px; border-radius:50%; background:${embedded ? C.rec : '#E5484D'}; box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0.6)' : 'rgba(229,72,77,.6)'}; animation:lspulse 1.4s infinite; }
         @keyframes lspulse { 0%{box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0.55)' : 'rgba(229,72,77,.55)'}} 70%{box-shadow:0 0 0 9px ${embedded ? 'rgba(248, 113, 113, 0)' : 'rgba(229,72,77,0)'}} 100%{box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0)' : 'rgba(229,72,77,0)'}} }
-        .ls-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:18px; }
+        .ls-grid { display:grid; grid-template-columns:1fr 380px; gap:18px; }
         @media (max-width: 900px){ .ls-grid{ grid-template-columns:1fr; } }
         .ls-fade { animation:lsfade .3s ease; }
         @keyframes lsfade { from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
         a.ls-src { color:${C.src}; text-decoration:none; border-bottom:1px solid rgba(166,106,0,.3); }
         .ls-start-pulse { animation:lsbtnpulse 2.2s infinite; }
-        @keyframes lsbtnpulse { 0%{box-shadow:0 0 0 0 rgba(234,179,8,.45)} 70%{box-shadow:0 0 0 14px rgba(234,179,8,0)} 100%{box-shadow:0 0 0 0 rgba(234,179,8,0)} }
-        .ls-eq { display:flex; gap:5px; align-items:flex-end; height:34px; }
-        .ls-eq span { width:5px; border-radius:3px; background:#C9A227; animation:lseq 1.1s ease-in-out infinite; }
-        .ls-eq span:nth-child(2){ animation-delay:.18s } .ls-eq span:nth-child(3){ animation-delay:.36s } .ls-eq span:nth-child(4){ animation-delay:.54s } .ls-eq span:nth-child(5){ animation-delay:.72s }
-        @keyframes lseq { 0%,100%{height:7px; opacity:.55} 50%{height:30px; opacity:1} }
+        @keyframes lsbtnpulse { ${embedded ? `0%{box-shadow:0 0 0 0 rgba(59, 130, 246, 0.3)} 70%{box-shadow:0 0 0 12px rgba(59, 130, 246, 0)} 100%{box-shadow:0 0 0 0 rgba(59, 130, 246, 0)}` : `0%{box-shadow:0 0 0 0 rgba(234,179,8,.45)} 70%{box-shadow:0 0 0 14px rgba(234,179,8,0)} 100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}`} }
+        .ls-eq { display:flex; gap:3px; align-items:flex-end; height:22px; }
+        .ls-eq span { width:3px; border-radius:2px; background:${embedded ? 'var(--cv6-accent-primary)' : '#C9A227'}; animation:lseq 1s ease-in-out infinite; }
+        .ls-eq span:nth-child(2){ animation-delay:.1s } .ls-eq span:nth-child(3){ animation-delay:.2s } .ls-eq span:nth-child(4){ animation-delay:.15s } .ls-eq span:nth-child(5){ animation-delay:.25s }
+        @keyframes lseq { 0%,100%{height:50%; opacity:.6} 50%{height:100%; opacity:1} }
         .ls-chip { display:inline-flex; align-items:center; gap:7px; padding:5px 11px; border-radius:999px; font-size:13px; font-weight:600; cursor:pointer; background:${embedded ? 'var(--cv6-surface)' : '#FBF9F4'}; border:1px solid ${C.line}; color:${C.ink}; }
         .ls-chip:hover { border-color:#C9BFA9; }
         .ls-chip-hint { animation:lschiphint 1.7s ease 3; }
@@ -346,7 +346,7 @@ export default function LiveScribe({ embedded = false }) {
             {(recording || elapsed > 0) && (
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {recording && <span className="ls-rec-dot" />}
-                <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 18, fontVariantNumeric: 'tabular-nums', opacity: recording ? 1 : 0.45 }}>
+                <span style={{ ...DISPLAY, fontWeight: 700, fontSize: embedded ? 14 : 18, fontVariantNumeric: 'tabular-nums', opacity: recording ? 1 : 0.45 }}>
                   {fmtTime(elapsed)}
                 </span>
               </span>

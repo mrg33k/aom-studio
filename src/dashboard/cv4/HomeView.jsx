@@ -1375,7 +1375,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
             const isExp = expandedRow === ri
             const isSelected = expandedRow === ri && sel.live
             return (
-            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'flex', alignItems: 'center', height: '60px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', cursor: sel.live ? 'pointer' : 'default', background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', outline: isSelected ? '2px solid var(--cv6-accent-primary)' : 'none', outlineOffset: isSelected ? '-2px' : 'auto', margin: isExp ? '0 -8px' : '0', borderRadius: isExp ? '8px' : '0', transition: 'background 120ms ease' }}>
+            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'flex', alignItems: 'center', minHeight: '60px', paddingTop: '11px', paddingBottom: '11px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', cursor: sel.live ? 'pointer' : 'default', background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', outline: isSelected ? '2px solid var(--cv6-accent-primary)' : 'none', outlineOffset: isSelected ? '-2px' : 'auto', margin: isExp ? '0 -8px' : '0', borderRadius: isExp ? '8px' : '0', transition: 'background 120ms ease' }}>
               {sel.columns.length > 0 && (
                 <>
                   <div key={sel.columns[0]} style={{ flex: 1, minWidth: 0, paddingRight: '12px', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
@@ -1444,7 +1444,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
                       } else {
                         // Generic content
                         return sel.live ? (
-                          <div style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', overflow: 'hidden' }}>
+                          <div style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', overflow: 'hidden', display: isExp ? 'block' : '-webkit-box', WebkitLineClamp: isExp ? 'none' : 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
                             {row[c] || '—'}
                           </div>
                         ) : (
