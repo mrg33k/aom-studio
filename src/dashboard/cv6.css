@@ -198,23 +198,30 @@
 /* The SELECTED tool tile (inline accent background) keeps white text + icon in
    BOTH glass styles so the active tool reads on its blue fill. This wins over
    the surface rule above. */
-[data-theme="glass"] [data-cv6] .hm-tools-row button[style*="accent-primary"],
-[data-theme="glass"] [data-cv6] .hm-tools-block button[style*="accent-primary"],
-[data-theme="glass"] [data-cv6] button[style*="var(--cv6-accent-primary)"] {
+[data-theme="glass"] [data-cv6] .hm-tools-row button[data-active="true"],
+[data-theme="glass"] [data-cv6] .hm-tools-block button[data-active="true"],
+[data-theme="glass"] [data-cv6] .hm-greeting-tools button[data-active="true"],
+[data-theme="glass"] [data-cv6] button[style*="background: var(--cv6-accent-primary)"] {
   color: #ffffff !important;
 }
 
 /* R-QA 2026-06-19: the selected tool tile keeps white text + icon in EVERY theme,
    not just glass. In LIGHT theme the "Home" label rendered dark on the blue fill
    (Patrik: "tools when selected have black text with a blue background, impossible
-   to read"). The icon was already white; force the LABEL + icon white on any
-   selected (accent-primary) tile, in all themes. */
-[data-cv6] .hm-tools-row button[style*="accent-primary"],
-[data-cv6] .hm-tools-block button[style*="accent-primary"],
-[data-cv6] .hm-tools-row button[style*="accent-primary"] span,
-[data-cv6] .hm-tools-block button[style*="accent-primary"] span,
-[data-cv6] .hm-tools-row button[style*="accent-primary"] svg,
-[data-cv6] .hm-tools-block button[style*="accent-primary"] svg {
+   to read"). Force the LABEL + icon white on the SELECTED tile only.
+   R-QA-FIX-15: keyed on data-active (NOT [style*="accent-primary"]) because hovering
+   an UNSELECTED tile sets its border-color to accent-primary, which used to trip the
+   substring match and flip the text white on the (white) hover background — unreadable.
+   data-active is set only on the genuinely-selected tile, so hover no longer matches. */
+[data-cv6] .hm-tools-row button[data-active="true"],
+[data-cv6] .hm-tools-block button[data-active="true"],
+[data-cv6] .hm-greeting-tools button[data-active="true"],
+[data-cv6] .hm-tools-row button[data-active="true"] span,
+[data-cv6] .hm-tools-block button[data-active="true"] span,
+[data-cv6] .hm-greeting-tools button[data-active="true"] span,
+[data-cv6] .hm-tools-row button[data-active="true"] svg,
+[data-cv6] .hm-tools-block button[data-active="true"] svg,
+[data-cv6] .hm-greeting-tools button[data-active="true"] svg {
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
@@ -817,6 +824,18 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-hom
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* R-QA-FIX-15 (Patrik): on DESKTOP the home tools live as a compact bar on the greeting
+   row (.hm-greeting-tools), so the big tile row is hidden on the HOME screen only. It still
+   shows when a tool overlay is open (no --home class) as the nav, and on mobile as the dock. */
+@media (min-width: 721px) {
+  [data-cv6] .hm-tools-block--home { display: none !important; }
+}
+.hm-greeting-tools::-webkit-scrollbar { display: none; }
+/* On mobile the compact greeting-row bar is hidden; the bottom dock (below) is the nav. */
+@media (max-width: 720px) {
+  [data-cv6] .hm-greeting-tools { display: none !important; }
 }
 
 /* R48: on mobile the tools become a fixed bottom drawer (app-dock style) that scrolls

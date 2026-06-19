@@ -317,6 +317,20 @@ function LetterCard({ letter, timestamp }) {
   )
 }
 
+// The 8 home tools (icon + label) in their LOCKED order. Single source for the
+// greeting-row tool bar (desktop) AND the mobile bottom dock so they never drift.
+// Icons matched 1:1 to the CV6 design (Home desktop.dc.html).
+const HOME_TOOLS = [
+  { key: 'home', label: 'Home', svg: (<><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></>) },
+  { key: 'chat', label: 'Chat', svg: (<><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></>) },
+  { key: 'organize', label: 'Organize', svg: (<><path d="M12 4 3 8l9 4 9-4Z"/><path d="m3 12 9 4 9-4"/></>) },
+  { key: 'review', label: 'Review', svg: (<><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></>) },
+  { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>) },
+  { key: 'tracker', label: 'Tracker', svg: (<><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></>) },
+  { key: 'command', label: 'Command', svg: (<><path d="M7 4H4v16h3M17 4h3v16h-3"/></>) },
+  { key: 'scribe', label: 'Live Scribe', svg: (<><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></>) },
+]
+
 function SupportToolOverlay({ worldId }) {
   const { wishes, mailboxes } = useSupportData(worldId)
   const items = buildItems(wishes, mailboxes)
@@ -4756,11 +4770,44 @@ export default function HomeView({
               </button>
             </div>
           ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: cv6 ? '-6px' : 0, marginBottom: cv6 ? '10px' : '32px' }}>
-            <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: cv6 ? 'flex-start' : 'space-between', marginTop: cv6 ? '-6px' : 0, marginBottom: cv6 ? '10px' : '32px' }}>
+            <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1, ...(cv6 ? { flex: '0 1 360px', minWidth: 0 } : {}) }}>
               <span className="hm-l1">{greeting}</span>{' '}
               <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
             </h1>
+            {/* R-QA-FIX-15 (Patrik): compact tool bar lives on the greeting row, its left edge
+                aligned to the All Rooms column line (the greeting cell mirrors the catch-up
+                column's 360px). Icon + title inside each tile; the active tile is solid accent
+                and serves as the section/header indicator. Big tile row is hidden on home
+                desktop (cv6.css) and stays as the mobile dock + the tool-screen nav. */}
+            {cv6 && (
+              <div className="hm-greeting-tools" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                {HOME_TOOLS.map(t => {
+                  const active = selectedTool === t.key
+                  return (
+                    <button
+                      key={t.key}
+                      data-active={active ? 'true' : undefined}
+                      onClick={() => openTool(t.key)}
+                      title={t.label}
+                      style={{
+                        flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                        borderRadius: '12px', padding: '8px 6px', minWidth: '64px',
+                        border: active ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                        background: active ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                        color: active ? '#ffffff' : 'var(--cv6-text-secondary)',
+                        cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit',
+                      }}
+                      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)' } }}
+                      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' } }}
+                    >
+                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{t.svg}</svg>
+                      <span style={{ fontSize: '10.5px', fontWeight: 600, whiteSpace: 'nowrap', color: active ? '#ffffff' : 'var(--cv6-text-secondary)' }}>{t.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
           ))}
 
@@ -4853,29 +4900,17 @@ export default function HomeView({
           {/* R37: home body (tools, columns, what-needs-you, ideas) hides while searching */}
           {!showSearch && (<>
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
-          <div className="hm-tools-block" style={{ marginTop: '-4px', marginBottom: '8px' }}>
+          <div className={'hm-tools-block' + (selectedTool === 'home' ? ' hm-tools-block--home' : '')} style={{ marginTop: '-4px', marginBottom: '8px' }}>
             <div className="hm-tools-heading" style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div className="hm-tools-row" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'nowrap', rowGap: '12px' }}>
-              {/* R48: Home pinned first, then tools in recency order (most-recently-used next to Home), then the rest in default order. Mobile: one scrollable row (cv6.css .hm-tools-row). */}
-              {(() => {
-                const TOOLS = [
-                  // Icons matched 1:1 to the CV6 design tool-row (Home desktop.dc.html):
-                  // house, message bubble, layers, eye, message-square, sun, square-brackets, mic.
-                  { key: 'home', label: 'Home', svg: (<><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></>) },
-                  { key: 'chat', label: 'Chat', svg: (<><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></>) },
-                  { key: 'organize', label: 'Organize', svg: (<><path d="M12 4 3 8l9 4 9-4Z"/><path d="m3 12 9 4 9-4"/></>) },
-                  { key: 'review', label: 'Review', svg: (<><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></>) },
-                  { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>) },
-                  { key: 'tracker', label: 'Tracker', svg: (<><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></>) },
-                  { key: 'command', label: 'Command', svg: (<><path d="M7 4H4v16h3M17 4h3v16h-3"/></>) },
-                  { key: 'scribe', label: 'Live Scribe', svg: (<><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></>) },
-                ]
-                // R50: LOCKED order — a nav that reshuffles kills spatial memory (Patrik).
-                // Active tool is shown by color/weight in a FIXED position, never moved.
-                return TOOLS
-              })().map(t => (
+              {/* R48: Home pinned first, LOCKED order (a nav that reshuffles kills spatial
+                  memory). Mobile: one scrollable bottom dock (cv6.css .hm-tools-row).
+                  R-QA-FIX-15: this big tile row is now the MOBILE dock only; on desktop it is
+                  hidden (cv6.css) in favor of the compact greeting-row tool bar below. */}
+              {HOME_TOOLS.map(t => (
                 <button
                   key={t.key}
+                  data-active={selectedTool === t.key ? 'true' : undefined}
                   className={MOBILE_MORE_KEYS.has(t.key) ? 'hm-tool hm-tool-overflow' : 'hm-tool hm-tool-primary'}
                   onClick={() => openTool(t.key)}
                   title={t.label}
@@ -4908,6 +4943,7 @@ export default function HomeView({
                   Opens a sheet holding Support / Tracker / Command / Live Scribe. */}
               <button
                 className="hm-tool hm-tool-more"
+                data-active={(moreOpen || MOBILE_MORE_KEYS.has(selectedTool)) ? 'true' : undefined}
                 onClick={() => setMoreOpen(v => !v)}
                 title="More"
                 aria-label="More tools"
