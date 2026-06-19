@@ -439,8 +439,8 @@ export default function CvgChatSurface({
           overflow: 'auto',
           display: 'flex',
           flexDirection: 'column',
-          gap: 12,
-          padding: '16px',
+          gap: 0,
+          padding: '24px',
           background: 'var(--cv6-ground)',
         }}
       >
@@ -498,6 +498,13 @@ export default function CvgChatSurface({
           // write path (supabase-messages sets role:'user'; chat-bridge stores the
           // user turn with agent='user'). Treat either as the user bubble.
           const isUser = msg.role === 'user' || msg.agent === 'user' || msg.sender === 'user'
+
+          // Extract sender name and format timestamp
+          const senderName = msg.sender_display || msg.sender || msg.agent || 'Assistant'
+          const timestamp = msg.timestamp
+            ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+            : ''
+
           return (
           <div
             key={msg.id}
@@ -505,70 +512,105 @@ export default function CvgChatSurface({
               display: 'flex',
               justifyContent: isUser ? 'flex-end' : 'flex-start',
               gap: 8,
+              marginBottom: 14,
             }}
           >
-            <div
-              /* Assistant bubbles are surface-coloured, so on the light-glass theme
-                 they inherit the on-photo WHITE text token and render white-on-white
-                 (illegible). Tagging the bubble as a card pulls it into the approved
-                 glass-card rule (cv6.css) that flips text to dark on light surfaces —
-                 same treatment every other card already uses. User bubbles ride the
-                 accent fill + white text, so they stay untagged. */
-              data-cv6-card={!isUser ? '' : undefined}
-              style={{
-                maxWidth: 'min(720px, 85%)',
-                padding: '12px 14px',
-                borderRadius: 8,
-                background:
-                  isUser
-                    ? 'var(--cv6-accent-primary)'
-                    : 'var(--cv6-surface)',
-                border:
-                  isUser
-                    ? 'none'
-                    : '1px solid var(--cv6-divider)',
-                color:
-                  isUser
-                    ? 'white'
-                    : 'var(--cv6-text-primary)',
-                fontSize: 14,
-                lineHeight: 1.5,
-                wordBreak: 'break-word',
-              }}
-            >
-              {/* CV4 chat renderer: clean markdown (lists, bold, links), no raw symbols */}
-              {(msg.text || msg.content) && <ChatMessageRenderer content={msg.text || msg.content} />}
-              {/* chat-4 / parity: render image + file attachments, and surface a
-                  failed image as a clear message instead of nothing. */}
-              {(() => {
-                const atts = getAttachments(msg)
-                const imgErr = msg.metadata?.image_error
-                if (!atts.length && !imgErr) return null
-                return (
-                  <div style={{ marginTop: (msg.text || msg.content) ? 8 : 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {atts.map((att, i) => {
-                      const urlOrName = String(att.url || att.name || '')
-                      const isVideo = (att.mime || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(urlOrName)
-                      if (isImageAtt(att)) return <ChatImageAttachment key={i} att={att} />
-                      if (isVideo && att.url) return (
-                        <video key={i} controls preload="metadata" src={att.url}
-                               style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, display: 'block', background: '#000' }} />
-                      )
-                      return att.url ? (
-                        <a key={i} href={att.url} target="_blank" rel="noreferrer"
-                           style={{ fontSize: 13, color: isUser ? 'white' : 'var(--cv6-accent-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
-                          {att.name || 'Attachment'}
-                        </a>
-                      ) : null
-                    })}
-                    {imgErr && (
-                      <div style={{ fontSize: 13, color: '#EF4444' }}>
-                        Image generation failed: {String(imgErr).slice(0, 200)}
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
+            {!isUser && (
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: '50%',
+                  background: 'var(--cv6-accent-success)',
+                  color: 'var(--cv6-ground)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                  marginTop: 2,
+                }}
+              >
+                {senderName.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div style={{ flex: isUser ? 0 : 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {!isUser && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--cv6-text-primary)' }}>
+                    {senderName}
+                  </span>
+                  {timestamp && (
+                    <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--cv6-text-tertiary)' }}>
+                      {timestamp}
+                    </span>
+                  )}
+                </div>
+              )}
+              <div
+                /* Assistant bubbles are surface-coloured, so on the light-glass theme
+                   they inherit the on-photo WHITE text token and render white-on-white
+                   (illegible). Tagging the bubble as a card pulls it into the approved
+                   glass-card rule (cv6.css) that flips text to dark on light surfaces —
+                   same treatment every other card already uses. User bubbles ride the
+                   accent fill + white text, so they stay untagged. */
+                data-cv6-card={!isUser ? '' : undefined}
+                style={{
+                  maxWidth: 'min(680px, 85%)',
+                  padding: isUser ? '11px 15px' : '12px 14px',
+                  borderRadius: isUser ? '18px 18px 5px 18px' : 8,
+                  background:
+                    isUser
+                      ? 'var(--cv6-accent-primary)'
+                      : 'var(--cv6-surface)',
+                  border:
+                    isUser
+                      ? 'none'
+                      : '1px solid var(--cv6-divider)',
+                  color:
+                    isUser
+                      ? 'white'
+                      : 'var(--cv6-text-primary)',
+                  fontSize: isUser ? '14.5px' : '15px',
+                  lineHeight: '1.62',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {/* CV4 chat renderer: clean markdown (lists, bold, links), no raw symbols */}
+                {(msg.text || msg.content) && <ChatMessageRenderer content={msg.text || msg.content} />}
+                {/* chat-4 / parity: render image + file attachments, and surface a
+                    failed image as a clear message instead of nothing. */}
+                {(() => {
+                  const atts = getAttachments(msg)
+                  const imgErr = msg.metadata?.image_error
+                  if (!atts.length && !imgErr) return null
+                  return (
+                    <div style={{ marginTop: (msg.text || msg.content) ? 8 : 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {atts.map((att, i) => {
+                        const urlOrName = String(att.url || att.name || '')
+                        const isVideo = (att.mime || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(urlOrName)
+                        if (isImageAtt(att)) return <ChatImageAttachment key={i} att={att} />
+                        if (isVideo && att.url) return (
+                          <video key={i} controls preload="metadata" src={att.url}
+                                 style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: 8, display: 'block', background: '#000' }} />
+                        )
+                        return att.url ? (
+                          <a key={i} href={att.url} target="_blank" rel="noreferrer"
+                             style={{ fontSize: 13, color: isUser ? 'white' : 'var(--cv6-accent-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
+                            {att.name || 'Attachment'}
+                          </a>
+                        ) : null
+                      })}
+                      {imgErr && (
+                        <div style={{ fontSize: 13, color: '#EF4444' }}>
+                          Image generation failed: {String(imgErr).slice(0, 200)}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
             </div>
           </div>
           )
@@ -576,13 +618,16 @@ export default function CvgChatSurface({
 
         {/* Step indicator — shows the assistant's current step while it works */}
         {awaitingReply && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 8 }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center', gap: 10,
-              maxWidth: 'min(720px, 85%)', padding: '10px 14px', borderRadius: 8,
-              background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
-              color: 'var(--cv6-text-secondary)', fontSize: 13,
-            }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 8, marginBottom: 14 }}>
+            <div
+              data-cv6-card=""
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+                maxWidth: 'min(680px, 85%)', padding: '14px 15px', borderRadius: 8,
+                background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+                color: 'var(--cv6-text-secondary)', fontSize: 14, lineHeight: '1.5',
+              }}
+            >
               <span style={{ display: 'inline-flex', gap: 3 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cv6-accent-primary)', animation: 'cv6-step-bounce 1.2s ease-in-out infinite' }} />
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--cv6-accent-primary)', animation: 'cv6-step-bounce 1.2s ease-in-out 0.2s infinite' }} />
