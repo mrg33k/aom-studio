@@ -4798,8 +4798,15 @@ export default function HomeView({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {visibleAgents.map((a) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
-                          const dotColor = a.status === 'routing work' ? '#10B981' : (a.status === 'idle' ? '#A3E635' : 'var(--cv6-warn)')
-                          const dotGlow = a.status === 'routing work' ? '0 0 8px rgba(16,185,129,.6)' : 'none'
+                          // R-PIXEL-LOOP R4: case-insensitive status → dot color (teal working / lime idle /
+                          // amber waiting), with idle/unknown defaulting to a VISIBLE lime so every agent
+                          // always shows a clear dot like the Claude design (was case-sensitive 'idle' →
+                          // muted amber that washed out on glass).
+                          const _st = (a.status || '').toLowerCase()
+                          const dotColor = (_st.includes('rout') || _st.includes('work') || _st.includes('activ')) ? '#34D399'
+                            : (_st.includes('review') || _st.includes('wait') || _st.includes('block')) ? '#FBBF24'
+                            : '#A3E635'
+                          const dotGlow = (_st.includes('rout') || _st.includes('work')) ? '0 0 8px rgba(52,211,153,.6)' : 'none'
                           return (
                             <button key={a.slug}
                               className="hm-card hm-room-row"
@@ -4866,8 +4873,10 @@ export default function HomeView({
                               onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
                               onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                             >
-                              {/* Colored folder icon (per-project color) */}
-                              <span style={{ display: 'inline-flex', flexShrink: 0, color: roomFill(p.slug) }}>
+                              {/* Colored folder icon (per-project color). R-PIXEL-LOOP R4: use a BRIGHT
+                                  saturated hue (was roomFill = a darkened background tone, which made the
+                                  folders read muted/grey). Matches the dc.html's clearly-colored folders. */}
+                              <span style={{ display: 'inline-flex', flexShrink: 0, color: `hsl(${roomHue(p.slug)}, 65%, 60%)` }}>
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
                                   <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
                                 </svg>
