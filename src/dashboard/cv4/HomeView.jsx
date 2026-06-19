@@ -838,167 +838,193 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
     }
   }
 
+  // Group items by project for the left column queue
+  const groupedByProject = useMemo(() => {
+    const groups = {}
+    items.forEach(it => {
+      const proj = it.project || '(root)'
+      if (!groups[proj]) groups[proj] = []
+      groups[proj].push(it)
+    })
+    return groups
+  }, [items])
+
   return (
     // R48: position:relative so the review modal can sit ABSOLUTELY inside the tool area
     // (covering only the review tools, never extending past the screen).
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', position: 'relative', minHeight: '100%', flex: 1 }}>
+      {/* Top summary bar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
         <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{items.filter(it => it.ready && !done[it.id]).length} ready for review · {items.length} in the pipeline</div>
-        {/* R50: legend so the eye states read clearly */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ display: 'inline-flex', width: '18px', height: '18px', borderRadius: '5px', background: 'var(--cv6-text-primary)', color: 'var(--cv6-surface)', alignItems: 'center', justifyContent: 'center' }}><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>ready to open</span>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}><span style={{ display: 'inline-flex', width: '18px', height: '18px', borderRadius: '5px', color: 'var(--cv6-text-tertiary)', alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></span>not ready yet</span>
+      </div>
+      {/* Desktop: 3-column layout (queue | preview | checklist) matching the mockup */}
+      {!isNarrow ? (
+      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr 330px', gap: '0', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', height: '600px' }}>
+
+        {/* Left: Queue grouped by project */}
+        <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '18px 20px 12px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div style={{ fontSize: '20px', fontWeight: '700', letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', marginBottom: '3px' }}>Review</div>
+          <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', marginBottom: '14px' }}>{items.filter(it => it.ready && !done[it.id]).length} ready · {items.length} in pipeline</div>
+
+          {/* Filter buttons */}
+          <div style={{ display: 'flex', gap: '7px', marginBottom: '14px', paddingRight: '0px' }}>
+            <button style={{ height: '30px', padding: '0 13px', borderRadius: '15px', border: 'none', background: 'var(--cv6-accent-weak)', color: 'var(--cv6-accent-primary)', fontSize: '12.5px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer' }}>Ready {items.filter(it => it.ready).length}</button>
+            <button style={{ height: '30px', padding: '0 13px', borderRadius: '15px', border: '1px solid var(--cv6-hair)', background: 'transparent', color: 'var(--cv6-text-secondary)', fontSize: '12.5px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer' }}>Pipeline</button>
+          </div>
+
+          {/* Items grouped by project */}
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingRight: '0px' }}>
+            {Object.keys(groupedByProject).length === 0 ? (
+              <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '40px 12px' }}>Nothing in the review pipeline yet</div>
+            ) : (
+              Object.entries(groupedByProject).map(([proj, projItems]) => (
+                <div key={proj}>
+                  {/* Project group header TODO: add "See all" for each project */}
+                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--cv6-text-secondary)', padding: '12px 12px 8px', marginTop: '8px' }}>
+                    {proj}
+                  </div>
+                  {projItems.map(it => {
+                    const isDone = done[it.id]
+                    const clickable = it.ready && !isDone
+                    return (
+                      <div
+                        key={it.id}
+                        onClick={() => { if (clickable) { setOpenItem(it); setReviewText('') } }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '13px 12px', borderRadius: '10px', marginBottom: '2px', cursor: clickable ? 'pointer' : 'default', background: isDone ? 'rgba(16,185,129,0.14)' : clickable ? 'var(--cv6-accent-weak)' : 'transparent', opacity: it.ready ? 1 : 0.5, transition: 'background 120ms ease' }}>
+                        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isDone ? '#10B981' : it.ready ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)', flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>{it.item}</div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>{it.path ? it.path.split('/').pop() : it.mission}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Center: Document preview (TODO: implement image/video/website annotators) */}
+        <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--cv6-ground)' }}>
+          {openItem ? (
+            <div style={{ width: '100%', maxWidth: '520px' }}>
+              <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} style={{ width: '100%' }} />
+            </div>
+          ) : (
+            <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center' }}>Select an item to preview</div>
+          )}
+        </div>
+
+        {/* Right: Document metadata + Request changes checklist */}
+        <div style={{ padding: '22px 22px', display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+          {openItem ? (
+            <>
+            {/* Document header — keeps the doc heading */}
+            <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)', marginBottom: '12px' }}>This document</div>
+
+            {/* Document metadata */}
+            <div style={{ background: 'var(--cv6-surface)', border: '1px solid var(--cv6-hair)', borderRadius: '12px', overflow: 'hidden', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', height: '44px', borderBottom: '1px solid var(--cv6-divider)' }}>
+                <span style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)' }}>From</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13.5px', fontWeight: '500', color: 'var(--cv6-text-primary)' }}>
+                  <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--cv6-accent-success-weak)', color: 'var(--cv6-accent-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: '700' }}>EA</span>Agent
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', height: '44px', borderBottom: '1px solid var(--cv6-divider)' }}>
+                <span style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)' }}>Location</span>
+                <span style={{ fontSize: '13.5px', fontWeight: '500', color: 'var(--cv6-text-primary)' }}>{openItem.project} {openItem.mission !== '(root)' ? `→ ${openItem.mission}` : ''}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 14px', height: '44px' }}>
+                <span style={{ fontSize: '13px', color: 'var(--cv6-text-secondary)' }}>Status</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', fontWeight: '500', color: 'var(--cv6-accent-success)' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--cv6-accent-success)' }} />Ready
+                </span>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', marginBottom: '18px' }}>
+              <button onClick={() => { if (!openItem || !onReplyToRoom) return; const s = roomSlugFor(openItem); if (s) { onReplyToRoom(s, `Approved "${openItem.item}".`); setDone(prev => ({ ...prev, [openItem.id]: true })); setOpenItem(null) } }} style={{ height: '46px', borderRadius: '11px', border: 'none', background: 'var(--cv6-accent-success)', color: '#06281c', fontSize: '14.5px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve
+              </button>
+              <button onClick={() => { if (typeof document !== 'undefined') document.querySelector('input[placeholder="Add a change…"]')?.focus() }} style={{ height: '46px', borderRadius: '11px', border: '1px solid var(--cv6-hair)', background: 'transparent', color: 'var(--cv6-text-primary)', fontSize: '14.5px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h18M3 6h18M3 18h12"/></svg>Request changes
+              </button>
+            </div>
+
+            {/* Checklist section */}
+            <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)', marginBottom: '10px' }}>Request changes</div>
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: '160px', marginBottom: '12px', border: '1px solid var(--cv6-divider)', borderRadius: '12px', padding: '12px', background: 'var(--cv6-ground)' }}>
+              {checklist.length === 0 ? (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center' }}>
+                  Add changes below
+                </div>
+              ) : (
+                checklist.map(step => (
+                  <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '13px', padding: '8px 0', borderBottom: '1px solid var(--cv6-divider)' }}>
+                    <button onClick={() => toggleStep(step.id)} style={{ flexShrink: 0, marginTop: '1px', width: '22px', height: '22px', borderRadius: '50%', border: step.done ? 'none' : '2px solid var(--cv6-text-tertiary)', background: step.done ? '#10B981' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                      {step.done && <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                    </button>
+                    <span style={{ flex: 1, fontSize: '14px', lineHeight: 1.4, color: step.done ? 'var(--cv6-text-tertiary)' : 'var(--cv6-text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.text}</span>
+                    <button onClick={() => deleteStep(step.id)} style={{ flexShrink: 0, width: '20px', height: '20px', borderRadius: '4px', border: 'none', background: 'transparent', color: 'var(--cv6-text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }}>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Input: Add a change */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid var(--cv6-divider)', borderRadius: '12px', padding: '4px 6px 4px 14px', background: 'var(--cv6-ground)' }}>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <input
+                value={newStep}
+                onChange={e => setNewStep(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addStep() } }}
+                placeholder="Add a change…"
+                style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '14px', outline: 'none' }}
+              />
+              <button onClick={addStep} disabled={savingStep || !newStep.trim()} style={{ flexShrink: 0, padding: '7px 12px', borderRadius: '8px', border: 'none', background: newStep.trim() ? 'var(--cv6-text-primary)' : 'var(--cv6-surface-hover)', color: newStep.trim() ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)', cursor: newStep.trim() ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '12px', fontWeight: '700' }}>Save</button>
+            </div>
+            </>
+          ) : (
+            <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '60px 12px' }}>Select an item to request changes</div>
+          )}
         </div>
       </div>
-      {/* Mobile: card per item so the review action (eye) is always visible — no horizontal scroll. */}
-      {isNarrow ? (
-        <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
-          <div style={{ maxHeight: '64vh', overflowY: 'auto' }}>
-            {items.map(it => {
-              const isDone = done[it.id]
-              const clickable = it.ready && !isDone
-              return (
-                <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', background: isDone ? 'var(--cv6-surface-hover)' : 'transparent' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.item}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{it.project} · {it.mission}</div>
-                    <span style={{ display: 'inline-block', marginTop: '6px', fontSize: '11px', fontWeight: '700', color: it.type.color, background: `${it.type.color}1f`, padding: '3px 8px', borderRadius: '5px' }}>{it.type.label}</span>
-                  </div>
-                  <button
-                    onClick={() => { if (clickable) { setOpenItem(it); setReviewText('') } }}
-                    disabled={!clickable}
-                    title={isDone ? 'Reviewed' : it.ready ? 'Review' : 'Not ready yet'}
-                    style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '9px', border: 'none', cursor: clickable ? 'pointer' : 'default',
-                      background: isDone ? 'rgba(16,185,129,0.14)' : clickable ? 'var(--cv6-text-primary)' : 'transparent',
-                      color: isDone ? '#10B981' : clickable ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: it.ready ? 1 : 0.45 }}>
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                  </button>
-                </div>
-              )
-            })}
-            {items.length === 0 && <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Nothing in the review pipeline yet</div>}
-          </div>
-        </div>
       ) : (
-      /* Desktop: inventory table */
+      /* Mobile: Fallback card layout */
       <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ minWidth: '580px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: cols, borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)' }}>
-              <div style={headCell}>Project</div><div style={headCell}>Mission</div><div style={headCell}>Item</div><div style={headCell}>Type</div><div style={{ ...headCell, textAlign: 'center' }}>Review</div>
-            </div>
-            <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
-              {items.map(it => {
-                const isDone = done[it.id]
-                const clickable = it.ready && !isDone
-                return (
-                  <div key={it.id} style={{ display: 'grid', gridTemplateColumns: cols, alignItems: 'center', borderBottom: '1px solid var(--cv6-divider)', background: isDone ? 'var(--cv6-surface-hover)' : 'transparent', transition: 'background 120ms ease' }}
-                    onMouseEnter={(e) => { if (clickable) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
-                    onMouseLeave={(e) => { if (!isDone) e.currentTarget.style.background = 'transparent' }}>
-                    <div style={cell}>{it.project}</div>
-                    <div style={{ ...cell, color: 'var(--cv6-text-secondary)' }}>{it.mission}</div>
-                    <div style={cell}>{it.item}</div>
-                    <div style={{ padding: '11px 14px' }}><span style={{ fontSize: '11px', fontWeight: '700', color: it.type.color, background: `${it.type.color}1f`, padding: '3px 8px', borderRadius: '5px' }}>{it.type.label}</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'center', padding: '8px' }}>
-                      <button
-                        onClick={() => { if (clickable) { setOpenItem(it); setReviewText('') } }}
-                        disabled={!clickable}
-                        title={isDone ? 'Reviewed' : it.ready ? 'Review' : 'Not ready yet'}
-                        style={{ width: '34px', height: '34px', borderRadius: '8px', border: 'none', cursor: clickable ? 'pointer' : 'default',
-                          background: isDone ? 'rgba(16,185,129,0.14)' : clickable ? 'var(--cv6-text-primary)' : 'transparent',
-                          color: isDone ? '#10B981' : clickable ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 120ms ease', opacity: it.ready ? 1 : 0.45 }}>
-                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-              {items.length === 0 && <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Nothing in the review pipeline yet</div>}
-            </div>
-          </div>
+        <div style={{ maxHeight: '64vh', overflowY: 'auto' }}>
+          {items.map(it => {
+            const isDone = done[it.id]
+            const clickable = it.ready && !isDone
+            return (
+              <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', background: isDone ? 'var(--cv6-surface-hover)' : 'transparent' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.item}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{it.project} · {it.mission}</div>
+                  <span style={{ display: 'inline-block', marginTop: '6px', fontSize: '11px', fontWeight: '700', color: it.type.color, background: `${it.type.color}1f`, padding: '3px 8px', borderRadius: '5px' }}>{it.type.label}</span>
+                </div>
+                <button
+                  onClick={() => { if (clickable) { setOpenItem(it); setReviewText('') } }}
+                  disabled={!clickable}
+                  title={isDone ? 'Reviewed' : it.ready ? 'Review' : 'Not ready yet'}
+                  style={{ flexShrink: 0, width: '40px', height: '40px', borderRadius: '9px', border: 'none', cursor: clickable ? 'pointer' : 'default',
+                    background: isDone ? 'rgba(16,185,129,0.14)' : clickable ? 'var(--cv6-text-primary)' : 'transparent',
+                    color: isDone ? '#10B981' : clickable ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: it.ready ? 1 : 0.45 }}>
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            )
+          })}
+          {items.length === 0 && <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Nothing in the review pipeline yet</div>}
         </div>
       </div>
       )}
 
-      {/* Full review modal — a viewport-bounded card (R60). It is centred and capped at
-          90vh so the top of long markdown AND the change input are always on screen, no
-          matter how long the pipeline table behind it is. Click the dim backdrop to close. */}
-      {openItem && (
-        <>
-        <div onClick={() => { setOpenItem(null); setReviewText('') }} style={{ position: 'fixed', inset: 0, zIndex: 59, background: 'rgba(0,0,0,0.55)' }} />
-        <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(1080px, 94vw)', height: 'min(860px, 90vh)', maxHeight: '90vh', zIndex: 60, borderRadius: '12px', overflow: 'hidden', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', boxShadow: '0 24px 70px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)' }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{openItem.item}</div>
-              <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>{openItem.project} · {openItem.mission} · {openItem.type.label}</div>
-            </div>
-            <button onClick={() => { setOpenItem(null); setReviewText('') }} title="Close" style={{ flexShrink: 0, width: '36px', height: '36px', borderRadius: '8px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-          </div>
-          <div style={{ flex: 1, display: isNarrow ? 'block' : 'grid', gridTemplateColumns: '1.6fr 1fr', overflow: isNarrow ? 'auto' : 'hidden', minHeight: 0 }}>
-            {/* Item in full — show real preview via FilePreviewPanel. Top-aligned and
-                self-scrolling so the top of long markdown is always visible (Patrik R60). */}
-            <div style={{ padding: '24px', borderRight: isNarrow ? 'none' : '1px solid var(--cv6-divider)', display: 'flex', alignItems: isNarrow ? 'center' : 'flex-start', justifyContent: 'center', minHeight: isNarrow ? '240px' : 0, overflowY: 'auto' }}>
-              <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} style={{ width: '100%', maxWidth: '520px' }} />
-            </div>
-            {/* Changes — the list of change items for THIS deliverable. Header + agent
-                switch on top, the list (or empty state) fills the middle, and the input
-                sits pinned at the bottom (Patrik R59). */}
-            <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: '14px', background: 'var(--cv6-surface)', minHeight: 0, overflow: 'hidden' }}>
-              {/* Header row: title + "agent acts" switch (on by default) */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Changes</div>
-                <button onClick={() => setAgentActs(v => !v)} title={agentActs ? 'Agent acts on your changes' : 'Agent will not act — changes are recorded only'} style={{ display: 'flex', alignItems: 'center', gap: '8px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
-                  <span style={{ fontSize: '11px', fontWeight: '600', color: agentActs ? 'var(--cv6-text-secondary)' : 'var(--cv6-text-tertiary)' }}>Agent acts</span>
-                  <span style={{ flexShrink: 0, width: '36px', height: '20px', borderRadius: '10px', background: agentActs ? 'var(--cv6-accent-success)' : 'var(--cv6-divider)', position: 'relative', transition: 'background 200ms ease' }}>
-                    <span style={{ position: 'absolute', top: '2px', left: agentActs ? '18px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 200ms ease' }} />
-                  </span>
-                </button>
-              </div>
-              {/* The list — fills the space; empty state centered with a list icon */}
-              <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', minHeight: '160px' }}>
-                {checklist.length === 0 ? (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', textAlign: 'center', padding: '24px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '700', lineHeight: 1.5, maxWidth: '250px', color: 'var(--cv6-text-secondary)' }}>Your detailed change items will appear here.</div>
-                    <div style={{ width: '80px', height: '80px', borderRadius: '22px', background: 'var(--cv6-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px var(--cv6-divider)' }}>
-                      <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-                    </div>
-                  </div>
-                ) : (
-                  checklist.map(step => (
-                    <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '13px', padding: '13px 4px', borderBottom: '1px solid var(--cv6-divider)' }}>
-                      <button onClick={() => toggleStep(step.id)} title={step.done ? 'Mark not done' : 'Mark done'} style={{ flexShrink: 0, marginTop: '1px', width: '22px', height: '22px', borderRadius: '50%', border: step.done ? 'none' : '2px solid var(--cv6-text-tertiary)', background: step.done ? '#10B981' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
-                        {step.done && <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                      </button>
-                      <span style={{ flex: 1, fontSize: '14.5px', lineHeight: 1.45, color: step.done ? 'var(--cv6-text-tertiary)' : 'var(--cv6-text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.text}</span>
-                      <button onClick={() => deleteStep(step.id)} title="Remove" style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--cv6-text-tertiary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.6 }}>
-                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-              {checklist.length > 0 && <span style={{ fontSize: '12px', color: 'var(--cv6-text-tertiary)' }}>{checklist.filter(s => s.done).length} of {checklist.length} done</span>}
-              {/* Input pinned at the bottom */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid var(--cv6-divider)', borderRadius: '12px', padding: '4px 6px 4px 14px', background: 'var(--cv6-ground)' }}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                <input
-                  value={newStep}
-                  onChange={e => setNewStep(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addStep() } }}
-                  placeholder="Add a change…"
-                  style={{ flex: 1, padding: '11px 0', border: 'none', background: 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '15px', outline: 'none' }}
-                />
-                <button onClick={addStep} disabled={savingStep || !newStep.trim()} title="Send" style={{ flexShrink: 0, padding: '9px 16px', borderRadius: '9px', border: 'none', background: newStep.trim() ? 'var(--cv6-text-primary)' : 'var(--cv6-surface-hover)', color: newStep.trim() ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)', cursor: newStep.trim() ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '14px', fontWeight: '700' }}>Send</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        </>
-      )}
     </div>
   )
 }
