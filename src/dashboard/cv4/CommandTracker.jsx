@@ -960,9 +960,10 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           <div
             onClick={() => {
               if (!isWorkerRow) {
+                // Master-detail: select this goal to open the detail panel on the right.
+                // (Do NOT jump to the room here — that navigated away before the panel showed.)
                 setSelectedRowSlug(row.slug)
                 setReplyOpenSlug(null)
-                onJumpToRoom?.(row.slug)
               }
             }}
             style={{
