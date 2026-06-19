@@ -5201,7 +5201,7 @@ export default function HomeView({
               screens (chat input fell below the fold) and left a gap on tall ones. Fill the
               available height so the quick reply sits just above the bottom and the section
               never gets cut off. */}
-          <div className="hm-three-column-grid" style={{ gap: '0', height: 'clamp(480px, calc(100dvh - 180px), 760px)', marginBottom: '18px', position: 'relative' }}>
+          <div className="hm-three-column-grid" style={{ gap: '0', height: 'clamp(480px, calc(100dvh - 110px), 820px)', marginBottom: '18px', position: 'relative' }}>
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
