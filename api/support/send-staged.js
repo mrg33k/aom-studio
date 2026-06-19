@@ -64,7 +64,7 @@ export default async function handler(req, res) {
   } catch {
     return res.status(400).json({ ok: false, error: 'invalid JSON' })
   }
-  const { action, wish_id, draft_id, connection_id, note } = body
+  const { action, wish_id, draft_id, connection_id, note, text } = body
 
   // ── preview: what EXACTLY goes out — full reply text + attachments ──────────
   // The card renders this so the human reads the actual outgoing email, not a
@@ -160,6 +160,92 @@ export default async function handler(req, res) {
       body: JSON.stringify({ status: 'resolved', updated_at: new Date().toISOString() }),
     })
     return res.status(200).json({ ok: true, sent: true, id: sent.id, threadId: sent.threadId })
+  }
+
+  // ── reply: send a custom reply text (from composer or suggested option) ────
+  // When the user types a custom reply or clicks a suggested-reply option button,
+  // this sends a REAL Gmail reply to the original sender in the correct thread,
+  // then marks the wish as resolved.
+  if (action === 'reply') {
+    if (!text || !text.trim()) {
+      return res.status(400).json({ ok: false, error: 'text required for reply action' })
+    }
+    // A custom reply MUST thread onto the staged draft so the client gets a proper
+    // threaded reply with the real subject + recipient. We reuse the draft's real
+    // thread/subject/To/reply-headers and only swap in the custom body. (Building a
+    // fresh message guessed the thread from text that isn't there → broken email.)
+    if (!draft_id || !connection_id) {
+      return res.status(400).json({ ok: false, error: 'draft_id and connection_id required (reply reuses the staged draft thread)' })
+    }
+    let creds
+    try {
+      creds = await getGmailTokenByConnection(connection_id)
+    } catch (e) {
+      return res.status(502).json({ ok: false, error: 'gmail-auth', detail: String(e).slice(0, 200) })
+    }
+    const getResp = await gmailFetch(creds.accessToken, `/drafts/${encodeURIComponent(draft_id)}?format=full`)
+    if (!getResp.ok) {
+      const t = await getResp.text().catch(() => '')
+      return res.status(getResp.status === 404 ? 404 : 502).json({ ok: false, error: 'gmail-drafts-get', status: getResp.status, detail: t.slice(0, 300) })
+    }
+    const draft = await getResp.json()
+    const dmsg = draft?.message || {}
+    const dpayload = dmsg.payload || {}
+    const dHeader = (name) => {
+      const h = (dpayload.headers || []).find((x) => String(x.name || '').toLowerCase() === name)
+      return h ? h.value : ''
+    }
+    const toAddr = dHeader('to')
+    const subject = dHeader('subject') || 'Re:'
+    const inReplyTo = dHeader('in-reply-to')
+    const references = dHeader('references')
+    const threadId = dmsg.threadId || undefined
+    const fromEmail = (creds.row && creds.row.config && creds.row.config.account_email) || (creds.profile && creds.profile.email) || dHeader('from')
+    if (!toAddr || !fromEmail) {
+      return res.status(502).json({ ok: false, error: 'reply-metadata', detail: 'staged draft missing to/from header' })
+    }
+
+    const encB64Url = (s) => Buffer.from(s, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+    const escHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const boundary = `=_corner_${String(wish_id).replace(/[^a-z0-9]/gi, '')}`
+    const h = [`From: ${fromEmail}`, `To: ${toAddr}`, `Subject: ${subject}`, 'MIME-Version: 1.0']
+    if (inReplyTo) h.push(`In-Reply-To: ${inReplyTo}`)
+    if (references) h.push(`References: ${references}`)
+    h.push(`Content-Type: multipart/alternative; boundary="${boundary}"`)
+    const raw = [
+      h.join('\r\n'), '',
+      `--${boundary}`, 'Content-Type: text/plain; charset="UTF-8"', '', text.trim(), '',
+      `--${boundary}`, 'Content-Type: text/html; charset="UTF-8"', '', `<p>${escHtml(text.trim()).replace(/\n/g, '</p><p>')}</p>`, '',
+      `--${boundary}--`,
+    ].join('\r\n')
+
+    const sendResp = await gmailFetch(creds.accessToken, '/messages/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw: encB64Url(raw), threadId }),
+    })
+    if (!sendResp.ok) {
+      const sendText = await sendResp.text().catch(() => '')
+      return res.status(sendResp.status === 404 ? 404 : 502).json({ ok: false, error: 'gmail-send', status: sendResp.status, detail: sendText.slice(0, 300) })
+    }
+    const sent = await sendResp.json()
+    await logUpdate(wish_id, 'response', 'Custom reply sent from the dashboard.', undefined)
+    await logUpdate(wish_id, 'status_change', 'Custom reply sent — resolved from the dashboard.', 'resolved')
+    await supa(`support_wishes?id=eq.${wish_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'resolved', updated_at: new Date().toISOString() }),
+    })
+    return res.status(200).json({ ok: true, sent: true, id: sent.id, threadId: sent.threadId })
+  }
+
+  // ── clear_schedule: pause auto-send by clearing auto_send_at ────────────────
+  if (action === 'clear_schedule') {
+    await logUpdate(wish_id, 'status_change', 'Auto-send paused from the dashboard.', undefined)
+    await supa(`support_wishes?id=eq.${wish_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ auto_send_at: null, updated_at: new Date().toISOString() }),
+    })
+    return res.status(200).json({ ok: true, cleared: true })
   }
 
   return res.status(400).json({ ok: false, error: `unknown action "${action}"` })

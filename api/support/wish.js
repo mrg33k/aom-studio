@@ -44,13 +44,16 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ ok: false, error: 'Method not allowed' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return res.status(503).json({ ok: false, error: 'Service unavailable' });
 
-  const { email, name, message, source } = req.body || {};
+  const { email, name, message, source, recommendation, reply_options } = req.body || {};
   if (!email || !message) return res.status(400).json({ ok: false, error: 'email and message required' });
 
   const access_code = await uniqueCode();
   const ins = await supa('support_wishes', { method: 'POST', body: JSON.stringify({
     access_code, email: email.trim(), name: name || null, message,
-    status: 'heard', source: source || 'web' }) });
+    status: 'heard', source: source || 'web',
+    recommendation: recommendation ? JSON.stringify(recommendation) : null,
+    reply_options: reply_options ? JSON.stringify(reply_options) : null,
+    auto_send_at: null }) });
   if (!ins.ok) return res.status(500).json({ ok: false, error: await ins.text() });
   const wish = (await ins.json())[0];
 

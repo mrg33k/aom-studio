@@ -89,6 +89,15 @@ export default async function handler(req, res) {
         }
       } catch { /* enrichment is best-effort; board still renders without it */ }
     }
+    // Parse JSON fields (recommendation, reply_options) so they're objects on the client
+    for (const w of wishes) {
+      if (w.recommendation && typeof w.recommendation === 'string') {
+        try { w.recommendation = JSON.parse(w.recommendation); } catch { w.recommendation = null; }
+      }
+      if (w.reply_options && typeof w.reply_options === 'string') {
+        try { w.reply_options = JSON.parse(w.reply_options); } catch { w.reply_options = null; }
+      }
+    }
     return res.status(200).json({ ok: true, wishes });
   }
 

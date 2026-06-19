@@ -212,72 +212,282 @@ function parseSupportStaged(msg) {
 function SupportToolOverlay({ worldId }) {
   const { wishes, mailboxes } = useSupportData(worldId)
   const items = buildItems(wishes, mailboxes)
-  const [isNarrow, setIsNarrow] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [filterStatus, setFilterStatus] = useState('open') // 'open' | 'waiting' | 'answered'
+
+  // Derive open/waiting/answered counts
+  const openCount = items.filter(it => !it.ready && it.status !== 'resolved' && it.status !== 'responded').length
+  const waitingCount = items.filter(it => it.ready || (it.status === 'needs_you')).length
+  const answeredCount = items.filter(it => it.status === 'resolved' || it.status === 'responded').length
+
+  // Filter items based on the active filter pill
+  const filteredItems = (() => {
+    if (filterStatus === 'open') return items.filter(it => !it.ready && it.status !== 'resolved' && it.status !== 'responded')
+    if (filterStatus === 'waiting') return items.filter(it => it.ready || it.status === 'needs_you')
+    if (filterStatus === 'answered') return items.filter(it => it.status === 'resolved' || it.status === 'responded')
+    return items
+  })()
+
+  // Auto-select first item when list changes
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const check = () => setIsNarrow(window.innerWidth <= 1024)
-    check(); window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
-  }, [])
-
-  // R88 (Patrik's chosen model): Send / Decide / Done. The agent answers most,
-  // so the board leads with replies it already drafted (one tap to send), then
-  // the few that need Patrik's judgment, then what's finished. Spam is already
-  // filtered out in buildItems.
-  const readyToSend = items.filter(it => it.ready)
-  const needsDecision = items.filter(it => !it.ready && it.status !== 'resolved' && it.status !== 'responded')
-  const done = items.filter(it => it.status === 'resolved' || it.status === 'responded')
+    if (filteredItems.length > 0) {
+      if (!selectedItem || !filteredItems.find(it => it.key === selectedItem.key)) {
+        setSelectedItem(filteredItems[0])
+      }
+    } else {
+      setSelectedItem(null)
+    }
+  }, [filteredItems, selectedItem])
 
   return (
-    <div style={{ display: isNarrow ? 'flex' : 'grid', flexDirection: isNarrow ? 'column' : undefined, gridTemplateColumns: isNarrow ? undefined : '1fr 1fr 1fr', gap: '16px', height: isNarrow ? 'auto' : '100%', flex: 1 }}>
-      <SupportColumn title="Ready to send" column="ready" items={readyToSend} accentColor="#10B981" />
-      <SupportColumn title="Needs a decision" column="decision" items={needsDecision} accentColor="#F59E0B" />
-      <SupportColumn title="Done" column="done" items={done} accentColor="#5A6F8C" />
-    </div>
-  )
-}
-
-// ── Support Column Component ────────────────────────────────────────────────────
-function SupportColumn({ title, column, items, accentColor }) {
-  return (
-    // R32: minWidth:0 stops a long email/word from stretching this column past its 1fr share
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-      {/* Column Header with count badge */}
+    <div style={{
+      display: 'flex', gap: '0', height: '100%', flex: 1,
+      background: 'var(--cv6-surface)', borderRadius: 'var(--cv6-card-radius)',
+      border: '1px solid var(--cv6-divider)', overflow: 'hidden'
+    }}>
+      {/* Left: Inbox list */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: '8px',
-        fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em',
-        color: 'var(--cv6-text-secondary)', marginBottom: '12px', paddingBottom: '12px',
-        borderBottom: `2px solid ${accentColor}`,
+        flex: '1', minWidth: 0, borderRight: '1px solid var(--cv6-divider)',
+        display: 'flex', flexDirection: 'column', background: 'var(--cv6-surface)'
       }}>
-        <span>{title}</span>
-        <span style={{ fontSize: '11px', fontWeight: '700', color: accentColor, background: `${accentColor}1f`, borderRadius: '10px', padding: '1px 8px', letterSpacing: 0 }}>{items.length}</span>
+        {/* Inbox header */}
+        <div style={{ padding: '20px 24px 14px', borderBottom: '1px solid var(--cv6-divider)', flexShrink: 0 }}>
+          <div style={{ marginBottom: '14px' }}>
+            <div style={{ fontSize: '20px', fontWeight: '700', letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)' }}>Support</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', marginTop: '3px' }}>
+              {openCount} open · {waitingCount} waiting on you
+            </div>
+          </div>
+
+          {/* Filter pills */}
+          <div style={{ display: 'flex', gap: '7px' }}>
+            <button
+              onClick={() => setFilterStatus('open')}
+              style={{
+                height: '32px', padding: '0 13px', borderRadius: '16px', border: 'none',
+                background: filterStatus === 'open' ? 'var(--cv6-accent-weak)' : 'transparent',
+                color: filterStatus === 'open' ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)',
+                fontSize: '12.5px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer',
+                borderBottom: filterStatus === 'open' ? '2px solid var(--cv6-accent-primary)' : 'none'
+              }}
+            >
+              Open
+            </button>
+            <button
+              onClick={() => setFilterStatus('waiting')}
+              style={{
+                height: '32px', padding: '0 13px', borderRadius: '16px',
+                border: filterStatus === 'waiting' ? 'none' : '1px solid var(--cv6-divider)',
+                background: filterStatus === 'waiting' ? 'var(--cv6-accent-weak)' : 'transparent',
+                color: filterStatus === 'waiting' ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)',
+                fontSize: '12.5px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer',
+                borderBottom: filterStatus === 'waiting' ? '2px solid var(--cv6-accent-primary)' : 'none'
+              }}
+            >
+              Waiting
+            </button>
+            <button
+              onClick={() => setFilterStatus('answered')}
+              style={{
+                height: '32px', padding: '0 13px', borderRadius: '16px',
+                border: filterStatus === 'answered' ? 'none' : '1px solid var(--cv6-divider)',
+                background: filterStatus === 'answered' ? 'var(--cv6-accent-weak)' : 'transparent',
+                color: filterStatus === 'answered' ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)',
+                fontSize: '12.5px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer',
+                borderBottom: filterStatus === 'answered' ? '2px solid var(--cv6-accent-primary)' : 'none'
+              }}
+            >
+              Answered
+            </button>
+          </div>
+        </div>
+
+        {/* Inbox list */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {filteredItems.length === 0 ? (
+            <div style={{ padding: '20px 12px', textAlign: 'center', color: 'var(--cv6-text-tertiary)', fontSize: '13px' }}>
+              {filterStatus === 'open' && 'No open asks.'}
+              {filterStatus === 'waiting' && 'Nothing waiting on you.'}
+              {filterStatus === 'answered' && 'Nothing here yet.'}
+            </div>
+          ) : (
+            filteredItems.map(item => (
+              <SupportInboxRow
+                key={item.key}
+                item={item}
+                isSelected={selectedItem?.key === item.key}
+                onSelect={setSelectedItem}
+              />
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Cards List */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {items.length === 0 ? (
-          <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center', padding: '20px 12px', marginTop: '8px', lineHeight: 1.5 }}>
-            {column === 'ready' ? 'Nothing staged to send right now.'
-              : column === 'decision' ? 'Nothing waiting on you. Inbox is clear.'
-              : 'Nothing here yet.'}
-          </div>
-        ) : (
-          items.map(item => (
-            <SupportCard key={item.key} item={item} accentColor={accentColor} column={column} />
-          ))
-        )}
-      </div>
+      {/* Right: Ask detail (520px fixed width) */}
+      {selectedItem ? (
+        <SupportDetailPanel item={selectedItem} />
+      ) : (
+        <div style={{
+          width: '520px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--cv6-text-tertiary)', fontSize: '13px'
+        }}>
+          Select an ask to view details
+        </div>
+      )}
     </div>
   )
 }
 
-// ── Support Card Component ──────────────────────────────────────────────────────
-function SupportCard({ item, accentColor, column }) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [resolving, setResolving] = useState(false)
+// ── Support Inbox Row — list item in the left panel ────────────────────────────
+function SupportInboxRow({ item, isSelected, onSelect }) {
+  const statusColor = item.ready || item.status === 'needs_you' ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)'
+  const statusLabel = item.ready ? 'Ready' : item.status === 'needs_you' ? 'Waiting' : item.status === 'responded' ? 'Answered' : 'Resolved'
+
+  return (
+    <button
+      onClick={() => onSelect(item)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '13px', padding: '14px 14px', borderRadius: '10px',
+        background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
+        border: isSelected ? '1px solid var(--cv6-accent-primary)' : '1px solid transparent',
+        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', width: '100%',
+        transition: 'all 120ms ease'
+      }}
+      onMouseEnter={(e) => {
+        if (!isSelected) {
+          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
+          e.currentTarget.style.borderColor = 'var(--cv6-divider)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isSelected) {
+          e.currentTarget.style.background = 'transparent'
+          e.currentTarget.style.borderColor = 'transparent'
+        }
+      }}
+    >
+      {/* Avatar */}
+      <div style={{
+        width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
+        background: 'rgba(59, 130, 246, 0.18)', color: '#7FB2FF',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '12px', fontWeight: '700'
+      }}>
+        {(item.who || '').slice(0, 2).toUpperCase()}
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: '14.5px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.subject || item.who}
+        </div>
+        <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {item.who} · {item.kind} · {relativeTime(new Date(item.date).toISOString())}
+        </div>
+      </div>
+
+      {/* Status chip */}
+      <span style={{
+        fontSize: '10.5px', fontWeight: '600', color: statusColor,
+        background: item.ready || item.status === 'needs_you' ? 'var(--cv6-accent-weak)' : 'var(--cv6-chip)',
+        padding: '3px 8px', borderRadius: '5px', flexShrink: 0, whiteSpace: 'nowrap'
+      }}>
+        {statusLabel}
+      </span>
+    </button>
+  )
+}
+
+// ── Support Detail Panel — right panel showing the selected ask ───────────────
+function SupportDetailPanel({ item }) {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
+  const [resolving, setResolving] = useState(false)
+  const [replyText, setReplyText] = useState('')
+  const [replyState, setReplyState] = useState('idle') // idle | sending
+  const [autoSendPaused, setAutoSendPaused] = useState(false)
+  const [countdownTime, setCountdownTime] = useState(null)
   const staged = item.wish ? parseSupportStaged(item.wish.message) : null
+
+  // Auto-send countdown timer
+  useEffect(() => {
+    if (!item.recommendation || !item.auto_send_at || autoSendPaused) {
+      setCountdownTime(null)
+      return
+    }
+    const timer = setInterval(() => {
+      const now = new Date().getTime()
+      const sendTime = new Date(item.auto_send_at).getTime()
+      const remaining = sendTime - now
+      if (remaining <= 0) {
+        setCountdownTime(null)
+        clearInterval(timer)
+      } else {
+        const minutes = Math.floor(remaining / 60000)
+        const seconds = Math.floor((remaining % 60000) / 1000)
+        setCountdownTime(`${minutes}:${seconds.toString().padStart(2, '0')}`)
+      }
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [item.auto_send_at, autoSendPaused, item.recommendation])
+
+  const handleSend = async (e, textOverride = null) => {
+    e.stopPropagation()
+    if (!item.wish || !staged) return
+    setSending(true)
+    try {
+      const r = await authFetch('/api/support/send-staged', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'send',
+          wish_id: item.wish.id,
+          draft_id: staged.draftId,
+          connection_id: staged.connectionId,
+          text: textOverride || null,
+        }),
+      })
+      const d = await r.json()
+      if (r.ok && d.ok) setSent(true)
+    } catch (e) {
+      console.error('Send failed:', e)
+    } finally {
+      setSending(false)
+    }
+  }
+
+  // Custom reply (composer text OR a chosen suggested option). Threads onto the
+  // staged draft so the client gets a proper threaded reply — so it needs `staged`.
+  const handleSendReply = async (e, overrideText = null) => {
+    e.stopPropagation()
+    const body = (overrideText != null ? overrideText : replyText).trim()
+    if (!item.wish || !body) return
+    if (!staged) return  // no staged draft = no thread to reply into; composer/options are disabled in that case
+    setReplyState('sending')
+    try {
+      const r = await authFetch('/api/support/send-staged', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'reply',
+          wish_id: item.wish.id,
+          draft_id: staged.draftId,
+          connection_id: staged.connectionId,
+          text: body,
+        }),
+      })
+      const d = await r.json()
+      if (r.ok && d.ok) {
+        setReplyText('')
+        setReplyState('idle')
+      } else {
+        setReplyState('idle')
+      }
+    } catch (e) {
+      console.error('Reply failed:', e)
+      setReplyState('idle')
+    }
+  }
 
   const handleResolve = async (e) => {
     e.stopPropagation()
@@ -291,7 +501,7 @@ function SupportCard({ item, accentColor, column }) {
       })
       const d = await r.json()
       if (r.ok && d.ok) {
-        // Item resolved; parent component will re-fetch
+        // Item resolved; parent will re-fetch
       }
     } catch (e) {
       console.error('Resolve failed:', e)
@@ -300,137 +510,285 @@ function SupportCard({ item, accentColor, column }) {
     }
   }
 
-  // Send the agent's staged reply. This sends a real email, so it only fires on
-  // Patrik's explicit click (never automatically).
-  const handleSend = async (e) => {
+  const handlePauseAutoSend = (e) => {
     e.stopPropagation()
-    if (!item.wish || !staged) return
-    setSending(true)
-    try {
-      const r = await authFetch('/api/support/send-staged', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send', wish_id: item.wish.id, draft_id: staged.draftId, connection_id: staged.connectionId }),
-      })
-      const d = await r.json()
-      if (r.ok && d.ok) setSent(true)
-    } catch (e) {
-      console.error('Send failed:', e)
-    } finally {
-      setSending(false)
-    }
+    setAutoSendPaused(true)
+    // Clear auto_send_at on the backend
+    authFetch('/api/support/send-staged', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clear_schedule', wish_id: item.wish.id }),
+    }).catch(e => console.error('Pause failed:', e))
   }
 
   const handleOpenMail = () => {
-    if (item.link) {
-      window.open(item.link, '_blank')
-    }
+    if (item.link) window.open(item.link, '_blank')
   }
 
-  // Plain-words "how long they've waited" for the decision column.
-  const waitedLabel = (() => {
-    if (!item.date) return null
-    const mins = Math.floor((Date.now() - item.date) / 60000)
-    if (mins < 60) return `${Math.max(1, mins)}m waiting`
-    const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h waiting`
-    return `${Math.floor(hrs / 24)}d waiting`
-  })()
-  const overdue = item.date && (Date.now() - item.date) > 10 * 60 * 1000
-
   return (
-    <button
-      onClick={() => setIsExpanded(!isExpanded)}
-      style={{
-        display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', width: '100%', textAlign: 'left',
-        // R53: THE CARD paradigm — surface bg, 1px border, 8px radius, 14px pad, no shadow (see cv6.css)
-        background: 'var(--cv6-surface)', border: `1px solid ${isExpanded ? accentColor : 'var(--cv6-divider)'}`,
-        borderRadius: 'var(--cv6-card-radius)', padding: 'var(--cv6-card-pad)', minHeight: '56px', justifyContent: 'center',
-        cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit',
-      }}
-      onMouseEnter={(e) => {
-        if (!isExpanded) {
-          e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-          e.currentTarget.style.borderColor = accentColor
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isExpanded) {
-          e.currentTarget.style.background = 'var(--cv6-surface)'
-          e.currentTarget.style.borderColor = 'var(--cv6-divider)'
-        }
-      }}
-    >
-      {/* Card Header: Who + Status Badge. R50: dropped the per-card mail icon — it just
-          re-encoded the column color (Patrik); removing it buys back a lot of visual calm. */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', width: '100%' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {item.who}
-            </span>
-            {item.ready && (
-              <span style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', color: accentColor, flexShrink: 0 }}>
-                Ready
-              </span>
-            )}
+    <div style={{ width: '520px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--cv6-divider)' }}>
+      {/* Detail header */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '18px 22px', borderBottom: '1px solid var(--cv6-divider)', flexShrink: 0
+      }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
+            {item.subject || item.who}
           </div>
-          {item.subject && (
-            <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {item.subject}
+          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>
+            {item.who} · {relativeTime(new Date(item.date).toISOString())}
+          </div>
+        </div>
+        <button
+          onClick={handleResolve}
+          disabled={resolving}
+          style={{
+            height: '36px', marginLeft: '8px', padding: '0 15px', borderRadius: '10px', border: 'none',
+            background: 'var(--cv6-accent-weak)', color: 'var(--cv6-accent-primary)', fontSize: '13px',
+            fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center',
+            gap: '6px', opacity: resolving ? 0.6 : 1
+          }}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m5 13 4 4L19 7" />
+          </svg>
+          Resolve
+        </button>
+      </div>
+
+      {/* Detail content - scrollable */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '22px' }}>
+        {/* Avatar + sender info */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <div style={{
+            width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
+            background: 'rgba(59, 130, 246, 0.18)', color: '#7FB2FF',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '12px', fontWeight: '700'
+          }}>
+            {(item.who || '').slice(0, 2).toUpperCase()}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
+              {item.who}
             </div>
+            <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>
+              {item.kind} · {relativeTime(new Date(item.date).toISOString())}
+            </div>
+          </div>
+          {item.ready && (
+            <span style={{ fontSize: '10.5px', fontWeight: '600', color: 'var(--cv6-accent-primary)', background: 'var(--cv6-accent-weak)', padding: '4px 9px', borderRadius: '6px' }}>
+              New
+            </span>
           )}
         </div>
-        {column === 'decision' && waitedLabel && (
-          <span style={{ flexShrink: 0, fontSize: '10px', fontWeight: '700', whiteSpace: 'nowrap', color: overdue ? '#ef4444' : 'var(--cv6-text-tertiary)' }}>{overdue ? '! ' : ''}{waitedLabel}</span>
+
+        {/* Ask title */}
+        {item.subject && (
+          <h2 style={{ fontSize: '19px', lineHeight: 1.3, fontWeight: '700', color: 'var(--cv6-text-primary)', margin: '0 0 12px' }}>
+            {item.subject}
+          </h2>
+        )}
+
+        {/* Ask body */}
+        {item.text && (
+          <p style={{ fontSize: '14.5px', lineHeight: 1.6, color: 'var(--cv6-text-primary)', margin: '0 0 14px', whiteSpace: 'pre-wrap' }}>
+            {item.text}
+          </p>
+        )}
+
+        {/* Original message (if exists) */}
+        {item.original && (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'var(--cv6-surface2)', border: '1px solid var(--cv6-divider)', borderRadius: '10px', padding: '9px 12px', marginBottom: '22px' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+              <path d="M14 2v6h6" />
+            </svg>
+            <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', color: 'var(--cv6-text-primary)' }}>
+              original-message
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>
+              attached
+            </span>
+          </div>
+        )}
+
+        {/* Agent assist: recommendations, suggested replies, auto-send timer */}
+        {staged && (
+          <div style={{ background: 'var(--cv6-surface)', border: '1px solid var(--cv6-accent-weak)', borderRadius: '14px', padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '14px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--cv6-accent-primary)" style={{ flexShrink: 0 }}>
+                <path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" />
+              </svg>
+              <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--cv6-accent-primary)' }}>
+                Agent assist
+              </span>
+            </div>
+
+            {/* Recommendation bullets */}
+            {item.recommendation && item.recommendation.length > 0 && (
+              <div style={{ marginBottom: '15px' }}>
+                <div style={{ fontSize: '10.5px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)', marginBottom: '7px' }}>
+                  Key talking points
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '15px' }}>
+                  {item.recommendation.map((bullet, idx) => (
+                    <div key={idx} style={{ display: 'flex', gap: '8px', fontSize: '13.5px', lineHeight: 1.5, color: 'var(--cv6-text-primary)' }}>
+                      <span style={{ color: 'var(--cv6-accent-primary)' }}>•</span>
+                      {bullet}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Suggested response option buttons */}
+            {item.reply_options && item.reply_options.length > 0 && (
+              <div style={{ marginBottom: '15px' }}>
+                <div style={{ fontSize: '10.5px', fontWeight: '600', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)', marginBottom: '7px' }}>
+                  Suggested responses
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '15px' }}>
+                  {item.reply_options.map((option, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => handleSendReply(e, option.text)}
+                      disabled={sending || sent}
+                      style={{
+                        textAlign: 'left',
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        border: '1px solid var(--cv6-divider)',
+                        background: 'var(--cv6-surface2)',
+                        color: 'var(--cv6-text-primary)',
+                        fontSize: '13.5px',
+                        fontWeight: '500',
+                        fontFamily: 'inherit',
+                        cursor: 'pointer',
+                        lineHeight: 1.45,
+                        opacity: sending || sent ? 0.6 : 1
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Auto-send countdown */}
+            {item.auto_send_at && !autoSendPaused && countdownTime && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px', background: 'var(--cv6-warn-weak)', borderRadius: '10px', padding: '10px 12px', marginBottom: '14px' }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-warn)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 8v4l3 2" />
+                </svg>
+                <span style={{ fontSize: '12.5px', lineHeight: 1.4, color: 'var(--cv6-text-primary)', flex: 1 }}>
+                  Auto-sends the best reply in <strong>{countdownTime}</strong> unless you jump in.
+                </span>
+                <button
+                  onClick={handlePauseAutoSend}
+                  style={{ fontSize: '12px', fontWeight: '600', color: 'var(--cv6-warn)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  Pause
+                </button>
+              </div>
+            )}
+
+            {/* Send/Edit buttons */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={handleSend}
+                disabled={sending || sent}
+                style={{
+                  flex: 1, height: '40px', borderRadius: '10px', border: 'none',
+                  background: sent ? 'transparent' : 'var(--cv6-accent-primary)',
+                  color: sent ? 'var(--cv6-accent-primary)' : '#fff',
+                  fontSize: '13.5px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer',
+                  borderBottom: sent ? '1px solid var(--cv6-accent-primary)' : 'none', opacity: sending ? 0.6 : 1
+                }}
+              >
+                {sent ? 'Sent ✓' : sending ? 'Sending…' : 'Send now'}
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setReplyText(item.reply || '') }}
+                title="Load the prepared reply into the box below to edit before sending"
+                style={{
+                  height: '40px', padding: '0 16px', borderRadius: '10px', border: '1px solid var(--cv6-divider)',
+                  background: 'transparent', color: 'var(--cv6-text-secondary)', fontSize: '13.5px', fontWeight: '600',
+                  fontFamily: 'inherit', cursor: 'pointer'
+                }}>
+                Edit
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Reply preview if not staged */}
+        {item.reply && !staged && (
+          <div style={{ padding: '8px 10px', background: 'rgba(16, 185, 129, 0.10)', borderLeft: '2px solid #10B981', borderRadius: '4px', marginBottom: '14px' }}>
+            <div style={{ fontSize: '9px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#10B981' }}>
+              We replied
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4', marginTop: '3px', whiteSpace: 'pre-wrap' }}>
+              {item.reply}
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Preview Text (collapsed to 2 lines, expanded to many) */}
-      {item.text && (
-        <p style={{
-          margin: '0', fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4', width: '100%',
-          display: '-webkit-box', WebkitLineClamp: isExpanded ? 99 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-          whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word',
-        }}>
-          {item.text}
-        </p>
-      )}
-
-      {/* Expanded: the thread (what they wrote + what we replied) and actions. */}
-      {isExpanded && (
-        <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid var(--cv6-divider)', display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-          {item.original && (
-            <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.5', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{item.original}</div>
-          )}
-          {item.reply && (
-            <div style={{ padding: '8px 10px', background: 'rgba(16,185,129,0.10)', borderLeft: '2px solid #10B981', borderRadius: '4px' }}>
-              <div style={{ fontSize: '9px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#10B981' }}>We replied</div>
-              <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', lineHeight: '1.4', marginTop: '3px', whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{item.reply}</div>
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {column === 'ready' && staged && (
-              <button onClick={handleSend} disabled={sending || sent} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 14px', borderRadius: '4px', background: sent ? 'transparent' : '#10B981', color: sent ? '#10B981' : '#ffffff', border: sent ? '1px solid #10B981' : 'none', cursor: (sending || sent) ? 'default' : 'pointer', opacity: sending ? 0.6 : 1 }}>
-                {sent ? 'Sent ✓' : sending ? 'Sending…' : 'Send reply'}
-              </button>
-            )}
-            {column === 'ready' && item.link && (
-              <button onClick={handleOpenMail} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', borderRadius: '4px', background: 'transparent', color: 'var(--cv6-text-secondary)', border: '1px solid var(--cv6-divider)', cursor: 'pointer' }}>Edit in Gmail</button>
-            )}
-            {column === 'decision' && item.link && (
-              <button onClick={handleOpenMail} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', borderRadius: '4px', background: accentColor, color: '#ffffff', border: 'none', cursor: 'pointer' }}>Open in Gmail</button>
-            )}
-            {column === 'decision' && item.wish && (
-              <button onClick={handleResolve} disabled={resolving} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', borderRadius: '4px', background: 'transparent', color: 'var(--cv6-text-secondary)', border: '1px solid var(--cv6-divider)', cursor: resolving ? 'default' : 'pointer', opacity: resolving ? 0.6 : 1 }}>{resolving ? '…' : 'Mark done'}</button>
-            )}
-            {column === 'done' && item.link && (
-              <button onClick={handleOpenMail} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 12px', borderRadius: '4px', background: 'transparent', color: 'var(--cv6-text-secondary)', border: '1px solid var(--cv6-divider)', cursor: 'pointer' }}>Open in Gmail</button>
-            )}
-          </div>
-        </div>
-      )}
-    </button>
+      {/* Footer: reply composer */}
+      <div style={{ borderTop: '1px solid var(--cv6-divider)', padding: '14px 22px', display: 'flex', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
+        <textarea
+          value={replyText}
+          onChange={(e) => setReplyText(e.target.value)}
+          placeholder="Write a reply…"
+          style={{
+            flex: 1,
+            height: '42px',
+            borderRadius: '11px',
+            border: '1px solid var(--cv6-divider)',
+            background: 'var(--cv6-surface2)',
+            padding: '10px 14px',
+            fontSize: '14px',
+            color: 'var(--cv6-text-primary)',
+            fontFamily: 'inherit',
+            resize: 'none',
+            boxSizing: 'border-box',
+            outline: 'none'
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && e.ctrlKey && replyText.trim()) {
+              handleSendReply(e)
+            }
+          }}
+        />
+        <button
+          onClick={handleSendReply}
+          disabled={!replyText.trim() || replyState === 'sending'}
+          style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '11px',
+            border: 'none',
+            background: replyText.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-tertiary)',
+            color: '#fff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: replyText.trim() ? 'pointer' : 'default',
+            flexShrink: 0,
+            opacity: replyState === 'sending' ? 0.6 : 1
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 19V5M5 12l7-7 7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
   )
 }
 
