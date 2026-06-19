@@ -4749,14 +4749,16 @@ export default function HomeView({
               {/* R48: Home pinned first, then tools in recency order (most-recently-used next to Home), then the rest in default order. Mobile: one scrollable row (cv6.css .hm-tools-row). */}
               {(() => {
                 const TOOLS = [
-                  { key: 'home', label: 'Home', svg: (<><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></>) },
-                  { key: 'chat', label: 'Chat', svg: (<><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z"/></>) },
-                  { key: 'organize', label: 'Organize', svg: (<><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></>) },
-                  { key: 'review', label: 'Review', svg: (<><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></>) },
-                  { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>) },
-                  { key: 'tracker', label: 'Tracker', svg: (<><rect x="9" y="8" width="6" height="9" rx="3"/><path d="M9 12h6"/><path d="M10 6l-1-2M14 6l1-2"/><path d="M4 9l3 2M20 9l-3 2M4 16l3-2M20 16l-3-2"/></>) },
-                  { key: 'command', label: 'Command', svg: (<><polyline points="4 9 7 9 7 20 4 20"/><polyline points="12 9 15 9 15 20 12 20"/><polyline points="20 9 23 9 23 20 20 20"/></>) },
-                  { key: 'scribe', label: 'Live Scribe', svg: (<><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></>) },
+                  // Icons matched 1:1 to the CV6 design tool-row (Home desktop.dc.html):
+                  // house, message bubble, layers, eye, message-square, sun, square-brackets, mic.
+                  { key: 'home', label: 'Home', svg: (<><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></>) },
+                  { key: 'chat', label: 'Chat', svg: (<><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></>) },
+                  { key: 'organize', label: 'Organize', svg: (<><path d="M12 4 3 8l9 4 9-4Z"/><path d="m3 12 9 4 9-4"/></>) },
+                  { key: 'review', label: 'Review', svg: (<><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></>) },
+                  { key: 'support', label: 'Support', svg: (<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/>) },
+                  { key: 'tracker', label: 'Tracker', svg: (<><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></>) },
+                  { key: 'command', label: 'Command', svg: (<><path d="M7 4H4v16h3M17 4h3v16h-3"/></>) },
+                  { key: 'scribe', label: 'Live Scribe', svg: (<><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></>) },
                 ]
                 // R50: LOCKED order — a nav that reshuffles kills spatial memory (Patrik).
                 // Active tool is shown by color/weight in a FIXED position, never moved.
