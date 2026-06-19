@@ -1042,9 +1042,10 @@ const TRACKER_TEMPLATES = {
   ] },
   blank: { label: 'Blank sheet', columns: ['Column 1', 'Column 2', 'Column 3'], statusCol: null, seed: [{ 'Column 1': '', 'Column 2': '', 'Column 3': '' }] },
 }
-const STATUS_COLORS = { 'Open': '#F59E0B', 'In progress': '#0066FF', 'Done': '#10B981' }
+const STATUS_COLORS = { 'Open': 'var(--cv6-error)', 'In progress': 'var(--cv6-warn)', 'Done': 'var(--cv6-success)' }
+const STATUS_BG_COLORS = { 'Open': 'var(--cv6-error-weak)', 'In progress': 'var(--cv6-warn-weak)', 'Done': 'var(--cv6-success-weak)' }
 // Priority 1 (now) -> 5 (later). Warm/urgent at the top, cool/calm at the bottom.
-const PRIORITY_COLORS = { 1: '#EF4444', 2: '#F59E0B', 3: '#0066FF', 4: '#6B7B8C', 5: '#9AA7B4' }
+const PRIORITY_COLORS = { 1: 'var(--cv6-error)', 2: 'var(--cv6-warn)', 3: 'var(--cv6-accent-primary)', 4: '#6B7B8C', 5: '#9AA7B4' }
 
 // R88: weighted column tracks so dense trackers stay readable. Short fields
 // (status/severity/owner) stay narrow; long text fields (bug/expected/notes)
@@ -1283,25 +1284,21 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
    const gridTemplate = sel.columns.map(trackerColTrack).join(' ')
    return (
     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '20px 24px 16px', borderBottom: '1px solid var(--cv6-divider)', flexWrap: 'wrap' }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{sel.name}</div>
-          <div style={{ fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{sel.scope} · {sel.rows.length} rows{sel.live ? ' · tap a row to read it in full' : ''}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: 'var(--cv6-accent-success)', flexShrink: 0 }} />
+            <span style={{ fontSize: '20px', fontWeight: '700', letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)' }}>{sel.name}</span>
+            {sel.columns && sel.columns.length > 0 && (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            )}
+          </div>
+          <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', marginTop: '3px' }}>{sel.scope} · {sel.id === 'cv6-bugs' ? 'Bug tracker' : 'Tracker'} · {sel.rows.length} {sel.rows.length === 1 ? 'item' : 'items'}{sel.rows.filter(r => String(r.Status || '').toLowerCase() !== 'done').length > 0 ? ` open` : ''}</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={() => setTall(v => !v)} title={tall ? 'Shrink the box' : 'Expand the box taller'} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{tall ? <><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/></> : <><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></>}</svg>{tall ? 'Shrink' : 'Expand'}
-          </button>
-          <button onClick={() => { if (sel.id === 'cv6-bugs') setAddingBug(v => !v); else addRow() }} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 11px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '600' }}>
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>{sel.id === 'cv6-bugs' ? 'Add bug' : 'Add row'}
-          </button>
-          <button onClick={toggleOn} title="Turn the tracker on so the agent works it" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 10px 6px 12px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '12px', fontWeight: '700', background: sel.on ? 'rgba(16,185,129,0.15)' : 'var(--cv6-surface-hover)', color: sel.on ? '#10B981' : 'var(--cv6-text-secondary)' }}>
-            {sel.on ? 'Agent ON' : 'Agent off'}
-            <span style={{ width: '34px', height: '20px', borderRadius: '11px', background: sel.on ? '#10B981' : 'var(--cv6-text-tertiary)', position: 'relative', transition: 'background 150ms ease', flexShrink: 0 }}>
-              <span style={{ position: 'absolute', top: '2px', left: sel.on ? '16px' : '2px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left 150ms ease' }} />
-            </span>
-          </button>
-        </div>
+        <button onClick={() => { if (sel.id === 'cv6-bugs') setAddingBug(v => !v); else addRow() }} style={{ height: '38px', padding: '0 16px', borderRadius: '10px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '13.5px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          {sel.id === 'cv6-bugs' ? 'New bug' : 'New row'}
+        </button>
       </div>
       {sel.on && <div style={{ padding: '8px 14px', fontSize: '12px', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderBottom: '1px solid var(--cv6-divider)' }}>Agent is watching this tracker and working items toward done.</div>}
       {sel.id === 'cv6-bugs' && addingBug && (
@@ -1321,12 +1318,23 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
       )}
       <div style={{ flex: 1, overflow: 'auto' }} onMouseEnter={() => setSheetFocused(true)} onMouseLeave={() => setSheetFocused(false)}>
         <div>
-          <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1 }}>
-            {sel.columns.map(c => (
-              <div key={c} onClick={() => { setSortDir(d => sortCol === c ? -d : 1); setSortCol(c); setExpandedRow(null) }} title={`Sort by ${c}`} style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: sortCol === c ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)', padding: '10px 12px', cursor: 'pointer', userSelect: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                {c}{sortCol === c ? <span style={{ fontSize: '9px' }}>{sortDir === 1 ? '▲' : '▼'}</span> : null}
-              </div>
-            ))}
+          <div style={{ display: 'flex', alignItems: 'center', height: '34px', borderBottom: '1px solid var(--cv6-hair)', paddingLeft: '24px', paddingRight: '24px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1, fontSize: '11px', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>
+            {sel.columns.length > 0 && (
+              <>
+                <div style={{ flex: 1, cursor: 'pointer', userSelect: 'none' }} onClick={() => { setSortDir(d => sortCol === sel.columns[0] ? -d : 1); setSortCol(sel.columns[0]); setExpandedRow(null) }}>
+                  {sel.columns[0]}{sortCol === sel.columns[0] ? <span style={{ fontSize: '9px', marginLeft: '4px' }}>{sortDir === 1 ? '▲' : '▼'}</span> : null}
+                </div>
+                {sel.columns.slice(1).map((c, i) => {
+                  const WIDTHS = { Status: '120px', Priority: '100px', Assignee: '120px', Updated: '70px', Owner: '120px', Area: '120px', Severity: '100px', Page: '100px', Bug: 'auto', Expected: '140px', Item: 'auto' }
+                  const w = WIDTHS[c] || '100px'
+                  return (
+                    <div key={c} style={{ width: w, flex: w === 'auto' ? 1 : 'none', cursor: 'pointer', userSelect: 'none', paddingRight: '12px' }} onClick={() => { setSortDir(d => sortCol === c ? -d : 1); setSortCol(c); setExpandedRow(null) }}>
+                      {c}{sortCol === c ? <span style={{ fontSize: '9px', marginLeft: '4px' }}>{sortDir === 1 ? '▲' : '▼'}</span> : null}
+                    </div>
+                  )
+                })}
+              </>
+            )}
           </div>
           {(() => {
             // Sort a decorated copy so inline edit + expand still reference the
@@ -1356,36 +1364,92 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
             const ri = origIndex
             const isExp = expandedRow === ri
             return (
-            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'grid', gridTemplateColumns: gridTemplate, borderBottom: '1px solid var(--cv6-divider)', cursor: sel.live ? 'pointer' : 'default', background: isExp ? 'var(--cv6-surface-hover)' : 'transparent' }}>
-              {sel.columns.map(c => (
-                <div key={c} style={{ borderRight: '1px solid var(--cv6-divider)', padding: '0', minWidth: 0 }}>
-                  {(sel.id === 'cv6-bugs' && c === 'Priority') ? (
-                    // Priority 1 (now) -> 5 (later), adjustable inline, persists to the file.
-                    <select value={row.Priority || 3} onChange={e => updateBugPriority(row.__id, e.target.value)} onClick={e => e.stopPropagation()} title="Priority — 1 is do now, 5 is later" style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: PRIORITY_COLORS[row.Priority || 3] || 'var(--cv6-text-primary)', fontWeight: '700', outline: 'none' }}>
-                      {[1, 2, 3, 4, 5].map(p => <option key={p} value={p}>P{p}</option>)}
-                    </select>
-                  ) : c === statusCol ? (
-                    sel.id === 'cv6-bugs' ? (
-                      // CV6 bug status persists to the tracker file so the agents see it.
-                      <select value={row[c] || 'Open'} onChange={e => updateBugStatus(row.__id, e.target.value)} onClick={e => e.stopPropagation()} style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none' }}>
-                        {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    ) : sel.live ? (
-                      <div style={{ minHeight: '40px', display: 'flex', alignItems: 'center', padding: '0 12px', fontSize: '13px', fontWeight: '600', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)' }}>{row[c] || 'Open'}</div>
-                    ) : (
-                      <select value={row[c] || 'Open'} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} style={{ width: '100%', height: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none' }}>
-                        {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
+            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'flex', alignItems: 'center', minHeight: '60px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', cursor: sel.live ? 'pointer' : 'default', background: isExp ? 'var(--cv6-surface-hover)' : 'transparent', margin: isExp ? '0 -8px' : '0', borderRadius: isExp ? '8px' : '0' }}>
+              {sel.columns.length > 0 && (
+                <>
+                  <div key={sel.columns[0]} style={{ flex: 1, minWidth: 0, paddingRight: '12px', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
+                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row[sel.columns[0]] || '—'}</div>
+                    {sel.id === 'cv6-bugs' && row.__id && (
+                      <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>CV6-{(String(row.__id).charCodeAt(0) * 137) % 999}</div>
+                    )}
+                  </div>
+                  {sel.columns.slice(1).map(c => {
+                    const WIDTHS = { Status: '120px', Priority: '100px', Assignee: '120px', Updated: '70px', Owner: '120px', Area: '120px', Severity: '100px', Page: '100px', Expected: '140px', Item: 'auto' }
+                    const w = WIDTHS[c] || '100px'
+                    // Render specific column content
+                    const renderCell = () => {
+                      if (sel.id === 'cv6-bugs' && c === 'Priority') {
+                        // Priority with inline-adjustable selector
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: PRIORITY_COLORS[row.Priority || 3] || 'var(--cv6-text-primary)' }} />
+                            <select value={row.Priority || 3} onChange={e => updateBugPriority(row.__id, e.target.value)} onClick={e => e.stopPropagation()} style={{ border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', cursor: 'pointer', color: 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none', appearance: 'none', padding: 0 }}>
+                              {[1, 2, 3, 4, 5].map(p => <option key={p} value={p}>P{p}</option>)}
+                            </select>
+                          </div>
+                        )
+                      } else if (c === statusCol) {
+                        // Status column
+                        if (sel.id === 'cv6-bugs') {
+                          return (
+                            <select value={row[c] || 'Open'} onChange={e => updateBugStatus(row.__id, e.target.value)} onClick={e => e.stopPropagation()} style={{ border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '11.5px', cursor: 'pointer', fontWeight: '600', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', outline: 'none', appearance: 'none', padding: '3px 9px', borderRadius: '13px' }}>
+                              {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          )
+                        } else if (sel.live) {
+                          return (
+                            <div style={{ display: 'inline-flex', fontSize: '11.5px', fontWeight: '600', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', background: STATUS_BG_COLORS[row[c]] || 'transparent', padding: '3px 9px', borderRadius: '13px' }}>
+                              {row[c] || 'Open'}
+                            </div>
+                          )
+                        } else {
+                          return (
+                            <select value={row[c] || 'Open'} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} style={{ border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', cursor: 'pointer', color: STATUS_COLORS[row[c]] || 'var(--cv6-text-primary)', fontWeight: '600', outline: 'none', appearance: 'none', padding: 0 }}>
+                              {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          )
+                        }
+                      } else if (c === 'Assignee' && sel.live) {
+                        // Assignee avatar + name
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                            {row[c] && (
+                              <>
+                                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(91, 155, 255, 0.2)', color: 'var(--cv6-accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9.5px', fontWeight: '700', flexShrink: 0 }}>
+                                  {(String(row[c])[0] + (String(row[c]).split(' ')[1] ? String(row[c]).split(' ')[1][0] : '')).toUpperCase()}
+                                </span>
+                                <span style={{ fontSize: '13px', color: 'var(--cv6-text-primary)' }}>{row[c]}</span>
+                              </>
+                            )}
+                          </div>
+                        )
+                      } else if (c === 'Updated' && sel.live) {
+                        // Time-ago format
+                        return (
+                          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '12px', color: 'var(--cv6-text-secondary)' }}>
+                            {row[c] || '—'}
+                          </div>
+                        )
+                      } else {
+                        // Generic content
+                        return sel.live ? (
+                          <div style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', overflow: 'hidden' }}>
+                            {row[c] || '—'}
+                          </div>
+                        ) : (
+                          <input value={row[c] || ''} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} placeholder="—" style={{ border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', color: 'var(--cv6-text-primary)', outline: 'none', width: '100%' }} />
+                        )
+                      }
+                    }
+
+                    return (
+                      <div key={c} style={{ width: w, flex: w === 'auto' ? 1 : 'none', paddingRight: '12px', minWidth: 0 }}>
+                        {renderCell()}
+                      </div>
                     )
-                  ) : (
-                    sel.live ? (
-                      <div title={row[c] || ''} style={{ minHeight: '40px', padding: '10px 12px', fontSize: '13px', color: 'var(--cv6-text-primary)', lineHeight: 1.4, wordBreak: 'break-word', overflow: 'hidden', ...(isExp ? {} : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }) }}>{row[c] || '—'}</div>
-                    ) : (
-                      <input value={row[c] || ''} onChange={e => setCell(ri, c, e.target.value)} onClick={e => e.stopPropagation()} placeholder="—" title={row[c] || ''} style={{ width: '100%', minHeight: '40px', border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', padding: '0 12px', color: 'var(--cv6-text-primary)', outline: 'none' }} />
-                    )
-                  )}
-                </div>
-              ))}
+                  })}
+                </>
+              )}
             </div>
           )})
           })()}
