@@ -3986,20 +3986,20 @@ export default function HomeView({
                         {n.timeAgo}
                       </div>
                     </div>
-                    {/* R4: Card body = centered QUOTE with internal scroll (max ~4-5 lines, then overflow:auto) */}
+                    {/* R-PIXEL-LOOP R3: plain left-aligned body (2-line clamp) to match the Claude
+                        design. Was a centered italic quote box with an accent border + tint — not
+                        in the picture. */}
                     <div style={{
-                      fontSize: '13.5px', lineHeight: 1.55, color: 'var(--cv6-text-primary)',
-                      maxHeight: '80px', overflowY: 'auto', padding: '12px 12px', borderLeft: '3px solid var(--cv6-accent-primary)',
-                      borderRadius: '4px', background: 'color-mix(in srgb, var(--cv6-accent-primary) 8%, transparent)',
-                      textAlign: 'center', fontStyle: 'italic',
+                      fontSize: '13.5px', lineHeight: 1.5, color: 'var(--cv6-text-primary)',
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                     }}>
-                      "{(() => {
+                      {(() => {
                         if (n.attachment || (n.attachments && n.attachments.length)) {
                           const fname = n.attachment?.name || (n.attachments?.[0]?.name) || 'attachment'
                           return `Attached file: ${fname}`
                         }
                         return (n.messagePreview || 'New update').replace(/[*_~\x60]|^#+\s?/gm, '')
-                      })()}"
+                      })()}
                     </div>
                   </div>
                 )
@@ -4027,25 +4027,29 @@ export default function HomeView({
                 light heuristic (ask vs not) for now, no fabricated per-card data. */}
             {top.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 40 }}>
-                {onCatchupReply && (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {(isAsk(top[0].messagePreview) ? ['Sounds good', 'Tell me more'] : ['Thanks', 'On it']).map(q => (
-                      <button key={q} onClick={() => replyToCatchup(top[0], q)}
-                        style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer' }}>
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {onCatchupReply && (
-                  <input
-                    value={catchupReplyText}
-                    onChange={e => setCatchupReplyText(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); replyToCatchup(top[0], catchupReplyText) } }}
-                    placeholder={`Reply to ${top[0].senderName || 'agent'}…`}
-                    style={{ height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface2)', padding: '0 14px', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }}
-                  />
-                )}
+                {/* R-PIXEL-LOOP R3: two outlined chips under the card (Thanks / Review), matching the
+                    Claude design. With an attachment the second chip is "Review" (jumps to the Review
+                    view); otherwise both are quick replies. The free-text "Reply to…" input was removed
+                    — the composer lives in the conversation column, not here (design has no input here). */}
+                {onCatchupReply && (() => {
+                  const hasAttach = !!(top[0].attachment || (top[0].attachments && top[0].attachments.length))
+                  const ask = isAsk(top[0].messagePreview)
+                  const chips = hasAttach
+                    ? [{ label: 'Thanks', act: () => replyToCatchup(top[0], 'Thanks') }, { label: 'Review', act: () => openTool('review') }]
+                    : (ask
+                        ? [{ label: 'Sounds good', act: () => replyToCatchup(top[0], 'Sounds good') }, { label: 'Tell me more', act: () => replyToCatchup(top[0], 'Tell me more') }]
+                        : [{ label: 'Thanks', act: () => replyToCatchup(top[0], 'Thanks') }, { label: 'On it', act: () => replyToCatchup(top[0], 'On it') }])
+                  return (
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {chips.map(c => (
+                        <button key={c.label} onClick={c.act}
+                          style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer' }}>
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })()}
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => { onCatchupOpenRoom && onCatchupOpenRoom(top[0]) }}
                     style={{ flex: 1, height: '44px', borderRadius: '12px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontFamily: 'inherit' }}>
