@@ -281,8 +281,8 @@ export default function LiveScribe({ embedded = false }) {
 
   // Theme — standalone (warm paper) vs embedded (CV6 vars). Same component, two skins.
   const C = embedded
-    ? { paper: 'transparent', ink: 'var(--cv6-text-primary)', soft: 'var(--cv6-text-secondary)', card: 'var(--cv6-surface)', line: 'var(--cv6-divider)', gold: 'var(--cv6-accent-primary)', goldBorder: 'var(--cv6-accent-primary)', btnInk: '#ffffff', btnBorder: 'var(--cv6-divider)', src: 'var(--cv6-accent-primary)' }
-    : { paper: PAPER, ink: INK, soft: INK, card: CARD, line: LINE, gold: GOLD, goldBorder: '#C9A227', btnInk: INK, btnBorder: INK, src: '#A66A00' };
+    ? { paper: 'transparent', ink: 'var(--cv6-text-primary)', soft: 'var(--cv6-text-secondary)', card: 'var(--cv6-surface)', line: 'var(--cv6-divider)', gold: 'var(--cv6-accent-primary)', goldBorder: 'var(--cv6-accent-primary)', btnInk: '#ffffff', btnBorder: 'var(--cv6-divider)', src: 'var(--cv6-accent-primary)', rec: 'var(--cv6-accent-error)', accentSuccess: 'var(--cv6-accent-success)', accentWarn: 'var(--cv6-accent-warn)' }
+    : { paper: PAPER, ink: INK, soft: INK, card: CARD, line: LINE, gold: GOLD, goldBorder: '#C9A227', btnInk: INK, btnBorder: INK, src: '#A66A00', rec: '#F87171', accentSuccess: '#34D399', accentWarn: '#FBBF24' };
 
   const F = embedded ? { fontFamily: 'inherit' } : { fontFamily: "'Space Grotesk', system-ui, sans-serif" };
   const DISPLAY = embedded ? { fontFamily: 'inherit' } : { fontFamily: "'Syne', system-ui, sans-serif" };
@@ -293,6 +293,9 @@ export default function LiveScribe({ embedded = false }) {
   const speakerIds = Object.keys(speakers);
   const wordCount = transcriptText.split(/\s+/).filter(Boolean).length;
   const maxW = embedded ? '100%' : 1180;
+  // Speaker accent colors for CV6 embedded mode (use CV6 accents for different speakers)
+  const CV6_SPEAKER_ACCENTS = ['var(--cv6-accent-primary)', 'var(--cv6-accent-success)', 'var(--cv6-accent-warn)'];
+  const getSpeakerAccent = (index) => CV6_SPEAKER_ACCENTS[index % CV6_SPEAKER_ACCENTS.length];
 
   return (
     <div style={{ minHeight: embedded ? 'auto' : '100vh', width: '100%', background: C.paper, color: C.ink, ...F }}>
@@ -300,8 +303,8 @@ export default function LiveScribe({ embedded = false }) {
         .ls-card { background:${C.card}; border:1px solid ${C.line}; border-radius:16px; }
         .ls-btn { font-family:${embedded ? 'inherit' : "'Space Grotesk',sans-serif"}; font-weight:600; border-radius:999px; cursor:pointer; border:1px solid ${C.btnBorder}; transition:transform .08s ease, opacity .15s ease; }
         .ls-btn:active { transform:translateY(1px); }
-        .ls-rec-dot { width:10px; height:10px; border-radius:50%; background:#E5484D; box-shadow:0 0 0 0 rgba(229,72,77,.6); animation:lspulse 1.4s infinite; }
-        @keyframes lspulse { 0%{box-shadow:0 0 0 0 rgba(229,72,77,.55)} 70%{box-shadow:0 0 0 9px rgba(229,72,77,0)} 100%{box-shadow:0 0 0 0 rgba(229,72,77,0)} }
+        .ls-rec-dot { width:10px; height:10px; border-radius:50%; background:${embedded ? C.rec : '#E5484D'}; box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0.6)' : 'rgba(229,72,77,.6)'}; animation:lspulse 1.4s infinite; }
+        @keyframes lspulse { 0%{box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0.55)' : 'rgba(229,72,77,.55)'}} 70%{box-shadow:0 0 0 9px ${embedded ? 'rgba(248, 113, 113, 0)' : 'rgba(229,72,77,0)'}} 100%{box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0)' : 'rgba(229,72,77,0)'}} }
         .ls-grid { display:grid; grid-template-columns:1.1fr 1fr; gap:18px; }
         @media (max-width: 900px){ .ls-grid{ grid-template-columns:1fr; } }
         .ls-fade { animation:lsfade .3s ease; }
@@ -322,11 +325,16 @@ export default function LiveScribe({ embedded = false }) {
       <input ref={fileInputRef} type="file" accept=".json,application/json" onChange={onImportFile} style={{ display: 'none' }} />
 
       {/* Header */}
-      <div style={{ maxWidth: maxW, margin: '0 auto', padding: embedded ? '0 0 8px' : '28px 24px 8px' }}>
+      <div style={{ maxWidth: maxW, margin: '0 auto', padding: embedded ? '14px 24px 12px' : '28px 24px 8px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
             {!embedded && (
               <div style={{ ...DISPLAY, fontWeight: 800, fontSize: 46, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                Live Scribe
+              </div>
+            )}
+            {embedded && (
+              <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: C.soft, marginBottom: 8 }}>
                 Live Scribe
               </div>
             )}
@@ -350,8 +358,8 @@ export default function LiveScribe({ embedded = false }) {
               </button>
             ) : (
               <button className="ls-btn" onClick={stop}
-                style={{ background: 'transparent', color: C.ink, padding: embedded ? '11px 22px' : '15px 30px', fontSize: embedded ? 15 : 17, fontWeight: 700 }}>
-                Stop
+                style={{ background: C.rec, color: '#fff', padding: embedded ? '11px 22px' : '15px 30px', fontSize: embedded ? 15 : 17, fontWeight: 700, border: 'none', borderColor: C.rec }}>
+                Stop {embedded ? '& save' : ''}
               </button>
             )}
           </div>
@@ -395,23 +403,24 @@ export default function LiveScribe({ embedded = false }) {
             {/* Speaker chips — tap to name */}
             {speakerIds.length > 0 && (
               <div style={{ padding: '10px 16px', borderBottom: `1px solid ${C.line}`, display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                {speakerIds.map((id, idx) => (
-                  editingSpeaker === id ? (
+                {speakerIds.map((id, idx) => {
+                  const speakerColor = embedded ? getSpeakerAccent(idx) : speakers[id].color;
+                  return editingSpeaker === id ? (
                     <input
                       key={id}
                       autoFocus
                       defaultValue={speakers[id].name}
                       onBlur={(e) => renameSpeaker(id, e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') renameSpeaker(id, e.target.value); if (e.key === 'Escape') setEditingSpeaker(null); }}
-                      style={{ ...F, fontSize: 13, fontWeight: 600, padding: '4px 10px', borderRadius: 999, border: `1px solid ${speakers[id].color}`, outline: 'none', width: 130, color: C.ink, background: 'transparent' }}
+                      style={{ ...F, fontSize: 13, fontWeight: 600, padding: '4px 10px', borderRadius: 999, border: `1px solid ${speakerColor}`, outline: 'none', width: 130, color: C.ink, background: 'transparent' }}
                     />
                   ) : (
                     <button key={id} className={`ls-chip${idx === 0 ? ' ls-chip-hint' : ''}`} onClick={() => setEditingSpeaker(id)} title="Tap to name this voice">
-                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: speakers[id].color }} />
+                      <span style={{ width: 9, height: 9, borderRadius: '50%', background: speakerColor }} />
                       <span>{speakers[id].name}</span>
                     </button>
-                  )
-                ))}
+                  );
+                })}
                 <span style={{ fontSize: 12, opacity: 0.5, marginLeft: 4 }}>tap a voice to name it</span>
               </div>
             )}
@@ -446,18 +455,19 @@ export default function LiveScribe({ embedded = false }) {
                     const sp = speakers[s.speakerId];
                     const prev = segments[i - 1];
                     const showLabel = !prev || prev.speakerId !== s.speakerId;
+                    const speakerAccent = embedded ? getSpeakerAccent(speakerIds.indexOf(s.speakerId)) : sp.color;
                     return (
                       <div key={i} className="ls-fade">
                         {showLabel && sp && (
                           <div
                             onClick={() => setEditingSpeaker(s.speakerId)}
-                            style={{ ...DISPLAY, color: sp.color, fontWeight: 600, fontSize: 11, letterSpacing: '0.03em', textTransform: 'uppercase', marginBottom: 3, cursor: 'pointer', opacity: 0.92 }}
+                            style={{ ...DISPLAY, color: speakerAccent, fontWeight: 600, fontSize: 11, letterSpacing: '0.03em', textTransform: 'uppercase', marginBottom: 3, cursor: 'pointer', opacity: 0.92 }}
                             title="Tap to name this voice"
                           >
                             {sp.name}
                           </div>
                         )}
-                        <div style={{ borderLeft: sp ? `3px solid ${sp.color}99` : 'none', paddingLeft: sp ? 13 : 0 }}>{s.text}</div>
+                        <div style={{ borderLeft: sp ? `3px solid ${speakerAccent}99` : 'none', paddingLeft: sp ? 13 : 0 }}>{s.text}</div>
                       </div>
                     );
                   })}
@@ -467,12 +477,15 @@ export default function LiveScribe({ embedded = false }) {
             </div>
           </div>
 
-          {/* Brief */}
+          {/* Brief / Extracted (desktop CV6 shows this as right panel with "extracted" label + export button) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="ls-card" style={{ padding: '16px 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7 }}>Brief</span>
+                <span style={{ ...DISPLAY, fontWeight: 700, fontSize: 14, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7 }}>
+                  {embedded ? 'Brief' : 'Brief'}
+                </span>
                 {analyzing && <span style={{ fontSize: 12, color: C.src }}>updating…</span>}
+                {/* TODO(cv6): Export button (session export via brief.json) not yet implemented */}
               </div>
               <div style={{ marginTop: 10, fontSize: 15, lineHeight: 1.6, minHeight: 24 }}>
                 {brief.summary
@@ -497,6 +510,8 @@ export default function LiveScribe({ embedded = false }) {
               </div>
             )}
 
+            {/* TODO(cv6): "Action items" section with checkboxes (from brief.actionItems) not yet backed by API */}
+
             {brief.talkingPoints.length > 0 && (
               <div className="ls-card ls-fade" style={{ padding: '16px 18px' }}>
                 <div style={{ ...DISPLAY, fontWeight: 700, fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 8 }}>Talking points</div>
@@ -511,9 +526,9 @@ export default function LiveScribe({ embedded = false }) {
                 <div style={{ ...DISPLAY, fontWeight: 700, fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 10 }}>Quotes</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {brief.quotes.map((q, i) => (
-                    <div key={i} style={{ display: 'flex', gap: 10 }}>
-                      <span style={{ ...DISPLAY, color: '#C7BBA2', fontSize: 30, lineHeight: 0.9, fontWeight: 800 }}>&ldquo;</span>
-                      <span style={{ fontSize: 15, lineHeight: 1.55, fontWeight: 500 }}>{q}</span>
+                    <div key={i} style={{ display: 'flex', gap: 10, borderLeft: `2px solid ${C.gold}`, paddingLeft: 10, paddingTop: 0, paddingBottom: 0 }}>
+                      <span style={{ ...DISPLAY, color: embedded ? C.gold : '#C7BBA2', fontSize: 30, lineHeight: 0.9, fontWeight: 800, marginLeft: -10 }}>&ldquo;</span>
+                      <span style={{ fontSize: 15, lineHeight: 1.55, fontWeight: 500, fontStyle: 'italic' }}>{q}</span>
                     </div>
                   ))}
                 </div>
@@ -535,6 +550,8 @@ export default function LiveScribe({ embedded = false }) {
               </div>
             )}
 
+            {/* TODO(cv6): "Decisions" section (from brief.decisions) not yet backed by API */}
+
             {brief.questions.length > 0 && (
               <div className="ls-card ls-fade" style={{ padding: '16px 18px' }}>
                 <div style={{ ...DISPLAY, fontWeight: 700, fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase', opacity: 0.7, marginBottom: 8 }}>Questions to ask</div>
@@ -546,6 +563,9 @@ export default function LiveScribe({ embedded = false }) {
           </div>
         </div>
       </div>
+
+      {/* TODO(cv6): Mobile persistent recording mini-bar above nav (58px, shows timer + waveform + pause/stop buttons).
+          Requires integration with HomeView to place above mobile nav on "scribe" tool view. Currently no backing in CV6 design-to-code for mobile nav overlay positioning. */}
     </div>
   );
 }
