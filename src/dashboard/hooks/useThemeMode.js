@@ -19,7 +19,7 @@ const KEY_USER_SET = 'cv4-theme-user-set'
 const KEY_GLASS_INDEX = 'cv4-glass-index'
 // How many glass backdrops there are. Keep in sync with CORNER_GLASS_BACKDROPS
 // in cv4/GlassBackdrop.jsx.
-export const GLASS_BACKDROP_COUNT = 8
+export const GLASS_BACKDROP_COUNT = 10
 // One uniform dark-frosted glass card style (2026-06-18, Patrik: "listen to the
 // design" — the design is a single translucent dark-frosted glass, no white
 // light-card variant). The cycle is one stop per backdrop photo; the card style

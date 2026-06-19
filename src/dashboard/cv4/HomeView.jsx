@@ -4813,7 +4813,7 @@ export default function HomeView({
                 <img
                   src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'}
                   alt="Corner"
-                  style={{ height: '36px', width: '36px', flexShrink: 0, display: 'block', objectFit: 'contain' }}
+                  style={{ height: '36px', width: '36px', flexShrink: 0, display: 'block', objectFit: 'contain', transform: 'translateY(-7px)' }}
                 />
               )}
               <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1, ...(cv6 ? { minWidth: 0, whiteSpace: 'nowrap' } : {}) }}>
