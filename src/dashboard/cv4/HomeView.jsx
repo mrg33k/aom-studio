@@ -2536,6 +2536,7 @@ export default function HomeView({
   onCatchupOpenRoom, // R64: open a catch-up item's room (routes to the in-page Chat tool via CornerVG handleSelect*).
   onCatchupViewAll, // R75: open the full Catch Up modal (the home column is a 5-card quick tool; overflow lives here).
   onCatchupDismiss, // R98: mark a catch-up item handled (clears it from the board) — harvested from the mobile triage design.
+  onCatchupReply, // R110: send a real reply to a catch-up item's room (CornerVG handleCatchupReply → supabase + mark read).
 }) {
   // Pin state — keyed by user id
   const userId = user?.id
@@ -2963,6 +2964,16 @@ export default function HomeView({
   }, [])
   // R183: active card index for the mobile Catch Up carousel (drives the dots).
   const [catchupIdx, setCatchupIdx] = useState(0)
+  const [catchupReplyText, setCatchupReplyText] = useState('') // R110: custom reply on the top catch-up card
+  // R110: reply to the top catch-up card (real send via onCatchupReply), then resolve + advance.
+  const replyToCatchup = useCallback((notif, text) => {
+    const t = (text || '').trim()
+    if (!t || !notif) return
+    if (onCatchupReply) onCatchupReply(notif, t)
+    setCatchupReplyText('')
+    setDismissedCatchup(prev => { const next = new Set(prev); next.add(notif.id); return next })
+    if (onCatchupDismiss) onCatchupDismiss(notif)
+  }, [onCatchupReply, onCatchupDismiss])
   const TOOL_TABS = useMemo(() => ([
     { key: 'organize', label: 'Organize' },
     { key: 'tracker', label: 'Tracker' }, { key: 'command', label: 'Command' }, { key: 'scribe', label: 'Live Scribe' },
@@ -3609,39 +3620,44 @@ export default function HomeView({
               )}
             </div>
 
-            {/* TODO(cv6): wire smart-reply source for catch-up quick replies — currently no per-card reply data in catchupNotifications */}
-
-            {/* Action row — only if cards remain. position+zIndex so the top card's actions
-                sit ABOVE the stacked cards + their drop shadow (Patrik: buttons were buried). */}
+            {/* Top-card actions (Patrik): suggested quick replies + a custom reply + Open in chat
+                + resolve — ALL act on the TOP card and advance on action. zIndex sits above the
+                stacked cards. Replies send for REAL via onCatchupReply (CornerVG → supabase, marks
+                read). TODO(cv6): make the quick replies context-aware via a smart-reply model —
+                light heuristic (ask vs not) for now, no fabricated per-card data. */}
             {top.length > 0 && (
-              <div style={{ display: 'flex', gap: '8px', position: 'relative', zIndex: 40 }}>
-                <button onClick={() => { top.length > 0 && onCatchupOpenRoom && onCatchupOpenRoom(top[0]) }}
-                  style={{
-                    flex: 1, height: '44px', borderRadius: '12px',
-                    border: 'none',
-                    background: 'var(--cv6-accent-primary)',
-                    color: '#fff',
-                    fontSize: '13.5px', fontWeight: '600',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                    fontFamily: 'inherit',
-                  }}>
-                  Open in chat
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                </button>
-                <button onClick={() => { top.length > 0 && setDismissedCatchup(prev => { const next = new Set(prev); next.add(top[0].id); return next }); onCatchupDismiss && onCatchupDismiss(top[0]) }}
-                  style={{
-                    width: '44px', height: '44px', flex: 'none',
-                    borderRadius: '12px',
-                    border: '1px solid var(--cv6-accent-success-weak)',
-                    background: 'var(--cv6-accent-success-weak)',
-                    color: 'var(--cv6-accent-success)',
-                    cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontFamily: 'inherit',
-                  }}>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 40 }}>
+                {onCatchupReply && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {(isAsk(top[0].messagePreview) ? ['Sounds good', 'Tell me more'] : ['Thanks', 'On it']).map(q => (
+                      <button key={q} onClick={() => replyToCatchup(top[0], q)}
+                        style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer' }}>
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {onCatchupReply && (
+                  <input
+                    value={catchupReplyText}
+                    onChange={e => setCatchupReplyText(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); replyToCatchup(top[0], catchupReplyText) } }}
+                    placeholder={`Reply to ${top[0].senderName || 'agent'}…`}
+                    style={{ height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface2)', padding: '0 14px', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }}
+                  />
+                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={() => { onCatchupOpenRoom && onCatchupOpenRoom(top[0]) }}
+                    style={{ flex: 1, height: '44px', borderRadius: '12px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontFamily: 'inherit' }}>
+                    Open in chat
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                  </button>
+                  <button onClick={() => { setDismissedCatchup(prev => { const next = new Set(prev); next.add(top[0].id); return next }); onCatchupDismiss && onCatchupDismiss(top[0]) }}
+                    title="Resolve"
+                    style={{ width: '44px', height: '44px', flex: 'none', borderRadius: '12px', border: '1px solid var(--cv6-accent-success-weak)', background: 'var(--cv6-accent-success-weak)', color: 'var(--cv6-accent-success)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -2964,6 +2964,7 @@ export default function CornerVG() {
                 onCatchupOpenRoom={handleCatchupOpenRoom}
                 onCatchupViewAll={() => setCatchupOpen(true)}
                 onCatchupDismiss={handleCatchupSkip}
+                onCatchupReply={handleCatchupReply}
                 commandDeckSlot={cv6Mode ? (
                   <CommandTracker
                     worldId={worldId}
