@@ -182,6 +182,19 @@
   color: #0f1626 !important;
 }
 
+/* Chat message bubbles (agent side) need a near-opaque backing in glass so dense
+   message text reads over the photo backdrop instead of letting it bleed through.
+   Dark/light themes already use a solid --cv6-surface, so this only fires in glass. */
+[data-theme="glass"] [data-cv6] .cv6-convo-bubble-agent {
+  background: rgba(18, 22, 28, 0.9) !important;
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+}
+[data-theme="glass"][data-glass-card="light"] [data-cv6] .cv6-convo-bubble-agent {
+  background: rgba(248, 249, 252, 0.92) !important;
+  color: #0f1626 !important;
+}
+
 /* The SELECTED tool tile (inline accent background) keeps white text + icon in
    BOTH glass styles so the active tool reads on its blue fill. This wins over
    the surface rule above. */

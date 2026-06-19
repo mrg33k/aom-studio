@@ -4529,6 +4529,7 @@ export default function HomeView({
                         }}
                       >
                         <div
+                          className={msg.sender === 'user' ? undefined : 'cv6-convo-bubble-agent'}
                           style={{
                             maxWidth: '75%',
                             padding: '10px 14px',
