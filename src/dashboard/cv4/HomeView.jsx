@@ -2196,7 +2196,7 @@ function OrganizeBrowser({ projects }) {
   const previewCol = <div style={{ ...colStyle, borderRight: 'none' }}><div style={headStyle}>Preview</div><FilePreviewPanel node={selFile} /></div>
 
   if (isNarrow) {
-    const wrap = (child, cap) => <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', maxHeight: cap, overflowY: 'auto' }}>{child}</div>
+    const wrap = (child, cap) => <div className="hm-organize-grid" style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', maxHeight: cap, overflowY: 'auto' }}>{child}</div>
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {wrap(projCol, '26vh')}{wrap(filesCol, '30vh')}{wrap(previewCol, 'none')}
@@ -2205,7 +2205,7 @@ function OrganizeBrowser({ projects }) {
   }
   return (
     <ResizableBox minHeight={460} storageKey="organize-browser">
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(170px,1fr) minmax(200px,1.2fr) minmax(280px,1.9fr)', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+      <div className="hm-organize-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(170px,1fr) minmax(200px,1.2fr) minmax(280px,1.9fr)', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
         {projCol}{filesCol}{previewCol}
       </div>
     </ResizableBox>
