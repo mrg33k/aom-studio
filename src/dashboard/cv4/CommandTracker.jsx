@@ -638,13 +638,16 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   }, [load, editingGoalSlug, savingGoal, replySending])
 
   // Open the detail pane on the first room by default (the CV6 design shows it
-  // open, not blank, until you pick another). Desktop only; mobile starts on the list.
+  // open, not blank). Desktop only; mobile starts on the list. Until the user
+  // clicks a row, FOLLOW the first room as the sorted list settles (an early load
+  // can put a different room first, so don't lock onto a stale pick).
+  const userPickedRow = useRef(false)
   useEffect(() => {
     if (isNarrow) return
-    if (selectedRowSlug) return
+    if (userPickedRow.current) return
     if (!Array.isArray(rows) || rows.length === 0) return
     const first = rows.find((r) => !r.isWorkerRow) || rows[0]
-    if (first?.slug) setSelectedRowSlug(first.slug)
+    if (first?.slug && first.slug !== selectedRowSlug) setSelectedRowSlug(first.slug)
   }, [rows, selectedRowSlug, isNarrow])
 
   const toggleRoutine = useCallback(async (routineId, wantOn) => {
@@ -822,12 +825,14 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
   const selectedRow = selectedRowSlug ? rows.find((r) => r.slug === selectedRowSlug) : null
 
   // Header counts for the "Command / Goal ledger · N rooms · N live" title + the
-  // live/idle/blocked pills (matches the CV6 design header). Real counts off the
-  // ledger rows (rooms only, not worker rows).
-  const roomRows = rows.filter((r) => !r.isWorkerRow)
-  const cLive = roomRows.filter((r) => r.status === 'active' || r.status === 'working').length
-  const cIdle = roomRows.filter((r) => r.status === 'idle').length
-  const cBlocked = roomRows.filter((r) => r.status === 'blocked' || r.status === 'error').length
+  // live/idle/blocked pills (matches the CV6 design header). The pills count EVERY
+  // displayed row by its badge status (worker rows sort to the top and show
+  // WORKING/BLOCKED, so counting rooms-only made the pills disagree with what's on
+  // screen — e.g. "0 live" next to a WORKING row). "N rooms" stays the room count.
+  const roomCount = rows.filter((r) => !r.isWorkerRow).length
+  const cLive = rows.filter((r) => r.status === 'active' || r.status === 'working').length
+  const cIdle = rows.filter((r) => r.status === 'idle').length
+  const cBlocked = rows.filter((r) => r.status === 'blocked' || r.status === 'error').length
 
   return (
     <div
@@ -927,7 +932,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, padding: '18px 24px 14px' }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)' }}>Command</div>
-                <div style={{ fontSize: 12.5, color: 'var(--cv6-text-secondary)', marginTop: 3 }}>Goal ledger · {roomRows.length} {roomRows.length === 1 ? 'room' : 'rooms'} · {cLive} live</div>
+                <div style={{ fontSize: 12.5, color: 'var(--cv6-text-secondary)', marginTop: 3 }}>Goal ledger · {roomCount} {roomCount === 1 ? 'room' : 'rooms'} · {cLive} live</div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 {cLive > 0 && (
@@ -1002,6 +1007,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               if (!isWorkerRow) {
                 // Master-detail: select this goal to open the detail panel on the right.
                 // (Do NOT jump to the room here — that navigated away before the panel showed.)
+                userPickedRow.current = true
                 setSelectedRowSlug(row.slug)
                 setReplyOpenSlug(null)
               }
