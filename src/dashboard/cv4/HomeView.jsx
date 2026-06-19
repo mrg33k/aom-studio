@@ -3789,6 +3789,9 @@ export default function HomeView({
   // <=720px. MOBILE_MORE_KEYS = the tools that move into the sheet.
   const MOBILE_MORE_KEYS = useMemo(() => new Set(['support', 'tracker', 'command', 'scribe']), [])
   const [moreOpen, setMoreOpen] = useState(false)
+  // R-MOBILE-NAV 2026-06-19 (Patrik): mobile gets a top-left menu icon that opens a left
+  // side-nav drawer listing every tool vertically with its title (replaces the bottom dock).
+  const [navDrawerOpen, setNavDrawerOpen] = useState(false)
   // R22: per-instance ref for the Home region so keyboard nav wires to THIS instance
   // (the gallery renders Home twice; document.querySelector grabbed only the first).
   const homeRef = useRef(null)
@@ -4238,7 +4241,7 @@ export default function HomeView({
         {catchupNotifications.length > 0 && (
           <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
         )}
-        {false && isNarrowHV && catchupNotifications.length > 1 && (
+        {isNarrowHV && catchupNotifications.length > 1 && (
           <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>swipe →</span>
         )}
       </div>
@@ -4278,10 +4281,10 @@ export default function HomeView({
         // horizontal snap carousel of 296px cards (matches Corner Mobile.dc.html
         // Direction A, themed by the live light/dark/glass picker). Desktop keeps
         // the dense vertical list below. swipe → hint + pagination dots.
-        // R-MOBILE-B 2026-06-19 (Patrik: "we want option B, the catch up like we do now on
-        // desktop"). Mobile no longer uses the Direction-A horizontal carousel — it falls
-        // through to the desktop stacked-deck render below, so phone + desktop catch-up match.
-        if (false && isNarrowHV) {
+        // R-MOBILE-B 2026-06-19 (Patrik: "cards in catch up not swipeable"). Mobile uses the
+        // horizontal swipe carousel (Corner Mobile.dc.html Direction A/B — both are swipe decks,
+        // differing only in surface style). Desktop keeps the stacked deck below.
+        if (isNarrowHV) {
           const STEP = 308 // 296 card + 12 gap
           return (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -4796,10 +4799,12 @@ export default function HomeView({
                     <span style={{ position: 'absolute', top: '7px', right: '8px', width: '7px', height: '7px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '2px solid var(--cv6-ground)' }} />
                   )}
                 </button>
-                {/* Avatar — gradient circle with the user's initial */}
+                {/* Avatar — gradient circle with the user's initial. On mobile (R-MOBILE-NAV,
+                    Patrik) it's the menu trigger: tap opens the right side-nav drawer. Desktop
+                    keeps it as the settings link. */}
                 <button
-                  title="User settings"
-                  onClick={() => window.location.href = '/dashboard?view=settings'}
+                  title={isNarrowHV ? 'Menu' : 'User settings'}
+                  onClick={() => isNarrowHV ? setNavDrawerOpen(true) : (window.location.href = '/dashboard?view=settings')}
                   style={{
                     width: '38px', height: '38px', borderRadius: '50%', border: 'none',
                     background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', cursor: 'pointer', color: '#fff',
@@ -4931,7 +4936,7 @@ export default function HomeView({
                     <span style={{ position: 'absolute', top: '5px', right: '6px', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '1.5px solid var(--cv6-surface)' }} />
                   )}
                 </button>
-                <button title="User settings" onClick={() => window.location.href = '/dashboard?view=settings'}
+                <button title={isNarrowHV ? 'Menu' : 'User settings'} onClick={() => isNarrowHV ? setNavDrawerOpen(true) : (window.location.href = '/dashboard?view=settings')}
                   style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', padding: 0, transition: 'transform 120ms ease' }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}>
@@ -5123,6 +5128,58 @@ export default function HomeView({
                     {t.label}
                   </button>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* R-MOBILE-NAV 2026-06-19 (Patrik): the mobile side-nav drawer. Opened by tapping the
+              profile picture (top-right); slides in from the RIGHT. Lists every tool vertically
+              with its title. Tap a tool to open it + close the drawer. Mobile only — the avatar
+              only calls setNavDrawerOpen on mobile (isNarrowHV), and the drawer renders nothing
+              unless open. */}
+          {navDrawerOpen && (
+            <div onClick={() => setNavDrawerOpen(false)}
+              style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'flex-end' }}>
+              <div onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: 'min(82vw, 320px)', height: '100%', background: 'var(--cv6-surface)',
+                  borderLeft: '1px solid var(--cv6-divider)', boxShadow: '-12px 0 40px rgba(0,0,0,0.35)',
+                  display: 'flex', flexDirection: 'column',
+                  paddingTop: 'calc(14px + env(safe-area-inset-top, 0px))',
+                  animation: 'cv6-drawer-in 0.22s cubic-bezier(.22,1,.36,1)',
+                }}>
+                {/* Header: profile + name + close */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '0 16px 14px', borderBottom: '1px solid var(--cv6-divider)' }}>
+                  <span style={{ width: '40px', height: '40px', borderRadius: '50%', flex: 'none', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 600 }}>
+                    {(displayName(user) || 'U').trim().charAt(0).toUpperCase()}
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: '15px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName(user) || 'You'}</span>
+                  <button onClick={() => setNavDrawerOpen(false)} aria-label="Close menu"
+                    style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '9px', border: 'none', background: 'transparent', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                {/* Tools, vertical, with titles */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {HOME_TOOLS.map(t => {
+                    const on = selectedTool === t.key
+                    return (
+                      <button key={t.key} onClick={() => { setNavDrawerOpen(false); openTool(t.key) }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '14px', width: '100%', textAlign: 'left',
+                          padding: '13px 14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                          background: on ? 'var(--cv6-accent-primary)' : 'transparent',
+                          color: on ? '#ffffff' : 'var(--cv6-text-primary)',
+                          fontFamily: 'inherit', fontSize: '16px', fontWeight: 600,
+                        }}>
+                        <svg viewBox="0 0 24 24" width="22" height="22" fill={t.key === 'support' ? 'none' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+                          {t.svg}
+                        </svg>
+                        {t.label}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           )}

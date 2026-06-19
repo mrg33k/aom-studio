@@ -876,14 +876,29 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
      5 tools become invisible on mobile /cvg. Lift the pill above the dock so every
      tab stays visible. ID + !important beats the element's inline bottom. */
   #cvg-surface-badge { bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important; }
-  /* keep page content clear of the fixed dock.
-     !important: the max-width:767px block below sets `padding: 16px` (shorthand),
-     which is later in source and same specificity, so it would otherwise reset
-     padding-bottom to 16px and the 80px fixed dock would cover the chat input. */
+  /* R-MOBILE-NAV 2026-06-19 (Patrik): the bottom dock is replaced by the right side-nav
+     drawer (opened from the profile picture). Hide the dock + its More toggle/sheet entirely
+     on mobile. */
+  [data-cv6] .hm-tools-row,
+  [data-cv6] .hm-tools-block--home,
+  [data-cv6] .hm-tool-more,
+  [data-cv6] .hm-more-backdrop { display: none !important; }
+  /* No dock now, so the shell only needs a small bottom inset for the home indicator. */
   [data-cv6] [data-cv4-home] .hm-shell {
-    padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
   }
 }
+
+/* R-MOBILE-NAV 2026-06-19 (Patrik): PWA/standalone was cut off under the iOS status bar —
+   the home top (greeting + icons) had no top inset. Pad the home top by the safe area on
+   mobile so nothing hides behind the status bar / notch. env() is 0 on desktop, so scope to
+   mobile anyway to avoid touching desktop. */
+@media (max-width: 768px) {
+  [data-cv6][data-cv4-home] { padding-top: env(safe-area-inset-top, 0px); }
+}
+
+/* Side-nav drawer slide-in from the right. */
+@keyframes cv6-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
 [data-cv6] [data-cv4-home] .hm-agent-name {
   flex: 1;
