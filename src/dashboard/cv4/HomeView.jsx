@@ -3012,6 +3012,17 @@ export default function HomeView({
     setChatInitialRoom(initial)
     setSelectedTool('chat')
   }, [openChatRequest?.nonce])
+  // Tablet/iPad (768-1024): the home conversation quick-view column is collapsed (cv6.css), so a
+  // room tapped in the home All-Rooms list would open nothing. Route any room selected at tablet
+  // width into the Chat tool's full-screen drill-in. (<768 opens chat via its own mobile path;
+  // >1024 keeps the desktop quick-view.) Fixes the iPad home room-tap dead-end.
+  useEffect(() => {
+    if (!cv6 || !selectedRoom || typeof window === 'undefined') return
+    const w = window.innerWidth
+    if (w < 768 || w > 1024) return
+    openChatToolForRoom(selectedRoom)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRoom])
   // R82: an agent opens a tool on the user's screen (cv6-view channel → CornerVG → here).
   useEffect(() => {
     if (!openToolRequest || !openToolRequest.tool) return
