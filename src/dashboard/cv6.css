@@ -1344,7 +1344,14 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
      is the one case that overrides an inline style).
      minmax(0,1fr) (not 1fr) so a long unbreakable string — e.g. an attached filename —
      can't blow the track wider than the viewport and clip cards off the right edge. */
-  [data-cv6] .hm-three-column-grid { display:flex; flex-direction:column; gap:30px !important; min-height:0; height:auto !important; }
+  /* R-MOBILE-B 2026-06-19: the home shell is display:grid; on mobile its single auto track
+     sized to the All Rooms column's max-content (~624px) and overflowed the 390px viewport,
+     dragging the catch-up column wide too (card text, second quick-reply chip, and Open-in-chat
+     got clipped off the right edge). On the phone the shell is a single stacked column, so make
+     it a plain block — the track-to-content expansion goes away and everything fits the width. */
+  [data-cv6] [data-cv4-home] .hm-shell { display:block !important; }
+  [data-cv6] .hm-three-column-grid { display:flex; flex-direction:column; gap:30px !important; min-height:0; height:auto !important; width:100%; max-width:100%; min-width:0; }
+  [data-cv6] .hm-three-column-grid > div { min-width:0 !important; max-width:100% !important; overflow-x:hidden; }
   [data-cv6] .hm-three-column-grid > div:nth-child(1),
   [data-cv6] .hm-three-column-grid > div:nth-child(2),
   [data-cv6] .hm-three-column-grid > div:nth-child(3) {
