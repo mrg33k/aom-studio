@@ -4232,64 +4232,63 @@ export default function HomeView({
                   R53 removed Explorer (duplicated the projects/missions tree on the Home body)
                   and Files (duplicated the Files tool in the Tools row) — both were unlabeled
                   duplicate destinations. CV6 R71: readded Search, Theme, and Help/Info icons. */}
-              {/* R-PIXEL-LOOP R1: wide "Search anything" pill on the left, matching
-                  Home desktop.dc.html. Opens the global search overlay. */}
+              {/* Primary group (left): compact Search icon + Theme cycle button. Patrik prefers
+                  the space-saving icons over the wide pill / segmented switch (2026-06-18). */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button
                   title="Search anything"
                   onClick={() => setShowSearch(true)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: '10px',
-                    height: '38px', minWidth: '260px', padding: '0 14px',
-                    borderRadius: '10px', border: '1px solid var(--cv6-divider)',
-                    background: 'var(--cv6-surface)', cursor: 'pointer',
-                    color: 'var(--cv6-text-secondary)', fontFamily: 'inherit', fontSize: '14px',
-                    transition: 'all 120ms ease',
+                    width: '38px', height: '38px', borderRadius: '11px', border: 'none',
+                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0,
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; }}
                 >
-                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
                   </svg>
-                  <span style={{ flex: 1, textAlign: 'left' }}>Search anything</span>
+                </button>
+                {/* Theme cycle: sun (light) → moon (dark) → glass orb (glass). */}
+                <button
+                  title="Switch theme"
+                  aria-label="Switch theme"
+                  data-theme-mode={themeMode}
+                  onClick={() => cycleTheme()}
+                  style={{
+                    width: '38px', height: '38px', borderRadius: '11px', border: 'none',
+                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'all 120ms ease', padding: 0,
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; }}
+                >
+                  {themeMode === 'light' ? (
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                  ) : themeMode === 'dark' ? (
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="10" r="7"/>
+                      <path d="M8.4 7.6a4.6 4.6 0 0 1 3-1.9" opacity="0.85"/>
+                      <path d="M9 17.4h6M9.6 17.4l-1 3.1M14.4 17.4l1 3.1"/>
+                    </svg>
+                  )}
                 </button>
               </div>
 
               {/* Divider */}
               <div style={{ flex: 1 }}></div>
 
-              {/* Secondary group (right): Theme switch + Notifications + Avatar.
-                  R-PIXEL-LOOP R1 (Patrik): the Claude dc.html top bar shows a Dark|Light|Glass
-                  segmented switch on the right (Dark active = accent fill), then bell + avatar.
-                  Supersedes the earlier single-cycle-icon decision. */}
+              {/* Secondary group (right): Notifications + Avatar. */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                {/* Theme segmented switch — Dark | Light | Glass */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '2px',
-                  padding: '3px', borderRadius: '10px',
-                  background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
-                }}>
-                  {[['dark', 'Dark'], ['light', 'Light'], ['glass', 'Glass']].map(([m, label]) => {
-                    const active = themeMode === m
-                    return (
-                      <button
-                        key={m}
-                        onClick={() => { if (m === 'glass' && themeMode === 'glass') { cycleTheme() } else { setTheme(m) } }}
-                        title={m === 'glass' ? 'Glass theme (click again to change backdrop)' : `${label} theme`}
-                        style={{
-                          height: '30px', padding: '0 12px', borderRadius: '7px', border: 'none',
-                          background: active ? 'var(--cv6-accent-primary)' : 'transparent',
-                          color: active ? '#fff' : 'var(--cv6-text-secondary)',
-                          fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
-                          transition: 'all 120ms ease',
-                        }}
-                        onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
-                        onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}
-                      >{label}</button>
-                    )
-                  })}
-                </div>
                 {/* Notifications bell — transparent, 38x38, unread accent dot */}
                 <button
                   title="Notifications"

@@ -40,6 +40,12 @@ function parseMarkdown(text) {
     const cleaned = String(text).replace(/\[staged_draft[^\]]*\](\([^)]*\))?/gi, '').replace(/[ \t]{2,}/g, ' ').trim()
     let html = marked.parse(preprocessBareUrls(cleaned))
     html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Strip inline styling that leaks in from quoted emails / pasted HTML (e.g. a signature's
+    // green links + colored blockquotes) so every message renders in the CV6 design tokens, not
+    // the source's own colors. Patrik 2026-06-18: "the messages in the chat aren't designed."
+    html = html.replace(/\sstyle="[^"]*"/gi, '').replace(/\sstyle='[^']*'/gi, '')
+    html = html.replace(/\s(?:color|bgcolor|face|align|width|height)="[^"]*"/gi, '')
+    html = html.replace(/<\/?(?:font|center)[^>]*>/gi, '')
     return html
   } catch {
     return text
