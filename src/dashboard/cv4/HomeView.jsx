@@ -3406,6 +3406,18 @@ export default function HomeView({
     openChatToolForRoom(selectedRoom)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoom])
+  // R-PIXEL-LOOP R2: the Claude design's Home always shows a populated conversation in the right
+  // column — never an empty "Select a mission" void. On desktop, default-select the first agent on
+  // mount so the column is alive on load. Guarded to >1024 so it does NOT auto-open the Chat tool at
+  // tablet width (the effect above routes tablet selections into the full Chat tool).
+  useEffect(() => {
+    if (!cv6 || selectedRoom || typeof window === 'undefined') return
+    if (window.innerWidth <= 1024) return
+    const first = Array.isArray(visibleAgents) && visibleAgents.length ? visibleAgents[0] : null
+    if (!first) return
+    setSelectedRoom({ agent: { slug: first.slug, name: first.name || first.slug } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cv6, visibleAgents])
   // R82: an agent opens a tool on the user's screen (cv6-view channel → CornerVG → here).
   useEffect(() => {
     if (!openToolRequest || !openToolRequest.tool) return
