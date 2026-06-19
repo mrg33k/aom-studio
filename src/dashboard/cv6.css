@@ -23,9 +23,13 @@
   --cv6-accent-primary: #0066ff;
   --cv6-accent-primary-hover: #0052cc;
   --cv6-accent-primary-active: #003d99;
+  --cv6-accent-weak: rgba(0, 102, 255, 0.1);
   --cv6-accent-success: #10b981;
+  --cv6-accent-success-weak: rgba(16, 185, 129, 0.16);
   --cv6-accent-warn: #f59e0b;
+  --cv6-accent-warn-weak: rgba(245, 158, 11, 0.16);
   --cv6-accent-error: #ef4444;
+  --cv6-accent-error-weak: rgba(239, 68, 68, 0.16);
 
   --cv6-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.12);
   --cv6-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.16);
@@ -80,9 +84,13 @@
   --cv6-accent-primary: #3b82f6;
   --cv6-accent-primary-hover: #60a5fa;
   --cv6-accent-primary-active: #1d4ed8;
+  --cv6-accent-weak: rgba(59, 130, 246, 0.18);
   --cv6-accent-success: #34d399;
+  --cv6-accent-success-weak: rgba(52, 211, 153, 0.16);
   --cv6-accent-warn: #fbbf24;
+  --cv6-accent-warn-weak: rgba(251, 191, 36, 0.16);
   --cv6-accent-error: #f87171;
+  --cv6-accent-error-weak: rgba(248, 113, 113, 0.16);
 
   --cv6-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.32), 0 8px 32px rgba(0, 0, 0, 0.48);
   --cv6-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.48);

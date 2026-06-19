@@ -1042,10 +1042,10 @@ const TRACKER_TEMPLATES = {
   ] },
   blank: { label: 'Blank sheet', columns: ['Column 1', 'Column 2', 'Column 3'], statusCol: null, seed: [{ 'Column 1': '', 'Column 2': '', 'Column 3': '' }] },
 }
-const STATUS_COLORS = { 'Open': 'var(--cv6-error)', 'In progress': 'var(--cv6-warn)', 'Done': 'var(--cv6-success)' }
-const STATUS_BG_COLORS = { 'Open': 'var(--cv6-error-weak)', 'In progress': 'var(--cv6-warn-weak)', 'Done': 'var(--cv6-success-weak)' }
+const STATUS_COLORS = { 'Open': 'var(--cv6-accent-error)', 'In progress': 'var(--cv6-accent-warn)', 'Done': 'var(--cv6-accent-success)' }
+const STATUS_BG_COLORS = { 'Open': 'var(--cv6-accent-error-weak)', 'In progress': 'var(--cv6-accent-warn-weak)', 'Done': 'var(--cv6-accent-success-weak)' }
 // Priority 1 (now) -> 5 (later). Warm/urgent at the top, cool/calm at the bottom.
-const PRIORITY_COLORS = { 1: 'var(--cv6-error)', 2: 'var(--cv6-warn)', 3: 'var(--cv6-accent-primary)', 4: '#6B7B8C', 5: '#9AA7B4' }
+const PRIORITY_COLORS = { 1: 'var(--cv6-accent-error)', 2: 'var(--cv6-accent-warn)', 3: 'var(--cv6-accent-primary)', 4: 'var(--cv6-text-secondary)', 5: 'var(--cv6-text-tertiary)' }
 
 // R88: weighted column tracks so dense trackers stay readable. Short fields
 // (status/severity/owner) stay narrow; long text fields (bug/expected/notes)
@@ -1275,9 +1275,9 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         </div>
       )}
       {trackers.map(t => (
-        <button key={t.id} onClick={() => { setSelId(t.id); if (isNarrow) setMobilePane('sheet') }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '11px 14px', margin: '2px 6px', borderRadius: '6px', border: '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit', background: selId === t.id ? 'hsla(220,90%,55%,0.10)' : 'transparent' }}
+        <button key={t.id} onClick={() => { setSelId(t.id); if (isNarrow) setMobilePane('sheet') }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '11px 14px', margin: '2px 6px', borderRadius: '6px', border: '2px solid transparent', cursor: 'pointer', fontFamily: 'inherit', background: selId === t.id ? 'var(--cv6-accent-weak)' : 'transparent' }}
           onMouseEnter={(e) => { if (selId !== t.id) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={(e) => { if (selId !== t.id) e.currentTarget.style.background = 'transparent' }}>
-        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: t.on ? '#10B981' : 'var(--cv6-text-tertiary)', flexShrink: 0 }} />
+        <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: t.on ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)', flexShrink: 0 }} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.name}</span>
           <span style={{ display: 'block', fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{t.scope} · {TRACKER_TEMPLATES[t.template].label}</span>
@@ -1303,14 +1303,14 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
             )}
           </div>
-          <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', marginTop: '3px' }}>{sel.scope} · {sel.id === 'cv6-bugs' ? 'Bug tracker' : 'Tracker'} · {sel.rows.length} {sel.rows.length === 1 ? 'item' : 'items'}{sel.rows.filter(r => String(r.Status || '').toLowerCase() !== 'done').length > 0 ? ` open` : ''}</div>
+          <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', marginTop: '3px' }}>{sel.scope} · {sel.id === 'cv6-bugs' ? 'Bug tracker' : 'Tracker'} · {sel.rows.length} {sel.rows.length === 1 ? 'item' : 'items'} open</div>
         </div>
         <button onClick={() => { if (sel.id === 'cv6-bugs') setAddingBug(v => !v); else addRow() }} style={{ height: '38px', padding: '0 16px', borderRadius: '10px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '13.5px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
           {sel.id === 'cv6-bugs' ? 'New bug' : 'New row'}
         </button>
       </div>
-      {sel.on && <div style={{ padding: '8px 14px', fontSize: '12px', color: '#10B981', background: 'rgba(16,185,129,0.08)', borderBottom: '1px solid var(--cv6-divider)' }}>Agent is watching this tracker and working items toward done.</div>}
+      {sel.on && <div style={{ padding: '8px 14px', fontSize: '12px', color: 'var(--cv6-accent-success)', background: 'var(--cv6-accent-success-weak)', borderBottom: '1px solid var(--cv6-divider)' }}>Agent is watching this tracker and working items toward done.</div>}
       {sel.id === 'cv6-bugs' && addingBug && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)' }}>
           <input value={bugDraft.page} onChange={e => setBugDraft(d => ({ ...d, page: e.target.value }))} placeholder="Page" style={{ width: '110px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
@@ -1328,7 +1328,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
       )}
       <div style={{ flex: 1, overflow: 'auto' }} onMouseEnter={() => setSheetFocused(true)} onMouseLeave={() => setSheetFocused(false)}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', height: '34px', borderBottom: '1px solid var(--cv6-hair)', paddingLeft: '24px', paddingRight: '24px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1, fontSize: '11px', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', height: '34px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1, fontSize: '11px', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>
             {sel.columns.length > 0 && (
               <>
                 <div style={{ flex: 1, cursor: 'pointer', userSelect: 'none' }} onClick={() => { setSortDir(d => sortCol === sel.columns[0] ? -d : 1); setSortCol(sel.columns[0]); setExpandedRow(null) }}>
@@ -1373,8 +1373,9 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
             return displayRows.map(({ row, origIndex }) => {
             const ri = origIndex
             const isExp = expandedRow === ri
+            const isSelected = expandedRow === ri && sel.live
             return (
-            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'flex', alignItems: 'center', minHeight: '60px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', cursor: sel.live ? 'pointer' : 'default', background: isExp ? 'var(--cv6-surface-hover)' : 'transparent', margin: isExp ? '0 -8px' : '0', borderRadius: isExp ? '8px' : '0' }}>
+            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'flex', alignItems: 'center', height: '60px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', cursor: sel.live ? 'pointer' : 'default', background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', outline: isSelected ? '2px solid var(--cv6-accent-primary)' : 'none', outlineOffset: isSelected ? '-2px' : 'auto', margin: isExp ? '0 -8px' : '0', borderRadius: isExp ? '8px' : '0', transition: 'background 120ms ease' }}>
               {sel.columns.length > 0 && (
                 <>
                   <div key={sel.columns[0]} style={{ flex: 1, minWidth: 0, paddingRight: '12px', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
