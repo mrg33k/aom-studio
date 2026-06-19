@@ -1267,7 +1267,13 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
         <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--cv6-ground)' }}>
           {openItem ? (
             <div style={{ width: '100%', maxWidth: '520px' }}>
-              <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} style={{ width: '100%' }} />
+              {/* R-QA 2026-06-19: review-queue emits an ABSOLUTE path, but
+                  /api/dashboard/project-file rejects absolute paths (it wants a
+                  path relative to the AOM-EA root, starting "corner/"). That 400
+                  was the "Could not open this file" red error in the center. Strip
+                  to the relative root so the document actually renders. Same
+                  real-file machinery Organize uses. */}
+              <FilePreviewPanel node={{ name: openItem.item, path: (() => { const p = openItem.path || ''; const i = p.indexOf('corner/'); return i >= 0 ? p.slice(i) : p })(), isFile: true }} style={{ width: '100%' }} />
             </div>
           ) : (
             <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center' }}>Select an item to preview</div>
