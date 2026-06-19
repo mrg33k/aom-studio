@@ -2918,7 +2918,7 @@ export default function HomeView({
 
   // Theme cycle for the home top-bar toggle: light → dark → glass[0..N-1] → light.
   // Owned by useThemeMode so it persists + drives the parent's GlassBackdrop.
-  const { mode: themeMode, cycleTheme, glassIndex, glassVariantCount, glassCard } = useThemeMode()
+  const { mode: themeMode, cycleTheme, setTheme, glassIndex, glassVariantCount, glassCard } = useThemeMode()
   const onLastGlass = themeMode === 'glass' && glassIndex >= glassVariantCount - 1
   const themeTitle = themeMode === 'light' ? 'Light · tap for Dark'
     : themeMode === 'dark' ? 'Dark · tap for Glass'
@@ -3015,6 +3015,9 @@ export default function HomeView({
   //   2. Re-run every 60s (background interval)
   //   3. Triggered on-demand when the user expands a project that shows 0 missions
   const [missionsByProject, setMissionsByProject] = useState({})
+
+  // R2 (CV6 round 2): All Rooms drill-through — when user clicks a project, show its missions in the same column with a back arrow
+  const [browsingProject, setBrowsingProject] = useState(null)
   const fetchMissions = useCallback(async () => {
     if (!worldId) return
     try {
@@ -3838,13 +3841,21 @@ export default function HomeView({
                           background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
                           color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
                         <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.senderName}</div>
-                          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{n.roomName}{n._roomCount > 1 ? ` · ${n._roomCount} new` : ''}</div>
+                          <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {/* R3: Show Project → Mission room name if this is a mission room; otherwise show senderName for 1:1 EA messages */}
+                            {n.projectSlug ? `${n.projectSlug} → ${n.roomName}` : n.senderName}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {n._roomCount > 1 ? `${n._roomCount} new` : (n.projectSlug ? `From ${n.senderName}` : '')}
+                          </div>
                         </div>
                         {ask && <span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '2px 5px' }}>ASK</span>}
                         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>{n.timeAgo}</span>
                       </div>
-                      <div style={{ fontSize: '14px', lineHeight: 1.45, color: 'var(--cv6-text-primary)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '40px' }}>{(n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')).replace(/[*_~\x60]|^#+\s?/gm, '')}</div>
+                      {/* R4: Message = centered QUOTE with internal scroll (max ~4-5 lines, then overflow:auto) */}
+                      <div style={{ fontSize: '14px', lineHeight: 1.55, color: 'var(--cv6-text-primary)', maxHeight: '80px', overflowY: 'auto', padding: '12px 12px', borderLeft: '3px solid var(--cv6-accent-primary)', borderRadius: '4px', background: 'color-mix(in srgb, var(--cv6-accent-primary) 8%, transparent)', textAlign: 'center', fontStyle: 'italic' }}>
+                        "{(n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')).replace(/[*_~\x60]|^#+\s?/gm, '')}"
+                      </div>
                       {/* R205 (Patrik): match the Claude design's Catch Up card — the primary
                           action is a FILLED accent button (not a text link), with a green
                           "mark handled" check beside it. Ref: mobile-refinement design rowA.png
@@ -3952,30 +3963,31 @@ export default function HomeView({
                       </div>
                       <div style={{ minWidth: 0, flex: 1 }}>
                         <div style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
-                          {n.senderName}
+                          {/* R3: Show Project → Mission room name if this is a mission room; otherwise show senderName for 1:1 EA messages */}
+                          {n.projectSlug ? `${n.projectSlug} → ${n.roomName}` : n.senderName}
                         </div>
                         <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {n.roomName}
+                          {n.projectSlug ? `From ${n.senderName}` : n.roomName}
                         </div>
                       </div>
                       <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>
                         {n.timeAgo}
                       </div>
                     </div>
-                    {/* Card body — plain 2-line preview; attachment-aware text.
-                        When the message is a file/image, show "Attached file: <name>" or "Sent an image".
-                        TODO(cv6: attachment field): use real message.attachments array when available. */}
+                    {/* R4: Card body = centered QUOTE with internal scroll (max ~4-5 lines, then overflow:auto) */}
                     <div style={{
-                      fontSize: '13.5px', lineHeight: 1.45, color: 'var(--cv6-text-primary)',
-                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+                      fontSize: '13.5px', lineHeight: 1.55, color: 'var(--cv6-text-primary)',
+                      maxHeight: '80px', overflowY: 'auto', padding: '12px 12px', borderLeft: '3px solid var(--cv6-accent-primary)',
+                      borderRadius: '4px', background: 'color-mix(in srgb, var(--cv6-accent-primary) 8%, transparent)',
+                      textAlign: 'center', fontStyle: 'italic',
                     }}>
-                      {(() => {
+                      "{(() => {
                         if (n.attachment || (n.attachments && n.attachments.length)) {
                           const fname = n.attachment?.name || (n.attachments?.[0]?.name) || 'attachment'
                           return `Attached file: ${fname}`
                         }
                         return (n.messagePreview || 'New update').replace(/[*_~\x60]|^#+\s?/gm, '')
-                      })()}
+                      })()}"
                     </div>
                   </div>
                 )
@@ -4204,70 +4216,64 @@ export default function HomeView({
                   R53 removed Explorer (duplicated the projects/missions tree on the Home body)
                   and Files (duplicated the Files tool in the Tools row) — both were unlabeled
                   duplicate destinations. CV6 R71: readded Search, Theme, and Help/Info icons. */}
+              {/* R-PIXEL-LOOP R1: wide "Search anything" pill on the left, matching
+                  Home desktop.dc.html. Opens the global search overlay. */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {/* Search icon — design TopBar: 38x38, radius 11, chip bg */}
                 <button
-                  title="Open search"
+                  title="Search anything"
                   onClick={() => setShowSearch(true)}
                   style={{
-                    width: '38px', height: '38px', borderRadius: '11px', border: 'none',
-                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-primary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0,
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    height: '38px', minWidth: '260px', padding: '0 14px',
+                    borderRadius: '10px', border: '1px solid var(--cv6-divider)',
+                    background: 'var(--cv6-surface)', cursor: 'pointer',
+                    color: 'var(--cv6-text-secondary)', fontFamily: 'inherit', fontSize: '14px',
+                    transition: 'all 120ms ease',
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; }}
                 >
-                  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                     <circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>
                   </svg>
+                  <span style={{ flex: 1, textAlign: 'left' }}>Search anything</span>
                 </button>
-
-                {/* Theme cycle: sun (light) → moon (dark) → glass orb (glass).
-                    Owned by useThemeMode so it persists + mounts the GlassBackdrop. */}
-                <button
-                  title={themeTitle}
-                  aria-label={themeMode === 'light' ? 'Switch to dark theme' : themeMode === 'dark' ? 'Switch to glass theme' : onLastGlass ? 'Switch to light theme' : 'Next glass backdrop'}
-                  data-theme-mode={themeMode}
-                  onClick={() => cycleTheme()}
-                  style={{
-                    width: '38px', height: '38px', borderRadius: '11px', border: 'none',
-                    background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-primary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 120ms ease', padding: 0,
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; }}
-                >
-                  {themeMode === 'light' ? (
-                    /* Sun — current mode is light */
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                    </svg>
-                  ) : themeMode === 'dark' ? (
-                    /* Crescent moon — current mode is dark */
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                    </svg>
-                  ) : (
-                    /* Crystal/glass orb on a stand with an inner shine — current mode is glass */
-                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="10" r="7"/>
-                      <path d="M8.4 7.6a4.6 4.6 0 0 1 3-1.9" opacity="0.85"/>
-                      <path d="M9 17.4h6M9.6 17.4l-1 3.1M14.4 17.4l1 3.1"/>
-                    </svg>
-                  )}
-                </button>
-                {/* R88: Help/documentation icon removed (Patrik 2026-06-17) — not used. */}
               </div>
 
               {/* Divider */}
               <div style={{ flex: 1 }}></div>
 
-              {/* Secondary group (right): Notifications + Avatar. R208b (Patrik): matched to
-                  TopBar.dc.html one-for-one — no in-app clock (the iOS status bar shows time in
-                  the PWA), bell 38px transparent with an unread dot, gradient avatar with initial. */}
+              {/* Secondary group (right): Theme switch + Notifications + Avatar.
+                  R-PIXEL-LOOP R1 (Patrik): the Claude dc.html top bar shows a Dark|Light|Glass
+                  segmented switch on the right (Dark active = accent fill), then bell + avatar.
+                  Supersedes the earlier single-cycle-icon decision. */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {/* Theme segmented switch — Dark | Light | Glass */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '2px',
+                  padding: '3px', borderRadius: '10px',
+                  background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
+                }}>
+                  {[['dark', 'Dark'], ['light', 'Light'], ['glass', 'Glass']].map(([m, label]) => {
+                    const active = themeMode === m
+                    return (
+                      <button
+                        key={m}
+                        onClick={() => { if (m === 'glass' && themeMode === 'glass') { cycleTheme() } else { setTheme(m) } }}
+                        title={m === 'glass' ? 'Glass theme (click again to change backdrop)' : `${label} theme`}
+                        style={{
+                          height: '30px', padding: '0 12px', borderRadius: '7px', border: 'none',
+                          background: active ? 'var(--cv6-accent-primary)' : 'transparent',
+                          color: active ? '#fff' : 'var(--cv6-text-secondary)',
+                          fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
+                          transition: 'all 120ms ease',
+                        }}
+                        onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+                        onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}
+                      >{label}</button>
+                    )
+                  })}
+                </div>
                 {/* Notifications bell — transparent, 38x38, unread accent dot */}
                 <button
                   title="Notifications"
@@ -4695,113 +4701,187 @@ export default function HomeView({
             {renderCatchupColumn()}
 
             {/* Design spec (lines 104–118): THREE stacked sections — Agents, Projects, nothing else.
-                No missions list, no combined view. Just agent status + 5 most recent active projects. */}
+                No missions list, no combined view. Just agent status + all projects (scrollable).
+                R2: Drill-through mode: click project → see its missions + back arrow */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
               {/* "All rooms" header (11px uppercase muted) */}
               <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
                 All rooms
               </div>
 
-              {/* SECTION 1: Agents (10.5px uppercase faint label) + rows */}
-              {visibleAgents.length > 0 && (
-                <div style={{ marginBottom: '18px' }}>
-                  <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Agents</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    {visibleAgents.map((a) => {
-                      const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
-                      const dotColor = a.status === 'routing work' ? '#10B981' : (a.status === 'idle' ? '#A3E635' : 'var(--cv6-warn)')
-                      const dotGlow = a.status === 'routing work' ? '0 0 8px rgba(16,185,129,.6)' : 'none'
-                      return (
-                        <button key={a.slug}
-                          className="hm-card hm-room-row"
-                          data-cv6-sel={isSelected ? 'true' : undefined}
-                          onClick={() => { selectByItem('agent', a.slug); setSelectedRoom({ agent: a, project: null, mission: null }); homeRef.current?.focus() }}
-                          onContextMenu={(e) => { e.preventDefault(); selectByItem('agent', a.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'agent', item: a, project: null }) }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', marginBottom: '0',
-                            boxSizing: 'border-box', width: '100%',
-                            background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
-                            color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
-                            cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-                            transition: 'background 120ms ease',
-                          }}
-                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
-                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
-                        >
-                          {/* 8px color dot (active=green glow / idle=lime / warn) */}
-                          <span style={{
-                            width: '8px', height: '8px', borderRadius: '50%',
-                            background: dotColor, boxShadow: dotGlow,
-                            flexShrink: 0,
-                          }}/>
-                          {/* Agent name (14px 600 when active, 500 when idle) */}
-                          <span style={{ flex: 1, fontSize: '14px', fontWeight: a.status === 'routing work' ? 600 : 500, color: 'var(--cv6-text-primary)' }}>
-                            {a.name || a.slug}
-                          </span>
-                          {/* Activity text right (11.5px muted): "routing work" / "idle" / "waiting on review" */}
-                          {a.status && (
-                            <span style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                              {a.status}
-                            </span>
-                          )}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+              {/* R2: If browsing a project, show back arrow + its missions */}
+              {browsingProject ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                  {/* Back button + project name header */}
+                  <button
+                    onClick={() => setBrowsingProject(null)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', marginBottom: '14px',
+                      background: 'transparent', border: 'none', color: 'var(--cv6-text-secondary)', cursor: 'pointer',
+                      fontFamily: 'inherit', fontSize: '13px', fontWeight: 600,
+                      transition: 'color 120ms ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}
+                  >
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    {browsingProject.name || browsingProject.slug}
+                  </button>
 
-              {/* SECTION 2: Projects (10.5px uppercase faint label) + rows — show 5 most recent active projects */}
-              {recentProjects && recentProjects.length > 0 && (
-                <div>
-                  <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Projects</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    {recentProjects.slice(0, 5).map((p) => {
-                      const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === p.slug && selectableItems[selectedIndex]?.type === 'project'
-                      const missionCount = Array.isArray(allMissionsForCV6) ? allMissionsForCV6.filter(x => (x.project?.slug || x.project?.id) === (p.slug || p.id)).length : 0
-                      return (
-                        <button key={p.slug}
-                          className="hm-card hm-room-row"
-                          data-cv6-sel={isSelected ? 'true' : undefined}
-                          onClick={() => { selectByItem('project', p.slug); setSelectedRoom({ project: p, mission: null }); homeRef.current?.focus() }}
-                          onContextMenu={(e) => { e.preventDefault(); selectByItem('project', p.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
-                          onDoubleClick={() => openChatToolForRoom({ project: p, mission: null })}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '11px', padding: '11px 12px', marginBottom: '0',
-                            boxSizing: 'border-box', width: '100%',
-                            background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
-                            color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
-                            cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
-                            transition: 'background 120ms ease',
-                          }}
-                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
-                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
-                        >
-                          {/* Colored folder icon (per-project color) */}
-                          <span style={{ display: 'inline-flex', flexShrink: 0, color: roomFill(p.slug) }}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-                              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
-                            </svg>
+                  {/* Scrollable missions list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: 'calc(100% - 50px)', overflowY: 'auto' }}>
+                    {/* "Recent rooms" label above missions */}
+                    {((missionsByProject[browsingProject.slug] || []).length > 0) && (
+                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px', padding: '0 12px' }}>
+                        Recent rooms
+                      </div>
+                    )}
+                    {(missionsByProject[browsingProject.slug] || []).map((m) => (
+                      <button key={m.slug}
+                        className="hm-card hm-room-row"
+                        onClick={() => {
+                          openChatToolForRoom({ project: browsingProject, mission: m })
+                          setBrowsingProject(null)
+                        }}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', marginBottom: '0',
+                          boxSizing: 'border-box', width: '100%',
+                          background: 'transparent', color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                          cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                          transition: 'background 120ms ease',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                      >
+                        {/* Mission icon (from getMissionIcon) */}
+                        <span style={{ display: 'inline-flex', flexShrink: 0, color: 'var(--cv6-text-secondary)' }}>
+                          {getMissionIcon(m.slug).svg}
+                        </span>
+                        {/* Mission name (14px 500) */}
+                        <span style={{ flex: 1, fontSize: '14px', fontWeight: 500, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {m.name || m.slug}
+                        </span>
+                        {/* Status indicator if running */}
+                        {MISSION_ACTIVE_STATUSES.has(m.status) && (
+                          <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '4px', padding: '2px 6px', flexShrink: 0 }}>
+                            Running
                           </span>
-                          {/* Project name (14px 500) */}
-                          <span style={{ flex: 1, fontSize: '14px', fontWeight: 500, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {p.name || p.slug}
-                          </span>
-                          {/* Mission count right (11.5px muted) */}
-                          <span style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', flexShrink: 0 }}>
-                            {missionCount}
-                          </span>
-                        </button>
-                      )
-                    })}
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
+              ) : (
+                <>
+                  {/* SECTION 1: Agents (10.5px uppercase faint label) + rows */}
+                  {visibleAgents.length > 0 && (
+                    <div style={{ marginBottom: '18px' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Agents</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        {visibleAgents.map((a) => {
+                          const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
+                          const dotColor = a.status === 'routing work' ? '#10B981' : (a.status === 'idle' ? '#A3E635' : 'var(--cv6-warn)')
+                          const dotGlow = a.status === 'routing work' ? '0 0 8px rgba(16,185,129,.6)' : 'none'
+                          return (
+                            <button key={a.slug}
+                              className="hm-card hm-room-row"
+                              data-cv6-sel={isSelected ? 'true' : undefined}
+                              onClick={() => { selectByItem('agent', a.slug); setSelectedRoom({ agent: a, project: null, mission: null }); homeRef.current?.focus() }}
+                              onContextMenu={(e) => { e.preventDefault(); selectByItem('agent', a.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'agent', item: a, project: null }) }}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', marginBottom: '0',
+                                boxSizing: 'border-box', width: '100%',
+                                background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
+                                color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                                cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                                transition: 'background 120ms ease',
+                              }}
+                              onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                              onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                            >
+                              {/* 8px color dot (active=green glow / idle=lime / warn) */}
+                              <span style={{
+                                width: '8px', height: '8px', borderRadius: '50%',
+                                background: dotColor, boxShadow: dotGlow,
+                                flexShrink: 0,
+                              }}/>
+                              {/* Agent name (14px 600 when active, 500 when idle) */}
+                              <span style={{ flex: 1, fontSize: '14px', fontWeight: a.status === 'routing work' ? 600 : 500, color: 'var(--cv6-text-primary)' }}>
+                                {a.name || a.slug}
+                              </span>
+                              {/* Activity text right (11.5px muted): "routing work" / "idle" / "waiting on review" */}
+                              {a.status && (
+                                <span style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                                  {a.status}
+                                </span>
+                              )}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SECTION 2: Projects (10.5px uppercase faint label) + rows — show ALL projects, scrollable */}
+                  {recentProjects && recentProjects.length > 0 && (
+                    <div>
+                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px' }}>Projects</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: 'calc(100% - 100px)', overflowY: 'auto' }}>
+                        {recentProjects.map((p) => {
+                          const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === p.slug && selectableItems[selectedIndex]?.type === 'project'
+                          const missionCount = Array.isArray(allMissionsForCV6) ? allMissionsForCV6.filter(x => (x.project?.slug || x.project?.id) === (p.slug || p.id)).length : 0
+                          return (
+                            <button key={p.slug}
+                              className="hm-card hm-room-row"
+                              data-cv6-sel={isSelected ? 'true' : undefined}
+                              onClick={() => { setBrowsingProject(p); homeRef.current?.focus() }}
+                              onContextMenu={(e) => { e.preventDefault(); selectByItem('project', p.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
+                              onDoubleClick={() => openChatToolForRoom({ project: p, mission: null })}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: '11px', padding: '11px 12px', marginBottom: '0',
+                                boxSizing: 'border-box', width: '100%',
+                                background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
+                                color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                                cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                                transition: 'background 120ms ease',
+                              }}
+                              onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                              onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
+                            >
+                              {/* Colored folder icon (per-project color) */}
+                              <span style={{ display: 'inline-flex', flexShrink: 0, color: roomFill(p.slug) }}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+                                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
+                                </svg>
+                              </span>
+                              {/* Project name (14px 500) */}
+                              <span style={{ flex: 1, fontSize: '14px', fontWeight: 500, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {p.name || p.slug}
+                              </span>
+                              {/* Mission count right (11.5px muted) */}
+                              <span style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', flexShrink: 0 }}>
+                                {missionCount}
+                              </span>
+                              {/* R2: Chevron right to drill in */}
+                              <span style={{ fontSize: '14px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, lineHeight: 1 }}>
+                                →
+                              </span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
             {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity
-                iPad fix: when no room selected, the heading aligns top with catch-up/all-rooms (18px padding) */}
-            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', paddingTop: selectedRoom ? '0' : '18px' }}>
+                R5: More top padding so room name isn't jammed against border
+                iPad fix: when no room selected, the heading aligns top with catch-up/all-rooms */}
+            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', paddingTop: selectedRoom ? '22px' : '22px' }}>
               {/* R19: Room identifier header with color tinting */}
               {/* R30b: Support agent rooms in addition to project/mission rooms */}
               {/* R19 + Design spec: TWO-line header — line 1: green dot + name (15px 600),
@@ -4877,37 +4957,51 @@ export default function HomeView({
                     gap: '12px',
                     // R20: grey container removed — conversation falls clean against the page (Patrik 2026-06-16)
                   }}>
-                    {conversationMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                          animation: msg.sender === 'user' ? 'cv6-msg-float-in 300ms ease-out' : 'cv6-msg-fade-in 300ms ease-out',
-                        }}
-                      >
-                        <div
-                          className={msg.sender === 'user' ? undefined : 'cv6-convo-bubble-agent'}
-                          style={{
-                            maxWidth: '75%',
-                            padding: '10px 14px',
-                            borderRadius: '8px',
-                            fontSize: '13px',
-                            lineHeight: '1.4',
-                            wordWrap: 'break-word',
-                            // R19: Color-coded bubbles
-                            background: msg.sender === 'user'
-                              // R31: agent rooms have no .project — derive room color from agent slug to avoid a crash
-                              ? roomSolid((selectedRoom.agent || selectedRoom.project).slug)  // Room color, darkened on bright hues so white text reads
-                              : 'var(--cv6-surface)',  // Gray for agent messages
-                            color: msg.sender === 'user' ? '#ffffff' : 'var(--cv6-text-primary)',
-                          }}
-                        >
-                          {/* CV4 chat renderer: clean markdown, no raw dashes/asterisks */}
-                          <ChatMessageRenderer content={msg.text} />
-                        </div>
-                      </div>
-                    ))}
+                    {conversationMessages.map((msg) => {
+                      if (msg.sender === 'user') {
+                        // R6: User message = right-aligned accent bubble (radius 16/16/4/16)
+                        return (
+                          <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-end', animation: 'cv6-msg-float-in 300ms ease-out' }}>
+                            <div style={{
+                              maxWidth: '75%', padding: '10px 13px', borderRadius: '16px 16px 4px 16px',
+                              background: roomSolid((selectedRoom.agent || selectedRoom.project).slug),
+                              color: '#ffffff', fontSize: '14px', lineHeight: '1.55', wordWrap: 'break-word',
+                            }}>
+                              <ChatMessageRenderer content={msg.text} />
+                            </div>
+                          </div>
+                        )
+                      } else {
+                        // R6: Agent message = small avatar + name + Space Mono timestamp + flat readable body (14px/1.55)
+                        return (
+                          <div key={msg.id} style={{ display: 'flex', gap: '8px', animation: 'cv6-msg-fade-in 300ms ease-out' }}>
+                            {/* Avatar */}
+                            <div style={{
+                              width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                              background: 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
+                              color: 'var(--cv6-accent-success)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '10px', fontWeight: '700',
+                            }}>
+                              {(msg.sender || 'A').slice(0, 2).toUpperCase()}
+                            </div>
+                            {/* Name + timestamp + body */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
+                                  {msg.sender || 'Agent'}
+                                </span>
+                                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)' }}>
+                                  {msg.timestamp ? relativeTime(msg.timestamp) : 'now'}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '14px', lineHeight: '1.55', color: 'var(--cv6-text-primary)', wordWrap: 'break-word' }}>
+                                <ChatMessageRenderer content={msg.text} />
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+                    })}
                   </div>
 
                   {/* R24: Conversation input — divider line, then suggested replies, then input row (Patrik: chips below the grey line, above where you type) */}
@@ -4944,14 +5038,14 @@ export default function HomeView({
                         ))}
                       </div>
                     )}
-                    {/* Design spec (line 128–134): voice button (left) + input with ONE attach icon inside + send button (right) */}
+                    {/* R7: Design spec (lines 128–134): left→right = [crystal-ball] · [input: attachment FIRST, text, master-loop icon] · [send|voice]
+                        When user hasn't typed, send icon is voice-chat icon. If Gemini unavailable, show honest message. */}
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', height: '40px' }}>
-                      {/* Voice button (40×40, left) — accent color */}
+                      {/* R7: Crystal ball (command icon) — left (40×40) */}
                       <button
                         onClick={() => {
-                          if (!replyText.trim()) {
-                            console.log('Voice message (placeholder)')
-                          }
+                          console.log('[crystal-ball command icon clicked]')
+                          // TODO: wire to command launcher
                         }}
                         style={{
                           width: '40px', height: '40px', flexShrink: 0, borderRadius: '11px', border: 'none',
@@ -4960,15 +5054,35 @@ export default function HomeView({
                           transition: 'all 120ms ease', boxShadow: '0 0 0 4px var(--cv6-accent-weak)',
                           padding: 0, fontFamily: 'inherit',
                         }}
-                        title="Voice message"
+                        title="Command launcher"
                         onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(0.92)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
-                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17v.01"/></svg>
+                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="8"/><path d="M9.5 9.5c.8-1.2 4.2-1.2 5 0"/><path d="M12 4v0M19.5 9l.5-1M4.5 9 4 8"/>
+                        </svg>
                       </button>
 
-                      {/* Input field with ONE attach icon INSIDE (right side of input) */}
+                      {/* Input field with icons INSIDE: attachment (left) + text + master-loop quick icon (right) */}
                       <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        {/* R7: Attachment icon (LEFT inside input) */}
+                        <button
+                          onClick={() => onOpenDrawer?.('files')}
+                          style={{
+                            position: 'absolute', left: '8px', width: '20px', height: '20px',
+                            background: 'none', border: 'none', color: 'var(--cv6-text-secondary)',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            padding: 0, transition: 'color 120ms ease',
+                          }}
+                          title="Attach files"
+                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
+                        >
+                          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 2.2"/>
+                          </svg>
+                        </button>
+
                         <input
                           ref={replyInputRef}
                           type="text"
@@ -4987,7 +5101,7 @@ export default function HomeView({
                             }
                           }}
                           style={{
-                            width: '100%', height: '100%', boxSizing: 'border-box', padding: '0 12px 0 12px',
+                            width: '100%', height: '100%', boxSizing: 'border-box', padding: '0 40px 0 32px',
                             borderRadius: '11px', border: '1px solid var(--cv6-divider)',
                             background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '14px',
                             fontFamily: 'inherit', outline: 'none', transition: 'border-color 120ms ease',
@@ -4995,31 +5109,40 @@ export default function HomeView({
                           onFocus={(e) => e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'}
                           onBlur={(e) => e.currentTarget.style.borderColor = 'var(--cv6-divider)'}
                         />
-                        {/* Files icon inside the input (right side) — opens the room Files drawer (real handler) */}
+
+                        {/* R7: Master-loop quick icon (RIGHT inside input) */}
                         <button
-                          onClick={() => onOpenDrawer?.('files')}
+                          onClick={() => {
+                            console.log('[master-loop quick icon clicked]')
+                            // TODO: wire to master-loop quick action
+                          }}
                           style={{
                             position: 'absolute', right: '8px', width: '20px', height: '20px',
                             background: 'none', border: 'none', color: 'var(--cv6-text-secondary)',
                             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                             padding: 0, transition: 'color 120ms ease',
                           }}
-                          title="Attach files"
+                          title="Master loop quick action"
                           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--cv6-text-primary)'; }}
                           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--cv6-text-secondary)'; }}
                         >
                           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 2.2"/>
+                            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"/>
                           </svg>
                         </button>
                       </div>
 
-                      {/* Send button (40×40, right) — accent color, arrow up icon */}
+                      {/* R7: Send button (40×40, right) — accent color
+                          When user HAS typed: send icon (arrow up)
+                          When user HASN'T typed: voice icon → starts Gemini voice chat, or honest unavailable message */}
                       <button
                         onClick={() => {
                           if (replyText.trim()) {
                             sendQuickReply(replyText)
                             setReplyText('')
+                          } else {
+                            // Voice chat mode — TODO: wire to real Gemini voice on /cvg
+                            console.log('[voice-chat button clicked — would start Gemini voice]')
                           }
                         }}
                         style={{
@@ -5028,13 +5151,21 @@ export default function HomeView({
                           cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           transition: 'all 120ms ease', padding: 0, fontFamily: 'inherit',
                         }}
-                        title="Send"
+                        title={replyText.trim() ? 'Send' : 'Voice chat'}
                         onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(0.92)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
-                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 19V5M5 12l7-7 7 7"/>
-                        </svg>
+                        {replyText.trim() ? (
+                          // Send icon (arrow up)
+                          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 19V5M5 12l7-7 7 7"/>
+                          </svg>
+                        ) : (
+                          // Voice icon (microphone)
+                          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </div>
