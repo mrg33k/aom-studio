@@ -204,6 +204,21 @@
   color: #ffffff !important;
 }
 
+/* R-QA 2026-06-19: the selected tool tile keeps white text + icon in EVERY theme,
+   not just glass. In LIGHT theme the "Home" label rendered dark on the blue fill
+   (Patrik: "tools when selected have black text with a blue background, impossible
+   to read"). The icon was already white; force the LABEL + icon white on any
+   selected (accent-primary) tile, in all themes. */
+[data-cv6] .hm-tools-row button[style*="accent-primary"],
+[data-cv6] .hm-tools-block button[style*="accent-primary"],
+[data-cv6] .hm-tools-row button[style*="accent-primary"] span,
+[data-cv6] .hm-tools-block button[style*="accent-primary"] span,
+[data-cv6] .hm-tools-row button[style*="accent-primary"] svg,
+[data-cv6] .hm-tools-block button[style*="accent-primary"] svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
 /* html/body transparent so the fixed backdrop shows through. */
 html[data-theme="glass"],
 html[data-theme="glass"] body {
