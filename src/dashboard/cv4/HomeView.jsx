@@ -2399,6 +2399,58 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
   const msgs = (() => { const seen = new Set(), out = []; for (const m of _rawMsgs) { const key = `${m.from}|${(m.text || '').trim()}`; if (seen.has(key)) continue; seen.add(key); out.push(m) } return out })()
   const files = useMemo(() => buildFileTree(sel ? { slug: keyOf(sel) } : null), [sel])
 
+  // R-PIXEL-LOOP (Chat right panel): real per-room mission-goals checklist + agent-on autopilot.
+  // Goal steps come from a real per-room store (room-goal-steps.json via the tunnel, same proven
+  // pattern as review-checklist.json) — the user adds/toggles them; the first not-done step renders
+  // as the active goal. No fabricated steps (real-data-only). Agent-on writes the room-autopilot flag.
+  const [goalSteps, setGoalSteps] = useState([])
+  const [goalDraft, setGoalDraft] = useState('')
+  const [autopilotOn, setAutopilotOn] = useState(true)
+  const isAgentRoom = !!(sel && sel.kind === 'agent')
+  useEffect(() => {
+    if (!sel || !worldId) { setGoalSteps([]); return }
+    let active = true
+    const rk = keyOf(sel)
+    ;(async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}&room=${encodeURIComponent(rk)}`)
+        if (r?.ok) { const d = await r.json(); if (active) setGoalSteps(Array.isArray(d.list) ? d.list : []) }
+      } catch (_) { /* ignore */ }
+      try {
+        const r2 = await authFetch(`/api/dashboard/room-autopilot?world=${encodeURIComponent(worldId)}`)
+        if (r2?.ok) { const d2 = await r2.json(); const bare = String(rk).split(':').pop(); if (active) setAutopilotOn(d2.autopilot && (bare in d2.autopilot) ? d2.autopilot[bare] !== false : true) }
+      } catch (_) { /* ignore */ }
+    })()
+    return () => { active = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sel && keyOf(sel), worldId])
+
+  const addGoalStep = useCallback(async () => {
+    const text = goalDraft.trim(); if (!text || !sel) return
+    const rk = keyOf(sel)
+    setGoalDraft('')
+    const tmp = { id: 'tmp-' + Math.max(1, text.length) + '-' + text.slice(0, 4), text, done: false }
+    setGoalSteps(prev => [...prev, tmp])
+    try {
+      const r = await authFetch('/api/dashboard/room-goal-steps', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', world: worldId, room: rk, text }) })
+      if (r?.ok) { const d = await r.json(); setGoalSteps(prev => prev.map(g => g === tmp ? { ...tmp, id: d.id } : g)) }
+    } catch (_) { /* ignore */ }
+  }, [goalDraft, sel, worldId])
+
+  const toggleGoalStep = useCallback(async (id) => {
+    if (!sel) return
+    const rk = keyOf(sel)
+    setGoalSteps(prev => prev.map(g => g.id === id ? { ...g, done: !g.done } : g))
+    try { await authFetch('/api/dashboard/room-goal-steps', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'toggle', world: worldId, room: rk, id }) }) } catch (_) { /* ignore */ }
+  }, [sel, worldId])
+
+  const setAutopilot = useCallback(async (on) => {
+    if (!sel) return
+    const bare = String(keyOf(sel)).split(':').pop()
+    setAutopilotOn(on)
+    try { await authFetch('/api/dashboard/room-autopilot', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ world: worldId, slug: bare, on }) }) } catch (_) { /* ignore */ }
+  }, [sel, worldId])
+
   function send() {
     const t = draft.trim(); if (!t || !sel) return
     const k = keyOf(sel)
@@ -2681,13 +2733,26 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
     return (
     <div style={{ ...colStyle, borderRight: 'none', display: 'flex', flexDirection: 'column' }}>
       <div style={headStyle}>
-        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '10px' }}>
           <span>Mission goals</span>
-          {!isNarrow && (
-            <button onClick={() => setFilesCollapsed(true)} title="Collapse context" style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-            </button>
-          )}
+          <span style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+            {/* R-PIXEL-LOOP: "Agent on" autopilot toggle (matches the dc.html). Applies to
+                project/mission rooms; disabled for agent direct chats (no goal record). */}
+            {sel && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: '7px' }} title={isAgentRoom ? 'Autopilot applies to project and mission rooms' : 'Keep the assistant pushing this room forward on its own'}>
+                <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--cv6-text-secondary)', textTransform: 'none', letterSpacing: 0 }}>Agent on</span>
+                <button onClick={() => { if (!isAgentRoom) setAutopilot(!autopilotOn) }} disabled={isAgentRoom} aria-label="Toggle autopilot"
+                  style={{ width: 30, height: 14, borderRadius: 7, border: 'none', background: (autopilotOn && !isAgentRoom) ? 'var(--cv6-accent-success)' : 'var(--cv6-divider)', cursor: isAgentRoom ? 'default' : 'pointer', position: 'relative', padding: 2, boxSizing: 'border-box', opacity: isAgentRoom ? 0.5 : 1, transition: 'background 200ms ease' }}>
+                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--cv6-surface)', position: 'absolute', left: (autopilotOn && !isAgentRoom) ? 18 : 2, top: 2, transition: 'left 200ms ease', display: 'block' }} />
+                </button>
+              </span>
+            )}
+            {!isNarrow && (
+              <button onClick={() => setFilesCollapsed(true)} title="Collapse context" style={{ flexShrink: 0, width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            )}
+          </span>
         </span>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -2695,24 +2760,41 @@ function ChatToolOverlay({ projects, missionsByProject, agents, initialRoom, onC
           <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>No room selected</div>
         ) : (
           <>
-            {/* Mission goal — the room-goals store holds ONE real goal line per room; there is
-                NO multi-step goal history in the data, so we never fabricate done/pending steps
-                (project rule: real data only). Show the room's real current goal if present.
-                The full multi-step checklist + a wired Agent-on toggle need real sources
-                (room-goals.json + room-autopilot) — queued as a follow-up, not faked here. */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-              <span style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>Current goal</span>
-              {sel.goal
-                ? <div style={{ fontSize: '13.5px', lineHeight: 1.5, color: 'var(--cv6-text-primary)' }}>{sel.goal}</div>
-                : <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>No goal set yet.</div>}
+            {/* R-PIXEL-LOOP: real per-room goal-steps checklist (room-goal-steps store). The first
+                not-done step is the ACTIVE goal (accent dot + owner); done = check, rest = todo ring.
+                Click a row to toggle done. No fabricated steps — the list is what the user added. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {(() => {
+                const firstActive = goalSteps.findIndex(g => !g.done)
+                return goalSteps.map((g, i) => {
+                  const state = g.done ? 'done' : (i === firstActive ? 'active' : 'todo')
+                  return (
+                    <button key={g.id} onClick={() => toggleGoalStep(g.id)} title={g.done ? 'Mark not done' : 'Mark done'}
+                      style={{ display: 'flex', alignItems: 'center', gap: '10px', textAlign: 'left', width: '100%', background: state === 'active' ? 'var(--cv6-accent-weak)' : 'transparent', border: 'none', borderRadius: '8px', padding: '7px 8px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      <span style={{ flexShrink: 0, width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        border: state === 'todo' ? '1.5px solid var(--cv6-divider)' : 'none',
+                        background: state === 'done' ? 'var(--cv6-accent-success)' : (state === 'active' ? 'var(--cv6-accent-primary)' : 'transparent'), color: '#fff' }}>
+                        {state === 'done' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>}
+                        {state === 'active' && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff' }} />}
+                      </span>
+                      <span style={{ flex: 1, fontSize: '13px', lineHeight: 1.4, color: state === 'done' ? 'var(--cv6-text-tertiary)' : 'var(--cv6-text-primary)', textDecoration: state === 'done' ? 'line-through' : 'none' }}>{g.text}</span>
+                      {state === 'active' && isAgentRoom && <span style={{ flexShrink: 0, fontSize: '11px', color: 'var(--cv6-text-secondary)' }}>{sel.name}</span>}
+                    </button>
+                  )
+                })
+              })()}
+              {goalSteps.length === 0 && (
+                <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', padding: '2px 2px 4px' }}>No goals yet.</div>
+              )}
             </div>
 
-            {/* Add a goal input */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', height: '40px', border: '1.5px dashed var(--cv6-divider)', borderRadius: '11px', padding: '0 12px', cursor: 'text', color: 'var(--cv6-text-tertiary)' }}>
+            {/* Add a goal — wired to the real room-goal-steps store (Enter to add). */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px', height: '40px', border: '1.5px dashed var(--cv6-divider)', borderRadius: '11px', padding: '0 12px', color: 'var(--cv6-text-tertiary)' }}>
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <path d="M12 5v14M5 12h14"/>
               </svg>
-              <span style={{ fontSize: '13px' }}>Add a goal…</span>
+              <input value={goalDraft} onChange={e => setGoalDraft(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGoalStep() } }} placeholder="Add a goal…"
+                style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: '13px', color: 'var(--cv6-text-primary)' }} />
             </div>
 
             {/* Files section */}
