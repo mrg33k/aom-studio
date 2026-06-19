@@ -5199,11 +5199,11 @@ export default function HomeView({
           {/* R76 (Patrik): grid layout lives in cv6.css so the ≤768px media query can
               collapse it to ONE stacked column on mobile. Inline display/columns used to
               override the media query, which is why mobile rendered 3 cramped columns. */}
-          {/* Fit the grid to the viewport (Patrik 2026-06-19): a fixed height overran short
-              screens (chat input fell below the fold) and left a gap on tall ones. Fill the
-              available height so the quick reply sits just above the bottom and the section
-              never gets cut off. */}
-          <div className="hm-three-column-grid" style={{ gap: '0', height: 'clamp(480px, calc(100dvh - 110px), 820px)', marginBottom: '18px', position: 'relative' }}>
+          {/* Fit the grid to the viewport (Patrik 2026-06-19): fill the available height so the
+              quick reply sits just above the bottom and the section never gets cut off. No upper
+              cap — the columns keep extending as the user grows the window height, holding the
+              same ~110px bottom offset. A 480px floor protects very short windows. */}
+          <div className="hm-three-column-grid" style={{ gap: '0', height: 'max(480px, calc(100dvh - 110px))', marginBottom: '18px', position: 'relative' }}>
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
