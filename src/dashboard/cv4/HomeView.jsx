@@ -5536,7 +5536,7 @@ export default function HomeView({
                   the same row as the Files button, to give the conversation more height. */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
-                marginBottom: '8px', paddingBottom: '8px',
+                marginBottom: '6px', paddingBottom: '6px',
                 // Patrik 2026-06-19: inset the column's items 20px from the left divider so they
                 // breathe; the border-bottom still spans the full column width (padding is inside
                 // the box) so the header underline stays connected to the middle column.
@@ -5597,8 +5597,8 @@ export default function HomeView({
                     flex: 1, // fills the equal-height column; composer pins to the bottom (matches the design)
                     minHeight: 0,
                     overflowY: 'auto',
-                    paddingLeft: '20px', paddingRight: '16px', // inset items from the divider (Patrik 2026-06-19)
-                    marginBottom: '12px',
+                    paddingLeft: '20px', paddingRight: '8px', // left inset from divider; trim the right (Patrik 2026-06-19)
+                    marginBottom: '8px',
                     display: 'flex',
                     flexDirection: 'column-reverse', // R19: Messages flow upward (newest at bottom, user messages float to top)
                     gap: '12px',
@@ -5662,10 +5662,10 @@ export default function HomeView({
                   </div>
 
                   {/* R24: Conversation input — divider line, then suggested replies, then input row (Patrik: chips below the grey line, above where you type) */}
-                  <div style={{ borderTop: '1px solid var(--cv6-divider)', padding: '12px 20px 16px' }}>
+                  <div style={{ borderTop: '1px solid var(--cv6-divider)', padding: '8px 20px 12px' }}>
                     {/* Suggested replies — below the divider line, ABOVE the input row */}
                     {suggestedReplies.length > 0 && (
-                      <div style={{ marginBottom: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <div style={{ marginBottom: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                         {suggestedReplies.map((reply, idx) => (
                           <button
                             key={idx}
