@@ -4633,8 +4633,10 @@ export default function HomeView({
       {/* R7: CV6 layout — missions as primary, keyboard navigation, inline actions, happening now */}
       {cv6 ? (
         <div className="hm-shell" style={{ maxWidth: '100%' }}>
-          {/* R12: Top nav bar — global icons — primary (left) + secondary (right) with divider, 24px icons, strong hover */}
-          {cv6 && (
+          {/* R12: Top nav bar — global icons — primary (left) + secondary (right) with divider, 24px icons, strong hover.
+              R-QA-FIX-15: on HOME these four icons move into the one-line greeting row (top-right);
+              this standalone bar now renders only on tool screens (selectedTool !== 'home'). */}
+          {cv6 && selectedTool !== 'home' && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
               height: '54px', marginBottom: '8px',
@@ -4771,41 +4773,81 @@ export default function HomeView({
             </div>
           ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: cv6 ? 'flex-start' : 'space-between', marginTop: cv6 ? '-6px' : 0, marginBottom: cv6 ? '10px' : '32px' }}>
-            <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1, ...(cv6 ? { flex: '0 1 360px', minWidth: 0 } : {}) }}>
+            {/* Cell 1 — greeting, over the Catch Up column (mirrors its 360px width). */}
+            <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1, ...(cv6 ? { flex: '0 1 360px', minWidth: 0, whiteSpace: 'nowrap' } : {}) }}>
               <span className="hm-l1">{greeting}</span>{' '}
               <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
             </h1>
-            {/* R-QA-FIX-15 (Patrik): compact tool bar lives on the greeting row, its left edge
-                aligned to the All Rooms column line (the greeting cell mirrors the catch-up
-                column's 360px). Icon + title inside each tile; the active tile is solid accent
-                and serves as the section/header indicator. Big tile row is hidden on home
-                desktop (cv6.css) and stays as the mobile dock + the tool-screen nav. */}
+            {/* Cell 2 — compact tool bar, CENTERED within the All Rooms column span (Patrik
+                2026-06-19). Tiles ~20% smaller; the active tile is solid accent and serves as
+                the section/header indicator. Big tile row is hidden on home desktop (cv6.css)
+                and stays as the mobile dock + the tool-screen nav. */}
             {cv6 && (
-              <div className="hm-greeting-tools" style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-                {HOME_TOOLS.map(t => {
-                  const active = selectedTool === t.key
-                  return (
-                    <button
-                      key={t.key}
-                      data-active={active ? 'true' : undefined}
-                      onClick={() => openTool(t.key)}
-                      title={t.label}
-                      style={{
-                        flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '5px',
-                        borderRadius: '12px', padding: '8px 6px', minWidth: '64px',
-                        border: active ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
-                        background: active ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
-                        color: active ? '#ffffff' : 'var(--cv6-text-secondary)',
-                        cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit',
-                      }}
-                      onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)' } }}
-                      onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' } }}
-                    >
-                      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{t.svg}</svg>
-                      <span style={{ fontSize: '10.5px', fontWeight: 600, whiteSpace: 'nowrap', color: active ? '#ffffff' : 'var(--cv6-text-secondary)' }}>{t.label}</span>
-                    </button>
-                  )
-                })}
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'center' }}>
+                <div className="hm-greeting-tools" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+                  {HOME_TOOLS.map(t => {
+                    const active = selectedTool === t.key
+                    return (
+                      <button
+                        key={t.key}
+                        data-active={active ? 'true' : undefined}
+                        onClick={() => openTool(t.key)}
+                        title={t.label}
+                        style={{
+                          flex: '0 0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                          borderRadius: '10px', padding: '6px 5px', minWidth: '51px',
+                          border: active ? '1px solid var(--cv6-accent-primary)' : '1px solid var(--cv6-divider)',
+                          background: active ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface)',
+                          color: active ? '#ffffff' : 'var(--cv6-text-secondary)',
+                          cursor: 'pointer', transition: 'all 120ms ease', fontFamily: 'inherit',
+                        }}
+                        onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)' } }}
+                        onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.borderColor = 'var(--cv6-divider)' } }}
+                      >
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{t.svg}</svg>
+                        <span style={{ fontSize: '8.5px', fontWeight: 600, whiteSpace: 'nowrap', color: active ? '#ffffff' : 'var(--cv6-text-secondary)' }}>{t.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            {/* Cell 3 — global icons (search, theme, notifications, avatar), over the
+                conversation column on the right. Smaller than the tool tiles; the bell gets a
+                solid white background (Patrik 2026-06-19) so notifications stand out. */}
+            {cv6 && (
+              <div style={{ flex: '0 1 420px', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                <button title="Search anything" onClick={() => setShowSearch(true)}
+                  style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: 'none', transition: 'all 120ms ease' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+                </button>
+                <button title="Switch theme" aria-label="Switch theme" data-theme-mode={themeMode} onClick={() => cycleTheme()}
+                  style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: 'none', transition: 'all 120ms ease' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>
+                  {themeMode === 'light' ? (
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                  ) : themeMode === 'dark' ? (
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="7"/><path d="M8.4 7.6a4.6 4.6 0 0 1 3-1.9" opacity="0.85"/><path d="M9 17.4h6M9.6 17.4l-1 3.1M14.4 17.4l1 3.1"/></svg>
+                  )}
+                </button>
+                <button title="Notifications" onClick={() => { if (cv6) setSelectedTool('home'); else window.location.href = '/dashboard?view=notifications' }}
+                  style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: '#ffffff', cursor: 'pointer', color: '#1c1b19', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: 0, flex: 'none' }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                  {catchupNotifications.length > 0 && (
+                    <span style={{ position: 'absolute', top: '5px', right: '6px', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '1.5px solid #ffffff' }} />
+                  )}
+                </button>
+                <button title="User settings" onClick={() => window.location.href = '/dashboard?view=settings'}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', padding: 0, transition: 'transform 120ms ease' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}>
+                  {(displayName(user) || 'U').trim().charAt(0).toUpperCase()}
+                </button>
               </div>
             )}
           </div>
