@@ -4805,11 +4805,22 @@ export default function HomeView({
             </div>
           ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: cv6 ? 'flex-start' : 'space-between', marginTop: cv6 ? '-6px' : 0, marginBottom: cv6 ? '10px' : '32px' }}>
-            {/* Cell 1 — greeting, over the Catch Up column (mirrors its 360px width). */}
-            <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1, ...(cv6 ? { flex: '0 1 360px', minWidth: 0, whiteSpace: 'nowrap' } : {}) }}>
-              <span className="hm-l1">{greeting}</span>{' '}
-              <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
-            </h1>
+            {/* Cell 1 — Corner mark + greeting, over the Catch Up column (mirrors its 360px width).
+                The mark is theme-aware (Patrik 2026-06-19): white on dark/glass surfaces, dark
+                ink on light. Medium size, sitting just left of the greeting. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: cv6 ? '14px' : '0', ...(cv6 ? { flex: '0 1 360px', minWidth: 0 } : {}) }}>
+              {cv6 && (
+                <img
+                  src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'}
+                  alt="Corner"
+                  style={{ height: '36px', width: '36px', flexShrink: 0, display: 'block', objectFit: 'contain' }}
+                />
+              )}
+              <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1, ...(cv6 ? { minWidth: 0, whiteSpace: 'nowrap' } : {}) }}>
+                <span className="hm-l1">{greeting}</span>{' '}
+                <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
+              </h1>
+            </div>
             {/* Cell 2 — compact tool bar, CENTERED within the All Rooms column span (Patrik
                 2026-06-19). Tiles ~20% smaller; the active tile is solid accent and serves as
                 the section/header indicator. Big tile row is hidden on home desktop (cv6.css)
