@@ -4653,7 +4653,10 @@ export default function HomeView({
           {/* R12: Top nav bar — global icons — primary (left) + secondary (right) with divider, 24px icons, strong hover.
               R-QA-FIX-15: on HOME these four icons move into the one-line greeting row (top-right);
               this standalone bar now renders only on tool screens (selectedTool !== 'home'). */}
-          {cv6 && selectedTool !== 'home' && (
+          {/* Superseded by the always-on top bar below (Patrik 2026-06-19: the greeting +
+              tools + icons bar is now locked into EVERY view, so this separate tool-screen
+              bar is disabled to avoid duplicate icons). */}
+          {false && cv6 && selectedTool !== 'home' && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
               height: '54px', marginBottom: '8px',
@@ -4760,8 +4763,11 @@ export default function HomeView({
             </div>
           )}
 
-          {/* R48: greeting + search hide entirely when a tool/room is open (cv6) */}
-          {(!cv6 || selectedTool === 'home') && (cv6 && showSearch ? (
+          {/* Top bar (greeting + centered tools + right icons) LOCKED into every view
+              (Patrik 2026-06-19: "we feel good about the top bar, lock it into all tool
+              views"). Was home-only; now always rendered, with the active tool tile as the
+              header indicator. */}
+          {(true) && (cv6 && showSearch ? (
             /* R37: search mode — greeting becomes a big "Search" field in the greeting font, icon + underline */
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '-20px', marginBottom: '20px', paddingBottom: '10px', borderBottom: '2px solid var(--cv6-text-primary)' }}>
               <svg viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-secondary)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 'clamp(28px,4vw,44px)', height: 'clamp(28px,4vw,44px)', flexShrink: 0 }}>
@@ -4970,7 +4976,7 @@ export default function HomeView({
           {/* R37: home body (tools, columns, what-needs-you, ideas) hides while searching */}
           {!showSearch && (<>
           {/* R23: Tools row — ABOVE three columns with heading + square icon tiles + labels */}
-          <div className={'hm-tools-block' + (selectedTool === 'home' ? ' hm-tools-block--home' : '')} style={{ marginTop: '-4px', marginBottom: '8px' }}>
+          <div className={'hm-tools-block hm-tools-block--home'} style={{ marginTop: '-4px', marginBottom: '8px' }}>
             <div className="hm-tools-heading" style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>Tools</div>
             <div className="hm-tools-row" style={{ display: 'flex', gap: '12px', alignItems: 'flex-start', flexWrap: 'nowrap', rowGap: '12px' }}>
               {/* R48: Home pinned first, LOCKED order (a nav that reshuffles kills spatial
@@ -5162,7 +5168,7 @@ export default function HomeView({
           {/* R76 (Patrik): grid layout lives in cv6.css so the ≤768px media query can
               collapse it to ONE stacked column on mobile. Inline display/columns used to
               override the media query, which is why mobile rendered 3 cramped columns. */}
-          <div className="hm-three-column-grid" style={{ gap: '0', height: '566px', marginBottom: '18px', position: 'relative' }}>
+          <div className="hm-three-column-grid" style={{ gap: '0', height: '680px', marginBottom: '18px', position: 'relative' }}>
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
@@ -5787,9 +5793,9 @@ export default function HomeView({
                   alt="Corner"
                   style={{ height: '30px', width: '30px', display: 'block', objectFit: 'contain', flexShrink: 0 }}
                 />
-                {/* font-size 44px sets the cap height equal to the 30px mark (Bricolage cap
-                    ratio 0.674), so the wordmark reads the same height as the logo. */}
-                <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '44px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>
+                {/* Smaller wordmark (Patrik 2026-06-19: the 44px read too tall). 30px sits as a
+                    tidy wordmark beside the 30px mark. */}
+                <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '30px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>
                   Corner
                 </span>
               </div>
