@@ -4043,7 +4043,7 @@ export default function HomeView({
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {chips.map(c => (
                         <button key={c.label} onClick={c.act}
-                          style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer' }}>
+                          style={{ flex: 1, height: '44px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '13px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer' }}>
                           {c.label}
                         </button>
                       ))}
