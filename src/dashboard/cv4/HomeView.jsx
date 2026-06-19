@@ -3403,7 +3403,7 @@ export default function HomeView({
   // simple list of what landed while you were away; tap a row to open that room's chat.
   const renderCatchupColumn = () => (
     <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px', marginBottom: '14px' }}>
         <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Catch up</span>
         {catchupNotifications.length > 0 && (
           <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>

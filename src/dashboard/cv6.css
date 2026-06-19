@@ -1175,7 +1175,7 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-rooms-scr
 /* Happening-now + 3-col grid */
 [data-cv6] .hm-happening-now { color:var(--cv6-text-secondary); }
 /* DELTA 4: Desktop 3-column layout with fixed widths (360px catch-up, flex middle, 420px conversation) */
-[data-cv6] .hm-three-column-grid { display:flex; gap:24px; min-height:auto; }
+[data-cv6] .hm-three-column-grid { display:flex; gap:24px; min-height:auto; border-top:1px solid var(--cv6-divider); }
 [data-cv6] .hm-three-column-grid > div:nth-child(1) {
   flex:0 1 360px;          /* shrinkable so sub-1440 laptops never overflow horizontally */
   min-width:0;
