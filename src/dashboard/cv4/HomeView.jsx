@@ -4238,7 +4238,7 @@ export default function HomeView({
         {catchupNotifications.length > 0 && (
           <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
         )}
-        {isNarrowHV && catchupNotifications.length > 1 && (
+        {false && isNarrowHV && catchupNotifications.length > 1 && (
           <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>swipe →</span>
         )}
       </div>
@@ -4278,7 +4278,10 @@ export default function HomeView({
         // horizontal snap carousel of 296px cards (matches Corner Mobile.dc.html
         // Direction A, themed by the live light/dark/glass picker). Desktop keeps
         // the dense vertical list below. swipe → hint + pagination dots.
-        if (isNarrowHV) {
+        // R-MOBILE-B 2026-06-19 (Patrik: "we want option B, the catch up like we do now on
+        // desktop"). Mobile no longer uses the Direction-A horizontal carousel — it falls
+        // through to the desktop stacked-deck render below, so phone + desktop catch-up match.
+        if (false && isNarrowHV) {
           const STEP = 308 // 296 card + 12 gap
           return (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -4536,8 +4539,10 @@ export default function HomeView({
             {/* Corner lockup pinned to the bottom of the catch-up column (Patrik 2026-06-19):
                 cards, options, then breathing space, then the logo at the bottom. Faint grey
                 (container opacity fades the mark + wordmark together so they match in both
-                themes) and shrunk 20% (30 -> 24px). */}
-            <div style={{ marginTop: 'auto', paddingTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.4 }}>
+                themes) and shrunk 20% (30 -> 24px). Desktop only — on the phone home the
+                column is content-height and All Rooms follows directly, so the logo would
+                float mid-page (R-MOBILE-B). */}
+            <div style={{ marginTop: 'auto', paddingTop: '12px', display: isNarrowHV ? 'none' : 'flex', alignItems: 'center', gap: '8px', opacity: 0.4 }}>
               <img src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'} alt="Corner" style={{ height: '24px', width: '24px', display: 'block', objectFit: 'contain', flexShrink: 0 }} />
               <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '24px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>Corner</span>
             </div>

@@ -1349,11 +1349,18 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
   [data-cv6] .hm-three-column-grid > div:nth-child(2),
   [data-cv6] .hm-three-column-grid > div:nth-child(3) {
     width:100%;
-    flex:1;
+    /* R-MOBILE-B 2026-06-19 (Patrik: Option B, catch-up like desktop): was flex:1, which
+       stretched each stacked column to fill the grid's flex height — the catch-up block
+       ballooned to full screen and shoved All Rooms far below the fold (the "empty void").
+       Size each column to its CONTENT so they stack naturally: catch-up, then All Rooms. */
+    flex:0 0 auto;
     border:none;
     padding:16px;
     overflow-y:visible;
   }
+  /* Mobile home = catch-up + All Rooms + tabs (matches Corner Mobile.dc.html Direction B).
+     The conversation column is reached by tapping a room, so hide it on the phone home. */
+  [data-cv6] .hm-three-column-grid > div:nth-child(3) { display:none !important; }
   [data-cv6] .hm-section { margin-bottom:0 !important; min-width:0; }
   [data-cv6] .hm-three-column-grid .hm-card { max-width:100%; }
   /* long tokens (filenames, slugs) wrap instead of forcing horizontal overflow */
