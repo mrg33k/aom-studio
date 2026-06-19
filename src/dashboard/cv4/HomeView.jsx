@@ -4373,6 +4373,8 @@ export default function HomeView({
                 return (
                   <div key={n.id}
                     className="glassy hm-catchup-card"
+                    onClick={i === 0 ? () => onCatchupOpenRoom && onCatchupOpenRoom(n) : undefined}
+                    title={i === 0 ? 'Open in chat to read the full message' : undefined}
                     style={{
                       position: 'absolute',
                       left: 0, right: 0, top: 0,
@@ -4382,9 +4384,12 @@ export default function HomeView({
                       border: '1px solid var(--cv6-divider)',
                       borderRadius: '16px',
                       padding: '14px',
-                      boxShadow: '0 14px 36px -14px rgba(0,0,0,.5)',
+                      // Softer, single shadow only on the top card (Patrik 2026-06-19: the
+                      // stacked cards had too much drop shadow). Behind cards rely on the
+                      // border + scale offset, no shadow, so the stack reads clean.
+                      boxShadow: i === 0 ? '0 6px 18px -12px rgba(0,0,0,.30)' : 'none',
                       touchAction: 'none',
-                      cursor: i === 0 ? 'grab' : 'default',
+                      cursor: i === 0 ? 'pointer' : 'default',
                       transition: trans,
                       transform: tf,
                       opacity: op,
@@ -4455,7 +4460,9 @@ export default function HomeView({
                 read). TODO(cv6): make the quick replies context-aware via a smart-reply model —
                 light heuristic (ask vs not) for now, no fabricated per-card data. */}
             {top.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 40 }}>
+              // marginTop:auto pushes the whole action section to the bottom of the column so
+              // the cards above get room to breathe (Patrik 2026-06-19).
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', position: 'relative', zIndex: 40, marginTop: 'auto' }}>
                 {/* R-PIXEL-LOOP R3: two outlined chips under the card (Thanks / Review), matching the
                     Claude design. With an attachment the second chip is "Review" (jumps to the Review
                     view); otherwise both are quick replies. The free-text "Reply to…" input was removed
@@ -4479,6 +4486,21 @@ export default function HomeView({
                     </div>
                   )
                 })()}
+                {/* Custom reply bar below the quick responses (Patrik 2026-06-19): type a reply
+                    to the top card; Enter or the send button posts it for real. */}
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    value={catchupReplyText}
+                    onChange={(e) => setCatchupReplyText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && catchupReplyText.trim()) { e.preventDefault(); replyToCatchup(top[0], catchupReplyText) } }}
+                    placeholder="Write a reply…"
+                    style={{ flex: 1, height: '44px', boxSizing: 'border-box', padding: '0 14px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '13px', fontFamily: 'inherit', outline: 'none' }}
+                  />
+                  <button onClick={() => replyToCatchup(top[0], catchupReplyText)} disabled={!catchupReplyText.trim()} title="Send reply"
+                    style={{ width: '44px', height: '44px', flex: 'none', borderRadius: '12px', border: 'none', background: catchupReplyText.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-surface2)', color: catchupReplyText.trim() ? '#fff' : 'var(--cv6-text-tertiary)', cursor: catchupReplyText.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                  </button>
+                </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={() => { onCatchupOpenRoom && onCatchupOpenRoom(top[0]) }}
                     style={{ flex: 1, height: '44px', borderRadius: '12px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontFamily: 'inherit' }}>
