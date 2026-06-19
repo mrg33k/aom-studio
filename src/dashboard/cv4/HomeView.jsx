@@ -1739,8 +1739,11 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
             const ri = origIndex
             const isExp = expandedRow === ri
             const isSelected = expandedRow === ri && sel.live
+            // Desktop shows the selected bug in the right detail pane (matches the design's
+            // 3-pane layout); only mobile expands the row inline since it has no room for a pane.
+            const inlineExpand = isExp && isNarrow
             return (
-            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'flex', alignItems: 'center', minHeight: '60px', paddingTop: '11px', paddingBottom: '11px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', cursor: sel.live ? 'pointer' : 'default', background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', outline: isSelected ? '2px solid var(--cv6-accent-primary)' : 'none', outlineOffset: isSelected ? '-2px' : 'auto', margin: isExp ? '0 -8px' : '0', borderRadius: isExp ? '8px' : '0', transition: 'background 120ms ease' }}>
+            <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'flex', alignItems: 'center', minHeight: '60px', paddingTop: '11px', paddingBottom: '11px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', cursor: sel.live ? 'pointer' : 'default', background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', outline: isSelected ? '2px solid var(--cv6-accent-primary)' : 'none', outlineOffset: isSelected ? '-2px' : 'auto', margin: inlineExpand ? '0 -8px' : '0', borderRadius: inlineExpand ? '8px' : '0', transition: 'background 120ms ease' }}>
               {sel.columns.length > 0 && (
                 <>
                   <div key={sel.columns[0]} style={{ flex: 1, minWidth: 0, paddingRight: '12px', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }}>
@@ -1809,7 +1812,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
                       } else {
                         // Generic content
                         return sel.live ? (
-                          <div style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', overflow: 'hidden', display: isExp ? 'block' : '-webkit-box', WebkitLineClamp: isExp ? 'none' : 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
+                          <div style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', overflow: 'hidden', display: inlineExpand ? 'block' : '-webkit-box', WebkitLineClamp: inlineExpand ? 'none' : 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis', lineHeight: 1.4 }}>
                             {row[c] || '—'}
                           </div>
                         ) : (
@@ -1835,6 +1838,67 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
    )
   }
 
+  // Right detail pane — the selected bug/row rendered as a focused card (matches the
+  // design's 3rd column). Real row fields; status is changeable from here too.
+  const Detail = () => {
+    if (expandedRow == null || !sel) return null
+    const row = sel.rows[expandedRow]
+    if (!row) return null
+    const isBug = sel.id === 'cv6-bugs'
+    const titleCol = isBug ? 'Bug' : sel.columns[0]
+    const title = row[titleCol] || '—'
+    const cv6id = isBug && row.__id ? `CV6-${(String(row.__id).charCodeAt(0) * 137) % 999}` : null
+    const statusVal = row[statusCol] || 'Open'
+    const fieldCols = sel.columns.filter(c => c !== titleCol && c !== statusCol)
+    const statusSelectStyle = { width: '100%', padding: '11px 12px', borderRadius: '9px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontFamily: 'inherit', fontSize: '13.5px', fontWeight: '600', cursor: 'pointer', outline: 'none' }
+    const onStatus = (val) => { if (isBug) updateBugStatus(row.__id, val); else setCell(expandedRow, statusCol, val) }
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, height: '100%', borderLeft: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', padding: '18px 18px 14px', borderBottom: '1px solid var(--cv6-divider)' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: 'var(--cv6-text-primary)', lineHeight: 1.3 }}>{title}</div>
+            {cv6id && <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '4px' }}>{cv6id}</div>}
+          </div>
+          <button onClick={() => setExpandedRow(null)} title="Close" style={{ width: '26px', height: '26px', flexShrink: 0, borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {fieldCols.map(c => {
+            const val = row[c]
+            if (val == null || val === '') return null
+            return (
+              <div key={c} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-tertiary)' }}>{c}</span>
+                {c === 'Severity' ? (
+                  <span style={{ alignSelf: 'flex-start', fontSize: '12.5px', fontWeight: '600', color: STATUS_COLORS[val] || 'var(--cv6-text-primary)' }}>{val}</span>
+                ) : c === 'Priority' ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--cv6-text-primary)' }}>
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: PRIORITY_COLORS[val || 3] || 'var(--cv6-text-primary)' }} />P{val}
+                  </span>
+                ) : (c === 'Owner' || c === 'Assignee') ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '13px', color: 'var(--cv6-text-primary)' }}>
+                    <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(91, 155, 255, 0.2)', color: 'var(--cv6-accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9.5px', fontWeight: '700', flexShrink: 0 }}>{(String(val)[0] + (String(val).split(' ')[1] ? String(val).split(' ')[1][0] : '')).toUpperCase()}</span>
+                    {val}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', lineHeight: 1.45 }}>{val}</span>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <div style={{ padding: '14px 18px', borderTop: '1px solid var(--cv6-divider)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <span style={{ fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-tertiary)' }}>Change status</span>
+          <select value={statusVal} onChange={e => onStatus(e.target.value)} style={statusSelectStyle}>
+            {['Open', 'In progress', 'Done'].map(s => <option key={s} value={s} style={{ color: 'var(--cv6-text-primary)', background: 'var(--cv6-surface)' }}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+    )
+  }
+  const detailOpen = !isNarrow && expandedRow != null && !!sel
+
   return (
    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
     {srStatus === 'needs_key' && (
@@ -1842,7 +1906,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         Space Rising live tracker is wired and ready. It needs its data key added to the dashboard settings to switch on.
       </div>
     )}
-    <div style={{ height: isNarrow ? '64vh' : (tall ? '82vh' : '440px'), minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : (selectorCollapsed ? '40px 1fr' : '230px 1fr'), transition: 'grid-template-columns 160ms ease, height 160ms ease' }}>
+    <div style={{ height: isNarrow ? '64vh' : (tall ? '82vh' : '440px'), minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : ((selectorCollapsed ? '40px' : '230px') + ' minmax(0, 1fr)' + (detailOpen ? ' 340px' : '')), transition: 'grid-template-columns 160ms ease, height 160ms ease' }}>
       {isNarrow ? (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {mobilePane === 'sheet' && (
@@ -1852,7 +1916,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
           )}
           <div style={{ flex: 1, minHeight: 0 }}>{mobilePane === 'list' ? Selector() : Sheet()}</div>
         </div>
-      ) : (<>{Selector()}{Sheet()}</>)}
+      ) : (<>{Selector()}{Sheet()}{detailOpen ? Detail() : null}</>)}
     </div>
    </div>
   )
