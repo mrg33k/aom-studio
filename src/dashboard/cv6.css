@@ -318,6 +318,16 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-hom
   padding: 10px 12px !important;
 }
 
+/* R-QA 2026-06-19: links inside the blue user bubble were the default link blue
+   (#60a5fa) sitting on the blue bubble — pale-on-blue, unreadable (e.g. a pasted
+   email's "Learn more" / website links). Force them white with a soft underline
+   so they read on the accent fill. !important to beat ChatMessageRenderer's a{}. */
+[data-cv6] .hm-user-bubble .cmr-content a,
+[data-cv6] .hm-user-bubble .message-content a {
+  color: #ffffff !important;
+  text-decoration-color: rgba(255, 255, 255, 0.55) !important;
+}
+
 /* R-QA 2026-06-19: the conversation column is also a .hm-section but the photo
    still bled around the message bubble (the .hm-section frost above did not reach
    it / it did not fill the column). Give it its OWN frosted backing, scoped

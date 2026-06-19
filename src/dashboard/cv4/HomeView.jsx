@@ -5068,7 +5068,7 @@ export default function HomeView({
                         // R6: User message = right-aligned accent bubble (radius 16/16/4/16)
                         return (
                           <div key={msg.id} style={{ display: 'flex', justifyContent: 'flex-end', animation: 'cv6-msg-float-in 300ms ease-out' }}>
-                            <div style={{
+                            <div className="hm-user-bubble" style={{
                               maxWidth: '75%', padding: '10px 13px', borderRadius: '16px 16px 4px 16px',
                               // R-QA: user bubble = the design's single blue accent, NOT roomSolid(slug).
                               // roomSolid maps the room hue to an hsl color, which for green-band rooms
