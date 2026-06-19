@@ -318,6 +318,30 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-hom
   padding: 10px 12px !important;
 }
 
+/* R-QA 2026-06-19: the conversation column is also a .hm-section but the photo
+   still bled around the message bubble (the .hm-section frost above did not reach
+   it / it did not fill the column). Give it its OWN frosted backing, scoped
+   without [data-cv4-home] so it definitely applies, and let it fill the column so
+   nothing bleeds below the messages. Matches the All Rooms + Catch Up panels. */
+[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-convo-col {
+  background: rgba(20, 24, 31, 0.80) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  backdrop-filter: blur(22px) saturate(1.3);
+  border-radius: 14px !important;
+  padding: 12px 14px !important;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+[data-glass-card="light"] [data-cv6] .hm-convo-col {
+  background: rgba(255, 255, 255, 0.86) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border-radius: 14px !important;
+  padding: 12px 14px !important;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* ─────────────────────────────────────────────────────────────────
    Typography base (Inter + Space Mono)
    ───────────────────────────────────────────────────────────────── */

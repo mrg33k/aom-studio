@@ -4987,7 +4987,7 @@ export default function HomeView({
             {/* R19: RIGHT COLUMN — CONVERSATION + QUICK REPLY with full interactivity
                 R5: More top padding so room name isn't jammed against border
                 iPad fix: when no room selected, the heading aligns top with catch-up/all-rooms */}
-            <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', paddingTop: selectedRoom ? '22px' : '22px' }}>
+            <div className="hm-section hm-convo-col" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', paddingTop: selectedRoom ? '22px' : '22px' }}>
               {/* R19: Room identifier header with color tinting */}
               {/* R30b: Support agent rooms in addition to project/mission rooms */}
               {/* R19 + Design spec: TWO-line header — line 1: green dot + name (15px 600),
