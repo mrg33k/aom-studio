@@ -216,6 +216,26 @@ function parseSupportStaged(msg) {
 // clean LETTER card (paper surface, readable text, sender + subject) instead — Patrik:
 // "format emails to look like letters and not so crazy."
 const ROOM_EMAIL_RE = /^\s*\[SUPPORT WISH\s+([A-Za-z0-9-]+)\]\s*from\s+([^<(]*?)\s*(?:<([^>]+)>)?\s*\((email[^)]*)\)\s*:\s*\n+([\s\S]*)$/
+// Keep only the clean summary an email message carries — drop the raw quoted thread,
+// machine tags, and signature noise so the letter reads tidily, not "so crazy" (Patrik).
+function cleanEmailBody(raw) {
+  let b = raw || ''
+  const cut = b.search(/---\s*ORIGINAL MESSAGE\s*---/i)
+  if (cut !== -1) {
+    b = b.slice(0, cut)
+  } else {
+    const q = b.search(/\n>\s|\nOn .{0,90}wrote:/)
+    if (q !== -1) b = b.slice(0, q)
+  }
+  return b
+    .replace(/\[staged_draft:[^\]]*\]/g, '')   // never show the staged-reply machine tag
+    .replace(/\[SUPPORT WISH[^\]]*\]/g, '')
+    .replace(/￼/g, '')                     // object-replacement glyphs from pasted signatures
+    .replace(/<https?:\/\/[^>]*>/g, '')         // bare <url> noise
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
 function parseRoomEmail(msg) {
   const text = (msg && msg.text) || ''
   const meta = msg && msg.meta
@@ -226,7 +246,7 @@ function parseRoomEmail(msg) {
     const rest = (m[5] || '').trim()
     const nl = rest.indexOf('\n')
     const subject = (nl === -1 ? rest : rest.slice(0, nl)).trim()
-    const body = (nl === -1 ? '' : rest.slice(nl + 1)).trim()
+    const body = cleanEmailBody(nl === -1 ? '' : rest.slice(nl + 1))
     return {
       who: (m[2] || '').trim() || (meta && meta.support_email) || 'Email',
       email: (m[3] || (meta && meta.support_email) || '').trim(),
@@ -235,8 +255,8 @@ function parseRoomEmail(msg) {
     }
   }
   // metadata says support-email but the text wasn't the machine format — still render
-  // it as a letter (readable) with the whole text as the body.
-  return { who: (meta.support_email || 'Email'), email: meta.support_email || '', subject: '', body: text.trim() }
+  // it as a letter (readable) with the cleaned text as the body.
+  return { who: (meta.support_email || 'Email'), email: meta.support_email || '', subject: '', body: cleanEmailBody(text) }
 }
 
 // A received email rendered as a clean letter (not a chat bubble): paper card, envelope
@@ -5240,6 +5260,10 @@ export default function HomeView({
               <div style={{
                 display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px',
                 marginBottom: '12px', paddingBottom: '12px',
+                // Patrik 2026-06-19: inset the column's items 20px from the left divider so they
+                // breathe; the border-bottom still spans the full column width (padding is inside
+                // the box) so the header underline stays connected to the middle column.
+                paddingLeft: '20px', paddingRight: '20px',
                 // Design: the header underline is a plain neutral hairline (no room-hue color),
                 // flush like the other columns. The old room-hue border was the green line Patrik flagged.
                 borderBottom: '1px solid var(--cv6-divider)',
@@ -5299,7 +5323,7 @@ export default function HomeView({
                     flex: 1, // fills the equal-height column; composer pins to the bottom (matches the design)
                     minHeight: 0,
                     overflowY: 'auto',
-                    paddingRight: '4px',
+                    paddingLeft: '20px', paddingRight: '16px', // inset items from the divider (Patrik 2026-06-19)
                     marginBottom: '12px',
                     display: 'flex',
                     flexDirection: 'column-reverse', // R19: Messages flow upward (newest at bottom, user messages float to top)
@@ -5364,7 +5388,7 @@ export default function HomeView({
                   </div>
 
                   {/* R24: Conversation input — divider line, then suggested replies, then input row (Patrik: chips below the grey line, above where you type) */}
-                  <div style={{ borderTop: '1px solid var(--cv6-divider)', paddingTop: '12px' }}>
+                  <div style={{ borderTop: '1px solid var(--cv6-divider)', padding: '12px 20px 16px' }}>
                     {/* Suggested replies — below the divider line, ABOVE the input row */}
                     {suggestedReplies.length > 0 && (
                       <div style={{ marginBottom: '12px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
