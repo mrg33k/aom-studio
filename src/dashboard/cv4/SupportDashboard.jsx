@@ -247,8 +247,10 @@ function isNonSupportWish(w) {
   return false
 }
 
-// Queue order, not feed order: what waits on you leads, oldest wait first
-// (the person waiting longest deserves the top slot). Finished work sinks.
+// What needs you leads (ready -> needs_you -> working -> rest), then NEWEST FIRST
+// within each group. Newest-first matches a normal inbox + the CV6 design (recent
+// asks at top); the old oldest-wait-first surfaced stale days-old promo mail at the
+// very top, which read as "emails not in order".
 function buildItems(wishes, mailboxes) {
   const items = []
   for (const w of wishes || []) { if (isNonSupportWish(w)) continue; items.push(wishToItem(w)) }
@@ -260,7 +262,7 @@ function buildItems(wishes, mailboxes) {
   items.sort((a, b) => {
     const ra = rank(a), rb = rank(b)
     if (ra !== rb) return ra - rb
-    return ra <= 1 ? (a.date || 0) - (b.date || 0) : (b.date || 0) - (a.date || 0)
+    return (b.date || 0) - (a.date || 0) // newest first within a group
   })
   return items
 }
