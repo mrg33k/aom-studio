@@ -34,7 +34,11 @@ function preprocessBareUrls(text) {
 function parseMarkdown(text) {
   if (!text) return ''
   try {
-    let html = marked.parse(preprocessBareUrls(text))
+    // Strip internal control markers the agent embeds (staged-draft tags) so they
+    // never leak as raw text/links into the chat. Covers both formats:
+    //   [staged_draft:ID|conn:ID]   and   [staged_draft-ID](com:ID)
+    const cleaned = String(text).replace(/\[staged_draft[^\]]*\](\([^)]*\))?/gi, '').replace(/[ \t]{2,}/g, ' ').trim()
+    let html = marked.parse(preprocessBareUrls(cleaned))
     html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     return html
   } catch {
