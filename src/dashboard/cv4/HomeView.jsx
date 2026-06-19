@@ -962,9 +962,26 @@ function ProjectsToolOverlay({ projects: projectsProp, missionsByProject, onOpen
   }, [missionsByProject])
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const check = () => setIsNarrow(window.innerWidth <= 1024)
-    check(); window.addEventListener('resize', check)
-    return () => window.removeEventListener('resize', check)
+    // R-IPAD 2026-06-19 (Patrik: "weird gap/cutoff on the bottom on iPad fullscreen").
+    // 100dvh on iOS Safari resolves to the toolbar-collapsed estimate, so the home grid
+    // stopped ~200px short of the real screen — black gap below + clipped composer. Publish
+    // the TRUE viewport height (visualViewport, which iOS updates live as the toolbar moves)
+    // as --app-height and size the grid off that instead of 100dvh.
+    const vv = window.visualViewport
+    const check = () => {
+      setIsNarrow(window.innerWidth <= 1024)
+      const h = Math.round((vv && vv.height) || window.innerHeight || 0)
+      if (h) document.documentElement.style.setProperty('--app-height', h + 'px')
+    }
+    check()
+    window.addEventListener('resize', check)
+    window.addEventListener('orientationchange', check)
+    if (vv) { vv.addEventListener('resize', check); vv.addEventListener('scroll', check) }
+    return () => {
+      window.removeEventListener('resize', check)
+      window.removeEventListener('orientationchange', check)
+      if (vv) { vv.removeEventListener('resize', check); vv.removeEventListener('scroll', check) }
+    }
   }, [])
 
   const hue = (slug) => ((slug ? slug.charCodeAt(0) : 0) * 137) % 360
@@ -4901,10 +4918,12 @@ export default function HomeView({
                   )}
                 </button>
                 <button title="Notifications" onClick={() => { if (cv6) setSelectedTool('home'); else window.location.href = '/dashboard?view=notifications' }}
-                  style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: '#ffffff', cursor: 'pointer', color: '#1c1b19', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: 0, flex: 'none' }}>
+                  style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: 0, flex: 'none', transition: 'all 120ms ease' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
                   {catchupNotifications.length > 0 && (
-                    <span style={{ position: 'absolute', top: '5px', right: '6px', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '1.5px solid #ffffff' }} />
+                    <span style={{ position: 'absolute', top: '5px', right: '6px', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '1.5px solid var(--cv6-surface)' }} />
                   )}
                 </button>
                 <button title="User settings" onClick={() => window.location.href = '/dashboard?view=settings'}
@@ -5203,7 +5222,7 @@ export default function HomeView({
               quick reply sits just above the bottom and the section never gets cut off. No upper
               cap — the columns keep extending as the user grows the window height, holding the
               same ~110px bottom offset. A 480px floor protects very short windows. */}
-          <div className="hm-three-column-grid" style={{ gap: '0', height: 'max(480px, calc(100dvh - 110px))', marginBottom: '18px', position: 'relative' }}>
+          <div className="hm-three-column-grid" style={{ gap: '0', height: 'max(480px, calc(var(--app-height, 100dvh) - 110px))', marginBottom: '18px', position: 'relative' }}>
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
