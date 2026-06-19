@@ -2111,6 +2111,107 @@ function FilesToolOverlay({ projects }) {
   )
 }
 
+// R-QA 2026-06-19: Organize desktop = the Claude design's 3 columns at once —
+// PROJECTS (left) | that project's FILES (middle) | PREVIEW (right, reads the file
+// you clicked). Composes the already-wired real-data pieces: project-files API ->
+// realFileTree, and FilePreviewPanel (real content, no placeholder). Replaces the
+// old Projects|Files toggle that showed one view at a time with no preview.
+function OrganizeBrowser({ projects }) {
+  const list = projects || []
+  const [proj, setProj] = useState(list[0] || null)
+  const [tree, setTree] = useState([])
+  const [selFile, setSelFile] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [isNarrow, setIsNarrow] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsNarrow(window.innerWidth <= 900)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  useEffect(() => { setSelFile(null) }, [proj])
+  useEffect(() => {
+    if (!proj || !proj.slug) { setTree(buildFileTree(proj)); return }
+    let active = true
+    const load = async () => {
+      setLoading(true)
+      try {
+        const r = await authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(proj.slug)}`)
+        if (!active) return
+        if (!r.ok) { setTree([]); return }
+        const d = await r.json()
+        setTree(realFileTree(d))
+      } catch { if (active) setTree([]) }
+      finally { if (active) setLoading(false) }
+    }
+    load()
+    const t = setInterval(load, 12000)
+    return () => { active = false; clearInterval(t) }
+  }, [proj])
+
+  // Flatten the tree into file rows (top-level files + files inside folders/missions,
+  // tagged with their group) so the middle column reads like the design's flat file list.
+  const flatFiles = []
+  const walk = (nodes, group) => (nodes || []).forEach(n => {
+    if (n.type === 'file') flatFiles.push({ ...n, group })
+    else walk(n.children, n.name)
+  })
+  walk(tree, null)
+  const fileCount = flatFiles.length
+
+  const colStyle = { display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto', borderRight: '1px solid var(--cv6-divider)' }
+  const headStyle = { flexShrink: 0, fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)', padding: '12px 14px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', borderBottom: '1px solid var(--cv6-divider)', zIndex: 1 }
+  const emptyHint = (t) => <div style={{ padding: '14px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>{t}</div>
+
+  const ProjRow = (p) => {
+    const active = proj && proj.slug === p.slug
+    return (
+      <button key={p.slug} onClick={() => setProj(p)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '9px 14px', margin: '2px 6px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'hsla(220,90%,55%,0.12)' : 'transparent' }}
+        onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+        <span style={{ flexShrink: 0, color: `hsl(${roomHueOf(p.slug)},65%,60%)`, display: 'inline-flex' }}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        </span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.slug}</span>
+      </button>
+    )
+  }
+  const FileRow = (f, i) => {
+    const active = selFile && selFile.path === f.path
+    const color = FILE_TYPE_COLOR[f.fileType] || 'var(--cv6-text-secondary)'
+    return (
+      <button key={f.path || i} onClick={() => setSelFile(f)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '8px 12px', margin: '2px 6px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'hsla(220,90%,55%,0.12)' : 'transparent' }}
+        onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+        <span style={{ flexShrink: 0, color, display: 'inline-flex' }}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+        </span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+        {f.group ? <span style={{ flexShrink: 0, fontSize: '10px', color: 'var(--cv6-text-tertiary)' }}>{f.group}</span> : null}
+      </button>
+    )
+  }
+
+  const projCol = <div style={colStyle}><div style={headStyle}>Projects</div>{list.length ? list.map(ProjRow) : emptyHint('No projects')}</div>
+  const filesCol = <div style={colStyle}><div style={headStyle}>{proj ? `${proj.name || proj.slug} · ${fileCount} ${fileCount === 1 ? 'file' : 'files'}` : 'Files'}</div>{loading && !flatFiles.length ? emptyHint('Loading…') : flatFiles.length ? flatFiles.map(FileRow) : emptyHint('No files yet')}</div>
+  const previewCol = <div style={{ ...colStyle, borderRight: 'none' }}><div style={headStyle}>Preview</div><FilePreviewPanel node={selFile} /></div>
+
+  if (isNarrow) {
+    const wrap = (child, cap) => <div style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', maxHeight: cap, overflowY: 'auto' }}>{child}</div>
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {wrap(projCol, '26vh')}{wrap(filesCol, '30vh')}{wrap(previewCol, 'none')}
+      </div>
+    )
+  }
+  return (
+    <ResizableBox minHeight={460} storageKey="organize-browser">
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(170px,1fr) minmax(200px,1.2fr) minmax(280px,1.9fr)', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+        {projCol}{filesCol}{previewCol}
+      </div>
+    </ResizableBox>
+  )
+}
+
 // R60 (Patrik): every tool surface (and the quick chat) keeps its designed height by
 // default but can be dragged TALLER from the bottom edge — never shorter than the design.
 // The child fills 100% height; we own the height and a grab handle at the bottom.
@@ -4692,66 +4793,11 @@ export default function HomeView({
                 )}
 
                 {selectedTool === 'organize' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '12px' }}>
-                    {/* Switcher in segmented button style per CV6 mockup */}
-                    <div style={{ display: 'flex', gap: '4px', background: 'var(--cv6-surface2)', borderRadius: '11px', padding: '4px', marginBottom: '8px' }}>
-                      <button
-                        onClick={() => setOrganizeSubtool('projects')}
-                        style={{
-                          flex: 1,
-                          height: '36px',
-                          padding: '0',
-                          borderRadius: '8px',
-                          border: organizeSubtool === 'projects' ? '1px solid var(--cv6-accent-primary)' : 'none',
-                          background: organizeSubtool === 'projects' ? 'var(--cv6-accent-primary)' : 'transparent',
-                          color: organizeSubtool === 'projects' ? '#fff' : 'var(--cv6-text-primary)',
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                          fontSize: '13.5px',
-                          fontWeight: '600',
-                          transition: 'all 120ms ease',
-                        }}
-                      >
-                        Projects
-                      </button>
-                      <button
-                        onClick={() => setOrganizeSubtool('files')}
-                        style={{
-                          flex: 1,
-                          height: '36px',
-                          padding: '0',
-                          borderRadius: '8px',
-                          border: organizeSubtool === 'files' ? '1px solid var(--cv6-accent-primary)' : 'none',
-                          background: organizeSubtool === 'files' ? 'var(--cv6-accent-primary)' : 'transparent',
-                          color: organizeSubtool === 'files' ? '#fff' : 'var(--cv6-text-primary)',
-                          cursor: 'pointer',
-                          fontFamily: 'inherit',
-                          fontSize: '13.5px',
-                          fontWeight: '600',
-                          transition: 'all 120ms ease',
-                        }}
-                      >
-                        Files
-                      </button>
-                    </div>
-                    {/* Tool content */}
-                    <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-                      {organizeSubtool === 'projects' && (
-                        <ProjectsToolOverlay
-                          projects={[...(recentProjects || []), ...(allProjects || [])]}
-                          missionsByProject={missionsByProject}
-                          onOpen={handleProjectSelect}
-                          onCreateProject={persistCreateProject}
-                          onCreateMission={persistCreateMission}
-                          onMoveFile={persistMoveFile}
-                          onMoveMission={persistMoveMission}
-                        />
-                      )}
-                      {organizeSubtool === 'files' && (
-                        <FilesToolOverlay projects={[...(recentProjects || []), ...(allProjects || [])]} />
-                      )}
-                    </div>
-                  </div>
+                  // R-QA 2026-06-19: the Claude design's Organize = Projects | files |
+                  // preview, all three columns at once (not the old Projects/Files
+                  // toggle with no preview). OrganizeBrowser composes the real-data
+                  // file tree + FilePreviewPanel. Mobile stacks the three.
+                  <OrganizeBrowser projects={[...(recentProjects || []), ...(allProjects || [])]} />
                 )}
 
                 {selectedTool === 'review' && (
