@@ -5044,8 +5044,10 @@ export default function HomeView({
                 No missions list, no combined view. Just agent status + all projects (scrollable).
                 R2: Drill-through mode: click project → see its missions + back arrow */}
             <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
-              {/* "All rooms" header (11px uppercase muted) */}
-              <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--cv6-divider)' }}>
+              {/* "All rooms" header (11px uppercase muted). Design: a plain label, NO
+                  underline (Patrik 2026-06-19: the border-bottom here didn't belong —
+                  only the conversation column header carries a divider). */}
+              <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)', marginBottom: '14px' }}>
                 All rooms
               </div>
 
@@ -5415,8 +5417,12 @@ export default function HomeView({
                         onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(0.92)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
                         onMouseLeave={(e) => { e.currentTarget.style.filter = 'none'; e.currentTarget.style.transform = 'translateY(0)'; }}
                       >
-                        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="8"/><path d="M9.5 9.5c.8-1.2 4.2-1.2 5 0"/><path d="M12 4v0M19.5 9l.5-1M4.5 9 4 8"/>
+                        {/* Patrik 2026-06-19: the design's orb-with-ticks glyph read as a
+                            "weird drawing" at this size. Replaced with a clean sparkles icon
+                            (a real, recognizable AI/command-launcher affordance). */}
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 3l1.6 4.9a3 3 0 0 0 1.9 1.9L20.4 11.4l-4.9 1.6a3 3 0 0 0-1.9 1.9L12 19.8l-1.6-4.9a3 3 0 0 0-1.9-1.9L3.6 11.4l4.9-1.6a3 3 0 0 0 1.9-1.9z"/>
+                          <path d="M19 4v2.6M20.3 5.3h-2.6"/>
                         </svg>
                       </button>
 
