@@ -220,6 +220,13 @@ function SupportToolOverlay({ worldId }) {
   const waitingCount = items.filter(it => it.ready || (it.status === 'needs_you')).length
   const answeredCount = items.filter(it => it.status === 'resolved' || it.status === 'responded').length
 
+  // "Things you need to know" banner — the real act-now signal is staged replies
+  // waiting on your OK (item.ready). Newest first (items is already sorted), so
+  // readyItems[0] is the most recent. We surface the count + the newest one; no
+  // fabricated agent narrative (real-data rule). Hidden when nothing is staged.
+  const readyItems = items.filter(it => it.ready)
+  const topReady = readyItems[0] || null
+
   // Filter items based on the active filter pill
   const filteredItems = (() => {
     if (filterStatus === 'open') return items.filter(it => !it.ready && it.status !== 'resolved' && it.status !== 'responded')
@@ -302,8 +309,35 @@ function SupportToolOverlay({ worldId }) {
           </div>
         </div>
 
+        {/* Things you need to know — staged replies waiting on your OK (real, act-now) */}
+        {topReady && (
+          <button
+            onClick={() => { setFilterStatus('waiting'); setSelectedItem(topReady) }}
+            style={{
+              textAlign: 'left', margin: '12px 16px 0', padding: '12px 14px', borderRadius: '10px',
+              border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-accent-weak)',
+              cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', gap: '4px'
+            }}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-accent-primary)' }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              Things you need to know
+            </span>
+            <span style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', lineHeight: 1.45 }}>
+              {readyItems.length === 1
+                ? <>A reply is staged and waiting on your OK: <strong>{topReady.subject || topReady.who}</strong>{topReady.who && topReady.subject ? <> from {topReady.who}</> : null}.</>
+                : <>{readyItems.length} replies are staged and waiting on your OK. Newest: <strong>{topReady.subject || topReady.who}</strong>{topReady.who && topReady.subject ? <> from {topReady.who}</> : null}.</>}
+            </span>
+          </button>
+        )}
+
+        {/* Section label — matches the design's OPEN ASKS / WAITING / ANSWERED heading */}
+        <div style={{ padding: '14px 18px 4px', fontSize: '10.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-tertiary)' }}>
+          {filterStatus === 'open' ? 'Open asks' : filterStatus === 'waiting' ? 'Waiting on you' : 'Answered'}
+        </div>
+
         {/* Inbox list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px 12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
           {filteredItems.length === 0 ? (
             <div style={{ padding: '20px 12px', textAlign: 'center', color: 'var(--cv6-text-tertiary)', fontSize: '13px' }}>
               {filterStatus === 'open' && 'No open asks.'}
