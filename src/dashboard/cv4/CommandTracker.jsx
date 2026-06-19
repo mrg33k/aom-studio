@@ -894,13 +894,13 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
         </div>
       )}
 
-      {/* Header row — hidden on mobile (rows become self-labeling cards) */}
+      {/* Header row — matches CV6 design: ROOM, CURRENT GOAL, SET BY, STATUS (170px, flex, 130px, 110px) */}
       <div
         style={{
           display: isNarrow ? 'none' : 'grid',
-          gridTemplateColumns: '1fr 2fr 80px 1.5fr 100px 60px',
+          gridTemplateColumns: '170px 1fr 130px 110px',
           gap: '12px',
-          padding: '12px 16px',
+          padding: '12px 24px',
           background: 'var(--cv6-surface)',
           borderBottom: '1px solid var(--cv6-divider)',
           position: 'sticky',
@@ -908,17 +908,16 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           zIndex: 10,
         }}
       >
-        {['ROOM', 'GOAL NOW', 'STATUS', 'LIVE NOW', 'LAST ACTIVITY', 'MASTER LOOP'].map((col) => (
+        {['ROOM', 'CURRENT GOAL', 'SET BY', 'STATUS'].map((col) => (
           <div
             key={col}
             style={{
               fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 10,
-              fontWeight: 700,
-              letterSpacing: '0.14em',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.05em',
               textTransform: 'uppercase',
               color: 'var(--cv6-text-tertiary)',
-              textAlign: col === 'LIVE NOW' ? 'left' : col === 'LAST ACTIVITY' ? 'right' : 'left',
             }}
           >
             {col}
@@ -951,83 +950,48 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             onClick={() => !isWorkerRow && onJumpToRoom?.(row.slug)}
             style={{
               display: 'grid',
-              gridTemplateColumns: isNarrow ? 'auto 1fr auto' : '1fr 2fr 80px 1.5fr 100px 60px',
+              gridTemplateColumns: isNarrow ? 'auto 1fr auto' : '170px 1fr 130px 110px',
               gridTemplateAreas: isNarrow ? '"room room toggle" "goal goal goal" "status live last"' : undefined,
               gap: isNarrow ? '7px 10px' : '12px',
-              padding: isNarrow ? '14px 16px' : '11px 16px',
+              padding: isNarrow ? '14px 16px' : '12px 24px',
               background: isWorkerRow ? 'rgba(255,255,255,0.01)' : (isHovered ? 'var(--cv6-surface-hover)' : 'var(--cv6-surface)'),
               cursor: isWorkerRow ? 'default' : 'pointer',
               transition: 'background 120ms ease',
               alignItems: 'center',
+              minHeight: '64px',
               opacity: isWorkerRow ? 0.95 : 1,
             }}
             onMouseEnter={() => !isWorkerRow && setHoveredRoutineId(row.routineId)}
             onMouseLeave={() => !isWorkerRow && setHoveredRoutineId(null)}
           >
-            {/* ROOM / WORKER NAME */}
-            <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 6, gridArea: isNarrow ? 'room' : undefined }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
+            {/* ROOM — color dot + name */}
+            <div style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: 9, gridArea: isNarrow ? 'room' : undefined }}>
               <div
                 style={{
-                  fontSize: 13,
-                  fontWeight: isWorkerRow ? 500 : 600,
-                  color: 'var(--cv6-text-primary)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: color,
+                  flexShrink: 0,
                 }}
-              >
-                {(row.display && row.display.name) || row.slug || '(unnamed)'}
-              </div>
-              {row.display && row.display.tag && (
+              />
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <div
                   style={{
-                    fontSize: 10,
-                    color: 'var(--cv6-text-tertiary)',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: 'var(--cv6-text-primary)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                   }}
                 >
-                  {row.display.tag}
+                  {(row.display && row.display.name) || row.slug || '(unnamed)'}
                 </div>
-              )}
               </div>
-              {/* R110: one-tap "move this forward" (room rows only) */}
-              {!isWorkerRow && onReplyToRoom && (
-                <button
-                  title="Tell the assistant to move this room forward"
-                  onClick={(e) => { e.stopPropagation(); moveForward(row) }}
-                  style={{
-                    flexShrink: 0, width: 24, height: 24, borderRadius: 6, border: 'none', cursor: 'pointer',
-                    background: movedSlug === row.slug ? 'color-mix(in srgb, var(--cv6-accent-success) 18%, transparent)' : 'transparent',
-                    color: movedSlug === row.slug ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  {movedSlug === row.slug
-                    ? <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    : <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>}
-                </button>
-              )}
-              {/* Inline reply trigger (room rows only) */}
-              {!isWorkerRow && onReplyToRoom && (
-                <button
-                  title="Quick reply to this room"
-                  onClick={(e) => { e.stopPropagation(); setReplyOpenSlug(replyOpenSlug === row.slug ? null : row.slug); setReplyText('') }}
-                  style={{
-                    flexShrink: 0, width: 24, height: 24, borderRadius: 6, border: 'none', cursor: 'pointer',
-                    background: replyOpenSlug === row.slug ? 'var(--cv6-accent-primary)' : 'transparent',
-                    color: replyOpenSlug === row.slug ? '#fff' : (replyDoneSlug === row.slug ? 'var(--cv6-accent-success)' : 'var(--cv6-text-tertiary)'),
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-                </button>
-              )}
             </div>
 
-            {/* GOAL NOW — click to edit (room rows) */}
+            {/* CURRENT GOAL — click to edit (room rows) */}
             {editingGoalSlug === row.slug && !isWorkerRow ? (
               <input
                 autoFocus
@@ -1039,7 +1003,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 disabled={savingGoal}
                 placeholder="One-line goal…"
                 style={{
-                  fontSize: 12, minWidth: 0, width: '100%', padding: '4px 8px', borderRadius: 5,
+                  fontSize: 13.5, minWidth: 0, width: '100%', padding: '6px 10px', borderRadius: 6,
                   border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-ground)',
                   color: 'var(--cv6-text-primary)', fontFamily: 'inherit', outline: 'none',
                   gridArea: isNarrow ? 'goal' : undefined,
@@ -1050,8 +1014,8 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                 onClick={(e) => { if (!isWorkerRow) { e.stopPropagation(); setEditingGoalSlug(row.slug); setGoalDraft(row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) } }}
                 title={row.goalCurated ? (isWorkerRow ? undefined : 'Click to edit the goal') : (cleanCell(row.goal) || undefined)}
                 style={{
-                  fontSize: 12,
-                  color: 'var(--cv6-text-secondary)',
+                  fontSize: 13.5,
+                  color: 'var(--cv6-text-primary)',
                   whiteSpace: isNarrow ? 'normal' : 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -1059,33 +1023,27 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                   WebkitLineClamp: isNarrow ? 3 : undefined,
                   WebkitBoxOrient: isNarrow ? 'vertical' : undefined,
                   minWidth: 0,
-                  cursor: isWorkerRow ? 'default' : 'text',
+                  cursor: isWorkerRow ? 'default' : 'pointer',
                   gridArea: isNarrow ? 'goal' : undefined,
                 }}
               >
-                {(() => {
-                  const goalText = (row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) || '—'
-                  // cc-6: where did this goal come from — you, the loop, or the mission doc.
-                  const prov = goalText === '—' ? null : ({
-                    user: { t: 'YOU', c: 'var(--cv6-accent-primary)' },
-                    loop: { t: 'LOOP', c: 'var(--cv6-accent-success)' },
-                    doc: { t: 'DOC', c: 'var(--cv6-text-tertiary)' },
-                    session: { t: 'LIVE', c: 'var(--cv6-text-tertiary)' },
-                  })[row.goalSource]
-                  return (<>
-                    {prov && (
-                      <span style={{
-                        fontSize: 8, fontWeight: 700, letterSpacing: '0.06em',
-                        color: prov.c, border: `1px solid ${prov.c}`, borderRadius: 4,
-                        padding: '1px 4px', marginRight: 6, opacity: 0.75,
-                        textTransform: 'uppercase', whiteSpace: 'nowrap', flexShrink: 0,
-                      }}>{prov.t}</span>
-                    )}
-                    {goalText}
-                  </>)
-                })()}
+                {(row.goalCurated ? cleanCell(row.goal) : synthGoal(row.goal)) || '—'}
               </div>
             )}
+
+            {/* SET BY — "Name · time ago" format */}
+            <div
+              style={{
+                fontSize: 12.5,
+                color: 'var(--cv6-text-tertiary)',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                minWidth: 0,
+              }}
+            >
+              {row.lastActivity ? `${row.last_touched_label || 'Patrik'} · ${relativeTime(row.lastActivity)}` : '—'}
+            </div>
 
             {/* STATUS */}
             <div
@@ -1093,23 +1051,23 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
-                justifyContent: isNarrow ? 'flex-start' : 'center',
-                gridArea: isNarrow ? 'status' : undefined,
+                gap: 5,
+                justifyContent: 'flex-start',
               }}
             >
               <div
                 style={{
-                  width: 8,
-                  height: 8,
+                  width: 6,
+                  height: 6,
                   borderRadius: '50%',
                   background: color,
+                  flexShrink: 0,
                 }}
               />
               <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 700,
+                  fontSize: 10.5,
+                  fontWeight: 600,
                   color: color,
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
@@ -1118,70 +1076,6 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
               >
                 {label}
               </div>
-            </div>
-
-            {/* LIVE NOW */}
-            <div
-              title={cleanCell(row.liveNow) || undefined}
-              style={{
-                fontSize: 12,
-                color: 'var(--cv6-text-secondary)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                minWidth: 0,
-                gridArea: isNarrow ? 'live' : undefined,
-              }}
-            >
-              {cleanCell(row.liveNow) || '—'}
-            </div>
-
-            {/* LAST ACTIVITY */}
-            <div
-              style={{
-                fontSize: 12,
-                color: 'var(--cv6-text-tertiary)',
-                textAlign: 'right',
-                whiteSpace: 'nowrap',
-                gridArea: isNarrow ? 'last' : undefined,
-              }}
-            >
-              {relativeTime(row.lastActivity)}
-            </div>
-
-            {/* MASTER LOOP TOGGLE (room-goal rows only) */}
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                display: 'flex',
-                justifyContent: isNarrow ? 'flex-end' : 'center',
-                alignItems: 'center',
-                gridArea: isNarrow ? 'toggle' : undefined,
-              }}
-            >
-              {!isWorkerRow ? (
-                (() => {
-                  const apKey = String(row.slug || '').split(':').pop().trim() || String(row.slug || '')
-                  const apOn = autopilotBusy[apKey] !== undefined ? autopilotBusy[apKey] : (row.autopilot !== false)
-                  return (
-                    <ToggleSwitch
-                      on={apOn}
-                      onChange={(wantOn) => toggleAutopilot(row.slug, wantOn)}
-                      disabled={autopilotBusy[apKey] !== undefined}
-                    />
-                  )
-                })()
-              ) : (
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: 'var(--cv6-text-tertiary)',
-                    fontStyle: 'italic',
-                  }}
-                >
-                  —
-                </div>
-              )}
             </div>
           </div>
           {/* Inline reply composer (expands under the row) */}
