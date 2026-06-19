@@ -3683,7 +3683,7 @@ export default function HomeView({
       const msgTs = mis.last_message_at ? new Date(mis.last_message_at).getTime() : 0
       cands.push({ type: 'mission', project: proj, mission: mis, ts: Math.max(visitTs, msgTs), key: vk })
     }
-    return cands.filter(c => c.ts > 0).sort((a, b) => b.ts - a.ts).slice(0, 3)
+    return cands.filter(c => c.ts > 0).sort((a, b) => b.ts - a.ts).slice(0, 4)
   }, [cv6, projectRooms, allMissionsForCV6, recentVisits])
 
   // R7: compute "happening now" section — agents with recent activity + active tasks
@@ -4016,42 +4016,35 @@ export default function HomeView({
     { text: 'Updates?' },
   ]
 
+  // The arrow list mirrors the middle (All Rooms) column EXACTLY, top to bottom, so
+  // ArrowDown starts at the top of that list and never lands on a hidden item
+  // (Patrik 2026-06-19). When drilled into a project, the list is that project's
+  // missions; otherwise it is Recents -> Agents -> all rooms.
   const selectableItems = useMemo(() => {
     if (!cv6) return []
     try {
       const items = []
-      // Patrik's model: the arrow list is agents -> active work -> needs-you ->
-      // projects, starting on the first agent. The Tools row is NOT in this list;
-      // it is driven separately by Tab.
+      if (browsingProject) {
+        const ms = missionsByProject[browsingProject.slug] || []
+        ms.forEach((m) => { if (m?.slug) items.push({ type: 'mission', item: m, project: browsingProject }) })
+        return items
+      }
+      recentRooms.forEach((r) => items.push({ type: 'recent', item: r }))
       if (Array.isArray(visibleAgents)) {
-        visibleAgents.forEach((a) => {
-          if (a?.slug) items.push({ type: 'agent', item: a })
-        })
+        visibleAgents.forEach((a) => { if (a?.slug) items.push({ type: 'agent', item: a }) })
       }
-      // Then Active Work (missions)
-      if (Array.isArray(allMissionsForCV6)) {
-        allMissionsForCV6.forEach((m) => {
-          if (m?.mission?.slug) items.push({ type: 'mission', item: m.mission, project: m.project })
-        })
-      }
-      // Then actionable stats. kb-8: only include needs-you items that actually
-      // have an onOpen handler, so keyboard Enter never lands on a dead no-op item.
-      if (Array.isArray(needsYou)) {
-        needsYou.forEach((n) => {
-          if (n?.key && typeof n.onOpen === 'function') items.push({ type: 'needsyou', item: n })
-        })
-      }
-      // Projects last
-      if (Array.isArray(recentProjects)) {
-        recentProjects.forEach((p) => {
-          if (p?.slug) items.push({ type: 'project', item: p })
-        })
-      }
+      ;[...(recentProjects || []), ...(allProjects || [])].forEach((p) => {
+        if (p?.slug) items.push({ type: 'project', item: p })
+      })
       return items
     } catch (_) {
       return []
     }
-  }, [cv6, needsYou, allMissionsForCV6, visibleAgents, recentProjects])
+  }, [cv6, browsingProject, missionsByProject, recentRooms, visibleAgents, recentProjects, allProjects])
+
+  // Return cursor to the top of the list whenever the middle column's screen changes
+  // (enter a project -> top of its missions; back out -> top of all rooms).
+  useEffect(() => { setSelectedIndex(0) }, [browsingProject])
 
   const handleKeyDown = useCallback((e) => {
     if (!cv6 || selectableItems.length === 0) return
@@ -4067,7 +4060,20 @@ export default function HomeView({
       if (selectedIndex < 0 || selectedIndex >= selectableItems.length) return
       const sel = selectableItems[selectedIndex]
       if (!sel) return
-      if (sel.type === 'needsyou') {
+      if (sel.type === 'recent') {
+        // A recent row (project or mission): first activate = quick view, second = open chat.
+        const r = sel.item
+        const isM = r.type === 'mission'
+        const inQuickView = selectedRoom && (isM
+          ? (selectedRoom.mission && selectedRoom.mission.slug === r.mission.slug)
+          : (!selectedRoom.mission && selectedRoom.project?.slug === r.project.slug))
+        if (!inQuickView) {
+          recordVisit(r.project.slug, isM ? r.mission.slug : null)
+          setSelectedRoom({ project: r.project, mission: isM ? r.mission : null })
+        } else {
+          openChatToolForRoom({ project: r.project, mission: isM ? r.mission : null })
+        }
+      } else if (sel.type === 'needsyou') {
         sel.item.onOpen && sel.item.onOpen()
       } else if (sel.type === 'mission') {
         // R88 (Patrik): first activate = quick view; second activate opens the
@@ -4094,9 +4100,10 @@ export default function HomeView({
       if (!toolsFocused) { setToolsFocused(true); return }
       setToolNavIndex(prev => e.shiftKey ? (prev - 1 + TOOL_TABS.length) % TOOL_TABS.length : (prev + 1) % TOOL_TABS.length)
     } else if (e.key === 'ArrowDown') {
-      // Arrow lane = the list. First arrow from the tools lane returns to the list.
+      // Arrow lane = the list. Coming down out of the tools lane lands on the TOP of the
+      // All Rooms list (Patrik 2026-06-19), not wherever the cursor last sat.
       e.preventDefault()
-      if (toolsFocused) { setToolsFocused(false); return }
+      if (toolsFocused) { setToolsFocused(false); setSelectedIndex(0); return }
       if (selectableItems.length === 0) return
       setSelectedIndex(prev => (prev + 1) % selectableItems.length)
     } else if (e.key === 'ArrowUp') {
@@ -4109,11 +4116,14 @@ export default function HomeView({
       if (toolsFocused) { openTool(TOOL_TABS[toolNavIndex].key); return }
       activate()
     } else if (e.key === 'ArrowLeft') {
-      // From a quick-view room, Left steps back out to the list selection.
+      // Left backs out: from inside a project's missions, return to the All Rooms list
+      // (the useEffect on browsingProject puts the cursor back at the top). Otherwise
+      // step out of a quick-view room (Patrik 2026-06-19).
       e.preventDefault()
-      if (selectedRoom) setSelectedRoom(null)
+      if (browsingProject) { setBrowsingProject(null); setSelectedRoom(null) }
+      else if (selectedRoom) setSelectedRoom(null)
     }
-  }, [cv6, selectableItems, selectedIndex, toolsFocused, toolNavIndex, TOOL_TABS, selectedRoom, openTool, selectedTool, openChatToolForRoom, recordVisit])
+  }, [cv6, selectableItems, selectedIndex, toolsFocused, toolNavIndex, TOOL_TABS, selectedRoom, openTool, selectedTool, openChatToolForRoom, recordVisit, browsingProject])
 
   useEffect(() => {
     if (!cv6) return
@@ -5152,7 +5162,7 @@ export default function HomeView({
           {/* R76 (Patrik): grid layout lives in cv6.css so the ≤768px media query can
               collapse it to ONE stacked column on mobile. Inline display/columns used to
               override the media query, which is why mobile rendered 3 cramped columns. */}
-          <div className="hm-three-column-grid" style={{ gap: '0', height: '566px', marginBottom: '18px' }}>
+          <div className="hm-three-column-grid" style={{ gap: '0', height: '566px', marginBottom: '18px', position: 'relative' }}>
             {/* R64: LEFT COLUMN — CATCH UP (Patrik: lives where Agents used to be) */}
             {renderCatchupColumn()}
 
@@ -5250,9 +5260,12 @@ export default function HomeView({
                         Recent rooms
                       </div>
                     )}
-                    {(missionsByProject[browsingProject.slug] || []).map((m) => (
+                    {(missionsByProject[browsingProject.slug] || []).map((m) => {
+                      const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'mission' && selectableItems[selectedIndex]?.item?.slug === m.slug
+                      return (
                       <button key={m.slug}
                         className="hm-card hm-room-row"
+                        data-cv6-sel={isSelected ? 'true' : undefined}
                         onClick={() => {
                           openChatToolForRoom({ project: browsingProject, mission: m })
                           setBrowsingProject(null)
@@ -5260,12 +5273,12 @@ export default function HomeView({
                         style={{
                           display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', marginBottom: '0',
                           boxSizing: 'border-box', width: '100%',
-                          background: 'transparent', color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                          background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
                           cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
                           transition: 'background 120ms ease',
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                        onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                        onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                       >
                         {/* Mission icon (from getMissionIcon) */}
                         <span style={{ display: 'inline-flex', flexShrink: 0, color: 'var(--cv6-text-secondary)' }}>
@@ -5282,7 +5295,7 @@ export default function HomeView({
                           </span>
                         )}
                       </button>
-                    ))}
+                    )})}
                   </div>
                 </div>
               ) : (() => {
@@ -5305,7 +5318,10 @@ export default function HomeView({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {recentRooms.map((r) => {
                           const isMission = r.type === 'mission'
+                          const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'recent' && selectableItems[selectedIndex]?.item?.key === r.key
                           const openRoom = () => {
+                            const idx = selectableItems.findIndex(s => s.type === 'recent' && s.item?.key === r.key)
+                            if (idx >= 0) setSelectedIndex(idx)
                             recordVisit(r.project.slug, isMission ? r.mission.slug : null)
                             setSelectedRoom({ project: r.project, mission: isMission ? r.mission : null })
                             homeRef.current?.focus()
@@ -5313,16 +5329,17 @@ export default function HomeView({
                           return (
                             <button key={r.key}
                               className="hm-card hm-room-row"
+                              data-cv6-sel={isSelected ? 'true' : undefined}
                               onClick={openRoom}
                               onDoubleClick={() => openChatToolForRoom({ project: r.project, mission: isMission ? r.mission : null })}
                               style={{
                                 display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', marginBottom: '0',
                                 boxSizing: 'border-box', width: '100%',
-                                background: 'transparent', color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                                background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
                                 cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'background 120ms ease',
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
-                              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                              onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
+                              onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                             >
                               <span style={{ display: 'inline-flex', flexShrink: 0, color: isMission ? 'var(--cv6-text-secondary)' : `hsl(${roomHue(r.project.slug)}, 65%, 60%)` }}>
                                 {isMission ? getMissionIcon(r.mission.slug).svg : (
@@ -5474,10 +5491,10 @@ export default function HomeView({
             <div className="hm-section hm-convo-col" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column', paddingTop: selectedRoom ? '22px' : '22px' }}>
               {/* R19: Room identifier header with color tinting */}
               {/* R30b: Support agent rooms in addition to project/mission rooms */}
-              {/* R19 + Design spec: TWO-line header — line 1: green dot + name (15px 600),
-                  line 2: room · mode subtext (11.5px muted) + Files button on the right */}
+              {/* ONE-line header (Patrik 2026-06-19): green dot + name + muted subname all on
+                  the same row as the Files button, to give the conversation more height. */}
               <div style={{
-                display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
                 marginBottom: '12px', paddingBottom: '12px',
                 // Patrik 2026-06-19: inset the column's items 20px from the left divider so they
                 // breathe; the border-bottom still spans the full column width (padding is inside
@@ -5489,22 +5506,19 @@ export default function HomeView({
                 transition: 'border-color 200ms ease',
               }}>
                 {selectedRoom ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                    {/* Line 1: green dot + name (15px/600) */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden', marginBottom: '2px' }}>
-                      <span style={{
-                        width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
-                        background: 'var(--cv6-accent-success)',
-                        boxShadow: '0 0 8px rgba(52,211,153,.6)',
-                      }}/>
-                      <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {selectedRoom.agent ? (selectedRoom.agent.name || selectedRoom.agent.slug) : (selectedRoom.project.name || selectedRoom.project.slug)}
-                      </span>
-                    </div>
-                    {/* Line 2: room · mode subtext (11.5px muted) */}
-                    <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {selectedRoom.agent ? 'Agent' : (selectedRoom.mission ? `${selectedRoom.project.slug} · /chat` : selectedRoom.project.slug)}
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                    <span style={{
+                      width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0,
+                      background: 'var(--cv6-accent-success)',
+                      boxShadow: '0 0 8px rgba(52,211,153,.6)',
+                    }}/>
+                    <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {selectedRoom.agent ? (selectedRoom.agent.name || selectedRoom.agent.slug) : (selectedRoom.project.name || selectedRoom.project.slug)}
+                    </span>
+                    {/* subname inline, muted, truncates if the row gets tight */}
+                    <span style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+                      · {selectedRoom.agent ? 'Agent' : (selectedRoom.mission ? `${selectedRoom.project.slug} · /chat` : selectedRoom.project.slug)}
+                    </span>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -5763,26 +5777,24 @@ export default function HomeView({
                 </div>
               )}
             </div>
+
+            {/* Corner brand lockup — anchored to the bottom-left of the rooms grid (Patrik
+                2026-06-19) so it sits in the corner on load, not below the fold. */}
+            {cv6 && (
+              <div style={{ position: 'absolute', left: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <img
+                  src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'}
+                  alt="Corner"
+                  style={{ height: '30px', width: '30px', display: 'block', objectFit: 'contain', flexShrink: 0 }}
+                />
+                {/* font-size 44px sets the cap height equal to the 30px mark (Bricolage cap
+                    ratio 0.674), so the wordmark reads the same height as the logo. */}
+                <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '44px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>
+                  Corner
+                </span>
+              </div>
+            )}
           </div>
-
-
-          {/* What needs you + Ideas removed (Patrik 2026-06-19) — the home is the rooms board;
-              the Corner brand lockup now anchors the bottom-left instead. */}
-          {cv6 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '36px', paddingTop: '4px' }}>
-              <img
-                src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'}
-                alt="Corner"
-                style={{ height: '30px', width: '30px', display: 'block', objectFit: 'contain', flexShrink: 0 }}
-              />
-              {/* font-size 44px sets the cap height equal to the 30px mark (Bricolage cap
-                  ratio 0.674), so the wordmark reads the same height as the logo, centered
-                  against it (Patrik 2026-06-19). */}
-              <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '44px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>
-                Corner
-              </span>
-            </div>
-          )}
           </>)}
 
           {/* R39: close home-body fragment */}
