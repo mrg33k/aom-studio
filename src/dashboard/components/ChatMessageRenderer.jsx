@@ -98,10 +98,12 @@ const listStyles = `
   .cmr-content h2, .message-content h2 { font-size: 1.1em; }
   .cmr-content h3, .message-content h3 { font-size: 1.05em; }
   .cmr-content blockquote, .message-content blockquote {
-    border-left: 3px solid rgba(255,255,255,0.2);
+    /* Quoted email/thread history reads as CITED context, not the active message:
+       accent-tinted left rule + dimmed secondary text. Links inside keep their own blue. */
+    border-left: 3px solid rgba(96,165,250,0.55);
+    color: rgba(233,233,236,0.6);
     margin: 0.5rem 0;
     padding: 0.25rem 0.75rem;
-    opacity: 0.8;
   }
   .cmr-content a, .message-content a {
     color: #60a5fa;
@@ -189,7 +191,8 @@ const listStyles = `
   }
   [data-theme="light"] .cmr-content blockquote,
   [data-theme="light"] .message-content blockquote {
-    border-left-color: rgba(26,31,44,0.22);
+    border-left-color: rgba(37,99,235,0.5);
+    color: rgba(26,31,44,0.58);
   }
   [data-theme="light"] .cmr-content hr,
   [data-theme="light"] .message-content hr {
