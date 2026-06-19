@@ -1906,7 +1906,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
         Space Rising live tracker is wired and ready. It needs its data key added to the dashboard settings to switch on.
       </div>
     )}
-    <div style={{ height: isNarrow ? '64vh' : (tall ? '82vh' : '440px'), minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : ((selectorCollapsed ? '40px' : '230px') + ' minmax(0, 1fr)' + (detailOpen ? ' 340px' : '')), transition: 'grid-template-columns 160ms ease, height 160ms ease' }}>
+    <div style={{ height: isNarrow ? '64vh' : (tall ? '82vh' : '440px'), minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : ((selectorCollapsed ? '40px' : '230px') + ' minmax(0, 1fr)' + (detailOpen ? ' 340px' : '')), gridTemplateRows: isNarrow ? undefined : 'minmax(0, 1fr)', transition: 'grid-template-columns 160ms ease, height 160ms ease' }}>
       {isNarrow ? (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
           {mobilePane === 'sheet' && (
