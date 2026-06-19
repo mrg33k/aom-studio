@@ -209,6 +209,94 @@ function parseSupportStaged(msg) {
   return m ? { draftId: m[1], connectionId: m[2] } : null
 }
 
+// R-QA 2026-06-19 (Patrik): support wishes that arrive by email get logged into the
+// room as plain user messages — raw "[SUPPORT WISH SUP-XXXX] from Name <e> (email):\n\n
+// Subject\n• body" text. Rendered in the blue user bubble that was unreadable dark text
+// on blue ("black text in a blue bubble"). Parse them so the conversation can show a
+// clean LETTER card (paper surface, readable text, sender + subject) instead — Patrik:
+// "format emails to look like letters and not so crazy."
+const ROOM_EMAIL_RE = /^\s*\[SUPPORT WISH\s+([A-Za-z0-9-]+)\]\s*from\s+([^<(]*?)\s*(?:<([^>]+)>)?\s*\((email[^)]*)\)\s*:\s*\n+([\s\S]*)$/
+function parseRoomEmail(msg) {
+  const text = (msg && msg.text) || ''
+  const meta = msg && msg.meta
+  const hasMeta = !!(meta && (meta.support_wish_id || meta.support_email))
+  const m = ROOM_EMAIL_RE.exec(text)
+  if (!m && !hasMeta) return null
+  if (m) {
+    const rest = (m[5] || '').trim()
+    const nl = rest.indexOf('\n')
+    const subject = (nl === -1 ? rest : rest.slice(0, nl)).trim()
+    const body = (nl === -1 ? '' : rest.slice(nl + 1)).trim()
+    return {
+      who: (m[2] || '').trim() || (meta && meta.support_email) || 'Email',
+      email: (m[3] || (meta && meta.support_email) || '').trim(),
+      subject,
+      body,
+    }
+  }
+  // metadata says support-email but the text wasn't the machine format — still render
+  // it as a letter (readable) with the whole text as the body.
+  return { who: (meta.support_email || 'Email'), email: meta.support_email || '', subject: '', body: text.trim() }
+}
+
+// A received email rendered as a clean letter (not a chat bubble): paper card, envelope
+// badge, sender + address, subject heading, plain readable body. Good contrast on every
+// theme, no machine prefix.
+function LetterCard({ letter, timestamp }) {
+  return (
+    <div style={{ display: 'flex', animation: 'cv6-msg-fade-in 300ms ease-out' }}>
+      <div style={{
+        flex: 1, minWidth: 0,
+        background: 'var(--cv6-surface)',
+        border: '1px solid var(--cv6-hair)',
+        borderRadius: '12px',
+        padding: '13px 15px',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+      }}>
+        {/* Letter header: envelope + sender + address + time */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '9px',
+          marginBottom: '10px', paddingBottom: '10px',
+          borderBottom: '1px solid var(--cv6-divider)',
+        }}>
+          <div style={{
+            width: '28px', height: '28px', borderRadius: '8px', flexShrink: 0,
+            background: 'var(--cv6-accent-weak)', color: 'var(--cv6-accent-primary)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>
+            </svg>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {letter.who}
+            </div>
+            {letter.email && (
+              <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {letter.email}
+              </div>
+            )}
+          </div>
+          <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flexShrink: 0 }}>
+            {timestamp ? relativeTime(timestamp) : 'Email'}
+          </span>
+        </div>
+        {letter.subject && (
+          <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--cv6-text-primary)', lineHeight: 1.4, marginBottom: '8px' }}>
+            {letter.subject}
+          </div>
+        )}
+        {letter.body && (
+          <div style={{ fontSize: '13.5px', lineHeight: 1.6, color: 'var(--cv6-text-secondary)', wordWrap: 'break-word', whiteSpace: 'pre-wrap' }}>
+            {letter.body}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SupportToolOverlay({ worldId }) {
   const { wishes, mailboxes } = useSupportData(worldId)
   const items = buildItems(wishes, mailboxes)
@@ -3758,6 +3846,8 @@ export default function HomeView({
       id: m.id,
       sender: (m.role === 'user' || m.agent === 'user' || m.sender === 'user') ? 'user' : 'agent',
       text: m.text || m.content || '',
+      meta: m.metadata || null,
+      timestamp: m.timestamp || null,
     })
 
     const load = async () => {
@@ -5204,9 +5294,8 @@ export default function HomeView({
                 <>
                   {/* R19: Conversation thread — scrollable area with messages */}
                   <div style={{
-                    flex: 1,
+                    flex: 1, // fills the equal-height column; composer pins to the bottom (matches the design)
                     minHeight: 0,
-                    maxHeight: '320px', // Fixed box — real threads scroll, they don't grow it (Patrik 2026-06-17)
                     overflowY: 'auto',
                     paddingRight: '4px',
                     marginBottom: '12px',
@@ -5216,6 +5305,12 @@ export default function HomeView({
                     // R20: grey container removed — conversation falls clean against the page (Patrik 2026-06-16)
                   }}>
                     {conversationMessages.map((msg) => {
+                      // Email-type messages (support wishes that arrived by email) render
+                      // as a clean letter card, not a chat bubble (Patrik: readable letters).
+                      const letter = parseRoomEmail(msg)
+                      if (letter) {
+                        return <LetterCard key={msg.id} letter={letter} timestamp={msg.timestamp} />
+                      }
                       if (msg.sender === 'user') {
                         // R6: User message = right-aligned accent bubble (radius 16/16/4/16)
                         return (

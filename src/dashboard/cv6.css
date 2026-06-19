@@ -1262,7 +1262,13 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-hom
 /* Happening-now + 3-col grid */
 [data-cv6] .hm-happening-now { color:var(--cv6-text-secondary); }
 /* DELTA 4: Desktop 3-column layout with fixed widths (360px catch-up, flex middle, 420px conversation) */
-[data-cv6] .hm-three-column-grid { display:flex; gap:24px; min-height:auto; border-top:1px solid var(--cv6-divider); }
+/* R-QA 2026-06-19 (Patrik): match the Claude design's home body exactly — a FLUSH
+   flex row (gap:0) at a fixed height, so the three columns share continuous vertical
+   hairline dividers (no 24px gutter that left the agent-name underline floating away
+   from the middle column) and all three are the SAME height (each scrolls internally,
+   like the design's 566px panels) instead of growing to their own content height. */
+[data-cv6] .hm-three-column-grid { display:flex; gap:0; height:566px; border-top:1px solid var(--cv6-divider); }
+[data-cv6] .hm-three-column-grid > div { margin:0 !important; }
 [data-cv6] .hm-three-column-grid > div:nth-child(1) {
   flex:0 1 360px;          /* shrinkable so sub-1440 laptops never overflow horizontally */
   min-width:0;
@@ -1304,7 +1310,7 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] [data-cv4-hom
      is the one case that overrides an inline style).
      minmax(0,1fr) (not 1fr) so a long unbreakable string — e.g. an attached filename —
      can't blow the track wider than the viewport and clip cards off the right edge. */
-  [data-cv6] .hm-three-column-grid { display:flex; flex-direction:column; gap:30px !important; min-height:0; }
+  [data-cv6] .hm-three-column-grid { display:flex; flex-direction:column; gap:30px !important; min-height:0; height:auto !important; }
   [data-cv6] .hm-three-column-grid > div:nth-child(1),
   [data-cv6] .hm-three-column-grid > div:nth-child(2),
   [data-cv6] .hm-three-column-grid > div:nth-child(3) {
