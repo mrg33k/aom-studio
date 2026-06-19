@@ -2402,7 +2402,10 @@ export default function CornerVG() {
            [style*=""] substring selectors. The browser keeps React's style
            string as-written, so hex literals match reliably. */
         [data-shell="cv4"][data-theme="light"] {
-          background: #EFEAE0 !important;
+          /* R-QA-FIX-15 (Patrik: "neutral for sure, not warm"): the page ground is the
+             neutral CV6 ground (#f5f5f5), matching the home container, so no warm beige
+             peeks around or behind the dashboard in light mode. */
+          background: #f5f5f5 !important;
           color: #2A2620;
         }
         /* Surfaces (page bg, drawer bg, cards) → warm paper tones */

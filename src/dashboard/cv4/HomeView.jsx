@@ -4782,9 +4782,13 @@ export default function HomeView({
                 2026-06-19). Tiles ~20% smaller; the active tile is solid accent and serves as
                 the section/header indicator. Big tile row is hidden on home desktop (cv6.css)
                 and stays as the mobile dock + the tool-screen nav. */}
-            {cv6 && (
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', justifyContent: 'center' }}>
-                <div className="hm-greeting-tools" style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+            {cv6 && (<>
+              {/* flexible spacers on each side keep the tools centered between the greeting
+                  cell and the icons cell (= centered in the All Rooms span when wide), while
+                  the tools cell itself never shrinks (flex 0 0 auto) so all 8 always show. */}
+              <div style={{ flex: 1, minWidth: 0 }} />
+              <div style={{ flex: '0 0 auto', display: 'flex', minWidth: 0 }}>
+                <div className="hm-greeting-tools" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {HOME_TOOLS.map(t => {
                     const active = selectedTool === t.key
                     return (
@@ -4811,7 +4815,8 @@ export default function HomeView({
                   })}
                 </div>
               </div>
-            )}
+              <div style={{ flex: 1, minWidth: 0 }} />
+            </>)}
             {/* Cell 3 — global icons (search, theme, notifications, avatar), over the
                 conversation column on the right. Smaller than the tool tiles; the bell gets a
                 solid white background (Patrik 2026-06-19) so notifications stand out. */}
