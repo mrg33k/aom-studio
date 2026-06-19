@@ -4780,17 +4780,10 @@ export default function HomeView({
             </div>
           ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: cv6 ? 'flex-start' : 'space-between', marginTop: cv6 ? '-6px' : 0, marginBottom: cv6 ? '10px' : '32px' }}>
-            {/* Cell 1 — Corner mark + greeting, over the Catch Up column (mirrors its 360px width).
-                The mark is theme-aware (Patrik 2026-06-19): white on dark/glass surfaces, dark
-                ink on light. Medium size, sitting just left of the greeting. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: cv6 ? '14px' : '0', ...(cv6 ? { flex: '0 0 auto', minWidth: '360px' } : {}) }}>
-              {cv6 && (
-                <img
-                  src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'}
-                  alt="Corner"
-                  style={{ height: '36px', width: '36px', flexShrink: 0, display: 'block', objectFit: 'contain', transform: 'translateY(-7px)' }}
-                />
-              )}
+            {/* Cell 1 — greeting, over the Catch Up column (mirrors its 360px width). The Corner
+                mark moved to the bottom-left brand lockup (Patrik 2026-06-19). The cell sizes to
+                content but holds 360px min and grows for a longer name, keeping the tools clear. */}
+            <div style={{ display: 'flex', alignItems: 'center', ...(cv6 ? { flex: '0 0 auto', minWidth: '360px' } : {}) }}>
               <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1, ...(cv6 ? { minWidth: 0, whiteSpace: 'nowrap' } : {}) }}>
                 <span className="hm-l1">{greeting}</span>{' '}
                 <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
@@ -5773,103 +5766,18 @@ export default function HomeView({
           </div>
 
 
-          {/* R14: WHAT NEEDS YOU — moved below the 3-column layout */}
-          {(needsYou && needsYou.length > 0) && (
-            <div className="hm-section" style={{ marginBottom: '18px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--cv6-divider)', color: 'var(--cv6-text-secondary)' }}>What needs you</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
-                {needsYou.map((n, idx) => {
-                  const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.type === 'needsyou' && selectableItems[selectedIndex]?.item?.key === n.key
-                  const roomColorHash = n.roomSlug ? `hsl(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 60%)` : 'var(--cv6-accent-warn)'
-                  return (
-                  <button
-                    key={n.key}
-                    className="hm-needs-card"
-                    data-cv6-sel={isSelected ? 'true' : undefined}
-                    onClick={() => n.onOpen && n.onOpen()}
-                    style={{
-                      display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px',
-                      background: isSelected ? roomColorHash : 'var(--cv6-surface)',
-                      color: isSelected ? '#ffffff' : 'var(--cv6-text-primary)',
-                      border: isSelected ? `2px solid ${roomColorHash}` : '1px solid var(--cv6-divider)',
-                      borderRadius: '8px', cursor: 'pointer', transition: 'box-shadow 220ms ease, border-color 160ms ease, transform 200ms ease',
-                      textAlign: 'left', fontFamily: 'inherit', fontWeight: '500',
-                      boxShadow: isSelected ? `0 3px 14px ${n.roomSlug ? `hsla(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 50%, 0.30)` : 'rgba(245,158,11,0.25)'}` : 'none',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.background = 'var(--cv6-surface-hover)'
-                        e.currentTarget.style.transform = 'translateY(-2px)'
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.background = 'var(--cv6-surface)'
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = 'none'
-                      }
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1 }}>
-                        <span style={{
-                          flexShrink: 0, width: '46px', height: '46px', borderRadius: '10px',
-                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                          background: isSelected ? 'rgba(255,255,255,0.18)' : (n.roomSlug ? `hsla(${(n.roomSlug.charCodeAt(0) * 137) % 360}, 70%, 55%, 0.14)` : 'rgba(245,158,11,0.14)'),
-                          color: isSelected ? '#ffffff' : roomColorHash,
-                        }}>{getNeedsTypeIcon(n)}</span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '14px', fontWeight: '600' }}>{n.label}</div>
-                          <div style={{ fontSize: '12px', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--cv6-text-secondary)', marginTop: '4px' }}>{n.detail}</div>
-                        </div>
-                      </div>
-                      <span style={{ fontSize: '16px', color: isSelected ? '#ffffff' : 'var(--cv6-accent-warn)', flexShrink: 0 }}>→</span>
-                    </div>
-                  </button>
-                )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* R36: Ideas moved to the bottom, below What Needs You — tap one to jump into the room and kick it off */}
-          {cv6 && suggestedIdeas.length > 0 && (
-            <div style={{ marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '12px', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.6c.6.5 1 1.3 1 2.1v.3h6v-.3c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>
-                </svg>
-                Ideas
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                {suggestedIdeas.map((idea, i) => (
-                  <button
-                    key={i}
-                    onClick={() => {
-                      if (idea.project) handleProjectSelect(idea.project, null)
-                      // Real surface: also auto-sends idea.prompt to that room to kick it off.
-                      console.log('[idea]', idea.label, '→', idea.prompt)
-                      homeRef.current?.focus()
-                    }}
-                    title={idea.prompt}
-                    style={{
-                      display: 'inline-flex', alignItems: 'center', gap: '8px',
-                      padding: '8px 14px', borderRadius: '999px', cursor: 'pointer', fontFamily: 'inherit',
-                      fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)',
-                      background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
-                      transition: 'all 140ms ease', whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'; e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 3px 10px rgba(0,102,255,0.10)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--cv6-divider)'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none' }}
-                  >
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke={idea.kind === 'spark' ? '#A855F7' : 'var(--cv6-accent-primary)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <path d="M12 3l1.8 4.6L18.5 9.4 13.8 11.2 12 16 10.2 11.2 5.5 9.4 10.2 7.6z"/>
-                    </svg>
-                    {idea.label}
-                  </button>
-                ))}
-              </div>
+          {/* What needs you + Ideas removed (Patrik 2026-06-19) — the home is the rooms board;
+              the Corner brand lockup now anchors the bottom-left instead. */}
+          {cv6 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '36px', paddingTop: '4px' }}>
+              <img
+                src={themeMode === 'light' ? '/corner/brand/corner-mark-dark.png' : '/corner/brand/corner-mark-white.png'}
+                alt="Corner"
+                style={{ height: '30px', width: '30px', display: 'block', objectFit: 'contain', flexShrink: 0 }}
+              />
+              <span style={{ fontFamily: "'Bricolage Grotesque', 'Hanken Grotesk', sans-serif", fontSize: '22px', fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', lineHeight: 1 }}>
+                Corner
+              </span>
             </div>
           )}
           </>)}
