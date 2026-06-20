@@ -3633,6 +3633,8 @@ export default function HomeView({
   // create-1: guard against double-submit on project/mission creation
   const [creatingProject, setCreatingProject] = useState(false)
   const [creatingMission, setCreatingMission] = useState(false)
+  // R-LIVE-FEEDBACK: locally cache newly-created projects/missions until they appear in props
+  const [localProjects, setLocalProjects] = useState([])
 
   // R35: live clock + timezone for the top-right display (greeting font, click to change zone)
   const [now, setNow] = useState(() => new Date())
@@ -3689,6 +3691,22 @@ export default function HomeView({
 
   // R2 (CV6 round 2): All Rooms drill-through — when user clicks a project, show its missions in the same column with a back arrow
   const [browsingProject, setBrowsingProject] = useState(null)
+  // R-LIVE-FEEDBACK: locally cache newly-created missions until they appear in fetched data
+  const [localMissions, setLocalMissions] = useState({}) // { projectSlug: [mission, ...] }
+  // R-LIVE-FEEDBACK: merge fetched missions with locally-created ones for live display
+  const effectiveMissionsByProject = useMemo(() => {
+    const merged = { ...missionsByProject }
+    for (const [projSlug, missions] of Object.entries(localMissions)) {
+      merged[projSlug] = [...(missions || []), ...(missionsByProject[projSlug] || [])].filter((m, i, arr) => arr.findIndex(x => x.slug === m.slug) === i) // dedup by slug
+    }
+    return merged
+  }, [missionsByProject, localMissions])
+  // R-LIVE-FEEDBACK: cleanup — when projectRooms updates and includes our local projects, remove them from cache
+  useEffect(() => {
+    if (!projectRooms || localProjects.length === 0) return
+    const projSlugs = new Set(projectRooms.map(p => p.slug))
+    setLocalProjects(prev => prev.filter(p => !projSlugs.has(p.slug)))
+  }, [projectRooms])
   const fetchMissions = useCallback(async () => {
     if (!worldId) return
     try {
@@ -3786,14 +3804,16 @@ export default function HomeView({
   // This means a room they just left will always appear at the top of RECENTS, regardless of pinning.
   // Pinning is preserved for UI affordance but does not change sort order.
   const { recentProjects, allProjects } = useMemo(() => {
-    if (!projectRooms || projectRooms.length === 0) return { recentProjects: [], allProjects: [] }
+    // R-LIVE-FEEDBACK: merge prop-supplied projects with locally-created ones
+    const allRooms = [...localProjects, ...(projectRooms || [])]
+    if (allRooms.length === 0) return { recentProjects: [], allProjects: [] }
 
     // Compute effective last-active timestamp per project.
     // recentVisits[slug] is highest priority — written on every project navigation.
     const effectiveTs = (p) => {
       const visitTs = recentVisits[p.slug] || 0           // user just visited this room
       const projTs = p.last_message_at ? new Date(p.last_message_at).getTime() : 0
-      const missions = missionsByProject[p.slug] || []
+      const missions = effectiveMissionsByProject[p.slug] || []
       const missionTs = missions.reduce((max, m) => {
         const t = m.last_message_at ? new Date(m.last_message_at).getTime() : 0
         return t > max ? t : max
@@ -3802,16 +3822,16 @@ export default function HomeView({
     }
 
     // Sort by recency only — most recently visited/active projects come first.
-    const sorted = [...projectRooms].sort((a, b) => {
+    const sorted = [...allRooms].sort((a, b) => {
       return effectiveTs(b) - effectiveTs(a)
     })
     const recent = sorted.slice(0, 5)
     const recentSlugs = new Set(recent.map(p => p.slug))
-    const rest = [...projectRooms]
+    const rest = [...allRooms]
       .filter(p => !recentSlugs.has(p.slug))
       .sort((a, b) => (a.name || a.slug || '').localeCompare(b.name || b.slug || ''))
     return { recentProjects: recent, allProjects: rest }
-  }, [projectRooms, pinnedProjects, missionsByProject, recentVisits])
+  }, [projectRooms, pinnedProjects, effectiveMissionsByProject, recentVisits, localProjects])
 
   // R43: real persistence for the tool actions. Optimistic UI updates first; these
   // fire the actual backend write. In the gallery (no auth) they no-op gracefully.
@@ -3835,6 +3855,11 @@ export default function HomeView({
       if (!res.ok) { showToast(await errText(res, 'Could not create that project'), 'error', 6000); return false }
       // R88: refresh now so the new project's missions show in real time, not in 60s.
       fetchMissions()
+      // R-LIVE-FEEDBACK: add to local cache so it appears immediately in All Rooms
+      setLocalProjects(prev => [{ slug, name, last_message_at: null }, ...prev.filter(p => p.slug !== slug)])
+      // R-LIVE-FEEDBACK: close tool and return to Home so user sees new project immediately
+      setSelectedTool('home')
+      showToast(`"${name}" created`, 'success', 4000)
       return true
     } catch {
       showToast('Could not create that project. Check your connection and try again.', 'error', 6000)
@@ -3855,6 +3880,14 @@ export default function HomeView({
       if (!res.ok) { showToast(await errText(res, 'Could not create that mission'), 'error', 6000); return false }
       // R88: refresh now so the new mission appears in Active Work within seconds.
       fetchMissions()
+      // R-LIVE-FEEDBACK: add to local cache so it appears immediately in the All Rooms list
+      setLocalMissions(prev => ({
+        ...prev,
+        [parentSlug]: [{ slug: missionSlug, name, status: 'idle', last_message_at: null }, ...(prev[parentSlug] || []).filter(m => m.slug !== missionSlug)]
+      }))
+      // R-LIVE-FEEDBACK: close tool and return to Home so user sees new mission immediately
+      setSelectedTool('home')
+      showToast(`"${name}" created in ${parentSlug}`, 'success', 4000)
       return true
     } catch {
       showToast('Could not create that mission. Check your connection and try again.', 'error', 6000)
@@ -5575,11 +5608,11 @@ export default function HomeView({
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 14px 34px -8px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.14)',
               }}>
-              {/* R-MATCH-KIT 2026-06-20: the kit's closed-state menu button IS the profile avatar
-                  (readme: "the profile avatar is the menu button") — a blue "P" circle bottom-right
-                  that opens the rail. Match the Final frame exactly: 60px circle, --avatar gradient,
-                  P at 19px, white-ring shadow, 15px accent dot. (Patrik: keep the button, it opens the rail.) */}
-              <span style={{ color: '#ffffff', fontSize: '19px', fontWeight: 700, fontFamily: 'inherit', lineHeight: 1 }}>{(displayName(user) || 'U').trim().charAt(0).toUpperCase()}</span>
+              {/* R-MATCH-KIT 2026-06-20: keep the Final frame's button SHAPE (60px circle, --avatar
+                  gradient, white-ring shadow, 15px accent dot) but the glyph is a MENU icon, not the
+                  profile "P" — Patrik override 2026-06-20: "the menu button being a p it should be a
+                  menu icon." It still opens the rail. Do NOT switch this back to a P. */}
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
               {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '1px', right: '1px', width: '15px', height: '15px', borderRadius: '50%', background: '#5B9BFF', border: '2.5px solid var(--cv6-ground)' }} />)}
             </button>
           )}
@@ -5631,6 +5664,17 @@ export default function HomeView({
 
                 {selectedTool === 'scribe' && (
                   <LiveScribe embedded />
+                )}
+
+                {selectedTool === 'projects' && (
+                  <ProjectsToolOverlay
+                    projects={[...(recentProjects || []), ...(allProjects || [])]}
+                    missionsByProject={effectiveMissionsByProject}
+                    onCreateProject={persistCreateProject}
+                    onCreateMission={persistCreateMission}
+                    onMoveFile={persistMoveFile}
+                    onMoveMission={persistMoveMission}
+                  />
                 )}
 
                 {selectedTool === 'organize' && (
