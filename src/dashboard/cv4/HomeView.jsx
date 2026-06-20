@@ -1424,13 +1424,11 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
         <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', background: 'var(--cv6-ground)' }}>
           {openItem ? (
             <div style={{ width: '100%', maxWidth: '100%' }}>
-              {/* The center renders the real document via FilePreviewPanel. NOTE
-                  (2026-06-19): files under a project that is on disk but NOT in the
-                  Supabase `projects` table return 404 from /api/dashboard/project-file
-                  (its resolveProjectWorld DB check) -> "Could not open this file".
-                  Works for registered projects (iso-wizard 200); fails for
-                  unregistered (space-rising 404). Fix is project registration /
-                  the project-file auth check, NOT this component. */}
+              {/* The center renders the real document via FilePreviewPanel + the
+                  Frame.io-style annotator (annotate). FIXED 2026-06-19: project-file
+                  now lets the aom super-admin world read any project's deliverables
+                  (it was 404'ing files the review queue listed for projects whose
+                  Supabase client_id != aom, e.g. space-rising), so attachments load. */}
               <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} worldId={worldId} annotate />
             </div>
           ) : (
@@ -1545,6 +1543,55 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
           {items.length === 0 && <div style={{ padding: '20px', textAlign: 'center', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Nothing in the review pipeline yet</div>}
         </div>
       </div>
+      )}
+
+      {/* Mobile: full-screen preview + annotator sheet (R-MATCH review-3). Tapping a
+          deliverable on a phone set openItem but rendered nothing (the preview only
+          existed in the desktop 3-col grid), so Patrik could not open a file or leave a
+          comment on his iPhone. This sheet renders the real file + the Frame.io
+          annotator (video timeline / point comments) + Approve + the request-changes
+          checklist. Respects the mobile top/bottom safe-area lock; only the sheet body
+          scrolls (overscroll-contain), never the page. */}
+      {isNarrow && openItem && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 140, background: 'var(--cv6-ground)', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', flexShrink: 0 }}>
+            <button onClick={() => setOpenItem(null)} aria-label="Back to review list" style={{ flexShrink: 0, width: '38px', height: '38px', borderRadius: '10px', border: 'none', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <span style={{ flex: 1, minWidth: 0, fontSize: '15px', fontWeight: '700', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{openItem.item}</span>
+            <span style={{ flexShrink: 0, fontSize: '11px', fontWeight: '700', color: openItem.type.color, background: `${openItem.type.color}1f`, padding: '3px 8px', borderRadius: '5px' }}>{openItem.type.label}</span>
+          </div>
+          <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: '14px', paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
+            <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} worldId={worldId} annotate />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginTop: '18px', padding: '12px 14px', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-hair)', borderRadius: '12px' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{openItem.project}{openItem.mission !== '(root)' ? ` → ${openItem.mission}` : ''}</span>
+              <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '500', color: 'var(--cv6-accent-success)' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--cv6-accent-success)' }} />Ready</span>
+            </div>
+            <button onClick={() => { if (!openItem || !onReplyToRoom) return; const s = roomSlugFor(openItem); if (s) { onReplyToRoom(s, `Approved "${openItem.item}".`); setDone(prev => ({ ...prev, [openItem.id]: true })); setOpenItem(null) } }} style={{ width: '100%', height: '48px', marginTop: '12px', borderRadius: '12px', border: 'none', background: 'var(--cv6-accent-success)', color: '#06281c', fontSize: '15px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve
+            </button>
+            <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)', margin: '20px 0 10px' }}>Request changes</div>
+            <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--cv6-divider)', borderRadius: '12px', padding: '12px', background: 'var(--cv6-surface)' }}>
+              {checklist.length === 0 ? (
+                <div style={{ padding: '14px 4px', fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center' }}>Add a change below to send it back.</div>
+              ) : checklist.map(step => (
+                <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '9px 0', borderBottom: '1px solid var(--cv6-divider)' }}>
+                  <button onClick={() => toggleStep(step.id)} style={{ flexShrink: 0, marginTop: '1px', width: '22px', height: '22px', borderRadius: '50%', border: step.done ? 'none' : '2px solid var(--cv6-text-tertiary)', background: step.done ? '#10B981' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                    {step.done && <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </button>
+                  <span style={{ flex: 1, fontSize: '14px', lineHeight: 1.4, color: step.done ? 'var(--cv6-text-tertiary)' : 'var(--cv6-text-primary)', textDecoration: step.done ? 'line-through' : 'none' }}>{step.text}</span>
+                  <button onClick={() => deleteStep(step.id)} aria-label="Delete change" style={{ flexShrink: 0, width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: 'transparent', color: 'var(--cv6-text-tertiary)', cursor: 'pointer' }}>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+              ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: checklist.length ? '10px' : '0', borderTop: checklist.length ? '1px solid var(--cv6-divider)' : 'none', paddingTop: checklist.length ? '10px' : '0' }}>
+                <input value={newStep} onChange={e => setNewStep(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addStep() } }} placeholder="Add a change…" style={{ flex: 1, height: '40px', padding: '0 12px', border: '1px solid var(--cv6-divider)', borderRadius: '10px', background: 'var(--cv6-ground)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '14px', outline: 'none' }} />
+                <button onClick={addStep} disabled={savingStep || !newStep.trim()} style={{ flexShrink: 0, height: '40px', padding: '0 16px', borderRadius: '10px', border: 'none', background: newStep.trim() ? 'var(--cv6-text-primary)' : 'var(--cv6-surface-hover)', color: newStep.trim() ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)', cursor: newStep.trim() ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
