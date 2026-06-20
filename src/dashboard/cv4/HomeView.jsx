@@ -5900,15 +5900,14 @@ export default function HomeView({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                         {filteredAgents.map((a) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
-                          // R-PIXEL-LOOP R4: case-insensitive status → dot color (teal working / lime idle /
-                          // amber waiting), with idle/unknown defaulting to a VISIBLE lime so every agent
-                          // always shows a clear dot like the Claude design (was case-sensitive 'idle' →
-                          // muted amber that washed out on glass).
+                          // Status dot per the kit's status-dots guideline (kit-2026-06-19):
+                          // online = green + glow / working = lime / attention = amber / idle = faint.
                           const _st = (a.status || '').toLowerCase()
-                          const dotColor = (_st.includes('rout') || _st.includes('work') || _st.includes('activ')) ? '#34D399'
-                            : (_st.includes('review') || _st.includes('wait') || _st.includes('block')) ? '#FBBF24'
-                            : '#A3E635'
-                          const dotGlow = (_st.includes('rout') || _st.includes('work')) ? '0 0 8px rgba(52,211,153,.6)' : 'none'
+                          const dotColor = _st.includes('online') ? 'var(--cv6-accent-success)'
+                            : (_st.includes('work') || _st.includes('rout') || _st.includes('activ') || _st.includes('run')) ? '#A3E635'
+                            : (_st.includes('wait') || _st.includes('review') || _st.includes('block') || _st.includes('attention') || _st.includes('need')) ? '#FBBF24'
+                            : 'var(--cv6-text-tertiary)'
+                          const dotGlow = _st.includes('online') ? '0 0 8px rgba(52,211,153,.6)' : 'none'
                           return (
                             <button key={a.slug}
                               className="hm-card hm-room-row"
@@ -5926,22 +5925,19 @@ export default function HomeView({
                               onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }}
                               onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent' }}
                             >
-                              {/* 8px color dot (active=green glow / idle=lime / warn) */}
-                              <span style={{
-                                width: '8px', height: '8px', borderRadius: '50%',
+                              {/* 9px status dot per the kit: online green+glow / working lime / attention amber / idle faint */}
+                              <span title={a.status || 'idle'} style={{
+                                width: '9px', height: '9px', borderRadius: '50%',
                                 background: dotColor, boxShadow: dotGlow,
                                 flexShrink: 0,
                               }}/>
-                              {/* Agent name (14px 600 when active, 500 when idle) */}
-                              <span style={{ flex: 1, fontSize: '14px', fontWeight: a.status === 'routing work' ? 600 : 500, color: 'var(--cv6-text-primary)' }}>
+                              {/* Agent name (14.5px 600, matching the kit .rn) */}
+                              <span style={{ flex: 1, fontSize: '14.5px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>
                                 {a.name || a.slug}
                               </span>
-                              {/* Activity text right (11.5px muted): "routing work" / "idle" / "waiting on review" */}
-                              {a.status && (
-                                <span style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                                  {a.status}
-                                </span>
-                              )}
+                              {/* Type tag — "AGENT" (mono faint), distinguishing agent rows from project rows
+                                  in the one All Rooms list; live status stays on hover via the dot title. */}
+                              <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10px', letterSpacing: '0.08em', color: 'var(--cv6-text-tertiary)', flexShrink: 0 }}>AGENT</span>
                             </button>
                           )
                         })}
@@ -5986,17 +5982,14 @@ export default function HomeView({
                                   <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
                                 </svg>
                               </span>
-                              {/* Project name (14px 500) */}
-                              <span style={{ flex: 1, fontSize: '14px', fontWeight: 500, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {/* Project name (14.5px 500, matching the kit .rn) */}
+                              <span style={{ flex: 1, fontSize: '14.5px', fontWeight: 500, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {p.name || p.slug}
                               </span>
-                              {/* Mission count right (11.5px muted) */}
-                              <span style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', flexShrink: 0 }}>
+                              {/* Mission count right (12px muted) — the kit shows just the count, no chevron;
+                                  the whole row is tappable to drill in. */}
+                              <span style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', flexShrink: 0 }}>
                                 {missionCount}
-                              </span>
-                              {/* R2: Chevron right to drill in */}
-                              <span style={{ fontSize: '14px', color: 'var(--cv6-text-tertiary)', flexShrink: 0, lineHeight: 1 }}>
-                                →
                               </span>
                             </button>
                           )
