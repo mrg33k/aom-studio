@@ -27,6 +27,7 @@ import { useThemeMode } from '../hooks/useThemeMode.js'
 import { useSystemToast } from '../SystemToast.jsx'
 import { useSupportData, buildItems } from './SupportDashboard.jsx'
 import LiveScribe from '../../pages/LiveScribe.jsx'
+import FileAnnotator from './FileAnnotator.jsx'
 
 const PIN_AGENTS_KEY = 'cv4_pinned_agents'
 const PIN_PROJECTS_KEY = 'cv4_pinned_projects'
@@ -1420,9 +1421,9 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
         </div>
 
         {/* Center: Document preview (TODO: implement image/video/website annotators) */}
-        <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--cv6-ground)' }}>
+        <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', background: 'var(--cv6-ground)' }}>
           {openItem ? (
-            <div style={{ width: '100%', maxWidth: '520px' }}>
+            <div style={{ width: '100%', maxWidth: '100%' }}>
               {/* The center renders the real document via FilePreviewPanel. NOTE
                   (2026-06-19): files under a project that is on disk but NOT in the
                   Supabase `projects` table return 404 from /api/dashboard/project-file
@@ -1430,7 +1431,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
                   Works for registered projects (iso-wizard 200); fails for
                   unregistered (space-rising 404). Fix is project registration /
                   the project-file auth check, NOT this component. */}
-              <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} style={{ width: '100%' }} />
+              <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} worldId={worldId} annotate />
             </div>
           ) : (
             <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', textAlign: 'center' }}>Select an item to preview</div>
@@ -2176,7 +2177,7 @@ if (typeof document !== 'undefined' && !document.getElementById('cv6-article-sty
   document.head.appendChild(s)
 }
 
-function FilePreviewPanel({ node }) {
+function FilePreviewPanel({ node, worldId, annotate }) {
   const [data, setData] = useState({ state: 'idle' })
   const [zoom, setZoom] = useState(false)
   const kind = previewKind(node)
@@ -2208,7 +2209,9 @@ function FilePreviewPanel({ node }) {
       </div>
       {data.state === 'loading' && hint('Loading…')}
       {data.state === 'error' && <div style={{ fontSize: '13px', color: '#ef4444' }}>Could not open this file.</div>}
-      {data.state === 'media' && kind === 'image' && (
+      {data.state === 'media' && kind === 'image' && (annotate ? (
+        <FileAnnotator node={node} worldId={worldId} kind="image" url={data.url} />
+      ) : (
         <>
           <img src={data.url} alt={node.name} onClick={() => setZoom(true)} title="Click to zoom" style={{ maxWidth: '100%', borderRadius: '8px', display: 'block', cursor: 'zoom-in' }} />
           {zoom && (
@@ -2217,8 +2220,12 @@ function FilePreviewPanel({ node }) {
             </div>
           )}
         </>
-      )}
-      {data.state === 'media' && kind === 'video' && <video src={data.url} controls style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />}
+      ))}
+      {data.state === 'media' && kind === 'video' && (annotate ? (
+        <FileAnnotator node={node} worldId={worldId} kind="video" url={data.url} />
+      ) : (
+        <video src={data.url} controls style={{ maxWidth: '100%', borderRadius: '8px', display: 'block' }} />
+      ))}
       {data.state === 'media' && kind === 'audio' && <audio src={data.url} controls style={{ width: '100%' }} />}
       {data.state === 'media' && kind === 'pdf' && (
         <div>
@@ -2228,11 +2235,13 @@ function FilePreviewPanel({ node }) {
       )}
       {/* R58/R59 (Patrik): text/markdown reads like an article — roomy type, a comfortable
           measure, and the heading/list/table hierarchy from the injected .cv6-article CSS. */}
-      {data.state === 'text' && (
+      {data.state === 'text' && (annotate ? (
+        <FileAnnotator node={node} worldId={worldId} kind="text" text={data.text} />
+      ) : (
         <article className="cv6-article" style={{ color: 'var(--cv6-text-primary)', overflowWrap: 'break-word', maxWidth: '72ch' }}>
           <ChatMessageRenderer content={data.text || '(empty file)'} />
         </article>
-      )}
+      ))}
     </div>
   )
 }
