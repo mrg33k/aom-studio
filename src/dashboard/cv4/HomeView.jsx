@@ -4509,12 +4509,12 @@ export default function HomeView({
   const renderCatchupColumn = () => (
     <div className="hm-section" style={{ marginBottom: '0', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px', marginBottom: '14px' }}>
-        <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Catch up</span>
+        <span style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)' }}>Catch up</span>
         {catchupNotifications.length > 0 && (
-          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-primary)', background: 'var(--cv6-accent-weak)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '20px', height: '20px', fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-primary)', background: 'var(--cv6-accent-weak)', borderRadius: '10px', padding: '0 6px' }}>{catchupNotifications.length}</span>
         )}
         {isNarrowHV && catchupNotifications.length > 1 && (
-          <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>swipe →</span>
+          <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>1 of {catchupNotifications.length} · swipe →</span>
         )}
       </div>
       {catchupNotifications.length === 0 ? (
@@ -4597,6 +4597,9 @@ export default function HomeView({
                   const human = n.senderType === 'human'
                   const ask = isAsk(n.messagePreview)
                   const hasAttachment = !!(n.attachment || (n.attachments && n.attachments.length))
+                  const att = n.attachment || (n.attachments && n.attachments[0]) || null
+                  const attName = att ? (att.name || (typeof att === 'string' ? att : 'Attachment')) : 'Attachment'
+                  const attSize = att && att.size ? `${Math.max(1, Math.round(att.size / 1024))} KB` : ''
                   const open = () => onCatchupOpenRoom && onCatchupOpenRoom(n)
                   const dismiss = (e) => { e.stopPropagation(); setDismissedCatchup(prev => { const next = new Set(prev); next.add(n.id); return next }); onCatchupDismiss && onCatchupDismiss(n) }
                   const flying = swipe.fly !== 0
@@ -4616,54 +4619,82 @@ export default function HomeView({
                         else { setSwipe({ dx: 0, fly: 0 }); if (Math.abs(dx) < 6 && !(e.target.closest && e.target.closest('button'))) open() }
                       }}
                       onPointerCancel={() => { swipeActive.current = false; setSwipe({ dx: 0, fly: 0 }) }}
-                      style={{ position: 'relative', zIndex: 5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '11px',
+                      style={{ position: 'relative', zIndex: 5, boxSizing: 'border-box', overflow: 'hidden',
                         transform: `translateX(${tx}px) rotate(${dragging ? swipe.dx * 0.022 : 0}deg)`,
                         transition: dragging ? 'none' : 'transform 240ms cubic-bezier(.22,1,.36,1), opacity 240ms ease',
                         opacity: flying ? 0 : 1, touchAction: 'none', userSelect: 'none',
                         background: 'var(--cv6-surface)', backdropFilter: 'blur(22px) saturate(1.3)', WebkitBackdropFilter: 'blur(22px) saturate(1.3)',
-                        border: '1px solid var(--cv6-divider)', borderRadius: '18px', padding: '16px',
+                        border: '1px solid var(--cv6-divider)', borderRadius: '18px',
                         boxShadow: '0 1px 2px rgba(0,0,0,0.10), 0 14px 36px -14px rgba(0,0,0,0.45)', cursor: 'grab', textAlign: 'left', fontFamily: 'inherit' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
-                        <span style={{ width: '38px', height: '38px', borderRadius: '50%', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12.5px', fontWeight: 700,
-                          background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
-                          color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {n.projectSlug ? `${n.projectSlug} → ${n.roomName}` : n.senderName}
+                      {/* Catch-up card — canonical mobile design (claude_design 2b54700b ui_kits/mobile):
+                          icon tile + name/context + type tag, summary box, action items (conditional),
+                          attachment row (conditional), then a divided Suggested actions section. */}
+                      <div style={{ padding: '14px 16px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                          <span style={{ width: '34px', height: '34px', borderRadius: '10px', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12.5px', fontWeight: 700,
+                            background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
+                            color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {n.projectSlug ? `${n.senderName} · ${n.roomName || n.projectSlug}` : n.senderName}
+                            </div>
+                            <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {n._roomCount > 1 ? `${n._roomCount} new updates` : (n.projectSlug ? `→ ${n.projectSlug}` : (n.roomName || ''))}
+                            </div>
                           </div>
-                          <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {n._roomCount > 1 ? `${n._roomCount} new` : (n.projectSlug ? `From ${n.senderName}` : '')}
+                          {ask && <span style={{ flex: 'none', fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--cv6-accent-primary)', background: 'var(--cv6-accent-weak)', borderRadius: '6px', padding: '3px 8px' }}>Ask</span>}
+                        </div>
+                        {/* Summary block — the message gist in the design's inset card (no border,
+                            surface-2 fill). Real message text; the AI "Summary —" lead is the wiring gap. */}
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', background: 'var(--cv6-surface2)', borderRadius: '10px', padding: '11px 12px', marginBottom: '14px' }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--cv6-accent-primary)" style={{ flex: 'none', marginTop: '1px' }}><path d="M12 3l1.6 4.9L18.5 9l-4.9 1.6L12 15l-1.6-4.4L5.5 9l4.9-1.1Z"/></svg>
+                          <div style={{ fontSize: '12.5px', lineHeight: 1.5, color: 'var(--cv6-text-primary)', maxHeight: '84px', overflowY: 'auto' }}>
+                            {(n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')).replace(/[*_~\x60]|^#+\s?/gm, '')}
                           </div>
                         </div>
-                        {ask && <span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '2px 5px' }}>ASK</span>}
-                        <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>{n.timeAgo}</span>
-                      </div>
-                      {/* message = plain left-aligned body text (design: not a centered italic quote) */}
-                      <div style={{ fontSize: '14px', lineHeight: 1.55, color: 'var(--cv6-text-primary)', maxHeight: '88px', overflowY: 'auto' }}>
-                        {(n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')).replace(/[*_~\x60]|^#+\s?/gm, '')}
-                      </div>
-                      {/* quick replies — design's contextual chip row above the primary action (Thanks + Review/On it) */}
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={(e) => { e.stopPropagation(); replyToCatchup(n, 'Thanks') }}
-                          style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>Thanks</button>
-                        {hasAttachment ? (
-                          <button onClick={(e) => { e.stopPropagation(); openTool('review') }}
-                            style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>Review</button>
-                        ) : (
-                          <button onClick={(e) => { e.stopPropagation(); replyToCatchup(n, 'On it') }}
-                            style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>On it</button>
+                        {/* Action items — shown only when an agent has extracted them. Real-data-only:
+                            the extraction step is the open wiring gap, so this stays conditional, never faked. */}
+                        {Array.isArray(n.actionItems) && n.actionItems.length > 0 && (
+                          <div style={{ marginBottom: '14px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)', marginBottom: '9px' }}>Action items</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {n.actionItems.slice(0, 4).map((it, ix) => (
+                                <div key={ix} style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', fontSize: '13px', color: 'var(--cv6-text-primary)', lineHeight: 1.4 }}>
+                                  <span style={{ width: '16px', height: '16px', borderRadius: '5px', border: '2px solid var(--cv6-accent-primary)', flex: 'none', marginTop: '1px' }} />
+                                  <span>{String(it).replace(/[*_~\x60]/g, '')}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {/* Attachment row — when the catch-up item carries one (real name + size). */}
+                        {hasAttachment && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '9px 11px', border: '1px solid var(--cv6-hair)', borderRadius: '11px', background: 'var(--cv6-surface2)', marginBottom: '15px' }}>
+                            <span style={{ width: '38px', height: '38px', borderRadius: '9px', background: 'var(--cv6-accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', color: 'var(--cv6-accent-primary)' }}>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+                            </span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{attName}</div>
+                              {attSize && <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)' }}>{attSize}</div>}
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); openTool('review') }} style={{ height: '30px', padding: '0 12px', borderRadius: '8px', border: 'none', background: 'var(--cv6-accent-weak)', color: 'var(--cv6-accent-primary)', fontSize: '11.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', flex: 'none' }}>Review</button>
+                          </div>
                         )}
                       </div>
-                      {/* primary action — Open in chat + mark handled (green check) */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <button onClick={(e) => { e.stopPropagation(); open() }}
-                          style={{ flex: 1, height: '46px', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
-                          Open in chat<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-                        </button>
-                        <button onClick={dismiss} title="Mark handled" aria-label="Mark handled"
-                          style={{ width: '46px', height: '46px', flex: 'none', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-success)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
-                        </button>
+                      {/* Suggested actions — in the design's divided footer section. Draft reply opens
+                          the room; Add to Tracker opens the tracker. Real handlers; mark-handled = swipe. */}
+                      <div style={{ borderTop: '1px solid var(--cv6-divider)', padding: '12px 14px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--cv6-text-secondary)', marginBottom: '10px' }}>Suggested actions</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                          <button onClick={(e) => { e.stopPropagation(); open() }} style={{ height: '42px', borderRadius: '10px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                            Draft reply
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); openTool('tracker') }} style={{ height: '42px', borderRadius: '10px', border: '1px solid var(--cv6-hair)', background: 'var(--cv6-surface2)', color: 'var(--cv6-text-primary)', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+                            Add to Tracker
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )
