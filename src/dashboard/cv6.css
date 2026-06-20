@@ -1394,7 +1394,12 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
        Size each column to its CONTENT so they stack naturally: catch-up, then All Rooms. */
     flex:0 0 auto;
     border:none;
-    padding:16px;
+    /* R-MATCH home-gap 2026-06-19: horizontal-only padding. 16px on all sides added
+       16(catch bottom)+16(gap)+16(rooms top)=48px of dead space between the catch-up
+       card and All Rooms (the "void"); the design (Corner Mobile.dc.html) puts the
+       rooms right under the card. The 16px grid gap alone now carries the vertical
+       rhythm, matching the design's tight stack. */
+    padding:0 16px;
     overflow-y:visible;
   }
   /* Mobile home = catch-up + All Rooms + tabs (matches Corner Mobile.dc.html Direction B).
