@@ -5200,9 +5200,9 @@ export default function HomeView({
               then Theme / Alerts / Search at the bottom. Each item = icon chip + title. Mobile only. */}
           {isNarrowHV && navDrawerOpen && (
             <>
-              <div onClick={() => setNavDrawerOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 54, background: 'rgba(0,0,0,0.45)' }} />
+              <div onClick={() => setNavDrawerOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 131, background: 'rgba(0,0,0,0.45)' }} />
               <nav style={{
-                position: 'fixed', top: 0, right: 0, bottom: 0, width: RAIL_W + 'px', zIndex: 55,
+                position: 'fixed', top: 0, right: 0, bottom: 0, width: RAIL_W + 'px', zIndex: 132,
                 /* R-MOBILE 2026-06-19: stack the surface token 3× so the rail reads as an OPAQUE
                    panel in glass theme too (rgba surface alone let the page bleed through — the
                    "+" / labels showed through the open menu). Solid in light/dark, ~0.91 in glass. */
@@ -5270,14 +5270,25 @@ export default function HomeView({
           {isNarrowHV && !navDrawerOpen && (
             <button className="hm-fab" onClick={() => setNavDrawerOpen(true)} title="Menu" aria-label="Open menu"
               style={{
-                position: 'fixed', right: '18px', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', zIndex: 53,
-                width: '58px', height: '58px', borderRadius: '50%', border: 'none',
-                background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', color: '#fff', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 600,
-                boxShadow: '0 8px 28px rgba(0,0,0,0.4)',
+                // R-MOBILE 2026-06-19 (Patrik): the menu must float above EVERY screen, including the
+                // full-screen Chat tool (zIndex 120) — at 53 it was hidden behind tools, so tool
+                // screens looked menu-less. 130 clears the tool layer; the rail/backdrop go higher.
+                position: 'fixed', right: '18px', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', zIndex: 130,
+                width: '56px', height: '56px', borderRadius: '50%', border: 'none',
+                background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
               }}>
-              {(displayName(user) || 'U').trim().charAt(0).toUpperCase()}
-              {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '3px', right: '3px', width: '14px', height: '14px', borderRadius: '50%', background: '#60a5fa', border: '2px solid var(--cv6-ground)' }} />)}
+              {/* R-MOBILE 2026-06-19 (Patrik: "menu type icon but not boring"): a 2x2 rounded-tile
+                  grid reads as "menu / all tools" without the plain-hamburger look. Explicit white
+                  fill (not currentColor) so the home's text-colour cascade can't tint it dark. */}
+              <svg viewBox="0 0 24 24" width="23" height="23" fill="#ffffff" aria-hidden="true">
+                <rect x="3.6" y="3.6" width="7.4" height="7.4" rx="2.4"/>
+                <rect x="13" y="3.6" width="7.4" height="7.4" rx="2.4"/>
+                <rect x="3.6" y="13" width="7.4" height="7.4" rx="2.4"/>
+                <rect x="13" y="13" width="7.4" height="7.4" rx="2.4"/>
+              </svg>
+              {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '2px', right: '2px', width: '14px', height: '14px', borderRadius: '50%', background: '#60a5fa', border: '2px solid var(--cv6-ground)' }} />)}
             </button>
           )}
 
@@ -5299,7 +5310,7 @@ export default function HomeView({
               // just above the bottom tools dock (so the dock stays visible "below"), with its
               // own back-arrow header. Other tools + desktop keep the in-page panel.
               ...((isNarrowHV && selectedTool === 'chat')
-                ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 120, margin: 0, borderRadius: 0, border: 'none', background: 'var(--cv6-ground)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }
+                ? { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 120, margin: 0, borderRadius: 0, border: 'none', background: 'var(--cv6-ground)', overflow: 'hidden', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }
                 : { marginBottom: '24px', borderRadius: '8px', border: 'none', background: 'transparent', overflow: 'hidden', minHeight: '72vh' }),
             }}>
               {/* Tool header removed per CV6 design: tool button row is the only header.
