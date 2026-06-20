@@ -1,7 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx';
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx';
+import { ChatStepThread } from './cv6kit/ChatStepThread.jsx';
 import './cv6kit/kit.css';
+
+// Sample Step Thread (the kit Chat view) — used to verify the layout in
+// isolation. The real wiring waits on a step-emission feed (BUILD.md R-KIT-5).
+const SAMPLE_CHAT = {
+  target: { name: 'Elon', initials: 'EL', statusLine: 'Space Rising · Mission /007 · working now' },
+  steps: [
+    { id: 's1', kind: 'done', title: 'Read the brief & pulled the repo', sub: 'Scanned 28 missions and the task-runner. Everything lined up except one thing.' },
+    { id: 's2', kind: 'snag', title: 'Hit a snag', statusLabel: 'Needs you', sub: 'The Space Rising repo is not wired into the task runner yet, so the print cannot build. Two ways forward, your call:', choices: [
+      { id: 'quick', recommended: true, title: 'Quick reversible fix', sub: 'Wire it in now, migrate cleanly later. Unblocks the print.' },
+      { id: 'clean', title: 'Do it the clean way', sub: 'Set up a proper projects entry first. Slower, but tidier long-term.' },
+    ] },
+    { id: 's3', kind: 'choice', title: 'You chose the quick fix', sub: '"but pin the framing first."' },
+    { id: 's4', kind: 'working', title: 'Patching the resolver', statusLabel: 'Working', sub: 'Pinned your framing, now teaching the task runner where the repo lives.', progress: { pct: 64, label: '3/4' } },
+    { id: 's5', kind: 'upnext', title: 'Re-run the print build', statusLabel: 'Up next' },
+  ],
+};
 
 /**
  * CV6 Kit preview route (/cv6kit). Renders the REAL wired Home components (the
@@ -42,10 +59,13 @@ export default function CV6KitTest() {
   }, []);
 
   const noop = () => {};
+  const screen = typeof window !== 'undefined' && /(\?|&)screen=chat\b/.test(window.location.search) ? 'chat' : 'home';
 
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>
-      {isDesktop ? (
+      {screen === 'chat' ? (
+        <ChatStepThread {...SAMPLE_CHAT} onBack={noop} onSend={noop} onChoice={noop} />
+      ) : isDesktop ? (
         <DesktopHomeWired {...SAMPLE} recentMessages={SAMPLE_RECENT} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
       ) : (
         <MobileHomeWired {...SAMPLE} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
