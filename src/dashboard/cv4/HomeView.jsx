@@ -306,6 +306,14 @@ const HOME_TOOLS = [
   { key: 'scribe', label: 'Live Scribe', svg: (<><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></>) },
 ]
 
+// R-MOBILE-NAV 2026-06-19 (Patrik): the mobile right-side rail — profile on top, every tool with
+// its title, then Theme / Alerts / Search at the bottom (Search very bottom). These shared styles
+// keep each rail item consistent. Active item gets the accent chip + accent label.
+const RAIL_W = 72
+const railItemSty = { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%', padding: '5px 0', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', flex: 'none' }
+function railChipSty(on) { return { width: '34px', height: '34px', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', background: on ? 'var(--cv6-accent-primary)' : 'transparent', color: on ? '#fff' : 'var(--cv6-text-secondary)' } }
+function railLabSty(on) { return { fontSize: '9px', fontWeight: 600, marginTop: '2px', whiteSpace: 'nowrap', color: on ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-tertiary)' } }
+
 function SupportToolOverlay({ worldId }) {
   const { wishes, mailboxes } = useSupportData(worldId)
   const items = buildItems(wishes, mailboxes)
@@ -4908,7 +4916,7 @@ export default function HomeView({
                 conversation column on the right. Smaller than the tool tiles; the bell gets a
                 solid white background (Patrik 2026-06-19) so notifications stand out. */}
             {cv6 && (
-              <div style={{ flex: '0 1 420px', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+              <div className="hm-topbar-globals" style={{ flex: '0 1 420px', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
                 <button title="Search anything" onClick={() => setShowSearch(true)}
                   style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flex: 'none', transition: 'all 120ms ease' }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
@@ -5132,56 +5140,87 @@ export default function HomeView({
             </div>
           )}
 
-          {/* R-MOBILE-NAV 2026-06-19 (Patrik): the mobile side-nav drawer. Opened by tapping the
-              profile picture (top-right); slides in from the RIGHT. Lists every tool vertically
-              with its title. Tap a tool to open it + close the drawer. Mobile only — the avatar
-              only calls setNavDrawerOpen on mobile (isNarrowHV), and the drawer renders nothing
-              unless open. */}
-          {navDrawerOpen && (
-            <div onClick={() => setNavDrawerOpen(false)}
-              style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'flex-end' }}>
-              <div onClick={(e) => e.stopPropagation()}
-                style={{
-                  width: 'min(82vw, 320px)', height: '100%', background: 'var(--cv6-surface)',
-                  borderLeft: '1px solid var(--cv6-divider)', boxShadow: '-12px 0 40px rgba(0,0,0,0.35)',
-                  display: 'flex', flexDirection: 'column',
-                  paddingTop: 'calc(14px + env(safe-area-inset-top, 0px))',
-                  animation: 'cv6-drawer-in 0.22s cubic-bezier(.22,1,.36,1)',
-                }}>
-                {/* Header: profile + name + close */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '0 16px 14px', borderBottom: '1px solid var(--cv6-divider)' }}>
-                  <span style={{ width: '40px', height: '40px', borderRadius: '50%', flex: 'none', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: 600 }}>
-                    {(displayName(user) || 'U').trim().charAt(0).toUpperCase()}
-                  </span>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: '15px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName(user) || 'You'}</span>
-                  <button onClick={() => setNavDrawerOpen(false)} aria-label="Close menu"
-                    style={{ width: '34px', height: '34px', flex: 'none', borderRadius: '9px', border: 'none', background: 'transparent', color: 'var(--cv6-text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          {/* R-MOBILE-NAV 2026-06-19 (Patrik, Corner Mobile.dc.html "Side menu · closed & open"):
+              CLOSED — content runs full-bleed; the profile avatar floats BOTTOM-RIGHT as the only
+              chrome (unread dot). OPEN — a NARROW rail slides in from the right: profile pinned at
+              top, then nav (Home/Chat/Organize/Review), then tools (Support/Tracker/Command/Scribe),
+              then Theme / Alerts / Search at the bottom. Each item = icon chip + title. Mobile only. */}
+          {isNarrowHV && navDrawerOpen && (
+            <>
+              <div onClick={() => setNavDrawerOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 54, background: 'rgba(0,0,0,0.45)' }} />
+              <nav style={{
+                position: 'fixed', top: 0, right: 0, bottom: 0, width: RAIL_W + 'px', zIndex: 55,
+                background: 'var(--cv6-surface)', borderLeft: '1px solid var(--cv6-divider)',
+                boxShadow: '-12px 0 40px rgba(0,0,0,0.4)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
+                paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+                gap: '1px', overflowY: 'auto', overflowX: 'hidden',
+                animation: 'cv6-drawer-in 0.22s cubic-bezier(.22,1,.36,1)',
+              }}>
+                {/* profile pinned top — also the close affordance */}
+                <button onClick={() => setNavDrawerOpen(false)} title="Close menu"
+                  style={{ width: '44px', height: '44px', borderRadius: '50%', border: 'none', flex: 'none', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', fontWeight: 600 }}>
+                  {(displayName(user) || 'U').trim().charAt(0).toUpperCase()}
+                </button>
+                <span style={{ width: '30px', height: '1px', background: 'var(--cv6-divider)', margin: '9px 0' }} />
+                {/* nav */}
+                {HOME_TOOLS.slice(0, 4).map(t => { const on = selectedTool === t.key; return (
+                  <button key={t.key} onClick={() => { setNavDrawerOpen(false); openTool(t.key) }} title={t.label} style={railItemSty}>
+                    <span style={railChipSty(on)}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{t.svg}</svg></span>
+                    <span style={railLabSty(on)}>{t.label}</span>
                   </button>
-                </div>
-                {/* Tools, vertical, with titles */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  {HOME_TOOLS.map(t => {
-                    const on = selectedTool === t.key
-                    return (
-                      <button key={t.key} onClick={() => { setNavDrawerOpen(false); openTool(t.key) }}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '14px', width: '100%', textAlign: 'left',
-                          padding: '13px 14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                          background: on ? 'var(--cv6-accent-primary)' : 'transparent',
-                          color: on ? '#ffffff' : 'var(--cv6-text-primary)',
-                          fontFamily: 'inherit', fontSize: '16px', fontWeight: 600,
-                        }}>
-                        <svg viewBox="0 0 24 24" width="22" height="22" fill={t.key === 'support' ? 'none' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
-                          {t.svg}
-                        </svg>
-                        {t.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            </div>
+                )})}
+                <span style={{ width: '30px', height: '1px', background: 'var(--cv6-divider)', margin: '9px 0' }} />
+                {/* tools */}
+                {HOME_TOOLS.slice(4).map(t => { const on = selectedTool === t.key; const label = t.key === 'scribe' ? 'Scribe' : t.label; return (
+                  <button key={t.key} onClick={() => { setNavDrawerOpen(false); openTool(t.key) }} title={t.label} style={railItemSty}>
+                    <span style={railChipSty(on)}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{t.svg}</svg></span>
+                    <span style={railLabSty(on)}>{label}</span>
+                  </button>
+                )})}
+                {/* bottom group: theme, alerts, search (search very bottom — Patrik) */}
+                <span style={{ marginTop: 'auto' }} />
+                <span style={{ width: '30px', height: '1px', background: 'var(--cv6-divider)', margin: '9px 0' }} />
+                <button onClick={() => cycleTheme()} title="Theme" style={railItemSty}>
+                  <span style={railChipSty(false)}>
+                    {themeMode === 'light'
+                      ? (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>)
+                      : themeMode === 'dark'
+                      ? (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>)
+                      : (<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="7"/><path d="M9 17.4h6M9.6 17.4l-1 3.1M14.4 17.4l1 3.1"/></svg>)}
+                  </span>
+                  <span style={railLabSty(false)}>Theme</span>
+                </button>
+                <button onClick={() => { setNavDrawerOpen(false); if (cv6) setSelectedTool('home') }} title="Alerts" style={railItemSty}>
+                  <span style={railChipSty(false)}>
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                    {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '3px', right: '4px', width: '8px', height: '8px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '1.5px solid var(--cv6-surface)' }} />)}
+                  </span>
+                  <span style={railLabSty(false)}>Alerts</span>
+                </button>
+                <button onClick={() => { setNavDrawerOpen(false); setShowSearch(true) }} title="Search" style={railItemSty}>
+                  <span style={railChipSty(false)}><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+                  <span style={railLabSty(false)}>Search</span>
+                </button>
+              </nav>
+            </>
+          )}
+
+          {/* CLOSED state: the profile avatar floats bottom-right as the only chrome (mobile). Tap
+              to slide the rail in. The dot flags unread. */}
+          {isNarrowHV && !navDrawerOpen && (
+            <button onClick={() => setNavDrawerOpen(true)} title="Menu" aria-label="Open menu"
+              style={{
+                position: 'fixed', right: '18px', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', zIndex: 53,
+                width: '58px', height: '58px', borderRadius: '50%', border: 'none',
+                background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', color: '#fff', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: 600,
+                boxShadow: '0 8px 28px rgba(0,0,0,0.4)',
+              }}>
+              {(displayName(user) || 'U').trim().charAt(0).toUpperCase()}
+              {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '3px', right: '3px', width: '14px', height: '14px', borderRadius: '50%', background: '#60a5fa', border: '2px solid var(--cv6-ground)' }} />)}
+            </button>
           )}
 
           {/* R23: Full-screen tool app container — rolls in above the 3-column band, above What Needs You */}
