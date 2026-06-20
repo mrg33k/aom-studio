@@ -28,6 +28,9 @@ import {
 } from './lib/clientConfig.js'
 import { authFetch } from './lib/authFetch.js'
 import { OVERLAY } from './cv4/lib/uiKit.jsx'
+// corner:corner-ui-cv6 R-KIT-2 — wired Claude-design mobile Home (real data, kit look).
+import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
+import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
 import { useCurrentUserSlug } from './hooks/useCurrentUserSlug'
@@ -2975,6 +2978,19 @@ export default function CornerVG() {
             ) : selectedMail ? (
               <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
             ) : isHomeMode ? (
+              !isDesktop ? (
+                /* corner:corner-ui-cv6 R-KIT-2 — wired Claude mobile Home (real data). */
+                <MobileHomeWired
+                  user={currentUser}
+                  agents={agents}
+                  projectRooms={projectRooms}
+                  catchup={buildCatchupNotifications(notifItems)}
+                  onSelectAgent={handleSelectAgent}
+                  onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
+                  onCatchupOpen={handleCatchupOpenRoom}
+                  onNav={(key) => { if (key === 'chat') setTab('chat'); else if (key === 'organize') setTab('tasks'); }}
+                />
+              ) : (
               <HomeView
                 cv6={cv6Mode}
                 user={currentUser}
@@ -3018,6 +3034,7 @@ export default function CornerVG() {
                   }
                 }}
               />
+              )
             ) : selectedAgent?.slug === 'elon' && deckTab === 'deck' ? (
               // command:deck — entry is the loop icon in the room header (ContextNav).
               // Ported from CornerV4 so the live goal ledger is testable on /cvg.
