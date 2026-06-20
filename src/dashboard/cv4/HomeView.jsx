@@ -2476,7 +2476,7 @@ function FilePreviewPanel({ node, worldId, annotate, bare }) {
       {data.state === 'media' && kind === 'audio' && <audio src={data.url} controls style={{ width: '100%' }} />}
       {data.state === 'media' && kind === 'pdf' && (
         <div>
-          <iframe src={`${data.url}#zoom=page-width`} title={node.name} style={{ width: '100%', height: '74vh', border: '1px solid var(--cv6-divider)', borderRadius: '8px', background: '#fff', display: 'block' }} />
+          <iframe src={`${data.url}#zoom=page-width`} title={node.name} style={{ width: '100%', height: '74vh', border: '1px solid var(--cv6-divider)', borderRadius: '8px', background: 'var(--cv6-surface)', display: 'block' }} />
           <a href={data.url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: 'var(--cv6-accent-primary)', textDecoration: 'none' }}>Open full size (zoom) →</a>
         </div>
       )}

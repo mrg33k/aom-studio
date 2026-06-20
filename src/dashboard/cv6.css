@@ -231,8 +231,15 @@
   stroke: #ffffff !important;
 }
 
-/* html/body transparent so the fixed backdrop shows through. */
-html[data-theme="glass"],
+/* R-WHITE-GAP 2026-06-20 (Patrik: "a gap of space stuck white on dark and glass —
+   make all backgrounds move with their theme"). html holds the dark nebula-base
+   color so the mobile safe-area regions (notch, home-bar) never fall through to
+   the browser's white. body stays transparent so the fixed nebula backdrop still
+   shows through — an html background sits BELOW the z-index:-1 backdrop, so it
+   cannot hide the nebula in the content area. */
+html[data-theme="glass"] {
+  background: #05080b !important;
+}
 html[data-theme="glass"] body {
   background: transparent !important;
 }
