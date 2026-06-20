@@ -739,7 +739,7 @@ function SupportDetailPanel({ item, mobile }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
           <div style={{
             width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
-            background: 'rgba(59, 130, 246, 0.18)', color: '#7FB2FF',
+            background: 'var(--cv6-accent-weak)', color: 'var(--cv6-accent-primary)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '12px', fontWeight: '700'
           }}>
@@ -2606,6 +2606,9 @@ function OrganizeBrowser({ projects }) {
   const [selFile, setSelFile] = useState(null)
   const [loading, setLoading] = useState(false)
   const [isNarrow, setIsNarrow] = useState(false)
+  // R-MATCH-KIT 2026-06-20: mobile Files/Projects segmented toggle (kit ui_kits/tools/organize.html)
+  const [mobileTab, setMobileTab] = useState('files')
+  const projPickedRef = useRef(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -2632,6 +2635,9 @@ function OrganizeBrowser({ projects }) {
     const t = setInterval(load, 12000)
     return () => { active = false; clearInterval(t) }
   }, [proj])
+  // On mobile, picking a project jumps to its Files view (kit toggle UX). Ref-guarded
+  // so the initial default-project selection on mount does not auto-switch tabs.
+  useEffect(() => { if (projPickedRef.current) setMobileTab('files'); else projPickedRef.current = true }, [proj])
 
   // Flatten the tree into file rows (top-level files + files inside folders/missions,
   // tagged with their group) so the middle column reads like the design's flat file list.
@@ -2679,10 +2685,33 @@ function OrganizeBrowser({ projects }) {
   const previewCol = <div style={{ ...colStyle, borderRight: 'none' }}><div style={headStyle}>Preview</div><FilePreviewPanel node={selFile} /></div>
 
   if (isNarrow) {
+    // R-MATCH-KIT 2026-06-20: mobile Organize = a Files/Projects segmented toggle
+    // (kit ui_kits/tools/organize.html line 95) that switches the view, not three
+    // stacked columns. Files = the current project's files (tap a file -> preview
+    // with a back row); Projects = pick a project, which jumps you to its Files.
     const wrap = (child, cap) => <div className="hm-organize-grid" style={{ border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', maxHeight: cap, overflowY: 'auto' }}>{child}</div>
+    const seg = (label, val) => (
+      <button onClick={() => { setMobileTab(val); if (val === 'projects') setSelFile(null) }}
+        style={{ flex: 1, height: '36px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13.5px', fontWeight: 600, background: mobileTab === val ? 'var(--cv6-accent-primary)' : 'transparent', color: mobileTab === val ? '#fff' : 'var(--cv6-text-secondary)', transition: 'background 120ms ease' }}>{label}</button>
+    )
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {wrap(projCol, '26vh')}{wrap(filesCol, '30vh')}{wrap(previewCol, 'none')}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '4px', background: 'var(--cv6-surface-2)', borderRadius: '11px', padding: '4px' }}>
+          {seg('Files', 'files')}{seg('Projects', 'projects')}
+        </div>
+        {mobileTab === 'projects'
+          ? wrap(projCol, '62vh')
+          : selFile
+            ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button onClick={() => setSelFile(null)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 2px', background: 'transparent', border: 'none', color: 'var(--cv6-accent-primary)', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', alignSelf: 'flex-start' }}>
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 19l-7-7 7-7"/></svg>
+                  Files
+                </button>
+                {wrap(previewCol, 'none')}
+              </div>
+            )
+            : wrap(filesCol, '62vh')}
       </div>
     )
   }
