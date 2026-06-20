@@ -3,6 +3,7 @@ import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx';
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx';
 import { ChatStepThread } from './cv6kit/ChatStepThread.jsx';
 import { TrackerView } from './cv6kit/TrackerView.jsx';
+import { CommandView } from './cv6kit/CommandView.jsx';
 import './cv6kit/kit.css';
 
 // Sample Step Thread (the kit Chat view) — used to verify the layout in
@@ -28,6 +29,24 @@ const SAMPLE_TRACKER = {
     { id: 'CV6-138', title: 'Catch Up cards crowd All Rooms', status: 'in_progress', priority: 'med', assignee: { initials: 'RX', name: 'Rex', tone: '#A3E635', toneBg: 'rgba(163,230,53,.2)' }, updated: '5h' },
     { id: 'CV6-131', title: 'Nav overlaps home indicator', status: 'in_progress', priority: 'med', assignee: { initials: 'EL', name: 'Elon', tone: 'var(--success)', toneBg: 'rgba(52,211,153,.2)' }, updated: '8h' },
     { id: 'CV6-126', title: 'Glass contrast dips on lightest photo', status: 'open', priority: 'low', assignee: { initials: 'GA', name: 'Gary', tone: 'var(--warn)', toneBg: 'rgba(251,191,36,.2)' }, updated: '1d' },
+  ],
+};
+
+const SAMPLE_COMMAND = {
+  summary: { roomCount: 6, liveCount: 3 },
+  featured: {
+    room: 'Space Rising', color: 'var(--violet-400)', status: 'live',
+    goal: 'Lock Interactive/community framing before the Apr 29 print.',
+    checklist: [
+      { label: 'Pull repo & scan task-runner', state: 'done' },
+      { label: 'Patch resolve_repo_path()', state: 'queued' },
+      { label: 'Route docs-only to AOM-EA', state: 'working' },
+    ],
+  },
+  rooms: [
+    { id: 'r1', name: 'Corner', color: 'var(--accent)', sub: 'Ship CV6 mobile parity', status: 'live' },
+    { id: 'r2', name: 'Included Health', color: 'var(--pink-400)', sub: 'Batch02 culture deck', status: 'blocked' },
+    { id: 'r3', name: 'Loop Test Project', color: 'var(--faint)', sub: 'Validate routing across missions', status: 'idle' },
   ],
 };
 
@@ -78,6 +97,8 @@ export default function CV6KitTest() {
         <ChatStepThread {...SAMPLE_CHAT} onBack={noop} onSend={noop} onChoice={noop} />
       ) : screen === 'tracker' ? (
         <TrackerView {...SAMPLE_TRACKER} onSelectBug={noop} onNewBug={noop} />
+      ) : screen === 'command' ? (
+        <CommandView {...SAMPLE_COMMAND} onSelectRoom={noop} />
       ) : isDesktop ? (
         <DesktopHomeWired {...SAMPLE} recentMessages={SAMPLE_RECENT} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
       ) : (
