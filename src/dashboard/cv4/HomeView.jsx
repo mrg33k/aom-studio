@@ -4658,7 +4658,7 @@ export default function HomeView({
           <div style={{ width: '72px', height: '72px', borderRadius: '20px', background: 'var(--cv6-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px var(--cv6-divider)' }}>
             <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="var(--cv6-accent-success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-secondary)', maxWidth: '200px' }}>You're all caught up.</div>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-secondary)', maxWidth: '200px' }}>Nothing needs you right now.</div>
         </div>
       ) : (() => {
         // Patrik (R75): Catch up is a QUICK TOOL, not a feed. Collapse the firehose to
@@ -4710,7 +4710,7 @@ export default function HomeView({
                 <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--cv6-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px var(--cv6-divider)' }}>
                   <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="var(--cv6-accent-success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
-                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-secondary)' }}>You're all caught up.</div>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-secondary)' }}>Nothing needs you right now.</div>
               </div>
             )
           }

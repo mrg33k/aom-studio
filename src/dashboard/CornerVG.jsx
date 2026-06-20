@@ -1069,8 +1069,29 @@ export default function CornerVG() {
 
   // corner:notifications-catchup R2 — build the CatchupNotification[] from notifItems.
   // Maps useDataPipe inboxItems into the shape CatchupModal expects.
+  //
+  // corner:corner-ui-cv6 (Patrik 2026-06-20): Catch Up is NOT a feed of every update.
+  // A card appears ONLY when the item BLOCKS Patrik or NEEDS his attention to move
+  // forward. The test: does this stop until he acts? Everything else stays in the rooms
+  // list and never becomes a Catch Up card. If nothing needs him, Catch Up is empty —
+  // that is the win state, not a bug. (Round 1: conservative, real-signal filter on the
+  // message itself. Round 2 wires a worker that flags needs_you + writes the summary /
+  // drafted response, plus the email feeder. Full rule: corner/missions/corner-ui-cv6/
+  // deliverables/catch-up-card-rule-2026-06-20.md)
+  const needsPatrik = useCallback((item) => {
+    const m = item.metadata || {}
+    // explicit flags a worker / triage may set (Round 2 feeds these)
+    if (m.needs_you === true || m.needs_input === true || m.blocker === true || m.blocked === true) return true
+    if (m.catchup_priority === 'needs_you' || m.status === 'needs_you' || m.status === 'blocked') return true
+    // real-text signal: a direct question or an explicit ask to Patrik. Conservative on
+    // purpose — a plain status update ("shipped X", "new update") does NOT qualify.
+    const t = (item.text || '').trim()
+    if (/\?\s*$/.test(t)) return true
+    return /\b(should i|shall i|which (one|option|do you)|can you|could you|would you|do you want|let me know|your call|your (input|sign[- ]?off|go[- ]?ahead|approval|decision)|need (your|you to)|waiting on (you|your)|please (confirm|approve|review|decide)|approve this|go ahead\b|option [ab]\b|ok(ay)? to)\b/i.test(t)
+  }, [])
+
   const buildCatchupNotifications = useCallback((items) => {
-    return (items || []).map(item => {
+    return (items || []).filter(needsPatrik).map(item => {
       // Resolve display name from agents list
       const agentObj = (agents || []).find(a => a.slug === item.agent)
       const senderName = agentObj?.name || item.agent || 'Agent'
@@ -1130,7 +1151,7 @@ export default function CornerVG() {
         _roomKey: item.roomKey || item.agent,
       }
     })
-  }, [agents])
+  }, [agents, needsPatrik])
 
   // corner:notifications-catchup R2 — reply handler: POST to supabase-messages + mark read
   const handleCatchupReply = useCallback(async (notif, replyText) => {
