@@ -176,7 +176,18 @@ export default async function handler(req, res) {
   // For project paths: look up world from the DB and confirm it matches.
   // For user-level mission paths: the world is explicit in the path segment;
   //   skip the DB project lookup (there is no project row for a user-mission).
-  if (!isMission) {
+  //
+  // EXCEPTION — the 'aom' super-admin world sees every room (same rule as
+  // review-queue.js:91 and missions-tree.js:94, which leave aom unscoped). The
+  // review queue surfaces deliverables from every project to aom, but the
+  // per-project client_id check here would 404 any project whose client_id
+  // isn't literally 'aom' — so the file the queue just listed "could not open."
+  // For aom the path is already pinned under corner/users/aom/, the hidden-
+  // segment + containment checks still apply, and verifyTenant('aom', req)
+  // below still proves the caller is the operator. So skip the DB world check
+  // for aom only; every real client world stays strictly gated.
+  const isSuperAdminWorld = world === 'aom';
+  if (!isMission && !isSuperAdminWorld) {
     const dbWorld = await resolveProjectWorld(slug);
     if (!dbWorld) {
       return res.status(404).json({ error: 'Not found' });
