@@ -72,7 +72,7 @@
 [data-theme="dark"] [data-cv6]:not([data-theme]):not(.dark),
 .dark [data-cv6]:not([data-theme]):not(.dark) {
   --cv6-ground: #0a0a0b;
-  --cv6-surface: #1a1a1b;
+  --cv6-surface: #161619;
   --cv6-surface2: #1c1c21;
   --cv6-surface-hover: #242427;
   --cv6-divider: rgba(255, 255, 255, 0.07);
@@ -312,7 +312,10 @@ html[data-glass-card="light"] [data-cv6] .hm-catchup-card {
    the panel). Give them a solid raised dark card (Patrik: the 0.05 raise was too
    transparent) so they read clearly as cards over the panel, like the dark theme. */
 html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-card {
-  background: rgba(42, 48, 59, 0.94) !important;
+  /* R-MATCH-KIT 2026-06-20: this is the WINNING rule by specificity (html + :not),
+     so the kit value must live HERE, not only on the lower-specificity rule below.
+     kit ui_kits/mobile catch-up deck = rgba(18,21,28,.975) near-opaque. */
+  background: rgba(18, 21, 28, 0.975) !important;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
