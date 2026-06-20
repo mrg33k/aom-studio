@@ -4635,10 +4635,11 @@ export default function HomeView({
                             background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
                             color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {/* name wraps to the next line on mobile instead of truncating (Patrik) */}
+                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-primary)', lineHeight: 1.3, overflowWrap: 'anywhere' }}>
                               {n.projectSlug ? `${n.senderName} · ${n.roomName || n.projectSlug}` : n.senderName}
                             </div>
-                            <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontSize: '11.5px', color: 'var(--cv6-text-secondary)', overflowWrap: 'anywhere' }}>
                               {n._roomCount > 1 ? `${n._roomCount} new updates` : (n.projectSlug ? `→ ${n.projectSlug}` : (n.roomName || ''))}
                             </div>
                           </div>
