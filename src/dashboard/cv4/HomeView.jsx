@@ -1990,7 +1990,9 @@ function TrackerToolOverlay({ projects, missionsByProject, agents }) {
      const avatar = (n) => <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(91,155,255,0.2)', color: 'var(--cv6-accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9.5px', fontWeight: '700', flexShrink: 0 }}>{initials(n)}</span>
      const chev = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
      return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--cv6-surface)' }}>
+      <div style={isNarrow
+        ? { position: 'fixed', inset: 0, zIndex: 150, display: 'flex', flexDirection: 'column', background: 'var(--cv6-ground)', paddingTop: 'env(safe-area-inset-top, 0px)' }
+        : { display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--cv6-surface)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid var(--cv6-divider)', flexShrink: 0 }}>
           <button onClick={() => setComposing(false)} style={{ border: 'none', background: 'transparent', color: 'var(--cv6-text-secondary)', fontFamily: 'inherit', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
           <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{isBug ? 'New bug' : 'New item'}</span>
