@@ -107,6 +107,9 @@ export default async function handler(req, res) {
       priority: (pr >= 1 && pr <= 5) ? pr : 3,
       status: 'Open',
       owner: clean(req.body.owner, 24) || 'Patrik',
+      attachments: Array.isArray(req.body.attachments)
+        ? req.body.attachments.slice(0, 12).map((a) => ({ name: clean(a && a.name, 200), path: clean(a && a.path, 400) })).filter((a) => a.name)
+        : [],
       added_by: 'patrik',
     });
     const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');

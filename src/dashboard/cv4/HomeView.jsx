@@ -1664,7 +1664,7 @@ function trackerColTrack(name) {
   return 'minmax(120px, 1fr)'
 }
 
-function TrackerToolOverlay({ projects, missionsByProject }) {
+function TrackerToolOverlay({ projects, missionsByProject, agents }) {
   const firstProj = (projects || [])[0]
   // Custom trackers PERSIST via /api/dashboard/trackers (Patrik 2026-06-19: "wire so
   // trackers actually save"). They load from the store on mount; the real trackers
@@ -1810,27 +1810,53 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
     return () => clearInterval(t)
   }, [pullBugs])
 
-  // R88 (Patrik): add a bug from the UI. Persists via /api/dashboard/cv6-bugs so
-  // the agents see it too, then refreshes the live list.
-  const [addingBug, setAddingBug] = useState(false)
-  const [bugDraft, setBugDraft] = useState({ page: 'Homepage', title: '', expected: '', severity: 'Medium', priority: 3 })
-  const [savingBug, setSavingBug] = useState(false)
-  const submitBug = useCallback(async () => {
-    const title = (bugDraft.title || '').trim()
-    if (!title) { setAddingBug(false); return }
-    setSavingBug(true)
+  // R-WIRE compose (Patrik 2026-06-19: "wire so trackers actually save + attachments +
+  // assign/invite people"). One clean grouped new-bug / new-item form that matches
+  // DESIGN-tracker.png: a big title + Status / Priority / Severity / Assignee rows + an
+  // Attach row + a full-width Create button. cv6-bugs files via /api/dashboard/cv6-bugs
+  // (owner = the assignee); a custom tracker files a row via /api/dashboard/trackers so
+  // __assignee + __attachments persist. Files upload for real through
+  // /api/dashboard/file-upload (returns a served URL), so an attachment is a real file.
+  const blankDraft = { title: '', page: 'Homepage', expected: '', severity: 'Medium', priority: 3, status: 'Open', assignee: '', attachments: [] }
+  const [composing, setComposing] = useState(false)
+  const [draft, setDraft] = useState(blankDraft)
+  const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [assigneeOpen, setAssigneeOpen] = useState(false)
+  const openCompose = () => { setDraft(blankDraft); setAssigneeOpen(false); setComposing(true) }
+  const onPickFile = useCallback(async (file) => {
+    if (!file) return
+    setUploading(true)
     try {
-      const r = await authFetch('/api/dashboard/cv6-bugs', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'add', world: 'aom', ...bugDraft, title }),
-      })
-      if (r.ok) {
-        setAddingBug(false)
-        setBugDraft({ page: 'Homepage', title: '', expected: '', severity: 'Medium', priority: 3 })
-        await pullBugs()
+      const data_base64 = await new Promise((resolve, reject) => { const fr = new FileReader(); fr.onload = () => resolve(String(fr.result).split(',')[1] || ''); fr.onerror = reject; fr.readAsDataURL(file) })
+      const r = await authFetch('/api/dashboard/file-upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ world: 'aom', filename: file.name, data_base64, mime_type: file.type || 'application/octet-stream' }) })
+      if (r.ok) { const d = await r.json().catch(() => ({})); setDraft(dd => ({ ...dd, attachments: [...dd.attachments, { name: d.filename || file.name, path: d.url || '' }] })) }
+    } catch { /* best effort; the file just will not attach */ } finally { setUploading(false) }
+  }, [])
+  const submitCompose = useCallback(async () => {
+    const title = (draft.title || '').trim(); if (!title) return
+    const cur = trackers.find(t => t.id === selId); if (!cur) return
+    setSaving(true)
+    try {
+      if (cur.id === 'cv6-bugs') {
+        const r = await authFetch('/api/dashboard/cv6-bugs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', world: 'aom', page: draft.page, title, expected: draft.expected, severity: draft.severity, priority: draft.priority, owner: draft.assignee || 'Patrik', attachments: draft.attachments }) })
+        if (r.ok) { setComposing(false); await pullBugs() }
+      } else {
+        const sc = TRACKER_TEMPLATES[cur.template].statusCol
+        const row = {}
+        row[cur.columns[0]] = title
+        if (sc) row[sc] = draft.status || 'Open'
+        if (cur.columns.includes('Severity')) row.Severity = draft.severity
+        if (cur.columns.includes('Owner')) row.Owner = draft.assignee
+        if (cur.columns.includes('Expected')) row.Expected = draft.expected
+        if (draft.assignee) row.__assignee = draft.assignee
+        if (draft.attachments.length) row.__attachments = draft.attachments
+        setTrackers(prev => prev.map(t => t.id !== selId ? t : { ...t, rows: [...t.rows, row] }))
+        setComposing(false)
+        if (isCustom(selId)) await postTracker({ action: 'add-row', id: selId, row })
       }
-    } finally { setSavingBug(false) }
-  }, [bugDraft, pullBugs])
+    } finally { setSaving(false) }
+  }, [draft, trackers, selId, pullBugs, postTracker])
   const updateBugStatus = useCallback(async (id, status) => {
     if (!id) return
     setTrackers(prev => prev.map(t => t.id !== 'cv6-bugs' ? t : { ...t, rows: t.rows.map(r => r.__id === id ? { ...r, Status: status } : r) }))
@@ -1946,6 +1972,102 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
    if (!sel) return (
     <div style={{ padding: '20px', fontSize: '13px', color: 'var(--cv6-text-tertiary)' }}>Select or create a tracker</div>
    )
+   if (composing) {
+     const isBug = sel.id === 'cv6-bugs'
+     const sc = TRACKER_TEMPLATES[sel.template].statusCol
+     const hasPriority = isBug
+     const hasSeverity = isBug || sel.columns.includes('Severity')
+     const people = Array.from(new Set(['Patrik', ...((agents || []).map(a => a && a.name).filter(Boolean))])).slice(0, 12)
+     const cycleSeverity = () => setDraft(d => ({ ...d, severity: { Low: 'Medium', Medium: 'High', High: 'Low' }[d.severity] || 'Medium' }))
+     const cyclePriority = () => setDraft(d => ({ ...d, priority: (d.priority % 5) + 1 }))
+     const cycleStatus = () => setDraft(d => ({ ...d, status: { 'Open': 'In progress', 'In progress': 'Done', 'Done': 'Open' }[d.status] || 'Open' }))
+     const initials = (n) => (String(n)[0] + (String(n).split(' ')[1] ? String(n).split(' ')[1][0] : '')).toUpperCase()
+     const rowStyle = { display: 'flex', alignItems: 'center', gap: '11px', padding: '13px 15px', cursor: 'pointer', userSelect: 'none' }
+     const labelStyle = { fontSize: '14px', color: 'var(--cv6-text-secondary)', flex: 1 }
+     const valStyle = { display: 'flex', alignItems: 'center', gap: '7px', fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)' }
+     const cardStyle = { borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)' }
+     const divider = { height: '1px', background: 'var(--cv6-divider)', marginLeft: '15px' }
+     const avatar = (n) => <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(91,155,255,0.2)', color: 'var(--cv6-accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9.5px', fontWeight: '700', flexShrink: 0 }}>{initials(n)}</span>
+     const chev = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+     return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, background: 'var(--cv6-surface)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid var(--cv6-divider)', flexShrink: 0 }}>
+          <button onClick={() => setComposing(false)} style={{ border: 'none', background: 'transparent', color: 'var(--cv6-text-secondary)', fontFamily: 'inherit', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+          <span style={{ fontSize: '14px', fontWeight: '700', color: 'var(--cv6-text-primary)' }}>{isBug ? 'New bug' : 'New item'}</span>
+          <button onClick={submitCompose} disabled={!draft.title.trim() || saving} style={{ border: 'none', background: 'transparent', color: draft.title.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-tertiary)', fontFamily: 'inherit', fontSize: '14px', fontWeight: '700', cursor: draft.title.trim() ? 'pointer' : 'default' }}>{saving ? 'Saving…' : 'Create'}</button>
+        </div>
+        <div style={{ flex: 1, overflow: 'auto', padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <input autoFocus value={draft.title} onChange={e => setDraft(d => ({ ...d, title: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') submitCompose() }} placeholder={isBug ? 'What is wrong?' : 'Title'} style={{ width: '100%', border: 'none', background: 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '21px', fontWeight: '700', letterSpacing: '-0.01em', outline: 'none' }} />
+            <div style={{ fontSize: '13px', color: 'var(--cv6-text-tertiary)', marginTop: '5px' }}>Add detail, steps to reproduce, logs…</div>
+          </div>
+          {isBug && (
+            <input value={draft.expected} onChange={e => setDraft(d => ({ ...d, expected: e.target.value }))} placeholder="What should happen instead?" style={{ width: '100%', padding: '12px 14px', borderRadius: '11px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '14px', outline: 'none' }} />
+          )}
+          <div style={cardStyle}>
+            <div style={{ ...rowStyle, cursor: 'default' }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+              <span style={labelStyle}>Tracker</span>
+              <span style={valStyle}>{sel.name}</span>
+            </div>
+            {sc && (<><div style={divider} /><div style={rowStyle} onClick={cycleStatus}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2"><circle cx="12" cy="12" r="9"/></svg>
+              <span style={labelStyle}>Status</span>
+              <span style={valStyle}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: STATUS_COLORS[draft.status] || 'var(--cv6-accent-primary)' }} />{draft.status}</span>{chev}
+            </div></>)}
+            {hasPriority && (<><div style={divider} /><div style={rowStyle} onClick={cyclePriority}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+              <span style={labelStyle}>Priority</span>
+              <span style={valStyle}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: PRIORITY_COLORS[draft.priority] || 'var(--cv6-text-primary)' }} />P{draft.priority}</span>{chev}
+            </div></>)}
+            {hasSeverity && (<><div style={divider} /><div style={rowStyle} onClick={cycleSeverity}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+              <span style={labelStyle}>Severity</span>
+              <span style={valStyle}>{draft.severity}</span>{chev}
+            </div></>)}
+          </div>
+          <div style={cardStyle}>
+            <div style={rowStyle} onClick={() => setAssigneeOpen(v => !v)}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span style={labelStyle}>Assignee</span>
+              {draft.assignee ? (<span style={valStyle}>{avatar(draft.assignee)}{draft.assignee}</span>) : (<span style={{ ...valStyle, color: 'var(--cv6-text-tertiary)', fontWeight: '500' }}>Unassigned</span>)}
+              {chev}
+            </div>
+            {assigneeOpen && (
+              <div style={{ borderTop: '1px solid var(--cv6-divider)', padding: '6px' }}>
+                {people.map(p => (
+                  <button key={p} onClick={() => { setDraft(d => ({ ...d, assignee: d.assignee === p ? '' : p })); setAssigneeOpen(false) }} style={{ display: 'flex', alignItems: 'center', gap: '9px', width: '100%', textAlign: 'left', padding: '9px 10px', borderRadius: '9px', border: 'none', background: draft.assignee === p ? 'var(--cv6-accent-weak)' : 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13.5px', cursor: 'pointer' }}>
+                    {avatar(p)}{p}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div style={cardStyle}>
+            <label style={{ ...rowStyle, cursor: uploading ? 'default' : 'pointer' }}>
+              <input type="file" style={{ display: 'none' }} disabled={uploading} onChange={e => { const f = e.target.files && e.target.files[0]; e.target.value = ''; onPickFile(f) }} />
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <span style={{ ...labelStyle, color: 'var(--cv6-text-primary)', flex: 'unset' }}>{uploading ? 'Uploading…' : 'Attach screenshot or log'}</span>
+            </label>
+            {draft.attachments.length > 0 && (
+              <div style={{ borderTop: '1px solid var(--cv6-divider)', padding: '8px 10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {draft.attachments.map((a, i) => (
+                  <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--cv6-text-secondary)', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '8px', padding: '5px 9px' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    {a.name}
+                    <span onClick={() => setDraft(d => ({ ...d, attachments: d.attachments.filter((_, j) => j !== i) }))} style={{ cursor: 'pointer', color: 'var(--cv6-text-tertiary)', fontWeight: '700' }}>×</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{ padding: '14px 16px', borderTop: '1px solid var(--cv6-divider)', flexShrink: 0, paddingBottom: 'max(14px, env(safe-area-inset-bottom, 0px))' }}>
+          <button onClick={submitCompose} disabled={!draft.title.trim() || saving} style={{ width: '100%', height: '48px', borderRadius: '13px', border: 'none', background: draft.title.trim() ? 'var(--cv6-accent-primary)' : 'var(--cv6-divider)', color: '#fff', fontFamily: 'inherit', fontSize: '15px', fontWeight: '700', cursor: draft.title.trim() ? 'pointer' : 'default', opacity: saving ? 0.7 : 1 }}>{saving ? 'Creating…' : `Create ${isBug ? 'bug' : 'item'} in ${sel.name}`}</button>
+        </div>
+      </div>
+     )
+   }
    const gridTemplate = sel.columns.map(trackerColTrack).join(' ')
    return (
     <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0, height: '100%' }}>
@@ -1960,27 +2082,12 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
           </div>
           <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', marginTop: '3px' }}>{sel.scope} · {sel.id === 'cv6-bugs' ? 'Bug tracker' : 'Tracker'} · {sel.rows.length} {sel.rows.length === 1 ? 'item' : 'items'} open</div>
         </div>
-        <button onClick={() => { if (sel.id === 'cv6-bugs') setAddingBug(v => !v); else addRow() }} style={{ height: '38px', padding: '0 16px', borderRadius: '10px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '13.5px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px' }}>
+        <button onClick={openCompose} style={{ height: '38px', padding: '0 16px', borderRadius: '10px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '13.5px', fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '7px' }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          {sel.id === 'cv6-bugs' ? 'New bug' : 'New row'}
+          {sel.id === 'cv6-bugs' ? 'New bug' : 'New item'}
         </button>
       </div>
       {sel.on && <div style={{ padding: '8px 14px', fontSize: '12px', color: 'var(--cv6-accent-success)', background: 'var(--cv6-accent-success-weak)', borderBottom: '1px solid var(--cv6-divider)' }}>Agent is watching this tracker and working items toward done.</div>}
-      {sel.id === 'cv6-bugs' && addingBug && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)' }}>
-          <input value={bugDraft.page} onChange={e => setBugDraft(d => ({ ...d, page: e.target.value }))} placeholder="Page" style={{ width: '110px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
-          <input autoFocus value={bugDraft.title} onChange={e => setBugDraft(d => ({ ...d, title: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') submitBug(); if (e.key === 'Escape') setAddingBug(false) }} placeholder="What is wrong?" style={{ flex: 2, minWidth: '180px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-accent-primary)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
-          <input value={bugDraft.expected} onChange={e => setBugDraft(d => ({ ...d, expected: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') submitBug(); if (e.key === 'Escape') setAddingBug(false) }} placeholder="What should happen?" style={{ flex: 2, minWidth: '180px', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', outline: 'none' }} />
-          <select value={bugDraft.severity} onChange={e => setBugDraft(d => ({ ...d, severity: e.target.value }))} style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px' }}>
-            {['Low', 'Medium', 'High'].map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <select value={bugDraft.priority} onChange={e => setBugDraft(d => ({ ...d, priority: parseInt(e.target.value, 10) }))} title="Priority — 1 is do now, 5 is later" style={{ padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: PRIORITY_COLORS[bugDraft.priority] || 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>
-            {[1, 2, 3, 4, 5].map(p => <option key={p} value={p}>P{p}</option>)}
-          </select>
-          <button onClick={submitBug} disabled={savingBug || !bugDraft.title.trim()} style={{ padding: '8px 14px', borderRadius: '6px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', cursor: savingBug ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700', opacity: (savingBug || !bugDraft.title.trim()) ? 0.6 : 1 }}>{savingBug ? 'Saving…' : 'Save bug'}</button>
-          <button onClick={() => setAddingBug(false)} style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px' }}>Cancel</button>
-        </div>
-      )}
       <div style={{ flex: 1, overflow: 'auto' }} onMouseEnter={() => setSheetFocused(true)} onMouseLeave={() => setSheetFocused(false)}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', height: '34px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1, fontSize: '11px', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>
@@ -2199,7 +2306,7 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
     <div style={{ height: isNarrow ? '64vh' : (tall ? '82vh' : '440px'), minHeight: '360px', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', display: isNarrow ? 'block' : 'grid', gridTemplateColumns: isNarrow ? undefined : ((selectorCollapsed ? '40px' : '230px') + ' minmax(0, 1fr)' + (detailOpen ? ' 340px' : '')), gridTemplateRows: isNarrow ? undefined : 'minmax(0, 1fr)', transition: 'grid-template-columns 160ms ease, height 160ms ease' }}>
       {isNarrow ? (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          {mobilePane === 'sheet' && (
+          {mobilePane === 'sheet' && !composing && (
             <button onClick={() => setMobilePane('list')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 14px', border: 'none', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', color: 'var(--cv6-accent-primary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: '600' }}>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Trackers
             </button>
@@ -5517,6 +5624,7 @@ export default function HomeView({
                   <TrackerToolOverlay
                     projects={[...(recentProjects || []), ...(allProjects || [])]}
                     missionsByProject={missionsByProject}
+                    agents={visibleAgents}
                   />
                 )}
 
