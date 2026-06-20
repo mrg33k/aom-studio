@@ -859,8 +859,11 @@ export default function CornerVG() {
       // notification dot (roomKey = 'agent:<slug>' per useDataPipe roomKey logic).
       setNotifReadAt(prev => ({ ...prev, [`agent:${agent.slug}`]: new Date().toISOString() }))
     }
-    if (cv6Mode) {
-      // R62: open the in-page Chat tool, not the full-screen surface. Stay in home mode.
+    if (cv6Mode && isDesktop) {
+      // R62: desktop opens the in-page Chat tool and stays in home mode (the
+      // desktop Home hosts that panel). On mobile the kit Home is full-screen
+      // with no in-page host, so fall through to set conversationTarget and open
+      // the full-screen CvgChatSurface — otherwise a room tap is a no-op.
       setCv6ChatRequest({ kind: 'agent', slug: agent.slug, name: agent.name, nonce: Date.now() })
       return
     }
@@ -873,7 +876,7 @@ export default function CornerVG() {
     const basePath = surfaceBase()
     // Clear any project route so ChatPanel renders the agent thread (not project chat).
     if (routeProjectId) navigate(basePath)
-  }, [navigate, routeProjectId, cv6Mode])
+  }, [navigate, routeProjectId, cv6Mode, isDesktop])
 
   // R21c: notifications carry `item.project` from a message's `project` column,
   // which is sometimes the display name (e.g. "aheadofmarket.com") instead of
@@ -912,8 +915,10 @@ export default function CornerVG() {
       // project-level notification dot (roomKey = project slug).
       setNotifReadAt(prev => ({ ...prev, [canonicalSlug]: new Date().toISOString() }))
     }
-    if (cv6Mode) {
-      // R62: open the in-page Chat tool drilled to this project, not the full-screen surface.
+    if (cv6Mode && isDesktop) {
+      // R62: desktop opens the in-page Chat tool drilled to this project (stays in
+      // home mode). On mobile the kit Home is full-screen with no in-page host, so
+      // fall through to set conversationTarget and open the full-screen chat.
       setCv6ChatRequest({ kind: 'project', slug: canonicalSlug, name: canonicalName, nonce: Date.now() })
       return
     }
@@ -925,7 +930,7 @@ export default function CornerVG() {
       const basePath = surfaceBase()
       navigate(`${basePath}/project/${canonicalSlug}`)
     }
-  }, [navigate, resolveCanonicalProject, cv6Mode])
+  }, [navigate, resolveCanonicalProject, cv6Mode, isDesktop])
 
   // R78-p9 corner:new-projects — self-serve creation. The "+ New project"
   // door in the drawer opens a name popup; on submit we create the room and
@@ -986,8 +991,10 @@ export default function CornerVG() {
     // corner:notifications R2 — opening the mission room clears that mission's
     // notification dot (roomKey = full mission_slug "project:mission").
     setNotifReadAt(prev => ({ ...prev, [`${canonicalProjectSlug}:${mission.slug}`]: new Date().toISOString() }))
-    if (cv6Mode) {
-      // R62: open the in-page Chat tool on this mission room, not the full-screen surface.
+    if (cv6Mode && isDesktop) {
+      // R62: desktop opens the in-page Chat tool on this mission room (stays in
+      // home mode). On mobile the kit Home is full-screen with no in-page host, so
+      // fall through to set conversationTarget and open the full-screen chat.
       setCv6ChatRequest({ kind: 'mission', slug: canonicalProjectSlug, missionSlug: mission.slug, name: mission.name || mission.slug, nonce: Date.now() })
       return
     }
@@ -1005,7 +1012,7 @@ export default function CornerVG() {
     setUnreadChat(0)
     const basePath = surfaceBase()
     navigate(`${basePath}/project/${canonicalProjectSlug}?mission=${encodeURIComponent(mission.slug)}`)
-  }, [navigate, resolveCanonicalProject, cv6Mode])
+  }, [navigate, resolveCanonicalProject, cv6Mode, isDesktop])
 
   // R78-p9b corner:new-projects — self-serve mission creation. The "New mission"
   // row in an expanded project triggers a name popup; on submit we scaffold the
@@ -2989,11 +2996,13 @@ export default function CornerVG() {
                   onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
                   onCatchupOpen={handleCatchupOpenRoom}
                   onNav={(key) => {
-                    // v1 nav: Home returns home; the other tabs dismiss the home overlay
-                    // and open the existing rooms/tasks view until each gets its own wired
-                    // screen in the rollout. Never a dead tap.
-                    if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setTab('chat'); }
-                    else { setActiveTool(null); setTab('tasks'); }
+                    // v1 nav: Home returns home; Support opens the real Support inbox;
+                    // the rest dismiss the home overlay to the existing rooms/tasks view
+                    // until each gets its own wired screen in the rollout. Never a dead tap.
+                    setActiveTool(null)
+                    if (key === 'home') { setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
+                    else if (key === 'support') { setShowSupportInbox(true); }
+                    else { setShowSupportInbox(false); setTab('tasks'); }
                   }}
                 />
               ) : (
