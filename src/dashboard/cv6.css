@@ -14,6 +14,7 @@
   --cv6-surface2: #f0f0f2;
   --cv6-surface-hover: #f8f8f8;
   --cv6-divider: rgba(0, 0, 0, 0.10);
+  --cv6-hair: rgba(0, 0, 0, 0.08);   /* card border (design --hair); distinct from row divider */
   --cv6-hover: rgba(0, 0, 0, 0.04);
 
   --cv6-text-primary: #1a1a1a;
@@ -74,7 +75,8 @@
   --cv6-surface: #1a1a1b;
   --cv6-surface2: #1c1c21;
   --cv6-surface-hover: #242427;
-  --cv6-divider: rgba(255, 255, 255, 0.06);
+  --cv6-divider: rgba(255, 255, 255, 0.07);
+  --cv6-hair: rgba(255, 255, 255, 0.09);   /* card border (design --hair) */
   --cv6-hover: rgba(255, 255, 255, 0.04);
 
   --cv6-text-primary: #e5e5e5;
@@ -106,7 +108,9 @@
    ───────────────────────────────────────────────────────────────── */
 /* GLASS theme — dark glass (default). Fills, text, and accents are driven by
    TOKENS so the active tool tile (inline accent bg) stays "selected" and every
-   surface recolours per variant. No borders (Patrik). */
+   surface recolours per variant. Hairline borders ON (design tokens.css: glass
+   --divider .10 for row separators, --hair .16 for card borders) — Patrik 2026-06-19
+   reverted the earlier "no borders" call: the frosted boxes need definition. */
 [data-cv6][data-theme="glass"],
 [data-cv6].glass,
 [data-cv6][data-theme="glass"] [data-cv6]:not([data-theme]):not(.glass),
@@ -119,7 +123,8 @@
   --cv6-surface: rgba(22, 26, 33, 0.55);
   --cv6-surface2: rgba(28, 28, 33, 0.65);
   --cv6-surface-hover: rgba(40, 46, 58, 0.66);
-  --cv6-divider: transparent;
+  --cv6-divider: rgba(255, 255, 255, 0.10);   /* design glass row divider (was transparent → flat) */
+  --cv6-hair: rgba(255, 255, 255, 0.16);      /* design glass card border (--hair) */
   --cv6-hover: rgba(255, 255, 255, 0.08);
 
   --cv6-text-primary: #f3f4f6;

@@ -4511,7 +4511,7 @@ export default function HomeView({
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '26px', marginBottom: '14px' }}>
         <span style={{ fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)' }}>Catch up</span>
         {catchupNotifications.length > 0 && (
-          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-success)', background: 'color-mix(in srgb, var(--cv6-accent-success) 14%, transparent)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--cv6-accent-primary)', background: 'var(--cv6-accent-weak)', borderRadius: '999px', padding: '1px 8px', lineHeight: 1.6 }}>{catchupNotifications.length}</span>
         )}
         {isNarrowHV && catchupNotifications.length > 1 && (
           <span style={{ marginLeft: 'auto', fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-tertiary)' }}>swipe →</span>
