@@ -2116,7 +2116,7 @@ function TrackerToolOverlay({ projects, missionsByProject, agents }) {
       {sel.on && <div style={{ padding: '8px 14px', fontSize: '12px', color: 'var(--cv6-accent-success)', background: 'var(--cv6-accent-success-weak)', borderBottom: '1px solid var(--cv6-divider)' }}>Agent is watching this tracker and working items toward done.</div>}
       <div style={{ flex: 1, overflow: 'auto' }} onMouseEnter={() => setSheetFocused(true)} onMouseLeave={() => setSheetFocused(false)}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', height: '34px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1, fontSize: '11px', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>
+          <div style={{ display: isNarrow ? 'none' : 'flex', alignItems: 'center', height: '34px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', zIndex: 1, fontSize: '11px', fontWeight: '600', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)' }}>
             {sel.columns.length > 0 && (
               <>
                 <div style={{ flex: 1, cursor: 'pointer', userSelect: 'none' }} onClick={() => { setSortDir(d => sortCol === sel.columns[0] ? -d : 1); setSortCol(sel.columns[0]); setExpandedRow(null) }}>
@@ -2165,6 +2165,45 @@ function TrackerToolOverlay({ projects, missionsByProject, agents }) {
             // Desktop shows the selected bug in the right detail pane (matches the design's
             // 3-pane layout); only mobile expands the row inline since it has no room for a pane.
             const inlineExpand = isExp && isNarrow
+            if (isNarrow) {
+              // Mobile: the desktop flex-table overlaps at 390px (fixed-width Page/
+              // Expected/Severity/Status/Owner columns blow past the viewport). Stack
+              // each row into a card — description first, status chip, priority dot,
+              // then a wrapped meta line — the way the Command ledger reflows. Tap to
+              // expand the full Expected text.
+              const titleColM = sel.id === 'cv6-bugs' ? 'Bug' : sel.columns[0]
+              const titleM = row[titleColM] || '—'
+              const cv6idM = sel.id === 'cv6-bugs' && row.__id ? `CV6-${(String(row.__id).charCodeAt(0) * 137) % 999}` : null
+              const sValM = row[statusCol] || 'Open'
+              const metaColsM = sel.columns.filter(c => c !== titleColM && c !== statusCol && c !== 'Expected')
+              return (
+                <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '7px', padding: '13px 18px', borderBottom: '1px solid var(--cv6-divider)', cursor: sel.live ? 'pointer' : 'default', background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', transition: 'background 120ms ease' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '9px' }}>
+                    {sel.id === 'cv6-bugs' && <span style={{ width: '8px', height: '8px', borderRadius: '50%', marginTop: '5px', flexShrink: 0, background: PRIORITY_COLORS[row.Priority || 3] || 'var(--cv6-text-tertiary)' }} />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--cv6-text-primary)', lineHeight: 1.35 }}>{titleM}</div>
+                      {cv6idM && <div style={{ fontFamily: "'Space Mono', monospace", fontSize: '11px', color: 'var(--cv6-text-secondary)', marginTop: '2px' }}>{cv6idM}</div>}
+                    </div>
+                    <span style={{ flexShrink: 0, fontSize: '11px', fontWeight: '600', color: STATUS_COLORS[sValM] || 'var(--cv6-text-primary)', background: STATUS_BG_COLORS[sValM] || 'var(--cv6-accent-weak)', padding: '3px 9px', borderRadius: '13px', whiteSpace: 'nowrap' }}>{sValM}</span>
+                  </div>
+                  {metaColsM.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 12px', fontSize: '12px', color: 'var(--cv6-text-secondary)', paddingLeft: sel.id === 'cv6-bugs' ? '17px' : '0' }}>
+                      {metaColsM.map(c => {
+                        const v = c === 'Priority' ? `P${row.Priority || 3}` : row[c]
+                        if (v == null || v === '') return null
+                        return <span key={c}>{c === 'Priority' ? '' : <span style={{ color: 'var(--cv6-text-tertiary)' }}>{c} </span>}{v}</span>
+                      })}
+                    </div>
+                  )}
+                  {inlineExpand && row.Expected && (
+                    <div style={{ fontSize: '13px', color: 'var(--cv6-text-primary)', lineHeight: 1.45, paddingLeft: sel.id === 'cv6-bugs' ? '17px' : '0' }}>
+                      <span style={{ color: 'var(--cv6-text-tertiary)' }}>Expected </span>{row.Expected}
+                    </div>
+                  )}
+                </div>
+              )
+            }
             return (
             <div key={ri} onClick={sel.live ? () => setExpandedRow(isExp ? null : ri) : undefined} style={{ display: 'flex', alignItems: 'center', minHeight: '60px', paddingTop: '11px', paddingBottom: '11px', borderBottom: '1px solid var(--cv6-divider)', paddingLeft: '24px', paddingRight: '24px', cursor: sel.live ? 'pointer' : 'default', background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent', outline: isSelected ? '2px solid var(--cv6-accent-primary)' : 'none', outlineOffset: isSelected ? '-2px' : 'auto', margin: inlineExpand ? '0 -8px' : '0', borderRadius: inlineExpand ? '8px' : '0', transition: 'background 120ms ease' }}>
               {sel.columns.length > 0 && (
