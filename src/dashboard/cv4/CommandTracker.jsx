@@ -83,7 +83,8 @@ function normGoalSource(s) {
 function statusColor(status) {
   // Returns a CSS custom property; all are cv6 tokens
   if (status === 'active' || status === 'working') return 'var(--cv6-accent-success)'
-  if (status === 'blocked' || status === 'error') return 'var(--cv6-accent-error)'
+  if (status === 'blocked') return 'var(--cv6-accent-warn)'   // kit command.html: blocked = amber (warn), red is reserved for true errors
+  if (status === 'error') return 'var(--cv6-accent-error)'
   if (status === 'idle') return 'var(--cv6-text-tertiary)'
   return 'var(--cv6-text-secondary)'
 }
@@ -944,7 +945,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
                   <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 11.5, fontWeight: 600, color: 'var(--cv6-text-secondary)', background: 'var(--cv6-surface2)', padding: '4px 10px', borderRadius: 13 }}>{cIdle} idle</span>
                 )}
                 {cBlocked > 0 && (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 11.5, fontWeight: 600, color: 'var(--cv6-accent-error)', background: 'var(--cv6-accent-error-weak)', padding: '4px 10px', borderRadius: 13 }}>{cBlocked} blocked</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 11.5, fontWeight: 600, color: 'var(--cv6-accent-warn)', background: 'var(--cv6-accent-warn-weak)', padding: '4px 10px', borderRadius: 13 }}>{cBlocked} blocked</span>
                 )}
               </div>
             </div>
@@ -953,7 +954,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
           <div
             style={{
               display: isNarrow ? 'none' : 'grid',
-              gridTemplateColumns: '170px 1fr 130px 110px',
+              gridTemplateColumns: '160px 1fr 110px 90px',
               gap: '12px',
               padding: '12px 24px',
               background: 'var(--cv6-surface)',
@@ -1014,7 +1015,7 @@ export default function CommandTracker({ worldId, onJumpToRoom, basePath, onRepl
             }}
             style={{
               display: 'grid',
-              gridTemplateColumns: isNarrow ? 'auto 1fr auto' : '170px 1fr 130px 110px',
+              gridTemplateColumns: isNarrow ? 'auto 1fr auto' : '160px 1fr 110px 90px',
               gridTemplateAreas: isNarrow ? '"room room toggle" "goal goal goal" "status live last"' : undefined,
               gap: isNarrow ? '7px 10px' : '12px',
               padding: isNarrow ? '14px 16px' : '12px 24px',

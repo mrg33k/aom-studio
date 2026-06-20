@@ -2672,6 +2672,14 @@ function OrganizeBrowser({ projects }) {
   })
   walk(tree, null)
   const fileCount = flatFiles.length
+  // Desktop keeps a real file selected so the Preview column is never an empty void
+  // (the kit's Organize always shows a selected file + rendered preview). Re-pick the
+  // first file when the project changes; keep the user's pick while it is still in view.
+  useEffect(() => {
+    if (isNarrow) return
+    if (!flatFiles.length) { if (selFile) setSelFile(null); return }
+    if (!selFile || !flatFiles.some(f => f.path === selFile.path)) setSelFile(flatFiles[0])
+  }, [isNarrow, proj, fileCount]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const colStyle = { display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto', borderRight: '1px solid var(--cv6-divider)' }
   const headStyle = { flexShrink: 0, fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-text-secondary)', padding: '12px 14px', position: 'sticky', top: 0, background: 'var(--cv6-surface)', borderBottom: '1px solid var(--cv6-divider)', zIndex: 1 }
