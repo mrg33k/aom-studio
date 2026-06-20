@@ -168,9 +168,8 @@ export default function FileAnnotator({ node, worldId, kind, url, text }) {
           <div style={{ fontSize: '12px', color: 'var(--cv6-text-tertiary)' }}>Click the {kind === 'image' ? 'image' : 'document'} to pin a comment.</div>
         )}
         {draft && draftEditor(draft.type === 'timeline' ? fmt(draft.t) : `#${points.length + 1}`)}
-        {comments.length === 0 && !draft && (
-          <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-tertiary)', padding: '6px 0' }}>No comments yet.</div>
-        )}
+        {/* empty state is carried by the "none yet" header + the click hint above —
+            no separate "No comments yet." line (it read as redundant). */}
         {[...timeline, ...points].map((c) => {
           const isPoint = c.type === 'point'
           const idx = isPoint ? points.indexOf(c) + 1 : null
