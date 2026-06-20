@@ -1392,6 +1392,26 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
      got clipped off the right edge). On the phone the shell is a single stacked column, so make
      it a plain block — the track-to-content expansion goes away and everything fits the width. */
   [data-cv6] [data-cv4-home] .hm-shell { display:block !important; }
+  /* R-MATCH-KIT 2026-06-20 (Patrik "follow the design"): the kit's mobile greeting is a 2-line 29px
+     block (ui_kits/mobile .greet: "Good evening," on line 1 in fg, the name on line 2 in --faint).
+     Ours was forced to one small line by an inline nowrap + a 360px min-width. Conform to the kit.
+     Nav (the button + the rail it opens) is untouched. */
+  [data-cv6] [data-cv4-home] .hm-welcome {
+    font-size: 29px !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.025em !important;
+    white-space: normal !important;
+  }
+  [data-cv6] [data-cv4-home] .hm-welcome .hm-l2 {
+    display: block !important;
+    margin-left: 0 !important;
+    color: var(--cv6-text-tertiary) !important;
+  }
+  [data-cv6] .hm-greeting-cell { min-width: 0 !important; flex: 1 1 auto !important; }
+  /* R-MATCH-KIT 2026-06-20: the kit's closed-state home has NO top icons (search/theme/bell/avatar) —
+     just the greeting. They live in the rail, opened by the "P" button bottom-right. Clear them on the
+     phone so the top matches the kit's "Menu closed" frame (Patrik). */
+  [data-cv6] .hm-topbar-globals { display: none !important; }
   /* R-MOBILE 2026-06-19 (Patrik: "the rest of the design is off"): 30px between catch-up and All
      Rooms read as a wasted void on the phone. Tighten to a normal section gap. */
   [data-cv6] .hm-three-column-grid { display:flex; flex-direction:column; gap:16px !important; min-height:0; height:auto !important; width:100%; max-width:100%; min-width:0; }

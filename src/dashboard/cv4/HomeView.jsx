@@ -5575,15 +5575,10 @@ export default function HomeView({
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
               }}>
-              {/* R-MOBILE 2026-06-19 (Patrik: "menu type icon but not boring"): a 2x2 rounded-tile
-                  grid reads as "menu / all tools" without the plain-hamburger look. Explicit white
-                  fill (not currentColor) so the home's text-colour cascade can't tint it dark. */}
-              <svg viewBox="0 0 24 24" width="23" height="23" fill="#ffffff" aria-hidden="true">
-                <rect x="3.6" y="3.6" width="7.4" height="7.4" rx="2.4"/>
-                <rect x="13" y="3.6" width="7.4" height="7.4" rx="2.4"/>
-                <rect x="3.6" y="13" width="7.4" height="7.4" rx="2.4"/>
-                <rect x="13" y="13" width="7.4" height="7.4" rx="2.4"/>
-              </svg>
+              {/* R-MATCH-KIT 2026-06-20: the kit's closed-state menu button IS the profile avatar
+                  (readme: "the profile avatar is the menu button") — a blue "P" circle bottom-right
+                  that opens the rail. Match it (Patrik: keep the button, it opens the rail). */}
+              <span style={{ color: '#ffffff', fontSize: '22px', fontWeight: 700, fontFamily: 'inherit', lineHeight: 1 }}>{(displayName(user) || 'U').trim().charAt(0).toUpperCase()}</span>
               {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '2px', right: '2px', width: '14px', height: '14px', borderRadius: '50%', background: '#60a5fa', border: '2px solid var(--cv6-ground)' }} />)}
             </button>
           )}
