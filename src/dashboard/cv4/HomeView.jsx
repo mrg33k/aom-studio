@@ -1666,10 +1666,46 @@ function trackerColTrack(name) {
 
 function TrackerToolOverlay({ projects, missionsByProject }) {
   const firstProj = (projects || [])[0]
-  const [trackers, setTrackers] = useState(() => [
-    { id: 't1', name: 'Launch bugs', scope: firstProj ? (firstProj.name || firstProj.slug) : 'Corner', template: 'bugs', columns: TRACKER_TEMPLATES.bugs.columns, rows: TRACKER_TEMPLATES.bugs.seed.map(r => ({ ...r })), on: false },
-  ])
-  const [selId, setSelId] = useState('t1')
+  // Custom trackers PERSIST via /api/dashboard/trackers (Patrik 2026-06-19: "wire so
+  // trackers actually save"). They load from the store on mount; the real trackers
+  // (cv6-bugs, sr-tickets) insert themselves from their own endpoints below. No
+  // hardcoded local seed any more — a created tracker survives a reload.
+  const TWORLD = 'aom'
+  const [trackers, setTrackers] = useState([])
+  const [selId, setSelId] = useState(null)
+  const cellSaveTimers = useRef({}) // debounce per tracker:row:col so typing doesn't spam the store
+  // Is this a persisted custom tracker (vs a live one with its own endpoint)?
+  const isCustom = (id) => typeof id === 'string' && id.startsWith('trk-')
+  const postTracker = useCallback(async (payload) => {
+    try {
+      const r = await authFetch('/api/dashboard/trackers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ world: TWORLD, ...payload }) })
+      return r.ok ? await r.json() : null
+    } catch { return null }
+  }, [])
+  // Load saved custom trackers once; merge so the live cv6-bugs/sr-tickets stay put.
+  useEffect(() => {
+    let active = true
+    authFetch(`/api/dashboard/trackers?world=${TWORLD}`)
+      .then(r => (r.ok ? r.json() : { trackers: [] }))
+      .then(d => {
+        if (!active) return
+        const saved = Array.isArray(d.trackers) ? d.trackers : []
+        setTrackers(prev => {
+          const live = prev.filter(t => !isCustom(t.id))
+          return [...live, ...saved]
+        })
+      })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+  // Always keep a valid selection: prefer the live cv6-bugs, then sr-tickets, then
+  // the first tracker. Runs whenever the list changes (replaces the old 't1' default).
+  useEffect(() => {
+    if (!trackers.length) return
+    if (selId && trackers.find(t => t.id === selId)) return
+    const pref = trackers.find(t => t.id === 'cv6-bugs') || trackers.find(t => t.id === 'sr-tickets') || trackers[0]
+    if (pref) setSelId(pref.id)
+  }, [trackers, selId])
   const [creating, setCreating] = useState(false)
   const [draftName, setDraftName] = useState('')
   const [draftScope, setDraftScope] = useState(firstProj ? (firstProj.slug) : '')
@@ -1820,23 +1856,37 @@ function TrackerToolOverlay({ projects, missionsByProject }) {
   const sel = trackers.find(t => t.id === selId)
   const scopeName = (slug) => { const p = (projects || []).find(x => x.slug === slug); return p ? (p.name || p.slug) : slug }
 
-  function createTracker() {
+  async function createTracker() {
     const name = draftName.trim(); if (!name) { setCreating(false); return }
     const tpl = TRACKER_TEMPLATES[draftTemplate]
-    const id = 't' + (trackers.length + 1) + '-' + Math.abs(name.length * 7 % 999)
-    const t = { id, name, scope: scopeName(draftScope) || 'Unassigned', template: draftTemplate, columns: tpl.columns, rows: tpl.seed.map(r => ({ ...r })), on: false }
-    setTrackers(prev => [...prev, t]); setSelId(id); setCreating(false); setDraftName(''); if (isNarrow) setMobilePane('sheet')
-    console.log('[tracker-create]', id, name, draftTemplate)
+    const rows = tpl.seed.map(r => ({ ...r }))
+    const scope = scopeName(draftScope) || 'Unassigned'
+    setCreating(false); setDraftName('')
+    // Persist first so the returned tracker carries its real (trk-) id; fall back to a
+    // local id if the store is unreachable so the UI still works this session.
+    const res = await postTracker({ action: 'create', name, scope, template: draftTemplate, columns: tpl.columns, rows })
+    const t = (res && res.tracker) ? res.tracker : { id: 'trk-local-' + Date.now().toString(36), name, scope, template: draftTemplate, columns: tpl.columns, rows, on: false }
+    setTrackers(prev => [...prev, t]); setSelId(t.id); if (isNarrow) setMobilePane('sheet')
   }
   function setCell(rowIdx, col, val) {
     setTrackers(prev => prev.map(t => t.id !== selId ? t : { ...t, rows: t.rows.map((r, i) => i === rowIdx ? { ...r, [col]: val } : r) }))
+    // Debounce per cell so typing doesn't spam the store. Only custom trackers persist
+    // here (cv6-bugs / sr-tickets have their own endpoints).
+    if (isCustom(selId)) {
+      const key = `${selId}:${rowIdx}:${col}`
+      clearTimeout(cellSaveTimers.current[key])
+      cellSaveTimers.current[key] = setTimeout(() => { postTracker({ action: 'set-cell', id: selId, rowIdx, col, val }) }, 600)
+    }
   }
   function addRow() {
-    setTrackers(prev => prev.map(t => t.id !== selId ? t : { ...t, rows: [...t.rows, Object.fromEntries(t.columns.map(c => [c, c === TRACKER_TEMPLATES[t.template].statusCol ? 'Open' : '']))] }))
+    const cur = trackers.find(t => t.id === selId); if (!cur) return
+    const row = Object.fromEntries(cur.columns.map(c => [c, c === TRACKER_TEMPLATES[cur.template].statusCol ? 'Open' : '']))
+    setTrackers(prev => prev.map(t => t.id !== selId ? t : { ...t, rows: [...t.rows, row] }))
+    if (isCustom(selId)) postTracker({ action: 'add-row', id: selId, row })
   }
   function toggleOn() {
     setTrackers(prev => prev.map(t => t.id !== selId ? t : { ...t, on: !t.on }))
-    console.log('[tracker-toggle]', selId)
+    if (isCustom(selId)) postTracker({ action: 'toggle', id: selId })
   }
 
   const statusCol = sel ? TRACKER_TEMPLATES[sel.template].statusCol : null
