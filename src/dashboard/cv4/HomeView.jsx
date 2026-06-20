@@ -4333,9 +4333,9 @@ export default function HomeView({
                     return (
                       <div key={n.id} aria-hidden="true" className="hm-catchup-card"
                         style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', zIndex: 5 - idx,
-                          transform: `translateY(${idx * 10}px) scale(${1 - idx * 0.05})`, opacity: idx === 1 ? 0.55 : 0.28,
-                          background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '16px',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.08)', pointerEvents: 'none' }} />
+                          transform: `translateY(${idx * 9}px) scale(${1 - idx * 0.045})`, opacity: idx === 1 ? 0.9 : 0.74,
+                          background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '18px',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.10), 0 10px 26px -14px rgba(0,0,0,0.4)', pointerEvents: 'none' }} />
                     )
                   }
                   const human = n.senderType === 'human'
@@ -4365,8 +4365,8 @@ export default function HomeView({
                         transition: dragging ? 'none' : 'transform 240ms cubic-bezier(.22,1,.36,1), opacity 240ms ease',
                         opacity: flying ? 0 : 1, touchAction: 'none', userSelect: 'none',
                         background: 'var(--cv6-surface)', backdropFilter: 'blur(22px) saturate(1.3)', WebkitBackdropFilter: 'blur(22px) saturate(1.3)',
-                        border: '1px solid var(--cv6-divider)', borderRadius: '16px', padding: '15px',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 6px 18px rgba(0,0,0,0.12)', cursor: 'grab', textAlign: 'left', fontFamily: 'inherit' }}>
+                        border: '1px solid var(--cv6-divider)', borderRadius: '18px', padding: '16px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.10), 0 14px 36px -14px rgba(0,0,0,0.45)', cursor: 'grab', textAlign: 'left', fontFamily: 'inherit' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
                         <span style={{ width: '38px', height: '38px', borderRadius: '50%', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12.5px', fontWeight: 700,
                           background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
@@ -4382,20 +4382,28 @@ export default function HomeView({
                         {ask && <span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '2px 5px' }}>ASK</span>}
                         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>{n.timeAgo}</span>
                       </div>
-                      <div style={{ fontSize: '14px', lineHeight: 1.55, color: 'var(--cv6-text-primary)', maxHeight: '80px', overflowY: 'auto', padding: '12px 12px', borderLeft: '3px solid var(--cv6-accent-primary)', borderRadius: '4px', background: 'color-mix(in srgb, var(--cv6-accent-primary) 8%, transparent)', textAlign: 'center', fontStyle: 'italic' }}>
-                        "{(n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')).replace(/[*_~\x60]|^#+\s?/gm, '')}"
+                      {/* message = plain left-aligned body text (design: not a centered italic quote) */}
+                      <div style={{ fontSize: '14px', lineHeight: 1.55, color: 'var(--cv6-text-primary)', maxHeight: '88px', overflowY: 'auto' }}>
+                        {(n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')).replace(/[*_~\x60]|^#+\s?/gm, '')}
                       </div>
+                      {/* quick replies — design's contextual chip row above the primary action (Thanks + Review/On it) */}
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={(e) => { e.stopPropagation(); replyToCatchup(n, 'Thanks') }}
+                          style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>Thanks</button>
+                        {hasAttachment ? (
+                          <button onClick={(e) => { e.stopPropagation(); openTool('review') }}
+                            style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>Review</button>
+                        ) : (
+                          <button onClick={(e) => { e.stopPropagation(); replyToCatchup(n, 'On it') }}
+                            style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer' }}>On it</button>
+                        )}
+                      </div>
+                      {/* primary action — Open in chat + mark handled (green check) */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <button onClick={(e) => { e.stopPropagation(); open() }}
                           style={{ flex: 1, height: '46px', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
                           Open in chat<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                         </button>
-                        {hasAttachment && (
-                          <button onClick={(e) => { e.stopPropagation(); openTool('review') }} title="Open the Review view"
-                            style={{ height: '46px', padding: '0 13px', borderRadius: '13px', border: '1px solid var(--cv6-divider)', background: 'transparent', color: 'var(--cv6-text-primary)', fontSize: '12.5px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--cv6-accent-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Review
-                          </button>
-                        )}
                         <button onClick={dismiss} title="Mark handled" aria-label="Mark handled"
                           style={{ width: '46px', height: '46px', flex: 'none', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-success)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
