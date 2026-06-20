@@ -1562,7 +1562,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
             <span style={{ flexShrink: 0, fontSize: '11px', fontWeight: '700', color: openItem.type.color, background: `${openItem.type.color}1f`, padding: '3px 8px', borderRadius: '5px' }}>{openItem.type.label}</span>
           </div>
           <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain', padding: '14px', paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))' }}>
-            <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} worldId={worldId} annotate />
+            <FilePreviewPanel node={{ name: openItem.item, path: openItem.path, isFile: true }} worldId={worldId} annotate bare />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginTop: '18px', padding: '12px 14px', background: 'var(--cv6-surface)', border: '1px solid var(--cv6-hair)', borderRadius: '12px' }}>
               <span style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{openItem.project}{openItem.mission !== '(root)' ? ` → ${openItem.mission}` : ''}</span>
               <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '500', color: 'var(--cv6-accent-success)' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--cv6-accent-success)' }} />Ready</span>
@@ -2224,7 +2224,7 @@ if (typeof document !== 'undefined' && !document.getElementById('cv6-article-sty
   document.head.appendChild(s)
 }
 
-function FilePreviewPanel({ node, worldId, annotate }) {
+function FilePreviewPanel({ node, worldId, annotate, bare }) {
   const [data, setData] = useState({ state: 'idle' })
   const [zoom, setZoom] = useState(false)
   const kind = previewKind(node)
@@ -2249,11 +2249,16 @@ function FilePreviewPanel({ node, worldId, annotate }) {
   const chip = kind === 'pdf' ? 'pdf' : (node.fileType || kind)
   const color = FILE_TYPE_COLOR[chip] || FILE_TYPE_COLOR.doc
   return (
-    <div style={{ padding: '14px', minWidth: 0 }}>
+    <div style={{ padding: bare ? '0' : '14px', minWidth: 0 }}>
+      {/* `bare` drops the internal name + type chip when the surrounding container
+          already shows them (e.g. the mobile Review sheet header) so the filename
+          doesn't render twice. */}
+      {!bare && (
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
         <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--cv6-text-primary)', wordBreak: 'break-word', flex: 1, minWidth: 0 }}>{node.name}</span>
         <span style={{ fontSize: '10px', fontWeight: '700', color, background: `${color}1f`, padding: '2px 7px', borderRadius: '5px', textTransform: 'uppercase', flexShrink: 0 }}>{chip}</span>
       </div>
+      )}
       {data.state === 'loading' && hint('Loading…')}
       {data.state === 'error' && <div style={{ fontSize: '13px', color: '#ef4444' }}>Could not open this file.</div>}
       {data.state === 'media' && kind === 'image' && (annotate ? (
