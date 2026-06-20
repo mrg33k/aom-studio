@@ -2988,7 +2988,13 @@ export default function CornerVG() {
                   onSelectAgent={handleSelectAgent}
                   onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
                   onCatchupOpen={handleCatchupOpenRoom}
-                  onNav={(key) => { if (key === 'chat') setTab('chat'); else if (key === 'organize') setTab('tasks'); }}
+                  onNav={(key) => {
+                    // v1 nav: Home returns home; the other tabs dismiss the home overlay
+                    // and open the existing rooms/tasks view until each gets its own wired
+                    // screen in the rollout. Never a dead tap.
+                    if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setTab('chat'); }
+                    else { setActiveTool(null); setTab('tasks'); }
+                  }}
                 />
               ) : (
               <HomeView

@@ -30,7 +30,9 @@ export function SideRail({ items = [], active, onSelect, onMenu, utilities = ['s
       padding: '15px 0 16px',
       ...style,
     }}>
-      <div onClick={onMenu} style={{ cursor: 'pointer', flex: 'none' }}><Avatar initial="P" size={44} ring /></div>
+      <div onClick={onMenu} title="Menu" aria-label="Toggle menu" style={{ cursor: 'pointer', flex: 'none', width: 44, height: 44, borderRadius: 14, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg)' }}>
+        <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>
+      </div>
       <span style={{ marginTop: 15 }}><Divider /></span>
 
       <div style={{ flex: 1, minHeight: 0, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-evenly', padding: '6px 0' }}>
