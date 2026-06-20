@@ -1603,9 +1603,15 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
               <span style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{openItem.project}{openItem.mission !== '(root)' ? ` → ${openItem.mission}` : ''}</span>
               <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '500', color: 'var(--cv6-accent-success)' }}><span style={{ width: '7px', height: '7px', borderRadius: '50%', background: 'var(--cv6-accent-success)' }} />Ready</span>
             </div>
-            <button onClick={() => { if (!openItem || !onReplyToRoom) return; const s = roomSlugFor(openItem); if (s) { onReplyToRoom(s, `Approved "${openItem.item}".`); setDone(prev => ({ ...prev, [openItem.id]: true })); setOpenItem(null) } }} style={{ width: '100%', height: '48px', marginTop: '12px', borderRadius: '12px', border: 'none', background: 'var(--cv6-accent-success)', color: '#06281c', fontSize: '15px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve
-            </button>
+            {/* R-MATCH-KIT 2026-06-20: kit mobile review action bar (review.html line 123) is
+                Approve (flex-1 green) + Changes (surface-2). Changes jumps to the request-changes
+                input below — "never approve blind". The checklist stays the real mechanism. */}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+              <button onClick={() => { if (!openItem || !onReplyToRoom) return; const s = roomSlugFor(openItem); if (s) { onReplyToRoom(s, `Approved "${openItem.item}".`); setDone(prev => ({ ...prev, [openItem.id]: true })); setOpenItem(null) } }} style={{ flex: 1, height: '48px', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-success)', color: '#06281c', fontSize: '14.5px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve
+              </button>
+              <button onClick={() => { const el = document.getElementById('cv6-review-change-input'); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el.focus(), 200) } }} style={{ width: '120px', height: '48px', borderRadius: '13px', border: '1px solid var(--cv6-hair)', background: 'var(--cv6-surface-2)', color: 'var(--cv6-text-primary)', fontSize: '13.5px', fontWeight: '600', fontFamily: 'Inter', cursor: 'pointer' }}>Changes</button>
+            </div>
             <div style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--cv6-text-secondary)', margin: '20px 0 10px' }}>Request changes</div>
             <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--cv6-divider)', borderRadius: '12px', padding: '12px', background: 'var(--cv6-surface)' }}>
               {checklist.length === 0 ? (
@@ -1622,7 +1628,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
                 </div>
               ))}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: checklist.length ? '10px' : '0', borderTop: checklist.length ? '1px solid var(--cv6-divider)' : 'none', paddingTop: checklist.length ? '10px' : '0' }}>
-                <input value={newStep} onChange={e => setNewStep(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addStep() } }} placeholder="Add a change…" style={{ flex: 1, height: '40px', padding: '0 12px', border: '1px solid var(--cv6-divider)', borderRadius: '10px', background: 'var(--cv6-ground)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '14px', outline: 'none' }} />
+                <input id="cv6-review-change-input" value={newStep} onChange={e => setNewStep(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addStep() } }} placeholder="Add a change…" style={{ flex: 1, height: '40px', padding: '0 12px', border: '1px solid var(--cv6-divider)', borderRadius: '10px', background: 'var(--cv6-ground)', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '14px', outline: 'none' }} />
                 <button onClick={addStep} disabled={savingStep || !newStep.trim()} style={{ flexShrink: 0, height: '40px', padding: '0 16px', borderRadius: '10px', border: 'none', background: newStep.trim() ? 'var(--cv6-text-primary)' : 'var(--cv6-surface-hover)', color: newStep.trim() ? 'var(--cv6-surface)' : 'var(--cv6-text-tertiary)', cursor: newStep.trim() ? 'pointer' : 'default', fontFamily: 'inherit', fontSize: '13px', fontWeight: '700' }}>Save</button>
               </div>
             </div>
