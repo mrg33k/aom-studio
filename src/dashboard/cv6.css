@@ -895,11 +895,18 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
    mobile anyway to avoid touching desktop. */
 @media (max-width: 768px) {
   [data-cv6][data-cv4-home] { padding-top: env(safe-area-inset-top, 0px); }
-  /* R-MOBILE-NAV 2026-06-19 (Patrik): CLOSED state runs full-bleed — the top-right global icons
-     (search / theme / bell / avatar) move into the right rail, so hide that cluster on mobile. The
-     greeting then fills the row; the floating profile avatar (bottom-right) is the only chrome. */
-  [data-cv6] .hm-topbar-globals { display: none !important; }
+  /* R-MOBILE 2026-06-19 (Patrik live iPhone): keep Search + Theme on the greeting row, far right —
+     the empty band there was the "white bar of space". Bell + avatar move to the rail / bottom FAB,
+     so hide just those two. The greeting cell drops its 360px desktop min so the icons sit on the
+     same row as the greeting without pushing off the edge. */
+  [data-cv6] .hm-greeting-cell { min-width: 0 !important; }
+  [data-cv6] .hm-topbar-globals { display: flex !important; flex: 0 0 auto !important; }
+  [data-cv6] .hm-global-bell, [data-cv6] .hm-global-avatar { display: none !important; }
 }
+
+/* The floating menu avatar's initial must stay white (Patrik live iPhone): a broad cv6 !important
+   color rule was tinting it dark in light theme. Scope tight to the FAB so nothing else shifts. */
+[data-cv6] .hm-fab, [data-cv6] .hm-fab * { color: #fff !important; }
 
 /* Side-nav drawer slide-in from the right. */
 @keyframes cv6-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -1369,7 +1376,9 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
      got clipped off the right edge). On the phone the shell is a single stacked column, so make
      it a plain block — the track-to-content expansion goes away and everything fits the width. */
   [data-cv6] [data-cv4-home] .hm-shell { display:block !important; }
-  [data-cv6] .hm-three-column-grid { display:flex; flex-direction:column; gap:30px !important; min-height:0; height:auto !important; width:100%; max-width:100%; min-width:0; }
+  /* R-MOBILE 2026-06-19 (Patrik: "the rest of the design is off"): 30px between catch-up and All
+     Rooms read as a wasted void on the phone. Tighten to a normal section gap. */
+  [data-cv6] .hm-three-column-grid { display:flex; flex-direction:column; gap:16px !important; min-height:0; height:auto !important; width:100%; max-width:100%; min-width:0; }
   [data-cv6] .hm-three-column-grid > div { min-width:0 !important; max-width:100% !important; overflow-x:hidden; }
   [data-cv6] .hm-three-column-grid > div:nth-child(1),
   [data-cv6] .hm-three-column-grid > div:nth-child(2),

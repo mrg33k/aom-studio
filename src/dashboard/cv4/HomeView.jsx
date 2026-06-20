@@ -3776,6 +3776,14 @@ export default function HomeView({
   }, [])
   // R183: active card index for the mobile Catch Up carousel (drives the dots).
   const [catchupIdx, setCatchupIdx] = useState(0)
+  // R-MOBILE 2026-06-19 (Patrik: "cards should swipe to the next one marking that catchup
+  // resolved"). Mobile Catch Up is a full-width swipe-to-dismiss DECK: drag the top card past
+  // a threshold and it flies off + marks that item caught up, surfacing the next behind it.
+  // swipe.dx is the live drag offset; swipe.fly (-1/+1) plays the fly-off before the dismiss
+  // commits. swipeStartX/swipeActive are refs so dragging never causes a stale-closure jump.
+  const [swipe, setSwipe] = useState({ dx: 0, fly: 0 })
+  const swipeStartX = useRef(0)
+  const swipeActive = useRef(false)
   const [catchupReplyText, setCatchupReplyText] = useState('') // R110: custom reply on the top catch-up card
   // R110: reply to the top catch-up card (real send via onCatchupReply), then resolve + advance.
   const replyToCatchup = useCallback((notif, text) => {
@@ -4293,28 +4301,78 @@ export default function HomeView({
         // horizontal swipe carousel (Corner Mobile.dc.html Direction A/B — both are swipe decks,
         // differing only in surface style). Desktop keeps the stacked deck below.
         if (isNarrowHV) {
-          const STEP = 308 // 296 card + 12 gap
+          // R-MOBILE 2026-06-19 (Patrik live iPhone): full-width swipe-to-dismiss DECK. The top
+          // card fills the column (no 296px peek = no "white bar" on the right); swiping it past
+          // a threshold flies it off and marks that item caught up, surfacing the next behind it.
+          const THRESH = 90
+          const topCard = top[0]
+          const dismissTop = () => {
+            if (!topCard) return
+            setDismissedCatchup(prev => { const next = new Set(prev); next.add(topCard.id); return next })
+            if (onCatchupDismiss) onCatchupDismiss(topCard)
+            setCatchupIdx(0)
+          }
+          if (!topCard) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '28px', textAlign: 'center' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--cv6-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px var(--cv6-divider)' }}>
+                  <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="var(--cv6-accent-success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--cv6-text-secondary)' }}>You're all caught up.</div>
+              </div>
+            )
+          }
+          const deck = top.slice(0, 3)
           return (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div onScroll={(e) => { const i = Math.max(0, Math.round(e.currentTarget.scrollLeft / STEP)); if (i !== catchupIdx) setCatchupIdx(i) }}
-                style={{ display: 'flex', gap: '12px', overflowX: 'auto', overflowY: 'hidden', scrollSnapType: 'x mandatory', padding: '2px 2px 4px', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-                {top.map((n) => {
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ position: 'relative', width: '100%' }}>
+                {deck.map((n, idx) => {
+                  const isTop = idx === 0
+                  // cards behind the top one are just faint surfaces that give the stack depth.
+                  if (!isTop) {
+                    return (
+                      <div key={n.id} aria-hidden="true" className="hm-catchup-card"
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '100%', zIndex: 5 - idx,
+                          transform: `translateY(${idx * 10}px) scale(${1 - idx * 0.05})`, opacity: idx === 1 ? 0.55 : 0.28,
+                          background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)', borderRadius: '16px',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.08)', pointerEvents: 'none' }} />
+                    )
+                  }
                   const human = n.senderType === 'human'
                   const ask = isAsk(n.messagePreview)
                   const hasAttachment = !!(n.attachment || (n.attachments && n.attachments.length))
                   const open = () => onCatchupOpenRoom && onCatchupOpenRoom(n)
                   const dismiss = (e) => { e.stopPropagation(); setDismissedCatchup(prev => { const next = new Set(prev); next.add(n.id); return next }); onCatchupDismiss && onCatchupDismiss(n) }
+                  const flying = swipe.fly !== 0
+                  const dragging = swipeActive.current && swipe.dx !== 0
+                  const vw = typeof window !== 'undefined' ? window.innerWidth : 480
+                  const tx = flying ? swipe.fly * (vw + 140) : (dragging ? swipe.dx : 0)
                   return (
-                    <div key={n.id} role="button" tabIndex={0} onClick={open} className="hm-catchup-card"
+                    <div key={n.id} role="button" tabIndex={0} className="hm-catchup-card"
                       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}
-                      style={{ flex: 'none', width: '296px', boxSizing: 'border-box', scrollSnapAlign: 'start', display: 'flex', flexDirection: 'column', gap: '11px', background: 'var(--cv6-surface)', backdropFilter: 'blur(22px) saturate(1.3)', WebkitBackdropFilter: 'blur(22px) saturate(1.3)', border: '1px solid var(--cv6-divider)', borderRadius: '16px', padding: '15px', boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.10)', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}>
+                      onPointerDown={(e) => { swipeStartX.current = e.clientX; swipeActive.current = true; try { e.currentTarget.setPointerCapture(e.pointerId) } catch (_) {} }}
+                      onPointerMove={(e) => { if (!swipeActive.current) return; setSwipe(s => ({ ...s, dx: e.clientX - swipeStartX.current })) }}
+                      onPointerUp={(e) => {
+                        if (!swipeActive.current) return
+                        swipeActive.current = false
+                        const dx = e.clientX - swipeStartX.current
+                        if (Math.abs(dx) > THRESH) { setSwipe({ dx, fly: dx > 0 ? 1 : -1 }); window.setTimeout(() => { dismissTop(); setSwipe({ dx: 0, fly: 0 }) }, 240) }
+                        else { setSwipe({ dx: 0, fly: 0 }); if (Math.abs(dx) < 6 && !(e.target.closest && e.target.closest('button'))) open() }
+                      }}
+                      onPointerCancel={() => { swipeActive.current = false; setSwipe({ dx: 0, fly: 0 }) }}
+                      style={{ position: 'relative', zIndex: 5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '11px',
+                        transform: `translateX(${tx}px) rotate(${dragging ? swipe.dx * 0.022 : 0}deg)`,
+                        transition: dragging ? 'none' : 'transform 240ms cubic-bezier(.22,1,.36,1), opacity 240ms ease',
+                        opacity: flying ? 0 : 1, touchAction: 'pan-y', userSelect: 'none',
+                        background: 'var(--cv6-surface)', backdropFilter: 'blur(22px) saturate(1.3)', WebkitBackdropFilter: 'blur(22px) saturate(1.3)',
+                        border: '1px solid var(--cv6-divider)', borderRadius: '16px', padding: '15px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 6px 18px rgba(0,0,0,0.12)', cursor: 'grab', textAlign: 'left', fontFamily: 'inherit' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
                         <span style={{ width: '38px', height: '38px', borderRadius: '50%', flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12.5px', fontWeight: 700,
                           background: human ? 'color-mix(in srgb, var(--cv6-accent-primary) 16%, transparent)' : 'color-mix(in srgb, var(--cv6-accent-success) 16%, transparent)',
                           color: human ? 'var(--cv6-accent-primary)' : 'var(--cv6-accent-success)' }}>{n.senderInitials || (n.senderName || '?')[0]}</span>
                         <div style={{ minWidth: 0, flex: 1 }}>
                           <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--cv6-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {/* R3: Show Project → Mission room name if this is a mission room; otherwise show senderName for 1:1 EA messages */}
                             {n.projectSlug ? `${n.projectSlug} → ${n.roomName}` : n.senderName}
                           </div>
                           <div style={{ fontSize: '12px', color: 'var(--cv6-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -4324,14 +4382,9 @@ export default function HomeView({
                         {ask && <span style={{ flex: 'none', fontSize: '9px', fontWeight: 700, letterSpacing: '0.04em', color: 'var(--cv6-accent-primary)', background: 'color-mix(in srgb, var(--cv6-accent-primary) 14%, transparent)', borderRadius: '4px', padding: '2px 5px' }}>ASK</span>}
                         <span style={{ fontFamily: "'Space Mono', monospace", fontSize: '10.5px', color: 'var(--cv6-text-tertiary)', flex: 'none' }}>{n.timeAgo}</span>
                       </div>
-                      {/* R4: Message = centered QUOTE with internal scroll (max ~4-5 lines, then overflow:auto) */}
                       <div style={{ fontSize: '14px', lineHeight: 1.55, color: 'var(--cv6-text-primary)', maxHeight: '80px', overflowY: 'auto', padding: '12px 12px', borderLeft: '3px solid var(--cv6-accent-primary)', borderRadius: '4px', background: 'color-mix(in srgb, var(--cv6-accent-primary) 8%, transparent)', textAlign: 'center', fontStyle: 'italic' }}>
                         "{(n.messagePreview || (n._roomCount > 1 ? `${n._roomCount} new updates` : 'New update')).replace(/[*_~\x60]|^#+\s?/gm, '')}"
                       </div>
-                      {/* R205 (Patrik): match the Claude design's Catch Up card — the primary
-                          action is a FILLED accent button (not a text link), with a green
-                          "mark handled" check beside it. Ref: mobile-refinement design rowA.png
-                          + Corner Mobile.dc.html line 150. */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <button onClick={(e) => { e.stopPropagation(); open() }}
                           style={{ flex: 1, height: '46px', borderRadius: '13px', border: 'none', background: 'var(--cv6-accent-primary)', color: '#fff', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px' }}>
@@ -4351,18 +4404,18 @@ export default function HomeView({
                     </div>
                   )
                 })}
-                {overflow > 0 && (
-                  <button onClick={() => onCatchupViewAll && onCatchupViewAll()}
-                    style={{ flex: 'none', width: '132px', scrollSnapAlign: 'start', background: 'transparent', border: '1px dashed var(--cv6-divider)', borderRadius: '16px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '8px' }}>
-                    View all {catchupNotifications.length}
-                  </button>
-                )}
               </div>
-              {top.length > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '14px' }}>
+              {(top.length > 1 || overflow > 0) && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '13px' }}>
                   {top.map((_, i) => (
-                    <span key={i} style={{ height: '6px', borderRadius: '3px', width: i === catchupIdx ? '18px' : '6px', background: i === catchupIdx ? 'var(--cv6-accent-primary)' : 'var(--cv6-divider)', transition: 'width .25s ease, background .25s ease' }} />
+                    <span key={i} style={{ height: '6px', borderRadius: '3px', width: i === 0 ? '18px' : '6px', background: i === 0 ? 'var(--cv6-accent-primary)' : 'var(--cv6-divider)', transition: 'width .25s ease, background .25s ease' }} />
                   ))}
+                  {overflow > 0 && (
+                    <button onClick={() => onCatchupViewAll && onCatchupViewAll()}
+                      style={{ marginLeft: '8px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: "'Space Mono', monospace", fontSize: '11px', fontWeight: 600, color: 'var(--cv6-text-tertiary)' }}>
+                      +{overflow} more
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -4865,7 +4918,7 @@ export default function HomeView({
             {/* Cell 1 — greeting, over the Catch Up column (mirrors its 360px width). The Corner
                 mark moved to the bottom-left brand lockup (Patrik 2026-06-19). The cell sizes to
                 content but holds 360px min and grows for a longer name, keeping the tools clear. */}
-            <div style={{ display: 'flex', alignItems: 'center', ...(cv6 ? { flex: '0 0 auto', minWidth: '360px' } : {}) }}>
+            <div className="hm-greeting-cell" style={{ display: 'flex', alignItems: 'center', ...(cv6 ? { flex: '0 0 auto', minWidth: '360px' } : {}) }}>
               <h1 className="hm-welcome" style={{ margin: 0, lineHeight: 1, ...(cv6 ? { minWidth: 0, whiteSpace: 'nowrap' } : {}) }}>
                 <span className="hm-l1">{greeting}</span>{' '}
                 <span className="hm-l2" style={{ textTransform: 'capitalize' }}>{displayName(user) || 'there'}.</span>
@@ -4935,7 +4988,7 @@ export default function HomeView({
                     <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="10" r="7"/><path d="M8.4 7.6a4.6 4.6 0 0 1 3-1.9" opacity="0.85"/><path d="M9 17.4h6M9.6 17.4l-1 3.1M14.4 17.4l1 3.1"/></svg>
                   )}
                 </button>
-                <button title="Notifications" onClick={() => { if (cv6) setSelectedTool('home'); else window.location.href = '/dashboard?view=notifications' }}
+                <button className="hm-global-bell" title="Notifications" onClick={() => { if (cv6) setSelectedTool('home'); else window.location.href = '/dashboard?view=notifications' }}
                   style={{ width: '32px', height: '32px', borderRadius: '9px', border: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', cursor: 'pointer', color: 'var(--cv6-text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', padding: 0, flex: 'none', transition: 'all 120ms ease' }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--cv6-surface-hover)'; e.currentTarget.style.color = 'var(--cv6-text-primary)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.color = 'var(--cv6-text-secondary)' }}>
@@ -4944,7 +4997,7 @@ export default function HomeView({
                     <span style={{ position: 'absolute', top: '5px', right: '6px', width: '6px', height: '6px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '1.5px solid var(--cv6-surface)' }} />
                   )}
                 </button>
-                <button title={isNarrowHV ? 'Menu' : 'User settings'} onClick={() => isNarrowHV ? setNavDrawerOpen(true) : (window.location.href = '/dashboard?view=settings')}
+                <button className="hm-global-avatar" title={isNarrowHV ? 'Menu' : 'User settings'} onClick={() => isNarrowHV ? setNavDrawerOpen(true) : (window.location.href = '/dashboard?view=settings')}
                   style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', padding: 0, transition: 'transform 120ms ease' }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)' }}
                   onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}>
@@ -5150,7 +5203,12 @@ export default function HomeView({
               <div onClick={() => setNavDrawerOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 54, background: 'rgba(0,0,0,0.45)' }} />
               <nav style={{
                 position: 'fixed', top: 0, right: 0, bottom: 0, width: RAIL_W + 'px', zIndex: 55,
-                background: 'var(--cv6-surface)', borderLeft: '1px solid var(--cv6-divider)',
+                /* R-MOBILE 2026-06-19: stack the surface token 3× so the rail reads as an OPAQUE
+                   panel in glass theme too (rgba surface alone let the page bleed through — the
+                   "+" / labels showed through the open menu). Solid in light/dark, ~0.91 in glass. */
+                background: 'linear-gradient(var(--cv6-surface), var(--cv6-surface)), linear-gradient(var(--cv6-surface), var(--cv6-surface)), var(--cv6-surface)',
+                backdropFilter: 'blur(28px) saturate(1.4)', WebkitBackdropFilter: 'blur(28px) saturate(1.4)',
+                borderLeft: '1px solid var(--cv6-divider)',
                 boxShadow: '-12px 0 40px rgba(0,0,0,0.4)',
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
@@ -5210,7 +5268,7 @@ export default function HomeView({
           {/* CLOSED state: the profile avatar floats bottom-right as the only chrome (mobile). Tap
               to slide the rail in. The dot flags unread. */}
           {isNarrowHV && !navDrawerOpen && (
-            <button onClick={() => setNavDrawerOpen(true)} title="Menu" aria-label="Open menu"
+            <button className="hm-fab" onClick={() => setNavDrawerOpen(true)} title="Menu" aria-label="Open menu"
               style={{
                 position: 'fixed', right: '18px', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', zIndex: 53,
                 width: '58px', height: '58px', borderRadius: '50%', border: 'none',
