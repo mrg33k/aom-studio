@@ -5645,9 +5645,10 @@ export default function HomeView({
                 const filteredProjects = allRoomsProjects.filter(p => colMatch(p.name || p.slug))
                 return (
                 <>
-                  {/* SECTION 0: RECENTS — 3 most recent rooms (projects or missions), pinned to
-                      the top. Hidden while searching (the filtered results take over). */}
-                  {!searching && recentRooms.length > 0 && (
+                  {/* SECTION 0: RECENTS — folded into the ONE single list below per Patrik
+                      2026-06-19 ("single list for all rooms"). Recent projects already bubble to
+                      the top of the projects list, so nothing is lost. Disabled (kept for history). */}
+                  {false && !searching && recentRooms.length > 0 && (
                     <div style={{ marginBottom: '4px' }}>
                       <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '6px' }}>Recents</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -5698,10 +5699,10 @@ export default function HomeView({
                     </div>
                   )}
 
-                  {/* SECTION 1: Agents (10.5px uppercase faint label) + rows */}
+                  {/* SECTION 1: Agents — part of the ONE single list now (no sub-label, Patrik
+                      2026-06-19). Agents read as agents by their status dot; projects by their folder. */}
                   {filteredAgents.length > 0 && (
-                    <div style={{ marginBottom: '4px' }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '3px' }}>Agents</div>
+                    <div style={{ marginBottom: '2px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                         {filteredAgents.map((a) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
@@ -5757,9 +5758,10 @@ export default function HomeView({
                   {/* SECTION 2: Projects — the FULL list (recent first, then alphabetical),
                       in a flex-bounded scroll area so ~5 show before it scrolls and every
                       project is reachable. */}
+                  {/* SECTION 2: Projects — continues the ONE single list (no sub-label, Patrik
+                      2026-06-19). Recent projects bubble to the top so recents live here too. */}
                   {filteredProjects.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--cv6-faint)', marginBottom: '8px', flexShrink: 0 }}>{searching ? 'Projects' : 'All rooms'}</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minHeight: 0, flex: 1, overflowY: 'auto' }}>
                         {filteredProjects.map((p) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === p.slug && selectableItems[selectedIndex]?.type === 'project'
