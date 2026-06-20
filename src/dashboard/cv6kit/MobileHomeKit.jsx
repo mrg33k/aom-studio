@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SideRail } from './components/navigation/SideRail.jsx';
 import { CatchUpCard } from './components/rooms/CatchUpCard.jsx';
 import { RoomRow } from './components/rooms/RoomRow.jsx';
@@ -14,8 +14,18 @@ const I = {
 
 const FOLDER = (c) => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>;
 
-/** Canonical mobile Home — side menu open. Reference composition. */
+// Menu (hamburger) glyph for the toggle button — Patrik 2026-06-19: the menu button is a
+// menu icon, not the P avatar. White stroke so it always reads on the dark control.
+const MENU_GLYPH = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>;
+
+/**
+ * Canonical mobile Home. Two states from the kit's navigation model:
+ *  - open (rail in, content inset 72px) — the avatar at the top of the rail closes it
+ *  - closed (content full-bleed, a menu FAB bottom-right is the only chrome) — the FAB opens it
+ * Starts open (what Patrik is seeing); the menu button toggles between the two.
+ */
 export function MobileHomeKit() {
+  const [menuOpen, setMenuOpen] = useState(true);
   const navItems = [
     { key: 'home', label: 'Home', icon: I.home },
     { key: 'chat', label: 'Chat', icon: I.chat },
@@ -25,7 +35,7 @@ export function MobileHomeKit() {
 
   return (
     <div data-theme="dark" style={{ position: 'fixed', inset: 0, width: '100%', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)' }}>
-      <div style={{ position: 'absolute', left: 0, top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: 72, bottom: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '6px 0 calc(28px + env(safe-area-inset-bottom, 0px))' }}>
+      <div style={{ position: 'absolute', left: 0, top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: menuOpen ? 72 : 0, bottom: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '6px 0 calc(28px + env(safe-area-inset-bottom, 0px))', transition: 'right .28s cubic-bezier(.4,0,.2,1)' }}>
         <div style={{ padding: '0 22px', marginBottom: 20, fontSize: 29, lineHeight: 1.1, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--fg)' }}>
           Good evening,<br /><span style={{ color: 'var(--faint)' }}>Patrik.</span>
         </div>
@@ -58,9 +68,25 @@ export function MobileHomeKit() {
         </div>
       </div>
 
-      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0 }}>
-        <SideRail active="home" items={navItems} style={{ padding: 'calc(15px + env(safe-area-inset-top, 0px)) 0 calc(16px + env(safe-area-inset-bottom, 0px))' }} />
-      </div>
+      {/* Open: the side rail. Tapping the avatar at the top closes the menu. */}
+      {menuOpen && (
+        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0 }}>
+          <SideRail active="home" items={navItems} onMenu={() => setMenuOpen(false)} style={{ padding: 'calc(15px + env(safe-area-inset-top, 0px)) 0 calc(16px + env(safe-area-inset-bottom, 0px))' }} />
+        </div>
+      )}
+
+      {/* Closed: a menu button bottom-right is the only chrome. Tapping it opens the rail. */}
+      {!menuOpen && (
+        <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{
+          position: 'absolute', right: 18, bottom: 'calc(18px + env(safe-area-inset-bottom, 0px))',
+          width: 54, height: 54, borderRadius: 27, padding: 0,
+          border: '1px solid rgba(255,255,255,.18)',
+          background: 'rgba(18,20,26,.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 10px 28px rgba(0,0,0,.5)', cursor: 'pointer',
+        }}>{MENU_GLYPH}</button>
+      )}
     </div>
   );
 }

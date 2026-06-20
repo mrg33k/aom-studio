@@ -41,8 +41,8 @@ export function ToolTile({ icon, label, active = false, layout = 'tile', onClick
           width: 38, height: 38,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           borderRadius: active ? 13 : 19,
-          background: active ? 'var(--accent)' : 'var(--chip)',
-          color: stroke,
+          background: active ? 'var(--accent)' : 'var(--surface-2, rgba(255,255,255,.12))',
+          color: active ? '#fff' : 'var(--fg)',
           transition: 'border-radius var(--dur-move) var(--ease-out), background var(--dur-move) var(--ease-out)',
         }}>{icon}</div>
         <span style={{ fontSize: 9, fontWeight: 600, color: active ? 'var(--accent)' : 'var(--muted)' }}>{label}</span>

@@ -47,7 +47,7 @@ export function SideRail({ items = [], active, onSelect, onMenu, utilities = ['s
       <Divider />
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 14, flex: 'none' }}>
         {utilities.map((u) => (
-          <div key={u} title={u} style={{ position: 'relative', width: 38, height: 38, borderRadius: 19, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', cursor: 'pointer' }}>
+          <div key={u} title={u} style={{ position: 'relative', width: 38, height: 38, borderRadius: 19, background: 'var(--surface-2, rgba(255,255,255,.12))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fg)', cursor: 'pointer' }}>
             {util[u]}
             {u === 'alerts' && <span style={{ position: 'absolute', top: 7, right: 9, width: 7, height: 7, borderRadius: '50%', background: 'var(--accent)', border: '1.5px solid var(--ground)' }} />}
           </div>
