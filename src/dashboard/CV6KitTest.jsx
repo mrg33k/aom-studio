@@ -11,11 +11,7 @@ export default function CV6KitTest() {
   return (
     <div data-cv6kit data-theme="glass" style={{
       minHeight: '100dvh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#0b0b0c',
-      padding: '20px',
+      background: 'var(--ground)',
     }}>
       <MobileHomeKit />
     </div>

@@ -89,6 +89,9 @@ function DashboardSurface() {
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
 // components on one page as the design surface for the CV6 redesign.
 const CV6Gallery = lazy(() => import('./dashboard/CV6Gallery.jsx'))
+// corner:corner-ui-cv6 — /cv6kit test route. Isolated rendering of the design kit's
+// mobile Home screen to verify pixel-perfect rendering before wiring data.
+const CV6KitTest = lazy(() => import('./dashboard/CV6KitTest.jsx'))
 const MissionRoom = lazy(() => import('./dashboard/MissionRoom.jsx'))
 const MissionsIndex = lazy(() => import('./dashboard/MissionsIndex.jsx'))
 const CleoWorkspacesIndex = lazy(() => import('./dashboard/components/cv3/CleoWorkspacesIndex.jsx'))
@@ -544,6 +547,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           {/* corner:corner-ui-cv6 — /cv6 component gallery. Public (no user
               data) so it renders frictionlessly for design review. */}
           <Route path="/cv6" element={<CV6Gallery />} />
+          {/* corner:corner-ui-cv6 — /cv6kit test route. Isolated kit component test;
+              renders the design kit's mobile Home screen as-is for pixel-perfect verification. */}
+          <Route path="/cv6kit" element={<CV6KitTest />} />
           {/* CV3 escape hatch — rollback path during R7.21 transition. */}
           <Route path="/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/cv3/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />

@@ -24,8 +24,8 @@ export function MobileHomeKit() {
   ];
 
   return (
-    <div data-theme="dark" style={{ position: 'relative', width: 390, height: 844, borderRadius: 'var(--radius-phone)', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)' }}>
-      <div style={{ position: 'absolute', left: 0, top: 54, right: 72, bottom: 0, overflow: 'hidden', padding: '6px 0' }}>
+    <div data-theme="dark" style={{ position: 'fixed', inset: 0, width: '100%', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)' }}>
+      <div style={{ position: 'absolute', left: 0, top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: 72, bottom: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '6px 0 calc(28px + env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ padding: '0 22px', marginBottom: 20, fontSize: 29, lineHeight: 1.1, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--fg)' }}>
           Good evening,<br /><span style={{ color: 'var(--faint)' }}>Patrik.</span>
         </div>
@@ -58,8 +58,8 @@ export function MobileHomeKit() {
         </div>
       </div>
 
-      <div style={{ position: 'absolute', right: 0, top: 54, bottom: 0 }}>
-        <SideRail active="home" items={navItems} />
+      <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0 }}>
+        <SideRail active="home" items={navItems} style={{ padding: 'calc(15px + env(safe-area-inset-top, 0px)) 0 calc(16px + env(safe-area-inset-bottom, 0px))' }} />
       </div>
     </div>
   );
