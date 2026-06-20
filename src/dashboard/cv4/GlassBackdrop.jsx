@@ -19,7 +19,16 @@ import { useEffect, useRef } from 'react'
 // Entries are either a plain string (a static image) OR an object
 // { src, type:'video', poster } for a looping video backdrop. The queue is the
 // magic-ball rotation: each step is one entry.
+// The kit's exact glass nebula (ui_kits/mobile .bg1) — the DEFAULT glass background so the surface
+// matches the Final design "exactly" (Patrik 2026-06-20: "when we go to glass it should look exactly
+// like this screen"). The photos below stay as the magic-ball rotation layered on top.
+const KIT_NEBULA =
+  'radial-gradient(55% 38% at 24% 14%, rgba(74,116,148,.5), transparent 62%),' +
+  'radial-gradient(48% 32% at 84% 22%, rgba(206,148,70,.32), transparent 58%),' +
+  'radial-gradient(42% 30% at 70% 72%, rgba(46,96,128,.4), transparent 62%),' +
+  'linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%)'
 export const CORNER_GLASS_BACKDROPS = [
+  { type: 'gradient', bg: KIT_NEBULA },
   '/corner-glass/us-fuji.jpg',
   '/corner-glass/us-ocean.jpg',
   '/corner-glass/us-blinds.jpg',
@@ -69,6 +78,10 @@ export default function GlassBackdrop({ images = CORNER_GLASS_BACKDROPS, index =
   // steps it). No auto-drift — it holds until the user clicks the crystal-ball
   // again. Clamp to a valid index defensively.
   const idx = ((index % list.length) + list.length) % list.length
+  // The kit's nebula IS already the dark moody ground; it only needs the kit's
+  // own light bg2 wash on top (rgba 5,8,11 .32→.5). The heavy photo scrim below
+  // would crush its glows, so soften the scrim when the gradient is the active step.
+  const activeIsGradient = asItem(list[idx]).type === 'gradient'
 
   // Preload every still backdrop once so stepping crossfades instantly, no flash.
   // Videos preload themselves via the <video preload="auto"> element.
@@ -103,6 +116,9 @@ export default function GlassBackdrop({ images = CORNER_GLASS_BACKDROPS, index =
           opacity: active ? 1 : 0,
           transition: `opacity ${FADE_MS}ms ease-in-out`,
         }
+        if (item.type === 'gradient') {
+          return <div key="kit-nebula" style={{ ...common, background: item.bg }} />
+        }
         if (item.type === 'video') {
           return <BackdropVideo key={item.src} item={item} active={active} style={common} />
         }
@@ -127,11 +143,14 @@ export default function GlassBackdrop({ images = CORNER_GLASS_BACKDROPS, index =
         style={{
           position: 'absolute',
           inset: 0,
-          background:
-            'linear-gradient(180deg, rgba(7,10,17,0.82) 0%, rgba(6,9,14,0.90) 100%),' +
-            'radial-gradient(58% 42% at 22% 12%, rgba(74,116,148,0.20), transparent 62%),' +
-            'radial-gradient(52% 38% at 86% 20%, rgba(206,148,70,0.12), transparent 58%),' +
-            'radial-gradient(48% 36% at 72% 88%, rgba(46,96,128,0.16), transparent 64%)',
+          background: activeIsGradient
+            ? // kit bg2: a light wash so the nebula reads at full strength
+              'linear-gradient(180deg, rgba(5,8,11,0.32), rgba(5,8,11,0.5))'
+            : // heavy photo scrim: crush a bright photo down to the moody-dark ground
+              'linear-gradient(180deg, rgba(7,10,17,0.82) 0%, rgba(6,9,14,0.90) 100%),' +
+                'radial-gradient(58% 42% at 22% 12%, rgba(74,116,148,0.20), transparent 62%),' +
+                'radial-gradient(52% 38% at 86% 20%, rgba(206,148,70,0.12), transparent 58%),' +
+                'radial-gradient(48% 36% at 72% 88%, rgba(46,96,128,0.16), transparent 64%)',
         }}
       />
     </div>

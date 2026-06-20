@@ -5570,16 +5570,17 @@ export default function HomeView({
                 // full-screen Chat tool (zIndex 120) — at 53 it was hidden behind tools, so tool
                 // screens looked menu-less. 130 clears the tool layer; the rail/backdrop go higher.
                 position: 'fixed', right: '18px', bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))', zIndex: 130,
-                width: '56px', height: '56px', borderRadius: '50%', border: 'none',
-                background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', cursor: 'pointer',
+                width: '60px', height: '60px', borderRadius: '50%', border: 'none',
+                background: 'linear-gradient(135deg, #5B9BFF, #2563EB)', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 8px 28px rgba(0,0,0,0.42)',
+                boxShadow: '0 14px 34px -8px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.14)',
               }}>
               {/* R-MATCH-KIT 2026-06-20: the kit's closed-state menu button IS the profile avatar
                   (readme: "the profile avatar is the menu button") — a blue "P" circle bottom-right
-                  that opens the rail. Match it (Patrik: keep the button, it opens the rail). */}
-              <span style={{ color: '#ffffff', fontSize: '22px', fontWeight: 700, fontFamily: 'inherit', lineHeight: 1 }}>{(displayName(user) || 'U').trim().charAt(0).toUpperCase()}</span>
-              {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '2px', right: '2px', width: '14px', height: '14px', borderRadius: '50%', background: '#60a5fa', border: '2px solid var(--cv6-ground)' }} />)}
+                  that opens the rail. Match the Final frame exactly: 60px circle, --avatar gradient,
+                  P at 19px, white-ring shadow, 15px accent dot. (Patrik: keep the button, it opens the rail.) */}
+              <span style={{ color: '#ffffff', fontSize: '19px', fontWeight: 700, fontFamily: 'inherit', lineHeight: 1 }}>{(displayName(user) || 'U').trim().charAt(0).toUpperCase()}</span>
+              {catchupNotifications.length > 0 && (<span style={{ position: 'absolute', top: '1px', right: '1px', width: '15px', height: '15px', borderRadius: '50%', background: '#5B9BFF', border: '2.5px solid var(--cv6-ground)' }} />)}
             </button>
           )}
 
