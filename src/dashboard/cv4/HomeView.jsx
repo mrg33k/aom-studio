@@ -5859,11 +5859,14 @@ export default function HomeView({
                     </div>
                   )}
 
-                  {/* SECTION 1: Agents — part of the ONE single list now (no sub-label, Patrik
-                      2026-06-19). Agents read as agents by their status dot; projects by their folder. */}
+                  {/* SECTION 1+2: the ONE All Rooms list in the design's bordered card
+                      (claude_design 2b54700b ui_kits/mobile: --surface bg, --hair border, r16,
+                      54px rows divided by --divider). Agents read by status dot, projects by folder. */}
+                  {(filteredAgents.length > 0 || filteredProjects.length > 0) && (
+                  <div className="glassy" style={{ background: 'var(--cv6-surface)', border: '1px solid var(--cv6-hair)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
                   {filteredAgents.length > 0 && (
-                    <div style={{ marginBottom: '2px' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                         {filteredAgents.map((a) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === a.slug && selectableItems[selectedIndex]?.type === 'agent'
                           // R-PIXEL-LOOP R4: case-insensitive status → dot color (teal working / lime idle /
@@ -5882,10 +5885,10 @@ export default function HomeView({
                               onClick={() => { selectByItem('agent', a.slug); setSelectedRoom({ agent: a, project: null, mission: null }); homeRef.current?.focus() }}
                               onContextMenu={(e) => { e.preventDefault(); selectByItem('agent', a.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'agent', item: a, project: null }) }}
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '11px', padding: '10px 12px', marginBottom: '0',
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '0 15px', minHeight: '54px',
                                 boxSizing: 'border-box', width: '100%',
                                 background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
-                                color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                                color: 'var(--cv6-text-primary)', border: 'none', borderBottom: '1px solid var(--cv6-divider)', borderRadius: '0',
                                 cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
                                 transition: 'background 120ms ease',
                               }}
@@ -5922,7 +5925,7 @@ export default function HomeView({
                       2026-06-19). Recent projects bubble to the top so recents live here too. */}
                   {filteredProjects.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', minHeight: 0, flex: 1, overflowY: 'auto' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0', minHeight: 0, flex: 1, overflowY: 'auto' }}>
                         {filteredProjects.map((p) => {
                           const isSelected = cv6 && !toolsFocused && selectedIndex >= 0 && selectableItems[selectedIndex]?.item?.slug === p.slug && selectableItems[selectedIndex]?.type === 'project'
                           const missionCount = Array.isArray(allMissionsForCV6) ? allMissionsForCV6.filter(x => (x.project?.slug || x.project?.id) === (p.slug || p.id)).length : 0
@@ -5934,10 +5937,10 @@ export default function HomeView({
                               onContextMenu={(e) => { e.preventDefault(); selectByItem('project', p.slug); setCardMenu({ x: e.clientX, y: e.clientY, type: 'project', item: p, project: p }) }}
                               onDoubleClick={() => openChatToolForRoom({ project: p, mission: null })}
                               style={{
-                                display: 'flex', alignItems: 'center', gap: '11px', padding: '11px 12px', marginBottom: '0',
+                                display: 'flex', alignItems: 'center', gap: '12px', padding: '0 15px', minHeight: '54px',
                                 boxSizing: 'border-box', width: '100%',
                                 background: isSelected ? 'var(--cv6-accent-weak)' : 'transparent',
-                                color: 'var(--cv6-text-primary)', border: 'none', borderRadius: '10px',
+                                color: 'var(--cv6-text-primary)', border: 'none', borderBottom: '1px solid var(--cv6-divider)', borderRadius: '0',
                                 cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
                                 transition: 'background 120ms ease',
                               }}
@@ -5969,6 +5972,8 @@ export default function HomeView({
                         })}
                       </div>
                     </div>
+                  )}
+                  </div>
                   )}
 
                   {/* Empty state when a column search matches nothing */}
