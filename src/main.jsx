@@ -84,6 +84,16 @@ function DashboardSurface() {
     else if (sessionStorage.getItem('cv4Dashboard') === '1') cv4 = true
     if (params.get('cv6') === '1') { sessionStorage.removeItem('cv4Dashboard'); cv4 = false }
   } catch { /* private mode: query string only */ }
+  // corner:corner-ui-cv6 — Patrik 2026-06-20 "this needs to be on dashboard": on phones,
+  // /dashboard shows the Claude-designed mobile Home (kit). Unwired preview for now; ?cv4=1
+  // stays an explicit escape hatch to the working surface. Desktop unchanged (mobile first).
+  const [narrow, setNarrow] = useState(typeof window !== 'undefined' && window.innerWidth <= 768)
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth <= 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  if (narrow && params.get('cv4') !== '1') return <CV6KitTest />
   return cv4 ? <CornerV4 /> : <CornerVG />
 }
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
