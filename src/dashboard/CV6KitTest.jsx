@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx';
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx';
 import { ChatStepThread } from './cv6kit/ChatStepThread.jsx';
+import { TrackerView } from './cv6kit/TrackerView.jsx';
 import './cv6kit/kit.css';
 
 // Sample Step Thread (the kit Chat view) — used to verify the layout in
@@ -17,6 +18,16 @@ const SAMPLE_CHAT = {
     { id: 's3', kind: 'choice', title: 'You chose the quick fix', sub: '"but pin the framing first."' },
     { id: 's4', kind: 'working', title: 'Patching the resolver', statusLabel: 'Working', sub: 'Pinned your framing, now teaching the task runner where the repo lives.', progress: { pct: 64, label: '3/4' } },
     { id: 's5', kind: 'upnext', title: 'Re-run the print build', statusLabel: 'Up next' },
+  ],
+};
+
+const SAMPLE_TRACKER = {
+  tracker: { name: 'CV6 Bugs', projectName: 'Corner CV6', openCount: 12 },
+  bugs: [
+    { id: 'CV6-142', title: 'Repo resolver drops docs-only projects', status: 'open', priority: 'high', assignee: { initials: 'EL', name: 'Elon', tone: 'var(--success)', toneBg: 'rgba(52,211,153,.2)' }, updated: '2h' },
+    { id: 'CV6-138', title: 'Catch Up cards crowd All Rooms', status: 'in_progress', priority: 'med', assignee: { initials: 'RX', name: 'Rex', tone: '#A3E635', toneBg: 'rgba(163,230,53,.2)' }, updated: '5h' },
+    { id: 'CV6-131', title: 'Nav overlaps home indicator', status: 'in_progress', priority: 'med', assignee: { initials: 'EL', name: 'Elon', tone: 'var(--success)', toneBg: 'rgba(52,211,153,.2)' }, updated: '8h' },
+    { id: 'CV6-126', title: 'Glass contrast dips on lightest photo', status: 'open', priority: 'low', assignee: { initials: 'GA', name: 'Gary', tone: 'var(--warn)', toneBg: 'rgba(251,191,36,.2)' }, updated: '1d' },
   ],
 };
 
@@ -59,12 +70,14 @@ export default function CV6KitTest() {
   }, []);
 
   const noop = () => {};
-  const screen = typeof window !== 'undefined' && /(\?|&)screen=chat\b/.test(window.location.search) ? 'chat' : 'home';
+  const screen = (typeof window !== 'undefined' && (window.location.search.match(/[?&]screen=([a-z]+)/) || [])[1]) || 'home';
 
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>
       {screen === 'chat' ? (
         <ChatStepThread {...SAMPLE_CHAT} onBack={noop} onSend={noop} onChoice={noop} />
+      ) : screen === 'tracker' ? (
+        <TrackerView {...SAMPLE_TRACKER} onSelectBug={noop} onNewBug={noop} />
       ) : isDesktop ? (
         <DesktopHomeWired {...SAMPLE} recentMessages={SAMPLE_RECENT} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
       ) : (
