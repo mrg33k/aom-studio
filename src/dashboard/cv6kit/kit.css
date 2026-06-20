@@ -1,0 +1,126 @@
+/* CV6 Kit — scoped token layer
+   All tokens are scoped to [data-cv6kit] so they don't leak globally.
+   The kit components use bare CSS vars (var(--ground), var(--accent), etc.)
+   which resolve under this scoped ancestor. */
+
+/* Import all token files first */
+@import './tokens/fonts.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+
+/* Colors & semantic tokens — scoped to [data-cv6kit] */
+:is([data-cv6kit]) {
+  --blue-400: #5B9BFF;
+  --blue-500: #3B82F6;
+  --blue-600: #2563EB;
+  --blue-700: #1D4ED8;
+  --blue-vivid: #0066FF;
+  --blue-900: #003D99;
+
+  --amber-400: #FBBF24;
+  --amber-700: #B45309;
+  --green-400: #46E0A8;
+  --green-500: #34D399;
+  --green-600: #10B981;
+  --lime-400: #A3E635;
+  --violet-400: #A855F7;
+  --pink-400: #F472B6;
+  --teal-400: #2DD4BF;
+
+  --ink-950: #05080b;
+  --ink-900: #0A0A0B;
+  --ink-850: #161619;
+  --ink-800: #1c1c21;
+  --paper-50: #F6F6F7;
+  --paper-0: #FFFFFF;
+  --paper-100: #F0F0F2;
+
+  /* Semantic (DARK defaults) */
+  --ground: var(--ink-900);
+  --surface: var(--ink-850);
+  --surface-2: #1c1c21;
+  --fg: #E9E9EC;
+  --muted: #9a9aa2;
+  --faint: #62626b;
+  --divider: rgba(255,255,255,.07);
+  --hair: rgba(255,255,255,.09);
+  --chip: rgba(255,255,255,.06);
+
+  --accent: var(--blue-500);
+  --accent-weak: rgba(59,130,246,.16);
+  --warn: var(--amber-400);
+  --success: var(--green-500);
+  --success-weak: rgba(52,211,153,.16);
+
+  --avatar: linear-gradient(135deg, #3B82F6, #1D4ED8);
+
+  --status-online: var(--green-500);
+  --status-working: var(--lime-400);
+  --status-attention: var(--amber-400);
+  --status-idle: var(--faint);
+}
+
+/* Themes — scoped to [data-cv6kit] */
+[data-cv6kit][data-theme="dark"] {
+  --ground: #0A0A0B;
+  --surface: #161619;
+  --surface-2: #1c1c21;
+  --fg: #E9E9EC;
+  --muted: #9a9aa2;
+  --faint: #62626b;
+  --divider: rgba(255,255,255,.07);
+  --hair: rgba(255,255,255,.09);
+  --chip: rgba(255,255,255,.06);
+  --accent: #3B82F6;
+  --accent-weak: rgba(59,130,246,.16);
+  --warn: #FBBF24;
+  --success: #34D399;
+  --success-weak: rgba(52,211,153,.16);
+  --avatar: linear-gradient(135deg, #3B82F6, #1D4ED8);
+}
+
+[data-cv6kit][data-theme="light"] {
+  --ground: #F6F6F7;
+  --surface: #FFFFFF;
+  --surface-2: #F0F0F2;
+  --fg: #18181B;
+  --muted: #6a6a72;
+  --faint: #a0a0a8;
+  --divider: rgba(0,0,0,.07);
+  --hair: rgba(0,0,0,.08);
+  --chip: rgba(0,0,0,.04);
+  --accent: #0066FF;
+  --accent-weak: rgba(0,102,255,.1);
+  --warn: #B45309;
+  --success: #10B981;
+  --success-weak: rgba(16,185,129,.12);
+  --avatar: linear-gradient(135deg, #0066FF, #003D99);
+}
+
+[data-cv6kit][data-theme="glass"] {
+  --ground:
+    radial-gradient(54% 40% at 22% 12%, rgba(74,116,148,.55), transparent 62%),
+    radial-gradient(50% 34% at 86% 20%, rgba(206,148,70,.34), transparent 58%),
+    radial-gradient(46% 34% at 72% 86%, rgba(46,96,128,.45), transparent 64%),
+    linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%);
+  --surface: rgba(22,26,33,.55);
+  --surface-2: rgba(255,255,255,.08);
+  --fg: #F3F4F6;
+  --muted: #c0c4cc;
+  --faint: #828690;
+  --divider: rgba(255,255,255,.1);
+  --hair: rgba(255,255,255,.16);
+  --chip: rgba(255,255,255,.1);
+  --accent: #5B9BFF;
+  --accent-weak: rgba(91,155,255,.22);
+  --warn: #FBBF24;
+  --success: #46E0A8;
+  --success-weak: rgba(70,224,168,.16);
+  --avatar: linear-gradient(135deg, #5B9BFF, #2563EB);
+}
+
+/* Frosted surfaces opt in with .glassy; only blurs under the glass theme. */
+[data-cv6kit][data-theme="glass"] .glassy {
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+}

@@ -1,0 +1,43 @@
+/* Corner CV6 — spacing, radius, shadow, motion.
+   Observed rhythm from the product. Guidelines, not hard rules. */
+
+:root {
+  /* spacing scale (px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 14px;
+  --space-5: 18px;
+  --space-6: 20px;
+  --space-7: 22px;
+  --space-8: 28px;
+
+  /* radius — controls are soft, frames are softer, avatars are round */
+  --radius-pill: 10px;   /* room rows, small chips */
+  --radius-control: 11px;/* inputs, icon buttons */
+  --radius-button: 13px; /* primary buttons, tool tiles (active) */
+  --radius-card: 16px;   /* cards, catch-up, message panels */
+  --radius-tile: 18px;   /* large cards, swipe deck */
+  --radius-window: 16px; /* desktop app frame */
+  --radius-phone: 46px;  /* mobile device frame */
+  --radius-round: 50%;   /* avatars, status dots */
+
+  /* hairline / border widths */
+  --border-hair: 1px;
+
+  /* elevation — soft, low, dark-biased; glass adds its own blur */
+  --shadow-card: 0 14px 36px -14px rgba(0,0,0,.5);
+  --shadow-deck: 0 18px 44px -14px rgba(0,0,0,.6);
+  --shadow-window: 0 30px 70px -28px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.06);
+  --shadow-phone: 0 34px 70px -24px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.06);
+  --ring-accent: 0 0 0 4px var(--accent-weak); /* focus / active well */
+  --glow-online: 0 0 8px rgba(52,211,153,.6);  /* status-dot halo */
+
+  /* motion — quick, eased, restrained. Press = shrink, not colour-flash. */
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --dur-press: .12s;
+  --dur-move: .2s;
+  --dur-card: .4s;
+  --press-scale: .94;     /* buttons */
+  --press-scale-lg: .97;  /* large buttons / tiles */
+}

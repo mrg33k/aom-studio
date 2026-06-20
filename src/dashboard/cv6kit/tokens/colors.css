@@ -1,0 +1,62 @@
+/* Corner CV6 — colour.
+   Two layers:
+   1. RAW PALETTE — the literal hues the product draws from. Rarely referenced directly.
+   2. SEMANTIC TOKENS — what components actually use (--surface, --fg, --accent…).
+      Defined here at :root with the DARK theme values so anything works out of
+      the box. themes.css re-scopes the semantic layer for light & glass.
+
+   These are guidelines, not laws — agents can extend the palette. Keep the
+   semantic names stable so components keep working across themes. */
+
+:root {
+  /* ---- raw palette ---- */
+  --blue-400: #5B9BFF;   /* glass accent */
+  --blue-500: #3B82F6;   /* dark accent */
+  --blue-600: #2563EB;
+  --blue-700: #1D4ED8;
+  --blue-vivid: #0066FF; /* light accent */
+  --blue-900: #003D99;
+
+  --amber-400: #FBBF24;  /* warn / "working" */
+  --amber-700: #B45309;
+  --green-400: #46E0A8;  /* glass success */
+  --green-500: #34D399;  /* dark success / online */
+  --green-600: #10B981;  /* light success */
+  --lime-400: #A3E635;   /* secondary agent status */
+  --violet-400: #A855F7; /* project glyphs */
+  --pink-400: #F472B6;   /* project glyphs */
+  --teal-400: #2DD4BF;   /* project glyphs */
+
+  --ink-950: #05080b;
+  --ink-900: #0A0A0B;
+  --ink-850: #161619;
+  --ink-800: #1c1c21;
+  --paper-50: #F6F6F7;
+  --paper-0:  #FFFFFF;
+  --paper-100:#F0F0F2;
+
+  /* ---- semantic (DARK defaults) ---- */
+  --ground: var(--ink-900);          /* app background */
+  --surface: var(--ink-850);         /* cards, panels */
+  --surface-2: #1c1c21;              /* inset fields, secondary surface */
+  --fg: #E9E9EC;                     /* primary text / icons */
+  --muted: #9a9aa2;                  /* secondary text */
+  --faint: #62626b;                  /* tertiary text, timestamps */
+  --divider: rgba(255,255,255,.07);  /* hairline between regions */
+  --hair: rgba(255,255,255,.09);     /* card / control border */
+  --chip: rgba(255,255,255,.06);     /* subtle fill (icon wells) */
+
+  --accent: var(--blue-500);
+  --accent-weak: rgba(59,130,246,.16);
+  --warn: var(--amber-400);
+  --success: var(--green-500);
+  --success-weak: rgba(52,211,153,.16);
+
+  --avatar: linear-gradient(135deg, #3B82F6, #1D4ED8);
+
+  /* status dots — consistent across themes */
+  --status-online: var(--green-500);
+  --status-working: var(--lime-400);
+  --status-attention: var(--amber-400);
+  --status-idle: var(--faint);
+}

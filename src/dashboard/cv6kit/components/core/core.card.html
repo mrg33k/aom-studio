@@ -1,0 +1,52 @@
+<!-- @dsCard group="Components" viewport="700x300" subtitle="Button · IconButton · Badge · Avatar · Card" name="Core" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin:0; font-family:var(--font-sans); background:#e8e6e2; padding:22px; }
+  .wrap { padding:24px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:var(--shadow-card); display:flex; flex-direction:column; gap:18px; }
+  .row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .lbl { font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); width:78px; flex:none; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; height:42px; padding:0 16px; border-radius:var(--radius-button); font-size:13px; font-weight:600; cursor:pointer; }
+  .ib { width:40px; height:40px; border-radius:var(--radius-control); display:flex; align-items:center; justify-content:center; position:relative; }
+  .badge { display:inline-flex; align-items:center; justify-content:center; min-width:20px; height:20px; padding:0 6px; border-radius:10px; font-size:11px; font-weight:700; }
+  .av { width:40px; height:40px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap" data-theme="dark">
+  <div class="row">
+    <span class="lbl">Button</span>
+    <span class="btn" style="background:var(--accent);color:#fff;">Open in chat</span>
+    <span class="btn" style="background:var(--surface-2);color:var(--fg);border:1px solid var(--hair);">Snooze</span>
+    <span class="btn" style="background:transparent;color:var(--muted);">Dismiss</span>
+    <span class="btn" style="background:var(--accent-weak);color:var(--accent);">Review →</span>
+  </div>
+  <div class="row">
+    <span class="lbl">Icon</span>
+    <span class="ib" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--muted);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span style="position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--accent);border:2px solid var(--ground);"></span></span>
+    <span class="ib" style="background:var(--accent);color:#fff;box-shadow:var(--ring-accent);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M9.5 9.5c.8-1.2 4.2-1.2 5 0"/></svg></span>
+    <span class="lbl" style="width:auto;margin-left:8px;">Badge</span>
+    <span class="badge" style="background:var(--accent-weak);color:var(--accent);">4</span>
+    <span class="badge" style="background:var(--accent);color:#fff;">3</span>
+    <span class="badge" style="background:var(--chip);color:var(--muted);">28</span>
+    <span class="lbl" style="width:auto;margin-left:8px;">Avatar</span>
+    <span class="av">P</span>
+    <span class="av" style="box-shadow:0 0 0 2px var(--accent);">P</span>
+  </div>
+  <div class="row">
+    <span class="lbl">Card</span>
+    <div class="glassy" style="flex:1;background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius-card);box-shadow:var(--shadow-card);padding:14px 16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div style="width:30px;height:30px;border-radius:9px;background:var(--chip);display:flex;align-items:center;justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></div>
+        <div style="flex:1;"><div style="font-size:13px;font-weight:600;color:var(--fg);">Space Rising</div><div style="font-size:11px;color:var(--muted);">→ Mission /007</div></div>
+        <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);">now</div>
+      </div>
+      <div style="font-size:14px;line-height:1.5;color:var(--fg);">Attached file: support-ask handoff.md</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

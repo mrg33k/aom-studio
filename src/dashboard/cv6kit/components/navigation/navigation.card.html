@@ -1,0 +1,50 @@
+<!-- @dsCard group="Components" viewport="700x330" subtitle="ToolTile (tools row) · SideRail (mobile side menu)" name="Navigation" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin:0; font-family:var(--font-sans); background:#e8e6e2; padding:22px; }
+  .wrap { padding:22px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:var(--shadow-card); }
+  .lbl { font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-bottom:10px; }
+  .tools { display:flex; gap:12px; margin-bottom:24px; }
+  .tile { width:120px; flex:none; display:flex; flex-direction:column; align-items:center; gap:9px; padding:14px 0; border-radius:var(--radius-button); }
+  .tlab { font-size:13px; font-weight:600; }
+  .rail { width:72px; background:rgba(12,12,14,.6); border:1px solid var(--divider); border-radius:18px; display:flex; flex-direction:column; align-items:center; padding:12px 0; gap:10px; }
+  .ri { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .rsq { width:38px; height:38px; display:flex; align-items:center; justify-content:center; color:var(--muted); }
+  .rl { font-size:9px; font-weight:600; color:var(--muted); }
+  .div { width:40px; height:1.5px; border-radius:1px; background:rgba(255,255,255,.28); }
+  .av { width:44px; height:44px; border-radius:50%; background:var(--avatar); box-shadow:0 0 0 2px var(--accent); display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="wrap" data-theme="dark" style="display:flex;gap:28px;align-items:center;">
+  <div style="flex:1;min-width:0;">
+    <div class="lbl">Desktop · tools row</div>
+    <div class="tools">
+      <div class="tile" style="background:var(--accent);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg><span class="tlab" style="color:#fff;">Home</span></div>
+      <div class="tile glassy" style="background:var(--surface);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg><span class="tlab" style="color:var(--muted);">Chat</span></div>
+      <div class="tile glassy" style="background:var(--surface);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 8l9 4 9-4-9-4Z"/><path d="m3 12 9 4 9-4"/></svg><span class="tlab" style="color:var(--muted);">Organize</span></div>
+      <div class="tile glassy" style="background:var(--surface);"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="tlab" style="color:var(--muted);">Review</span></div>
+    </div>
+    <div class="lbl">The eight tools</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.7;">Home · Chat · Organize · Review · Support · Tracker · Command · Live&nbsp;Scribe</div>
+  </div>
+
+  <div>
+    <div class="lbl">Mobile · side menu</div>
+    <div class="rail">
+      <div class="av">P</div>
+      <div class="div"></div>
+      <div class="ri"><div class="rsq" style="background:var(--accent);border-radius:13px;color:#fff;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg></div><span class="rl" style="color:var(--accent);">Home</span></div>
+      <div class="ri"><div class="rsq" style="background:var(--chip);border-radius:19px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg></div><span class="rl">Chat</span></div>
+      <div class="ri"><div class="rsq" style="background:var(--chip);border-radius:19px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 8l9 4 9-4-9-4Z"/><path d="m3 12 9 4 9-4"/></svg></div><span class="rl">Organize</span></div>
+      <div class="div"></div>
+      <div class="ri"><div class="rsq" style="background:var(--chip);border-radius:19px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

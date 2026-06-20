@@ -1,0 +1,35 @@
+/* Corner CV6 — typography.
+   Inter throughout; Space Mono for anything machine-flavoured (timestamps,
+   IDs, counts, file sizes, "swipe →" hints). The scale below is descriptive of
+   how the product sets type today — treat as a starting rhythm, not a cage. */
+
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* size scale (px) */
+  --text-display: 30px;   /* greeting / hero, 700, tight -.025em */
+  --text-title: 26px;     /* screen / section title, 700, -.02em */
+  --text-h: 16px;         /* panel heading, 600 */
+  --text-body: 14px;      /* default body & message text, 400–500 */
+  --text-sm: 13px;        /* dense rows, buttons */
+  --text-xs: 12px;        /* meta, captions */
+  --text-label: 11px;     /* UPPERCASE eyebrow, 600, +.1em tracking */
+  --text-mono: 10.5px;    /* Space Mono timestamps & tags */
+
+  /* weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* line-heights */
+  --leading-tight: 1.1;   /* display / title */
+  --leading-snug: 1.4;
+  --leading-body: 1.55;   /* paragraphs */
+
+  /* tracking */
+  --tracking-display: -0.025em;
+  --tracking-title: -0.02em;
+  --tracking-label: 0.1em;  /* eyebrows */
+}

@@ -1,0 +1,6 @@
+/* Corner CV6 type families.
+   Inter for everything; Space Mono for timestamps, IDs, and technical labels.
+   These are the families used throughout the product today. If real/licensed
+   font files are dropped into /assets/fonts, replace this @import with
+   @font-face rules pointing at them and keep the family names identical. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");

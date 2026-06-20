@@ -1,0 +1,44 @@
+<!-- @dsCard group="Components" viewport="700x340" subtitle="StatusDot · RoomRow · CatchUpCard · MessageBubble" name="Rooms & chat" -->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin:0; font-family:var(--font-sans); background:#e8e6e2; padding:22px; }
+  .wrap { padding:22px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:var(--shadow-card); display:flex; gap:20px; }
+  .col { flex:1; min-width:0; }
+  .lbl { font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-bottom:8px; }
+  .row { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:var(--radius-pill); }
+  .dot { width:9px; height:9px; border-radius:50%; flex:none; }
+  .nm { font-size:14px; color:var(--fg); flex:1; }
+  .tag { font-family:var(--font-mono); font-size:10px; letter-spacing:.08em; color:var(--faint); }
+</style>
+</head>
+<body>
+<div class="wrap" data-theme="dark">
+  <div class="col">
+    <div class="lbl">All rooms</div>
+    <div class="row" style="background:var(--accent-weak);"><span class="dot" style="background:var(--status-online);box-shadow:var(--glow-online);"></span><span class="nm" style="font-weight:600;">Elon</span><span class="tag">AGENT</span></div>
+    <div class="row"><span class="dot" style="background:var(--status-working);"></span><span class="nm" style="font-weight:500;">Rex</span><span class="tag">AGENT</span></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span class="nm" style="font-weight:500;">Space Rising</span><span style="font-size:11.5px;color:var(--muted);">28</span></div>
+    <div class="row"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span class="nm" style="font-weight:500;">Corner</span><span style="display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;font-size:11px;font-weight:700;background:var(--accent);color:#fff;">3</span></div>
+  </div>
+  <div class="col">
+    <div class="lbl">Catch up · swipe deck</div>
+    <div class="glassy" style="background:var(--surface);border:1px solid var(--hair);border-radius:var(--radius-card);box-shadow:var(--shadow-deck);padding:14px 16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <div style="width:30px;height:30px;border-radius:9px;background:var(--chip);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></div>
+        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--fg);">Space Rising</div><div style="font-size:11px;color:var(--muted);">→ Mission /007</div></div>
+        <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);">now</div>
+      </div>
+      <div style="font-size:14px;line-height:1.5;color:var(--fg);">Attached file: support-ask handoff.md</div>
+    </div>
+    <div class="lbl">Conversation</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:28px;height:28px;border-radius:50%;background:var(--success-weak);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">EL</div><span style="font-size:13px;font-weight:600;color:var(--fg);">Elon</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);">7:20</span></div>
+    <div style="font-size:14px;line-height:1.5;color:var(--fg);margin-bottom:8px;">Want me to retry, or try a different angle?</div>
+    <div style="display:flex;justify-content:flex-end;"><div style="max-width:80%;background:var(--accent);color:#fff;font-size:13.5px;line-height:1.5;padding:10px 13px;border-radius:16px 16px 4px 16px;">Retry — but pin the framing first.</div></div>
+  </div>
+</div>
+</body>
+</html>
