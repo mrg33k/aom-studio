@@ -377,7 +377,7 @@ export default function LiveScribe({ embedded = false }) {
           {showActions && (
             <>
               <button className="ls-btn" onClick={copyBrief} style={{ background: C.card, color: C.ink, padding: '9px 16px', fontSize: 13, borderColor: C.line }}>Copy brief</button>
-              <button className="ls-btn" onClick={reset} style={{ background: C.card, color: '#9A4A4A', padding: '9px 16px', fontSize: 13, borderColor: C.line }}>Clear</button>
+              <button className="ls-btn" onClick={reset} style={{ background: C.card, color: embedded ? 'var(--cv6-accent-error)' : '#9A4A4A', padding: '9px 16px', fontSize: 13, borderColor: C.line }}>Clear</button>
             </>
           )}
         </div>

@@ -3551,7 +3551,7 @@ function CommandDeckOverlay({ projects, agents }) {
                   onBlur={e => { e.currentTarget.style.border = '1px solid transparent'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.boxShadow = 'none' }} />
               </span>
               <span style={{ ...cell, paddingTop: '12px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontVariantNumeric: 'tabular-nums', color: r.status === 'sent' ? '#10B981' : r.status === 'discarded' ? 'var(--cv6-text-tertiary)' : r.held ? 'var(--cv6-text-tertiary)' : 'var(--cv6-text-secondary)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontVariantNumeric: 'tabular-nums', color: r.status === 'sent' ? 'var(--cv6-accent-success)' : r.status === 'discarded' ? 'var(--cv6-text-tertiary)' : r.held ? 'var(--cv6-text-tertiary)' : 'var(--cv6-text-secondary)' }}>
                   {r.status === 'sent' ? 'sent' : r.status === 'discarded' ? 'discarded' : r.held ? 'held' : `${r.secs}s`}
                 </span>
                 {!done && (
