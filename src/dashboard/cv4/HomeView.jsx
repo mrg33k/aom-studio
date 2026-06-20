@@ -4363,7 +4363,7 @@ export default function HomeView({
                       style={{ position: 'relative', zIndex: 5, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '11px',
                         transform: `translateX(${tx}px) rotate(${dragging ? swipe.dx * 0.022 : 0}deg)`,
                         transition: dragging ? 'none' : 'transform 240ms cubic-bezier(.22,1,.36,1), opacity 240ms ease',
-                        opacity: flying ? 0 : 1, touchAction: 'pan-y', userSelect: 'none',
+                        opacity: flying ? 0 : 1, touchAction: 'none', userSelect: 'none',
                         background: 'var(--cv6-surface)', backdropFilter: 'blur(22px) saturate(1.3)', WebkitBackdropFilter: 'blur(22px) saturate(1.3)',
                         border: '1px solid var(--cv6-divider)', borderRadius: '16px', padding: '15px',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.08), 0 6px 18px rgba(0,0,0,0.12)', cursor: 'grab', textAlign: 'left', fontFamily: 'inherit' }}>

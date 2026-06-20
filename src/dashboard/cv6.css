@@ -894,7 +894,11 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
    mobile so nothing hides behind the status bar / notch. env() is 0 on desktop, so scope to
    mobile anyway to avoid touching desktop. */
 @media (max-width: 768px) {
-  [data-cv6][data-cv4-home] { padding-top: env(safe-area-inset-top, 0px); }
+  /* Patrik 2026-06-19: keep ALL scrolling inside the app window on the phone — no page bounce that
+     reads as "the page scrolled". The home is the single scroll surface; contain its overscroll so it
+     never chains to the document, and lock the document itself. (Zoom is locked via the viewport meta.) */
+  [data-cv6][data-cv4-home] { padding-top: env(safe-area-inset-top, 0px); overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
+  body { overscroll-behavior: none; }
   /* R-MOBILE 2026-06-19 (Patrik live iPhone): keep Search + Theme on the greeting row, far right —
      the empty band there was the "white bar of space". Bell + avatar move to the rail / bottom FAB,
      so hide just those two. The greeting cell drops its 360px desktop min so the icons sit on the
