@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx';
+import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx';
 import './cv6kit/kit.css';
 
 /**
- * CV6 Kit preview route (/cv6kit). Renders the REAL wired mobile Home component
- * (the same one mounted in CornerVG on /dashboard) but with sample props, so the
- * component's layout + data mapping can be verified without auth. On /dashboard
- * the same component is fed live data.
+ * CV6 Kit preview route (/cv6kit). Renders the REAL wired Home components (the
+ * same ones mounted in CornerVG on /dashboard) but with sample props, so the
+ * layout + data mapping can be verified without auth. Responsive: the desktop
+ * three-column Home when the viewport is wide (>=1024px), the mobile Home when
+ * narrow — mirroring the isDesktop gate in CornerVG. On /dashboard the same
+ * components are fed live data.
  */
 const SAMPLE = {
   user: { user_metadata: { full_name: 'Patrik Matheson' } },
@@ -23,10 +26,30 @@ const SAMPLE = {
   ],
 };
 
+const SAMPLE_RECENT = [
+  { from: 'agent', author: 'Elon', initials: 'EL', time: '9:24', text: 'Pulled the latest numbers — the launch deck is ready for your review.' },
+  { from: 'me', time: '9:26', text: 'Looks good. Send it once the cover slide is updated.' },
+  { from: 'agent', author: 'Elon', initials: 'EL', time: '9:27', text: 'On it. Cover swapped and out the door in five.' },
+];
+
 export default function CV6KitTest() {
+  const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
+
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const noop = () => {};
+
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>
-      <MobileHomeWired {...SAMPLE} onSelectAgent={() => {}} onSelectProject={() => {}} onCatchupOpen={() => {}} onNav={() => {}} />
+      {isDesktop ? (
+        <DesktopHomeWired {...SAMPLE} recentMessages={SAMPLE_RECENT} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
+      ) : (
+        <MobileHomeWired {...SAMPLE} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
+      )}
     </div>
   );
 }
