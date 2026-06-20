@@ -303,15 +303,15 @@ export default function LiveScribe({ embedded = false }) {
         .ls-card { background:${C.card}; border:1px solid ${C.line}; border-radius:16px; }
         .ls-btn { font-family:${embedded ? 'inherit' : "'Space Grotesk',sans-serif"}; font-weight:600; border-radius:999px; cursor:pointer; border:1px solid ${C.btnBorder}; transition:transform .08s ease, opacity .15s ease; }
         .ls-btn:active { transform:translateY(1px); }
-        .ls-rec-dot { width:10px; height:10px; border-radius:50%; background:${embedded ? C.rec : '#E5484D'}; box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0.6)' : 'rgba(229,72,77,.6)'}; animation:lspulse 1.4s infinite; }
-        @keyframes lspulse { 0%{box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0.55)' : 'rgba(229,72,77,.55)'}} 70%{box-shadow:0 0 0 9px ${embedded ? 'rgba(248, 113, 113, 0)' : 'rgba(229,72,77,0)'}} 100%{box-shadow:0 0 0 0 ${embedded ? 'rgba(248, 113, 113, 0)' : 'rgba(229,72,77,0)'}} }
+        .ls-rec-dot { width:10px; height:10px; border-radius:50%; background:${embedded ? C.rec : '#E5484D'}; box-shadow:0 0 0 0 ${embedded ? 'rgba(var(--cv6-accent-error-rgb), 0.6)' : 'rgba(229,72,77,.6)'}; animation:lspulse 1.4s infinite; }
+        @keyframes lspulse { 0%{box-shadow:0 0 0 0 ${embedded ? 'rgba(var(--cv6-accent-error-rgb), 0.55)' : 'rgba(229,72,77,.55)'}} 70%{box-shadow:0 0 0 9px ${embedded ? 'rgba(var(--cv6-accent-error-rgb), 0)' : 'rgba(229,72,77,0)'}} 100%{box-shadow:0 0 0 0 ${embedded ? 'rgba(var(--cv6-accent-error-rgb), 0)' : 'rgba(229,72,77,0)'}} }
         .ls-grid { display:grid; grid-template-columns:1fr 380px; gap:18px; }
         @media (max-width: 900px){ .ls-grid{ grid-template-columns:1fr; } }
         .ls-fade { animation:lsfade .3s ease; }
         @keyframes lsfade { from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
         a.ls-src { color:${C.src}; text-decoration:none; border-bottom:1px solid rgba(166,106,0,.3); }
         .ls-start-pulse { animation:lsbtnpulse 2.2s infinite; }
-        @keyframes lsbtnpulse { ${embedded ? `0%{box-shadow:0 0 0 0 rgba(59, 130, 246, 0.3)} 70%{box-shadow:0 0 0 12px rgba(59, 130, 246, 0)} 100%{box-shadow:0 0 0 0 rgba(59, 130, 246, 0)}` : `0%{box-shadow:0 0 0 0 rgba(234,179,8,.45)} 70%{box-shadow:0 0 0 14px rgba(234,179,8,0)} 100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}`} }
+        @keyframes lsbtnpulse { ${embedded ? `0%{box-shadow:0 0 0 0 rgba(var(--cv6-accent-primary-rgb), 0.3)} 70%{box-shadow:0 0 0 12px rgba(var(--cv6-accent-primary-rgb), 0)} 100%{box-shadow:0 0 0 0 rgba(var(--cv6-accent-primary-rgb), 0)}` : `0%{box-shadow:0 0 0 0 rgba(234,179,8,.45)} 70%{box-shadow:0 0 0 14px rgba(234,179,8,0)} 100%{box-shadow:0 0 0 0 rgba(234,179,8,0)}`} }
         .ls-eq { display:flex; gap:3px; align-items:flex-end; height:22px; }
         .ls-eq span { width:3px; border-radius:2px; background:${embedded ? 'var(--cv6-accent-primary)' : '#C9A227'}; animation:lseq 1s ease-in-out infinite; }
         .ls-eq span:nth-child(2){ animation-delay:.1s } .ls-eq span:nth-child(3){ animation-delay:.2s } .ls-eq span:nth-child(4){ animation-delay:.15s } .ls-eq span:nth-child(5){ animation-delay:.25s }

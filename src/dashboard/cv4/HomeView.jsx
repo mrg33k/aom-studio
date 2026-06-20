@@ -512,10 +512,28 @@ function SupportToolOverlay({ worldId }) {
   )
 }
 
+// Kit Support inbox avatars are colour-coded per sender (support.html: pink, purple,
+// teal…), not all-blue. Deterministic hash on the sender name keeps each person's
+// colour stable across renders. Uses the real sender name — no fabricated data.
+const SUPPORT_AVATAR_COLORS = [
+  { bg: 'rgba(244,114,182,0.18)', fg: '#f472b6' }, // pink
+  { bg: 'rgba(168,85,247,0.18)',  fg: '#a855f7' }, // purple
+  { bg: 'rgba(45,212,191,0.18)',  fg: '#2dd4bf' }, // teal
+  { bg: 'rgba(91,155,255,0.18)',  fg: '#5b9bff' }, // blue
+  { bg: 'rgba(251,191,36,0.18)',  fg: '#fbbf24' }, // amber
+  { bg: 'rgba(132,204,22,0.18)',  fg: '#84cc16' }, // lime
+]
+const supportAvatarColor = (who) => {
+  const s = String(who || '?'); let h = 0
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0
+  return SUPPORT_AVATAR_COLORS[h % SUPPORT_AVATAR_COLORS.length]
+}
+
 // ── Support Inbox Row — list item in the left panel ────────────────────────────
 function SupportInboxRow({ item, isSelected, onSelect }) {
-  const statusColor = item.ready || item.status === 'needs_you' ? 'var(--cv6-accent-primary)' : 'var(--cv6-text-secondary)'
+  const statusColor = item.ready ? 'var(--cv6-accent-primary)' : item.status === 'needs_you' ? 'var(--cv6-accent-warn)' : 'var(--cv6-text-secondary)'
   const statusLabel = item.ready ? 'Ready' : item.status === 'needs_you' ? 'Waiting' : item.status === 'responded' ? 'Answered' : 'Resolved'
+  const av = supportAvatarColor(item.who)
 
   return (
     <button
@@ -543,7 +561,7 @@ function SupportInboxRow({ item, isSelected, onSelect }) {
       {/* Avatar */}
       <div style={{
         width: '38px', height: '38px', borderRadius: '50%', flexShrink: 0,
-        background: 'rgba(59, 130, 246, 0.18)', color: '#7FB2FF',
+        background: av.bg, color: av.fg,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: '12px', fontWeight: '700'
       }}>
@@ -563,7 +581,7 @@ function SupportInboxRow({ item, isSelected, onSelect }) {
       {/* Status chip */}
       <span style={{
         fontSize: '10.5px', fontWeight: '600', color: statusColor,
-        background: item.ready || item.status === 'needs_you' ? 'var(--cv6-accent-weak)' : 'var(--cv6-chip)',
+        background: item.ready ? 'var(--cv6-accent-weak)' : item.status === 'needs_you' ? 'var(--cv6-accent-warn-weak)' : 'var(--cv6-chip)',
         padding: '3px 8px', borderRadius: '5px', flexShrink: 0, whiteSpace: 'nowrap'
       }}>
         {statusLabel}
@@ -721,7 +739,7 @@ function SupportDetailPanel({ item, mobile }) {
           disabled={resolving}
           style={{
             height: '36px', marginLeft: '8px', padding: '0 15px', borderRadius: '10px', border: 'none',
-            background: 'var(--cv6-accent-weak)', color: 'var(--cv6-accent-primary)', fontSize: '13px',
+            background: 'var(--cv6-accent-success-weak)', color: 'var(--cv6-accent-success)', fontSize: '13px',
             fontWeight: '600', fontFamily: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center',
             gap: '6px', opacity: resolving ? 0.6 : 1
           }}
@@ -1410,11 +1428,11 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
       </div>
       {/* Desktop: 3-column layout (queue | preview | checklist) matching the mockup */}
       {!isNarrow ? (
-      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr 330px', gap: '0', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', height: '600px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '330px 1fr 320px', gap: '0', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)', height: '600px' }}>
 
         {/* Left: Queue grouped by project */}
         <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '18px 20px 12px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <div style={{ fontSize: '20px', fontWeight: '700', letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', marginBottom: '3px' }}>Review</div>
+          <div style={{ fontSize: '20px', fontWeight: '700', letterSpacing: '-0.01em', color: 'var(--cv6-text-primary)', marginBottom: '3px' }}>Queue</div>
           <div style={{ fontSize: '12.5px', color: 'var(--cv6-text-secondary)', marginBottom: '14px' }}>{items.filter(it => it.ready && !done[it.id]).length} ready · {items.length} in pipeline</div>
 
           {/* Filter buttons */}
@@ -1457,7 +1475,7 @@ function ReviewToolOverlay({ projects, missionsByProject, onReplyToRoom, worldId
         </div>
 
         {/* Center: Document preview (TODO: implement image/video/website annotators) */}
-        <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', background: 'var(--cv6-ground)' }}>
+        <div style={{ borderRight: '1px solid var(--cv6-divider)', overflowY: 'auto', padding: '24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', background: 'var(--cv6-surface)' }}>
           {openItem ? (
             <div style={{ width: '100%', maxWidth: '100%' }}>
               {/* The center renders the real document via FilePreviewPanel + the
@@ -2662,7 +2680,7 @@ function OrganizeBrowser({ projects }) {
   const ProjRow = (p) => {
     const active = proj && proj.slug === p.slug
     return (
-      <button key={p.slug} onClick={() => setProj(p)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '9px 14px', margin: '2px 6px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'hsla(220,90%,55%,0.12)' : 'transparent' }}
+      <button key={p.slug} onClick={() => setProj(p)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '9px 14px', margin: '2px 6px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'var(--cv6-accent-weak)' : 'transparent' }}
         onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
         <span style={{ flexShrink: 0, color: `hsl(${roomHueOf(p.slug)},65%,60%)`, display: 'inline-flex' }}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -2675,19 +2693,22 @@ function OrganizeBrowser({ projects }) {
     const active = selFile && selFile.path === f.path
     const color = FILE_TYPE_COLOR[f.fileType] || 'var(--cv6-text-secondary)'
     return (
-      <button key={f.path || i} onClick={() => setSelFile(f)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '8px 12px', margin: '2px 6px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'hsla(220,90%,55%,0.12)' : 'transparent' }}
+      <button key={f.path || i} onClick={() => setSelFile(f)} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: 'auto', textAlign: 'left', padding: '8px 12px', margin: '2px 6px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', background: active ? 'var(--cv6-accent-weak)' : 'transparent' }}
         onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--cv6-surface-hover)' }} onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
         <span style={{ flexShrink: 0, color, display: 'inline-flex' }}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
         </span>
-        <span style={{ flex: 1, minWidth: 0, fontSize: '13px', fontWeight: '500', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+        <span style={{ flex: 1, minWidth: 0, fontSize: '13.5px', fontWeight: '600', color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
         {f.group ? <span style={{ flexShrink: 0, fontSize: '10px', color: 'var(--cv6-text-tertiary)' }}>{f.group}</span> : null}
       </button>
     )
   }
 
   const projCol = <div style={colStyle}><div style={headStyle}>Projects</div>{list.length ? list.map(ProjRow) : emptyHint('No projects')}</div>
-  const filesCol = <div style={colStyle}><div style={headStyle}>{proj ? `${proj.name || proj.slug} · ${fileCount} ${fileCount === 1 ? 'file' : 'files'}` : 'Files'}</div>{loading && !flatFiles.length ? emptyHint('Loading…') : flatFiles.length ? flatFiles.map(FileRow) : emptyHint('No files yet')}</div>
+  // Kit Files header (organize.html:63) is a title row, not an eyebrow: project
+  // name 15px/600/fg on the left, "N files" in mono on the right.
+  const filesHeadStyle = { ...headStyle, padding: '16px 16px 12px', textTransform: 'none', letterSpacing: 'normal', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }
+  const filesCol = <div style={colStyle}><div style={filesHeadStyle}>{proj ? (<><span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--cv6-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{proj.name || proj.slug}</span><span style={{ fontFamily: 'var(--cv6-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)', fontSize: '11.5px', color: 'var(--cv6-text-tertiary)', flexShrink: 0 }}>{fileCount} {fileCount === 1 ? 'file' : 'files'}</span></>) : <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--cv6-text-primary)' }}>Files</span>}</div>{loading && !flatFiles.length ? emptyHint('Loading…') : flatFiles.length ? flatFiles.map(FileRow) : emptyHint('No files yet')}</div>
   const previewCol = <div style={{ ...colStyle, borderRight: 'none' }}><div style={headStyle}>Preview</div><FilePreviewPanel node={selFile} /></div>
 
   if (isNarrow) {
@@ -2723,7 +2744,7 @@ function OrganizeBrowser({ projects }) {
   }
   return (
     <ResizableBox minHeight={460} storageKey="organize-browser">
-      <div className="hm-organize-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(170px,1fr) minmax(200px,1.2fr) minmax(280px,1.9fr)', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
+      <div className="hm-organize-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(240px,280px) minmax(320px,380px) minmax(0,1fr)', height: '100%', border: '1px solid var(--cv6-divider)', borderRadius: '8px', overflow: 'hidden', background: 'var(--cv6-surface)' }}>
         {projCol}{filesCol}{previewCol}
       </div>
     </ResizableBox>
@@ -3547,7 +3568,7 @@ function CommandDeckOverlay({ projects, agents }) {
               <span style={cell}>
                 <textarea value={r.reply} disabled={done} onChange={e => update(r.id, { reply: e.target.value, held: true })} rows={2}
                   style={{ width: '100%', boxSizing: 'border-box', resize: 'none', padding: '6px 8px', borderRadius: '5px', border: '1px solid transparent', background: 'transparent', color: 'var(--cv6-text-primary)', fontFamily: 'inherit', fontSize: '13px', lineHeight: 1.45, outline: 'none' }}
-                  onFocus={e => { e.currentTarget.style.border = '1px solid var(--cv6-accent-primary)'; e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,102,255,0.12)' }}
+                  onFocus={e => { e.currentTarget.style.border = '1px solid var(--cv6-accent-primary)'; e.currentTarget.style.background = 'var(--cv6-surface)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--cv6-accent-weak)' }}
                   onBlur={e => { e.currentTarget.style.border = '1px solid transparent'; e.currentTarget.style.background = 'transparent'; e.currentTarget.style.boxShadow = 'none' }} />
               </span>
               <span style={{ ...cell, paddingTop: '12px' }}>
@@ -5388,7 +5409,7 @@ export default function HomeView({
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'var(--cv6-surface-hover)'
                     e.currentTarget.style.borderColor = 'var(--cv6-accent-primary)'
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,102,255,0.12)'
+                    e.currentTarget.style.boxShadow = '0 4px 12px var(--cv6-accent-weak)'
                     e.currentTarget.style.transform = 'translateY(-2px)'
                   }}
                   onMouseLeave={(e) => {
