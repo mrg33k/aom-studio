@@ -320,6 +320,15 @@ function SupportToolOverlay({ worldId }) {
   const items = buildItems(wishes, mailboxes)
   const [selectedItem, setSelectedItem] = useState(null)
   const [filterStatus, setFilterStatus] = useState('open') // 'open' | 'waiting' | 'answered'
+  // Mobile (<=1024, matches the other tools): the detail is a full-screen sheet, not a
+  // fixed 520px side pane that would overflow a 390px phone.
+  const [isNarrow, setIsNarrow] = useState(typeof window !== 'undefined' && window.innerWidth <= 1024)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const check = () => setIsNarrow(window.innerWidth <= 1024)
+    check(); window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   // Derive open/waiting/answered counts
   const openCount = items.filter(it => !it.ready && it.status !== 'resolved' && it.status !== 'responded').length
@@ -341,8 +350,15 @@ function SupportToolOverlay({ worldId }) {
     return items
   })()
 
-  // Auto-select first item when list changes
+  // Auto-select first item when list changes — DESKTOP ONLY. On mobile the inbox list
+  // shows first and the user taps an ask to open the sheet (auto-opening a sheet over
+  // the list on load would be wrong). We still clear a selection that fell out of the
+  // current filter.
   useEffect(() => {
+    if (isNarrow) {
+      if (selectedItem && !filteredItems.find(it => it.key === selectedItem.key)) setSelectedItem(null)
+      return
+    }
     if (filteredItems.length > 0) {
       if (!selectedItem || !filteredItems.find(it => it.key === selectedItem.key)) {
         setSelectedItem(filteredItems[0])
@@ -350,9 +366,10 @@ function SupportToolOverlay({ worldId }) {
     } else {
       setSelectedItem(null)
     }
-  }, [filteredItems, selectedItem])
+  }, [filteredItems, selectedItem, isNarrow])
 
   return (
+    <>
     <div style={{
       display: 'flex', gap: '0', height: '100%', flex: 1,
       background: 'var(--cv6-surface)', borderRadius: 'var(--cv6-card-radius)',
@@ -463,8 +480,9 @@ function SupportToolOverlay({ worldId }) {
         </div>
       </div>
 
-      {/* Right: Ask detail (520px fixed width) */}
-      {selectedItem ? (
+      {/* Right: Ask detail — desktop only (520px fixed). On mobile it opens as a
+          full-screen sheet below so it never overflows a 390px phone. */}
+      {!isNarrow && (selectedItem ? (
         <SupportDetailPanel item={selectedItem} />
       ) : (
         <div style={{
@@ -473,8 +491,24 @@ function SupportToolOverlay({ worldId }) {
         }}>
           Select an ask to view details
         </div>
-      )}
+      ))}
     </div>
+
+    {/* Mobile: full-screen ask-detail sheet. Slim back bar + the real SupportDetailPanel
+        (mobile mode = full width, fills height, keeps its own subject + Resolve header and
+        internal scroll). Respects the top safe-area lock; the panel scrolls, not the page. */}
+    {isNarrow && selectedItem && (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 140, background: 'var(--cv6-ground)', display: 'flex', flexDirection: 'column', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', borderBottom: '1px solid var(--cv6-divider)', background: 'var(--cv6-surface)', flexShrink: 0 }}>
+          <button onClick={() => setSelectedItem(null)} aria-label="Back to inbox" style={{ flexShrink: 0, width: '38px', height: '38px', borderRadius: '10px', border: 'none', background: 'var(--cv6-surface-hover)', color: 'var(--cv6-text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--cv6-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Support</span>
+        </div>
+        <SupportDetailPanel item={selectedItem} mobile />
+      </div>
+    )}
+    </>
   )
 }
 
@@ -539,7 +573,7 @@ function SupportInboxRow({ item, isSelected, onSelect }) {
 }
 
 // ── Support Detail Panel — right panel showing the selected ask ───────────────
-function SupportDetailPanel({ item }) {
+function SupportDetailPanel({ item, mobile }) {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [resolving, setResolving] = useState(false)
@@ -666,7 +700,9 @@ function SupportDetailPanel({ item }) {
   }
 
   return (
-    <div style={{ width: '520px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--cv6-divider)' }}>
+    <div style={mobile
+      ? { width: '100%', flex: '1 1 0%', minHeight: 0, display: 'flex', flexDirection: 'column', borderLeft: 'none' }
+      : { width: '520px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderLeft: '1px solid var(--cv6-divider)' }}>
       {/* Detail header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
