@@ -209,7 +209,7 @@ function Toggle({ on, onChange }) {
 }
 
 // Content renderer for each settings section
-function SectionContent({ sectionId, user, agents, connections, scope, permissions, notifySettings, theme, onConnect, onCycleScope, onEditConnection, editingConn, onTogglePerm, onToggleNotify, onThemeChange, onReconnect, onDisconnect, onRotateKeys, onRerunSetup, onSignOut }) {
+function SectionContent({ sectionId, live, user, agents, connections, scope, permissions, notifySettings, theme, onConnect, onCycleScope, onEditConnection, editingConn, onTogglePerm, onToggleNotify, onThemeChange, onReconnect, onDisconnect, onRotateKeys, onRerunSetup, onSignOut }) {
   if (sectionId === 'env') {
     return (
       <div>
@@ -244,7 +244,7 @@ function SectionContent({ sectionId, user, agents, connections, scope, permissio
                     </button>
                   ) : (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flex: 'none' }}>
-                      <button onClick={() => onCycleScope?.(int.name)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 30, padding: '0 10px', borderRadius: 9, border: `1px solid ${isPrivate ? 'var(--hair)' : 'var(--accent-weak)'}`, background: isPrivate ? 'var(--surface-2)' : 'var(--accent-weak)', color: isPrivate ? 'var(--muted)' : 'var(--accent)', fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+                      <button onClick={live ? undefined : () => onCycleScope?.(int.name)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 30, padding: '0 10px', borderRadius: 9, border: `1px solid ${isPrivate ? 'var(--hair)' : 'var(--accent-weak)'}`, background: isPrivate ? 'var(--surface-2)' : 'var(--accent-weak)', color: isPrivate ? 'var(--muted)' : 'var(--accent)', fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: live ? 'default' : 'pointer' }}>
                         {isPrivate && LockIcon(isPrivate ? 'var(--muted)' : 'var(--accent)')}
                         {!isPrivate && PeopleIcon('var(--accent)', '13')}
                         {scope?.[int.name] || 'All rooms'}
@@ -263,9 +263,9 @@ function SectionContent({ sectionId, user, agents, connections, scope, permissio
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                       <span style={{ fontSize: 12, color: 'var(--muted)', flex: 1 }}>Visible in</span>
-                      <button style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 30, padding: '0 10px', borderRadius: 9, border: `1px solid ${isPrivate ? 'var(--hair)' : 'var(--accent-weak)'}`, background: isPrivate ? 'var(--surface-2)' : 'var(--accent-weak)', color: isPrivate ? 'var(--muted)' : 'var(--accent)', fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 30, padding: '0 10px', borderRadius: 9, border: `1px solid ${isPrivate ? 'var(--hair)' : 'var(--accent-weak)'}`, background: isPrivate ? 'var(--surface-2)' : 'var(--accent-weak)', color: isPrivate ? 'var(--muted)' : 'var(--accent)', fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
                         {scope?.[int.name] || 'All rooms'}
-                      </button>
+                      </span>
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button onClick={() => onReconnect?.(int.name)} style={{ flex: 1, height: 32, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
@@ -282,22 +282,26 @@ function SectionContent({ sectionId, user, agents, connections, scope, permissio
           })}
         </div>
 
-        {/* Secrets & keys */}
-        <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Secrets & keys</div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px' }}>
-            <span style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-              {KeyIcon()}
-            </span>
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>API keys</div>
-              <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>3 stored . last rotated 12d ago</div>
+        {/* Secrets & keys — hidden on the live surface (no real key store wired yet). */}
+        {!live && (
+          <>
+            <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Secrets & keys</div>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px' }}>
+                <span style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                  {KeyIcon()}
+                </span>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>API keys</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>3 stored . last rotated 12d ago</div>
+                </div>
+                <button onClick={() => onRotateKeys?.()} style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
+                  Edit
+                </button>
+              </div>
             </div>
-            <button onClick={() => onRotateKeys?.()} style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
-              Edit
-            </button>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     );
   }
@@ -419,22 +423,26 @@ function SectionContent({ sectionId, user, agents, connections, scope, permissio
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{user?.full_name || 'Patrik'}</div>
               <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{user?.email || 'patrik@corner.so'}</div>
             </div>
-            <button style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
-              Edit
-            </button>
+            {!live && (
+              <button style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
+                Edit
+              </button>
+            )}
           </div>
         </div>
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', borderBottom: '1px solid var(--divider)' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>Workspace</div>
-              <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>Corner . 8 seats</div>
+          {!live && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', borderBottom: '1px solid var(--divider)' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>Workspace</div>
+                <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>Corner . 8 seats</div>
+              </div>
+              <button style={{ height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', marginLeft: 'auto', flex: 'none' }}>
+                Manage
+              </button>
             </div>
-            <button style={{ height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', marginLeft: 'auto', flex: 'none' }}>
-              Manage
-            </button>
-          </div>
+          )}
           <button onClick={() => onSignOut?.()} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', cursor: 'pointer', border: 'none', background: 'transparent', fontSize: 14, fontWeight: 600, color: '#F87171', fontFamily: 'var(--font-sans)' }}>
             Sign out
           </button>
@@ -467,6 +475,7 @@ function SectionContent({ sectionId, user, agents, connections, scope, permissio
 
 export function SettingsView({
   theme = 'dark',
+  live = false, // true = real live surface: hide controls/data not wired to a real backend
   user = { full_name: 'Patrik', email: 'patrik@corner.so' },
   agents = [
     { id: 'Elon', initials: 'EL', role: 'Engineering · drives missions', tone: 'var(--success)', toneBg: 'rgba(52,211,153,.2)' },
@@ -553,6 +562,7 @@ export function SettingsView({
           <div style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 18 }}>{curSection.sub}</div>
           <SectionContent
             sectionId={section}
+            live={live}
             user={user}
             agents={agents}
             connections={connections}

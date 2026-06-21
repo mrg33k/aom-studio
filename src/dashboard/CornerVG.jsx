@@ -44,6 +44,9 @@ import { TrackerView } from './cv6kit/TrackerView.jsx'
 import { OnboardingLive } from './cv6kit/OnboardingLive.jsx'
 // R4 — cross-page Activity Dock wired to REAL running jobs (status=running tasks for the world).
 import { ActivityDockLive } from './cv6kit/ActivityDockLive.jsx'
+// R4 — Claude-design Settings (Environment): real integrations, live theme, real per-agent
+// permissions + notification prefs (user_preferences), real sign out.
+import { SettingsLive } from './cv6kit/SettingsLive.jsx'
 import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -3061,6 +3064,21 @@ export default function CornerVG() {
                   <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-tertiary)', fontSize: 14 }}>Loading your conversation…</div>
                 )
               })()
+            ) : (!isDesktop && activeTool === 'settings') ? (
+              /* corner:corner-ui-cv6 R4 — Claude-design Settings (Environment). Real wiring:
+                 integrations list + OAuth connect/disconnect, live theme switch, per-agent
+                 permissions + notification prefs persisted to user_preferences, real sign out.
+                 onRerunSetup opens the onboarding flow. onBack returns home. */
+              <SettingsLive
+                user={currentUser}
+                theme={theme}
+                onThemeChange={setTheme}
+                onSignOut={() => { if (supabase) supabase.auth.signOut().catch(() => {}) }}
+                onRerunSetup={() => setActiveTool('onboarding')}
+                agents={agents}
+                worldId={worldId}
+                onBack={() => setActiveTool(null)}
+              />
             ) : (!isDesktop && activeTool === 'onboarding') ? (
               /* corner:corner-ui-cv6 R-KIT-ONBOARD — Claude-design first-run onboarding flow
                  (5 steps: welcome, connections, permissions, theme, first goal + done).
@@ -3133,6 +3151,7 @@ export default function CornerVG() {
                     else if (key === 'review') { setShowSupportInbox(false); setActiveTool('review'); }
                     else if (key === 'tracker') { setShowSupportInbox(false); setActiveTool('tracker'); }
                     else if (key === 'onboarding') { setShowSupportInbox(false); setActiveTool('onboarding'); }
+                    else if (key === 'settings' || key === 'profile') { setShowSupportInbox(false); setActiveTool('settings'); }
                     else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
                     else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                   }}
