@@ -99,7 +99,10 @@ function WatcherRow({ watcher, onToggle }) {
   );
 }
 
-export function CommandView({ summary = {}, featured, rooms = [], activities = [], onSelectRoom, onBack, onRetask, onWatcherToggle }) {
+export function CommandView({ status = 'loaded', summary = {}, featured, rooms = [], activities = [], onSelectRoom, onBack, onRetask, onWatcherToggle }) {
+  // Nothing to show yet: loading (spinner), error (it retries), or genuinely empty.
+  // This is what stops the screen from rendering as a blank dark page.
+  const emptyBody = !featured && (!rooms || rooms.length === 0) && (!activities || activities.length === 0);
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
       <style>{'@keyframes cmdPulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes spin{to{transform:rotate(360deg)}}'}</style>
@@ -119,6 +122,21 @@ export function CommandView({ summary = {}, featured, rooms = [], activities = [
 
       {/* body */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 0 calc(24px + env(safe-area-inset-bottom, 0px))' }}>
+        {emptyBody ? (
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
+            {status === 'loading' ? (
+              <>
+                <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
+                <div style={{ fontSize: 13, color: 'var(--muted)' }}>Loading room goals…</div>
+              </>
+            ) : status === 'error' ? (
+              <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load the room goals just now. It keeps trying on its own.</div>
+            ) : (
+              <div style={{ fontSize: 13, color: 'var(--faint)' }}>No room goals yet.</div>
+            )}
+          </div>
+        ) : (
+        <>
         {/* activity rail */}
         {Array.isArray(activities) && activities.length > 0 && (
           <div style={{ padding: '14px 0 4px' }}>
@@ -209,6 +227,8 @@ export function CommandView({ summary = {}, featured, rooms = [], activities = [
             </div>
           ))}
         </div>
+        </>
+        )}
       </div>
     </div>
   );

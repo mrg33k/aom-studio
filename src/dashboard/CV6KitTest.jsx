@@ -233,6 +233,8 @@ export default function CV6KitTest() {
   const noop = () => {};
   const screen = (typeof window !== 'undefined' && (window.location.search.match(/[?&]screen=([a-z]+)/) || [])[1]) || 'home';
   const newRoomKind = (typeof window !== 'undefined' && (window.location.search.match(/[?&]kind=([a-z]+)/) || [])[1]) || 'project';
+  // ?state=empty|loading|error lets us preview a tool's empty / loading / error states.
+  const stateVar = (typeof window !== 'undefined' && (window.location.search.match(/[?&]state=([a-z]+)/) || [])[1]) || '';
 
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>
@@ -268,7 +270,15 @@ export default function CV6KitTest() {
       ) : screen === 'tracker' ? (
         <TrackerView {...SAMPLE_TRACKER} onSelectBug={noop} onNewBug={noop} />
       ) : screen === 'command' ? (
-        <CommandView {...SAMPLE_COMMAND} onSelectRoom={noop} />
+        stateVar === 'empty' ? (
+          <CommandView status="loaded" summary={{ roomCount: 0, liveCount: 0 }} featured={null} rooms={[]} activities={[]} onSelectRoom={noop} />
+        ) : stateVar === 'loading' ? (
+          <CommandView status="loading" summary={{}} featured={null} rooms={[]} activities={[]} onSelectRoom={noop} />
+        ) : stateVar === 'error' ? (
+          <CommandView status="error" summary={{}} featured={null} rooms={[]} activities={[]} onSelectRoom={noop} />
+        ) : (
+          <CommandView status="loaded" {...SAMPLE_COMMAND} onSelectRoom={noop} />
+        )
       ) : screen === 'support' ? (
         <SupportView {...SAMPLE_SUPPORT} isDesktop={isDesktop} onSelectItem={noop} onBack={noop} onDraftReply={noop} onMarkResolved={noop} />
       ) : screen === 'organize' ? (

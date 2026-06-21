@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { CommandView } from './CommandView';
+import { useRunningJobs } from './useRunningJobs.js';
 import { authFetch } from '../lib/authFetch.js';
 
 /**
@@ -60,6 +61,10 @@ function mapRoom([slug, v], i) {
 
 export function CommandLive({ worldId = 'aom', onSelectRoom, onBack }) {
   const [rooms, setRooms] = useState([]);
+  // Load status drives the loading / empty / error states so the screen is NEVER
+  // a blank dark page (the "black screen" bug). On a refresh failure we keep the
+  // rooms we already have and only surface the error when there is nothing to show.
+  const [status, setStatus] = useState('loading');
 
   useEffect(() => {
     let alive = true;
@@ -68,16 +73,22 @@ export function CommandLive({ worldId = 'aom', onSelectRoom, onBack }) {
         // Same deployed, tenant-auth'd path the desktop CommandTracker reads from.
         const path = `/api/dashboard/project-file?raw=1&path=corner/users/${encodeURIComponent(worldId)}/missions/master-loop/deliverables/room-goals.json`;
         const res = await authFetch(path);
-        if (!res || !res.ok) { if (alive) setRooms([]); return; }
+        if (!res || !res.ok) { if (alive) setStatus('error'); return; }
         const parsed = JSON.parse(await res.text());
         const obj = parsed && typeof parsed === 'object' && parsed.rooms && typeof parsed.rooms === 'object' ? parsed.rooms : {};
-        if (alive) setRooms(Object.entries(obj).map(mapRoom));
-      } catch { if (alive) setRooms([]); }
+        if (alive) { setRooms(Object.entries(obj).map(mapRoom)); setStatus('loaded'); }
+      } catch { if (alive) setStatus('error'); }
     };
     load();
     const t = setInterval(load, 30000);
     return () => { alive = false; clearInterval(t); };
   }, [worldId]);
+
+  // The design's activity rail: the one real running job from the tasks table.
+  const { job } = useRunningJobs(worldId);
+  const activities = useMemo(() => (
+    job ? [{ state: job.kind === 'recording' ? 'recording' : (job.kind === 'drafting' ? 'success' : 'working'), title: job.label, sub: job.detail }] : []
+  ), [job]);
 
   // Needs-you first, then live, then idle; within a tier, freshest review first.
   const sorted = useMemo(() => {
@@ -115,9 +126,11 @@ export function CommandLive({ worldId = 'aom', onSelectRoom, onBack }) {
 
   return (
     <CommandView
+      status={status}
       summary={{ roomCount: rooms.length, liveCount }}
       featured={featured}
       rooms={roster}
+      activities={activities}
       onSelectRoom={(r) => onSelectRoom && onSelectRoom(r)}
       onBack={onBack}
     />
