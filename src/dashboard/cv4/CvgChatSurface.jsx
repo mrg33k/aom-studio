@@ -558,8 +558,8 @@ export default function CvgChatSurface({
                 data-cv6-card={!isUser ? '' : undefined}
                 style={{
                   maxWidth: 'min(680px, 85%)',
-                  padding: isUser ? '11px 15px' : '12px 14px',
-                  borderRadius: isUser ? '18px 18px 5px 18px' : 8,
+                  padding: isUser ? '11px 15px' : '12px 15px',
+                  borderRadius: isUser ? '18px 18px 5px 18px' : '18px 18px 18px 5px',
                   background:
                     isUser
                       ? 'var(--cv6-accent-primary)'
@@ -623,7 +623,7 @@ export default function CvgChatSurface({
               data-cv6-card=""
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 10,
-                maxWidth: 'min(680px, 85%)', padding: '14px 15px', borderRadius: 8,
+                maxWidth: 'min(680px, 85%)', padding: '14px 15px', borderRadius: '18px 18px 18px 5px',
                 background: 'var(--cv6-surface)', border: '1px solid var(--cv6-divider)',
                 color: 'var(--cv6-text-secondary)', fontSize: 14, lineHeight: '1.5',
               }}
@@ -681,7 +681,7 @@ export default function CvgChatSurface({
               padding: '10px 12px',
               background: 'var(--cv6-ground)',
               border: '1px solid var(--cv6-divider)',
-              borderRadius: 6,
+              borderRadius: 22,
               color: 'var(--cv6-text-primary)',
               fontFamily: 'inherit',
               fontSize: 14,
@@ -716,7 +716,7 @@ export default function CvgChatSurface({
                   ? 'var(--cv6-accent-primary)'
                   : 'var(--cv6-hover)',
               border: 'none',
-              borderRadius: 6,
+              borderRadius: 22,
               color: input.trim() && !isSending ? '#ffffff' : 'var(--cv6-text-tertiary)',
               cursor: input.trim() && !isSending ? 'pointer' : 'not-allowed',
               fontSize: 18,
