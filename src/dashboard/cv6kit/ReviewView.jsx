@@ -609,6 +609,8 @@ export function ReviewView({
     { key: 'live', label: 'Live site' },
   ];
 
+  const queueCount = Array.isArray(queueItems) ? queueItems.length : 0;
+
   return (
     <div
       data-cv6kit
@@ -639,7 +641,7 @@ export function ReviewView({
       >
         <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>9:41</span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
-          {selectedItem ? '2 / 5' : '0 / 5'} ready
+          {queueCount} ready
         </span>
       </div>
 
@@ -679,40 +681,47 @@ export function ReviewView({
         </button>
 
         {/* Title + Subtitle */}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2 }}>
-            Review
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {selectedItem ? (selectedItem.title || 'Review') : 'Review'}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.2, marginTop: 2 }}>
-            Reviewing {selectedItem ? '2 of 5' : '0 of 5'} ready
+          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.2, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {selectedItem ? (metadata.location || selectedItem.source || 'Reading') : `${queueCount} ready to review`}
           </div>
         </div>
-
-        {/* Search button */}
-        <button
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            border: 'none',
-            background: 'var(--surface-2)',
-            color: 'var(--muted)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flex: 'none',
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-            <circle cx="11" cy="11" r="7"/>
-            <path d="m20 20-3.5-3.5"/>
-          </svg>
-        </button>
       </div>
 
-      {/* Content area — type tabs + viewer */}
-      {selectedItem && (
+      {/* Content: the real queue list when nothing is picked, the real document when one is */}
+      {!selectedItem ? (
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '8px 12px calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+          {queueCount === 0 ? (
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--faint)', fontSize: 13, padding: '40px 24px', textAlign: 'center' }}>Nothing to review right now.</div>
+          ) : (
+            queueItems.map((it) => (
+              <QueueItem key={it.id} item={{ ...it, status: it.status || 'ready' }} selected={false} onClick={() => onSelectItem && onSelectItem(it)} />
+            ))
+          )}
+        </div>
+      ) : (
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: 'var(--ground)', padding: '14px 14px calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+          <div style={{ background: '#fbfbfa', color: '#1a1a1a', borderRadius: 14, padding: '20px 18px', boxShadow: '0 10px 30px rgba(0,0,0,.25)' }}>
+            {(selectedItem.title || (selectedItem.content && selectedItem.content.title)) && (
+              <div style={{ fontSize: 19, fontWeight: 700, color: '#15161a', letterSpacing: '-.01em', marginBottom: 12, lineHeight: 1.25 }}>{selectedItem.title || selectedItem.content.title}</div>
+            )}
+            {selectedItem.content && selectedItem.content.body && (
+              <div style={{ fontSize: 14, lineHeight: 1.62, color: '#33343a', whiteSpace: 'pre-wrap' }}>{selectedItem.content.body}</div>
+            )}
+            {selectedItem.content && Array.isArray(selectedItem.content.sections) && selectedItem.content.sections.map((s, i) => (
+              <div key={i} style={{ marginTop: 18 }}>
+                {s.title && <div style={{ fontSize: 15, fontWeight: 700, color: '#15161a', marginBottom: 6 }}>{s.title}</div>}
+                {s.body && <div style={{ fontSize: 14, lineHeight: 1.62, color: '#33343a', whiteSpace: 'pre-wrap' }}>{s.body}</div>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Legacy sample media viewer — kept out of render (false guard) pending removal. */}
+      {false && (
         <>
           {/* Type selector tabs — Photo, Video, Screenshot, Live site */}
           <div
@@ -1072,8 +1081,8 @@ export function ReviewView({
         </>
       )}
 
-      {/* Action buttons — safe-area bottom. Approve + Changes */}
-      {selectedItem && (
+      {/* Action buttons — only when an item is open AND a decision is actually wired */}
+      {selectedItem && (onApprove || onReject) && (
         <div
           style={{
             display: 'flex',

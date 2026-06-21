@@ -164,6 +164,24 @@ function OrganizePreview() {
   );
 }
 
+// Interactive Review preview: opens on the real queue list, tap an item to read the
+// document, back returns to the queue. Mirrors the live read-only flow (no actions).
+function ReviewPreview() {
+  const [sel, setSel] = useState(null);
+  const item = sel ? SAMPLE_REVIEW.selectedItem : null;
+  return (
+    <ReviewView
+      queueItems={SAMPLE_REVIEW.queueItems}
+      selectedItem={item}
+      comments={[]}
+      metadata={item ? { location: item.location } : {}}
+      queueSummary={SAMPLE_REVIEW.queueSummary}
+      onSelectItem={() => setSel('rv1')}
+      onBack={() => setSel(null)}
+    />
+  );
+}
+
 const SAMPLE_REVIEW = {
   queueSummary: { readyCount: 2, pipelineCount: 4 },
   queueItems: [
@@ -284,7 +302,7 @@ export default function CV6KitTest() {
       ) : screen === 'organize' ? (
         <OrganizePreview />
       ) : screen === 'review' ? (
-        <ReviewView {...SAMPLE_REVIEW} onSelectItem={noop} onApprove={noop} onReject={noop} onComment={noop} onSendNotes={noop} />
+        <ReviewPreview />
       ) : screen === 'scribe' ? (
         <ScribeView {...SAMPLE_SCRIBE} mode={isDesktop ? 'desktop' : 'mobile'} onStop={noop} onSelectItem={noop} onBack={noop} />
       ) : screen === 'onboarding' ? (
