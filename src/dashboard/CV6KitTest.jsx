@@ -10,7 +10,7 @@ import { ReviewView } from './cv6kit/ReviewView.jsx';
 import { ScribeView } from './cv6kit/ScribeView.jsx';
 import { OnboardingView } from './cv6kit/OnboardingView.jsx';
 import { SettingsView } from './cv6kit/SettingsView.jsx';
-import { MobileMenu } from './cv6kit/MobileMenu.jsx';
+import { SideRail as MobileMenu } from './cv6kit/MobileMenu.jsx';
 import { ActivityDock } from './cv6kit/ActivityDock.jsx';
 import CvgChatSurface from './cv4/CvgChatSurface.jsx';
 import './cv6kit/kit.css';
