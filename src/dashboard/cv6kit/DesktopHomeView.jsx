@@ -303,6 +303,8 @@ export function DesktopHomeView({
   onSelectRoom,
   onNewRoom,
   onOpenFiles,
+  catchContent = null,   // live slot: real Catch Up cards (sample rich cards when null)
+  renderConvo = null,    // live slot: (selectedName, isAgent) => real conversation (sample dashboard when null)
 }) {
   const agentNames = agents.map((a) => a.name);
   const [selected, setSelected] = useState(agentNames[0] || 'Elon');
@@ -353,6 +355,7 @@ export function DesktopHomeView({
             <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>1 of {catchTotal} · <span className="mono">swipe</span></span>
           </div>
           <div className="scrollcap" style={{ flex: 1 }}>
+            {catchContent != null ? catchContent : (<>
             <div className="card glassy" style={{ overflow: 'hidden', marginBottom: 14 }}>
               <div style={{ padding: '14px 16px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -391,6 +394,7 @@ export function DesktopHomeView({
             <div className="card" style={{ padding: '13px 16px', opacity: .5 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}><div className="glyph" style={{ width: 30, height: 30, background: 'var(--chip)' }}>{sw('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>', 'var(--accent)', 15)}</div><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>Marcus Lee · Included Health</div><div style={{ fontSize: 11.5, color: 'var(--muted)' }}>Reviewed the culture deck · two notes</div></div></div>
             </div>
+            </>)}
           </div>
         </div>
 
@@ -434,7 +438,7 @@ export function DesktopHomeView({
 
         {/* CONVERSATION */}
         <div className="col convo">
-          {isAgent ? <AgentConvo name={selected} onOpenFiles={onOpenFiles} /> : <ProjectConvo name={selected} onOpenFiles={onOpenFiles} />}
+          {renderConvo ? renderConvo(selected, isAgent) : (isAgent ? <AgentConvo name={selected} onOpenFiles={onOpenFiles} /> : <ProjectConvo name={selected} onOpenFiles={onOpenFiles} />)}
         </div>
       </div>
     </div>
