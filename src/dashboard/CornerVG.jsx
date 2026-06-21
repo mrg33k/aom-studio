@@ -31,6 +31,7 @@ import { OVERLAY } from './cv4/lib/uiKit.jsx'
 // corner:corner-ui-cv6 R-KIT-2 — wired Claude-design mobile Home (real data, kit look).
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
 import { MobileProjectWired } from './cv6kit/MobileProjectWired.jsx'
+import { NewRoomModal } from './cv6kit/NewRoomModal.jsx'
 // R5 — Claude-design DESKTOP Home (3-column shell, real data, self-scoped data-cv6kit).
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx'
 // R-KIT-11/13 — Claude-design Organize screen on phones (kit view + real projects + files).
@@ -3034,7 +3035,7 @@ export default function CornerVG() {
               /* corner:corner-ui-cv6 R-KIT-13 — Claude-design Organize screen on the phone,
                  wired to the user's real project rooms AND each project's real files (with
                  previews). onBack returns to home. */
-              <OrganizeLive projectRooms={projectRooms} onBack={() => setActiveTool(null)} />
+              <OrganizeLive projectRooms={projectRooms} worldId={worldId} onBack={() => setActiveTool(null)} />
             ) : (activeTool === 'command') ? (
               /* corner:corner-ui-cv6 R-KIT-14 — Claude-design Command goal ledger on the
                  phone, wired to the real room-goals data (read-only: featured goal + room
@@ -3507,99 +3508,8 @@ export default function CornerVG() {
   )
 }
 
-// R78-p9 corner:new-projects — the "name it" popup for self-serve creation.
-// Stupid simple: one field, Enter to create. On submit the caller creates the
-// room and drops the user into it, where the agent's kickoff greeting waits.
-function NewRoomModal({ kind = 'project', busy = false, error = null, onSubmit, onClose }) {
-  const [name, setName] = useState('')
-  const label = kind === 'mission' ? 'mission' : 'project'
-  const canSubmit = !!name.trim() && !busy
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 400,
-        background: 'rgba(0,0,0,0.55)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 20,
-        animation: 'cv4DrawerFade 0.15s ease-out',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 'min(420px, 92vw)',
-          background: C.bg,
-          border: '1px solid ' + C.border,
-          borderRadius: 14,
-          padding: '22px 22px 18px',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
-        }}
-      >
-        <div style={{
-          fontFamily: "'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
-          fontSize: 25, fontWeight: 800, lineHeight: 1.1, color: C.text, marginBottom: 6,
-          letterSpacing: '-0.03em',
-        }}>
-          New {label}
-        </div>
-        <div style={{
-          fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
-          fontSize: 13, color: C.muted, marginBottom: 16,
-        }}>
-          Name it. You'll land in the room and we'll set it up from there.
-        </div>
-        <input
-          autoFocus
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && canSubmit) onSubmit(name)
-            if (e.key === 'Escape' && !busy) onClose()
-          }}
-          placeholder={kind === 'mission' ? 'e.g. Hero section' : 'e.g. Phoenix Bakery'}
-          style={{
-            width: '100%', boxSizing: 'border-box',
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid ' + C.border,
-            borderRadius: 8, padding: '10px 12px',
-            color: C.text, fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
-            fontSize: 15, outline: 'none', marginBottom: error ? 8 : 18,
-          }}
-        />
-        {error && (
-          <div style={{
-            color: '#FCA5A5', fontSize: 12, marginBottom: 14,
-            fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
-          }}>{error}</div>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
-          <button
-            onClick={onClose}
-            disabled={busy}
-            style={{
-              background: 'none', border: 'none', color: C.muted,
-              fontSize: 13, fontWeight: 600, cursor: busy ? 'default' : 'pointer',
-              padding: '8px 12px', fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
-            }}
-          >Cancel</button>
-          <button
-            onClick={() => canSubmit && onSubmit(name)}
-            disabled={!canSubmit}
-            style={{
-              background: canSubmit ? C.accent : 'rgba(255,255,255,0.08)',
-              color: canSubmit ? '#0b0b0c' : C.muted,
-              border: 'none', borderRadius: 8, padding: '8px 16px',
-              fontSize: 13, fontWeight: 700,
-              cursor: canSubmit ? 'pointer' : 'default',
-              fontFamily: "'Hanken Grotesk', system-ui, sans-serif",
-            }}
-          >{busy ? 'Creating…' : `Create ${label}`}</button>
-        </div>
-      </div>
-    </div>
-  )
-}
+// NewRoomModal moved to ./cv6kit/NewRoomModal.jsx (cv6 glass redesign, also used
+// by the /cv6kit?screen=newroom preview). Imported at the top of this file.
 
 // corner:support N3-r2 — Support chat modal for non-Patrik tenants.
 // Opens the Corner Support embed (emb_corner_support) in an iframe.

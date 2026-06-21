@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx';
 import { MobileProjectWired } from './cv6kit/MobileProjectWired.jsx';
+import { NewRoomModal } from './cv6kit/NewRoomModal.jsx';
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx';
 import { DesktopHomeView } from './cv6kit/DesktopHomeView.jsx';
 
@@ -207,6 +208,7 @@ export default function CV6KitTest() {
 
   const noop = () => {};
   const screen = (typeof window !== 'undefined' && (window.location.search.match(/[?&]screen=([a-z]+)/) || [])[1]) || 'home';
+  const newRoomKind = (typeof window !== 'undefined' && (window.location.search.match(/[?&]kind=([a-z]+)/) || [])[1]) || 'project';
 
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>
@@ -226,6 +228,13 @@ export default function CV6KitTest() {
         </div>
       ) : screen === 'project' ? (
         <MobileProjectWired project={SAMPLE_PROJECT} sampleMissions={SAMPLE_PROJECT_MISSIONS} onBack={noop} onOpenChat={noop} onOpenMission={noop} onNewMission={noop} />
+      ) : screen === 'newroom' ? (
+        /* New project / mission modal (cv6 glass). ?kind=mission for the mission
+           variant. Rendered over the sample Home so the frosted glass reads. */
+        <div style={{ height: '100dvh', position: 'relative' }}>
+          <MobileHomeWired {...SAMPLE} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
+          <NewRoomModal kind={newRoomKind} busy={false} error={null} onSubmit={noop} onClose={noop} />
+        </div>
       ) : screen === 'cvgchat' ? (
         <div style={{ height: '100dvh' }}>
           <CvgChatSurface worldId={null} target={{ type: 'agent', name: 'Elon', slug: 'elon' }} kit previewMessages={SAMPLE_CVG_MESSAGES} onSend={noop} onBack={noop} />

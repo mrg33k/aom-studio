@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { OrganizeView } from './OrganizeView';
+import { authFetch } from '../lib/authFetch.js';
 
 /**
  * OrganizeLive — wires the Claude-design Organize screen (OrganizeView) to REAL data:
@@ -29,16 +30,19 @@ function mapFile(f) {
     id: f.id,
     name,
     type: ext,
-    updated: f.dateFormatted || '',
+    updated: f.dateFormatted || f.updated_at || f.created_at || '',
     size,
     content: f.content || '',
+    // The endpoint tags each scaffold with its own project as client_id (legacy
+    // rows may use project/project_slug). We filter on this client-side.
+    project: f.client_id || f.project || f.project_slug || null,
   };
 }
 
-export function OrganizeLive({ projectRooms = [], onBack }) {
+export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack }) {
   const projects = useMemo(() => (projectRooms || []).map(mapProject), [projectRooms]);
   const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.slug);
-  const [files, setFiles] = useState([]);
+  const [allFiles, setAllFiles] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState([]);
 
   // Keep a valid project selected as the list settles.
@@ -46,16 +50,24 @@ export function OrganizeLive({ projectRooms = [], onBack }) {
     if (!selectedProjectId && projects[0]?.slug) setSelectedProjectId(projects[0].slug);
   }, [projects, selectedProjectId]);
 
-  // Fetch the selected project's files (real). Content rides along for the preview.
+  // Fetch the WHOLE world's text/scaffold files once. The endpoint is world-scoped
+  // (client=<world>) and tags each file with its own project; passing a project
+  // slug as `client` returns nothing, which is why Organize showed no files. We
+  // authFetch (the call needs the user JWT) and filter to the selected project below.
   useEffect(() => {
-    if (!selectedProjectId) { setFiles([]); return; }
     let alive = true;
-    fetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(selectedProjectId)}`)
-      .then((r) => r.json())
-      .then((d) => { if (alive) { const mapped = (d.files || []).map(mapFile); setFiles(mapped); setSelectedFileIds([]); } })
-      .catch(() => { if (alive) { setFiles([]); setSelectedFileIds([]); } });
+    authFetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(worldId || 'aom')}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (alive) setAllFiles((((d && d.files)) || []).map(mapFile)); })
+      .catch(() => { if (alive) setAllFiles([]); });
     return () => { alive = false; };
-  }, [selectedProjectId]);
+  }, [worldId]);
+
+  // The selected project's files (real). Content rides along for the preview.
+  const files = useMemo(
+    () => allFiles.filter((f) => !selectedProjectId || f.project === selectedProjectId),
+    [allFiles, selectedProjectId]
+  );
 
   return (
     <OrganizeView
