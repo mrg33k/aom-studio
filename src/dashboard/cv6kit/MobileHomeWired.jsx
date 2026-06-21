@@ -80,7 +80,7 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
 
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, width: '100%', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)' }}>
-      <div style={{ position: 'absolute', left: 0, top: 'calc(env(safe-area-inset-top, 0px) + 54px)', right: menuOpen ? 72 : 0, bottom: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '6px 0 calc(env(safe-area-inset-bottom, 0px) + 28px)', transition: 'right .28s cubic-bezier(.4,0,.2,1)' }}>
+      <div style={{ position: 'absolute', left: 0, top: 'env(safe-area-inset-top, 0px)', right: menuOpen ? 72 : 0, bottom: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '6px 0 calc(env(safe-area-inset-bottom, 0px) + 28px)', transition: 'right .28s cubic-bezier(.4,0,.2,1)' }}>
         {/* Brand row: Corner logo (mark + wordmark) */}
         <div style={{ padding: '4px 22px 0', marginBottom: 20, display: 'flex', alignItems: 'center' }}>
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110.72 24.00" fill="var(--fg)" style={{ display: 'block', height: 24, width: 'auto' }}>
