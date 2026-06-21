@@ -57,7 +57,7 @@ export function NewRoomModal({ kind = 'project', busy = false, error = null, onS
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && canSubmit) onSubmit(name);
-            if (e.key === 'Escape' && !busy) onClose();
+            if (e.key === 'Escape') onClose();
           }}
           placeholder={kind === 'mission' ? 'e.g. Hero section' : 'e.g. Phoenix Bakery'}
           style={{
@@ -69,15 +69,14 @@ export function NewRoomModal({ kind = 'project', busy = false, error = null, onS
           }}
         />
         {error && (
-          <div style={{ color: 'var(--warn)', fontSize: 12.5, marginBottom: 14 }}>{error}</div>
+          <div style={{ color: 'var(--warn)', fontSize: 12.5, marginBottom: 14, wordBreak: 'break-word' }}>{error}</div>
         )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, alignItems: 'center' }}>
           <button
             onClick={onClose}
-            disabled={busy}
             style={{
               background: 'transparent', border: 'none', color: 'var(--muted)',
-              fontSize: 13.5, fontWeight: 600, cursor: busy ? 'default' : 'pointer',
+              fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
               padding: '10px 14px', fontFamily: 'var(--font-sans)', borderRadius: 10,
             }}
           >Cancel</button>
