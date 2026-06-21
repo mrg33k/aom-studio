@@ -633,9 +633,32 @@ export function ReviewView({
           </button>
         ) : <span />}
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
-          {selectedItem ? '1' : '0'} / {queueItems.length} ready
+          {selectedItem ? `1 / ${queueItems.length} ready` : `${queueItems.length} ready`}
         </span>
       </div>
+
+      {/* queue list — shown when nothing is open (kit mobile only had the single-doc
+          view; this adds the browse list so the real review queue is navigable) */}
+      {!selectedItem && (
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '8px 16px calc(20px + env(safe-area-inset-bottom, 0px))' }}>
+          {queueItems.length === 0 ? (
+            <div className="glassy" style={{ padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>Nothing new to review.</div>
+          ) : (
+            <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
+              {queueItems.map((item, i) => (
+                <div key={item.id || i} onClick={() => onSelectItem && onSelectItem(item)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 15px', borderBottom: i < queueItems.length - 1 ? '1px solid var(--divider)' : 'none', cursor: 'pointer' }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.tone || 'var(--accent)', flex: 'none' }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
+                    {item.source && <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.source}</div>}
+                  </div>
+                  {item.timestamp && <span style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{item.timestamp}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* item header */}
       {selectedItem && (
@@ -681,7 +704,7 @@ export function ReviewView({
               {selectedItem.title}
             </h1>
             {selectedItem.content?.body && (
-              <p style={{ fontSize: 14, lineHeight: 1.6, color: '#333', margin: '0 0 12px' }}>
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: '#333', margin: '0 0 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                 {selectedItem.content.body}
               </p>
             )}
@@ -695,7 +718,9 @@ export function ReviewView({
         </div>
       )}
 
-      {/* action buttons — safe-area bottom */}
+      {/* action buttons — safe-area bottom. Only shown when an item is open AND the
+          approve/reject actions are wired (read-only browse hides them). */}
+      {selectedItem && (onApprove || onReject) && (
       <div
         style={{
           position: 'absolute',
@@ -749,6 +774,7 @@ export function ReviewView({
           Changes
         </button>
       </div>
+      )}
     </div>
   );
 }

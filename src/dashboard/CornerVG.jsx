@@ -36,6 +36,8 @@ import { OrganizeLive } from './cv6kit/OrganizeLive.jsx'
 import { SupportLive } from './cv6kit/SupportLive.jsx'
 // R-KIT-14 — Claude-design Command goal ledger on phones, wired to the real room-goals data.
 import { CommandLive } from './cv6kit/CommandLive.jsx'
+// R-KIT-17 — Claude-design Review queue on phones, wired to the real recent-deliverables data.
+import { ReviewLive } from './cv6kit/ReviewLive.jsx'
 import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -3015,6 +3017,13 @@ export default function CornerVG() {
                   }
                 }}
               />
+            ) : (!isDesktop && activeTool === 'review') ? (
+              /* corner:corner-ui-cv6 R-KIT-17 — Claude-design Review queue on the phone,
+                 wired to the real recent-deliverables queue (/api/dashboard/review-queue).
+                 Read-only browse: list of recent finished work, tap to read it. Approve /
+                 request-changes held until that action is defined (action bar stays hidden).
+                 onExit returns home. */
+              <ReviewLive worldId={worldId} onExit={() => setActiveTool(null)} />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */
@@ -3051,6 +3060,7 @@ export default function CornerVG() {
                     else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
                     else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
                     else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
+                    else if (key === 'review') { setShowSupportInbox(false); setActiveTool('review'); }
                     else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
                     else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                   }}
