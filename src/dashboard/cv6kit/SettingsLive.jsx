@@ -247,6 +247,7 @@ export function SettingsLive({
       onToggleNotify={handleToggleNotify}
       onRotateKeys={handleRotateKeys}
       onRerunSetup={onRerunSetup}
+      onBack={onBack}
       onSignOut={onSignOut}
     />
   );

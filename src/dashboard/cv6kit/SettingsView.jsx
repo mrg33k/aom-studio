@@ -495,26 +495,26 @@ export function SettingsView({
   onToggleNotify = () => {},
   onRotateKeys = () => {},
   onRerunSetup = () => {},
+  onBack = () => {},
   onSignOut = () => {}
 }) {
-  const [section, setSection] = useState('env');
+  // Open to the section LIST (list-to-detail drill-down), not straight into a section.
+  const [section, setSection] = useState(null);
   const [editingConn, setEditingConn] = useState(null);
 
   const curSection = SECTIONS.find(s => s.id === section) || SECTIONS[0];
 
   return (
     <div data-cv6kit data-theme={theme} style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
-      {/* header — shown only on detail view */}
-      {section && (
-        <div style={{ flex: 'none', height: 56, display: 'flex', alignItems: 'center', gap: 11, padding: '0 14px', borderBottom: '1px solid var(--divider)' }}>
-          <button onClick={() => setSection(null)} aria-label="Back" style={{ width: 34, height: 34, marginLeft: -8, flex: 'none', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            {ICONS.back()}
-          </button>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{curSection.title}</div>
-          </div>
+      {/* header: from a detail, back returns to the section list; from the list, back exits to Home. */}
+      <div style={{ flex: 'none', height: 56, display: 'flex', alignItems: 'center', gap: 11, padding: '0 14px', borderBottom: '1px solid var(--divider)' }}>
+        <button onClick={() => (section ? setSection(null) : onBack?.())} aria-label="Back" style={{ width: 34, height: 34, marginLeft: -8, flex: 'none', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          {ICONS.back()}
+        </button>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{section ? curSection.title : 'Settings'}</div>
         </div>
-      )}
+      </div>
 
       {section === null ? (
         // List view
