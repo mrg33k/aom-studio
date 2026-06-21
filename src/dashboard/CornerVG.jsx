@@ -42,6 +42,8 @@ import { ReviewLive } from './cv6kit/ReviewLive.jsx'
 import { TrackerView } from './cv6kit/TrackerView.jsx'
 // R-KIT-ONBOARD — Claude-design first-run onboarding (5 steps: welcome, connections, permissions, theme, first goal).
 import { OnboardingLive } from './cv6kit/OnboardingLive.jsx'
+// R4 — cross-page Activity Dock wired to REAL running jobs (status=running tasks for the world).
+import { ActivityDockLive } from './cv6kit/ActivityDockLive.jsx'
 import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -2844,6 +2846,16 @@ export default function CornerVG() {
           />
         </div>
       </nav>)}
+
+      {/* corner:corner-ui-cv6 R4 — cross-page Activity Dock. A real running job
+          (status=running task for this world) shows as a full-width glass pill that
+          follows the user across every cv6 mobile screen; renders nothing when idle.
+          Fixed wrapper gives the absolute pill its full-width positioned parent. */}
+      {cv6Mode && !isDesktop && (
+        <div style={{ position: 'fixed', left: 0, right: 0, top: 'calc(env(safe-area-inset-top, 0px) + 56px)', zIndex: 55 }}>
+          <ActivityDockLive worldId={worldId} variant="float" />
+        </div>
+      )}
 
       {/* ── CV4 CONTEXT NAV (second row: hamburger + title · Chat|Tasks · slot) */}
       {!cv6Mode && <CV4ContextNav
