@@ -386,6 +386,21 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
             status: 'IDLE',
           }))
         const merged = [...fromAgents, ...fromDefs]
+        // corner:corner-ui-cv6 — order project rooms by recent activity so the
+        // Home room list leads with what the user touched last. Recency = the
+        // latest message in the project; every message carries a `project` field
+        // (mission-tagged ones included), matching the missions-tree recency rule.
+        // Projects with no recent activity fall to the bottom, then alphabetical.
+        {
+          const projRecency = {}
+          for (const m of (data.messages || [])) {
+            if (!m.project || !m.timestamp) continue
+            const t = new Date(m.timestamp).getTime()
+            if (!Number.isNaN(t) && (!projRecency[m.project] || t > projRecency[m.project])) projRecency[m.project] = t
+          }
+          for (const p of merged) p.last_message_at = projRecency[p.slug] || 0
+          merged.sort((a, b) => (b.last_message_at - a.last_message_at) || (a.name || '').localeCompare(b.name || ''))
+        }
         if (merged.length > 0) setSupabaseProjectRooms(merged)
 
         // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
