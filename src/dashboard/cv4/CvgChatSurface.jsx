@@ -423,7 +423,17 @@ export default function CvgChatSurface({
 
     return (
       <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
-        <style>{'@keyframes cv6spin{to{transform:rotate(360deg)}}@keyframes cv6bar{0%{margin-left:-40%}100%{margin-left:100%}}'}</style>
+        <style>{`
+          @keyframes cv6spin{to{transform:rotate(360deg)}}
+          @keyframes cv6bar{0%{margin-left:-40%}100%{margin-left:100%}}
+          /* Keep agent markdown legible on the dark glass even when an outer
+             data-theme="light" is present (ChatMessageRenderer's light overrides
+             otherwise force dark-navy links/code). Outranks [data-theme="light"] .cmr-content. */
+          [data-cv6kit][data-theme="glass"] .cmr-content a,[data-cv6kit][data-theme="glass"] .message-content a{color:var(--accent);text-decoration-color:rgba(91,155,255,.4)}
+          [data-cv6kit][data-theme="glass"] .cmr-content code,[data-cv6kit][data-theme="glass"] .message-content code{color:#e2e8f0;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.08)}
+          [data-cv6kit][data-theme="glass"] .cmr-content pre code,[data-cv6kit][data-theme="glass"] .message-content pre code{color:#cbd5e1}
+          [data-cv6kit][data-theme="glass"] .cmr-content blockquote,[data-cv6kit][data-theme="glass"] .message-content blockquote{color:rgba(243,244,246,.62);border-left-color:rgba(91,155,255,.5)}
+        `}</style>
 
         {/* header — back chevron + agent avatar + name + live status */}
         <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 10, padding: 'calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px', borderBottom: '1px solid var(--divider)' }}>
