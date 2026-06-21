@@ -71,7 +71,10 @@ function SupportView({
 
   function AskCard({ item, isSelected, onClick }) {
     const isWish = !!item.access_code;
-    const source = isWish ? item.source || 'web' : 'Email';
+    // Normalize the channel label casing so chips read consistently (Web / Email),
+    // not a mix of lowercase "web" and capitalized "Email".
+    const rawSource = isWish ? (item.source || 'web') : 'Email';
+    const source = rawSource.charAt(0).toUpperCase() + rawSource.slice(1);
     const status = item.status || 'open';
     const statusLabel = status === 'needs_you' ? 'Needs you' : status === 'waiting' ? 'Waiting' : 'New';
     const statusColor = status === 'needs_you' ? 'var(--accent)' : 'var(--warn)';

@@ -116,11 +116,13 @@ export function OrganizeView({
                 </div>
               </div>
             </div>
-            <button onClick={onNew} aria-label="New" style={{ width: 34, height: 34, flex: 'none', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                <path d="M12 5v14M5 12h14"/>
-              </svg>
-            </button>
+            {onNew && (
+              <button onClick={onNew} aria-label="New" style={{ width: 34, height: 34, flex: 'none', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Tab toggle */}
