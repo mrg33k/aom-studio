@@ -56,7 +56,7 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
       {/* list */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 16px calc(96px + env(safe-area-inset-bottom, 0px))' }}>
         {bugs.length === 0 ? (
-          <div className="glassy" style={{ padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>No open bugs. File one with the plus button.</div>
+          <div className="glassy" style={{ padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>{onNewBug ? 'No open bugs. File one with the plus button.' : 'No issues tracked yet.'}</div>
         ) : (
           <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
             {bugs.map((b, i) => {
@@ -84,8 +84,11 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
         )}
       </div>
 
-      {/* FAB — safe-area bottom */}
-      <button onClick={onNewBug} aria-label="New bug" style={{ position: 'absolute', right: 18, bottom: 'calc(26px + env(safe-area-inset-bottom, 0px))', width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 30px -8px rgba(0,0,0,.6)', cursor: 'pointer' }}>{PLUS}</button>
+      {/* FAB — safe-area bottom. Only shown when filing a new item is actually wired
+          (onNewBug); otherwise it would be a dead button on the parked empty state. */}
+      {onNewBug && (
+        <button onClick={onNewBug} aria-label="New bug" style={{ position: 'absolute', right: 18, bottom: 'calc(26px + env(safe-area-inset-bottom, 0px))', width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 30px -8px rgba(0,0,0,.6)', cursor: 'pointer' }}>{PLUS}</button>
+      )}
     </div>
   );
 }
