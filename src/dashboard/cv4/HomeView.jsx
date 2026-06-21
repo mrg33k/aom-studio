@@ -6034,11 +6034,13 @@ export default function HomeView({
                     </div>
                   )}
 
-                  {/* SECTION 1+2: the ONE All Rooms list in the design's bordered card
-                      (claude_design 2b54700b ui_kits/mobile: --surface bg, --hair border, r16,
-                      54px rows divided by --divider). Agents read by status dot, projects by folder. */}
+                  {/* SECTION 1+2: the ONE All Rooms list — OPEN in the column (no card box),
+                      matching the desktop design's open three-column layout where the thin
+                      vertical divider between columns (cv6.css .hm-three-column-grid) is the only
+                      separation. 54px rows divided by --divider. Agents read by status dot,
+                      projects by folder. */}
                   {(filteredAgents.length > 0 || filteredProjects.length > 0) && (
-                  <div className="glassy" style={{ background: 'var(--cv6-surface)', border: '1px solid var(--cv6-hair)', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+                  <div style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
                   {filteredAgents.length > 0 && (
                     <div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
