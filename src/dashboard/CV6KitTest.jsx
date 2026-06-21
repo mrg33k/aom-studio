@@ -8,6 +8,7 @@ import { SupportView } from './cv6kit/SupportView.jsx';
 import { OrganizeView } from './cv6kit/OrganizeView.jsx';
 import { ReviewView } from './cv6kit/ReviewView.jsx';
 import { ScribeView } from './cv6kit/ScribeView.jsx';
+import CvgChatSurface from './cv4/CvgChatSurface.jsx';
 import './cv6kit/kit.css';
 
 // Sample Step Thread (the kit Chat view) — used to verify the layout in
@@ -157,6 +158,16 @@ const SAMPLE_SCRIBE = {
   },
 };
 
+// Real live-chat surface (CvgChatSurface) — the SAME component mounted in CornerVG
+// on the phone, now wearing the kit glass skin (kit prop). previewMessages seeds the
+// thread so /cv6kit?screen=cvgchat shows it with no auth. This is what taps on Chat
+// render on /dashboard; the only difference here is the messages are sample, not live.
+const SAMPLE_CVG_MESSAGES = [
+  { id: 'm1', role: 'assistant', sender: 'Elon', timestamp: '2026-06-20T09:24:00Z', text: 'Pulled the latest numbers. The launch deck is ready for your review whenever you want to take a look.' },
+  { id: 'm2', role: 'user', timestamp: '2026-06-20T09:26:00Z', text: 'Looks good. Send it once the cover slide is updated.' },
+  { id: 'm3', role: 'assistant', sender: 'Elon', timestamp: '2026-06-20T09:27:00Z', text: 'On it. Cover swapped and out the door in five.' },
+];
+
 export default function CV6KitTest() {
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
 
@@ -171,7 +182,11 @@ export default function CV6KitTest() {
 
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>
-      {screen === 'chat' ? (
+      {screen === 'cvgchat' ? (
+        <div style={{ height: '100dvh' }}>
+          <CvgChatSurface worldId={null} target={{ type: 'agent', name: 'Elon', slug: 'elon' }} kit previewMessages={SAMPLE_CVG_MESSAGES} onSend={noop} onBack={noop} />
+        </div>
+      ) : screen === 'chat' ? (
         <ChatStepThread {...SAMPLE_CHAT} onBack={noop} onSend={noop} onChoice={noop} />
       ) : screen === 'tracker' ? (
         <TrackerView {...SAMPLE_TRACKER} onSelectBug={noop} onNewBug={noop} />

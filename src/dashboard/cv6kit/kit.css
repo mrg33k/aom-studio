@@ -147,3 +147,31 @@
 .rv-doc-paper h3 {
   font-size: revert;
 }
+
+/* CvgChatSurface (the live chat) wearing the kit glass skin so it matches every
+   other mobile tool screen instead of reading as an old surface (Patrik 2026-06-20:
+   "all chat surfaces point to a cv4 surface"). The chat is built on cv6 tokens; its
+   glass variant already matches the kit on text + accent, so the only real gaps are
+   the card surface (cv6 = dark slate -> kit = light frost) and the missing nebula
+   ground (cv6 glass left it transparent). We alias the cv6 tokens to kit tokens and
+   paint the nebula. Three selectors (attr+attr+class) outrank cv6.css's
+   [data-cv6][data-theme="glass"] (attr+attr), so the alias always wins regardless of
+   stylesheet load order; !important on background beats the element's inline ground. */
+[data-cv6kit][data-theme="glass"].cvg-kit {
+  background: var(--ground) !important;        /* nebula, painted once on the container */
+  --cv6-surface: var(--surface);               /* light frost cards (was dark slate) */
+  --cv6-hover: var(--chip);
+  --cv6-divider: var(--divider);
+  --cv6-accent-primary: var(--accent);
+  --cv6-accent-primary-hover: var(--blue-600, #2563EB);
+  --cv6-accent-success: var(--success);
+  --cv6-text-primary: var(--fg);
+  --cv6-text-secondary: var(--muted);
+  --cv6-text-tertiary: var(--faint);
+}
+/* The assistant avatar fills with --cv6-accent-success and draws its initials in
+   --cv6-ground; under glass that ground is transparent, so the initials vanish.
+   Give them a dark ink that reads on the green circle. */
+[data-cv6kit].cvg-kit [data-cvg-avatar] {
+  color: #0b1220 !important;
+}

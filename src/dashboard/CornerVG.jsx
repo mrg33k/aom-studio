@@ -3039,6 +3039,7 @@ export default function CornerVG() {
                     worldId={worldId}
                     target={{ type: 'agent', slug: ea.slug, name: ea.name }}
                     theme={theme}
+                    kit
                     onSend={handleCvgChatSend}
                     onBack={() => setActiveTool(null)}
                   />
@@ -3179,6 +3180,7 @@ export default function CornerVG() {
                   missionSlug: conversationTarget.missionSlug,
                 } : null}
                 theme={theme}
+                kit={!isDesktop}
                 onSend={handleCvgChatSend}
                 onBack={handleBackFromConversation}
               />

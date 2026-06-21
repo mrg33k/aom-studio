@@ -117,8 +117,16 @@ export default function CvgChatSurface({
   worldId,
   target,
   theme = 'light',
+  // kit: wear the Claude-kit glass skin (nebula ground + light-frost cards) so the
+  // chat matches every other mobile tool screen instead of reading as an old surface.
+  // When true we force data-theme="glass" and alias the cv6 tokens to kit tokens
+  // (see kit.css .cvg-kit). Desktop keeps the user's own theme (kit=false).
+  kit = false,
   onSend,
   onBack,
+  // previewMessages: preview/Storybook only — seed the thread directly and skip
+  // Supabase so /cv6kit can render real bubbles with no auth. Undefined in production.
+  previewMessages,
 }) {
   const inputRef = useRef(null)
   const messagesEndRef = useRef(null)
@@ -142,6 +150,12 @@ export default function CvgChatSurface({
 
   // Load message history on mount or when target changes
   useEffect(() => {
+    // Preview/Storybook: render the given thread without touching Supabase.
+    if (previewMessages) {
+      setMessages(previewMessages)
+      setLoading(false)
+      return
+    }
     if (!target || !worldId || !supabase) {
       setLoading(false)
       return
@@ -199,7 +213,7 @@ export default function CvgChatSurface({
     }
 
     loadHistory()
-  }, [target?.slug, target?.type, worldId, target?.missionSlug, reloadKey])
+  }, [target?.slug, target?.type, worldId, target?.missionSlug, reloadKey, previewMessages])
 
   // Real-time subscription
   useEffect(() => {
@@ -349,8 +363,10 @@ export default function CvgChatSurface({
 
   return (
     <div
-      data-cv6
-      data-theme={theme}
+      data-cv6=""
+      {...(kit
+        ? { 'data-cv6kit': '', 'data-theme': 'glass', className: 'cvg-kit' }
+        : { 'data-theme': theme })}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -517,6 +533,7 @@ export default function CvgChatSurface({
           >
             {!isUser && (
               <div
+                data-cvg-avatar=""
                 style={{
                   width: 30,
                   height: 30,
