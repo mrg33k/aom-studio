@@ -38,6 +38,8 @@ import { SupportLive } from './cv6kit/SupportLive.jsx'
 import { CommandLive } from './cv6kit/CommandLive.jsx'
 // R-KIT-17 — Claude-design Review queue on phones, wired to the real recent-deliverables data.
 import { ReviewLive } from './cv6kit/ReviewLive.jsx'
+// R-KIT-18 — Claude-design Tracker screen (opens to an honest empty state until a bugs source exists).
+import { TrackerView } from './cv6kit/TrackerView.jsx'
 import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -3024,6 +3026,31 @@ export default function CornerVG() {
                  request-changes held until that action is defined (action bar stays hidden).
                  onExit returns home. */
               <ReviewLive worldId={worldId} onExit={() => setActiveTool(null)} />
+            ) : (!isDesktop && activeTool === 'chat') ? (
+              /* corner:corner-ui-cv6 R-KIT-18 — Chat menu opens the live EA conversation
+                 (CvgChatSurface, the cv6 chat) via activeTool so it can never fall to the
+                 old ChatPanel. The EA is resolved at render time, so a slow agents load
+                 simply shows a brief loader, then the conversation. onBack returns home. */
+              (() => {
+                const ea = agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
+                return ea ? (
+                  <CvgChatSurface
+                    key={ea.slug}
+                    worldId={worldId}
+                    target={{ type: 'agent', slug: ea.slug, name: ea.name }}
+                    theme={theme}
+                    onSend={handleCvgChatSend}
+                    onBack={() => setActiveTool(null)}
+                  />
+                ) : (
+                  <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-tertiary)', fontSize: 14 }}>Loading your conversation…</div>
+                )
+              })()
+            ) : (!isDesktop && activeTool === 'tracker') ? (
+              /* corner:corner-ui-cv6 R-KIT-18 — Tracker opens to the Claude-design tracker.
+                 There is no bugs/tickets source yet, so it shows an honest empty state
+                 instead of bouncing home. onBack returns home. */
+              <TrackerView tracker={{ openCount: 0 }} bugs={[]} onBack={() => setActiveTool(null)} />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */
@@ -3053,14 +3080,17 @@ export default function CornerVG() {
                     setSelectedMail(null)
                     if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                     else if (key === 'chat') {
-                      setActiveTool(null); setShowSupportInbox(false)
-                      const ea = agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
-                      if (ea) handleSelectAgent(ea)
+                      // Route chat through activeTool (reliable, like the other tools)
+                      // instead of the selectedAgent path, which could land on the old
+                      // ChatPanel if agents had not loaded yet. The EA is resolved at
+                      // render time in the activeTool==='chat' branch.
+                      setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('chat')
                     }
                     else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
                     else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
                     else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
                     else if (key === 'review') { setShowSupportInbox(false); setActiveTool('review'); }
+                    else if (key === 'tracker') { setShowSupportInbox(false); setActiveTool('tracker'); }
                     else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
                     else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                   }}

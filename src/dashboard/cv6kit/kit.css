@@ -124,3 +124,26 @@
   backdrop-filter: blur(22px) saturate(1.3);
   -webkit-backdrop-filter: blur(22px) saturate(1.3);
 }
+
+/* Review document paper: a white sheet, so its text is ALWAYS dark, regardless of
+   the dashboard's themed heading/body color. The .glassy + paper combo otherwise
+   inherits the glass theme's light --fg, rendering white-on-white (Patrik 2026-06-20:
+   "white text on the white paper, hard to read"). Force dark with !important. */
+.rv-doc-paper,
+.rv-doc-paper h1,
+.rv-doc-paper h2,
+.rv-doc-paper h3,
+.rv-doc-paper h4,
+.rv-doc-paper p,
+.rv-doc-paper li,
+.rv-doc-paper span,
+.rv-doc-paper strong,
+.rv-doc-paper em,
+.rv-doc-paper code {
+  color: #1a1a1a !important;
+}
+.rv-doc-paper h1,
+.rv-doc-paper h2,
+.rv-doc-paper h3 {
+  font-size: revert;
+}

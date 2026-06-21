@@ -683,9 +683,10 @@ export function ReviewView({
             </div>
           </div>
 
-          {/* document preview */}
+          {/* document preview — rv-doc-paper forces dark text on the white paper,
+              beating the dashboard's themed heading/text color (kit.css) */}
           <div
-            className="glassy"
+            className="glassy rv-doc-paper"
             style={{
               padding: '24px 22px',
               height: 520,
