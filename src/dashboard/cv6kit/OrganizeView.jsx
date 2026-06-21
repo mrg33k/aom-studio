@@ -571,55 +571,101 @@ function FilePreviewScreen({ file, projectName, onBack, onMove }) {
   );
 }
 
-// High-level Organize screen (Patrik 2026-06-21): Organize opens HERE, on the
-// list of projects, so you step INTO a project to see its files (rather than
-// landing pre-selected inside the first one). Tap a project to open it; back
-// returns home. Matches the cv6 glass chrome of the files view so they read as
-// siblings.
-function ProjectListScreen({ projects = [], onSelectProject, onBack }) {
+// Project switcher (Patrik 2026-06-21, "open on files, switch from top"): Organize
+// opens inside a project's files; tapping the project name in the breadcrumb opens
+// this bottom sheet to switch to another project. Same sheet language as MoveToSheet
+// so they read as siblings — grab handle, title, radio-selected list.
+function ProjectSwitcherSheet({ projects = [], selectedProjectId, onClose, onSelect }) {
   return (
-    <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)', overflow: 'hidden' }}>
-      {/* status bar */}
-      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'calc(env(safe-area-inset-top, 0px) + 8px) 16px 12px', fontSize: 15, fontWeight: 600 }}>
-        <span>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>Corner</span>
-      </div>
-      {/* header */}
-      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px 16px' }}>
-        {onBack && (
-          <button onClick={onBack} aria-label="Back to home" style={{ width: 34, height: 34, borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none', marginLeft: -2 }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+    <>
+      {/* Scrim */}
+      <div
+        onClick={onClose}
+        style={{ position: 'fixed', inset: 0, background: 'rgba(4, 6, 9, 0.55)', zIndex: 100 }}
+      />
+      {/* Sheet */}
+      <div style={{
+        position: 'fixed',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'var(--surface)',
+        borderTopLeftRadius: 22,
+        borderTopRightRadius: 22,
+        borderTop: '1px solid var(--hair)',
+        boxShadow: '0 -18px 50px -12px rgba(0,0,0,.6)',
+        padding: '10px 0 calc(16px + env(safe-area-inset-bottom, 0px))',
+        zIndex: 101,
+      }}>
+        {/* Handle */}
+        <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--hair)', margin: '0 auto 14px' }} />
+
+        {/* Title + close */}
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 18px 12px' }}>
+          <div style={{ flex: 1, fontSize: 16, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>
+            Switch project
+          </div>
+          <button
+            onClick={onClose}
+            style={{ width: 30, height: 30, borderRadius: 9, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 6l12 12M18 6 6 18"/>
+            </svg>
           </button>
-        )}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>Organize</div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{projects.length} project{projects.length === 1 ? '' : 's'} · tap to open</div>
         </div>
-      </div>
-      {/* project list */}
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '4px 16px calc(env(safe-area-inset-bottom, 0px) + 28px)' }}>
-        {projects.length === 0 ? (
-          <div style={{ padding: '16px', color: 'var(--faint)', fontSize: 13 }}>No projects yet.</div>
-        ) : (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
-            {projects.map((p, i) => (
-              <button key={p.slug || p.id || i} onClick={() => onSelectProject && onSelectProject(p)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', border: 'none', borderTop: i === 0 ? 'none' : '1px solid var(--hair)', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}>
-                <span style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={p.color || 'var(--violet-400)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
-                </span>
+
+        {/* Project list */}
+        <div style={{ padding: '0 12px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          {projects.length === 0 ? (
+            <div style={{ padding: '16px 14px', color: 'var(--faint)', fontSize: 13 }}>No projects yet.</div>
+          ) : projects.map((proj, idx) => {
+            const isCurrent = proj.slug === selectedProjectId || proj.id === selectedProjectId;
+            return (
+              <div
+                key={proj.id || proj.slug || idx}
+                onClick={() => onSelect && onSelect(proj)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '0 12px',
+                  height: 54,
+                  borderRadius: 11,
+                  background: isCurrent ? 'var(--accent-weak)' : 'transparent',
+                  cursor: 'pointer',
+                  marginBottom: idx < projects.length - 1 ? 4 : 0,
+                }}
+              >
+                <FolderIcon color={isCurrent ? 'var(--accent)' : 'var(--muted)'} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.slug}</div>
-                  {typeof p.fileCount === 'number' && p.fileCount > 0 && (
-                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>{p.fileCount} file{p.fileCount === 1 ? '' : 's'}</div>
+                  <div style={{ fontSize: 14, fontWeight: isCurrent ? 600 : 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {proj.name || proj.slug}
+                  </div>
+                  {typeof proj.fileCount === 'number' && proj.fileCount > 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{proj.fileCount} file{proj.fileCount === 1 ? '' : 's'}</div>
                   )}
                 </div>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M9 18l6-6-6-6" /></svg>
-              </button>
-            ))}
-          </div>
-        )}
+                <span style={{
+                  width: 21,
+                  height: 21,
+                  borderRadius: '50%',
+                  border: `2px solid ${isCurrent ? 'var(--accent)' : 'var(--hair)'}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flex: 'none',
+                }}>
+                  {isCurrent && (
+                    <span style={{ width: 11, height: 11, borderRadius: '50%', background: 'var(--accent)' }} />
+                  )}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -631,19 +677,22 @@ export function OrganizeView({
   onSelectFile,
   onSelectProject,
   onBack,
-  onExitProject,
   activityAgent,
   onMove,
   onRename,
   onShare,
   onDelete,
 }) {
-  const selectedProject = projects.find(p => p.slug === selectedProjectId || p.id === selectedProjectId);
+  // Open on files: always resolve to a project. Use the chosen one, else fall back
+  // to the first (most-recent) so there is never a project-list landing or a flash
+  // of empty chrome before the parent auto-selects.
+  const selectedProject = projects.find(p => p.slug === selectedProjectId || p.id === selectedProjectId) || projects[0];
   const fileCount = selectedFileIds.length;
   const totalFiles = files.length;
 
   // UI state
   const [showMoveSheet, setShowMoveSheet] = useState(false);
+  const [showSwitcher, setShowSwitcher] = useState(false);
   const [previewFileId, setPreviewFileId] = useState(null);
 
   const previewFile = useMemo(() =>
@@ -661,9 +710,22 @@ export function OrganizeView({
     />;
   }
 
-  // High level: nothing stepped into yet → show the project list to open one.
+  // Open on files: there is no project-list landing. selectedProject is only empty
+  // when there are no rooms at all (or data is still loading) — show a quiet state.
   if (!selectedProject) {
-    return <ProjectListScreen projects={projects} onSelectProject={onSelectProject} onBack={onBack} />;
+    return (
+      <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
+        <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: 'calc(env(safe-area-inset-top, 0px) + 12px) 12px 16px' }}>
+          {onBack && (
+            <button onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+            </button>
+          )}
+          <div style={{ fontSize: 18, fontWeight: 700 }}>Organize</div>
+        </div>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--faint)', fontSize: 13 }}>No projects yet.</div>
+      </div>
+    );
   }
 
   return (
@@ -701,10 +763,10 @@ export function OrganizeView({
         gap: 12,
         padding: '0 12px 16px',
       }}>
-        {(onExitProject || onBack) && (
+        {onBack && (
           <button
-            onClick={onExitProject || onBack}
-            aria-label="Back to projects"
+            onClick={onBack}
+            aria-label="Back"
             style={{
               width: 34,
               height: 34,
@@ -860,7 +922,30 @@ export function OrganizeView({
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M9 18l6-6-6-6"/>
           </svg>
-          <span style={{ color: 'var(--fg)', fontWeight: 500 }}>Dashboard</span>
+          <button
+            onClick={() => setShowSwitcher(true)}
+            aria-label="Switch project"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '2px 4px',
+              margin: '-2px -2px -2px -4px',
+              borderRadius: 8,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--fg)',
+              fontWeight: 500,
+              fontSize: 12,
+              fontFamily: 'var(--font-sans)',
+              cursor: 'pointer',
+            }}
+          >
+            {selectedProject?.name || 'Dashboard'}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <button style={{
@@ -1135,6 +1220,19 @@ export function OrganizeView({
           onMove={(destinationId) => {
             onMove && onMove(selectedFileIds, destinationId);
             setShowMoveSheet(false);
+          }}
+        />
+      )}
+
+      {/* Project switcher sheet (tap the breadcrumb project name) */}
+      {showSwitcher && (
+        <ProjectSwitcherSheet
+          projects={projects}
+          selectedProjectId={selectedProject?.slug || selectedProject?.id}
+          onClose={() => setShowSwitcher(false)}
+          onSelect={(p) => {
+            onSelectProject && onSelectProject(p);
+            setShowSwitcher(false);
           }}
         />
       )}

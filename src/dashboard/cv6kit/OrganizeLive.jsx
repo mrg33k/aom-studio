@@ -40,9 +40,10 @@ function mapFile(f) {
 }
 
 export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack }) {
-  // Organize opens at the HIGH LEVEL (Patrik 2026-06-21): no project selected, so
-  // OrganizeView shows the project list to step into. We do NOT auto-select the
-  // first project anymore.
+  // Organize opens ON FILES (Patrik 2026-06-21, "open on files, switch from top"):
+  // it lands inside your most-recent project's files, and you change projects from
+  // the breadcrumb at the top. So we auto-select the first (recency-sorted) project
+  // on mount. There is no separate project-list landing.
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [allFiles, setAllFiles] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState([]);
@@ -74,6 +75,14 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack }) {
     return (projectRooms || []).map((p) => ({ ...mapProject(p), fileCount: counts[p.slug] || 0 }));
   }, [projectRooms, allFiles]);
 
+  // Open on files: as soon as we know the projects, land inside the first
+  // (most-recent) one. The breadcrumb switcher changes it from there.
+  useEffect(() => {
+    if (!selectedProjectId && projects.length > 0) {
+      setSelectedProjectId(projects[0].slug || projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
   return (
     <OrganizeView
       projects={projects}
@@ -89,7 +98,6 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack }) {
       }}
       onSelectProject={(proj) => { setSelectedProjectId(proj.slug || proj.id); setSelectedFileIds([]); }}
       onBack={onBack}
-      onExitProject={() => { setSelectedProjectId(null); setSelectedFileIds([]); }}
       onMove={(fileIds, destinationId) => {
         console.warn('[OrganizeLive] onMove not yet wired to backend:', { fileIds, destinationId });
         // TODO: wire to /api/dashboard/files/move or similar

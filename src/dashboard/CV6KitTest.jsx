@@ -140,10 +140,11 @@ const SAMPLE_ORGANIZE = {
   selectedFileIds: [],
 };
 
-// Interactive Organize preview: starts at the HIGH LEVEL (project list) and lets
-// you step into a project and back out, so the new drill-in flow is reviewable.
+// Interactive Organize preview: opens ON FILES inside a project ("open on files,
+// switch from top"). Tap the project name in the breadcrumb to switch projects via
+// the bottom sheet, so the new flow is reviewable.
 function OrganizePreview() {
-  const [sel, setSel] = useState(null);
+  const [sel, setSel] = useState('corner');
   const projects = SAMPLE_ORGANIZE.projects.map((p) => ({ ...p, fileCount: (p.tasks && p.tasks.length) || 0 }));
   const nope = () => {};
   return (
@@ -153,7 +154,6 @@ function OrganizePreview() {
       selectedProjectId={sel}
       selectedFileIds={[]}
       onSelectProject={(proj) => setSel(proj.slug || proj.id)}
-      onExitProject={() => setSel(null)}
       onSelectFile={nope}
       onBack={nope}
       onMove={nope}
