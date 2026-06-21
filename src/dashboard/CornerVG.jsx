@@ -3154,6 +3154,7 @@ export default function CornerVG() {
                     else if (key === 'tracker') { setShowSupportInbox(false); setActiveTool('tracker'); }
                     else if (key === 'onboarding') { setShowSupportInbox(false); setActiveTool('onboarding'); }
                     else if (key === 'settings' || key === 'profile') { setShowSupportInbox(false); setActiveTool('settings'); }
+                    else if (key === 'newproject') { setActiveTool(null); setShowSupportInbox(false); setNewRoomModal({ kind: 'project' }); }
                     else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
                     else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                   }}

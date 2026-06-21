@@ -57,6 +57,10 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
   // Home opens with the menu CLOSED (Patrik 2026-06-20): content full-width, the
   // side rail tucked behind the round menu button until the user opens it.
   const [menuOpen, setMenuOpen] = useState(false);
+  // All Rooms inline search + new (Patrik 2026-06-21): magnifier toggles a filter
+  // field; the + routes to the new-project flow. Both real (search filters the list).
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [roomQuery, setRoomQuery] = useState('');
   const greet = useMemo(() => pickGreet(), []);
   const name = firstName(user);
 
@@ -77,6 +81,10 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
     ...(agents || []).map(a => ({ kind: 'agent', raw: a, name: a.name || a.slug, status: dotStatus(a.status) })),
     ...(projectRooms || []).map(p => ({ kind: 'project', raw: p, name: p.name || p.slug, count: roomCount(p), color: p.color })),
   ]), [agents, projectRooms]);
+
+  const shownRooms = roomQuery.trim()
+    ? rooms.filter(r => (r.name || '').toLowerCase().includes(roomQuery.trim().toLowerCase()))
+    : rooms;
 
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, width: '100%', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)' }}>
@@ -128,18 +136,38 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
           </div>
         )}
 
-        {/* All rooms eyebrow */}
+        {/* All rooms eyebrow + search + new (Patrik 2026-06-21) */}
         <div style={{ padding: '0 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '30px 0 10px' }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>All rooms</span>
-          <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--accent)' }}>See all</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button aria-label="Search rooms" onClick={() => setSearchOpen(o => { const n = !o; if (!n) setRoomQuery(''); return n; })} style={{ width: 30, height: 30, borderRadius: 9, border: '1px solid var(--hair)', background: searchOpen ? 'var(--surface-2)' : 'transparent', color: searchOpen ? 'var(--fg)' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            </button>
+            <button aria-label="New project" onClick={() => onNav && onNav('newproject')} style={{ width: 30, height: 30, borderRadius: 9, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
+          </div>
         </div>
 
+        {/* Inline room search field */}
+        {searchOpen && (
+          <div style={{ padding: '0 22px', marginBottom: 10 }}>
+            <input
+              autoFocus
+              value={roomQuery}
+              onChange={(e) => setRoomQuery(e.target.value)}
+              placeholder="Search rooms"
+              style={{ width: '100%', height: 40, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', padding: '0 14px', outline: 'none', boxSizing: 'border-box' }}
+            />
+          </div>
+        )}
+
         {/* Rooms list */}
-        {rooms.length === 0 ? (
-          <div style={{ margin: '0 22px', padding: '16px', color: 'var(--faint)', fontSize: 13 }}>No rooms yet.</div>
+        {shownRooms.length === 0 ? (
+          <div style={{ margin: '0 22px', padding: '16px', color: 'var(--faint)', fontSize: 13 }}>{roomQuery.trim() ? 'No rooms match.' : 'No rooms yet.'}</div>
         ) : (
           <div style={{ margin: '0 22px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
-            {rooms.map((r, i) => r.kind === 'agent' ? (
+            {shownRooms.map((r, i) => r.kind === 'agent' ? (
               <RoomRow key={'a' + i} status={r.status} name={r.name} tag="AGENT" onClick={() => onSelectAgent && onSelectAgent(r.raw)} />
             ) : (
               <RoomRow key={'p' + i} leading={FOLDER(r.color)} name={r.name} count={r.count} onClick={() => onSelectProject && onSelectProject(r.raw)} />
