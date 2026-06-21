@@ -32,6 +32,8 @@ import { OVERLAY } from './cv4/lib/uiKit.jsx'
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
 // R-KIT-11 — Claude-design Organize screen, mounted live per activeTool (kit view + real projects).
 import { OrganizeView } from './cv6kit/OrganizeView.jsx'
+// R-KIT-12 — Claude-design Support inbox on phones, wired to the real wishes+email data.
+import { SupportLive } from './cv6kit/SupportLive.jsx'
 import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -2968,10 +2970,17 @@ export default function CornerVG() {
               } : {}),
             }}
           >
-            {/* corner:support N1 — Support Inbox (Patrik only) */}
+            {/* corner:support N1 — Support Inbox (Patrik only). Phone gets the Claude-design
+                inbox (SupportLive: real wishes+email, tap hands the item to the EA); desktop
+                keeps the full SupportDashboard until its kit desktop layout + actions are wired. */}
             {showSupportInbox && worldId === 'aom' ? (
-              <SupportDashboard isDesktop={isDesktop} worldId={worldId} onClose={() => setShowSupportInbox(false)}
-                onDiscuss={handleDiscussSupportEmail} />
+              isDesktop ? (
+                <SupportDashboard isDesktop={isDesktop} worldId={worldId} onClose={() => setShowSupportInbox(false)}
+                  onDiscuss={handleDiscussSupportEmail} />
+              ) : (
+                <SupportLive worldId={worldId} isDesktop={false} onClose={() => setShowSupportInbox(false)}
+                  onDiscuss={handleDiscussSupportEmail} />
+              )
             ) : activeTool === 'routines' ? (
               /* corner:routines R3 — full-area card view of every open loop.
                  Selecting any agent / project / mission / mail clears

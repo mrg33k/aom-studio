@@ -614,6 +614,11 @@ function SupportView({
         {/* Header */}
         <div style={{ padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 16px 14px', flex: 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            {onBack && (
+              <button onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, marginLeft: -8, flex: 'none', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+              </button>
+            )}
             <span style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--fg)' }}>Support</span>
           </div>
           <div style={{ fontSize: 13, color: 'var(--muted)' }}>
