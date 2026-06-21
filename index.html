@@ -26,6 +26,22 @@ document.head.appendChild(o)}initApollo();</script>
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Corner" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Portrait lock: the manifest sets orientation:portrait (Android PWA), but iOS
+         web apps ignore that, so we block mobile landscape with a full-screen overlay.
+         Phones only (max-width 1023px); tablets/desktop are unaffected. -->
+    <style>
+      #cv6-rotate-lock { display: none; }
+      @media only screen and (max-width: 1023px) and (orientation: landscape) {
+        #cv6-rotate-lock {
+          display: flex; position: fixed; inset: 0; z-index: 2147483647;
+          flex-direction: column; align-items: center; justify-content: center;
+          gap: 14px; padding: 24px; text-align: center;
+          background: #0A0A0B; color: #E9E9EC;
+          font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+        }
+        html, body { overflow: hidden; }
+      }
+    </style>
     <!-- Primary Meta -->
     <title>AOM | We Make Companies Impossible to Ignore</title>
     <meta name="description" content="AOM builds the content, websites, and systems that make companies impossible to ignore. Video production, social media, websites, and AI-powered workflows for construction companies, founders, nonprofits, and brands that do real work." />
@@ -72,6 +88,11 @@ document.head.appendChild(o)}initApollo();</script>
 </noscript>
 
     <div id="root"></div>
+    <div id="cv6-rotate-lock" aria-hidden="true">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#5B9BFF" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M12 18h.01"/></svg>
+      <div style="font-size:18px;font-weight:700;letter-spacing:-.02em;">Rotate to portrait</div>
+      <div style="font-size:13px;color:#9a9aa2;max-width:280px;line-height:1.5;">Corner is built for portrait. Turn your phone upright to keep going.</div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
     <script src="/aom-tracker.js" data-site="aom" data-endpoint="https://ambition-teal.vercel.app/api/track-visitor" defer></script>
   </body>
