@@ -571,6 +571,58 @@ function FilePreviewScreen({ file, projectName, onBack, onMove }) {
   );
 }
 
+// High-level Organize screen (Patrik 2026-06-21): Organize opens HERE, on the
+// list of projects, so you step INTO a project to see its files (rather than
+// landing pre-selected inside the first one). Tap a project to open it; back
+// returns home. Matches the cv6 glass chrome of the files view so they read as
+// siblings.
+function ProjectListScreen({ projects = [], onSelectProject, onBack }) {
+  return (
+    <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)', overflow: 'hidden' }}>
+      {/* status bar */}
+      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'calc(env(safe-area-inset-top, 0px) + 8px) 16px 12px', fontSize: 15, fontWeight: 600 }}>
+        <span>9:41</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>Corner</span>
+      </div>
+      {/* header */}
+      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px 16px' }}>
+        {onBack && (
+          <button onClick={onBack} aria-label="Back to home" style={{ width: 34, height: 34, borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flex: 'none', marginLeft: -2 }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>Organize</div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>{projects.length} project{projects.length === 1 ? '' : 's'} · tap to open</div>
+        </div>
+      </div>
+      {/* project list */}
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '4px 16px calc(env(safe-area-inset-bottom, 0px) + 28px)' }}>
+        {projects.length === 0 ? (
+          <div style={{ padding: '16px', color: 'var(--faint)', fontSize: 13 }}>No projects yet.</div>
+        ) : (
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
+            {projects.map((p, i) => (
+              <button key={p.slug || p.id || i} onClick={() => onSelectProject && onSelectProject(p)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '13px 14px', border: 'none', borderTop: i === 0 ? 'none' : '1px solid var(--hair)', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}>
+                <span style={{ width: 36, height: 36, borderRadius: 11, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={p.color || 'var(--violet-400)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || p.slug}</div>
+                  {typeof p.fileCount === 'number' && p.fileCount > 0 && (
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1 }}>{p.fileCount} file{p.fileCount === 1 ? '' : 's'}</div>
+                  )}
+                </div>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M9 18l6-6-6-6" /></svg>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function OrganizeView({
   projects = [],
   files = [],
@@ -579,6 +631,7 @@ export function OrganizeView({
   onSelectFile,
   onSelectProject,
   onBack,
+  onExitProject,
   activityAgent,
   onMove,
   onRename,
@@ -606,6 +659,11 @@ export function OrganizeView({
       onBack={() => setPreviewFileId(null)}
       onMove={() => setShowMoveSheet(true)}
     />;
+  }
+
+  // High level: nothing stepped into yet → show the project list to open one.
+  if (!selectedProject) {
+    return <ProjectListScreen projects={projects} onSelectProject={onSelectProject} onBack={onBack} />;
   }
 
   return (
@@ -643,9 +701,10 @@ export function OrganizeView({
         gap: 12,
         padding: '0 12px 16px',
       }}>
-        {onBack && (
+        {(onExitProject || onBack) && (
           <button
-            onClick={onBack}
+            onClick={onExitProject || onBack}
+            aria-label="Back to projects"
             style={{
               width: 34,
               height: 34,

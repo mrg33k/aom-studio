@@ -40,15 +40,12 @@ function mapFile(f) {
 }
 
 export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack }) {
-  const projects = useMemo(() => (projectRooms || []).map(mapProject), [projectRooms]);
-  const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.slug);
+  // Organize opens at the HIGH LEVEL (Patrik 2026-06-21): no project selected, so
+  // OrganizeView shows the project list to step into. We do NOT auto-select the
+  // first project anymore.
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [allFiles, setAllFiles] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState([]);
-
-  // Keep a valid project selected as the list settles.
-  useEffect(() => {
-    if (!selectedProjectId && projects[0]?.slug) setSelectedProjectId(projects[0].slug);
-  }, [projects, selectedProjectId]);
 
   // Fetch the WHOLE world's text/scaffold files once. The endpoint is world-scoped
   // (client=<world>) and tags each file with its own project; passing a project
@@ -69,6 +66,14 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack }) {
     [allFiles, selectedProjectId]
   );
 
+  // Project rows for the high-level list, enriched with each project's real file
+  // count (from the world files we already fetched) so the list shows "N files".
+  const projects = useMemo(() => {
+    const counts = {};
+    for (const f of allFiles) { if (f.project) counts[f.project] = (counts[f.project] || 0) + 1; }
+    return (projectRooms || []).map((p) => ({ ...mapProject(p), fileCount: counts[p.slug] || 0 }));
+  }, [projectRooms, allFiles]);
+
   return (
     <OrganizeView
       projects={projects}
@@ -84,6 +89,7 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack }) {
       }}
       onSelectProject={(proj) => { setSelectedProjectId(proj.slug || proj.id); setSelectedFileIds([]); }}
       onBack={onBack}
+      onExitProject={() => { setSelectedProjectId(null); setSelectedFileIds([]); }}
       onMove={(fileIds, destinationId) => {
         console.warn('[OrganizeLive] onMove not yet wired to backend:', { fileIds, destinationId });
         // TODO: wire to /api/dashboard/files/move or similar

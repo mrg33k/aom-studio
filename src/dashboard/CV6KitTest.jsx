@@ -140,6 +140,30 @@ const SAMPLE_ORGANIZE = {
   selectedFileIds: [],
 };
 
+// Interactive Organize preview: starts at the HIGH LEVEL (project list) and lets
+// you step into a project and back out, so the new drill-in flow is reviewable.
+function OrganizePreview() {
+  const [sel, setSel] = useState(null);
+  const projects = SAMPLE_ORGANIZE.projects.map((p) => ({ ...p, fileCount: (p.tasks && p.tasks.length) || 0 }));
+  const nope = () => {};
+  return (
+    <OrganizeView
+      projects={projects}
+      files={SAMPLE_ORGANIZE.files}
+      selectedProjectId={sel}
+      selectedFileIds={[]}
+      onSelectProject={(proj) => setSel(proj.slug || proj.id)}
+      onExitProject={() => setSel(null)}
+      onSelectFile={nope}
+      onBack={nope}
+      onMove={nope}
+      onRename={nope}
+      onShare={nope}
+      onDelete={nope}
+    />
+  );
+}
+
 const SAMPLE_REVIEW = {
   queueSummary: { readyCount: 2, pipelineCount: 4 },
   queueItems: [
@@ -248,16 +272,7 @@ export default function CV6KitTest() {
       ) : screen === 'support' ? (
         <SupportView {...SAMPLE_SUPPORT} isDesktop={isDesktop} onSelectItem={noop} onBack={noop} onDraftReply={noop} onMarkResolved={noop} />
       ) : screen === 'organize' ? (
-        <OrganizeView
-          {...SAMPLE_ORGANIZE}
-          onSelectProject={noop}
-          onSelectFile={noop}
-          onBack={noop}
-          onMove={noop}
-          onRename={noop}
-          onShare={noop}
-          onDelete={noop}
-        />
+        <OrganizePreview />
       ) : screen === 'review' ? (
         <ReviewView {...SAMPLE_REVIEW} onSelectItem={noop} onApprove={noop} onReject={noop} onComment={noop} onSendNotes={noop} />
       ) : screen === 'scribe' ? (
