@@ -1,7 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx';
+import { MobileProjectWired } from './cv6kit/MobileProjectWired.jsx';
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx';
 import { DesktopHomeView } from './cv6kit/DesktopHomeView.jsx';
+
+// Sample for the /cv6kit?screen=project preview (the "project opened, missions
+// inside" design — FRAME 3). Live CornerVG feeds real missions; this is no-auth.
+const SAMPLE_PROJECT = { slug: 'space-rising', name: 'Space Rising', color: 'var(--violet-400)' };
+const SAMPLE_PROJECT_MISSIONS = [
+  { slug: 'lock-print-framing', name: 'Lock the print framing', status: 'running', agent: 'Elon' },
+  { slug: 'resolver-patch', name: 'Resolver patch & tests', status: 'running', agent: 'Rex' },
+  { slug: 'changelog-v6', name: 'Changelog for v6', status: 'idle', agent: 'Gary' },
+  { slug: 'print-spec', name: 'Print spec summary', status: 'done', is_done: true, agent: 'Elon' },
+];
 import { ChatStepThread } from './cv6kit/ChatStepThread.jsx';
 import { TrackerView } from './cv6kit/TrackerView.jsx';
 import { CommandView } from './cv6kit/CommandView.jsx';
@@ -213,6 +224,8 @@ export default function CV6KitTest() {
             user={{ initials: 'P', statusDot: 'online' }}
           />
         </div>
+      ) : screen === 'project' ? (
+        <MobileProjectWired project={SAMPLE_PROJECT} sampleMissions={SAMPLE_PROJECT_MISSIONS} onBack={noop} onOpenChat={noop} onOpenMission={noop} onNewMission={noop} />
       ) : screen === 'cvgchat' ? (
         <div style={{ height: '100dvh' }}>
           <CvgChatSurface worldId={null} target={{ type: 'agent', name: 'Elon', slug: 'elon' }} kit previewMessages={SAMPLE_CVG_MESSAGES} onSend={noop} onBack={noop} />

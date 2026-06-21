@@ -30,6 +30,7 @@ import { authFetch } from './lib/authFetch.js'
 import { OVERLAY } from './cv4/lib/uiKit.jsx'
 // corner:corner-ui-cv6 R-KIT-2 — wired Claude-design mobile Home (real data, kit look).
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
+import { MobileProjectWired } from './cv6kit/MobileProjectWired.jsx'
 // R5 — Claude-design DESKTOP Home (3-column shell, real data, self-scoped data-cv6kit).
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx'
 // R-KIT-11/13 — Claude-design Organize screen on phones (kit view + real projects + files).
@@ -956,6 +957,10 @@ export default function CornerVG() {
   // drop the user straight into it, where the agent's kickoff greeting
   // (posted server-side by create-project-from-chat) is already waiting.
   const [newRoomModal, setNewRoomModal] = useState(null) // null | { kind: 'project' | 'mission', parentSlug?, parentName? }
+  // corner:corner-ui-cv6 LIVE-FEEDBACK — the project whose "missions inside" view
+  // is open on mobile (set when a room is tapped on the Home screen). Rendered via
+  // activeTool === 'projectview'; null otherwise.
+  const [mobileProject, setMobileProject] = useState(null)
   const [creatingRoom, setCreatingRoom]  = useState(false)
   const [createRoomError, setCreateRoomError] = useState(null)
 
@@ -3011,6 +3016,20 @@ export default function CornerVG() {
                  Selecting any agent / project / mission / mail clears
                  activeTool, which force-closes this board. */
               <RoutinesBoard worldId={worldId} onClose={() => setActiveTool(null)} />
+            ) : (activeTool === 'projectview') ? (
+              /* corner:corner-ui-cv6 LIVE-FEEDBACK R2 — tapping a room on the mobile
+                 Home opens the project (missions inside) view, not straight-to-chat.
+                 Real missions via /api/dashboard/missions-tree; the general-chat
+                 button keeps the old room-tap behaviour; a mission row opens that
+                 mission; New mission opens the real create flow. */
+              <MobileProjectWired
+                project={mobileProject}
+                worldId={worldId}
+                onBack={() => { setActiveTool(null); setMobileProject(null); }}
+                onOpenChat={(p) => { setActiveTool(null); setMobileProject(null); handleSelectProject(p); }}
+                onOpenMission={(p, m) => { setActiveTool(null); setMobileProject(null); handleSelectMission(m, p); }}
+                onNewMission={(p) => setNewRoomModal({ kind: 'mission', parentSlug: p.slug, parentName: p.name })}
+              />
             ) : (activeTool === 'organize') ? (
               /* corner:corner-ui-cv6 R-KIT-13 — Claude-design Organize screen on the phone,
                  wired to the user's real project rooms AND each project's real files (with
@@ -3129,7 +3148,7 @@ export default function CornerVG() {
                   projectRooms={projectRooms}
                   catchup={buildCatchupNotifications(notifItems)}
                   onSelectAgent={handleSelectAgent}
-                  onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
+                  onSelectProject={(proj, mission) => { if (mission && mission.slug) { handleSelectMission(mission, proj); } else { setMobileProject(proj); setActiveTool('projectview'); } }}
                   onCatchupOpen={handleCatchupOpenRoom}
                   onNav={(key) => {
                     // Every menu item lands on its real surface — never the old CV4
