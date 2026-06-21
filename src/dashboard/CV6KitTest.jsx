@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx';
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx';
+import { DesktopHomeView } from './cv6kit/DesktopHomeView.jsx';
 import { ChatStepThread } from './cv6kit/ChatStepThread.jsx';
 import { TrackerView } from './cv6kit/TrackerView.jsx';
 import { CommandView } from './cv6kit/CommandView.jsx';
@@ -198,7 +199,11 @@ export default function CV6KitTest() {
 
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>
-      {screen === 'menu' ? (
+      {screen === 'deskhome' ? (
+        /* The faithful exact pull of the canonical desktop Home (sample data) —
+           the full three-column design for review. The live wrapper feeds real data. */
+        <DesktopHomeView onNav={noop} onSelectRoom={noop} onNewRoom={noop} onOpenFiles={noop} />
+      ) : screen === 'menu' ? (
         <div style={{ height: '100dvh', width: '100%', position: 'relative' }}>
           <MobileMenu
             open={menuOpen}
