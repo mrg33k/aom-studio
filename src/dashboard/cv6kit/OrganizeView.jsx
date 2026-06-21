@@ -694,6 +694,9 @@ export function OrganizeView({
   const [showMoveSheet, setShowMoveSheet] = useState(false);
   const [showSwitcher, setShowSwitcher] = useState(false);
   const [previewFileId, setPreviewFileId] = useState(null);
+  const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [typeFilter, setTypeFilter] = useState('all'); // all | docs | images
 
   const previewFile = useMemo(() =>
     files.find(f => f.id === previewFileId),
@@ -727,6 +730,19 @@ export function OrganizeView({
       </div>
     );
   }
+
+  // Real search + type filter over the project's files.
+  const isImageFile = (n) => /\.(png|jpe?g|gif|webp|svg|heic|bmp)$/i.test(n || '');
+  const docCount = files.filter((f) => !isImageFile(f.name)).length;
+  const imageCount = files.filter((f) => isImageFile(f.name)).length;
+  const q = query.trim().toLowerCase();
+  const shownFiles = files.filter((f) => {
+    if (typeFilter === 'docs' && isImageFile(f.name)) return false;
+    if (typeFilter === 'images' && !isImageFile(f.name)) return false;
+    if (q && !(f.name || '').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const filtering = !!q || typeFilter !== 'all';
 
   return (
     <div data-cv6kit data-theme="glass" style={{
@@ -795,19 +811,22 @@ export function OrganizeView({
             {totalFiles} files · 1 folder
           </div>
         </div>
-        <button style={{
-          width: 34,
-          height: 34,
-          borderRadius: 10,
-          border: 'none',
-          background: 'var(--surface)',
-          color: 'var(--fg)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          flex: 'none',
-        }}>
+        <button
+          onClick={() => setSearchOpen((v) => { if (v) setQuery(''); return !v; })}
+          aria-label="Search files"
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            border: 'none',
+            background: searchOpen ? 'var(--accent)' : 'var(--surface)',
+            color: searchOpen ? '#fff' : 'var(--fg)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            flex: 'none',
+          }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="7"/>
             <path d="m20 20-3.5-3.5"/>
@@ -831,6 +850,19 @@ export function OrganizeView({
           </svg>
         </button>
       </div>
+
+      {/* inline search field */}
+      {searchOpen && (
+        <div style={{ flex: 'none', padding: '0 16px 12px' }}>
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search files in this project"
+            style={{ width: '100%', boxSizing: 'border-box', height: 40, background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 11, padding: '0 14px', color: 'var(--fg)', fontFamily: 'var(--font-sans)', fontSize: 14, outline: 'none' }}
+          />
+        </div>
+      )}
 
       {/* activity dock (floating) */}
       {activityAgent && (
@@ -952,56 +984,33 @@ export function OrganizeView({
           </button>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <button style={{
-            height: 30,
-            padding: '0 13px',
-            borderRadius: 15,
-            border: 'none',
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: 12.5,
-            fontWeight: 600,
-            fontFamily: 'var(--font-sans)',
-            cursor: 'pointer',
-          }}>
-            All {totalFiles}
-          </button>
-          <button style={{
-            height: 30,
-            padding: '0 13px',
-            borderRadius: 15,
-            border: '1px solid var(--hair)',
-            background: 'transparent',
-            color: 'var(--muted)',
-            fontSize: 12.5,
-            fontWeight: 600,
-            fontFamily: 'var(--font-sans)',
-            cursor: 'pointer',
-          }}>
-            Docs
-          </button>
-          <button style={{
-            height: 30,
-            padding: '0 13px',
-            borderRadius: 15,
-            border: '1px solid var(--hair)',
-            background: 'transparent',
-            color: 'var(--muted)',
-            fontSize: 12.5,
-            fontWeight: 600,
-            fontFamily: 'var(--font-sans)',
-            cursor: 'pointer',
-          }}>
-            Images
-          </button>
-          <span style={{
-            marginLeft: 'auto',
-            fontSize: 12.5,
-            fontWeight: 600,
-            color: 'var(--accent)',
-          }}>
-            Done
-          </span>
+          {[
+            { key: 'all', label: `All ${files.length}` },
+            { key: 'docs', label: `Docs ${docCount}` },
+            { key: 'images', label: `Images ${imageCount}` },
+          ].map((c) => {
+            const active = typeFilter === c.key;
+            return (
+              <button
+                key={c.key}
+                onClick={() => setTypeFilter(c.key)}
+                style={{
+                  height: 30,
+                  padding: '0 13px',
+                  borderRadius: 15,
+                  border: active ? 'none' : '1px solid var(--hair)',
+                  background: active ? 'var(--accent)' : 'transparent',
+                  color: active ? '#fff' : 'var(--muted)',
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-sans)',
+                  cursor: 'pointer',
+                }}
+              >
+                {c.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -1019,7 +1028,8 @@ export function OrganizeView({
           borderRadius: 16,
           overflow: 'hidden',
         }}>
-          {/* folder row */}
+          {/* folder row (hidden while searching/filtering, so results are just files) */}
+          {!filtering && (
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -1040,9 +1050,13 @@ export function OrganizeView({
               <path d="M9 18l6-6-6-6"/>
             </svg>
           </div>
+          )}
 
           {/* file rows */}
-          {files.map((f, i) => {
+          {shownFiles.length === 0 && (
+            <div style={{ padding: '18px 14px', color: 'var(--faint)', fontSize: 13 }}>No files match.</div>
+          )}
+          {shownFiles.map((f, i) => {
             const isChecked = selectedFileIds?.includes(f.id) || selectedFileIds?.includes(f.name);
             return (
               <div
@@ -1058,7 +1072,7 @@ export function OrganizeView({
                   gap: 12,
                   padding: '0 14px',
                   height: 58,
-                  borderBottom: i < files.length - 1 ? '1px solid var(--divider)' : 'none',
+                  borderBottom: i < shownFiles.length - 1 ? '1px solid var(--divider)' : 'none',
                   background: isChecked ? 'var(--accent-weak)' : 'transparent',
                   cursor: 'pointer',
                 }}
