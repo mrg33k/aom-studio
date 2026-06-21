@@ -40,6 +40,8 @@ import { CommandLive } from './cv6kit/CommandLive.jsx'
 import { ReviewLive } from './cv6kit/ReviewLive.jsx'
 // R-KIT-18 — Claude-design Tracker screen (opens to an honest empty state until a bugs source exists).
 import { TrackerView } from './cv6kit/TrackerView.jsx'
+// R-KIT-ONBOARD — Claude-design first-run onboarding (5 steps: welcome, connections, permissions, theme, first goal).
+import { OnboardingLive } from './cv6kit/OnboardingLive.jsx'
 import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -3047,6 +3049,31 @@ export default function CornerVG() {
                   <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-tertiary)', fontSize: 14 }}>Loading your conversation…</div>
                 )
               })()
+            ) : (!isDesktop && activeTool === 'onboarding') ? (
+              /* corner:corner-ui-cv6 R-KIT-ONBOARD — Claude-design first-run onboarding flow
+                 (5 steps: welcome, connections, permissions, theme, first goal + done).
+                 Wired to real endpoints: oauth/start, agent-permissions, create-project-from-chat,
+                 onboarding-state. Missing endpoints reported as console.warn + openWiring list.
+                 onNavigateHome returns to home after setup completes. */
+              <OnboardingLive
+                user={currentUser}
+                worldId={worldId}
+                onFinish={(result) => {
+                  // Setup complete. Clear onboarding state.
+                  setActiveTool(null)
+                  // Optionally log the result (theme/connections/permissions)
+                  console.log('[OnboardingLive] Setup complete:', result)
+                }}
+                setTheme={setTheme}
+                onNavigateHome={() => {
+                  setActiveTool(null)
+                  // Ensure we're on home view
+                  setShowSupportInbox(false)
+                  setSelectedAgent(null)
+                  setConversationTarget(null)
+                  setTab('chat')
+                }}
+              />
             ) : (!isDesktop && activeTool === 'tracker') ? (
               /* corner:corner-ui-cv6 R-KIT-18 — Tracker opens to the Claude-design tracker.
                  There is no bugs/tickets source yet, so it shows an honest empty state
@@ -3078,6 +3105,7 @@ export default function CornerVG() {
                     // conversation; organize/support/command → their wired kit screens;
                     // scribe → the real voice recorder. review/tracker have no data
                     // model yet, so they return home (parked) rather than show old UI.
+                    // onboarding → first-run setup flow on phones.
                     setSelectedMail(null)
                     if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                     else if (key === 'chat') {
@@ -3092,6 +3120,7 @@ export default function CornerVG() {
                     else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
                     else if (key === 'review') { setShowSupportInbox(false); setActiveTool('review'); }
                     else if (key === 'tracker') { setShowSupportInbox(false); setActiveTool('tracker'); }
+                    else if (key === 'onboarding') { setShowSupportInbox(false); setActiveTool('onboarding'); }
                     else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
                     else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                   }}
