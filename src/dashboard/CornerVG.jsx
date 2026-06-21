@@ -34,6 +34,8 @@ import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
 import { OrganizeLive } from './cv6kit/OrganizeLive.jsx'
 // R-KIT-12 — Claude-design Support inbox on phones, wired to the real wishes+email data.
 import { SupportLive } from './cv6kit/SupportLive.jsx'
+// R-KIT-14 — Claude-design Command goal ledger on phones, wired to the real room-goals data.
+import { CommandLive } from './cv6kit/CommandLive.jsx'
 import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -2991,6 +2993,28 @@ export default function CornerVG() {
                  wired to the user's real project rooms AND each project's real files (with
                  previews). onBack returns to home. */
               <OrganizeLive projectRooms={projectRooms} onBack={() => setActiveTool(null)} />
+            ) : (!isDesktop && activeTool === 'command') ? (
+              /* corner:corner-ui-cv6 R-KIT-14 — Claude-design Command goal ledger on the
+                 phone, wired to the real room-goals data (read-only: featured goal + room
+                 roster with status; needs-you rooms surface amber). Tapping a room opens it
+                 if it resolves to a real project/agent. The interactive controls (loop
+                 toggle, inline reply, edit-goal, autopilot) stay on the desktop tracker. */
+              <CommandLive
+                worldId={worldId}
+                onBack={() => setActiveTool(null)}
+                onSelectRoom={(r) => {
+                  const slug = (r && (r.slug || r.id)) || ''
+                  if (!slug) return
+                  if (slug.includes(':')) {
+                    const proj = slug.split(':')[0]
+                    const match = projectRooms?.find(p => p?.slug === proj || (p?.slug || '').toLowerCase() === proj.toLowerCase())
+                    if (match) { setActiveTool(null); handleSelectProject(match) }
+                  } else {
+                    const ag = agents?.find(a => a?.slug === slug)
+                    if (ag) { setActiveTool(null); handleSelectAgent(ag) }
+                  }
+                }}
+              />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */
@@ -3012,14 +3036,23 @@ export default function CornerVG() {
                   onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
                   onCatchupOpen={handleCatchupOpenRoom}
                   onNav={(key) => {
-                    // Home returns home; Support opens the real Support inbox; the four
-                    // Claude-design tool screens (organize/review/tracker/scribe) open
-                    // full-screen via activeTool; chat/command keep their existing path
-                    // until their kit screens are wired. Never a dead tap.
+                    // Every menu item lands on its real surface — never the old CV4
+                    // tasks/files screen. home → kit Home; chat → the live EA
+                    // conversation; organize/support/command → their wired kit screens;
+                    // scribe → the real voice recorder. review/tracker have no data
+                    // model yet, so they return home (parked) rather than show old UI.
+                    setSelectedMail(null)
                     if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
+                    else if (key === 'chat') {
+                      setActiveTool(null); setShowSupportInbox(false)
+                      const ea = agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
+                      if (ea) handleSelectAgent(ea)
+                    }
                     else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
                     else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
-                    else { setActiveTool(null); setShowSupportInbox(false); setTab('tasks'); }
+                    else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
+                    else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); if (!telephone.isRecording) telephone.toggle(); }
+                    else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                   }}
                 />
               ) : (
