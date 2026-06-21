@@ -132,7 +132,7 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
             active="home"
             items={navItems}
             onMenu={() => setMenuOpen(false)}
-            onSelect={(key) => { if (key !== 'home' && onNav) onNav(key); }}
+            onSelect={(key) => { if (key === 'home') { setMenuOpen(false); } else if (onNav) { onNav(key); } }}
             style={{ padding: 'calc(15px + env(safe-area-inset-top, 0px)) 0 calc(16px + env(safe-area-inset-bottom, 0px))' }}
           />
         </div>

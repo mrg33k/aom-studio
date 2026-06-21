@@ -3051,7 +3051,7 @@ export default function CornerVG() {
                     else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
                     else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
                     else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
-                    else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); if (!telephone.isRecording) telephone.toggle(); }
+                    else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
                     else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                   }}
                 />

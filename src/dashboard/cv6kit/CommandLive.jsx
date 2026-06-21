@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { CommandView } from './CommandView';
+import { authFetch } from '../lib/authFetch.js';
 
 /**
  * CommandLive — wires the Claude-design Command screen (CommandView, the goal
- * ledger) to REAL data: the master loop's per-room goal memory via
- * GET /api/dashboard/room-goals?world=<world>. Read-only on the phone: a featured
+ * ledger) to REAL data: the master loop's per-room goal memory (room-goals.json),
+ * read through the SAME deployed, auth'd path the desktop CommandTracker uses
+ * (/api/dashboard/project-file?raw=1&path=...room-goals.json). Read-only on the
+ * phone: a featured
  * goal over the room roster with status. A room with an unanswered open question
  * surfaces as "blocked" (needs you, amber) and sorts to the top. Tapping a room
  * hands off to the real open-room handler (onSelectRoom). The interactive controls
@@ -60,15 +63,16 @@ export function CommandLive({ worldId = 'aom', onSelectRoom, onBack }) {
 
   useEffect(() => {
     let alive = true;
-    const load = () => {
-      fetch(`/api/dashboard/room-goals?world=${encodeURIComponent(worldId)}`)
-        .then((r) => r.json())
-        .then((d) => {
-          if (!alive) return;
-          const obj = d && d.rooms && typeof d.rooms === 'object' ? d.rooms : {};
-          setRooms(Object.entries(obj).map(mapRoom));
-        })
-        .catch(() => { if (alive) setRooms([]); });
+    const load = async () => {
+      try {
+        // Same deployed, tenant-auth'd path the desktop CommandTracker reads from.
+        const path = `/api/dashboard/project-file?raw=1&path=corner/users/${encodeURIComponent(worldId)}/missions/master-loop/deliverables/room-goals.json`;
+        const res = await authFetch(path);
+        if (!res || !res.ok) { if (alive) setRooms([]); return; }
+        const parsed = JSON.parse(await res.text());
+        const obj = parsed && typeof parsed === 'object' && parsed.rooms && typeof parsed.rooms === 'object' ? parsed.rooms : {};
+        if (alive) setRooms(Object.entries(obj).map(mapRoom));
+      } catch { if (alive) setRooms([]); }
     };
     load();
     const t = setInterval(load, 30000);
