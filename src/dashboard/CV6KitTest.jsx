@@ -8,6 +8,10 @@ import { SupportView } from './cv6kit/SupportView.jsx';
 import { OrganizeView } from './cv6kit/OrganizeView.jsx';
 import { ReviewView } from './cv6kit/ReviewView.jsx';
 import { ScribeView } from './cv6kit/ScribeView.jsx';
+import { OnboardingView } from './cv6kit/OnboardingView.jsx';
+import { SettingsView } from './cv6kit/SettingsView.jsx';
+import { MobileMenu } from './cv6kit/MobileMenu.jsx';
+import { ActivityDock } from './cv6kit/ActivityDock.jsx';
 import CvgChatSurface from './cv4/CvgChatSurface.jsx';
 import './cv6kit/kit.css';
 
@@ -52,6 +56,11 @@ const SAMPLE_COMMAND = {
     { id: 'r1', name: 'Corner', color: 'var(--accent)', sub: 'Ship CV6 mobile parity', status: 'live' },
     { id: 'r2', name: 'Included Health', color: 'var(--pink-400)', sub: 'Batch02 culture deck', status: 'blocked' },
     { id: 'r3', name: 'Loop Test Project', color: 'var(--faint)', sub: 'Validate routing across missions', status: 'idle' },
+  ],
+  activities: [
+    { state: 'recording', title: 'Recording', sub: 'Corner · Dashboard · 08:42', badge: 'REC', badgeColor: '#F87171', badgeBg: 'rgba(248,113,113,.16)' },
+    { state: 'working', title: 'Elon · patching', sub: 'CV6-142 · step 2 of 3' },
+    { state: 'working', title: 'Print build', sub: 'space-rising · 58%' },
   ],
 };
 
@@ -170,6 +179,8 @@ const SAMPLE_CVG_MESSAGES = [
 
 export default function CV6KitTest() {
   const [isDesktop, setIsDesktop] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activeKey, setActiveKey] = useState('home');
 
   useEffect(() => {
     const onResize = () => setIsDesktop(window.innerWidth >= 1024);
@@ -182,7 +193,17 @@ export default function CV6KitTest() {
 
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>
-      {screen === 'cvgchat' ? (
+      {screen === 'menu' ? (
+        <div style={{ height: '100dvh', width: '100%', position: 'relative' }}>
+          <MobileMenu
+            open={menuOpen}
+            onToggle={() => setMenuOpen(!menuOpen)}
+            onNav={(key) => setActiveKey(key)}
+            activeKey={activeKey}
+            user={{ initials: 'P', statusDot: 'online' }}
+          />
+        </div>
+      ) : screen === 'cvgchat' ? (
         <div style={{ height: '100dvh' }}>
           <CvgChatSurface worldId={null} target={{ type: 'agent', name: 'Elon', slug: 'elon' }} kit previewMessages={SAMPLE_CVG_MESSAGES} onSend={noop} onBack={noop} />
         </div>
@@ -200,6 +221,18 @@ export default function CV6KitTest() {
         <ReviewView {...SAMPLE_REVIEW} onSelectItem={noop} onApprove={noop} onReject={noop} onComment={noop} onSendNotes={noop} />
       ) : screen === 'scribe' ? (
         <ScribeView {...SAMPLE_SCRIBE} mode={isDesktop ? 'desktop' : 'mobile'} onStop={noop} onSelectItem={noop} onBack={noop} />
+      ) : screen === 'onboarding' ? (
+        <OnboardingView step={0} steps={5} onNext={noop} onSkip={noop} onBack={noop} />
+      ) : screen === 'settings' ? (
+        <SettingsView theme="glass" onThemeChange={noop} onConnect={noop} onCycleScope={noop} onEditConnection={noop} onTogglePerm={noop} onToggleNotify={noop} onBackToList={noop} />
+      ) : screen === 'dock' ? (
+        <div style={{ height: '100dvh', background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'flex-end', padding: '16px' }}>
+          <ActivityDock activities={[
+            { state: 'recording', title: 'Recording', sub: 'Corner · Dashboard · 08:42', badge: 'REC', badgeColor: '#F87171', badgeBg: 'rgba(248,113,113,.16)' },
+            { state: 'working', title: 'Elon · patching', sub: 'CV6-142 · step 2 of 3' },
+            { state: 'working', title: 'Print build', sub: 'space-rising · 58%' },
+          ]} onActivitySelect={noop} />
+        </div>
       ) : isDesktop ? (
         <DesktopHomeWired {...SAMPLE} recentMessages={SAMPLE_RECENT} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
       ) : (

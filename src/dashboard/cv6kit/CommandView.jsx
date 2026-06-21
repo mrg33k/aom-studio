@@ -56,10 +56,53 @@ function ChecklistRow({ item }) {
   );
 }
 
-export function CommandView({ summary = {}, featured, rooms = [], onSelectRoom, onBack }) {
+function ActivityDock({ activity }) {
+  const st = activity.state || 'working';
+  let icoStyle = {};
+  let icoContent = null;
+
+  if (st === 'recording') {
+    icoStyle = { background: 'rgba(248,113,113,.16)' };
+    icoContent = <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#F87171', animation: 'cmdPulse 1.4s infinite', flex: 'none' }} />;
+  } else if (st === 'working') {
+    icoStyle = { background: 'var(--accent-weak)' };
+    icoContent = (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1.05s linear infinite' }}>
+        <path d="M21 12a9 9 0 1 1-6.2-8.6" />
+      </svg>
+    );
+  } else if (st === 'success') {
+    icoStyle = { background: 'rgba(52,211,153,.18)' };
+    icoContent = (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+      </svg>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 11, height: 56, padding: '0 10px 0 13px', borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--hair)', boxShadow: 'var(--shadow-card)', flex: 'none', minWidth: 248 }}>
+      <span style={{ width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', ...icoStyle }}>
+        {icoContent}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activity.title}</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activity.sub}</div>
+      </div>
+      {activity.badge && (
+        <span style={{ fontSize: 10, fontWeight: 700, color: activity.badgeColor || 'var(--fg)', background: activity.badgeBg || 'var(--chip)', padding: '3px 7px', borderRadius: 7, flex: 'none', whiteSpace: 'nowrap' }}>
+          {activity.badge}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export function CommandView({ summary = {}, featured, rooms = [], activities = [], onSelectRoom, onBack }) {
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
-      <style>{'@keyframes cmdPulse{0%,100%{opacity:1}50%{opacity:.35}}'}</style>
+      <style>{'@keyframes cmdPulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes spin{to{transform:rotate(360deg)}}'}</style>
 
       {/* heading — safe-area top */}
       <div style={{ flex: 'none', padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 16px 12px' }}>
@@ -75,33 +118,48 @@ export function CommandView({ summary = {}, featured, rooms = [], onSelectRoom, 
       </div>
 
       {/* body */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 16px calc(24px + env(safe-area-inset-bottom, 0px))' }}>
-        {featured && (
-          <div className="glassy" onClick={() => onSelectRoom && onSelectRoom(featured)} style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, padding: 16, marginBottom: 12, cursor: onSelectRoom ? 'pointer' : 'default' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: featured.color || 'var(--violet-400)', flex: 'none' }} />
-              <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{featured.room}</span>
-              <StatusChip status={featured.status} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 0 calc(24px + env(safe-area-inset-bottom, 0px))' }}>
+        {/* activity rail */}
+        {Array.isArray(activities) && activities.length > 0 && (
+          <div style={{ padding: '14px 0 4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Background activity</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)' }}>{activities.length} running</span>
             </div>
-            <div style={{ fontSize: 15.5, lineHeight: 1.4, fontWeight: 600, color: 'var(--fg)', marginBottom: Array.isArray(featured.checklist) && featured.checklist.length ? 14 : 0 }}>{featured.goal}</div>
-            {Array.isArray(featured.checklist) && featured.checklist.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-                {featured.checklist.map((it, i) => <ChecklistRow key={i} item={it} />)}
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', padding: '0 16px', marginBottom: 4 }}>
+              {activities.map((a, i) => <ActivityDock key={i} activity={a} />)}
+            </div>
           </div>
         )}
 
-        {rooms.map((r, i) => (
-          <div key={r.id || i} className="glassy" onClick={() => onSelectRoom && onSelectRoom(r)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 15px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, marginBottom: 10, cursor: onSelectRoom ? 'pointer' : 'default' }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: r.color || 'var(--faint)', flex: 'none' }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
-              {r.sub && <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.sub}</div>}
+        <div style={{ padding: '8px 16px 0' }}>
+          {featured && (
+            <div className="glassy" onClick={() => onSelectRoom && onSelectRoom(featured)} style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, padding: 16, marginBottom: 12, cursor: onSelectRoom ? 'pointer' : 'default' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: featured.color || 'var(--violet-400)', flex: 'none' }} />
+                <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{featured.room}</span>
+                <StatusChip status={featured.status} />
+              </div>
+              <div style={{ fontSize: 15.5, lineHeight: 1.4, fontWeight: 600, color: 'var(--fg)', marginBottom: Array.isArray(featured.checklist) && featured.checklist.length ? 14 : 0 }}>{featured.goal}</div>
+              {Array.isArray(featured.checklist) && featured.checklist.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+                  {featured.checklist.map((it, i) => <ChecklistRow key={i} item={it} />)}
+                </div>
+              )}
             </div>
-            <StatusChip status={r.status} />
-          </div>
-        ))}
+          )}
+
+          {rooms.map((r, i) => (
+            <div key={r.id || i} className="glassy" onClick={() => onSelectRoom && onSelectRoom(r)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 15px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, marginBottom: 10, cursor: onSelectRoom ? 'pointer' : 'default' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: r.color || 'var(--faint)', flex: 'none' }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</div>
+                {r.sub && <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.sub}</div>}
+              </div>
+              <StatusChip status={r.status} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

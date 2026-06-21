@@ -3,13 +3,13 @@ import React from 'react';
 /**
  * CV6 kit Tracker — the per-project bug/ticket list (mobile). Kit-faithful to
  * ui_kits/tools/tracker.html (mobile "bug list" frame): title + open count, a
- * card per bug (status + priority + id, title, assignee + updated), and a "+"
+ * card per bug (status + priority + id, title, attachments, live agent), and a "+"
  * FAB to file a new bug.
  *
- * Props shaped for REAL data (today there is NO bugs/tickets table — see BUILD.md
- * R-KIT-6; verified in isolation, live wiring waits on that data source):
+ * Props shaped for REAL data:
  *   tracker = { name, projectName, openCount }
- *   bugs[]  = { id, title, status, priority, assignee: { initials, name, tone }, updated }
+ *   bugs[]  = { id, title, status, priority, assignee: { initials, name, tone, toneBg },
+ *               updated, attachments: [{ name, type, preview }], agentWorking }
  *             status: 'open' | 'in_progress'   priority: 'high' | 'med' | 'low'
  *   onSelectBug(bug), onNewBug()
  */
@@ -37,57 +37,118 @@ const PLUS = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke=
 
 export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, onBack }) {
   const open = tracker.openCount != null ? tracker.openCount : bugs.length;
+
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
-      {/* heading — safe-area top */}
-      <div style={{ flex: 'none', padding: 'calc(env(safe-area-inset-top, 0px) + 16px) 16px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          {onBack && (
-            <button onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, marginLeft: -8, flex: 'none', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-          )}
-          <span style={{ width: 9, height: 9, borderRadius: '50%', background: 'var(--success)' }} />
-          <span style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--fg)' }}>{tracker.name || 'Tracker'}</span>
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--muted)' }}>{[tracker.projectName, `${open} open`].filter(Boolean).join(' · ')}</div>
+      {/* Status bar (time + open count) */}
+      <div style={{ flex: 'none', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 15, fontWeight: 600 }}>9:41</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>{open} open</span>
       </div>
 
-      {/* list */}
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 16px calc(96px + env(safe-area-inset-bottom, 0px))' }}>
+      {/* Header — safe-area top */}
+      <div style={{ flex: 'none', padding: '0 16px calc(14px + env(safe-area-inset-top, 0px))', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)', lineHeight: 1.2 }}>{tracker.name || 'Tracker'}</div>
+            <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>{[tracker.projectName, `${open} open`].filter(Boolean).join(' · ')}</div>
+          </div>
+          {/* menu button (hamburger) */}
+          <button onClick={() => {}} aria-label="Menu" style={{ width: 36, height: 36, flex: 'none', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      {/* List container */}
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(96px + env(safe-area-inset-bottom, 0px))', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {bugs.length === 0 ? (
-          <div className="glassy" style={{ padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>{onNewBug ? 'No open bugs. File one with the plus button.' : 'No issues tracked yet.'}</div>
+          <div style={{ border: '1px solid var(--accent-weak)', background: 'var(--surface)', borderRadius: 15, padding: '18px 16px', fontSize: 13.5, color: 'var(--muted)' }}>
+            {onNewBug ? 'No open bugs. File one with the plus button.' : 'No issues tracked yet.'}
+          </div>
         ) : (
-          <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
-            {bugs.map((b, i) => {
-              const tone = statusChip(b.status, b.priority);
-              const p = PRIORITY[b.priority] || PRIORITY.high;
-              const a = b.assignee || {};
-              return (
-                <div key={b.id || i} onClick={() => onSelectBug && onSelectBug(b)} style={{ padding: '14px 15px', borderBottom: i < bugs.length - 1 ? '1px solid var(--divider)' : 'none', cursor: 'pointer' }}>
+          bugs.map((b, i) => {
+            const tone = statusChip(b.status, b.priority);
+            const p = PRIORITY[b.priority] || PRIORITY.high;
+            const a = b.assignee || {};
+            const hasAttachments = b.attachments && b.attachments.length > 0;
+            const isWorking = b.agentWorking;
+
+            return (
+              <div key={b.id || i} onClick={() => onSelectBug && onSelectBug(b)} style={{ border: '1px solid var(--accent-weak)', background: 'var(--surface)', borderRadius: 15, overflow: 'hidden', cursor: 'pointer' }}>
+                {/* Card content */}
+                <div style={{ padding: '13px 14px' }}>
+                  {/* Top row: status chip, priority dot+label, id */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     <Chip tone={tone} />
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--fg)' }}><Dot c={p.color} />{p.label}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: 'var(--fg)' }}>
+                      <Dot c={p.color} />{p.label}
+                    </span>
                     <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)' }}>{b.id}</span>
                   </div>
-                  <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)', lineHeight: 1.4 }}>{b.title}</div>
-                  {(a.name || b.updated) && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 8 }}>
-                      {a.initials && <span style={{ width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 700, color: a.tone || 'var(--success)', background: a.toneBg || 'rgba(52,211,153,.2)' }}>{a.initials}</span>}
-                      <span style={{ fontSize: 12, color: 'var(--muted)' }}>{[a.name, b.updated].filter(Boolean).join(' · ')}</span>
+
+                  {/* Title */}
+                  <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)', lineHeight: 1.4, marginBottom: hasAttachments ? 11 : 0 }}>
+                    {b.title}
+                  </div>
+
+                  {/* Attachments grid (2 columns) */}
+                  {hasAttachments && (
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 0 }}>
+                      {b.attachments.map((att, j) => (
+                        <div key={j} style={{ flex: 1, border: '1px solid var(--hair)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
+                          <div style={{ height: 54, background: 'linear-gradient(135deg,#2a2030,#15161a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {att.type === 'image' ? (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg>
+                            ) : (
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 8px' }}>
+                            <span style={{ flex: 1, minWidth: 0, fontSize: 11, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{att.name}</span>
+                            <button onClick={(e) => e.stopPropagation()} style={{ height: 24, padding: '0 8px', borderRadius: 7, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>View</button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Working indicator or assignee footer */}
+                {isWorking ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderTop: '1px solid var(--divider)', background: 'var(--accent-weak)' }}>
+                    <div style={{ position: 'relative', flex: 'none' }}>
+                      <div style={{ width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, background: 'rgba(52,211,153,.22)', color: 'var(--success)' }}>
+                        {a.initials || 'EL'}
+                      </div>
+                      <span style={{ position: 'absolute', bottom: -1, right: -1, width: 11, height: 11, background: 'var(--success)', boxShadow: '0 0 4px rgba(52,211,153,.6)', border: '2px solid var(--ground)', borderRadius: '50%' }} />
+                    </div>
+                    <span style={{ flex: 1, fontSize: 12, color: 'var(--fg)' }}>
+                      <strong>{a.name || 'Agent'}</strong> is working this · step 2 of 3
+                    </span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1.05s linear infinite', flex: 'none' }}>
+                      <path d="M21 12a9 9 0 1 1-6.2-8.6" />
+                    </svg>
+                  </div>
+                ) : (a.name || b.updated) ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 14px', borderTop: '1px solid var(--divider)', background: 'rgba(0,0,0,.05)' }}>
+                    {a.initials && (
+                      <span style={{ width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 700, color: a.tone || 'var(--success)', background: a.toneBg || 'rgba(52,211,153,.2)' }}>
+                        {a.initials}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 12, color: 'var(--muted)' }}>{[a.name, b.updated].filter(Boolean).join(' · ')}</span>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })
         )}
       </div>
 
-      {/* FAB — safe-area bottom. Only shown when filing a new item is actually wired
-          (onNewBug); otherwise it would be a dead button on the parked empty state. */}
+      {/* FAB — safe-area bottom */}
       {onNewBug && (
-        <button onClick={onNewBug} aria-label="New bug" style={{ position: 'absolute', right: 18, bottom: 'calc(26px + env(safe-area-inset-bottom, 0px))', width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 30px -8px rgba(0,0,0,.6)', cursor: 'pointer' }}>{PLUS}</button>
+        <button onClick={onNewBug} aria-label="New bug" style={{ position: 'absolute', right: 18, bottom: 'calc(26px + env(safe-area-inset-bottom, 0px))', width: 56, height: 56, borderRadius: '50%', border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 14px 32px -8px rgba(0,0,0,.6)', cursor: 'pointer', zIndex: 10 }}>{PLUS}</button>
       )}
     </div>
   );

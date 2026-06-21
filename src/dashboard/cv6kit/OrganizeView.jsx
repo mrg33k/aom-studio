@@ -1,380 +1,523 @@
 import React, { useState } from 'react';
 
 /**
- * CV6 kit Organize — projects tree + files list + preview (desktop) or
- * Files/Projects toggle (mobile). Kit-faithful to ui_kits/tools/organize.html.
- *
- * Desktop layout: 3-column (projects tree | file list | markdown preview)
- * Mobile layout: Files/Projects toggle + card list
+ * CV6 kit Organize — mobile file browse + selection mode with dock activity.
+ * Pixel-faithful to ui_kits/tools/organize.html MOBILE A (browse & organize).
  *
  * Props:
- *   projects[] = { id, slug, name, color, status?, isShared?, tasks?, children?: [missions] }
- *   files[]    = { id, name, type, updated, size, content? }
- *   selectedProjectId (slug or id)
- *   selectedFileId (file id or name)
+ *   projects[] = { id, slug, name, color, tasks? }
+ *   files[]    = { id, name, type, updated, size, checked? }
+ *   selectedProjectId
+ *   selectedFileIds[] = files currently checked
+ *   onSelectFile(file, checked)
  *   onSelectProject(project)
- *   onSelectFile(file)
  *   onBack()
+ *   activityAgent? = { name, action, status, progress, isLive }
  */
 
-function getMissionIcon(slug) {
-  if (!slug) return '▸'
-  let hash = 0
-  for (let i = 0; i < slug.length; i++) {
-    hash = ((hash << 5) - hash) + slug.charCodeAt(i)
-    hash = hash & hash
-  }
-  const icons = ['▸', '➤', '➘', '⚡', '◉', '◆', '◈']
-  return icons[Math.abs(hash) % icons.length]
-}
-
-function getFileIcon(name) {
-  if (!name) return 'document'
-  const lower = name.toLowerCase()
-  if (lower.endsWith('.md')) return 'document'
-  if (lower.match(/\.(png|jpg|jpeg|gif|webp)$/i)) return 'image'
-  if (lower.match(/\.(mp4|mov|mkv)$/i)) return 'video'
-  return 'document'
-}
-
-function FolderIcon({ color }) {
+function FolderIcon({ color = 'var(--accent)', stroke = 2 }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={color || 'var(--accent)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
       <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>
     </svg>
   );
 }
 
-function FileIcon({ name }) {
-  const icon = getFileIcon(name);
-  if (icon === 'image') {
+function FileIcon({ name, isChecked = false }) {
+  // Image icon
+  if (name?.toLowerCase().match(/\.(png|jpg|jpeg|gif|webp)$/i)) {
     return (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={isChecked ? 'var(--accent)' : 'var(--muted)'} strokeWidth={isChecked ? 1.9 : 1.9} strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
         <rect x="3" y="3" width="18" height="18" rx="2"/>
-        <path d="m9 11 2 2 4-4"/>
+        <circle cx="8.5" cy="8.5" r="1.6"/>
+        <path d="m21 15-5-5L5 21"/>
       </svg>
     );
   }
+  // Default document icon
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={isChecked ? 'var(--accent)' : 'var(--muted)'} strokeWidth={isChecked ? 1.9 : 1.9} strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/>
       <path d="M14 2v6h6"/>
+      <path d="M9 13h6M9 17h4"/>
     </svg>
   );
 }
 
-function formatFileSize(bytes) {
-  if (!bytes) return '';
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+function Checkbox({ checked, onChange }) {
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        onChange?.(!checked);
+      }}
+      style={{
+        width: 21,
+        height: 21,
+        borderRadius: 7,
+        border: `2px solid ${checked ? 'var(--accent)' : 'var(--hair)'}`,
+        background: checked ? 'var(--accent)' : 'transparent',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flex: 'none',
+        cursor: 'pointer',
+      }}
+    >
+      {checked && (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m5 12 4 4L19 7"/>
+        </svg>
+      )}
+    </span>
+  );
 }
 
 export function OrganizeView({
   projects = [],
   files = [],
   selectedProjectId,
-  selectedFileId,
-  onSelectProject,
+  selectedFileIds = [],
   onSelectFile,
+  onSelectProject,
   onBack,
-  onNew,
+  activityAgent,
 }) {
-  // Open on Projects when there are no files to show yet (so the screen leads with
-  // real data instead of an empty Files tab); Files once a files source is wired.
-  const [mobileTab, setMobileTab] = useState(files.length ? 'files' : 'projects'); // 'files' | 'projects'
-  const [isNarrow, setIsNarrow] = useState(typeof window !== 'undefined' && window.innerWidth < 1024);
-
-  React.useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const check = () => setIsNarrow(window.innerWidth < 1024);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
   const selectedProject = projects.find(p => p.slug === selectedProjectId || p.id === selectedProjectId);
-  const selectedFile = files.find(f => f.id === selectedFileId || f.name === selectedFileId);
+  const fileCount = selectedFileIds.length;
+  const totalFiles = files.length;
 
-  // Mobile view
-  if (isNarrow) {
-    return (
-      <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
-        {/* status bar + top safe-area */}
-        <div style={{ flex: 'none', padding: 'calc(env(safe-area-inset-top, 0px) + 8px) 22px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              {onBack && (
-                <button onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, marginLeft: -8, flex: 'none', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                </button>
-              )}
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 25, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--fg)' }}>Organize</div>
-                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-                  {selectedProject ? `${selectedProject.name} · ${files.length} files` : 'Select a project'}
-                </div>
-              </div>
-            </div>
-            {onNew && (
-              <button onClick={onNew} aria-label="New" style={{ width: 34, height: 34, flex: 'none', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <path d="M12 5v14M5 12h14"/>
-                </svg>
-              </button>
-            )}
-          </div>
-
-          {/* Tab toggle */}
-          <div style={{ display: 'flex', gap: 4, background: 'var(--surface-2)', borderRadius: 11, padding: 4, marginBottom: 18 }}>
-            <button
-              onClick={() => setMobileTab('files')}
-              style={{
-                flex: 1,
-                height: 36,
-                borderRadius: 8,
-                border: 'none',
-                background: mobileTab === 'files' ? 'var(--accent)' : 'transparent',
-                color: mobileTab === 'files' ? '#fff' : 'var(--muted)',
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Files
-            </button>
-            <button
-              onClick={() => setMobileTab('projects')}
-              style={{
-                flex: 1,
-                height: 36,
-                borderRadius: 8,
-                border: 'none',
-                background: mobileTab === 'projects' ? 'var(--accent)' : 'transparent',
-                color: mobileTab === 'projects' ? '#fff' : 'var(--muted)',
-                fontSize: 13.5,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Projects
-            </button>
-          </div>
-
-          {mobileTab === 'files' && selectedProject && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: 'var(--muted)', marginBottom: 14 }}>
-              <span style={{ color: 'var(--fg)', fontWeight: 500 }}>{selectedProject.name}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m9 6 6 6-6 6"/>
-              </svg>
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 12px calc(24px + env(safe-area-inset-bottom, 0px))' }}>
-          {mobileTab === 'files' ? (
-            <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
-              {files.length === 0 ? (
-                <div style={{ padding: '18px 16px', fontSize: 13.5, color: 'var(--muted)', textAlign: 'center' }}>
-                  No files. Create one or select a project.
-                </div>
-              ) : (
-                files.map((f, i) => (
-                  <div
-                    key={f.id || i}
-                    onClick={() => onSelectFile && onSelectFile(f)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '0 15px',
-                      height: 56,
-                      borderBottom: i < files.length - 1 ? '1px solid var(--divider)' : 'none',
-                      background: selectedFile?.id === f.id || selectedFile?.name === f.name ? 'var(--accent-weak)' : 'transparent',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <FileIcon name={f.name} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {f.name}
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)', marginTop: 1 }}>
-                        {[f.updated, f.size && formatFileSize(f.size)].filter(Boolean).join(' · ')}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : (
-            <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
-              {projects.length === 0 ? (
-                <div style={{ padding: '18px 16px', fontSize: 13.5, color: 'var(--muted)', textAlign: 'center' }}>
-                  No projects.
-                </div>
-              ) : (
-                projects.map((p, i) => (
-                  <div
-                    key={p.id || p.slug || i}
-                    onClick={() => onSelectProject && onSelectProject(p)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '0 15px',
-                      height: 56,
-                      borderBottom: i < projects.length - 1 ? '1px solid var(--divider)' : 'none',
-                      background: selectedProject?.slug === p.slug || selectedProject?.id === p.id ? 'var(--accent-weak)' : 'transparent',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <FolderIcon color={p.color} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {p.name || p.slug}
-                      </div>
-                      <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
-                        {p.tasks?.length || 0} items
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Desktop view: 3-column layout
   return (
-    <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
-      {/* top bar */}
-      <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 22, padding: '14px 24px', borderBottom: '1px solid var(--divider)' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--fg)', whiteSpace: 'nowrap' }}>Organize</div>
-        <div style={{ flex: 1 }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--hair)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="7"/>
-              <path d="m20 20-3.5-3.5"/>
+    <div data-cv6kit data-theme="glass" style={{
+      position: 'fixed',
+      inset: 0,
+      zIndex: 50,
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100dvh',
+      background: 'var(--ground)',
+      fontFamily: 'var(--font-sans)',
+      color: 'var(--fg)',
+      overflow: 'hidden',
+    }}>
+      {/* status bar */}
+      <div style={{
+        flex: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 'calc(env(safe-area-inset-top, 0px) + 8px) 16px 12px',
+        fontSize: 15,
+        fontWeight: 600,
+      }}>
+        <span>9:41</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>Corner</span>
+      </div>
+
+      {/* header */}
+      <div style={{
+        flex: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '0 12px 16px',
+      }}>
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 10,
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--fg)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              flex: 'none',
+              marginLeft: -2,
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+        )}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>
+            {selectedProject?.name || 'Dashboard'}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+            {totalFiles} files · 1 folder
+          </div>
+        </div>
+        <button style={{
+          width: 34,
+          height: 34,
+          borderRadius: 10,
+          border: 'none',
+          background: 'var(--surface)',
+          color: 'var(--fg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          flex: 'none',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m20 20-3.5-3.5"/>
+          </svg>
+        </button>
+        <button style={{
+          width: 34,
+          height: 34,
+          borderRadius: 10,
+          border: 'none',
+          background: 'var(--surface)',
+          color: 'var(--fg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          flex: 'none',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18M6 12h12M9 18h6"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* activity dock (floating) */}
+      {activityAgent && (
+        <div style={{
+          position: 'absolute',
+          top: 120,
+          left: 16,
+          right: 16,
+          zIndex: 40,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '10px 12px',
+          borderRadius: 13,
+          background: 'var(--surface)',
+          border: '1px solid var(--divider)',
+          boxShadow: '0 12px 32px rgba(0,0,0,.3)',
+        }}>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            background: 'var(--accent-weak)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 'none',
+          }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ animation: 'spin 1.05s linear infinite' }}>
+              <path d="M21 12a9 9 0 1 1-6.2-8.6"/>
             </svg>
           </div>
-          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--avatar)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 600 }}>
-            P
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
+              {activityAgent.name} · {activityAgent.action}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+              {activityAgent.status}
+            </div>
           </div>
+          <button style={{
+            width: 32,
+            height: 32,
+            borderRadius: 9,
+            border: 'none',
+            background: 'rgba(255,255,255,.07)',
+            color: 'var(--fg)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 'none',
+            cursor: 'pointer',
+          }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m6 15 6-6 6 6"/>
+            </svg>
+          </button>
+          {activityAgent.isLive && (
+            <span style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--accent)',
+              background: 'var(--accent-weak)',
+              padding: '3px 8px',
+              borderRadius: 8,
+              flex: 'none',
+            }}>
+              LIVE
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* breadcrumb + tabs */}
+      <div style={{
+        flex: 'none',
+        padding: '12px 16px 14px',
+        borderBottom: '1px solid var(--divider)',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          fontSize: 12,
+          color: 'var(--muted)',
+          marginBottom: 12,
+        }}>
+          <span>Corner</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+          <span style={{ color: 'var(--fg)', fontWeight: 500 }}>Dashboard</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <button style={{
+            height: 30,
+            padding: '0 13px',
+            borderRadius: 15,
+            border: 'none',
+            background: 'var(--accent)',
+            color: '#fff',
+            fontSize: 12.5,
+            fontWeight: 600,
+            fontFamily: 'var(--font-sans)',
+            cursor: 'pointer',
+          }}>
+            All {totalFiles}
+          </button>
+          <button style={{
+            height: 30,
+            padding: '0 13px',
+            borderRadius: 15,
+            border: '1px solid var(--hair)',
+            background: 'transparent',
+            color: 'var(--muted)',
+            fontSize: 12.5,
+            fontWeight: 600,
+            fontFamily: 'var(--font-sans)',
+            cursor: 'pointer',
+          }}>
+            Docs
+          </button>
+          <button style={{
+            height: 30,
+            padding: '0 13px',
+            borderRadius: 15,
+            border: '1px solid var(--hair)',
+            background: 'transparent',
+            color: 'var(--muted)',
+            fontSize: 12.5,
+            fontWeight: 600,
+            fontFamily: 'var(--font-sans)',
+            cursor: 'pointer',
+          }}>
+            Images
+          </button>
+          <span style={{
+            marginLeft: 'auto',
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: 'var(--accent)',
+          }}>
+            Done
+          </span>
         </div>
       </div>
 
-      {/* 3-column body */}
-      <div style={{ display: 'flex', height: 'calc(100% - 66px)' }}>
-        {/* tree: projects */}
-        <div style={{ width: 280, flex: 'none', borderRight: '1px solid var(--divider)', padding: '18px 14px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.09em', textTransform: 'uppercase', color: 'var(--muted)', margin: '0 6px 12px' }}>
-            Projects
+      {/* files list */}
+      <div style={{
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        padding: '12px 16px calc(24px + env(safe-area-inset-bottom, 0px))',
+      }}>
+        <div style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--hair)',
+          borderRadius: 16,
+          overflow: 'hidden',
+        }}>
+          {/* folder row */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '0 14px',
+            height: 58,
+            borderBottom: '1px solid var(--divider)',
+            cursor: 'pointer',
+          }}
+          onClick={() => onSelectProject && selectedProject && onSelectProject(selectedProject)}>
+            <Checkbox checked={false} onChange={() => {}} />
+            <FolderIcon color="var(--accent)" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>cv6</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>{totalFiles} files</div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {projects.map((p, i) => (
+
+          {/* file rows */}
+          {files.map((f, i) => {
+            const isChecked = selectedFileIds?.includes(f.id) || selectedFileIds?.includes(f.name);
+            return (
               <div
-                key={p.id || p.slug || i}
-                onClick={() => onSelectProject && onSelectProject(p)}
+                key={f.id || i}
+                onClick={() => onSelectFile && onSelectFile(f, !isChecked)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 9,
-                  padding: '8px',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  color: selectedProject?.slug === p.slug || selectedProject?.id === p.id ? 'var(--fg)' : 'var(--fg)',
-                  background: selectedProject?.slug === p.slug || selectedProject?.id === p.id ? 'var(--surface-2)' : 'transparent',
+                  gap: 12,
+                  padding: '0 14px',
+                  height: 58,
+                  borderBottom: i < files.length - 1 ? '1px solid var(--divider)' : 'none',
+                  background: isChecked ? 'var(--accent-weak)' : 'transparent',
                   cursor: 'pointer',
-                  fontWeight: selectedProject?.slug === p.slug || selectedProject?.id === p.id ? 600 : 400,
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m9 6 6 6-6 6"/>
-                </svg>
-                <FolderIcon color={p.color} />
-                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {p.name || p.slug}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* file list */}
-        <div style={{ width: 380, flex: 'none', borderRight: '1px solid var(--divider)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px' }}>
-            <span style={{ color: 'var(--fg)', fontWeight: 600, fontSize: 15 }}>
-              {selectedProject ? selectedProject.name : 'Files'}
-            </span>
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--faint)' }}>
-              {files.length} files
-            </span>
-          </div>
-          <div style={{ padding: '0 12px' }}>
-            {files.length === 0 ? (
-              <div style={{ padding: '18px 16px', fontSize: 13.5, color: 'var(--muted)', textAlign: 'center' }}>
-                No files
-              </div>
-            ) : (
-              files.map((f, i) => (
-                <div
-                  key={f.id || i}
-                  onClick={() => onSelectFile && onSelectFile(f)}
-                  className="glassy"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 11,
-                    padding: '11px 12px',
-                    borderRadius: 9,
-                    marginBottom: i < files.length - 1 ? 8 : 0,
-                    background: selectedFile?.id === f.id || selectedFile?.name === f.name ? 'var(--accent-weak)' : 'transparent',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <FileIcon name={f.name} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--fg)' }}>
-                      {f.name}
-                    </div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)', marginTop: 1 }}>
-                      {[f.updated, f.size && formatFileSize(f.size)].filter(Boolean).join(' · ')}
-                    </div>
+                <Checkbox checked={isChecked} onChange={(val) => onSelectFile && onSelectFile(f, val)} />
+                <FileIcon name={f.name} isChecked={isChecked} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>
+                    {f.name}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)', marginTop: 1 }}>
+                    {[f.updated, f.size].filter(Boolean).join(' · ')}
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* preview */}
-        <div style={{ flex: 1, minWidth: 0, background: '#0d0d0f', display: 'flex', justifyContent: 'center', padding: '32px 0', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          {selectedFile && selectedFile.content ? (
-            <div style={{ width: 520, background: '#fbfbfa', borderRadius: 6, boxShadow: '0 12px 40px rgba(0,0,0,.4)', padding: '44px 48px', color: '#1a1a1a' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#999', marginBottom: 18 }}>
-                {selectedFile.name}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--faint)">
+                  <circle cx="12" cy="5" r="1.7"/>
+                  <circle cx="12" cy="12" r="1.7"/>
+                  <circle cx="12" cy="19" r="1.7"/>
+                </svg>
               </div>
-              {selectedFile.preview ? (
-                <div dangerouslySetInnerHTML={{ __html: selectedFile.preview }} />
-              ) : (
-                <div style={{ fontSize: 13.5, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}>
-                  {selectedFile.content}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ color: 'var(--faint)', fontSize: 13.5 }}>
-              Select a file to preview
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
+
+      {/* bottom action bar (when files selected) */}
+      {fileCount > 0 && (
+        <div style={{
+          flex: 'none',
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 82,
+          borderTop: '1px solid var(--divider)',
+          background: 'var(--ground)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          padding: '0 16px calc(16px + env(safe-area-inset-bottom, 0px))',
+          boxSizing: 'border-box',
+        }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap' }}>
+            {fileCount} selected
+          </span>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 18 }}>
+            <button style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 3,
+              background: 'none',
+              border: 'none',
+              color: 'var(--muted)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 10,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/>
+                <path d="M13 17h8M18 14l3 3-3 3"/>
+              </svg>
+              Move
+            </button>
+            <button style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 3,
+              background: 'none',
+              border: 'none',
+              color: 'var(--muted)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 10,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9"/>
+                <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+              </svg>
+              Rename
+            </button>
+            <button style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 3,
+              background: 'none',
+              border: 'none',
+              color: 'var(--muted)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 10,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3v13"/>
+                <path d="m8 7 4-4 4 4"/>
+                <path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/>
+              </svg>
+              Share
+            </button>
+            <button style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 3,
+              background: 'none',
+              border: 'none',
+              color: 'var(--muted)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 10,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18M8 6V4h8v2M18 6l-1 14H7L6 6"/>
+              </svg>
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

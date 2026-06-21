@@ -10,13 +10,12 @@ const I = {
   chat: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z" /></svg>,
   organize: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4 3 8l9 4 9-4-9-4Z" /><path d="m3 12 9 4 9-4" /></svg>,
   review: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></svg>,
-  support: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 13v-2a8 8 0 0 1 16 0v2" /><path d="M6 12h1v6H6a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2Z" /><path d="M18 12h-1v6h1a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2Z" /></svg>,
+  support: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /></svg>,
   tracker: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12h4l2.5-7 5 14 2.5-7H21" /></svg>,
   command: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="m7.5 9.5 3 2.5-3 2.5" /><path d="M13 15h4" /></svg>,
   scribe: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5.5 11a6.5 6.5 0 0 0 13 0" /><path d="M12 17.5V21" /></svg>,
 };
 const FOLDER = (c) => <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke={c || 'var(--violet-400)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>;
-const MENU_GLYPH = <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h16" /></svg>;
 
 // Single-word, time-based greeting word (Patrik 2026-06-19: "[word], Name."). Picked
 // once per mount so it does not re-randomize on every render.
@@ -48,11 +47,10 @@ function roomCount(p) {
 }
 
 /**
- * Wired CV6 mobile Home. Same look as the static kit Home (safe-area frame, menu
- * open/closed toggle) but every value is REAL: the greeting name, the Catch Up
- * deck (only items that need Patrik), and one unified All Rooms list (agents +
- * projects, no subheaders). Rendered inside CornerVG so it shares the live data
- * and the real open-room handlers.
+ * Wired CV6 mobile Home. Exact pixel-faithful pull of the design system Home screen
+ * (safe-area frame with Corner logo, Catch Up deck, All Rooms list). Menu closed by
+ * default; profile FAB toggles the side rail. Props kept from CornerVG: user, agents,
+ * projectRooms, catchup, onSelectAgent, onSelectProject, onCatchupOpen, onNav.
  */
 export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup = [], onSelectAgent, onSelectProject, onCatchupOpen, onNav }) {
   // Home opens with the menu CLOSED (Patrik 2026-06-20): content full-width, the
@@ -80,22 +78,28 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
 
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, width: '100%', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)' }}>
-      <div style={{ position: 'absolute', left: 0, top: 'calc(env(safe-area-inset-top, 0px) + 14px)', right: menuOpen ? 72 : 0, bottom: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '6px 0 calc(28px + env(safe-area-inset-bottom, 0px))', transition: 'right .28s cubic-bezier(.4,0,.2,1)' }}>
-        <div style={{ padding: '0 22px', marginBottom: 20, fontSize: 29, lineHeight: 1.1, fontWeight: 700, letterSpacing: '-.025em', color: 'var(--fg)' }}>
-          {greet}<br /><span style={{ color: 'var(--faint)' }}>{name}.</span>
+      <div style={{ position: 'absolute', left: 0, top: 'calc(env(safe-area-inset-top, 0px) + 54px)', right: menuOpen ? 72 : 0, bottom: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '6px 0 calc(env(safe-area-inset-bottom, 0px) + 28px)', transition: 'right .28s cubic-bezier(.4,0,.2,1)' }}>
+        {/* Brand row: Corner logo */}
+        <div style={{ padding: '4px 22px 0', marginBottom: 20, display: 'flex', alignItems: 'center' }}>
+          <svg width="24" height="24" viewBox="0 0 100 100" fill="none" stroke="var(--fg)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', height: 24, width: 'auto' }}>
+            <path d="M10 90 L10 10 L50 10 Q90 10 90 50 Q90 90 50 90 Z" />
+            <path d="M30 30 L30 70" />
+          </svg>
         </div>
 
+        {/* Catch up eyebrow + badge */}
         <div style={{ padding: '0 22px', display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Catch up</span>
           {catchup.length > 0 && <Badge tone="weak">{catchup.length}</Badge>}
         </div>
 
+        {/* Catch up content */}
         {catchup.length === 0 ? (
-          <div className="glassy" style={{ margin: '0 22px 20px', padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-card)', fontSize: 13.5, color: 'var(--muted)' }}>
+          <div style={{ margin: '0 22px 20px', padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 18, fontSize: 13.5, color: 'var(--muted)', textAlign: 'center' }}>
             Nothing needs you right now.
           </div>
         ) : (
-          <div style={{ margin: '0 22px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ margin: '0 22px 20px' }}>
             {catchup.map((c) => (
               <div key={c.id} onClick={() => onCatchupOpen && onCatchupOpen(c)} style={{ cursor: 'pointer' }}>
                 <CatchUpCard
@@ -110,13 +114,17 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
           </div>
         )}
 
+        {/* All rooms eyebrow */}
         <div style={{ padding: '0 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '30px 0 10px' }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>All rooms</span>
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--accent)' }}>See all</span>
         </div>
+
+        {/* Rooms list */}
         {rooms.length === 0 ? (
           <div style={{ margin: '0 22px', padding: '16px', color: 'var(--faint)', fontSize: 13 }}>No rooms yet.</div>
         ) : (
-          <div className="glassy" style={{ margin: '0 22px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
+          <div style={{ margin: '0 22px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
             {rooms.map((r, i) => r.kind === 'agent' ? (
               <RoomRow key={'a' + i} status={r.status} name={r.name} tag="AGENT" onClick={() => onSelectAgent && onSelectAgent(r.raw)} />
             ) : (
@@ -126,6 +134,7 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
         )}
       </div>
 
+      {/* Side rail (open) */}
       {menuOpen && (
         <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0 }}>
           <SideRail
@@ -138,15 +147,30 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
         </div>
       )}
 
+      {/* Menu FAB (hamburger + profile avatar) — when menu is closed */}
       {!menuOpen && (
         <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{
-          position: 'absolute', right: 18, bottom: 'calc(18px + env(safe-area-inset-bottom, 0px))',
-          width: 54, height: 54, borderRadius: 27, padding: 0,
-          border: '1px solid rgba(255,255,255,.18)',
-          background: 'rgba(18,20,26,.92)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
-          color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 10px 28px rgba(0,0,0,.5)', cursor: 'pointer',
-        }}>{MENU_GLYPH}</button>
+          position: 'absolute', right: 18, bottom: 'calc(26px + env(safe-area-inset-bottom, 0px))',
+          display: 'flex', alignItems: 'center', gap: 12, height: 56, padding: '0 9px 0 18px',
+          border: '1px solid rgba(255,255,255,.16)',
+          borderRadius: 28,
+          background: 'rgba(13,17,23,.72)', backdropFilter: 'blur(18px) saturate(1.2)', WebkitBackdropFilter: 'blur(18px) saturate(1.2)',
+          boxShadow: '0 16px 36px -10px rgba(0,0,0,.7)', cursor: 'pointer',
+          zIndex: 8,
+        }}>
+          {/* Hamburger lines */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <i style={{ display: 'block', width: 20, height: 2, borderRadius: 2, background: 'var(--fg)' }} />
+            <i style={{ display: 'block', width: 14, height: 2, borderRadius: 2, background: 'var(--fg)' }} />
+            <i style={{ display: 'block', width: 20, height: 2, borderRadius: 2, background: 'var(--fg)' }} />
+          </div>
+          {/* Profile avatar */}
+          <div style={{ position: 'relative', width: 40, height: 40, borderRadius: '50%', background: 'var(--avatar)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 15, fontWeight: 700, flex: 'none' }}>
+            P
+            {/* Online indicator dot */}
+            <div style={{ position: 'absolute', top: 0, right: 0, width: 13, height: 13, borderRadius: '50%', background: 'var(--accent)', border: '2.5px solid #0d1117' }} />
+          </div>
+        </button>
       )}
     </div>
   );

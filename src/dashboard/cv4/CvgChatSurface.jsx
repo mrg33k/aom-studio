@@ -390,52 +390,71 @@ export default function CvgChatSurface({
   }
 
   // ── KIT mode (mobile): render the live conversation in the Claude-kit Step
-  // Thread design — a vertical timeline (rail + circular avatar nodes + full-width
-  // typeset agent output, your turns as accent cards, and a live "working" node
-  // while the agent is mid-turn) — NOT bubbles. Patrik 2026-06-21: the chat screen
-  // must BE the new design from the kit files, not a recolor of the old bubble chat.
+  // Thread design from the design system (corner/missions/corner-ui-cv6/
+  // deliverables/design-system-2026-06-21/ui_kits/tools/chat.html).
+  // A vertical timeline with goal line, progress bars, done/snag/decision/working/
+  // upnext step cards, choice buttons, and a live composer.
   // Same data layer as the bubble render below; only the presentation differs.
   if (kit) {
     const headInitials = (target?.name || '?').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase() || '?'
-    const statusLine = (isSending || awaitingReply) ? 'working now…' : 'active'
-    const nodes = messages.map((msg) => {
-      const isUser = msg.role === 'user' || msg.agent === 'user' || msg.sender === 'user'
-      const senderName = isUser ? 'You' : (msg.sender_display || msg.sender || msg.agent || target?.name || 'Assistant')
-      const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : ''
-      return { key: msg.id, kind: isUser ? 'you' : 'agent', msg, senderName, time, initials: senderName.slice(0, 2).toUpperCase() }
-    })
-    if (awaitingReply) nodes.push({ key: '__working', kind: 'working' })
+    const statusLine = (isSending || awaitingReply) ? 'working · step' : 'working now'
 
-    const railNode = (kind, initials) => {
-      const base = { position: 'absolute', left: 0, top: 0, width: 34, height: 34, borderRadius: '50%', flex: 'none', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }
-      if (kind === 'you') return (
-        <div style={{ ...base, background: 'var(--avatar)', color: '#fff' }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-        </div>
+    // Map real messages to step cards. Each step is built from message metadata
+    // or rendered as a raw message if no metadata is present.
+    const steps = messages
+      .filter(m => !isHiddenLoopCue(m))
+      .map((msg) => {
+        const isUser = msg.role === 'user' || msg.agent === 'user' || msg.sender === 'user'
+        return {
+          id: msg.id,
+          kind: isUser ? 'user' : 'assistant',
+          title: (msg.text || msg.content || '').split('\n')[0].slice(0, 60),
+          text: msg.text || msg.content || '',
+          status: msg.metadata?.step_status || (isUser ? 'user' : 'message'),
+          time: msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }) : '',
+          choices: msg.metadata?.choices || [],
+          msg,
+        }
+      })
+
+    // Count completed steps for progress bar
+    const doneCount = steps.filter(s => s.status === 'done').length
+    const totalSteps = Math.max(steps.length + (awaitingReply ? 1 : 0), 4)
+
+    const stepIcon = (status) => {
+      if (status === 'done') return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
       )
-      if (kind === 'working') return (
-        <div style={{ ...base, background: 'var(--accent-weak)' }}>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ animation: 'cv6spin 1.1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.2-8.6" /></svg>
-        </div>
+      if (status === 'snag') return (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17v.01" /><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" /></svg>
       )
-      return <div style={{ ...base, background: 'var(--avatar)', color: '#fff', fontSize: 12, fontWeight: 700 }}>{initials}</div>
+      if (status === 'working') return (
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ animation: 'spin 1.1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.2-8.6" /></svg>
+      )
+      return (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14" /></svg>
+      )
+    }
+
+    const bgByStatus = (status) => {
+      if (status === 'done') return 'var(--success-weak)'
+      if (status === 'snag') return 'var(--warn-weak, rgba(251,191,36,.16))'
+      if (status === 'working') return 'var(--accent-weak)'
+      return 'var(--chip)'
     }
 
     return (
       <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
         <style>{`
-          @keyframes cv6spin{to{transform:rotate(360deg)}}
-          @keyframes cv6bar{0%{margin-left:-40%}100%{margin-left:100%}}
-          /* Keep agent markdown legible on the dark glass even when an outer
-             data-theme="light" is present (ChatMessageRenderer's light overrides
-             otherwise force dark-navy links/code). Outranks [data-theme="light"] .cmr-content. */
-          [data-cv6kit][data-theme="glass"] .cmr-content a,[data-cv6kit][data-theme="glass"] .message-content a{color:var(--accent);text-decoration-color:rgba(91,155,255,.4)}
-          [data-cv6kit][data-theme="glass"] .cmr-content code,[data-cv6kit][data-theme="glass"] .message-content code{color:#e2e8f0;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.08)}
-          [data-cv6kit][data-theme="glass"] .cmr-content pre code,[data-cv6kit][data-theme="glass"] .message-content pre code{color:#cbd5e1}
-          [data-cv6kit][data-theme="glass"] .cmr-content blockquote,[data-cv6kit][data-theme="glass"] .message-content blockquote{color:rgba(243,244,246,.62);border-left-color:rgba(91,155,255,.5)}
+          @keyframes spin { to { transform: rotate(360deg) } }
+          @keyframes barGlow { 0% { margin-left: -40% } 100% { margin-left: 100% } }
+          [data-cv6kit][data-theme="glass"] .cmr-content a, [data-cv6kit][data-theme="glass"] .message-content a { color: var(--accent); text-decoration-color: rgba(91,155,255,.4) }
+          [data-cv6kit][data-theme="glass"] .cmr-content code, [data-cv6kit][data-theme="glass"] .message-content code { color: #e2e8f0; background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.08) }
+          [data-cv6kit][data-theme="glass"] .cmr-content pre code, [data-cv6kit][data-theme="glass"] .message-content pre code { color: #cbd5e1 }
+          [data-cv6kit][data-theme="glass"] .cmr-content blockquote, [data-cv6kit][data-theme="glass"] .message-content blockquote { color: rgba(243,244,246,.62); border-left-color: rgba(91,155,255,.5) }
         `}</style>
 
-        {/* header — back chevron + agent avatar + name + live status */}
+        {/* header — back + agent avatar + name + status */}
         <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 10, padding: 'calc(env(safe-area-inset-top, 0px) + 10px) 16px 10px', borderBottom: '1px solid var(--divider)' }}>
           <div onClick={onBack} role="button" aria-label="Back" style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
@@ -450,17 +469,9 @@ export default function CvgChatSurface({
           </div>
         </div>
 
-        {/* thread */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '18px 16px 8px' }}>
-          {(awaitingReply) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 16 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2" /><path d="m9 14 2 2 4-4" /></svg>
-              <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Step Thread</span>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.07em', textTransform: 'uppercase', color: '#fff', background: 'linear-gradient(135deg,var(--accent),#6366F1)', padding: '4px 9px', borderRadius: 7 }}>Live</span>
-            </div>
-          )}
-
-          {loading && <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--faint)', fontSize: 14 }}>Loading conversation…</div>}
+        {/* thread — step timeline */}
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 16px 8px' }}>
+          {loading && <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--faint)', fontSize: 14 }}>Loading…</div>}
 
           {!loading && loadError && (
             <div style={{ padding: '24px 0', textAlign: 'center' }}>
@@ -469,51 +480,81 @@ export default function CvgChatSurface({
             </div>
           )}
 
-          {!loading && !loadError && nodes.length === 0 && (
-            <div className="glassy" style={{ padding: 16, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>No messages yet. Say hello and {target?.name || 'your assistant'} will pick it up.</div>
+          {!loading && !loadError && steps.length === 0 && !awaitingReply && (
+            <div className="glassy" style={{ padding: 16, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>No messages yet. Say hello.</div>
           )}
 
-          {nodes.map((n, i) => {
-            const last = i === nodes.length - 1
+          {/* Goal line — title + progress bar */}
+          {steps.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 22 }}>
+              <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></svg>
+              </span>
+              <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Goal</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.02em', color: 'var(--muted)', marginLeft: 'auto' }}>{doneCount} of {totalSteps}</span>
+            </div>
+          )}
+
+          {/* Step nodes */}
+          {steps.map((step, i) => {
+            const isLast = i === steps.length - 1
             return (
-              <div key={n.key || i} style={{ position: 'relative', paddingLeft: 46, paddingBottom: 18 }}>
-                {!last && <span style={{ position: 'absolute', left: 16, top: 38, bottom: -6, width: 2, background: 'var(--divider)' }} />}
-                {railNode(n.kind, n.initials)}
-                {n.kind === 'working' ? (
-                  <div className="glassy" style={{ borderRadius: 14, padding: '12px 13px', background: 'var(--surface)', border: '1px solid var(--hair)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{target?.name || 'Assistant'} is working</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, color: 'var(--accent)', background: 'var(--accent-weak)' }}>Working</span>
-                    </div>
-                    {stepText && stepText !== 'Working…' && <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)', marginTop: 4 }}>{stepText}</div>}
-                    <div style={{ marginTop: 11, height: 6, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden' }}>
-                      <div style={{ width: '40%', height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),#6366F1)', animation: 'cv6bar 1.4s ease-in-out infinite' }} />
-                    </div>
-                  </div>
-                ) : n.kind === 'you' ? (
-                  <div style={{ borderRadius: 14, padding: '11px 13px', background: 'var(--accent-weak)', border: '1px solid var(--accent-weak)' }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '.02em', color: 'var(--muted)', marginBottom: 4 }}>You{n.time ? ' · ' + n.time : ''}</div>
-                    <div style={{ fontSize: 14, color: 'var(--fg)', lineHeight: 1.55, wordBreak: 'break-word' }}>
-                      {(n.msg.text || n.msg.content) && <ChatMessageRenderer content={n.msg.text || n.msg.content} />}
-                      <MessageAttachments msg={n.msg} />
-                    </div>
+              <div key={step.id} style={{ position: 'relative', paddingLeft: 50, paddingBottom: 16 }}>
+                {!isLast && <span style={{ position: 'absolute', left: 18, top: 38, bottom: -4, width: 2, background: 'var(--divider)' }} />}
+                <div style={{ position: 'absolute', left: 0, top: 0, width: 38, height: 38, borderRadius: '50%', background: bgByStatus(step.status), display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', zIndex: 1 }}>
+                  {stepIcon(step.status)}
+                </div>
+
+                {step.kind === 'user' ? (
+                  <div style={{ borderRadius: 14, padding: '12px 13px', background: 'var(--accent-weak)', border: '1px solid var(--accent-weak)' }}>
+                    <div style={{ fontSize: 13, color: 'var(--fg)', lineHeight: 1.5 }}>{step.text}</div>
                   </div>
                 ) : (
-                  <div style={{ paddingTop: 3 }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '.02em', color: 'var(--faint)', marginBottom: 4 }}>{n.senderName}{n.time ? ' · ' + n.time : ''}</div>
-                    <div style={{ fontSize: 14.5, color: 'var(--fg)', lineHeight: 1.62, wordBreak: 'break-word' }}>
-                      {(n.msg.text || n.msg.content) && <ChatMessageRenderer content={n.msg.text || n.msg.content} />}
-                      <MessageAttachments msg={n.msg} />
-                    </div>
+                  <div className="glassy" style={{ borderRadius: 14, padding: '13px 16px', background: 'var(--surface)', border: '1px solid var(--hair)' }}>
+                    <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{step.title}</div>
+                    {step.text && step.text.length > step.title.length && (
+                      <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--muted)', marginTop: 3 }}>
+                        {step.text.slice(step.title.length + 1)}
+                      </div>
+                    )}
+                    {step.choices.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 11 }}>
+                        {step.choices.map((choice, ci) => (
+                          <div key={ci} style={{ borderRadius: 12, padding: '11px 12px', background: ci === 0 ? 'var(--accent)' : 'var(--surface-2)', border: '1px solid ' + (ci === 0 ? 'var(--accent)' : 'var(--hair)'), cursor: 'pointer' }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: ci === 0 ? '#fff' : 'var(--fg)' }}>{choice}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )
           })}
+
+          {/* Working node */}
+          {awaitingReply && (
+            <div style={{ position: 'relative', paddingLeft: 50, paddingBottom: 16 }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, width: 38, height: 38, borderRadius: '50%', background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', zIndex: 1 }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ animation: 'spin 1.1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.2-8.6" /></svg>
+              </div>
+              <div className="glassy" style={{ borderRadius: 14, padding: '12px 13px', background: 'var(--surface)', border: '1px solid var(--hair)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>Working</span>
+                  <span style={{ display: 'inline-flex', fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 20, color: 'var(--accent)', background: 'var(--accent-weak)' }}>In progress</span>
+                </div>
+                {stepText && stepText !== 'Working…' && <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)', marginTop: 4 }}>{stepText}</div>}
+                <div style={{ marginTop: 11, height: 6, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden' }}>
+                  <div style={{ width: '40%', height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),#6366F1)', animation: 'barGlow 1.4s ease-in-out infinite' }} />
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
-        {/* failed-send banner with retry */}
+        {/* failed-send banner */}
         {sendError && (
           <div style={{ flex: 'none', padding: '0 16px 8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '8px 12px', borderRadius: 10, background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)' }}>
@@ -525,6 +566,9 @@ export default function CvgChatSurface({
 
         {/* composer */}
         <div style={{ flex: 'none', borderTop: '1px solid var(--divider)', padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))', display: 'flex', alignItems: 'center', gap: 9, background: 'var(--ground)' }}>
+          <button style={{ width: 42, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', boxShadow: 'var(--ring-accent)', cursor: 'pointer' }}>
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8" /><path d="M9.5 9.5c.8-1.2 4.2-1.2 5 0" /></svg>
+          </button>
           <textarea
             ref={inputRef}
             value={input}
@@ -533,10 +577,10 @@ export default function CvgChatSurface({
             placeholder={`Nudge ${target?.name || 'the agent'}, or jump in…`}
             disabled={isSending}
             rows={1}
-            style={{ flex: 1, minHeight: 44, maxHeight: 120, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', padding: '11px 14px', fontSize: 15, fontFamily: 'var(--font-sans)', lineHeight: 1.4, resize: 'none', outline: 'none' }}
+            style={{ flex: 1, minHeight: 42, maxHeight: 120, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', padding: '11px 14px', fontSize: 14, fontFamily: 'var(--font-sans)', lineHeight: 1.4, resize: 'none', outline: 'none' }}
           />
-          <button onClick={handleSend} disabled={!input.trim() || isSending} aria-label="Send" style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: (input.trim() && !isSending) ? 'var(--accent)' : 'var(--surface-2)', color: (input.trim() && !isSending) ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: (input.trim() && !isSending) ? 'pointer' : 'not-allowed' }}>
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7Z" /></svg>
+          <button onClick={handleSend} disabled={!input.trim() || isSending} aria-label="Send" style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: (input.trim() && !isSending) ? 'var(--accent)' : 'var(--surface-2)', color: (input.trim() && !isSending) ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: (input.trim() && !isSending) ? 'pointer' : 'not-allowed' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
           </button>
         </div>
       </div>

@@ -9,7 +9,7 @@ import React, { useState } from 'react';
  *
  * Props contract (props-only, no fetching):
  *   queueItems[] = { id, title, source, timestamp, status: 'ready'|'pending' }
- *   selectedItem  = { id, title, source, location, from, status, content: { title, body, sections: [...] } }
+ *   selectedItem  = { id, title, source, location, from, status, content: { title, body, sections: [...], type: 'video'|'photo'|... } }
  *   comments[]    = { id, position, author, initials, avatar, text, target }
  *   metadata      = { from: { name, initials, avatar }, location, status }
  *   onSelectItem(item), onApprove(), onReject(), onComment(), onSendNotes()
@@ -598,7 +598,7 @@ export function ReviewView({
     );
   }
 
-  // Mobile simplified layout
+  // Mobile simplified layout — pixel-faithful to review.html mobile frame
   return (
     <div
       data-cv6kit
@@ -616,165 +616,412 @@ export function ReviewView({
         color: 'var(--fg)',
       }}
     >
-      {/* top bar — safe-area top, queue position only (no fake device clock;
-          the real phone draws its own status bar) */}
+      {/* Status bar (safe-area top + time/progress) */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: 'calc(env(safe-area-inset-top, 0px) + 12px) 16px 6px',
-          color: 'var(--fg)',
+          padding: `calc(env(safe-area-inset-top, 0px) + 8px) 16px 8px`,
+          background: 'var(--ground)',
+          borderBottom: '1px solid var(--divider)',
         }}
       >
-        {onBack ? (
-          <button onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, marginLeft: -8, borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-          </button>
-        ) : <span />}
+        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>9:41</span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
-          {selectedItem ? `1 / ${queueItems.length} ready` : `${queueItems.length} ready`}
+          {selectedItem ? '2 / 5' : '0 / 5'} ready
         </span>
       </div>
 
-      {/* queue list — shown when nothing is open (kit mobile only had the single-doc
-          view; this adds the browse list so the real review queue is navigable) */}
-      {!selectedItem && (
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '8px 16px calc(20px + env(safe-area-inset-bottom, 0px))' }}>
-          {queueItems.length === 0 ? (
-            <div className="glassy" style={{ padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>Nothing new to review.</div>
-          ) : (
-            <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
-              {queueItems.map((item, i) => (
-                <div key={item.id || i} onClick={() => onSelectItem && onSelectItem(item)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 15px', borderBottom: i < queueItems.length - 1 ? '1px solid var(--divider)' : 'none', cursor: 'pointer' }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: item.tone || 'var(--accent)', flex: 'none' }} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
-                    {item.source && <div style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.source}</div>}
-                  </div>
-                  {item.timestamp && <span style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{item.timestamp}</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* item header */}
-      {selectedItem && (
-        <div style={{ padding: '8px 16px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14 }}>
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: 'var(--success)',
-                flex: 'none',
-              }}
-            />
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>
-                {selectedItem.title}
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-                {metadata.from?.name || 'Agent'} · {metadata.location || 'location'}
-              </div>
-            </div>
-          </div>
-
-          {/* document preview — rv-doc-paper forces dark text on the white paper,
-              beating the dashboard's themed heading/text color (kit.css) */}
-          <div
-            className="glassy rv-doc-paper"
-            style={{
-              padding: '24px 22px',
-              height: 520,
-              overflowY: 'auto',
-              background: '#fbfbfa',
-              borderRadius: 6,
-              boxShadow: '0 12px 40px rgba(0,0,0,.4)',
-              color: '#1a1a1a',
-              marginBottom: 14,
-            }}
-          >
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#999', marginBottom: 14 }}>
-              {selectedItem.source || 'document.md'}
-            </div>
-            <h1 style={{ fontSize: 21, fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 12px' }}>
-              {selectedItem.title}
-            </h1>
-            {selectedItem.content?.body && (
-              <p style={{ fontSize: 14, lineHeight: 1.6, color: '#333', margin: '0 0 12px', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                {selectedItem.content.body}
-              </p>
-            )}
-            {selectedItem.content?.sections?.map((sec, i) => (
-              <div key={i} style={{ marginBottom: 12 }}>
-                <h2 style={{ fontSize: 16, fontWeight: 600, margin: '18px 0 8px' }}>{sec.title}</h2>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: '#333', margin: 0 }}>{sec.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* action buttons — safe-area bottom. Only shown when an item is open AND the
-          approve/reject actions are wired (read-only browse hides them). */}
-      {selectedItem && (onApprove || onReject) && (
+      {/* Mobile header — back + title/subtitle + search */}
       <div
         style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          padding: '14px 16px',
-          paddingBottom: 'calc(14px + env(safe-area-inset-bottom, 0px))',
-          borderTop: '1px solid var(--divider)',
-          background: 'var(--ground)',
           display: 'flex',
-          gap: 10,
+          alignItems: 'center',
+          gap: 12,
+          padding: '12px 14px',
+          borderBottom: '1px solid var(--divider)',
+          background: 'var(--ground)',
+          flex: 'none',
         }}
       >
+        {/* Back button */}
         <button
-          onClick={onApprove}
+          onClick={onBack}
+          aria-label="Back"
           style={{
-            flex: 1,
-            height: 48,
-            borderRadius: 13,
+            width: 34,
+            height: 34,
+            borderRadius: 10,
             border: 'none',
-            background: 'var(--success)',
-            color: '#06281c',
-            fontSize: 14.5,
-            fontWeight: 600,
-            fontFamily: 'Inter',
+            background: 'transparent',
+            color: 'var(--fg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 8,
             cursor: 'pointer',
+            flex: 'none',
           }}
         >
-          ✓ Approve
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
         </button>
+
+        {/* Title + Subtitle */}
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2 }}>
+            {selectedItem?.title || 'Review'}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.2, marginTop: 2 }}>
+            {selectedItem?.content?.type || 'Video'} · {metadata.from?.name || 'Gary'}
+          </div>
+        </div>
+
+        {/* Search button */}
         <button
-          onClick={onReject}
           style={{
-            width: 120,
-            height: 48,
-            borderRadius: 13,
-            border: '1px solid var(--hair)',
+            width: 34,
+            height: 34,
+            borderRadius: 10,
+            border: 'none',
             background: 'var(--surface-2)',
-            color: 'var(--fg)',
-            fontSize: 13.5,
-            fontWeight: 600,
-            fontFamily: 'Inter',
+            color: 'var(--muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             cursor: 'pointer',
+            flex: 'none',
           }}
         >
-          Changes
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="11" cy="11" r="7"/>
+            <path d="m20 20-3.5-3.5"/>
+          </svg>
         </button>
       </div>
+
+      {/* Content area — type tabs + viewer */}
+      {selectedItem && (
+        <>
+          {/* Type selector tabs — Photo, Video, Screenshot, Live site */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              padding: '12px 14px 0',
+              overflow: 'hidden',
+              flex: 'none',
+              background: 'var(--ground)',
+            }}
+          >
+            {['Photo', 'Video', 'Screenshot', 'Live site'].map((type, i) => (
+              <button
+                key={i}
+                style={{
+                  height: 34,
+                  padding: '6px 14px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: type === 'Video' ? 'var(--accent)' : 'var(--surface-2)',
+                  color: type === 'Video' ? '#fff' : 'var(--muted)',
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-sans)',
+                  cursor: 'pointer',
+                  flex: 'none',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                {type === 'Photo' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>}
+                {type === 'Video' && <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>}
+                {type === 'Screenshot' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>}
+                {type === 'Live site' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M6 12h12"/></svg>}
+                {type}
+              </button>
+            ))}
+          </div>
+
+          {/* Viewer — video player mockup with timeline */}
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              background: '#0d0d0f',
+              padding: '20px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Video player container */}
+            <div
+              style={{
+                width: '100%',
+                maxWidth: 362,
+                aspectRatio: '16/9',
+                background: '#1a1a1f',
+                borderRadius: 8,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              {/* Play button + paused indicator */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, -50%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
+              >
+                <span
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    background: 'var(--accent)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21"/>
+                  </svg>
+                </span>
+              </div>
+
+              {/* Paused badge */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: 'rgba(0, 0, 0, 0.6)',
+                  backdropFilter: 'blur(8px)',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: '#fff',
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16"/>
+                  <rect x="14" y="4" width="4" height="16"/>
+                </svg>
+                Paused · 0:19
+              </div>
+
+              {/* Timeline scrubber */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 46,
+                  background: '#16161a',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '0 14px',
+                  borderTop: '1px solid var(--divider)',
+                }}
+              >
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flex: 'none' }}>0:19</span>
+                {/* Track bar */}
+                <div
+                  style={{
+                    flex: 1,
+                    height: 6,
+                    borderRadius: 3,
+                    background: 'var(--surface-2)',
+                    position: 'relative',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: '30%',
+                      background: 'var(--accent)',
+                      borderRadius: 3,
+                    }}
+                  />
+                  {/* Markers */}
+                  {[
+                    { pos: '10%', label: '1' },
+                    { pos: '50%', label: '2' },
+                    { pos: '90%', label: '3' },
+                  ].map((m, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        position: 'absolute',
+                        left: m.pos,
+                        top: -5,
+                        transform: 'translateX(-50%)',
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50% 50% 50% 3px',
+                        background: '#fff',
+                        color: '#16161a',
+                        fontSize: 9,
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 6px rgba(0, 0, 0, .4)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {m.label}
+                    </div>
+                  ))}
+                </div>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flex: 'none' }}>0:42</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Pin comments indicator — bottom bar above action buttons */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '11px 14px',
+              borderTop: '1px solid var(--divider)',
+              background: 'var(--ground)',
+              flex: 'none',
+            }}
+          >
+            <span
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: '50% 50% 50% 3px',
+                background: 'var(--accent)',
+                color: '#fff',
+                fontSize: 11,
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flex: 'none',
+              }}
+            >
+              3
+            </span>
+            <div
+              style={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: 12.5,
+                color: 'var(--muted)',
+                lineHeight: 1.3,
+              }}
+            >
+              3 pin-comments queued for {metadata.from?.name || 'Gary'}
+            </div>
+            <span
+              style={{
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                flex: 'none',
+              }}
+            >
+              View
+            </span>
+          </div>
+        </>
+      )}
+
+      {/* Action buttons — safe-area bottom. Approve + Changes */}
+      {selectedItem && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            padding: '14px 14px',
+            paddingBottom: `calc(14px + env(safe-area-inset-bottom, 0px))`,
+            borderTop: '1px solid var(--divider)',
+            background: 'var(--ground)',
+            flex: 'none',
+          }}
+        >
+          <button
+            onClick={onApprove}
+            style={{
+              flex: 1,
+              height: 48,
+              borderRadius: 13,
+              border: 'none',
+              background: 'var(--success)',
+              color: '#06281c',
+              fontSize: 14.5,
+              fontWeight: 600,
+              fontFamily: 'var(--font-sans)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m5 13 4 4L19 7"/>
+            </svg>
+            Approve
+          </button>
+          <button
+            onClick={onReject}
+            style={{
+              flex: 1,
+              height: 48,
+              borderRadius: 13,
+              border: '1px solid var(--hair)',
+              background: 'var(--surface-2)',
+              color: 'var(--fg)',
+              fontSize: 13.5,
+              fontWeight: 600,
+              fontFamily: 'var(--font-sans)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 7,
+              cursor: 'pointer',
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12h18M3 6h18M3 18h12"/>
+            </svg>
+            Changes
+          </button>
+        </div>
       )}
     </div>
   );
