@@ -181,13 +181,8 @@ export function ScribeView({
           @keyframes scribeCaret { 0%,100%{opacity:1;} 50%{opacity:0;} }
         `}</style>
 
-        {/* status bar + time */}
-        <div style={{ height: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 24px 6px', color: 'var(--fg)' }}>
-          <span style={{ fontSize: 15, fontWeight: 600 }}>{new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
-        </div>
-
-        {/* header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 54, padding: '0 12px 0 6px', borderBottom: '1px solid var(--divider)', flex: 'none' }}>
+        {/* header — safe-area top (no fake device clock; the phone draws its own) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 54, padding: 'calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px 6px', borderBottom: '1px solid var(--divider)', flex: 'none' }}>
           <button onClick={onBack} style={{ width: 40, height: 40, borderRadius: 11, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
           </button>

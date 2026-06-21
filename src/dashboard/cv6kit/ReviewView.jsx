@@ -615,21 +615,18 @@ export function ReviewView({
         color: 'var(--fg)',
       }}
     >
-      {/* status bar */}
+      {/* top bar — safe-area top, queue position only (no fake device clock;
+          the real phone draws its own status bar) */}
       <div
         style={{
-          height: 50,
           display: 'flex',
           alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          paddingBottom: 6,
-          paddingLeft: 0,
-          paddingRight: 0,
+          justifyContent: 'flex-end',
+          padding: 'calc(env(safe-area-inset-top, 0px) + 12px) 16px 6px',
           color: 'var(--fg)',
         }}
       >
-        <span style={{ fontSize: 15, fontWeight: 600, marginLeft: 16 }}>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)', marginRight: 16 }}>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
           {selectedItem ? '1' : '0'} / {queueItems.length} ready
         </span>
       </div>
