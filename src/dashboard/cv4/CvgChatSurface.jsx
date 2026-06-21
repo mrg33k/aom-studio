@@ -552,7 +552,12 @@ export default function CvgChatSurface({
                 {senderName.slice(0, 2).toUpperCase()}
               </div>
             )}
-            <div style={{ flex: isUser ? 0 : 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {/* Shrink-wrap the bubble and cap it at 85% of the ROW (this column is a
+                direct flex child of the row, so the % resolves against full width).
+                The previous flex:0 gave the user column a 0% basis, so the bubble's
+                own 85% maxWidth collapsed to one character per line. alignItems puts
+                the bubble on its correct side; the bubble fills this capped column. */}
+            <div style={{ flex: '0 1 auto', minWidth: 0, maxWidth: 'min(680px, 85%)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: isUser ? 'flex-end' : 'flex-start' }}>
               {!isUser && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 0 }}>
                   <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--cv6-text-primary)' }}>
@@ -574,7 +579,7 @@ export default function CvgChatSurface({
                    accent fill + white text, so they stay untagged. */
                 data-cv6-card={!isUser ? '' : undefined}
                 style={{
-                  maxWidth: 'min(680px, 85%)',
+                  maxWidth: '100%',
                   padding: isUser ? '11px 15px' : '12px 15px',
                   borderRadius: isUser ? '18px 18px 5px 18px' : '18px 18px 18px 5px',
                   background:
