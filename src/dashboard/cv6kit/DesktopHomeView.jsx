@@ -432,7 +432,9 @@ export function DesktopHomeView({
                   : <span style={{ fontSize: 11.5, color: 'var(--muted)' }}>{p.count}</span>}
               </div>
             ))}
-            <button style={{ width: '100%', height: 38, marginTop: 6, borderRadius: 10, border: '1px dashed var(--hair)', background: 'transparent', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Show {Math.max(0, projectTotal - projects.length)} more projects</button>
+            {projectTotal > projects.length && (
+              <button style={{ width: '100%', height: 38, marginTop: 6, borderRadius: 10, border: '1px dashed var(--hair)', background: 'transparent', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Show {projectTotal - projects.length} more projects</button>
+            )}
           </div>
         </div>
 
