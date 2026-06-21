@@ -918,10 +918,14 @@ export function OrganizeView({
           color: 'var(--muted)',
           marginBottom: 12,
         }}>
-          <span>Corner</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
+          {(selectedProject?.name || 'Dashboard') !== 'Corner' && (
+            <>
+              <span>Corner</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18l6-6-6-6"/>
+              </svg>
+            </>
+          )}
           <button
             onClick={() => setShowSwitcher(true)}
             aria-label="Switch project"
