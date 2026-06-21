@@ -30,8 +30,8 @@ import { authFetch } from './lib/authFetch.js'
 import { OVERLAY } from './cv4/lib/uiKit.jsx'
 // corner:corner-ui-cv6 R-KIT-2 — wired Claude-design mobile Home (real data, kit look).
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
-// R-KIT-11 — Claude-design Organize screen, mounted live per activeTool (kit view + real projects).
-import { OrganizeView } from './cv6kit/OrganizeView.jsx'
+// R-KIT-11/13 — Claude-design Organize screen on phones (kit view + real projects + files).
+import { OrganizeLive } from './cv6kit/OrganizeLive.jsx'
 // R-KIT-12 — Claude-design Support inbox on phones, wired to the real wishes+email data.
 import { SupportLive } from './cv6kit/SupportLive.jsx'
 import './cv6kit/kit.css'
@@ -2987,16 +2987,10 @@ export default function CornerVG() {
                  activeTool, which force-closes this board. */
               <RoutinesBoard worldId={worldId} onClose={() => setActiveTool(null)} />
             ) : (!isDesktop && activeTool === 'organize') ? (
-              /* corner:corner-ui-cv6 R-KIT-11 — Claude-design Organize screen on the phone,
-                 wired to the user's real project rooms. onBack returns to home. Files tab
-                 fills in once a per-project files source is wired (opens on Projects for now). */
-              <OrganizeView
-                projects={(projectRooms || []).map((p) => ({ id: p.slug, slug: p.slug, name: p.name || p.slug, color: p.color, status: p.status, tasks: p.tasks || [] }))}
-                files={[]}
-                onSelectProject={(proj) => { const r = (projectRooms || []).find((x) => x.slug === (proj.slug || proj.id)); if (r) handleSelectProject(r); }}
-                onSelectFile={() => {}}
-                onBack={() => setActiveTool(null)}
-              />
+              /* corner:corner-ui-cv6 R-KIT-13 — Claude-design Organize screen on the phone,
+                 wired to the user's real project rooms AND each project's real files (with
+                 previews). onBack returns to home. */
+              <OrganizeLive projectRooms={projectRooms} onBack={() => setActiveTool(null)} />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */
