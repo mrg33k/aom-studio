@@ -20,6 +20,7 @@ import { CommandView } from './cv6kit/CommandView.jsx';
 import { SupportView } from './cv6kit/SupportView.jsx';
 import { OrganizeView } from './cv6kit/OrganizeView.jsx';
 import { ReviewView } from './cv6kit/ReviewView.jsx';
+import { MobileChatList } from './cv6kit/MobileChatList.jsx';
 import { ScribeView } from './cv6kit/ScribeView.jsx';
 import { OnboardingView } from './cv6kit/OnboardingView.jsx';
 import { SettingsView } from './cv6kit/SettingsView.jsx';
@@ -283,6 +284,20 @@ export default function CV6KitTest() {
         <div style={{ height: '100dvh' }}>
           <CvgChatSurface worldId={null} target={{ type: 'agent', name: 'Elon', slug: 'elon' }} kit previewMessages={SAMPLE_CVG_MESSAGES} onSend={noop} onBack={noop} />
         </div>
+      ) : screen === 'chatlist' ? (
+        <MobileChatList
+          agents={[
+            { slug: 'elon', name: 'Elon', status: 'online' },
+            { slug: 'rex', name: 'Rex', status: 'working' },
+            { slug: 'gary', name: 'Gary', status: 'idle' },
+          ]}
+          projectRooms={[
+            { slug: 'space-rising', name: 'Space Rising', color: 'var(--violet-400)', tasks: Array.from({ length: 28 }) },
+            { slug: 'corner', name: 'Corner', color: 'var(--accent)', tasks: Array.from({ length: 84 }) },
+          ]}
+          onOpen={noop}
+          onBack={noop}
+        />
       ) : screen === 'chat' ? (
         <ChatStepThread {...SAMPLE_CHAT} onBack={noop} onSend={noop} onChoice={noop} />
       ) : screen === 'tracker' ? (

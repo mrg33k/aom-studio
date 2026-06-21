@@ -30,6 +30,7 @@ import { authFetch } from './lib/authFetch.js'
 import { OVERLAY } from './cv4/lib/uiKit.jsx'
 // corner:corner-ui-cv6 R-KIT-2 — wired Claude-design mobile Home (real data, kit look).
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
+import { MobileChatList } from './cv6kit/MobileChatList.jsx'
 import { MobileProjectWired } from './cv6kit/MobileProjectWired.jsx'
 import { NewRoomModal } from './cv6kit/NewRoomModal.jsx'
 // R5 — Claude-design DESKTOP Home (3-column shell, real data, self-scoped data-cv6kit).
@@ -188,6 +189,7 @@ export default function CornerVG() {
   // anywhere (notification, catchup, command tracker, room links) instead opens the in-page
   // Chat tool. This carries the room to HomeView, which opens the Chat tool preselected.
   const [cv6ChatRequest, setCv6ChatRequest] = useState(null) // { kind, slug, name, missionSlug?, nonce }
+  const [chatTarget, setChatTarget] = useState(null) // mobile Chat: which conversation is open (null = show the conversations list)
   const [cv6ToolRequest, setCv6ToolRequest] = useState(null) // R82: { tool, nonce } — agent opens a tool on the user's screen
   const [prefillMessage, setPrefillMessage] = useState(null)
   // R6.2: mission clicked from the drawer is "attached" to the composer
@@ -3066,21 +3068,34 @@ export default function CornerVG() {
                  onExit returns home. */
               <ReviewLive worldId={worldId} onExit={() => setActiveTool(null)} />
             ) : (activeTool === 'chat') ? (
-              /* corner:corner-ui-cv6 R-KIT-18 — Chat menu opens the live EA conversation
-                 (CvgChatSurface, the cv6 chat) via activeTool so it can never fall to the
-                 old ChatPanel. The EA is resolved at render time, so a slow agents load
-                 simply shows a brief loader, then the conversation. onBack returns home. */
+              /* corner:corner-ui-cv6 — Chat lands on your CONVERSATIONS LIST (Patrik
+                 2026-06-21), the design's rooms rail brought to the phone. On mobile,
+                 with nothing picked yet, show MobileChatList (your assistants + project
+                 rooms); tapping one opens the live chat for it and back returns to the
+                 list. Desktop keeps opening the conversation directly. The live chat
+                 surface (CvgChatSurface) itself is untouched. */
               (() => {
+                if (!isDesktop && !chatTarget) {
+                  return (
+                    <MobileChatList
+                      agents={agents}
+                      projectRooms={projectRooms}
+                      onOpen={(t) => setChatTarget(t)}
+                      onBack={() => setActiveTool(null)}
+                    />
+                  )
+                }
                 const ea = agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
-                return ea ? (
+                const tgt = chatTarget || (ea ? { type: 'agent', slug: ea.slug, name: ea.name } : null)
+                return tgt ? (
                   <CvgChatSurface
-                    key={ea.slug}
+                    key={`${tgt.type}:${tgt.slug}`}
                     worldId={worldId}
-                    target={{ type: 'agent', slug: ea.slug, name: ea.name }}
+                    target={tgt}
                     theme={theme}
                     kit
                     onSend={handleCvgChatSend}
-                    onBack={() => setActiveTool(null)}
+                    onBack={() => { if (!isDesktop && chatTarget) { setChatTarget(null) } else { setActiveTool(null) } }}
                   />
                 ) : (
                   <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-tertiary)', fontSize: 14 }}>Loading your conversation…</div>
@@ -3165,7 +3180,7 @@ export default function CornerVG() {
                       // instead of the selectedAgent path, which could land on the old
                       // ChatPanel if agents had not loaded yet. The EA is resolved at
                       // render time in the activeTool==='chat' branch.
-                      setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('chat')
+                      setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setChatTarget(null); setActiveTool('chat')
                     }
                     else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
                     else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
@@ -3199,7 +3214,7 @@ export default function CornerVG() {
                 onNav={(key) => {
                   setSelectedMail(null)
                   if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
-                  else if (key === 'chat') { setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('chat') }
+                  else if (key === 'chat') { setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setChatTarget(null); setActiveTool('chat') }
                   else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
                   else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
                   else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
