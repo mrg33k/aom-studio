@@ -8,6 +8,77 @@
 @import './tokens/typography.css';
 @import './tokens/spacing.css';
 
+/* Typography & spacing tokens — scoped to [data-cv6kit], theme-independent */
+[data-cv6kit] {
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+
+  /* size scale (px) */
+  --text-display: 30px;
+  --text-title: 26px;
+  --text-h: 16px;
+  --text-body: 14px;
+  --text-sm: 13px;
+  --text-xs: 12px;
+  --text-label: 11px;
+  --text-mono: 10.5px;
+
+  /* weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* line-heights */
+  --leading-tight: 1.1;
+  --leading-snug: 1.4;
+  --leading-body: 1.55;
+
+  /* tracking */
+  --tracking-display: -0.025em;
+  --tracking-title: -0.02em;
+  --tracking-label: 0.1em;
+
+  /* spacing scale (px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 14px;
+  --space-5: 18px;
+  --space-6: 20px;
+  --space-7: 22px;
+  --space-8: 28px;
+
+  /* radius */
+  --radius-pill: 10px;
+  --radius-control: 11px;
+  --radius-button: 13px;
+  --radius-card: 16px;
+  --radius-tile: 18px;
+  --radius-window: 16px;
+  --radius-phone: 46px;
+  --radius-round: 50%;
+
+  /* hairline / border widths */
+  --border-hair: 1px;
+
+  /* elevation */
+  --shadow-card: 0 14px 36px -14px rgba(0,0,0,.5);
+  --shadow-deck: 0 18px 44px -14px rgba(0,0,0,.6);
+  --shadow-window: 0 30px 70px -28px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.06);
+  --shadow-phone: 0 34px 70px -24px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.06);
+  --ring-accent: 0 0 0 4px var(--accent-weak);
+  --glow-online: 0 0 8px rgba(52,211,153,.6);
+
+  /* motion */
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+  --dur-press: .12s;
+  --dur-move: .2s;
+  --dur-card: .4s;
+  --press-scale: .94;
+  --press-scale-lg: .97;
+}
+
 /* Colors & semantic tokens — scoped to [data-cv6kit] */
 :is([data-cv6kit]) {
   --blue-400: #5B9BFF;
@@ -103,13 +174,13 @@
     radial-gradient(50% 34% at 86% 20%, rgba(206,148,70,.34), transparent 58%),
     radial-gradient(46% 34% at 72% 86%, rgba(46,96,128,.45), transparent 64%),
     linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%);
-  --surface: rgba(255,255,255,.055);
+  --surface: rgba(22,26,33,.55);
   --surface-2: rgba(255,255,255,.08);
   --fg: #F3F4F6;
   --muted: #c0c4cc;
   --faint: #828690;
-  --divider: rgba(255,255,255,.08);
-  --hair: rgba(255,255,255,.09);
+  --divider: rgba(255,255,255,.1);
+  --hair: rgba(255,255,255,.16);
   --chip: rgba(255,255,255,.1);
   --accent: #5B9BFF;
   --accent-weak: rgba(91,155,255,.22);
