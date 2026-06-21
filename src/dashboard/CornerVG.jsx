@@ -30,6 +30,8 @@ import { authFetch } from './lib/authFetch.js'
 import { OVERLAY } from './cv4/lib/uiKit.jsx'
 // corner:corner-ui-cv6 R-KIT-2 — wired Claude-design mobile Home (real data, kit look).
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
+// R5 — Claude-design DESKTOP Home (3-column shell, real data, self-scoped data-cv6kit).
+import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx'
 // R-KIT-11/13 — Claude-design Organize screen on phones (kit view + real projects + files).
 import { OrganizeLive } from './cv6kit/OrganizeLive.jsx'
 // R-KIT-12 — Claude-design Support inbox on phones, wired to the real wishes+email data.
@@ -3009,12 +3011,12 @@ export default function CornerVG() {
                  Selecting any agent / project / mission / mail clears
                  activeTool, which force-closes this board. */
               <RoutinesBoard worldId={worldId} onClose={() => setActiveTool(null)} />
-            ) : (!isDesktop && activeTool === 'organize') ? (
+            ) : (activeTool === 'organize') ? (
               /* corner:corner-ui-cv6 R-KIT-13 — Claude-design Organize screen on the phone,
                  wired to the user's real project rooms AND each project's real files (with
                  previews). onBack returns to home. */
               <OrganizeLive projectRooms={projectRooms} onBack={() => setActiveTool(null)} />
-            ) : (!isDesktop && activeTool === 'command') ? (
+            ) : (activeTool === 'command') ? (
               /* corner:corner-ui-cv6 R-KIT-14 — Claude-design Command goal ledger on the
                  phone, wired to the real room-goals data (read-only: featured goal + room
                  roster with status; needs-you rooms surface amber). Tapping a room opens it
@@ -3036,14 +3038,14 @@ export default function CornerVG() {
                   }
                 }}
               />
-            ) : (!isDesktop && activeTool === 'review') ? (
+            ) : (activeTool === 'review') ? (
               /* corner:corner-ui-cv6 R-KIT-17 — Claude-design Review queue on the phone,
                  wired to the real recent-deliverables queue (/api/dashboard/review-queue).
                  Read-only browse: list of recent finished work, tap to read it. Approve /
                  request-changes held until that action is defined (action bar stays hidden).
                  onExit returns home. */
               <ReviewLive worldId={worldId} onExit={() => setActiveTool(null)} />
-            ) : (!isDesktop && activeTool === 'chat') ? (
+            ) : (activeTool === 'chat') ? (
               /* corner:corner-ui-cv6 R-KIT-18 — Chat menu opens the live EA conversation
                  (CvgChatSurface, the cv6 chat) via activeTool so it can never fall to the
                  old ChatPanel. The EA is resolved at render time, so a slow agents load
@@ -3064,7 +3066,7 @@ export default function CornerVG() {
                   <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-tertiary)', fontSize: 14 }}>Loading your conversation…</div>
                 )
               })()
-            ) : (!isDesktop && activeTool === 'settings') ? (
+            ) : (activeTool === 'settings') ? (
               /* corner:corner-ui-cv6 R4 — Claude-design Settings (Environment). Real wiring:
                  integrations list + OAuth connect/disconnect, live theme switch, per-agent
                  permissions + notification prefs persisted to user_preferences, real sign out.
@@ -3079,7 +3081,7 @@ export default function CornerVG() {
                 worldId={worldId}
                 onBack={() => setActiveTool(null)}
               />
-            ) : (!isDesktop && activeTool === 'onboarding') ? (
+            ) : (activeTool === 'onboarding') ? (
               /* corner:corner-ui-cv6 R-KIT-ONBOARD — Claude-design first-run onboarding flow
                  (5 steps: welcome, connections, permissions, theme, first goal + done).
                  Wired to real endpoints: oauth/start, agent-permissions, create-project-from-chat,
@@ -3104,7 +3106,7 @@ export default function CornerVG() {
                   setTab('chat')
                 }}
               />
-            ) : (!isDesktop && activeTool === 'tracker') ? (
+            ) : (activeTool === 'tracker') ? (
               /* corner:corner-ui-cv6 R-KIT-18 — Tracker opens to the Claude-design tracker.
                  There is no bugs/tickets source yet, so it shows an honest empty state
                  instead of bouncing home. onBack returns home. */
@@ -3157,47 +3159,35 @@ export default function CornerVG() {
                   }}
                 />
               ) : (
-              <HomeView
-                cv6={cv6Mode}
+              /* corner:corner-ui-cv6 R5 — Claude-design DESKTOP Home. Three-column
+                 shell (Catch Up | All Rooms | Conversation) wired to real data,
+                 self-scoped data-cv6kit so tokens resolve. Tool tiles route through
+                 onNav to the same wired surfaces as the mobile Home menu (rendered at
+                 desktop width for now; per-tool desktop layouts come in a later round).
+                 Replaces the old cv4 HomeView on desktop. */
+              <DesktopHomeWired
                 user={currentUser}
-                worldId={worldId}
                 agents={agents}
                 projectRooms={projectRooms}
-                needsYou={homeNeedsYou}
-                onChatSend={handleCvgChatSend}
-                onReplyToRoom={postReplyToRoom}
-                openChatRequest={cv6ChatRequest}
-                openToolRequest={cv6ToolRequest}
-                catchupNotifications={buildCatchupNotifications(notifItems)}
-                onCatchupOpenRoom={handleCatchupOpenRoom}
-                onCatchupViewAll={() => setCatchupOpen(true)}
-                onCatchupDismiss={handleCatchupSkip}
-                onCatchupReply={handleCatchupReply}
-                commandDeckSlot={cv6Mode ? (
-                  <CommandTracker
-                    worldId={worldId}
-                    basePath={'/cvg/project'}
-                    onReplyToRoom={postReplyToRoom}
-                    onJumpToRoom={(room) => {
-                      // R62: jump into the in-page Chat tool, not the full-screen surface.
-                      if (room.includes(':')) {
-                        const parts = room.split(':')
-                        const mission = parts.pop()
-                        const proj = parts[parts.length - 1]
-                        setCv6ChatRequest({ kind: 'mission', slug: proj, missionSlug: mission, name: mission, nonce: Date.now() })
-                      } else {
-                        setCv6ChatRequest({ kind: 'agent', slug: room, name: room, nonce: Date.now() })
-                      }
-                    }}
-                  />
-                ) : undefined}
+                catchup={buildCatchupNotifications(notifItems)}
+                recentMessages={[]}
+                theme={theme}
                 onSelectAgent={handleSelectAgent}
-                onSelectProject={(proj, mission) => {
-                  if (mission && mission.slug) {
-                    handleSelectMission(mission, proj)
-                  } else {
-                    handleSelectProject(proj)
-                  }
+                onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
+                onCatchupOpen={handleCatchupOpenRoom}
+                onNav={(key) => {
+                  setSelectedMail(null)
+                  if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
+                  else if (key === 'chat') { setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('chat') }
+                  else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
+                  else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
+                  else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
+                  else if (key === 'review') { setShowSupportInbox(false); setActiveTool('review'); }
+                  else if (key === 'tracker') { setShowSupportInbox(false); setActiveTool('tracker'); }
+                  else if (key === 'onboarding') { setShowSupportInbox(false); setActiveTool('onboarding'); }
+                  else if (key === 'settings' || key === 'profile') { setShowSupportInbox(false); setActiveTool('settings'); }
+                  else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
+                  else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
                 }}
               />
               )
