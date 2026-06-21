@@ -44,6 +44,45 @@ function mapItem(it) {
 }
 
 const TEXT_RE = /\.(md|txt|js|jsx|ts|tsx|py|go|rs|java|json|css|html|yml|yaml|sh)$/i;
+const MD_RE = /\.(md|txt)$/i;
+
+// Turn raw markdown into the kit doc shape { title, body, sections:[{title,body}] }
+// so the document renders as the clean sectioned layout (not raw # and ** symbols).
+function stripInline(s) {
+  return String(s)
+    .replace(/^\s{0,3}#{1,6}\s+/, '')
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[(.+?)\]\((?:[^)]+)\)/g, '$1')
+    .replace(/^\s{0,3}[-*+]\s+/, '• ')
+    .replace(/^\s{0,3}>\s?/, '');
+}
+function parseDoc(text) {
+  const lines = String(text || '').replace(/\r/g, '').split('\n');
+  let title = '';
+  const intro = [];
+  const sections = [];
+  let cur = null;
+  for (const line of lines) {
+    const h = line.match(/^(#{1,6})\s+(.*)$/);
+    if (h) {
+      const t = stripInline(h[2].trim());
+      if (h[1].length === 1 && !title && !sections.length && !intro.join('').trim()) { title = t; continue; }
+      cur = { title: t, body: [] };
+      sections.push(cur);
+      continue;
+    }
+    const clean = stripInline(line);
+    (cur ? cur.body : intro).push(clean);
+  }
+  const join = (arr) => arr.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  return {
+    title,
+    body: join(intro),
+    sections: sections.map((s) => ({ title: s.title, body: join(s.body) })).filter((s) => s.title || s.body),
+  };
+}
 
 export function ReviewLive({ worldId = 'aom', onExit }) {
   const [queueItems, setQueueItems] = useState([]);
@@ -72,14 +111,20 @@ export function ReviewLive({ worldId = 'aom', onExit }) {
     setSelectedItem({ id: item.id, title: item.title, source: item.title, content: { body: 'Loading…' } });
     try {
       const isText = TEXT_RE.test(item.path || '');
-      let body;
+      const isMd = MD_RE.test(item.path || '');
+      let content;
+      let docTitle = item.title;
       if (isText) {
         const res = await authFetch(`/api/dashboard/project-file?raw=1&path=${encodeURIComponent(item.path)}`);
-        body = res && res.ok ? (await res.text()) || 'This file is empty.' : 'Could not load this file.';
+        const text = res && res.ok ? await res.text() : null;
+        if (text == null) content = { body: 'Could not load this file.' };
+        else if (!text.trim()) content = { body: 'This file is empty.' };
+        else if (isMd) { const p = parseDoc(text); content = { body: p.body, sections: p.sections }; if (p.title) docTitle = p.title; }
+        else content = { body: text };
       } else {
-        body = 'This is an image or media file. Open it on your computer to review it properly.';
+        content = { body: 'This is an image or media file. Open it on your computer to review it properly.' };
       }
-      setSelectedItem((s) => (s && s.id === item.id ? { ...s, content: { body } } : s));
+      setSelectedItem((s) => (s && s.id === item.id ? { ...s, title: docTitle, content } : s));
     } catch {
       setSelectedItem((s) => (s && s.id === item.id ? { ...s, content: { body: 'Could not load this file.' } } : s));
     }
