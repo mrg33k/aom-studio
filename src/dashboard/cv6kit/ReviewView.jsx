@@ -599,6 +599,16 @@ export function ReviewView({
   }
 
   // Mobile simplified layout — pixel-faithful to review.html mobile frame
+  const [selectedType, setSelectedType] = useState('video');
+  const [videoPlayTime, setVideoPlayTime] = useState(0);
+
+  const typeChips = [
+    { key: 'photo', label: 'Photo' },
+    { key: 'video', label: 'Video' },
+    { key: 'screenshot', label: 'Screenshot' },
+    { key: 'live', label: 'Live site' },
+  ];
+
   return (
     <div
       data-cv6kit
@@ -671,10 +681,10 @@ export function ReviewView({
         {/* Title + Subtitle */}
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2 }}>
-            {selectedItem?.title || 'Review'}
+            Review
           </div>
           <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.2, marginTop: 2 }}>
-            {selectedItem?.content?.type || 'Video'} · {metadata.from?.name || 'Gary'}
+            Reviewing {selectedItem ? '2 of 5' : '0 of 5'} ready
           </div>
         </div>
 
@@ -710,22 +720,23 @@ export function ReviewView({
               display: 'flex',
               gap: 6,
               padding: '12px 14px 0',
-              overflow: 'hidden',
+              overflow: 'auto',
               flex: 'none',
               background: 'var(--ground)',
             }}
           >
-            {['Photo', 'Video', 'Screenshot', 'Live site'].map((type, i) => (
+            {typeChips.map((chip) => (
               <button
-                key={i}
+                key={chip.key}
+                onClick={() => setSelectedType(chip.key)}
                 style={{
-                  height: 34,
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: type === 'Video' ? 'var(--accent)' : 'var(--surface-2)',
-                  color: type === 'Video' ? '#fff' : 'var(--muted)',
-                  fontSize: 12.5,
+                  height: 30,
+                  padding: '0 11px',
+                  borderRadius: 15,
+                  border: selectedType === chip.key ? 'none' : '1px solid var(--hair)',
+                  background: selectedType === chip.key ? 'var(--accent)' : 'var(--surface-2)',
+                  color: selectedType === chip.key ? '#fff' : 'var(--muted)',
+                  fontSize: 11.5,
                   fontWeight: 600,
                   fontFamily: 'var(--font-sans)',
                   cursor: 'pointer',
@@ -733,25 +744,25 @@ export function ReviewView({
                   whiteSpace: 'nowrap',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 5,
                 }}
               >
-                {type === 'Photo' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>}
-                {type === 'Video' && <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>}
-                {type === 'Screenshot' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>}
-                {type === 'Live site' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M6 12h12"/></svg>}
-                {type}
+                {chip.key === 'photo' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg>}
+                {chip.key === 'video' && <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>}
+                {chip.key === 'screenshot' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>}
+                {chip.key === 'live' && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18"/></svg>}
+                {chip.label}
               </button>
             ))}
           </div>
 
-          {/* Viewer — video player mockup with timeline */}
+          {/* Viewer — adapts per type */}
           <div
             style={{
               flex: 1,
               minWidth: 0,
               background: '#0d0d0f',
-              padding: '20px 14px',
+              padding: '12px 14px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -759,150 +770,251 @@ export function ReviewView({
               overflow: 'hidden',
             }}
           >
-            {/* Video player container */}
-            <div
-              style={{
-                width: '100%',
-                maxWidth: 362,
-                aspectRatio: '16/9',
-                background: '#1a1a1f',
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Play button + paused indicator */}
+            {selectedType === 'video' && (
               <div
                 style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
+                  width: '100%',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  boxShadow: '0 12px 36px rgba(0,0,0,.4)',
                 }}
               >
-                <span
+                {/* Video player */}
+                <div
                   style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: 'var(--accent)',
+                    position: 'relative',
+                    width: '100%',
+                    aspectRatio: '16/9',
+                    background: 'linear-gradient(135deg,#10202e,#241a33)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#fff',
-                    cursor: 'pointer',
                   }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                    <polygon points="5 3 19 12 5 21"/>
-                  </svg>
-                </span>
-              </div>
+                  {/* Play button */}
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      background: 'rgba(0,0,0,.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                      <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                  </div>
 
-              {/* Paused badge */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 12,
-                  right: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  background: 'rgba(0, 0, 0, 0.6)',
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: 6,
-                  padding: '4px 10px',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: '#fff',
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                  <rect x="6" y="4" width="4" height="16"/>
-                  <rect x="14" y="4" width="4" height="16"/>
-                </svg>
-                Paused · 0:19
-              </div>
-
-              {/* Timeline scrubber */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 46,
-                  background: '#16161a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '0 14px',
-                  borderTop: '1px solid var(--divider)',
-                }}
-              >
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flex: 'none' }}>0:19</span>
-                {/* Track bar */}
-                <div
-                  style={{
-                    flex: 1,
-                    height: 6,
-                    borderRadius: 3,
-                    background: 'var(--surface-2)',
-                    position: 'relative',
-                    cursor: 'pointer',
-                  }}
-                >
+                  {/* Paused badge */}
                   <div
                     style={{
                       position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: '30%',
-                      background: 'var(--accent)',
-                      borderRadius: 3,
+                      top: 12,
+                      right: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      background: 'rgba(0,0,0,.55)',
+                      backdropFilter: 'blur(8px)',
+                      borderRadius: 16,
+                      padding: '6px 12px',
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                      color: '#fff',
                     }}
-                  />
-                  {/* Markers */}
-                  {[
-                    { pos: '10%', label: '1' },
-                    { pos: '50%', label: '2' },
-                    { pos: '90%', label: '3' },
-                  ].map((m, i) => (
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                      <rect x="6" y="4" width="4" height="16"/>
+                      <rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                    Paused . 0:19
+                  </div>
+
+                  {/* Still-frame pin */}
+                  <span
+                    style={{
+                      position: 'absolute',
+                      width: 26,
+                      height: 26,
+                      borderRadius: '50% 50% 50% 3px',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 5px 14px -3px rgba(0,0,0,.5)',
+                      left: '40%',
+                      top: '58%',
+                      transform: 'translate(-50%, -100%)',
+                    }}
+                  >
+                    2
+                  </span>
+                </div>
+
+                {/* Timeline scrubber */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    height: 46,
+                    padding: '0 14px',
+                    background: '#16161a',
+                    borderTop: '1px solid var(--divider)',
+                  }}
+                >
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flex: 'none' }}>0:19</span>
+                  {/* Track bar */}
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 6,
+                      borderRadius: 3,
+                      background: '#33333b',
+                      position: 'relative',
+                      cursor: 'pointer',
+                    }}
+                  >
                     <div
-                      key={i}
                       style={{
                         position: 'absolute',
-                        left: m.pos,
-                        top: -5,
-                        transform: 'translateX(-50%)',
-                        width: 16,
-                        height: 16,
-                        borderRadius: '50% 50% 50% 3px',
-                        background: '#fff',
-                        color: '#16161a',
-                        fontSize: 9,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 6px rgba(0, 0, 0, .4)',
-                        cursor: 'pointer',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: '46%',
+                        background: 'var(--accent)',
+                        borderRadius: 3,
                       }}
-                    >
-                      {m.label}
-                    </div>
-                  ))}
+                    />
+                    {/* Markers */}
+                    {[
+                      { pos: '16%', label: '1' },
+                      { pos: '46%', label: '2' },
+                      { pos: '78%', label: '3' },
+                    ].map((m, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          position: 'absolute',
+                          left: m.pos,
+                          top: -5,
+                          transform: 'translateX(-50%)',
+                          width: 16,
+                          height: 16,
+                          borderRadius: '50% 50% 50% 3px',
+                          background: '#fff',
+                          color: '#16161a',
+                          fontSize: 9,
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          boxShadow: '0 2px 6px rgba(0,0,0,.4)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {m.label}
+                      </div>
+                    ))}
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flex: 'none' }}>0:42</span>
                 </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)', flex: 'none' }}>0:42</span>
               </div>
-            </div>
+            )}
+            {selectedType === 'photo' && (
+              <div
+                style={{
+                  width: '100%',
+                  aspectRatio: '16/9',
+                  borderRadius: 12,
+                  background: 'linear-gradient(135deg,#1d3a53,#3a2440 55%,#5a2e3a)',
+                  boxShadow: '0 12px 36px rgba(0,0,0,.4)',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'flex-end',
+                  justifyContent: 'flex-start',
+                }}
+              >
+                <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 70% 20%,rgba(255,255,255,.18),transparent)' }} />
+                <div style={{ position: 'relative', color: '#fff', fontSize: 22, fontWeight: 800, letterSpacing: '-.02em', textShadow: '0 2px 18px rgba(0,0,0,.4)', padding: '18px 18px 30px' }}>
+                  Brand hero . launch
+                </div>
+                <span style={{ position: 'absolute', width: 26, height: 26, borderRadius: '50% 50% 50% 3px', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 14px -3px rgba(0,0,0,.5)', left: '26%', top: '38%', transform: 'translate(-50%, -100%)' }}>1</span>
+                <span style={{ position: 'absolute', width: 26, height: 26, borderRadius: '50% 50% 50% 3px', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 5px 14px -3px rgba(0,0,0,.5)', left: '70%', top: '66%', transform: 'translate(-50%, -100%)' }}>2</span>
+              </div>
+            )}
+            {selectedType === 'screenshot' && (
+              <div
+                style={{
+                  width: '100%',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  boxShadow: '0 12px 36px rgba(0,0,0,.4)',
+                }}
+              >
+                {/* Browser chrome */}
+                <div style={{ background: '#e9e7e4', height: 34, display: 'flex', alignItems: 'center', gap: 9, padding: '0 14px', borderBottom: '1px solid #d9d6d2' }}>
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#f87171' }} />
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#fbbf24' }} />
+                  <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#34d399' }} />
+                  <div style={{ flex: 1, height: 20, borderRadius: 7, background: '#fff', border: '1px solid #d9d6d2', display: 'flex', alignItems: 'center', gap: 7, padding: '0 10px', fontSize: 10, color: '#888', fontFamily: 'var(--font-mono)' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                    corner.so/pricing
+                  </div>
+                </div>
+                {/* Page mockup */}
+                <div style={{ background: '#fff', color: '#16181d', padding: '38px 22px 30px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 10, color: '#1a1a1d' }}>Pricing plans</div>
+                  <div style={{ fontSize: 12, color: '#666', maxWidth: 300, margin: '0 auto 18px', lineHeight: 1.5 }}>Choose the plan that works for your team.</div>
+                </div>
+              </div>
+            )}
+            {selectedType === 'live' && (
+              <div
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--accent-weak)', border: '1px solid var(--accent-weak)', borderRadius: 11, padding: '10px 13px' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18"/></svg>
+                  <span style={{ flex: 1, fontSize: 12.5, color: 'var(--fg)' }}>Delivered as a live link. Open it, or leave feedback on the captured snapshot.</span>
+                  <a href="https://cv6.corner.so" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', height: 32, padding: '0 13px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    Open live
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17 17 7M9 7h8v8"/></svg>
+                  </a>
+                </div>
+                {/* Browser chrome + mock page */}
+                <div
+                  style={{
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    boxShadow: '0 12px 36px rgba(0,0,0,.4)',
+                  }}
+                >
+                  <div style={{ background: '#e9e7e4', height: 34, display: 'flex', alignItems: 'center', gap: 9, padding: '0 14px', borderBottom: '1px solid #d9d6d2' }}>
+                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#f87171' }} />
+                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#fbbf24' }} />
+                    <span style={{ width: 9, height: 9, borderRadius: '50%', background: '#34d399' }} />
+                    <div style={{ flex: 1, height: 20, borderRadius: 7, background: '#fff', border: '1px solid #d9d6d2', display: 'flex', alignItems: 'center', gap: 7, padding: '0 10px', fontSize: 10, color: '#888', fontFamily: 'var(--font-mono)' }}>
+                      cv6.corner.so
+                    </div>
+                  </div>
+                  <div style={{ background: '#fff', color: '#16181d', padding: '38px 22px 30px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-.02em', marginBottom: 10, color: '#1a1a1d' }}>Agents that do the work</div>
+                    <div style={{ fontSize: 12, color: '#666', maxWidth: 300, margin: '0 auto', lineHeight: 1.5 }}>A workspace where named AI agents run your projects.</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Pin comments indicator — bottom bar above action buttons */}

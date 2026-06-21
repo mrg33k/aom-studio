@@ -3,8 +3,18 @@ import React, { useState } from 'react';
 /**
  * OnboardingView — CV6 first-run setup flow (5 steps + done screen).
  * Exact pixel-faithful port of the design system's onboarding.html.
- * Props: { step, steps, onNext, onSkip, onBack }
- * Renders mobile frame with safe-area padding; desktop will wrap differently.
+ *
+ * Props:
+ *   step: current step index (0-4 are setup, 5 is done)
+ *   steps: total step count (should be 5)
+ *   onNext: callback when user clicks Continue (receives { step, state })
+ *   onBack: callback when user clicks Back (receives { step })
+ *   onSkip: callback when user clicks Skip (receives null)
+ *   onFinish: callback when Done screen clicked (receives { selectedTheme, connections, permissions })
+ *   onConnectionChange: callback for connection toggle (receives { name, connected })
+ *   onPermissionChange: callback for permission toggle (receives { agent, perm, value })
+ *   onThemeChange: callback for theme selection (receives { theme })
+ *   onAssignGoal: callback for assigning first goal (receives { project, description, agent })
  */
 
 function SVG(pathData, strokeWidth, color, size) {
@@ -37,19 +47,50 @@ const THEMES = [
   { k: 'glass', label: 'Glass', bg: 'linear-gradient(140deg,#0c1a22,#1a1224)', c1: 'rgba(255,255,255,.18)', c2: '#5B9BFF' }
 ];
 
-const STEP_CONTENT = [
+function Toggle({ on, onChange }) {
+  return (
+    <button
+      onClick={onChange}
+      style={{
+        width: '42px',
+        height: '24px',
+        borderRadius: '12px',
+        background: on ? 'var(--accent)' : 'var(--surface-2)',
+        border: on ? 'none' : '1px solid var(--hair)',
+        position: 'relative',
+        cursor: 'pointer',
+        transition: 'background .15s, border .15s',
+        flex: 'none',
+        padding: '0'
+      }}
+    >
+      <i style={{
+        position: 'absolute',
+        top: '2px',
+        left: on ? '20px' : '2px',
+        width: '18px',
+        height: '18px',
+        borderRadius: '50%',
+        background: on ? '#fff' : 'var(--faint)',
+        transition: 'left .15s, background .15s'
+      }} />
+    </button>
+  );
+}
+
+const STEPS = [
   {
     eyebrow: 'WELCOME',
     title: 'Meet your agent workspace',
-    sub: 'Corner runs a team of AI agents across your projects. They work, then bring you the decisions. Let\'s set up your environment — it takes a minute.',
-    content: (state, setState) => (
+    sub: 'Corner runs a team of AI agents across your projects. They work, then bring you the decisions. Let\'s set up your environment · it takes a minute.',
+    render: (state, setState) => (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {[
-          { ico: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', t: 'Agents do the work', s: 'They draft, build, file and research — then ask when it\'s your call.' },
+          { ico: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>', t: 'Agents do the work', s: 'They draft, build, file and research · then ask when it\'s your call.' },
           { ico: '<path d="M3 7h18M3 12h18M3 17h12"/>', t: 'One inbox for what needs you', s: 'Catch Up gathers every "needs you" from every tool in one place.' },
           { ico: '<path d="M12 2 2 7l10 5 10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>', t: 'Everything in one workspace', s: 'Chat, files, review, support, tracker, command and live notes.' }
         ].map((row, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '13px', marginBottom: '16px' }}>
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '13px' }}>
             <span style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }} dangerouslySetInnerHTML={{ __html: SVG(row.ico, '2', 'var(--accent)', '18') }} />
             <div>
               <div style={{ fontSize: '14.5px', fontWeight: '600', color: 'var(--fg)' }}>{row.t}</div>
@@ -63,8 +104,8 @@ const STEP_CONTENT = [
   {
     eyebrow: 'STEP 2 · ENVIRONMENT',
     title: 'Connect your environment',
-    sub: 'Your environment is everything the agents can read and act on. Connect the services you use — you can change these anytime.',
-    content: (state, setState) => (
+    sub: 'Your environment is everything the agents can read and act on. Connect the services you use · you can change these anytime.',
+    render: (state, setState, handlers) => (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         {INTEGRATIONS.map(int => {
           const isConnected = state.connected[int.name];
@@ -76,7 +117,11 @@ const STEP_CONTENT = [
                 <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>{int.desc}</div>
               </div>
               <button
-                onClick={() => setState({ ...state, connected: { ...state.connected, [int.name]: !isConnected } })}
+                onClick={() => {
+                  const newConnected = { ...state.connected, [int.name]: !isConnected };
+                  setState({ ...state, connected: newConnected });
+                  handlers.onConnectionChange?.({ name: int.name, connected: !isConnected });
+                }}
                 style={{
                   marginLeft: 'auto',
                   height: '32px',
@@ -103,8 +148,8 @@ const STEP_CONTENT = [
   {
     eyebrow: 'STEP 3 · TRUST',
     title: 'What can agents do on their own?',
-    sub: 'Set the guardrails. Anything left off still gets done — the agent just asks you first.',
-    content: (state, setState) => (
+    sub: 'Set the guardrails. Anything left off still gets done · the agent just asks you first.',
+    render: (state, setState, handlers) => (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
         {AGENTS.map(agent => (
           <div key={agent.id} style={{ border: '1px solid var(--hair)', borderRadius: '14px', background: 'var(--surface)', padding: '15px 16px', marginBottom: '12px' }}>
@@ -123,10 +168,11 @@ const STEP_CONTENT = [
                 </div>
                 <Toggle
                   on={state.perms[agent.id]?.[perm.k] || false}
-                  onChange={() => setState({
-                    ...state,
-                    perms: { ...state.perms, [agent.id]: { ...state.perms[agent.id], [perm.k]: !state.perms[agent.id]?.[perm.k] } }
-                  })}
+                  onChange={() => {
+                    const newPerms = { ...state.perms, [agent.id]: { ...state.perms[agent.id], [perm.k]: !state.perms[agent.id]?.[perm.k] } };
+                    setState({ ...state, perms: newPerms });
+                    handlers.onPermissionChange?.({ agent: agent.id, perm: perm.k, value: !state.perms[agent.id]?.[perm.k] });
+                  }}
                 />
               </div>
             ))}
@@ -139,21 +185,25 @@ const STEP_CONTENT = [
     eyebrow: 'STEP 4 · APPEARANCE',
     title: 'Choose your look',
     sub: 'Dark, Light and Glass are all first-class. Tap one to preview it live.',
-    content: (state, setState) => (
+    render: (state, setState, handlers) => (
       <div style={{ display: 'flex', gap: '14px' }}>
         {THEMES.map(theme => {
           const selected = state.theme === theme.k;
           return (
             <div
               key={theme.k}
-              onClick={() => setState({ ...state, theme: theme.k })}
+              onClick={() => {
+                setState({ ...state, theme: theme.k });
+                handlers.onThemeChange?.({ theme: theme.k });
+              }}
               style={{
                 flex: '1',
                 border: selected ? '2px solid var(--accent)' : '2px solid var(--hair)',
                 borderRadius: '16px',
                 overflow: 'hidden',
                 cursor: 'pointer',
-                background: 'var(--surface)'
+                background: 'var(--surface)',
+                transition: 'border .15s'
               }}
             >
               <div style={{ height: '96px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '7px', background: theme.bg }}>
@@ -177,7 +227,7 @@ const STEP_CONTENT = [
     eyebrow: 'STEP 5 · FIRST GOAL',
     title: 'Assign your first goal',
     sub: 'Pick a project, describe the outcome, and assign it to an agent. You\'ll see it run in Command.',
-    content: (state, setState) => (
+    render: (state, setState, handlers) => (
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', border: '1px solid var(--hair)', borderRadius: '12px', background: 'var(--surface)', marginBottom: '12px' }}>
           <span dangerouslySetInnerHTML={{ __html: SVG('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>', '2', 'var(--violet-400)', '18') }} />
@@ -190,7 +240,12 @@ const STEP_CONTENT = [
         <div style={{ display: 'flex', alignItems: 'center', gap: '11px', marginTop: '14px' }}>
           <span style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(52,211,153,.2)', color: 'var(--success)', fontSize: '11px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>EL</span>
           <span style={{ flex: '1', fontSize: '13px', color: 'var(--muted)' }}>Elon will drive this goal</span>
-          <button style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '46px', padding: '0 22px', borderRadius: '12px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '14.5px', fontWeight: '600', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+          <button
+            onClick={() => {
+              handlers.onAssignGoal?.({ project: 'Space Rising', description: 'Lock the Interactive / community framing before the Apr 29 print.', agent: 'Elon' });
+            }}
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '46px', padding: '0 22px', borderRadius: '12px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '14.5px', fontWeight: '600', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}
+          >
             <span dangerouslySetInnerHTML={{ __html: SVG('<path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"/>', '0', '#fff', '0').replace('fill="none"', 'fill="#fff"') }} />
             Assign to agent
           </button>
@@ -200,69 +255,18 @@ const STEP_CONTENT = [
   }
 ];
 
-const DONE_STEP = {
-  eyebrow: 'ALL SET',
-  title: 'You\'re ready to go',
-  sub: '',
-  content: (state, setState) => (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', paddingTop: '6px' }}>
-      <span style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--success-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '18px' }} dangerouslySetInnerHTML={{ __html: SVG('<path d="m5 13 4 4L19 7"/>', '2.6', 'var(--success)', '30') }} />
-      <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-.02em', color: 'var(--fg)', marginBottom: '8px' }}>You\'re all set, Patrik</div>
-      <div style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: '1.6', maxWidth: '380px', marginBottom: '22px' }}>Your environment is live and Elon is on your first goal. Here\'s what\'s ready:</div>
-      <div style={{ textAlign: 'left', marginBottom: '24px' }}>
-        {[
-          `${Object.values(state.connected).filter(Boolean).length} services connected`,
-          '2 agents with permissions set',
-          'Theme applied',
-          'First goal assigned to Elon'
-        ].map((item, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-            <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--success-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }} dangerouslySetInnerHTML={{ __html: SVG('<path d="m5 12 4 4L19 7"/>', '3', 'var(--success)', '12') }} />
-            <span style={{ fontSize: '13.5px', color: 'var(--fg)' }}>{item}</span>
-          </div>
-        ))}
-      </div>
-      <a href="#" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', height: '50px', padding: '0 28px', borderRadius: '12px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '14.5px', fontWeight: '600', fontFamily: 'var(--font-sans)', textDecoration: 'none', cursor: 'pointer' }}>
-        Take me to Corner
-        <span dangerouslySetInnerHTML={{ __html: SVG('<path d="M5 12h14M13 6l6 6-6 6"/>', '2.2', '#fff', '17') }} />
-      </a>
-      <div style={{ marginTop: '18px', fontSize: '12px', color: 'var(--faint)', lineHeight: '1.5', maxWidth: '340px' }}>All of this lives in <span style={{ color: 'var(--fg)', fontWeight: '600' }}>Settings → Environment</span>. Come back and change anything, anytime.</div>
-    </div>
-  )
-};
-
-function Toggle({ on, onChange }) {
-  return (
-    <button
-      onClick={onChange}
-      style={{
-        width: '42px',
-        height: '24px',
-        borderRadius: '12px',
-        background: on ? 'var(--accent)' : 'var(--surface-2)',
-        border: on ? 'none' : '1px solid var(--hair)',
-        position: 'relative',
-        cursor: 'pointer',
-        transition: 'background .15s',
-        flex: 'none',
-        padding: '0'
-      }}
-    >
-      <i style={{
-        position: 'absolute',
-        top: '2px',
-        left: on ? '20px' : '2px',
-        width: '18px',
-        height: '18px',
-        borderRadius: '50%',
-        background: on ? '#fff' : 'var(--faint)',
-        transition: 'left .15s, background .15s'
-      }} />
-    </button>
-  );
-}
-
-export function OnboardingView({ step = 0, steps = STEP_CONTENT.length, onNext, onSkip, onBack }) {
+export function OnboardingView({
+  step = 0,
+  steps = 5,
+  onNext,
+  onSkip,
+  onBack,
+  onFinish,
+  onConnectionChange,
+  onPermissionChange,
+  onThemeChange,
+  onAssignGoal
+}) {
   const [state, setState] = useState({
     step: step,
     theme: 'dark',
@@ -270,32 +274,38 @@ export function OnboardingView({ step = 0, steps = STEP_CONTENT.length, onNext, 
     perms: { Elon: { Draft: true, Send: false, Commit: true, File: true }, Rex: { Draft: true, Send: false, Commit: false, File: true } }
   });
 
-  const currentStep = state.step === steps ? DONE_STEP : STEP_CONTENT[state.step];
   const isDone = state.step === steps;
   const isFirstStep = state.step === 0;
   const isLastSetupStep = state.step === steps - 1;
+  const currentStep = STEPS[Math.min(state.step, STEPS.length - 1)];
+
+  const progressPct = isDone ? 100 : Math.round((state.step + 1) / steps * 100);
+  const stepLabel = isDone ? 'All set' : `Step ${state.step + 1} of ${steps}`;
+
+  const handlers = { onConnectionChange, onPermissionChange, onThemeChange, onAssignGoal };
 
   const handleNext = () => {
-    if (state.step < STEP_CONTENT.length) {
+    onNext?.({ step: state.step, state });
+    if (state.step < STEPS.length) {
       setState({ ...state, step: state.step + 1 });
     }
-    onNext?.();
   };
 
   const handleBack = () => {
     if (state.step > 0) {
       setState({ ...state, step: state.step - 1 });
     }
-    onBack?.();
+    onBack?.({ step: state.step });
   };
 
   const handleSkip = () => {
-    setState({ ...state, step: STEP_CONTENT.length });
-    onSkip?.();
+    setState({ ...state, step: steps });
+    onSkip?.(null);
   };
 
-  const progressPct = isDone ? 100 : Math.round((state.step + 1) / steps * 100);
-  const stepLabel = isDone ? 'All set' : `Step ${state.step + 1} of ${steps}`;
+  const handleFinish = () => {
+    onFinish?.({ theme: state.theme, connections: state.connected, permissions: state.perms });
+  };
 
   return (
     <div
@@ -319,7 +329,10 @@ export function OnboardingView({ step = 0, steps = STEP_CONTENT.length, onNext, 
         borderBottom: isDone ? 'none' : '1px solid var(--divider)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '11px', marginBottom: '14px' }}>
-          <div style={{ width: '20px', height: '20px', background: 'var(--accent)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '12px', fontWeight: '700' }}>C</div>
+          {/* Corner logo */}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style={{ color: 'var(--fg)', flex: 'none' }}>
+            <path d="M3 3h6v6H3V3zm12 0h6v6h-6V3zM3 15h6v6H3v-6zm12 0h6v6h-6v-6z" />
+          </svg>
           <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--muted)' }}>{stepLabel}</span>
           <button
             onClick={handleSkip}
@@ -355,7 +368,7 @@ export function OnboardingView({ step = 0, steps = STEP_CONTENT.length, onNext, 
         display: 'flex',
         flexDirection: 'column'
       }}>
-        <div style={{ overflowY: 'auto', flex: '1' }}>
+        <div style={{ overflowY: 'auto', flex: '1', paddingRight: '4px' }}>
           <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '12px' }}>
             {currentStep.eyebrow}
           </div>
@@ -363,61 +376,135 @@ export function OnboardingView({ step = 0, steps = STEP_CONTENT.length, onNext, 
             {currentStep.title}
           </h1>
           {currentStep.sub && (
-            <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--muted)', maxWidth: '520px', marginBottom: '24px' }}>
+            <p style={{ fontSize: '14px', lineHeight: '1.6', color: 'var(--muted)', marginBottom: '24px' }}>
               {currentStep.sub}
             </p>
           )}
-          <div style={{ marginTop: '24px' }}>
-            {currentStep.content(state, setState)}
+          <div>
+            {currentStep.render(state, setState, handlers)}
           </div>
         </div>
       </div>
 
+      {/* Done state content (replaces nav) */}
+      {isDone && (
+        <div style={{
+          flex: '1',
+          minHeight: '0',
+          overflow: 'auto',
+          padding: '20px 22px 0',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center'
+        }}>
+          <span style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'var(--success-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '18px', flex: 'none' }} dangerouslySetInnerHTML={{ __html: SVG('<path d="m5 13 4 4L19 7"/>', '2.6', 'var(--success)', '30') }} />
+          <div style={{ fontSize: '24px', fontWeight: '700', letterSpacing: '-.02em', color: 'var(--fg)', marginBottom: '8px' }}>You're all set, Patrik</div>
+          <div style={{ fontSize: '14px', color: 'var(--muted)', lineHeight: '1.6', marginBottom: '22px' }}>Your environment is live and Elon is on your first goal. Here's what's ready:</div>
+          <div style={{ textAlign: 'left', marginBottom: '24px' }}>
+            {[
+              `${Object.values(state.connected).filter(Boolean).length} services connected`,
+              '2 agents with permissions set',
+              'Theme applied',
+              'First goal assigned to Elon'
+            ].map((item, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--success-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }} dangerouslySetInnerHTML={{ __html: SVG('<path d="m5 12 4 4L19 7"/>', '3', 'var(--success)', '12') }} />
+                <span style={{ fontSize: '13.5px', color: 'var(--fg)' }}>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Mobile nav footer */}
-      <div style={{
-        flex: 'none',
-        padding: `16px 22px calc(16px + env(safe-area-inset-bottom, 0px))`,
-        borderTop: isDone ? 'none' : '1px solid var(--divider)',
-        display: isDone ? 'none' : 'flex',
-        alignItems: 'center',
-        gap: '10px'
-      }}>
-        <button
-          onClick={handleBack}
-          style={{
-            height: '50px',
-            padding: '0 18px',
-            borderRadius: '12px',
-            border: '1px solid var(--hair)',
-            background: 'transparent',
-            color: 'var(--fg)',
-            fontSize: '14px',
-            fontWeight: '600',
-            fontFamily: 'var(--font-sans)',
-            cursor: 'pointer',
-            visibility: isFirstStep ? 'hidden' : 'visible'
-          }}
-        >
-          Back
-        </button>
-        <button
-          onClick={handleNext}
-          style={{
-            flex: '1',
-            height: '50px',
-            borderRadius: '12px',
-            border: 'none',
-            background: 'var(--accent)',
-            color: '#fff',
-            fontSize: '14.5px',
-            fontWeight: '600',
-            fontFamily: 'var(--font-sans)',
-            cursor: 'pointer'
-          }}
-        >
-          {isLastSetupStep ? 'Finish setup' : 'Continue'}
-        </button>
-      </div>
+      {!isDone && (
+        <div style={{
+          flex: 'none',
+          padding: `16px 22px calc(16px + env(safe-area-inset-bottom, 0px))`,
+          borderTop: '1px solid var(--divider)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <button
+            onClick={handleBack}
+            style={{
+              height: '50px',
+              padding: '0 18px',
+              borderRadius: '12px',
+              border: '1px solid var(--hair)',
+              background: 'transparent',
+              color: 'var(--fg)',
+              fontSize: '14px',
+              fontWeight: '600',
+              fontFamily: 'var(--font-sans)',
+              cursor: 'pointer',
+              visibility: isFirstStep ? 'hidden' : 'visible'
+            }}
+          >
+            Back
+          </button>
+          <button
+            onClick={handleNext}
+            style={{
+              flex: '1',
+              height: '50px',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#fff',
+              fontSize: '14.5px',
+              fontWeight: '600',
+              fontFamily: 'var(--font-sans)',
+              cursor: 'pointer'
+            }}
+          >
+            {isLastSetupStep ? 'Finish setup' : 'Continue'}
+          </button>
+        </div>
+      )}
+
+      {/* Done button */}
+      {isDone && (
+        <div style={{
+          flex: 'none',
+          padding: `16px 22px calc(16px + env(safe-area-inset-bottom, 0px))`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px'
+        }}>
+          <button
+            onClick={handleFinish}
+            style={{
+              flex: '1',
+              height: '50px',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#fff',
+              fontSize: '14.5px',
+              fontWeight: '600',
+              fontFamily: 'var(--font-sans)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            Take me to Corner
+            <span dangerouslySetInnerHTML={{ __html: SVG('<path d="M5 12h14M13 6l6 6-6 6"/>', '2.2', '#fff', '17') }} />
+          </button>
+        </div>
+      )}
+
+      {isDone && (
+        <div style={{ flex: 'none', padding: '0 22px 18px', fontSize: '12px', color: 'var(--faint)', lineHeight: '1.5', textAlign: 'center' }}>
+          All of this lives in <span style={{ color: 'var(--fg)', fontWeight: '600' }}>Settings · Environment</span>. Come back and change anything, anytime.
+        </div>
+      )}
     </div>
   );
 }

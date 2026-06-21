@@ -18,16 +18,16 @@ import './cv6kit/kit.css';
 // Sample Step Thread (the kit Chat view) — used to verify the layout in
 // isolation. The real wiring waits on a step-emission feed (BUILD.md R-KIT-5).
 const SAMPLE_CHAT = {
-  target: { name: 'Elon', initials: 'EL', statusLine: 'Space Rising · Mission /007 · working now' },
+  goal: { name: 'Lock the print framing', stepDone: 2, stepTotal: 4 },
+  target: { name: 'Elon', initials: 'EL', statusLine: 'working · step 3 of 4' },
   steps: [
-    { id: 's1', kind: 'done', title: 'Read the brief & pulled the repo', sub: 'Scanned 28 missions and the task-runner. Everything lined up except one thing.' },
-    { id: 's2', kind: 'snag', title: 'Hit a snag', statusLabel: 'Needs you', sub: 'The Space Rising repo is not wired into the task runner yet, so the print cannot build. Two ways forward, your call:', choices: [
+    { id: 's1', kind: 'done', title: 'Read brief & pulled repo', sub: 'Scanned 28 missions.' },
+    { id: 's2', kind: 'snag', title: 'Hit a snag', statusLabel: 'Needs you', sub: 'Repo isn\'t wired into the runner yet. Your call:', choices: [
       { id: 'quick', recommended: true, title: 'Quick reversible fix', sub: 'Wire it in now, migrate cleanly later. Unblocks the print.' },
       { id: 'clean', title: 'Do it the clean way', sub: 'Set up a proper projects entry first. Slower, but tidier long-term.' },
     ] },
-    { id: 's3', kind: 'choice', title: 'You chose the quick fix', sub: '"but pin the framing first."' },
+    { id: 's3', kind: 'choice', title: 'You chose the quick fix', sub: 'but pin the framing first.' },
     { id: 's4', kind: 'working', title: 'Patching the resolver', statusLabel: 'Working', sub: 'Pinned your framing, now teaching the task runner where the repo lives.', progress: { pct: 64, label: '3/4' } },
-    { id: 's5', kind: 'upnext', title: 'Re-run the print build', statusLabel: 'Up next' },
   ],
 };
 
@@ -51,11 +51,16 @@ const SAMPLE_COMMAND = {
       { label: 'Patch resolve_repo_path()', state: 'queued' },
       { label: 'Route docs-only to AOM-EA', state: 'working' },
     ],
+    watchers: [
+      { name: 'Elon', initials: 'EL', role: 'Master loop', tone: 'var(--success)', toneBg: 'rgba(52,211,153,.2)', active: true },
+      { name: 'Gary', initials: 'GA', role: 'Verifier', tone: 'var(--warn)', toneBg: 'rgba(251,191,36,.2)', active: true },
+      { name: 'Patrik', initials: 'P', role: 'Owner', tone: 'var(--muted)', toneBg: 'var(--chip)', active: false },
+    ],
   },
   rooms: [
     { id: 'r1', name: 'Corner', color: 'var(--accent)', sub: 'Ship CV6 mobile parity', status: 'live' },
     { id: 'r2', name: 'Included Health', color: 'var(--pink-400)', sub: 'Batch02 culture deck', status: 'blocked' },
-    { id: 'r3', name: 'Loop Test Project', color: 'var(--faint)', sub: 'Validate routing across missions', status: 'idle' },
+    { id: 'r3', name: 'Loop Test Project', color: 'var(--faint)', sub: 'Validate routing across missions', status: 'ready' },
   ],
   activities: [
     { state: 'recording', title: 'Recording', sub: 'Corner · Dashboard · 08:42', badge: 'REC', badgeColor: '#F87171', badgeBg: 'rgba(248,113,113,.16)' },
@@ -119,7 +124,7 @@ const SAMPLE_ORGANIZE = {
     { id: 'f4', name: 'handoff-2026-06-20.md', type: 'md', updated: '1d', size: 5310, content: '# Handoff\n\nColumns opened on desktop home. Glass box removed. Next: graft the tool screens live.' },
   ],
   selectedProjectId: 'corner',
-  selectedFileId: 'f1',
+  selectedFileIds: [],
 };
 
 const SAMPLE_REVIEW = {
@@ -216,7 +221,16 @@ export default function CV6KitTest() {
       ) : screen === 'support' ? (
         <SupportView {...SAMPLE_SUPPORT} isDesktop={isDesktop} onSelectItem={noop} onBack={noop} onDraftReply={noop} onMarkResolved={noop} />
       ) : screen === 'organize' ? (
-        <OrganizeView {...SAMPLE_ORGANIZE} onSelectProject={noop} onSelectFile={noop} onBack={noop} />
+        <OrganizeView
+          {...SAMPLE_ORGANIZE}
+          onSelectProject={noop}
+          onSelectFile={noop}
+          onBack={noop}
+          onMove={noop}
+          onRename={noop}
+          onShare={noop}
+          onDelete={noop}
+        />
       ) : screen === 'review' ? (
         <ReviewView {...SAMPLE_REVIEW} onSelectItem={noop} onApprove={noop} onReject={noop} onComment={noop} onSendNotes={noop} />
       ) : screen === 'scribe' ? (
@@ -226,12 +240,61 @@ export default function CV6KitTest() {
       ) : screen === 'settings' ? (
         <SettingsView theme="glass" onThemeChange={noop} onConnect={noop} onCycleScope={noop} onEditConnection={noop} onTogglePerm={noop} onToggleNotify={noop} onBackToList={noop} />
       ) : screen === 'dock' ? (
-        <div style={{ height: '100dvh', background: 'rgba(0,0,0,.6)', display: 'flex', alignItems: 'flex-end', padding: '16px' }}>
-          <ActivityDock activities={[
-            { state: 'recording', title: 'Recording', sub: 'Corner · Dashboard · 08:42', badge: 'REC', badgeColor: '#F87171', badgeBg: 'rgba(248,113,113,.16)' },
-            { state: 'working', title: 'Elon · patching', sub: 'CV6-142 · step 2 of 3' },
-            { state: 'working', title: 'Print build', sub: 'space-rising · 58%' },
-          ]} onActivitySelect={noop} />
+        <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--ground)' }}>
+          {/* Float variant — under mock headers */}
+          <div style={{ flex: 'none', height: '120px', background: 'var(--surface)', borderBottom: '1px solid var(--divider)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: '14px', color: 'var(--muted)' }}>Recording</div>
+            <ActivityDock
+              job={{ kind: 'recording', label: 'Recording · 08:42', detail: 'Corner · Dashboard' }}
+              onOpen={noop}
+              onExpand={noop}
+              variant="float"
+            />
+          </div>
+
+          <div style={{ flex: 'none', height: '120px', background: 'var(--surface-2)', borderBottom: '1px solid var(--divider)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: '14px', color: 'var(--muted)' }}>Working Agent</div>
+            <ActivityDock
+              job={{ kind: 'working', label: 'Elon · filing 40 files', detail: 'into Projects · 28 done' }}
+              onOpen={noop}
+              onExpand={noop}
+              variant="float"
+            />
+          </div>
+
+          <div style={{ flex: 'none', height: '120px', background: 'var(--surface)', borderBottom: '1px solid var(--divider)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: '14px', color: 'var(--muted)' }}>Secondary Agent</div>
+            <ActivityDock
+              job={{ kind: 'secondary', label: 'Gary · pre-screening', detail: '40 in queue · 12 flagged' }}
+              onOpen={noop}
+              onExpand={noop}
+              variant="float"
+            />
+          </div>
+
+          <div style={{ flex: 'none', height: '120px', background: 'var(--surface-2)', borderBottom: '1px solid var(--divider)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ fontSize: '14px', color: 'var(--muted)' }}>Drafting</div>
+            <ActivityDock
+              job={{ kind: 'drafting', label: 'Elon · drafting reply', detail: 'Acme · for your approval' }}
+              onOpen={noop}
+              onExpand={noop}
+              variant="float"
+            />
+          </div>
+
+          {/* Rail variant — stacked cards */}
+          <div style={{ flex: 1, padding: '32px 16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '8px' }}>Rail Variant (Command view)</div>
+            <ActivityDock
+              jobs={[
+                { kind: 'recording', label: 'Recording · 08:42', detail: 'Corner · Dashboard' },
+                { kind: 'working', label: 'Elon · patching', detail: 'CV6-142 · step 2 of 3' },
+                { kind: 'working', label: 'Print build', detail: 'space-rising · 58%' },
+              ]}
+              onSelectJob={noop}
+              variant="rail"
+            />
+          </div>
         </div>
       ) : isDesktop ? (
         <DesktopHomeWired {...SAMPLE} recentMessages={SAMPLE_RECENT} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />

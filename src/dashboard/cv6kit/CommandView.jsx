@@ -1,26 +1,35 @@
 import React from 'react';
+import { ActivityDock } from './ActivityDock.jsx';
 
 /**
  * CV6 kit Command — the goal ledger (mobile). Kit-faithful to
  * ui_kits/tools/command.html (mobile "live goal" frame): a featured live-goal
- * card (room + goal + master-loop checklist) over a list of the other rooms with
- * their status.
+ * card (room + goal + master-loop checklist + watchers) over a list of the other
+ * rooms with their status.
  *
  * UNLIKE chat/tracker, Command is a RESKIN of an existing feature — cv4/
  * CommandTracker.jsx already serves this goal ledger (rooms + current goal +
  * status + set-by + time, via /api/dashboard/room-goals). So props are shaped to
  * that real data and this view is wire-ready:
  *   summary  = { roomCount, liveCount }
- *   featured = { room, color, goal, status, checklist: [{ label, state, note }] }
+ *   featured = {
+ *     id, room, color, goal, status,
+ *     checklist: [{ label, state, note }],
+ *     watchers: [{ name, initials, role, status, onToggle }],
+ *     onRetask, onAddWatcher
+ *   }
  *   rooms[]  = { id, name, color, sub, status }
- *             status: 'live' | 'blocked' | 'idle'   checklist state: 'done'|'queued'|'working'|'pending'
- *   onSelectRoom(room)
+ *             status: 'live' | 'blocked' | 'ready'
+ *             checklist state: 'done'|'queued'|'working'|'pending'
+ *   activities[] = { state: 'recording'|'working'|'success', title, sub }
+ *                  (mapped from running jobs; state translates to ActivityDock kind)
+ *   onSelectRoom(room), onRetask, onWatcherToggle, onSelectActivity
  */
 
 const STATUS = {
   live: { label: 'LIVE', color: 'var(--success)', background: 'var(--success-weak)', pulse: true },
   blocked: { label: 'BLOCKED', color: 'var(--warn)', background: 'var(--warn-weak, rgba(251,191,36,.16))' },
-  idle: { label: 'IDLE', color: 'var(--muted)', background: 'var(--chip)' },
+  ready: { label: 'READY', color: 'var(--muted)', background: 'var(--chip)' },
 };
 
 function StatusChip({ status }) {
@@ -33,7 +42,7 @@ function StatusChip({ status }) {
   );
 }
 
-function ChecklistRow({ item }) {
+function ChecklistRow({ item, onQueueClick }) {
   const st = item.state || 'pending';
   let mark;
   if (st === 'done') {
@@ -50,56 +59,47 @@ function ChecklistRow({ item }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
       {mark}
       <span style={{ flex: 1, fontSize: 13.5, color: muted ? 'var(--muted)' : 'var(--fg)', fontWeight: muted ? 400 : 500, textDecoration: st === 'done' ? 'line-through' : 'none' }}>{item.label}</span>
-      {st === 'queued' && <span style={{ fontSize: 10.5, fontWeight: 600, padding: '3px 9px', borderRadius: 6, color: 'var(--warn)', background: 'var(--warn-weak, rgba(251,191,36,.16))' }}>Queued</span>}
+      {st === 'queued' && <button onClick={() => onQueueClick && onQueueClick(item)} style={{ fontSize: 10.5, fontWeight: 600, padding: '3px 9px', borderRadius: 6, color: 'var(--warn)', background: 'var(--warn-weak, rgba(251,191,36,.16))', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Queued</button>}
       {item.note && st !== 'queued' && <span style={{ fontSize: 11, color: st === 'done' ? 'var(--success)' : 'var(--faint)' }}>{item.note}</span>}
     </div>
   );
 }
 
-function ActivityDock({ activity }) {
-  const st = activity.state || 'working';
-  let icoStyle = {};
-  let icoContent = null;
 
-  if (st === 'recording') {
-    icoStyle = { background: 'rgba(248,113,113,.16)' };
-    icoContent = <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#F87171', animation: 'cmdPulse 1.4s infinite', flex: 'none' }} />;
-  } else if (st === 'working') {
-    icoStyle = { background: 'var(--accent-weak)' };
-    icoContent = (
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1.05s linear infinite' }}>
-        <path d="M21 12a9 9 0 1 1-6.2-8.6" />
-      </svg>
-    );
-  } else if (st === 'success') {
-    icoStyle = { background: 'rgba(52,211,153,.18)' };
-    icoContent = (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 20h9" />
-        <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-      </svg>
-    );
-  }
-
+function WatcherRow({ watcher, onToggle }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 11, height: 56, padding: '0 10px 0 13px', borderRadius: 14, background: 'var(--surface)', border: '1px solid var(--hair)', boxShadow: 'var(--shadow-card)', flex: 'none', minWidth: 248 }}>
-      <span style={{ width: 32, height: 32, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', ...icoStyle }}>
-        {icoContent}
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--surface-2)', borderRadius: 11, opacity: watcher.active === false ? 0.72 : 1 }}>
+      <span style={{ width: 26, height: 26, borderRadius: '50%', background: watcher.toneBg || 'var(--chip)', color: watcher.tone || 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, flex: 'none' }}>
+        {watcher.initials || (watcher.icon && watcher.icon)}
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activity.title}</div>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activity.sub}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{watcher.name}</div>
+        <div style={{ fontSize: 11, color: 'var(--muted)' }}>{watcher.role}</div>
       </div>
-      {activity.badge && (
-        <span style={{ fontSize: 10, fontWeight: 700, color: activity.badgeColor || 'var(--fg)', background: activity.badgeBg || 'var(--chip)', padding: '3px 7px', borderRadius: 7, flex: 'none', whiteSpace: 'nowrap' }}>
-          {activity.badge}
-        </span>
-      )}
+      <button
+        onClick={() => onToggle && onToggle(watcher)}
+        style={{
+          width: 38,
+          height: 22,
+          borderRadius: 11,
+          background: watcher.active ? 'var(--accent)' : 'var(--chip)',
+          border: watcher.active ? 'none' : '1px solid var(--hair)',
+          position: 'relative',
+          flex: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: watcher.active ? 'flex-end' : 'flex-start',
+          padding: '2px',
+        }}
+      >
+        <span style={{ width: 18, height: 18, borderRadius: '50%', background: watcher.active ? '#fff' : 'var(--faint)' }} />
+      </button>
     </div>
   );
 }
 
-export function CommandView({ summary = {}, featured, rooms = [], activities = [], onSelectRoom, onBack }) {
+export function CommandView({ summary = {}, featured, rooms = [], activities = [], onSelectRoom, onBack, onRetask, onWatcherToggle }) {
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
       <style>{'@keyframes cmdPulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes spin{to{transform:rotate(360deg)}}'}</style>
@@ -127,28 +127,77 @@ export function CommandView({ summary = {}, featured, rooms = [], activities = [
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)' }}>{activities.length} running</span>
             </div>
             <div style={{ display: 'flex', gap: 10, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', padding: '0 16px', marginBottom: 4 }}>
-              {activities.map((a, i) => <ActivityDock key={i} activity={a} />)}
+              {activities.map((a, i) => {
+                const kind = a.state === 'recording' ? 'recording' : a.state === 'success' ? 'drafting' : 'working';
+                return (
+                  <ActivityDock
+                    key={i}
+                    job={{ kind, label: a.title || '', detail: a.sub || '' }}
+                    variant="rail"
+                    onOpen={() => {}}
+                  />
+                );
+              })}
             </div>
           </div>
         )}
 
         <div style={{ padding: '8px 16px 0' }}>
           {featured && (
-            <div className="glassy" onClick={() => onSelectRoom && onSelectRoom(featured)} style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, padding: 16, marginBottom: 12, cursor: onSelectRoom ? 'pointer' : 'default' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, padding: 16, marginBottom: 12 }}>
+              {/* Featured goal header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: featured.color || 'var(--violet-400)', flex: 'none' }} />
                 <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{featured.room}</span>
                 <StatusChip status={featured.status} />
               </div>
-              <div style={{ fontSize: 15.5, lineHeight: 1.4, fontWeight: 600, color: 'var(--fg)', marginBottom: Array.isArray(featured.checklist) && featured.checklist.length ? 14 : 0 }}>{featured.goal}</div>
+
+              {/* Goal text */}
+              <div style={{ fontSize: 15.5, lineHeight: 1.4, fontWeight: 600, color: 'var(--fg)', marginBottom: 14 }}>{featured.goal}</div>
+
+              {/* Checklist */}
               {Array.isArray(featured.checklist) && featured.checklist.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-                  {featured.checklist.map((it, i) => <ChecklistRow key={i} item={it} />)}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 11, marginBottom: 18 }}>
+                  {featured.checklist.map((it, i) => <ChecklistRow key={i} item={it} onQueueClick={featured.onQueueClick} />)}
+                </div>
+              )}
+
+              {/* Watchers section */}
+              {Array.isArray(featured.watchers) && featured.watchers.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Master-loop watchers</span>
+                    <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600 }}>
+                      {featured.watchers.filter((w) => w.active !== false).length} active
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--muted)', marginBottom: 13 }}>
+                    The loop drives these conversations toward the goal and verifies each finished step. Toggle who it watches.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 16 }}>
+                    {featured.watchers.map((w, i) => (
+                      <WatcherRow key={i} watcher={w} onToggle={() => onWatcherToggle && onWatcherToggle(w)} />
+                    ))}
+                  </div>
+                </>
+              )}
+
+              {/* Re-task button */}
+              {onRetask && (
+                <div style={{ display: 'flex', gap: 9 }}>
+                  <button style={{ flex: 'none', width: 46, height: 42, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                  </button>
+                  <button onClick={onRetask} style={{ flex: 1, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                    Re-task
+                  </button>
                 </div>
               )}
             </div>
           )}
 
+          {/* Other rooms */}
           {rooms.map((r, i) => (
             <div key={r.id || i} className="glassy" onClick={() => onSelectRoom && onSelectRoom(r)} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 15px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, marginBottom: 10, cursor: onSelectRoom ? 'pointer' : 'default' }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: r.color || 'var(--faint)', flex: 'none' }} />

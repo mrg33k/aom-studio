@@ -39,7 +39,7 @@ export function OrganizeLive({ projectRooms = [], onBack }) {
   const projects = useMemo(() => (projectRooms || []).map(mapProject), [projectRooms]);
   const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.slug);
   const [files, setFiles] = useState([]);
-  const [selectedFileId, setSelectedFileId] = useState(null);
+  const [selectedFileIds, setSelectedFileIds] = useState([]);
 
   // Keep a valid project selected as the list settles.
   useEffect(() => {
@@ -52,8 +52,8 @@ export function OrganizeLive({ projectRooms = [], onBack }) {
     let alive = true;
     fetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(selectedProjectId)}`)
       .then((r) => r.json())
-      .then((d) => { if (alive) { const mapped = (d.files || []).map(mapFile); setFiles(mapped); setSelectedFileId(mapped[0]?.id || null); } })
-      .catch(() => { if (alive) { setFiles([]); setSelectedFileId(null); } });
+      .then((d) => { if (alive) { const mapped = (d.files || []).map(mapFile); setFiles(mapped); setSelectedFileIds([]); } })
+      .catch(() => { if (alive) { setFiles([]); setSelectedFileIds([]); } });
     return () => { alive = false; };
   }, [selectedProjectId]);
 
@@ -62,10 +62,32 @@ export function OrganizeLive({ projectRooms = [], onBack }) {
       projects={projects}
       files={files}
       selectedProjectId={selectedProjectId}
-      selectedFileId={selectedFileId}
-      onSelectProject={(proj) => { setSelectedProjectId(proj.slug || proj.id); setSelectedFileId(null); }}
-      onSelectFile={(file) => setSelectedFileId(file.id)}
+      selectedFileIds={selectedFileIds}
+      onSelectFile={(file, checked) => {
+        if (checked) {
+          setSelectedFileIds([...selectedFileIds, file.id]);
+        } else {
+          setSelectedFileIds(selectedFileIds.filter(id => id !== file.id));
+        }
+      }}
+      onSelectProject={(proj) => { setSelectedProjectId(proj.slug || proj.id); setSelectedFileIds([]); }}
       onBack={onBack}
+      onMove={(fileIds, destinationId) => {
+        console.warn('[OrganizeLive] onMove not yet wired to backend:', { fileIds, destinationId });
+        // TODO: wire to /api/dashboard/files/move or similar
+      }}
+      onRename={(fileIds) => {
+        console.warn('[OrganizeLive] onRename not yet wired to backend:', { fileIds });
+        // TODO: wire to rename endpoint
+      }}
+      onShare={(fileIds) => {
+        console.warn('[OrganizeLive] onShare not yet wired to backend:', { fileIds });
+        // TODO: wire to share endpoint
+      }}
+      onDelete={(fileIds) => {
+        console.warn('[OrganizeLive] onDelete not yet wired to backend:', { fileIds });
+        // TODO: wire to delete endpoint
+      }}
     />
   );
 }
