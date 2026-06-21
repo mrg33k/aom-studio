@@ -366,13 +366,17 @@ html[data-theme="glass"]:not([data-glass-card="light"]) [data-cv6] .hm-catchup-c
   border-radius: 0 !important;
 }
 
-/* The one continuous frosted panel behind all three columns (replaces the per-card
-   frosting). Flat rectangle, no rounding — matches the flat light/dark grid. Glass is
-   always dark-glass now (useThemeMode cardStyleOf() === 'dark'); light-glass retired. */
+/* R-GLASS-OPEN 2026-06-20 (Patrik: "why glass ui has a box border around the columns…
+   theres a background on the glass ui that isnt correct to the design"). Desktop glass
+   kept a near-solid dark panel behind the whole grid — that fill IS the box he's seeing.
+   The design (and the verified kit DesktopHomeWired) sits the columns OPEN on the
+   gradient nebula, exactly like mobile glass already does (≤768 rule below killed the same
+   panel). So drop the panel fill + blur; columns sit flat on the ground. The Catch Up card
+   keeps its own near-opaque frosting, and the column dividers + top hairline stay. */
 [data-theme="glass"] [data-cv6] .hm-three-column-grid {
-  background: rgba(20, 24, 31, 0.80) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  backdrop-filter: blur(22px) saturate(1.3);
+  background: transparent !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-top-color: rgba(255, 255, 255, 0.10) !important;
 }
 /* Restore the column dividers light/dark have (glass --cv6-divider is transparent). */
