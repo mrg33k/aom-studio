@@ -78,8 +78,11 @@ export function OrganizeView({
   onSelectProject,
   onSelectFile,
   onBack,
+  onNew,
 }) {
-  const [mobileTab, setMobileTab] = useState('files'); // 'files' | 'projects'
+  // Open on Projects when there are no files to show yet (so the screen leads with
+  // real data instead of an empty Files tab); Files once a files source is wired.
+  const [mobileTab, setMobileTab] = useState(files.length ? 'files' : 'projects'); // 'files' | 'projects'
   const [isNarrow, setIsNarrow] = useState(typeof window !== 'undefined' && window.innerWidth < 1024);
 
   React.useEffect(() => {
@@ -100,13 +103,20 @@ export function OrganizeView({
         {/* status bar + top safe-area */}
         <div style={{ flex: 'none', padding: 'calc(env(safe-area-inset-top, 0px) + 8px) 22px 0' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 25, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--fg)' }}>Organize</div>
-              <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-                {selectedProject ? `${selectedProject.name} · ${files.length} files` : 'Select a project'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+              {onBack && (
+                <button onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, marginLeft: -8, flex: 'none', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+              )}
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 25, fontWeight: 700, letterSpacing: '-.02em', color: 'var(--fg)' }}>Organize</div>
+                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
+                  {selectedProject ? `${selectedProject.name} · ${files.length} files` : 'Select a project'}
+                </div>
               </div>
             </div>
-            <button onClick={onBack} aria-label="Add" style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <button onClick={onNew} aria-label="New" style={{ width: 34, height: 34, flex: 'none', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
                 <path d="M12 5v14M5 12h14"/>
               </svg>

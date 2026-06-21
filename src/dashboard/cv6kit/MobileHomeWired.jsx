@@ -55,7 +55,9 @@ function roomCount(p) {
  * and the real open-room handlers.
  */
 export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup = [], onSelectAgent, onSelectProject, onCatchupOpen, onNav }) {
-  const [menuOpen, setMenuOpen] = useState(true);
+  // Home opens with the menu CLOSED (Patrik 2026-06-20): content full-width, the
+  // side rail tucked behind the round menu button until the user opens it.
+  const [menuOpen, setMenuOpen] = useState(false);
   const greet = useMemo(() => pickGreet(), []);
   const name = firstName(user);
 

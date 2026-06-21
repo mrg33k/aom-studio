@@ -217,6 +217,7 @@ export function ReviewView({
   onReject,
   onComment,
   onSendNotes,
+  onBack,
 }) {
   const [activeCommentId, setActiveCommentId] = useState(null);
   const openCommentCount = comments.filter((c) => !c.resolved).length;
@@ -620,12 +621,17 @@ export function ReviewView({
       <div
         style={{
           display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'flex-end',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           padding: 'calc(env(safe-area-inset-top, 0px) + 12px) 16px 6px',
           color: 'var(--fg)',
         }}
       >
+        {onBack ? (
+          <button onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, marginLeft: -8, borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+        ) : <span />}
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
           {selectedItem ? '1' : '0'} / {queueItems.length} ready
         </span>
