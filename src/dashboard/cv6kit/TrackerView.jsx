@@ -51,9 +51,9 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug }) 
       {/* list */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '0 16px calc(96px + env(safe-area-inset-bottom, 0px))' }}>
         {bugs.length === 0 ? (
-          <div style={{ padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>No open bugs. File one with the plus button.</div>
+          <div className="glassy" style={{ padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, fontSize: 13.5, color: 'var(--muted)' }}>No open bugs. File one with the plus button.</div>
         ) : (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
+          <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
             {bugs.map((b, i) => {
               const tone = statusChip(b.status, b.priority);
               const p = PRIORITY[b.priority] || PRIORITY.high;

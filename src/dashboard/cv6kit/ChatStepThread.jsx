@@ -76,7 +76,7 @@ export function ChatStepThread({ target = {}, steps = [], onBack, onSend, onChoi
         </div>
 
         {steps.length === 0 ? (
-          <div style={{ padding: '16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-card)', fontSize: 13.5, color: 'var(--muted)' }}>No steps yet. The thread fills in as the agent works.</div>
+          <div className="glassy" style={{ padding: '16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-card)', fontSize: 13.5, color: 'var(--muted)' }}>No steps yet. The thread fills in as the agent works.</div>
         ) : steps.map((s, i) => {
           const last = i === steps.length - 1;
           const transparent = s.kind === 'done' || s.kind === 'upnext';
@@ -84,7 +84,7 @@ export function ChatStepThread({ target = {}, steps = [], onBack, onSend, onChoi
             <div key={s.id || i} style={{ position: 'relative', paddingLeft: 46, paddingBottom: 16 }}>
               {!last && <span style={{ position: 'absolute', left: 16, top: 36, bottom: -4, width: 2, background: 'var(--divider)' }} />}
               <StepIcon kind={s.kind} />
-              <div style={{
+              <div className={transparent || s.kind === 'choice' ? undefined : 'glassy'} style={{
                 borderRadius: 14,
                 padding: transparent ? '6px 0 0' : '12px 13px',
                 background: s.kind === 'choice' ? 'var(--accent-weak)' : transparent ? 'transparent' : 'var(--surface)',

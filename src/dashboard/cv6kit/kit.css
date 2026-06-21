@@ -103,13 +103,13 @@
     radial-gradient(50% 34% at 86% 20%, rgba(206,148,70,.34), transparent 58%),
     radial-gradient(46% 34% at 72% 86%, rgba(46,96,128,.45), transparent 64%),
     linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%);
-  --surface: rgba(22,26,33,.55);
+  --surface: rgba(255,255,255,.055);
   --surface-2: rgba(255,255,255,.08);
   --fg: #F3F4F6;
   --muted: #c0c4cc;
   --faint: #828690;
-  --divider: rgba(255,255,255,.1);
-  --hair: rgba(255,255,255,.16);
+  --divider: rgba(255,255,255,.08);
+  --hair: rgba(255,255,255,.09);
   --chip: rgba(255,255,255,.1);
   --accent: #5B9BFF;
   --accent-weak: rgba(91,155,255,.22);

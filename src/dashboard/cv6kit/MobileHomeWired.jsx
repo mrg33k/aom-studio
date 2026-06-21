@@ -89,7 +89,7 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
         </div>
 
         {catchup.length === 0 ? (
-          <div style={{ margin: '0 22px 20px', padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-card)', fontSize: 13.5, color: 'var(--muted)' }}>
+          <div className="glassy" style={{ margin: '0 22px 20px', padding: '18px 16px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 'var(--radius-card)', fontSize: 13.5, color: 'var(--muted)' }}>
             Nothing needs you right now.
           </div>
         ) : (
@@ -114,7 +114,7 @@ export function MobileHomeWired({ user, agents = [], projectRooms = [], catchup 
         {rooms.length === 0 ? (
           <div style={{ margin: '0 22px', padding: '16px', color: 'var(--faint)', fontSize: 13 }}>No rooms yet.</div>
         ) : (
-          <div style={{ margin: '0 22px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
+          <div className="glassy" style={{ margin: '0 22px', background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, overflow: 'hidden' }}>
             {rooms.map((r, i) => r.kind === 'agent' ? (
               <RoomRow key={'a' + i} status={r.status} name={r.name} tag="AGENT" onClick={() => onSelectAgent && onSelectAgent(r.raw)} />
             ) : (
