@@ -183,6 +183,30 @@ function ReviewPreview() {
   );
 }
 
+// Interactive Support preview: lands on the real inbox (wishes + emails), tap a row
+// to open its thread detail, back returns to the inbox. Mirrors SupportLive.
+function SupportPreview() {
+  const [sel, setSel] = useState(null);
+  const tagged = [
+    ...SAMPLE_SUPPORT.wishes.map((w) => ({ ...w, type: 'wish' })),
+    ...SAMPLE_SUPPORT.inbox.map((e) => ({ ...e, type: 'email' })),
+  ];
+  const item = sel ? tagged.find((x) => x.id === sel) || null : null;
+  return (
+    <SupportView
+      wishes={SAMPLE_SUPPORT.wishes}
+      inbox={SAMPLE_SUPPORT.inbox}
+      counts={SAMPLE_SUPPORT.counts}
+      selectedItem={item}
+      onSelectItem={(it) => setSel(it.id)}
+      onBack={() => setSel(null)}
+      onClose={() => {}}
+      onDraftReply={() => {}}
+      onMarkResolved={() => {}}
+    />
+  );
+}
+
 const SAMPLE_REVIEW = {
   queueSummary: { readyCount: 2, pipelineCount: 4 },
   queueItems: [
@@ -313,7 +337,7 @@ export default function CV6KitTest() {
           <CommandView status="loaded" {...SAMPLE_COMMAND} onSelectRoom={noop} />
         )
       ) : screen === 'support' ? (
-        <SupportView {...SAMPLE_SUPPORT} isDesktop={isDesktop} onSelectItem={noop} onBack={noop} onDraftReply={noop} onMarkResolved={noop} />
+        <SupportPreview />
       ) : screen === 'organize' ? (
         <OrganizePreview />
       ) : screen === 'review' ? (

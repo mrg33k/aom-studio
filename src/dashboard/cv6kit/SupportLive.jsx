@@ -161,9 +161,16 @@ export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDis
     respondedEmails,
   };
 
-  // Find selected item (search by ID in wishes or inbox)
+  // Find selected item (search by ID in wishes or inbox), tagged with its type so the
+  // thread detail renders the right header and body.
   const selectedItem = selectedId
-    ? wishesList.find((w) => w.id === selectedId) || inboxList.find((it) => it.id === selectedId)
+    ? (() => {
+        const w = wishesList.find((x) => x.id === selectedId);
+        if (w) return { ...w, type: 'wish' };
+        const e = inboxList.find((x) => x.id === selectedId);
+        if (e) return { ...e, type: 'email' };
+        return null;
+      })()
     : null;
 
   // The parent's onDiscuss(text) opens a chat with the EA and posts that text as a user
@@ -179,10 +186,10 @@ export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDis
     onDiscuss(`Help me handle this support message from ${who}${addr}${subj}. They wrote: "${body}". Draft the reply you'd send and check it with me before anything goes out.`);
   };
 
-  // List-only on the phone for now: a tap (or "draft reply") hands the item to the EA.
-  // The kit detail pane ships with placeholder agent-assist chips, so it stays off until
-  // those are real — selectedId is never set, so SupportView shows only the real list.
-  const handleSelectItem = (item) => discussItem(item);
+  // Tapping a row opens that item's thread detail in place (real sender + body).
+  // "Reply via your assistant" (onDraftReply) hands the item to the EA to draft the
+  // reply and check it with Patrik — nothing is ever sent to the customer from here.
+  const handleSelectItem = (item) => { if (item && item.id) setSelectedId(item.id); };
   const handleDraftReply = (item) => discussItem(item);
   const handleMarkResolved = () => { /* held: resolve runs from the full Support screen until wired + verified */ };
 
@@ -191,10 +198,10 @@ export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDis
       wishes={wishesList}
       inbox={inboxList}
       counts={counts}
-      selectedId={null}
-      selectedItem={null}
+      selectedItem={selectedItem}
       onSelectItem={handleSelectItem}
-      onBack={onClose}
+      onBack={() => setSelectedId(null)}
+      onClose={onClose}
       onDraftReply={handleDraftReply}
       onMarkResolved={handleMarkResolved}
       isDesktop={isDesktop}
