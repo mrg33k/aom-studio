@@ -3082,7 +3082,7 @@ export default function CornerVG() {
               /* corner:corner-ui-cv6 R-KIT-13 — Claude-design Organize screen on the phone,
                  wired to the user's real project rooms AND each project's real files (with
                  previews). onBack returns to home. */
-              <OrganizeLive projectRooms={projectRooms} worldId={worldId} onBack={() => setActiveTool(null)} />
+              <OrganizeLive projectRooms={projectRooms} worldId={worldId} onBack={() => setActiveTool(null)} onMenu={() => setNavOpen(true)} />
             ) : (activeTool === 'command') ? (
               /* corner:corner-ui-cv6 R-KIT-14 — Claude-design Command goal ledger on the
                  phone, wired to the real room-goals data (read-only: featured goal + room

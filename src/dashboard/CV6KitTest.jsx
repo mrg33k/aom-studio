@@ -160,6 +160,7 @@ function OrganizePreview() {
       onSelectProject={(proj) => setSel(proj.slug || proj.id)}
       onSelectFile={nope}
       onBack={nope}
+      onMenu={nope}
       onMove={nope}
       onRename={nope}
       onShare={nope}

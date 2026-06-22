@@ -650,6 +650,16 @@ function ProjectSwitcherDropdown({ projects = [], selectedProjectId, onClose, on
   );
 }
 
+// Format a real byte count the way the design shows it ("8 KB"), so the mono meta
+// reads cleanly. Pure formatting of the real size; nothing invented.
+function formatSize(bytes) {
+  const n = Number(bytes);
+  if (!n || n < 0) return '';
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${Math.round(n / 1024)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function OrganizeView({
   projects = [],
   files = [],
@@ -658,6 +668,7 @@ export function OrganizeView({
   onSelectFile,
   onSelectProject,
   onBack,
+  onMenu,
   activityAgent,
   onMove,
   onRename,
@@ -749,7 +760,7 @@ export function OrganizeView({
         fontWeight: 600,
       }}>
         <span>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>Corner</span>
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>{selectedProject?.name || 'Organize'}</span>
       </div>
 
       {/* header */}
@@ -760,36 +771,34 @@ export function OrganizeView({
         gap: 12,
         padding: '0 12px 16px',
       }}>
-        {onBack && (
-          <button
-            onClick={onBack}
-            aria-label="Back"
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 10,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--fg)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              flex: 'none',
-              marginLeft: -2,
-            }}
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-          </button>
-        )}
+        {/* Tool home: the menu opens the nav drawer (the file preview drill-in shows a back chevron instead). */}
+        <button
+          onClick={onMenu}
+          aria-label="Menu"
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            border: '1px solid var(--hair)',
+            background: 'var(--surface-2)',
+            color: 'var(--muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            flex: 'none',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M3 6h18M3 12h18M3 18h18"/>
+          </svg>
+        </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>
-            {selectedProject?.name || 'Dashboard'}
+            {selectedProject?.name || 'Organize'}
           </div>
           <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-            {totalFiles} files · 1 folder
+            {totalFiles} {totalFiles === 1 ? 'file' : 'files'}
           </div>
         </div>
         <button
@@ -931,14 +940,11 @@ export function OrganizeView({
           color: 'var(--muted)',
           marginBottom: 12,
         }}>
-          {(selectedProject?.name || 'Dashboard') !== 'Corner' && (
-            <>
-              <span>Corner</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
-            </>
-          )}
+          {/* The tool is the root; the project switcher follows. No invented parent project. */}
+          <span>Organize</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
           <span style={{ position: 'relative', display: 'inline-flex' }}>
             <button
               onClick={() => setShowSwitcher((v) => !v)}
@@ -1023,29 +1029,9 @@ export function OrganizeView({
           borderRadius: 16,
           overflow: 'hidden',
         }}>
-          {/* folder row (hidden while searching/filtering, so results are just files) */}
-          {!filtering && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            padding: '0 14px',
-            height: 58,
-            borderBottom: '1px solid var(--divider)',
-            cursor: 'pointer',
-          }}
-          onClick={() => onSelectProject && selectedProject && onSelectProject(selectedProject)}>
-            <Checkbox checked={false} onChange={() => {}} />
-            <FolderIcon color="var(--accent)" />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>cv6</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)' }}>{totalFiles} files</div>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18l6-6-6-6"/>
-            </svg>
-          </div>
-          )}
+          {/* The data is flat (files tagged by project); there is no real folder tree,
+              so no folder row is invented here. The breadcrumb switcher above changes
+              projects; the list below is the project's real files. */}
 
           {/* file rows */}
           {shownFiles.length === 0 && (
@@ -1079,7 +1065,7 @@ export function OrganizeView({
                     {f.name}
                   </div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)', marginTop: 1 }}>
-                    {[f.updated, f.size].filter(Boolean).join(' · ')}
+                    {[f.updated, formatSize(f.size)].filter(Boolean).join(' · ')}
                   </div>
                 </div>
                 <button
