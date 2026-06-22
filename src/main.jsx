@@ -67,6 +67,11 @@ const CornerV3 = lazy(() => import('./dashboard/CornerV3.jsx'))
 const CornerV4 = lazy(() => import('./dashboard/CornerV4.jsx'))
 // corner:gemini-workers R10 — /cvg Gemini workbench (CornerV4 duplicate).
 const CornerVG = lazy(() => import('./dashboard/CornerVG.jsx'))
+// corner:corner-ui-cv6 R-CLEANUP — fresh CV6 surface. /dashboard renders THIS now.
+// Every screen is a Claude Design fill-in template, mounted verbatim through the
+// template engine and fed real data. Nothing hand-drawn, nothing faked. Screens
+// fill in as Claude Design labels them. CV4 stays the fallback at ?cv4=1.
+const CornerCV6 = lazy(() => import('./dashboard/cv6next/CornerCV6.jsx'))
 
 // corner:corner-ui-cv6 R90 — CV6 is now the DEFAULT /dashboard surface for every
 // client, on the CLAUDE brain (Patrik flipped it on 2026-06-17 to finish it off
@@ -84,9 +89,11 @@ function DashboardSurface() {
     else if (sessionStorage.getItem('cv4Dashboard') === '1') cv4 = true
     if (params.get('cv6') === '1') { sessionStorage.removeItem('cv4Dashboard'); cv4 = false }
   } catch { /* private mode: query string only */ }
-  // corner:corner-ui-cv6 R-KIT-2 — the Claude mobile Home is now wired INSIDE CornerVG
-  // (real data) and shows on phones there; ?cv4=1 still escapes to the old CornerV4 surface.
-  return cv4 ? <CornerV4 /> : <CornerVG />
+  // corner:corner-ui-cv6 R-CLEANUP — fresh start. /dashboard serves CornerCV6 (Claude
+  // Design templates wired to real data). ?cv4=1 escapes to the old CornerV4 surface,
+  // which stays untouched as the fallback. CornerVG (the old drifted mess) is retired
+  // from the default path.
+  return cv4 ? <CornerV4 /> : <CornerCV6 />
 }
 // corner:corner-ui-cv6 — /cv6 component gallery. Renders the real app
 // components on one page as the design surface for the CV6 redesign.
