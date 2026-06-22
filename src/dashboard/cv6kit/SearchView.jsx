@@ -12,6 +12,7 @@ export function SearchView({
   isDesktop = false,
   query = '',
   results = {},
+  selectedIndex = 0,
   onQueryChange,
   onSelect,
   onClose,
@@ -22,7 +23,7 @@ export function SearchView({
 }) {
   const resultCount = Object.values(results).reduce((sum, arr) => sum + (Array.isArray(arr) ? arr.length : 0), 0);
 
-  const renderResultRow = (item, idx, groupKey) => {
+  const renderResultRow = (item, idx, groupKey, globalIdx) => {
     const isRoom = groupKey === 'rooms';
     const isMission = groupKey === 'missions';
     const isFile = groupKey === 'files';
@@ -42,7 +43,7 @@ export function SearchView({
             margin: '0 8px',
             borderRadius: 11,
             cursor: 'pointer',
-            background: idx === 0 ? 'var(--accent-weak)' : 'transparent',
+            background: globalIdx === selectedIndex ? 'var(--accent-weak)' : 'transparent',
             transition: 'background 0.15s ease',
           }}
           onClick={() => onSelect && onSelect(item, groupKey)}
@@ -193,6 +194,8 @@ export function SearchView({
             padding: '11px 16px',
             borderBottom: '1px solid var(--divider)',
             cursor: 'pointer',
+            background: globalIdx === selectedIndex ? 'var(--accent-weak)' : 'transparent',
+            transition: 'background 0.15s ease',
           }}
           onClick={() => onSelect && onSelect(item, groupKey)}
         >
@@ -408,49 +411,56 @@ export function SearchView({
               padding: '6px 0',
             }}
           >
-            {groups.map((group) => (
-              <div key={group.key}>
-                {group.items.length > 0 && (
-                  <>
-                    {/* .sgrp (display:flex, align-items:center, gap:8px, padding:12px 18px 6px) */}
-                    <div
-                      className="sgrp"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '12px 18px 6px',
-                      }}
-                    >
-                      <span
-                        className="eyebrow"
+            {(() => {
+              let globalIdx = 0;
+              return groups.map((group) => (
+                <div key={group.key}>
+                  {group.items.length > 0 && (
+                    <>
+                      {/* .sgrp (display:flex, align-items:center, gap:8px, padding:12px 18px 6px) */}
+                      <div
+                        className="sgrp"
                         style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                          letterSpacing: '.08em',
-                          textTransform: 'uppercase',
-                          color: 'var(--muted)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '12px 18px 6px',
                         }}
                       >
-                        {group.label}
-                      </span>
-                      <span
-                        className="mono"
-                        style={{
-                          fontSize: '10.5px',
-                          color: 'var(--faint)',
-                          fontFamily: 'var(--font-mono)',
-                        }}
-                      >
-                        {group.items.length}
-                      </span>
-                    </div>
-                    {/* Result rows */}
-                    {group.items.map((item, idx) => renderResultRow(item, idx, group.key))}
-                  </>
-                )}
-              </div>
-            ))}
+                        <span
+                          className="eyebrow"
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            letterSpacing: '.08em',
+                            textTransform: 'uppercase',
+                            color: 'var(--muted)',
+                          }}
+                        >
+                          {group.label}
+                        </span>
+                        <span
+                          className="mono"
+                          style={{
+                            fontSize: '10.5px',
+                            color: 'var(--faint)',
+                            fontFamily: 'var(--font-mono)',
+                          }}
+                        >
+                          {group.items.length}
+                        </span>
+                      </div>
+                      {/* Result rows */}
+                      {group.items.map((item, idx) => {
+                        const gi = globalIdx;
+                        globalIdx += 1;
+                        return renderResultRow(item, idx, group.key, gi);
+                      })}
+                    </>
+                  )}
+                </div>
+              ));
+            })()}
           </div>
 
           {/* Keyboard hints footer */}
@@ -691,49 +701,56 @@ export function SearchView({
             overflow: 'auto',
           }}
         >
-          {groups.map((group) => (
-            <div key={group.key}>
-              {group.items.length > 0 && (
-                <>
-                  {/* Group header */}
-                  <div
-                    className="sgrp"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '12px 18px 6px',
-                    }}
-                  >
-                    <span
-                      className="eyebrow"
+          {(() => {
+            let globalIdx = 0;
+            return groups.map((group) => (
+              <div key={group.key}>
+                {group.items.length > 0 && (
+                  <>
+                    {/* Group header */}
+                    <div
+                      className="sgrp"
                       style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        letterSpacing: '.08em',
-                        textTransform: 'uppercase',
-                        color: 'var(--muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '12px 18px 6px',
                       }}
                     >
-                      {group.label}
-                    </span>
-                    <span
-                      className="mono"
-                      style={{
-                        fontSize: '10.5px',
-                        color: 'var(--faint)',
-                        fontFamily: 'var(--font-mono)',
-                      }}
-                    >
-                      {group.items.length}
-                    </span>
-                  </div>
-                  {/* Result rows */}
-                  {group.items.map((item, idx) => renderResultRow(item, idx, group.key))}
-                </>
-              )}
-            </div>
-          ))}
+                      <span
+                        className="eyebrow"
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          letterSpacing: '.08em',
+                          textTransform: 'uppercase',
+                          color: 'var(--muted)',
+                        }}
+                      >
+                        {group.label}
+                      </span>
+                      <span
+                        className="mono"
+                        style={{
+                          fontSize: '10.5px',
+                          color: 'var(--faint)',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        {group.items.length}
+                      </span>
+                    </div>
+                    {/* Result rows */}
+                    {group.items.map((item, idx) => {
+                      const gi = globalIdx;
+                      globalIdx += 1;
+                      return renderResultRow(item, idx, group.key, gi);
+                    })}
+                  </>
+                )}
+              </div>
+            ));
+          })()}
         </div>
       </div>
     );

@@ -61,6 +61,7 @@ import { ChatView, SAMPLE_CHAT } from './cv6kit/ChatView.jsx'
 import { ScribeView, SAMPLE_SCRIBE } from './cv6kit/ScribeView.jsx'
 import { DesktopHomeView, SAMPLE_HOME } from './cv6kit/DesktopHomeView.jsx'
 import { MobileHomeKit } from './cv6kit/MobileHomeKit.jsx'
+import { SearchLive } from './cv6kit/SearchLive.jsx'
 import { SAMPLE_COMMAND, SAMPLE_REVIEW, SAMPLE_SUPPORT, SAMPLE_ORGANIZE, SAMPLE_TRACKER } from './CV6KitTest.jsx'
 // R-KIT-ONBOARD — Claude-design first-run onboarding (5 steps: welcome, connections, permissions, theme, first goal).
 import { OnboardingLive } from './cv6kit/OnboardingLive.jsx'
@@ -223,6 +224,19 @@ export default function CornerVG() {
   // up a level within a tool. Mounted once for every cv6 mobile screen.
   const [navOpen, setNavOpen] = useState(false)
   const [notifPromptOpen, setNotifPromptOpen] = useState(false)
+  // corner:corner-ui-cv6 R-WIRE — Global Search (⌘K / Ctrl-K). The palette is the
+  // SearchLive overlay; this just owns open/close. Cmd-K toggles it from anywhere.
+  const [searchOpen, setSearchOpen] = useState(false)
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault()
+        setSearchOpen((o) => !o)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
   const [selectedMail, setSelectedMail] = useState(null)
   // corner:support N1 — Support Inbox view (Patrik workspace only)
   // ?support=1 deep-links straight to the Support dashboard (verify-at URL for
@@ -1400,6 +1414,7 @@ export default function CornerVG() {
     else if (key === 'settings' || key === 'profile') { setShowSupportInbox(false); setActiveTool('settings'); }
     else if (key === 'newproject') { setActiveTool(null); setShowSupportInbox(false); setNewRoomModal({ kind: 'project' }); }
     else if (key === 'scribe') { setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('scribe'); }
+    else if (key === 'search') { setSearchOpen(true); }
     else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
   }, [telephone])
 
@@ -1750,6 +1765,22 @@ export default function CornerVG() {
         onAllow={() => setNotifPromptOpen(false)}
         onDismiss={() => setNotifPromptOpen(false)}
       />
+      {/* corner:corner-ui-cv6 R-WIRE — Global Search palette (⌘K). Real results: Rooms ←
+          your agents + projects (instant client filter); Files ← /api/dashboard/file-search.
+          Esc / click-out / select closes. Selecting a room opens it; a file routes to its room. */}
+      {searchOpen && (
+        <SearchLive
+          worldId={worldId}
+          agents={agents}
+          projectRooms={projectRooms}
+          isDesktop={isDesktop}
+          onClose={() => setSearchOpen(false)}
+          onSelectAgent={(a) => { setSearchOpen(false); if (a) handleSelectAgent(a) }}
+          onSelectProject={(p) => { setSearchOpen(false); if (p) handleSelectProject(p) }}
+          onNav={handleCv6Nav}
+          user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
+        />
+      )}
       {/* R5.1 CV4 scoped styles. Everything keyed to [data-shell="cv4"] so the
           shared cv3/ components stay unchanged on /dashboard. */}
       <style>{`
