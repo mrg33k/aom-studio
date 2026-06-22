@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { TrackerView } from './TrackerView';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { TrackerView, NewIssueView } from './TrackerView';
 import { TrackerDetailView } from './TrackerDetailView';
 
 /**
@@ -38,15 +38,44 @@ function assigneeOf(owner) {
 export function TrackerLive({ worldId = 'aom', onBack, onDiscuss, isDesktop = false, activeTool = 'tracker', onNav, onMenu, user = {} }) {
   const [raw, setRaw] = useState(null); // null = loading
   const [selectedId, setSelectedId] = useState(null);
+  const [showNew, setShowNew] = useState(false);
 
-  useEffect(() => {
-    let alive = true;
-    fetch('/api/dashboard/cv6-bugs')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (alive) setRaw(d && Array.isArray(d.bugs) ? d.bugs : []); })
-      .catch(() => { if (alive) setRaw([]); });
-    return () => { alive = false; };
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch('/api/dashboard/cv6-bugs');
+      if (!r.ok) { setRaw((p) => p || []); return; }
+      const d = await r.json();
+      setRaw(d && Array.isArray(d.bugs) ? d.bugs : []);
+    } catch {
+      setRaw((p) => p || []);
+    }
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Create a new issue, then refresh the list and return to it. cv6-bugs POST add
+  // takes { action:'add', page, title, expected, severity, world }. We map the
+  // design form: title -> title, description -> expected, priority -> severity, and
+  // use the title as the page label (the form has no separate page field).
+  const createIssue = useCallback(async ({ title, priority, description }) => {
+    if (!title || !title.trim()) return;
+    try {
+      await fetch('/api/dashboard/cv6-bugs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'add',
+          page: title.trim(),
+          title: title.trim(),
+          expected: (description || '').trim(),
+          severity: priority || 'med',
+          world: worldId,
+        }),
+      });
+    } catch { /* non-fatal: the refresh below reflects reality either way */ }
+    setShowNew(false);
+    await load();
+  }, [load, worldId]);
 
   // Open work only (open + in_progress); closed/fixed bugs drop off the list.
   const bugs = useMemo(() => (raw || [])
@@ -78,6 +107,15 @@ export function TrackerLive({ worldId = 'aom', onBack, onDiscuss, isDesktop = fa
     attachments: [],
   } : null;
 
+  if (showNew) {
+    return (
+      <NewIssueView
+        onSubmit={createIssue}
+        onBack={() => setShowNew(false)}
+      />
+    );
+  }
+
   if (detailBug) {
     return (
       <TrackerDetailView
@@ -96,6 +134,7 @@ export function TrackerLive({ worldId = 'aom', onBack, onDiscuss, isDesktop = fa
       tracker={tracker}
       bugs={raw === null ? [] : bugs}
       onSelectBug={(b) => b && b.id && setSelectedId(b.id)}
+      onNewBug={() => setShowNew(true)}
       onBack={onBack}
       isDesktop={isDesktop}
       activeTool={activeTool}

@@ -394,6 +394,7 @@ export function TrackerSwitcherView({ onSelect, onBack }) {
 export function NewIssueView({ onSubmit, onBack }) {
   const [title, setTitle] = React.useState('');
   const [priority, setPriority] = React.useState('med');
+  const [description, setDescription] = React.useState('');
 
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
@@ -409,7 +410,7 @@ export function NewIssueView({ onSubmit, onBack }) {
         {/* Description field */}
         <div style={{ marginBottom: 18 }}>
           <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 6 }} className="eyebrow">Description</label>
-          <textarea placeholder="More details about what's broken or needed" style={{ width: '100%', minHeight: 100, padding: '10px 12px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box', resize: 'none' }} />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="More details about what's broken or needed" style={{ width: '100%', minHeight: 100, padding: '10px 12px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box', resize: 'none' }} />
         </div>
 
         {/* Priority selector */}
@@ -454,7 +455,7 @@ export function NewIssueView({ onSubmit, onBack }) {
 
       {/* Submit button — fixed bottom */}
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px calc(20px + env(safe-area-inset-bottom, 0px))', background: 'linear-gradient(180deg,transparent,var(--ground))', zIndex: 20 }}>
-        <button onClick={() => onSubmit?.({ title, priority })} style={{ width: '100%', height: 48, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+        <button onClick={() => { if (title.trim()) onSubmit?.({ title: title.trim(), priority, description: description.trim() }); }} style={{ width: '100%', height: 48, borderRadius: 11, border: 'none', background: title.trim() ? 'var(--accent)' : 'var(--surface-2)', color: title.trim() ? '#fff' : 'var(--faint)', fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: title.trim() ? 'pointer' : 'default' }}>
           Create Issue
         </button>
       </div>
