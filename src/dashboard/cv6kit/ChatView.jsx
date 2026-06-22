@@ -1,6 +1,32 @@
 import React from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 import { CvgMobileHeader } from './CvgMobileHeader.jsx';
+import { AgentMessage } from './chat-elements/index.jsx';
+
+// The agent closes a goal thread with a summary + next-step choices (the lifecycle
+// from ui_kits/agent-chat/README.md). Expressed as typed messages the Agent Chat
+// element kit renders; real threads replace this in the wiring step.
+const SAMPLE_THREAD = [
+  {
+    type: 'summary',
+    title: 'Summary',
+    meta: 'Lock the print framing',
+    bullets: [
+      { text: 'Framed the print spec and confirmed the bleed and trim sizes.' },
+      { text: 'Resolved the retry loop that stalled the last build.' },
+      { text: 'One scope item still needs your call on the cover stock.', warn: true },
+    ],
+    actions: [{ id: 'a1', label: 'Open the spec', done: true }, { id: 'a2', label: 'Pick the cover stock' }],
+  },
+  {
+    type: 'choices',
+    choices: [
+      { id: 'c1', label: 'Send the spec to print', recommended: true },
+      { id: 'c2', label: 'Review the cover options first' },
+      { id: 'c3', label: 'Hold for Patrik' },
+    ],
+  },
+];
 
 /**
  * CV6 kit Chat — Rooms rail · Goal thread · Mission goals & files drawer.
@@ -328,6 +354,14 @@ function DesktopChat({ data, onNav, user }) {
                   </div>
                 );
               })}
+
+              {/* Goal-thread close: the agent returns with a summary + next-step
+                  choices, rendered through the Agent Chat element kit. */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 6 }}>
+                {(data.thread || SAMPLE_THREAD).map((m, i) => (
+                  <AgentMessage key={i} message={m} agent={{ initials: active.initials, name: active.name }} />
+                ))}
+              </div>
             </div>
           </div>
 
