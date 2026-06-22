@@ -1,0 +1,95 @@
+{
+  "screen": "home-desktop",
+  "title": "Home · Desktop (3-column)",
+  "source": "ui_kits/desktop/index.html",
+  "fragment": "wired/desktop/home.html",
+  "stylesheet": "wired/cv6.css",
+  "wrapper": { "selector": "[data-cv6][data-screen=\"home-desktop\"]", "theme": "dark|light|glass" },
+  "note": "Anchors the shared vocabulary (rooms/room, agents, projects, catchUp, goal). Mobile Home (wired/mobile/home.html) reuses these same names.",
+
+  "data": {
+    "rooms": { "total": "int" },
+    "agents": {
+      "count": "int",
+      "list": true, "item": "room",
+      "shape": {
+        "id": "string",
+        "name": "string",
+        "status": "enum: live | working | blocked | ready  → data-mod dot:room.status swaps the .dot color",
+        "statusText": "string (e.g. 'on step 3', 'drafting', 'needs you')",
+        "initials": "string (used in the conversation header)"
+      }
+    },
+    "projects": {
+      "count": "int",
+      "moreCount": "int (the 'Show N more' affordance)",
+      "list": true, "item": "room",
+      "shape": {
+        "id": "string",
+        "name": "string",
+        "tint": "enum: violet | accent | pink | teal | lime | amber → data-mod stroke:room.tint on the folder glyph",
+        "count": "int (missions/items in the project)"
+      }
+    },
+    "catchUp": {
+      "count": "int",
+      "position": "int (1-based index of the focused card)",
+      "current": {
+        "id": "string",
+        "kind": "enum: email | agent | review | support | tracker → data-mod glyph:.. and tag:..",
+        "kindLabel": "string (UPPERCASE chip text)",
+        "from": "string",
+        "subject": "string",
+        "summary": "string (the AI summary)",
+        "actionItems": { "list": true, "item": "actionItem", "shape": { "text": "string" } },
+        "attachments": { "list": true, "item": "attachment", "shape": { "id": "string", "name": "string", "size": "string (mono)" } }
+      },
+      "rest": { "list": true, "item": "card", "shape": { "id": "string", "kind": "enum (as current.kind)", "from": "string", "subject": "string", "time": "string (mono)" } }
+    },
+    "room": {
+      "note": "the selected room shown in the conversation column",
+      "name": "string", "initials": "string", "project": "string", "mission": "string (mono /007)"
+    },
+    "goal": {
+      "title": "string", "step": "int", "total": "int", "pct": "int (0-100, data-mod width:goal.pct on the progress fill)",
+      "summary": { "list": true, "item": "summary", "shape": { "text": "string" } },
+      "checklist": { "list": true, "item": "step", "shape": { "label": "string", "state": "enum: done | working | pending → data-mod state:step.state" } }
+    }
+  },
+
+  "actions": [
+    { "name": "nav", "target": "home|chat|organize|review|support|tracker|command|livescribe|organize", "from": "8-tool nav tiles + Files button" },
+    { "name": "openCommandK", "from": "header search ib + rooms search field", "does": "open the ⌘K palette" },
+    { "name": "toggleTheme", "from": "header moon ib" },
+    { "name": "openNotifications", "from": "header bell ib" },
+    { "name": "openProfile", "from": "avatar" },
+    { "name": "newRoom", "from": "All Rooms New button" },
+    { "name": "showMoreProjects", "from": "Show N more" },
+    { "name": "openRoom", "arg": "room.id", "from": ".room rows (agents + projects)" },
+    { "name": "openCatchUp", "arg": "catchUp.current.id | card.id", "from": "catch-up cards" },
+    { "name": "draftReply", "arg": "catchUp.current.id" },
+    { "name": "addToTracker", "arg": "catchUp.current.id" },
+    { "name": "assignAgent", "arg": "catchUp.current.id", "from": "Send to <agent>" },
+    { "name": "snooze", "arg": "catchUp.current.id" },
+    { "name": "review", "arg": "attachment.id" },
+    { "name": "openAttachment", "arg": "attachment.id" },
+    { "name": "voiceInput", "from": "composer mic-left" },
+    { "name": "composeMessage", "from": "composer field" },
+    { "name": "sendMessage", "from": "composer send" }
+  ],
+
+  "states": {
+    "ready": { "region": "[data-state=\"ready\"] (.cols)" },
+    "empty": { "in": "wired/_base/states.html", "note": "'You're all caught up' when catchUp.count === 0" },
+    "loading": { "in": "wired/_base/states.html" },
+    "error": { "in": "wired/_base/states.html" }
+  },
+
+  "modifiers": {
+    "dot:room.status": "live→var(--success)+glow · working→var(--status-working) · blocked→var(--warn) · ready→var(--faint)",
+    "stroke:room.tint": "sets the folder SVG stroke to the project tint var",
+    "glyph:..": "swaps the catch-up source glyph + tint by kind",
+    "width:goal.pct": "sets the progress-fill width %",
+    "state:step.state": "checklist row: done (struck) / working (live ring) / pending (empty ring)"
+  }
+}

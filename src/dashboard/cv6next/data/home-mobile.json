@@ -1,0 +1,52 @@
+{
+  "screen": "home-mobile",
+  "title": "Home · Mobile",
+  "source": "ui_kits/mobile/index.html",
+  "fragment": "wired/mobile/home.html",
+  "stylesheet": "wired/cv6.css",
+  "wrapper": { "selector": "[data-cv6][data-screen=\"home-mobile\"]", "theme": "dark|light|glass" },
+  "sharesVocabularyWith": "wired/desktop/home.json",
+  "note": "Two navigation states in one file: A) Home (Catch Up + All Rooms) and B) Project opened (general chat + missions). Reuses the SAME names as desktop Home: catchUp.*, rooms/agents/projects, room.*.",
+
+  "data": {
+    "catchUp": "same shape as desktop home.json (count, position, current{...}, rest[])",
+    "agents": "same as desktop (list of room; data-mod dot:room.status)",
+    "projects": "same as desktop (list of room; data-mod stroke:room.tint)",
+    "project": {
+      "note": "state B — the opened project",
+      "id": "string", "name": "string", "missionCount": "int",
+      "tint": "enum: violet|accent|pink|teal|lime|amber → data-mod stroke:project.tint"
+    },
+    "missions": {
+      "list": true, "item": "mission",
+      "shape": {
+        "id": "string (mono /007)",
+        "title": "string",
+        "agent": "string (first name)",
+        "status": "enum: live | ready | done → data-mod dot:mission.status AND stp:mission.status",
+        "statusLabel": "string (UPPERCASE: LIVE | READY | DONE)"
+      }
+    }
+  },
+
+  "actions": [
+    { "name": "search", "from": "header search ib" },
+    { "name": "openNav", "from": "header menu ib", "does": "open the right-drawer tool switcher" },
+    { "name": "nav", "target": "rooms|back", "from": "See all / back chevron" },
+    { "name": "openRoom", "arg": "room.id", "from": "All Rooms rows" },
+    { "name": "openCatchUp", "arg": "catchUp.current.id" },
+    { "name": "draftReply", "arg": "catchUp.current.id" },
+    { "name": "addToTracker", "arg": "catchUp.current.id" },
+    { "name": "review", "arg": "attachment.id" },
+    { "name": "openAttachment", "arg": "attachment.id" },
+    { "name": "openProjectChat", "arg": "project.id", "from": "state B general project chat" },
+    { "name": "openMission", "arg": "mission.id", "from": "state B mission rows" },
+    { "name": "newMission", "arg": "project.id", "from": "state B New mission" }
+  ],
+
+  "states": {
+    "A_home": { "label": "Home", "region": "first [data-screen=\"home-mobile\"]" },
+    "B_project": { "label": "Project opened", "region": "second [data-screen=\"home-mobile\"]" },
+    "empty/loading/error": { "in": "wired/_base/states.html" }
+  }
+}

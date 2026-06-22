@@ -1,0 +1,87 @@
+<!-- @dsCard group="Wired Templates" viewport="880x800" subtitle="Mobile Home · (A) Catch Up + All Rooms and (B) Project opened. Same room/catchUp/mission names as desktop Home." name="Wired · Home (mobile)" -->
+<!--
+  ============================================================================
+  WIRED — Home, mobile  ·  Source: ui_kits/mobile/index.html
+  Contract: wired/mobile/home.json  (shares the desktop Home vocabulary)
+  Two navigation states, each a mountable [data-cv6] screen:
+    A. data-screen-label "Home" — Catch Up (needs-you inbox) + All Rooms
+    B. data-screen-label "Project opened" — general project chat + missions
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+</head>
+<body style="margin:0;background:#e8e6e2;display:flex;gap:36px;flex-wrap:wrap;justify-content:center;padding:40px;">
+
+<!-- ============ A · HOME (Catch Up + All Rooms) ============ -->
+<div data-cv6 data-theme="dark" data-screen="home-mobile" data-screen-label="Home" class="cv6-screen" style="position:relative;width:390px;height:760px;border-radius:24px;overflow:hidden;background:#05080b;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="bg1"></div><div class="bg2"></div>
+  <div class="mhdr" style="position:relative;z-index:2;background:transparent;border-bottom-color:rgba(255,255,255,.08);">
+    <img class="hlogo" src="../../assets/corner-logo-white.svg" alt="Corner">
+    <div class="mhtitle"></div>
+    <div class="mhactions">
+      <div class="ib" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <div class="ib" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
+    </div>
+  </div>
+  <div class="hbody" data-state="ready">
+    <div class="secrow"><span style="display:flex;align-items:center;gap:9px;"><span class="needs"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Catch up</span><span style="min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent-weak);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;" data-bind="catchUp.count">5</span></span><span class="mono" style="font-size:11px;color:var(--faint);"><span data-bind="catchUp.position">1</span> of <span data-bind="catchUp.count">5</span> · swipe →</span></div>
+    <div style="margin:0 22px 18px;">
+      <div style="background:rgba(18,21,28,.975);border:1px solid var(--hair);border-radius:18px;box-shadow:var(--shadow-deck);overflow:hidden;" data-action="openCatchUp" data-arg="catchUp.current.id">
+        <div style="padding:14px 16px 0;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><div style="width:34px;height:34px;border-radius:10px;background:rgba(244,114,182,.16);display:flex;align-items:center;justify-content:center;flex:none;" data-mod="glyph:catchUp.current.kind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="catchUp.current.from">Dana Whitfield · Acme</div><div style="font-size:11.5px;color:var(--muted);" data-bind="catchUp.current.subject">Re: Q2 partnership scope</div></div><span style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--pink-400);background:rgba(244,114,182,.16);padding:3px 8px;border-radius:6px;" data-mod="tag:catchUp.current.kind" data-bind="catchUp.current.kindLabel">Email</span></div>
+          <div style="display:flex;gap:8px;align-items:flex-start;background:var(--surface-2);border-radius:10px;padding:11px 12px;margin-bottom:14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)" style="flex:none;margin-top:1px;"><path d="M12 3l1.6 4.9L18.5 9l-4.9 1.6L12 15l-1.6-4.4L5.5 9l4.9-1.1Z"/></svg><div style="font-size:12.5px;line-height:1.5;color:var(--fg);"><span style="font-weight:600;">Summary:</span> <span data-bind="catchUp.current.summary">wants to expand the pilot to three teams; needs revised pricing by Friday.</span></div></div>
+          <div class="eyebrow" style="margin-bottom:9px;">Action items</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+            <div style="display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--fg);line-height:1.4;" data-each="catchUp.current.actionItems"><span style="width:16px;height:16px;border-radius:5px;border:2px solid var(--accent);flex:none;margin-top:1px;"></span><span data-bind="actionItem.text">Send revised 3-team pricing by Friday</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--hair);border-radius:11px;background:var(--surface-2);margin-bottom:15px;" data-each="catchUp.current.attachments" data-action="openAttachment" data-arg="attachment.id"><div style="width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,#26303f,#161b24);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></div><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--fg);" data-bind="attachment.name">partnership-terms.pdf</div><div class="mono" style="font-size:10.5px;color:var(--faint);" data-bind="attachment.size">240 KB</div></div><button style="height:30px;padding:0 12px;border-radius:8px;border:none;background:var(--accent-weak);color:var(--accent);font-size:11.5px;font-weight:600;font-family:var(--font-sans);" data-action="review" data-arg="attachment.id">Review</button></div>
+        </div>
+        <div style="border-top:1px solid var(--divider);padding:12px 14px;">
+          <div class="eyebrow" style="margin-bottom:10px;">Suggested actions</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <button style="height:42px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:6px;" data-action="draftReply" data-arg="catchUp.current.id"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Draft reply</button>
+            <button style="height:42px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:6px;" data-action="addToTracker" data-arg="catchUp.current.id"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Add to Tracker</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="roomshdr"><span class="eyebrow">All rooms</span><span style="font-size:12.5px;font-weight:600;color:var(--accent);" data-action="nav" data-target="rooms">See all</span></div>
+    <div class="rooms">
+      <!-- ONE template row per agent -->
+      <div class="room" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="dot" data-mod="dot:room.status" style="background:var(--status-online);box-shadow:var(--glow-online);"></span><span class="rn" data-bind="room.name">Elon</span><span class="tag">AGENT</span></div>
+      <!-- ONE template row per project -->
+      <div class="room" style="border-bottom:none;" data-each="projects" data-action="openRoom" data-arg="room.id"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="stroke:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span class="rn" style="font-weight:500;" data-bind="room.name">Space Rising</span><span style="font-size:12px;color:var(--muted);" data-bind="room.count">28</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ B · PROJECT OPENED (general chat + missions) ============ -->
+<div data-cv6 data-theme="dark" data-screen="home-mobile" data-screen-label="Project opened" class="cv6-screen" style="position:relative;width:390px;height:760px;border-radius:24px;overflow:hidden;background:#05080b;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="bg1"></div><div class="bg2"></div>
+  <div class="mhdr" style="position:relative;z-index:2;background:transparent;border-bottom-color:rgba(255,255,255,.08);">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl" data-bind="project.name">Space Rising</div><div class="msub">Project · <span data-bind="project.missionCount">4</span> missions</div></div>
+    <div class="mhactions">
+      <div class="ib" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <div class="ib" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
+    </div>
+  </div>
+  <div class="hbody" data-state="ready" style="padding:14px 16px 0;">
+    <button style="width:100%;display:flex;align-items:center;gap:12px;padding:13px;border-radius:14px;border:1px solid var(--accent-weak);background:linear-gradient(180deg,var(--accent-weak),transparent);margin-bottom:18px;text-align:left;cursor:pointer;" data-action="openProjectChat" data-arg="project.id">
+      <span style="width:38px;height:38px;border-radius:11px;background:var(--chip);display:flex;align-items:center;justify-content:center;flex:none;" data-mod="stroke:project.tint"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span>
+      <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--fg);" data-bind="project.name">Space Rising</div><div style="font-size:12px;color:var(--accent);font-weight:600;">General project chat · talk to the whole project</div></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span class="eyebrow">Missions inside</span><span class="mono" style="font-size:10.5px;color:var(--faint);" data-bind="project.missionCount">4</span></div>
+    <!-- ONE template row per mission -->
+    <div class="miss" data-each="missions" data-action="openMission" data-arg="mission.id"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:var(--glow-online);flex:none;" data-mod="dot:mission.status"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="mission.title">Lock the print framing</div><div class="mono" style="font-size:10.5px;color:var(--faint);"><span data-bind="mission.id">/007</span> · <span data-bind="mission.agent">Elon</span></div></div><span class="stp" style="color:var(--success);background:var(--success-weak);" data-mod="stp:mission.status" data-bind="mission.statusLabel">LIVE</span></div>
+    <button style="width:100%;height:40px;margin-top:8px;border-radius:10px;border:1px dashed var(--hair);background:transparent;color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;" data-action="newMission" data-arg="project.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New mission</button>
+  </div>
+</div>
+
+</body>
+</html>

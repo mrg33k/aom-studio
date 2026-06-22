@@ -125,20 +125,25 @@ function applyBindings(el, scopes, ctx) {
   const bindPath = el.getAttribute('data-bind');
   if (bindPath) applyValue(el, resolvePath(scopes, bindPath));
 
-  // data-mod — swap a documented per-item modifier class from data. Form
-  // "prefix:path" (e.g. "is-:email.avatarTint" -> replaces any is-* class with
-  // is-<value>). Several allowed, separated by ";". Keeps the look in the design's
-  // own classes; never invents CSS.
+  // data-mod — drive a documented per-item visual variation from data. Form
+  // "verb:path", several allowed, separated by ";". The host stays design-agnostic:
+  // every verb just toggles the design's `is-<value>` modifier class (the verb —
+  // is- / dot / stp / stroke / glyph / state — is a human label of WHICH property it
+  // affects; the look always lives in the design's own `.base.is-<value>` CSS). The
+  // one exception is `width:` (a numeric like goal.pct), set as an inline width %,
+  // because a progress fill can't be a finite set of classes.
   const mod = el.getAttribute('data-mod');
   if (mod) {
     for (const one of mod.split(';')) {
       const ix = one.indexOf(':');
       if (ix < 0) continue;
-      const prefix = one.slice(0, ix).trim();
+      const verb = one.slice(0, ix).trim();
       const val = resolvePath(scopes, one.slice(ix + 1).trim());
-      if (val == null || !prefix) continue;
-      const classes = (el.getAttribute('class') || '').split(/\s+/).filter((c) => c && !c.startsWith(prefix));
-      classes.push(prefix + val);
+      if (val == null) continue;
+      if (verb === 'width') { if (el.style) el.style.width = `${val}%`; continue; }
+      // swap to the design's documented is-<value> class; drop any prior is-*.
+      const classes = (el.getAttribute('class') || '').split(/\s+/).filter((c) => c && !c.startsWith('is-'));
+      classes.push(`is-${val}`);
       el.setAttribute('class', classes.join(' '));
     }
   }
