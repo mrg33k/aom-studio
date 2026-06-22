@@ -72,7 +72,7 @@ export function ChatStepThread({ goal = {}, target = {}, steps = [], onBack, onS
       <div style={{ flex: 'none', height: 'auto', minHeight: 60, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 11, padding: '0 14px', paddingTop: 'env(safe-area-inset-top, 0px)', borderBottom: '1px solid var(--divider)' }}>
         <div onClick={onBack} role="button" aria-label="Back" style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.back}</div>
         <div style={{ position: 'relative', flex: 'none' }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--avatar)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>{target.initials || 'EL'}</div>
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--avatar)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bone)', fontSize: 12, fontWeight: 700 }}>{target.initials || 'EL'}</div>
           <span style={{ position: 'absolute', bottom: -1, right: -1, width: 11, height: 11, borderRadius: '50%', background: 'var(--success)', border: '2px solid var(--ground)' }} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -87,7 +87,7 @@ export function ChatStepThread({ goal = {}, target = {}, steps = [], onBack, onS
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 18 }}>
           <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{ICON.goal}</span>
           <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}><span style={{ color: 'var(--muted)', fontWeight: 600 }}>Goal:</span> {goalName}</span>
-          <span style={{ fontFamily: 'var(--font-mono)', marginLeft: 'auto', fontSize: 11, color: 'var(--muted)' }}>{stepDone}/{stepTotal}</span>
+          <span className="mono" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)' }}>{stepDone}/{stepTotal}</span>
         </div>
 
         {/* Step timeline */}
@@ -123,11 +123,11 @@ export function ChatStepThread({ goal = {}, target = {}, steps = [], onBack, onS
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 11 }}>
                         {s.choices.map((c) => (
                           <div key={c.id} onClick={() => onChoice && onChoice(s.id, c.id)} style={{ padding: '11px 12px', borderRadius: 12, cursor: 'pointer', background: c.recommended ? 'var(--accent)' : 'var(--surface-2)', border: c.recommended ? '1px solid transparent' : '1px solid var(--hair)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: c.recommended ? '#fff' : 'var(--fg)' }}>
-                              <span style={{ color: c.recommended ? '#fff' : 'var(--muted)', display: 'inline-flex' }}>{c.recommended ? ICON.redo : ICON.chev}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: c.recommended ? 'var(--bone)' : 'var(--fg)' }}>
+                              <span style={{ color: c.recommended ? 'var(--bone)' : 'var(--muted)', display: 'inline-flex' }}>{c.recommended ? ICON.redo : ICON.chev}</span>
                               <span>{c.title}{c.recommended ? ' · Recommended' : ''}</span>
                             </div>
-                            {c.sub && <div style={{ fontSize: 11.5, lineHeight: 1.4, marginTop: 4, color: c.recommended ? 'rgba(255,255,255,.85)' : 'var(--muted)' }}>{c.sub}</div>}
+                            {c.sub && <div style={{ fontSize: 11.5, lineHeight: 1.4, marginTop: 4, color: c.recommended ? 'rgba(251,251,250,.85)' : 'var(--muted)' }}>{c.sub}</div>}
                           </div>
                         ))}
                       </div>
@@ -136,9 +136,9 @@ export function ChatStepThread({ goal = {}, target = {}, steps = [], onBack, onS
                     {s.progress && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 10 }}>
                         <div style={{ flex: 1, height: 6, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden' }}>
-                          <div style={{ width: `${s.progress.pct || 0}%`, height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),#6366F1)' }} />
+                          <div style={{ width: `${s.progress.pct || 0}%`, height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),var(--accent-dark))' }} />
                         </div>
-                        {s.progress.label && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--muted)' }}>{s.progress.label}</span>}
+                        {s.progress.label && <span className="mono" style={{ fontSize: 10.5, color: 'var(--muted)' }}>{s.progress.label}</span>}
                       </div>
                     )}
                   </>
@@ -154,7 +154,7 @@ export function ChatStepThread({ goal = {}, target = {}, steps = [], onBack, onS
 
       {/* composer — safe-area bottom, full-width bar */}
       <div style={{ flex: 'none', position: 'absolute', left: 0, right: 0, bottom: 0, borderTop: '1px solid var(--divider)', padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))', display: 'flex', alignItems: 'center', gap: 9, background: 'var(--ground)' }}>
-        <button onClick={() => {}} aria-label="Voice message" style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.mic}</button>
+        <button onClick={() => {}} aria-label="Voice message" style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.mic}</button>
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -162,7 +162,7 @@ export function ChatStepThread({ goal = {}, target = {}, steps = [], onBack, onS
           placeholder={composerPlaceholder || `Nudge ${target.name || 'the agent'}, or jump in...`}
           style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', padding: '0 14px', fontSize: 14, fontFamily: 'var(--font-sans)', outline: 'none' }}
         />
-        <button onClick={send} aria-label="Send" style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.send}</button>
+        <button onClick={send} aria-label="Send" style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.send}</button>
       </div>
     </div>
   );

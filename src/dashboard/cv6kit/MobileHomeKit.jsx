@@ -42,7 +42,7 @@ const css = `
 .cv6mh .card-footer { border-top:1px solid var(--divider); padding:12px 14px; }
 .cv6mh .button-row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .cv6mh .btn { height:40px; border-radius:10px; font-size:13px; font-weight:600; font-family:var(--font-sans); cursor:pointer; border:none; display:flex; align-items:center; justify-content:center; gap:7px; }
-.cv6mh .btn-primary { background:var(--accent); color:#fff; }
+.cv6mh .btn-primary { background:var(--accent); color:var(--bone); }
 .cv6mh .btn-secondary { background:var(--surface-2); border:1px solid var(--hair); color:var(--fg); }
 .cv6mh .btn-full { grid-column:1 / -1; }
 .cv6mh .room-list { margin:0 22px; background:var(--surface); border:1px solid var(--hair); border-radius:16px; overflow:hidden; }
@@ -56,12 +56,12 @@ const css = `
 .cv6mh .rail-item { width:56px; height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; border-radius:12px; cursor:pointer; transition:background .14s; }
 .cv6mh .rail-item:hover { background:var(--surface); }
 .cv6mh .rail-item.on { background:var(--accent); }
-.cv6mh .rail-item.on svg { color:#fff; }
+.cv6mh .rail-item.on svg { color:var(--bone); }
 .cv6mh .rail-label { font-size:8px; font-weight:600; text-align:center; color:inherit; }
 .cv6mh .rail-divider { width:32px; height:1px; background:var(--divider); }
-.cv6mh .rail-avatar { width:40px; height:40px; border-radius:50%; background:var(--avatar); color:#fff; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; margin-top:auto; cursor:pointer; }
-.cv6mh .fab { position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); width:54px; height:54px; border-radius:27px; padding:0; border:1px solid rgba(255,255,255,.18); background:rgba(18,20,26,.92); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 28px rgba(0,0,0,.5); cursor:pointer; z-index:999; }
-.cv6mh .fab:hover { background:rgba(18,20,26,.98); }
+.cv6mh .rail-avatar { width:40px; height:40px; border-radius:50%; background:var(--avatar); color:var(--bone); display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:600; margin-top:auto; cursor:pointer; }
+.cv6mh .fab { position:fixed; right:18px; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); width:54px; height:54px; border-radius:27px; padding:0; border:1px solid var(--divider); background:var(--surface-2); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); color:var(--fg); display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow-card,0 1px 2px rgba(0,0,0,.2)); cursor:pointer; z-index:999; }
+.cv6mh .fab:hover { background:var(--surface); }
 `;
 
 const sw = (paths, stroke = 'currentColor', w = 20, fill = 'none', swid = 2) => (
@@ -163,7 +163,7 @@ export function MobileHomeKit({
               </div>
 
               <div className="attach">
-                <div className="athumb" style={{ background: 'linear-gradient(135deg,#26303f,#161b24)' }}>
+                <div className="athumb" style={{ background: 'var(--surface)' }}>
                   {sw('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>', 'var(--pink-400)', 19, 'none', 1.8)}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -225,7 +225,7 @@ export function MobileHomeKit({
               key={t.key}
               className={`rail-item${activeTool === t.key ? ' on' : ''}`}
               onClick={() => onNav && onNav(t.key)}
-              style={{ color: activeTool === t.key ? '#fff' : 'var(--muted)' }}
+              style={{ color: activeTool === t.key ? 'var(--ground)' : 'var(--muted)' }}
             >
               {sw(t.p, 'currentColor', 18)}
               <span className="rail-label">{t.label}</span>

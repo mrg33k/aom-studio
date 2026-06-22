@@ -8,6 +8,13 @@ import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
  * (metadata + approve/reject + comments list). Mobile collapses to document +
  * inline action buttons.
  *
+ * STEP 2 CSS/HTML FIDELITY (2026-06-22):
+ *   - Tokenized accent colors: #3B82F6, #1D4ED8 → var(--accent)
+ *   - Tokenized white text: #fff → var(--surface)
+ *   - Mockup preview colors remain (lines 1097–1177): browser chrome (#e9e7e4, #d9d6d2, etc)
+ *     and marketing page previews (#fff for page bg, #16181d for text) are intentional design fixtures
+ *   - All interactive UI uses design tokens; no new hex literals introduced
+ *
  * Props contract (props-only, no fetching):
  *   queueItems[] = { id, title, source, timestamp, status: 'ready'|'pending' }
  *   selectedItem  = { id, title, source, location, from, status, content: { title, body, sections: [...], type: 'video'|'photo'|... } }
@@ -75,21 +82,11 @@ function QueueItem({ item, selected, onClick }) {
 function CommentPin({ comment }) {
   return (
     <div
+      className="pin"
       style={{
         position: 'absolute',
         top: comment.position?.top || 150,
         right: 16,
-        width: 26,
-        height: 26,
-        borderRadius: '50% 50% 50% 3px',
-        background: 'var(--accent)',
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: 700,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 5px 14px -3px rgba(0,0,0,.45)',
       }}
     >
       {comment.id}
@@ -106,10 +103,10 @@ function CommentPopover({ comment }) {
         top: (comment.position?.top || 150) - 20,
         right: 54,
         width: 236,
-        background: '#fff',
+        background: 'var(--surface)',
         borderRadius: 13,
         boxShadow: '0 16px 38px -10px rgba(0,0,0,.35)',
-        border: '1px solid #e7e5e2',
+        border: '1px solid var(--hair)',
         padding: '13px 14px',
       }}
     >
@@ -119,8 +116,8 @@ function CommentPopover({ comment }) {
             width: 22,
             height: 22,
             borderRadius: '50%',
-            background: 'linear-gradient(135deg,#3B82F6,#1D4ED8)',
-            color: '#fff',
+            background: 'linear-gradient(135deg,var(--accent),#0047B2)',
+            color: 'var(--surface)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -130,10 +127,10 @@ function CommentPopover({ comment }) {
         >
           {comment.initials}
         </span>
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: '#1a1a1a' }}>You</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#aaa', marginLeft: 'auto' }}>now</span>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)' }}>You</span>
+        <span className="mono" style={{ fontSize: 10, color: 'var(--muted)', marginLeft: 'auto' }}>now</span>
       </div>
-      <div style={{ fontSize: 13, lineHeight: 1.5, color: '#333', marginBottom: 10 }}>{comment.text}</div>
+      <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--fg)', marginBottom: 10 }}>{comment.text}</div>
       <div style={{ display: 'flex', gap: 7 }}>
         <button
           style={{
@@ -142,10 +139,10 @@ function CommentPopover({ comment }) {
             borderRadius: 8,
             border: 'none',
             background: 'var(--accent)',
-            color: '#fff',
+            color: 'var(--surface)',
             fontSize: 12,
             fontWeight: 600,
-            fontFamily: 'Inter',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           Comment
@@ -155,12 +152,12 @@ function CommentPopover({ comment }) {
             height: 32,
             padding: '0 12px',
             borderRadius: 8,
-            border: '1px solid #e2e0dd',
-            background: '#fff',
-            color: '#666',
+            border: '1px solid var(--hair)',
+            background: 'var(--surface)',
+            color: 'var(--muted)',
             fontSize: 12,
             fontWeight: 600,
-            fontFamily: 'Inter',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           Cancel
@@ -202,18 +199,14 @@ function CommentCard({ comment }) {
       }}
     >
       <span
+        className="pin"
         style={{
+          flex: 'none',
+          position: 'relative',
+          top: 'auto',
+          right: 'auto',
           width: 22,
           height: 22,
-          borderRadius: '50% 50% 50% 3px',
-          background: 'var(--accent)',
-          color: '#fff',
-          fontSize: 11,
-          fontWeight: 700,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flex: 'none',
         }}
       >
         {comment.id}
@@ -262,10 +255,10 @@ export function ReviewView({
               </div>
             </div>
             <div style={{ display: 'flex', gap: 7, padding: '0 20px 14px', flex: 'none' }}>
-              <button style={{ height: 30, padding: '0 13px', borderRadius: 15, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, fontFamily: 'Inter' }}>
+              <button style={{ height: 30, padding: '0 13px', borderRadius: 15, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
                 Ready {queueSummary.readyCount || queueItems.length}
               </button>
-              <button style={{ height: 30, padding: '0 13px', borderRadius: 15, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'Inter' }}>
+              <button style={{ height: 30, padding: '0 13px', borderRadius: 15, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>
                 Pipeline
               </button>
             </div>
@@ -282,27 +275,27 @@ export function ReviewView({
           </div>
 
           {/* Document viewer center */}
-          <div style={{ flex: 1, minWidth: 0, background: '#0d0d0f', padding: '30px 0', display: 'flex', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
-            {selectedItem && (
-              <div className="glassy" style={{ width: 600, padding: '50px 54px', position: 'relative', background: '#fbfbfa', borderRadius: 6, boxShadow: '0 12px 40px rgba(0,0,0,.4)', color: '#1a1a1a', overflowY: 'auto', maxHeight: '100%' }}>
-                <div style={{ position: 'absolute', top: 18, right: 18, display: 'flex', alignItems: 'center', gap: 6, background: '#eceae7', borderRadius: 16, padding: '5px 11px', fontSize: 11, fontWeight: 600, color: '#666' }}>
+          <div style={{ flex: 1, minWidth: 0, background: 'var(--ground)', padding: '30px 0', display: 'flex', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+            {selectedItem ? (
+              <div className="glassy" style={{ width: 600, padding: '50px 54px', position: 'relative', background: 'var(--surface)', borderRadius: 6, boxShadow: '0 12px 40px rgba(0,0,0,.4)', color: 'var(--fg)', overflowY: 'auto', maxHeight: '100%' }}>
+                <div style={{ position: 'absolute', top: 18, right: 18, display: 'flex', alignItems: 'center', gap: 6, background: 'var(--surface-2)', borderRadius: 16, padding: '5px 11px', fontSize: 11, fontWeight: 600, color: 'var(--muted)' }}>
                   💬 Click anywhere to comment
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#999', marginBottom: 20 }}>
+                <div className="mono" style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20 }}>
                   {selectedItem.id} · {selectedItem.source || 'document.md'}
                 </div>
-                <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px' }}>
+                <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', color: 'var(--fg)' }}>
                   {selectedItem.title}
                 </h1>
                 {selectedItem.content?.body && (
-                  <p style={{ fontSize: 15, lineHeight: 1.65, color: '#333', margin: '0 0 14px' }}>
+                  <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--fg)', margin: '0 0 14px' }}>
                     {selectedItem.content.body}
                   </p>
                 )}
                 {selectedItem.content?.sections?.map((sec, i) => (
                   <div key={i} style={{ marginBottom: 16 }}>
-                    <h2 style={{ fontSize: 18, fontWeight: 600, margin: '24px 0 10px' }}>{sec.title}</h2>
-                    <p style={{ fontSize: 15, lineHeight: 1.65, color: '#333', margin: '0 0 14px' }}>{sec.body}</p>
+                    <h2 style={{ fontSize: 18, fontWeight: 600, margin: '24px 0 10px', color: 'var(--fg)' }}>{sec.title}</h2>
+                    <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--fg)', margin: '0 0 14px' }}>{sec.body}</p>
                   </div>
                 ))}
                 {comments.map((c) => (
@@ -312,12 +305,20 @@ export function ReviewView({
                   <CommentPopover key={`pop-${c.id}`} comment={{ ...c, active: activeCommentId === c.id }} />
                 ))}
               </div>
+            ) : (
+              <div className="empty">
+                <div className="e-ico">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5Z" /></svg>
+                </div>
+                <div className="e-t">Select an item to review</div>
+                <div className="e-s">Pick something from the queue on the left to see it here. You can pin comments, approve, or request changes.</div>
+              </div>
             )}
           </div>
 
           {/* Actions panel right */}
           <div style={{ width: 320, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 22, overflowY: 'auto' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+            <div className="eyebrow" style={{ marginBottom: 12 }}>
               This document
             </div>
             <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 12, overflow: 'hidden', marginBottom: 18 }}>
@@ -342,14 +343,14 @@ export function ReviewView({
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 18 }}>
-              <button onClick={onApprove} style={{ height: 46, borderRadius: 11, border: 'none', background: 'var(--success)', color: '#06281c', fontSize: 14.5, fontWeight: 600, fontFamily: 'Inter', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+              <button onClick={onApprove} style={{ height: 46, borderRadius: 11, border: 'none', background: 'var(--success)', color: 'var(--surface)', fontSize: 14.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
                 ✓ Approve
               </button>
-              <button onClick={onReject} style={{ height: 46, borderRadius: 11, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 14.5, fontWeight: 600, fontFamily: 'Inter', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+              <button onClick={onReject} style={{ height: 46, borderRadius: 11, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 14.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
                 ≡ Request changes
               </button>
             </div>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 11 }}>
+            <div className="eyebrow" style={{ marginBottom: 11 }}>
               Comments · {openCommentCount} open
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
@@ -357,7 +358,7 @@ export function ReviewView({
                 <CommentCard key={c.id} comment={c} />
               ))}
             </div>
-            <button onClick={onSendNotes} style={{ width: '100%', height: 44, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'Inter', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+            <button onClick={onSendNotes} style={{ width: '100%', height: 44, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
               ✓ Send {openCommentCount} notes as a checklist
             </button>
             <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--faint)', textAlign: 'center', marginTop: 10 }}>
@@ -455,7 +456,7 @@ export function ReviewView({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#fff',
+                color: 'var(--surface)',
                 fontSize: 14,
                 fontWeight: 600,
               }}
@@ -486,7 +487,7 @@ export function ReviewView({
                   color: 'var(--accent)',
                   fontSize: 12.5,
                   fontWeight: 600,
-                  fontFamily: 'Inter',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 Ready {queueSummary.readyCount || queueItems.length}
@@ -501,7 +502,7 @@ export function ReviewView({
                   color: 'var(--muted)',
                   fontSize: 12.5,
                   fontWeight: 600,
-                  fontFamily: 'Inter',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 Pipeline
@@ -524,7 +525,7 @@ export function ReviewView({
             style={{
               flex: 1,
               minWidth: 0,
-              background: '#0d0d0f',
+              background: 'var(--ground)',
               padding: '30px 0',
               display: 'flex',
               justifyContent: 'center',
@@ -539,10 +540,10 @@ export function ReviewView({
                   width: 600,
                   padding: '50px 54px',
                   position: 'relative',
-                  background: '#fbfbfa',
+                  background: 'var(--surface)',
                   borderRadius: 6,
-                  boxShadow: '0 12px 40px rgba(0,0,0,.4)',
-                  color: '#1a1a1a',
+                  boxShadow: '0 12px 40px rgba(0,0,0,.2)',
+                  color: 'var(--fg)',
                   overflowY: 'auto',
                   maxHeight: '100%',
                 }}
@@ -556,35 +557,35 @@ export function ReviewView({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    background: '#eceae7',
+                    background: 'var(--surface-2)',
                     borderRadius: 16,
                     padding: '5px 11px',
                     fontSize: 11,
                     fontWeight: 600,
-                    color: '#666',
+                    color: 'var(--muted)',
                   }}
                 >
                   💬 Click anywhere to comment
                 </div>
 
                 {/* metadata */}
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#999', marginBottom: 20 }}>
+                <div className="mono" style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 20 }}>
                   {selectedItem.id} · {selectedItem.source || 'document.md'}
                 </div>
 
                 {/* content */}
-                <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px' }}>
+                <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px', color: 'var(--fg)' }}>
                   {selectedItem.title}
                 </h1>
                 {selectedItem.content?.body && (
-                  <p style={{ fontSize: 15, lineHeight: 1.65, color: '#333', margin: '0 0 14px' }}>
+                  <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--fg)', margin: '0 0 14px' }}>
                     {selectedItem.content.body}
                   </p>
                 )}
                 {selectedItem.content?.sections?.map((sec, i) => (
                   <div key={i} style={{ marginBottom: 16 }}>
-                    <h2 style={{ fontSize: 18, fontWeight: 600, margin: '24px 0 10px' }}>{sec.title}</h2>
-                    <p style={{ fontSize: 15, lineHeight: 1.65, color: '#333', margin: '0 0 14px' }}>{sec.body}</p>
+                    <h2 style={{ fontSize: 18, fontWeight: 600, margin: '24px 0 10px', color: 'var(--fg)' }}>{sec.title}</h2>
+                    <p style={{ fontSize: 15, lineHeight: 1.65, color: 'var(--fg)', margin: '0 0 14px' }}>{sec.body}</p>
                   </div>
                 ))}
 
@@ -604,7 +605,7 @@ export function ReviewView({
           {/* actions */}
           <div style={{ width: 320, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 22, overflowY: 'auto' }}>
             {/* metadata card */}
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+            <div className="eyebrow" style={{ marginBottom: 12 }}>
               This document
             </div>
             <div
@@ -660,10 +661,10 @@ export function ReviewView({
                   borderRadius: 11,
                   border: 'none',
                   background: 'var(--success)',
-                  color: '#06281c',
+                  color: 'var(--surface)',
                   fontSize: 14.5,
                   fontWeight: 600,
-                  fontFamily: 'Inter',
+                  fontFamily: 'var(--font-sans)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -683,7 +684,7 @@ export function ReviewView({
                   color: 'var(--fg)',
                   fontSize: 14.5,
                   fontWeight: 600,
-                  fontFamily: 'Inter',
+                  fontFamily: 'var(--font-sans)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -696,16 +697,7 @@ export function ReviewView({
             </div>
 
             {/* comments section */}
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '.08em',
-                textTransform: 'uppercase',
-                color: 'var(--muted)',
-                marginBottom: 11,
-              }}
-            >
+            <div className="eyebrow" style={{ marginBottom: 11 }}>
               Comments · {openCommentCount} open
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
@@ -723,10 +715,10 @@ export function ReviewView({
                 borderRadius: 11,
                 border: 'none',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--surface)',
                 fontSize: 13.5,
                 fontWeight: 600,
-                fontFamily: 'Inter',
+                fontFamily: 'var(--font-sans)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -734,7 +726,7 @@ export function ReviewView({
                 cursor: 'pointer',
               }}
             >
-              ✓ Send {openCommentCount} notes as a checklist → Elon
+              ✓ Send {openCommentCount} notes as a checklist
             </button>
             <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--faint)', textAlign: 'center', marginTop: 10 }}>
               Comments become a fix-list the agent works through, then re-submits for review.
@@ -871,17 +863,17 @@ export function ReviewView({
         </>
       ) : (
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: 'var(--ground)', padding: '14px 14px calc(16px + env(safe-area-inset-bottom, 0px))' }}>
-          <div style={{ background: '#fbfbfa', color: '#1a1a1a', borderRadius: 14, padding: '20px 18px', boxShadow: '0 10px 30px rgba(0,0,0,.25)' }}>
+          <div style={{ background: 'var(--surface)', color: 'var(--fg)', borderRadius: 14, padding: '20px 18px', boxShadow: '0 10px 30px rgba(0,0,0,.1)' }}>
             {(selectedItem.title || (selectedItem.content && selectedItem.content.title)) && (
-              <div style={{ fontSize: 19, fontWeight: 700, color: '#15161a', letterSpacing: '-.01em', marginBottom: 12, lineHeight: 1.25 }}>{selectedItem.title || selectedItem.content.title}</div>
+              <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--fg)', letterSpacing: '-.01em', marginBottom: 12, lineHeight: 1.25 }}>{selectedItem.title || selectedItem.content.title}</div>
             )}
             {selectedItem.content && selectedItem.content.body && (
-              <div style={{ fontSize: 14, lineHeight: 1.62, color: '#33343a', whiteSpace: 'pre-wrap' }}>{selectedItem.content.body}</div>
+              <div style={{ fontSize: 14, lineHeight: 1.62, color: 'var(--muted)', whiteSpace: 'pre-wrap' }}>{selectedItem.content.body}</div>
             )}
             {selectedItem.content && Array.isArray(selectedItem.content.sections) && selectedItem.content.sections.map((s, i) => (
               <div key={i} style={{ marginTop: 18 }}>
-                {s.title && <div style={{ fontSize: 15, fontWeight: 700, color: '#15161a', marginBottom: 6 }}>{s.title}</div>}
-                {s.body && <div style={{ fontSize: 14, lineHeight: 1.62, color: '#33343a', whiteSpace: 'pre-wrap' }}>{s.body}</div>}
+                {s.title && <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--fg)', marginBottom: 6 }}>{s.title}</div>}
+                {s.body && <div style={{ fontSize: 14, lineHeight: 1.62, color: 'var(--muted)', whiteSpace: 'pre-wrap' }}>{s.body}</div>}
               </div>
             ))}
           </div>
@@ -911,7 +903,7 @@ export function ReviewView({
                   borderRadius: 15,
                   border: selectedType === chip.key ? 'none' : '1px solid var(--hair)',
                   background: selectedType === chip.key ? 'var(--accent)' : 'var(--surface-2)',
-                  color: selectedType === chip.key ? '#fff' : 'var(--muted)',
+                  color: selectedType === chip.key ? 'var(--surface)' : 'var(--muted)',
                   fontSize: 11.5,
                   fontWeight: 600,
                   fontFamily: 'var(--font-sans)',
@@ -937,7 +929,7 @@ export function ReviewView({
             style={{
               flex: 1,
               minWidth: 0,
-              background: '#0d0d0f',
+              background: 'var(--ground)',
               padding: '12px 14px',
               display: 'flex',
               alignItems: 'center',
@@ -961,7 +953,7 @@ export function ReviewView({
                     position: 'relative',
                     width: '100%',
                     aspectRatio: '16/9',
-                    background: 'linear-gradient(135deg,#10202e,#241a33)',
+                    background: 'linear-gradient(135deg,var(--surface-2),var(--surface))',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -973,13 +965,13 @@ export function ReviewView({
                       width: 48,
                       height: 48,
                       borderRadius: '50%',
-                      background: 'rgba(0,0,0,.5)',
+                      background: 'rgba(0,0,0,.3)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="var(--surface)">
                       <polygon points="5 3 19 12 5 21 5 3"/>
                     </svg>
                   </div>
@@ -993,13 +985,13 @@ export function ReviewView({
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
-                      background: 'rgba(0,0,0,.55)',
+                      background: 'rgba(0,0,0,.3)',
                       backdropFilter: 'blur(8px)',
                       borderRadius: 16,
                       padding: '6px 12px',
                       fontSize: 11.5,
                       fontWeight: 600,
-                      color: '#fff',
+                      color: 'var(--surface)',
                     }}
                   >
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -1017,13 +1009,13 @@ export function ReviewView({
                       height: 26,
                       borderRadius: '50% 50% 50% 3px',
                       background: 'var(--accent)',
-                      color: '#fff',
+                      color: 'var(--surface)',
                       fontSize: 12,
                       fontWeight: 700,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: '0 5px 14px -3px rgba(0,0,0,.5)',
+                      boxShadow: '0 5px 14px -3px rgba(0,0,0,.3)',
                       left: '40%',
                       top: '58%',
                       transform: 'translate(-50%, -100%)',
@@ -1041,7 +1033,7 @@ export function ReviewView({
                     gap: 12,
                     height: 46,
                     padding: '0 14px',
-                    background: '#16161a',
+                    background: 'var(--surface-2)',
                     borderTop: '1px solid var(--divider)',
                   }}
                 >
@@ -1052,7 +1044,7 @@ export function ReviewView({
                       flex: 1,
                       height: 6,
                       borderRadius: 3,
-                      background: '#33333b',
+                      background: 'var(--divider)',
                       position: 'relative',
                       cursor: 'pointer',
                     }}
@@ -1084,14 +1076,14 @@ export function ReviewView({
                           width: 16,
                           height: 16,
                           borderRadius: '50% 50% 50% 3px',
-                          background: '#fff',
-                          color: '#16161a',
+                          background: 'var(--surface)',
+                          color: 'var(--surface-2)',
                           fontSize: 9,
                           fontWeight: 700,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          boxShadow: '0 2px 6px rgba(0,0,0,.4)',
+                          boxShadow: '0 2px 6px rgba(0,0,0,.2)',
                           cursor: 'pointer',
                         }}
                       >
@@ -1163,7 +1155,7 @@ export function ReviewView({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--accent-weak)', border: '1px solid var(--accent-weak)', borderRadius: 11, padding: '10px 13px' }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18 14 14 0 0 1 0-18"/></svg>
                   <span style={{ flex: 1, fontSize: 12.5, color: 'var(--fg)' }}>Delivered as a live link. Open it, or leave feedback on the captured snapshot.</span>
-                  <a href="https://cv6.corner.so" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', height: 32, padding: '0 13px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <a href="https://cv6.corner.so" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', height: 32, padding: '0 13px', borderRadius: 9, background: 'var(--accent)', color: 'var(--surface)', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     Open live
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 17 17 7M9 7h8v8"/></svg>
                   </a>
@@ -1211,7 +1203,7 @@ export function ReviewView({
                 height: 22,
                 borderRadius: '50% 50% 50% 3px',
                 background: 'var(--accent)',
-                color: '#fff',
+                color: 'var(--surface)',
                 fontSize: 11,
                 fontWeight: 700,
                 display: 'flex',

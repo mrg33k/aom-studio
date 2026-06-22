@@ -6,6 +6,11 @@ import { CvgMobileHeader } from './CvgMobileHeader.jsx';
  * CV6 kit Organize — desktop & mobile file browse, multi-select, move-to-folder, and view/review.
  * Pixel-faithful to ui_kits/tools/organize.html (desktop + mobile A/B/C).
  *
+ * STEP 2 CSS/HTML FIDELITY (2026-06-22):
+ *   - Tokenized file preview colors: #fbfbfa → var(--surface), #1a1a1a → var(--fg), #999 → var(--muted)
+ *   - All interactive UI uses design tokens; no new hex literals in code
+ *   - File preview card styling mirrors design-system spacing and shadows
+ *
  * Desktop: three-column layout (project tree, file list, preview).
  * Mobile three states:
  *   1. Browse/organize: project breadcrumb + file list with multi-select + bottom action bar
@@ -88,6 +93,8 @@ function Checkbox({ checked, onChange }) {
     </span>
   );
 }
+
+/* #fff is the design convention for button text on var(--accent) backgrounds; kept as-is per frame.css */
 
 function MoveToSheet({ projects = [], selectedProjectId, files = [], onClose, onMove }) {
   const selectedFiles = files.slice(0, 1); // Show first selected file
@@ -455,18 +462,18 @@ function FilePreviewScreen({ file, projectName, onBack, onMove }) {
         padding: 16,
       }}>
         <div style={{
-          background: '#fbfbfa',
+          background: 'var(--surface)',
           borderRadius: 8,
           height: '100%',
           boxShadow: '0 12px 36px rgba(0,0,0,.4)',
           padding: '24px 22px',
-          color: '#1a1a1a',
+          color: 'var(--fg)',
           overflowY: 'auto',
           fontFamily: 'var(--font-sans)',
           fontSize: 13.5,
           lineHeight: 1.6,
         }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#999', marginBottom: 14 }}>
+          <div className="mono" style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 14 }}>
             {file.name}
           </div>
           <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
@@ -786,7 +793,7 @@ export function OrganizeView({
                         <div style={{ fontSize: 13.5, fontWeight: 600, color: isSelected ? 'var(--accent)' : 'var(--fg)' }}>
                           {f.name}
                         </div>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)', marginTop: 1 }}>
+                        <div className="mono" style={{ fontSize: 11, color: 'var(--faint)', marginTop: 1 }}>
                           {[f.updated, formatSize(f.size)].filter(Boolean).join(' · ')}
                         </div>
                       </div>
@@ -800,8 +807,8 @@ export function OrganizeView({
           {/* Preview (right) */}
           <div style={{ flex: 1, minWidth: 0, background: 'var(--ground)', display: 'flex', justifyContent: 'center', padding: '32px 0', overflowY: 'auto' }}>
             {selectedFile ? (
-              <div style={{ width: 520, background: '#fbfbfa', borderRadius: 6, boxShadow: '0 12px 40px rgba(0,0,0,.4)', padding: '44px 48px', color: '#1a1a1a' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#999', marginBottom: 18 }}>
+              <div style={{ width: 520, background: 'var(--surface)', borderRadius: 6, boxShadow: '0 12px 40px rgba(0,0,0,.4)', padding: '44px 48px', color: 'var(--fg)' }}>
+                <div className="mono" style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 18 }}>
                   {selectedFile.name}
                 </div>
                 <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 14, lineHeight: 1.6 }}>
@@ -895,42 +902,27 @@ export function OrganizeView({
         </div>
       )}
 
-      {/* activity dock (floating) */}
+      {/* activity dock (floating) — .actdock.is-float + .ad-ico/.ad-body from frame.css */}
       {activityAgent && (
-        <div style={{
+        <div className="actdock is-float" style={{
           position: 'absolute',
           top: 120,
           left: 16,
           right: 16,
           zIndex: 40,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '10px 12px',
-          borderRadius: 13,
-          background: 'var(--surface)',
-          border: '1px solid var(--divider)',
-          boxShadow: '0 12px 32px rgba(0,0,0,.3)',
         }}>
-          <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
+          <span className="ad-ico" style={{
             background: 'var(--accent-weak)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 'none',
           }}>
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ animation: 'spin 1.05s linear infinite' }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" className="ad-spin" style={{ animation: 'spin 1.05s linear infinite' }}>
               <path d="M21 12a9 9 0 1 1-6.2-8.6"/>
             </svg>
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>
+          </span>
+          <div className="ad-body">
+            <div className="ad-title">
               {activityAgent.name} · {activityAgent.action}
             </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+            <div className="ad-sub">
               {activityAgent.status}
             </div>
           </div>
@@ -973,12 +965,10 @@ export function OrganizeView({
         padding: '12px 16px 14px',
         borderBottom: '1px solid var(--divider)',
       }}>
-        <div style={{
+        <div className="eyebrow" style={{
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          fontSize: 12,
-          color: 'var(--muted)',
           marginBottom: 12,
         }}>
           {/* The tool is the root; the project switcher follows. No invented parent project. */}
@@ -1105,7 +1095,7 @@ export function OrganizeView({
                   <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>
                     {f.name}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)', marginTop: 1 }}>
+                  <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', marginTop: 1 }}>
                     {[f.updated, formatSize(f.size)].filter(Boolean).join(' · ')}
                   </div>
                 </div>

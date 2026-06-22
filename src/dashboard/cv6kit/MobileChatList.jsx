@@ -19,7 +19,7 @@ import React, { useState, useMemo } from 'react';
 const HUES = [
   { bg: 'rgba(91,155,255,.18)', fg: 'var(--accent)' },
   { bg: 'rgba(139,124,246,.22)', fg: 'var(--violet-400)' },
-  { bg: 'rgba(244,114,182,.18)', fg: '#F8A8D0' },
+  { bg: 'rgba(244,114,182,.18)', fg: 'var(--pink-400)' },
   { bg: 'rgba(52,211,153,.20)', fg: 'var(--success)' },
   { bg: 'rgba(251,191,36,.20)', fg: 'var(--warn)' },
 ];

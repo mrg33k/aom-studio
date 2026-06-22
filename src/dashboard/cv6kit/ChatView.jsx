@@ -186,17 +186,17 @@ function DesktopChat({ data, onNav, user }) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
             <span>Search rooms…</span>
           </div>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', margin: '0 6px 8px' }}>Agents</div>
+          <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Agents</div>
           <div style={{ marginBottom: 16 }}>
             {d.agents?.map((a) => (
               <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 9, marginBottom: 8, background: a.id === active.id ? 'var(--accent-weak)' : 'transparent' }}>
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: a.color, flex: 'none', boxShadow: a.online ? 'var(--glow-online)' : 'none' }} />
                 <span style={{ flex: 1, fontSize: 14, color: 'var(--fg)', fontWeight: a.id === active.id ? 600 : 400 }}>{a.name}</span>
-                {a.status && <span style={{ fontSize: 10.5, color: 'var(--accent)', fontWeight: 600 }}>{a.status}</span>}
+                {a.status && <span className="mono" style={{ fontSize: 10.5 }}>{a.status}</span>}
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', margin: '0 6px 8px' }}>Projects</div>
+          <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Projects</div>
           {d.projects?.map((p) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 9, marginBottom: 8 }}>
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={p.icon} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
@@ -211,14 +211,14 @@ function DesktopChat({ data, onNav, user }) {
           {/* header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '15px 24px', borderBottom: '1px solid var(--divider)' }}>
             <div style={{ position: 'relative', flex: 'none' }}>
-              <div style={{ width: 40, height: 40, borderRadius: '50%', background: active.avatar, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 15, fontWeight: 700 }}>{active.initials}</div>
+              <div style={{ width: 40, height: 40, borderRadius: '50%', background: active.avatar, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--bone)', fontSize: 15, fontWeight: 700 }}>{active.initials}</div>
               <span style={{ position: 'absolute', bottom: -1, right: -1, width: 12, height: 12, background: 'var(--success)', boxShadow: 'var(--glow-online)', border: '2.5px solid var(--ground)', borderRadius: '50%' }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)' }}>{active.name}</div>
               <div style={{ fontSize: 12, color: 'var(--muted)' }}>{active.project} · Mission {active.mission} · {active.status}</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--success)', background: 'var(--success-weak)', padding: '6px 12px', borderRadius: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12, fontWeight: 600, padding: '6px 12px', borderRadius: 18 }} className="astat is-live">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               Following along
             </div>
@@ -231,10 +231,10 @@ function DesktopChat({ data, onNav, user }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 22 }}>
                 <span style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{ICON.target}</span>
                 <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>
-                  <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Goal:</span> {goal.title}
+                  <span style={{ color: 'var(--muted)' }}>Goal:</span> {goal.title}
                 </span>
                 <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 11 }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{goal.done} of {goal.total} done</span>
+                  <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{goal.done} of {goal.total} done</span>
                   <div style={{ display: 'flex', gap: 3 }}>
                     {Array.from({ length: goal.total }, (_, i) => (
                       <span key={i} style={{ width: 18, height: 4, borderRadius: 2, background: i < goal.done ? 'var(--success)' : 'var(--surface-2)' }} />
@@ -297,11 +297,11 @@ function DesktopChat({ data, onNav, user }) {
                                   border: c.recommended ? '1px solid transparent' : '1px solid var(--hair)',
                                   cursor: 'pointer',
                                 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13.5, fontWeight: 600, color: c.recommended ? '#fff' : 'var(--fg)' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13.5, fontWeight: 600, color: c.recommended ? 'var(--bone)' : 'var(--fg)' }}>
                                     {c.recommended ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>}
                                     <span>{c.recommended ? 'Quick reversible fix' : 'Do it the clean way'}</span>
                                   </div>
-                                  <div style={{ fontSize: 11.5, lineHeight: 1.4, marginTop: 4, color: c.recommended ? 'rgba(255,255,255,.85)' : 'var(--muted)' }}>{c.sub}</div>
+                                  <div style={{ fontSize: 11.5, lineHeight: 1.4, marginTop: 4, color: c.recommended ? 'rgba(251,251,250,.85)' : 'var(--muted)' }}>{c.sub}</div>
                                 </div>
                               ))}
                             </div>
@@ -315,11 +315,11 @@ function DesktopChat({ data, onNav, user }) {
                                   width: `${s.progress.pct}%`,
                                   height: '100%',
                                   borderRadius: 4,
-                                  background: 'linear-gradient(90deg,var(--accent),#6366F1)',
+                                  background: 'linear-gradient(90deg,var(--accent),var(--accent-dark))',
                                   animation: 'barGlow 1.6s ease-in-out infinite',
                                 }} />
                               </div>
-                              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>{s.progress.label}</span>
+                              <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>{s.progress.label}</span>
                             </div>
                           )}
                         </>
@@ -333,9 +333,9 @@ function DesktopChat({ data, onNav, user }) {
 
           {/* composer */}
           <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button style={{ width: 42, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', boxShadow: 'var(--ring-accent)', cursor: 'pointer' }}>{ICON.mic}</button>
+            <button style={{ width: 42, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', boxShadow: 'var(--ring-accent)', cursor: 'pointer' }}>{ICON.mic}</button>
             <div style={{ flex: 1, height: 44, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', padding: '0 16px', fontSize: 15, color: 'var(--faint)' }}>Nudge {active.name}, or jump in…</div>
-            <button style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.send}</button>
+            <button style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: 'var(--accent)', color: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.send}</button>
           </div>
         </div>
 
@@ -343,11 +343,11 @@ function DesktopChat({ data, onNav, user }) {
         <div style={{ width: 316, flex: 'none', borderLeft: '1px solid var(--divider)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ flex: 1, overflow: 'hidden', padding: 20 }}>
             {/* Agent control */}
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>Agent on this goal</div>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Agent on this goal</div>
             <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20, boxShadow: 'var(--shadow-card)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 13 }}>
                 <div style={{ position: 'relative', flex: 'none' }}>
-                  <span style={{ width: 34, height: 34, background: 'rgba(52,211,153,.2)', color: 'var(--success)', fontSize: 12, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>EL</span>
+                  <span style={{ width: 34, height: 34, background: 'var(--success-weak)', color: 'var(--success)', fontSize: 12, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>EL</span>
                   <span style={{ position: 'absolute', bottom: -1, right: -1, width: 11, height: 11, background: 'var(--success)', boxShadow: 'var(--glow-online)', border: '2px solid var(--surface)', borderRadius: '50%' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -360,16 +360,16 @@ function DesktopChat({ data, onNav, user }) {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                 <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden' }}>
-                  <div style={{ width: '64%', height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),#6366F1)', animation: 'barGlow 1.6s ease-in-out infinite' }} />
+                  <div style={{ width: '64%', height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),var(--accent-dark))', animation: 'barGlow 1.6s ease-in-out infinite' }} />
                 </div>
-                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--muted)' }}>step 3/4</span>
+                <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>step 3/4</span>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={{ flex: 1, height: 40, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
                   Pause
                 </button>
-                <button style={{ flex: 1, height: 40, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}>
+                <button style={{ flex: 1, height: 40, borderRadius: 11, border: 'none', background: 'var(--accent)', color: 'var(--bone)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                   Re-task
                 </button>
@@ -377,7 +377,7 @@ function DesktopChat({ data, onNav, user }) {
             </div>
 
             {/* Quick actions */}
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>Quick actions</div>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Quick actions</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 22 }}>
               {d.quickActions?.slice(0, 3).map((qa) => (
                 <button key={qa.id} style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', height: 44, padding: '0 12px', borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface)', cursor: 'pointer', textAlign: 'left', fontFamily: 'var(--font-sans)' }}>
@@ -394,8 +394,8 @@ function DesktopChat({ data, onNav, user }) {
 
             {/* Mission goals */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Mission goals</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)' }}>
+              <span className="eyebrow">Mission goals</span>
+              <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>
                 {missionGoals?.filter(g => g.done).length} of {missionGoals?.length}
               </span>
             </div>
@@ -403,7 +403,7 @@ function DesktopChat({ data, onNav, user }) {
               {missionGoals?.map((g) => (
                 <div key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   {g.done ? (
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="var(--success)" stroke="none" style={{ flex: 'none' }}><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6" stroke="#0A0A0B" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="var(--success)" stroke="none" style={{ flex: 'none' }}><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6" stroke="var(--ground)" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   ) : g.active ? (
                     <span style={{ width: 17, height: 17, borderRadius: '50%', border: '2px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', animation: 'livePulse 1.6s infinite' }} />
@@ -418,8 +418,8 @@ function DesktopChat({ data, onNav, user }) {
 
             {/* Attachments */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 11 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Attachments</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)' }}>{attachments?.length}</span>
+              <span className="eyebrow">Attachments</span>
+              <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{attachments?.length}</span>
               <button style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg>
                 Add
@@ -428,7 +428,7 @@ function DesktopChat({ data, onNav, user }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {attachments?.map((a) => (
                 <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', border: '1px solid var(--hair)', borderRadius: 11, background: 'var(--surface)' }}>
-                  <span style={{ width: 32, height: 32, borderRadius: 8, background: a.type === 'markdown' ? 'linear-gradient(135deg,#1e2433,#11151c)' : 'linear-gradient(135deg,#2a2030,#15161a)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                  <span style={{ width: 32, height: 32, borderRadius: 8, background: a.type === 'markdown' ? 'linear-gradient(135deg,var(--surface-2),var(--ground))' : 'linear-gradient(135deg,var(--surface-2),var(--ground))', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                     {a.type === 'markdown' ? (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
                     ) : (
@@ -437,7 +437,7 @@ function DesktopChat({ data, onNav, user }) {
                   </span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)' }}>{a.name}</div>
-                    <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--faint)' }}>{a.size}</div>
+                    <div className="mono" style={{ fontSize: 10, color: 'var(--faint)' }}>{a.size}</div>
                   </div>
                   <button style={{ height: 28, padding: '0 11px', borderRadius: 8, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Review</button>
                 </div>
@@ -481,7 +481,7 @@ function MobileChat({ data, onNav, user }) {
           <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>
             <span style={{ color: 'var(--muted)', fontWeight: 600 }}>Goal:</span> {goal.title}
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', marginLeft: 'auto', fontSize: 11, color: 'var(--muted)' }}>{goal.done}/{goal.total}</span>
+          <span className="mono" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)' }}>{goal.done}/{goal.total}</span>
         </div>
 
         {/* Steps */}
@@ -537,7 +537,7 @@ function MobileChat({ data, onNav, user }) {
                             border: c.recommended ? 'none' : '1px solid var(--hair)',
                             cursor: 'pointer',
                           }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: c.recommended ? '#fff' : 'var(--fg)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 600, color: c.recommended ? 'var(--bone)' : 'var(--fg)' }}>
                               {c.recommended ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg> : <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>}
                               <span>{c.title}{c.recommended ? ' · Recommended' : ''}</span>
                             </div>
@@ -550,9 +550,9 @@ function MobileChat({ data, onNav, user }) {
                     {s.progress && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginTop: 10 }}>
                         <div style={{ flex: 1, height: 6, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden' }}>
-                          <div style={{ width: `${s.progress.pct}%`, height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),#6366F1)' }} />
+                          <div style={{ width: `${s.progress.pct}%`, height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),var(--accent-dark))' }} />
                         </div>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--muted)' }}>{s.progress.label}</span>
+                        <span className="mono" style={{ fontSize: 10.5, color: 'var(--muted)' }}>{s.progress.label}</span>
                       </div>
                     )}
                   </>
@@ -567,9 +567,9 @@ function MobileChat({ data, onNav, user }) {
 
       {/* Composer */}
       <div style={{ flex: 'none', position: 'absolute', left: 0, right: 0, bottom: 0, borderTop: '1px solid var(--divider)', padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))', display: 'flex', alignItems: 'center', gap: 9, background: 'var(--ground)' }}>
-        <button style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.mic}</button>
+        <button style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.mic}</button>
         <div style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', padding: '0 14px', fontSize: 14, color: 'var(--faint)' }}>Nudge {active.name}, or jump in…</div>
-        <button style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.send}</button>
+        <button style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: 'var(--bone)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.send}</button>
       </div>
     </div>
   );

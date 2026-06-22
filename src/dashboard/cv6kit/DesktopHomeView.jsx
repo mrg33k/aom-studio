@@ -21,13 +21,13 @@ import React, { useState } from 'react';
 
 const css = `
 .cv6dh { position:relative; width:100%; height:100dvh; overflow:hidden; background:var(--ground); display:flex; flex-direction:column; font-family:var(--font-sans); color:var(--fg); -webkit-font-smoothing:antialiased; }
-.cv6dh .av { width:40px; height:40px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:600; flex:none; }
+.cv6dh .av { width:40px; height:40px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:var(--bone); font-size:15px; font-weight:600; flex:none; }
 .cv6dh .topbar { flex:none; display:flex; align-items:center; gap:22px; padding:16px 28px; border-bottom:1px solid var(--divider); }
 .cv6dh .eyebrow { font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
 .cv6dh .toolnav { flex:1; display:flex; justify-content:center; gap:8px; }
 .cv6dh .ctile { width:66px; flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; padding:8px 0 7px; border-radius:var(--radius-control,12px); background:var(--surface); border:1px solid var(--hair); color:var(--muted); cursor:pointer; transition:background .14s,color .14s; }
 .cv6dh .ctile:hover { color:var(--fg); }
-.cv6dh .ctile.on { background:var(--accent); border-color:transparent; color:#fff; }
+.cv6dh .ctile.on { background:var(--accent); border-color:transparent; color:var(--bone); }
 .cv6dh .clab { font-size:10.5px; font-weight:600; }
 .cv6dh .ib { width:40px; height:40px; border-radius:11px; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; }
 .cv6dh .ib:hover { color:var(--fg); }
@@ -55,7 +55,7 @@ const css = `
 .cv6dh .cvhdr { display:flex; align-items:center; gap:9px; padding:20px 20px 16px; border-bottom:1px solid var(--divider); flex:none; }
 .cv6dh .filesbtn { display:flex; align-items:center; gap:6px; height:34px; padding:0 12px; border-radius:9px; border:1px solid var(--hair); color:var(--muted); font-size:12.5px; font-weight:600; background:transparent; cursor:pointer; }
 .cv6dh .composer { border-top:1px solid var(--divider); padding:12px 16px; display:flex; align-items:center; gap:9px; flex:none; }
-.cv6dh .cmd { width:40px; height:40px; border-radius:11px; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; }
+.cv6dh .cmd { width:40px; height:40px; border-radius:11px; background:var(--accent); color:var(--bone); display:flex; align-items:center; justify-content:center; flex:none; }
 .cv6dh .field { flex:1; height:40px; border-radius:11px; border:1px solid var(--hair); background:var(--surface-2); display:flex; align-items:center; gap:8px; padding:0 12px; color:var(--faint); font-size:14px; }
 .cv6dh .mono { font-family:var(--font-mono); }
 .cv6dh .kbd { font-family:var(--font-mono); font-size:10px; color:var(--faint); border:1px solid var(--hair); border-radius:5px; padding:1px 5px; }
@@ -162,7 +162,7 @@ function DataCard({ data }) {
               return (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: 7, height: 118 }}>
                   <span className="mono" style={{ fontSize: 10, color: 'var(--muted)' }}>{r[ci]}</span>
-                  <div style={{ width: '60%', maxWidth: 26, height: h, borderRadius: '6px 6px 2px 2px', background: 'linear-gradient(180deg,var(--accent),#6366F1)' }} />
+                  <div style={{ width: '60%', maxWidth: 26, height: h, borderRadius: '6px 6px 2px 2px', background: 'var(--accent)' }} />
                   <span style={{ fontSize: 10.5, color: 'var(--faint)' }}>{r[0]}</span>
                 </div>
               );
@@ -227,7 +227,7 @@ function AgentConvo({ name, onOpenFiles }) {
           <span style={{ fontSize: 14.5, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}><span style={{ color: 'var(--muted)' }}>Goal:</span> {a.goal}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-          <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--surface-2)', overflow: 'hidden' }}><div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: 'linear-gradient(90deg,var(--accent),#6366F1)' }} /></div>
+          <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'var(--surface-2)', overflow: 'hidden' }}><div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: 'var(--accent)' }} /></div>
           <span className="mono" style={{ fontSize: 10.5, color: 'var(--muted)' }}>{a.step}/{a.total}</span>
         </div>
         <div style={{ background: 'linear-gradient(180deg,var(--accent-weak),transparent)', border: '1px solid var(--accent-weak)', borderRadius: 14, padding: '13px 15px', marginBottom: 14 }}>
@@ -373,7 +373,7 @@ export function DesktopHomeView({
                   <div className="echk"><span className="box" /><span>Confirm the rollout timeline with Dana</span></div>
                 </div>
                 <div className="attach" style={{ marginBottom: 15 }}>
-                  <div className="athumb" style={{ background: 'linear-gradient(135deg,#26303f,#161b24)' }}>{sw('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>', 'var(--pink-400)', 19, 'none', 1.8)}</div>
+                  <div className="athumb" style={{ background: 'var(--surface)' }}>{sw('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/>', 'var(--pink-400)', 19, 'none', 1.8)}</div>
                   <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>partnership-terms.pdf</div><div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>240 KB</div></div>
                   <button className="eact" style={{ height: 30, padding: '0 12px', background: 'var(--accent-weak)', color: 'var(--accent)' }}>Review</button>
                 </div>
@@ -381,7 +381,7 @@ export function DesktopHomeView({
               <div style={{ borderTop: '1px solid var(--divider)', padding: '12px 14px' }}>
                 <div className="eyebrow" style={{ marginBottom: 10 }}>Suggested actions</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                  <button className="eact" style={{ background: 'var(--accent)', color: '#fff' }}>{sw('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', 'currentColor', 15)}Draft reply</button>
+                  <button className="eact" style={{ background: 'var(--accent)', color: 'var(--bone)' }}>{sw('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', 'currentColor', 15)}Draft reply</button>
                   <button className="eact" style={{ background: 'var(--surface-2)', border: '1px solid var(--hair)', color: 'var(--fg)' }}>{sw('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 'currentColor', 15)}Add to Tracker</button>
                   <button className="eact" style={{ background: 'var(--surface-2)', border: '1px solid var(--hair)', color: 'var(--fg)' }}>{sw('<path d="M5 12h14M13 6l6 6-6 6"/>', 'currentColor', 15)}Send to Elon</button>
                   <button className="eact" style={{ background: 'var(--surface-2)', border: '1px solid var(--hair)', color: 'var(--fg)' }}>{sw('<circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/>', 'currentColor', 15)}Snooze</button>
@@ -402,10 +402,10 @@ export function DesktopHomeView({
         <div className="col rooms">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flex: 'none' }}>
             <span className="eyebrow">All rooms</span><span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{roomTotal}</span>
-            <button onClick={onNewRoom} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 14, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>{sw('<path d="M12 5v14M5 12h14"/>', 'currentColor', 14, 'none', 2.4)}New</button>
+            <button onClick={onNewRoom} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 14, border: 'none', background: 'var(--accent)', color: 'var(--bone)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>{sw('<path d="M12 5v14M5 12h14"/>', 'currentColor', 14, 'none', 2.4)}New</button>
           </div>
           <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8, height: 38, marginBottom: 14, padding: '0 12px', borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--hair)' }}>
-            {sw('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 'var(--muted)', 16)}<span style={{ flex: 1, fontSize: 13, color: 'var(--faint)' }}>Search rooms and agents</span><span className="kbd">K</span>
+            {sw('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 'var(--muted)', 16)}<span style={{ flex: 1, fontSize: 13, color: 'var(--faint)' }}>cmd+K to search</span>
           </div>
           <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 13, padding: '0 2px', fontSize: 11, color: 'var(--faint)' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="kbd">up</span><span className="kbd">dn</span> move</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="kbd">right</span> open</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="kbd">K</span> jump</span>

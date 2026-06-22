@@ -47,7 +47,7 @@ function ChecklistRow({ item, onQueueClick }) {
   const st = item.state || 'pending';
   let mark;
   if (st === 'done') {
-    mark = <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--success)" stroke="none" style={{ flex: 'none' }}><circle cx="12" cy="12" r="10" /><path d="m8 12 3 3 5-6" stroke="#0A0A0B" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>;
+    mark = <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--success)" stroke="none" style={{ flex: 'none' }}><circle cx="12" cy="12" r="10" /><path d="m8 12 3 3 5-6" stroke="var(--ground)" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" /></svg>;
   } else if (st === 'working') {
     mark = <span style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--success)', animation: 'cmdPulse 1.6s infinite' }} /></span>;
   } else if (st === 'queued') {
@@ -94,7 +94,7 @@ function WatcherRow({ watcher, onToggle }) {
           padding: '2px',
         }}
       >
-        <span style={{ width: 18, height: 18, borderRadius: '50%', background: watcher.active ? '#fff' : 'var(--faint)' }} />
+        <span style={{ width: 18, height: 18, borderRadius: '50%', background: watcher.active ? 'var(--bone)' : 'var(--faint)' }} />
       </button>
     </div>
   );
@@ -182,7 +182,7 @@ export function CommandView({ status = 'loaded', summary = {}, featured, rooms =
                 {onRetask && (
                   <div style={{ display: 'flex', gap: 9 }}>
                     <button style={{ flex: 'none', width: 46, height: 42, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
-                    <button onClick={onRetask} style={{ flex: 1, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>Re-task</button>
+                    <button onClick={onRetask} style={{ flex: 1, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: 'var(--bone)', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>Re-task</button>
                   </div>
                 )}
               </>
@@ -296,7 +296,7 @@ export function CommandView({ status = 'loaded', summary = {}, featured, rooms =
                   <button style={{ flex: 'none', width: 46, height: 42, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                   </button>
-                  <button onClick={onRetask} style={{ flex: 1, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}>
+                  <button onClick={onRetask} style={{ flex: 1, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: 'var(--bone)', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                     Re-task
                   </button>

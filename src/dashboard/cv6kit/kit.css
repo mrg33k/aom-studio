@@ -129,6 +129,8 @@
 
   --avatar: linear-gradient(135deg, #3B82F6, #1D4ED8);
 
+  --bone: #FFFFFF; /* bright text on dark/accent backgrounds */
+
   --status-online: var(--green-500);
   --status-working: var(--lime-400);
   --status-attention: var(--amber-400);

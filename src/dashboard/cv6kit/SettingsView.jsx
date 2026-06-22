@@ -82,13 +82,13 @@ const INTEGRATIONS = [
     name: 'Email',
     desc: 'Read & draft replies',
     tint: 'rgba(244,114,182,.16)',
-    icon: (w = '19') => <svg width={w} height={w} viewBox="0 0 24 24" fill="none" stroke="#f472b6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16v12H4Z"/><path d="m4 7 8 6 8-6"/></svg>
+    icon: (w = '19') => <svg width={w} height={w} viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16v12H4Z"/><path d="m4 7 8 6 8-6"/></svg>
   },
   {
     name: 'GitHub',
     desc: 'Repos & pull requests',
     tint: 'rgba(139,124,246,.16)',
-    icon: (w = '19') => <svg width={w} height={w} viewBox="0 0 24 24" fill="none" stroke="#8b7cf6" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-4 1.5-4-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6 0C6.7 2.3 5.6 2.6 5.6 2.6a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
+    icon: (w = '19') => <svg width={w} height={w} viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-4 1.5-4-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6 0C6.7 2.3 5.6 2.6 5.6 2.6a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
   },
   {
     name: 'Calendar',
@@ -167,7 +167,7 @@ function RefreshIcon(color = 'var(--accent)') {
 
 function CheckIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
       <path d="m5 12 4 4L19 7"/>
     </svg>
   );
@@ -199,7 +199,7 @@ function Toggle({ on, onChange }) {
           width: 18,
           height: 18,
           borderRadius: '50%',
-          background: on ? '#fff' : 'var(--faint)',
+          background: on ? 'var(--paper-0)' : 'var(--faint)',
           transition: 'left .15s, background .15s',
           pointerEvents: 'none'
         }}
@@ -214,15 +214,15 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
     return (
       <div>
         {/* Shared rooms awareness banner */}
-        <div style={{ display: 'flex', gap: 11, padding: '13px 14px', border: '1px solid var(--accent-weak)', background: 'var(--accent-weak)', borderRadius: 13, marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 11, padding: '13px 14px', border: '1px solid var(--accent-weak)', background: 'var(--accent-weak)', borderRadius: 13, marginBottom: 20, fontSize: '12.5px', lineHeight: 1.5, color: 'var(--fg)' }}>
           {PeopleIcon('var(--accent)', '18')}
-          <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--fg)' }}>
+          <div>
             <strong>Connections are shared with everyone in a shared room</strong>. Scope each one to control which rooms, and which people, can reach it.
           </div>
         </div>
 
         {/* Connections section */}
-        <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Connections</div>
+        <div className="eyebrow" style={{ marginBottom: 10 }}>Connections</div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, marginBottom: 22, overflow: 'hidden' }}>
           {INTEGRATIONS.map((int, idx) => {
             const isConnected = connections?.[int.name];
@@ -230,16 +230,16 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
             const isEditing = editingConn === int.name;
             return (
               <div key={int.name}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', borderBottom: idx < INTEGRATIONS.length - 1 ? '1px solid var(--divider)' : 'none' }}>
-                  <span style={{ width: 38, height: 38, borderRadius: 10, background: int.tint, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                <div className="row" style={{ borderBottom: idx < INTEGRATIONS.length - 1 ? '1px solid var(--divider)' : 'none' }}>
+                  <span className="ico" style={{ background: int.tint }}>
                     {int.icon('18')}
                   </span>
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{int.name}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{int.desc}</div>
+                    <div className="nm">{int.name}</div>
+                    <div className="ds">{int.desc}</div>
                   </div>
                   {!isConnected ? (
-                    <button onClick={() => onConnect?.(int.name)} style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
+                    <button onClick={() => onConnect?.(int.name)} className="conn" style={{ marginLeft: 'auto', flex: 'none' }}>
                       Connect
                     </button>
                   ) : (
@@ -249,7 +249,7 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
                         {!isPrivate && PeopleIcon('var(--accent)', '13')}
                         {scope?.[int.name] || 'All rooms'}
                       </button>
-                      <button onClick={() => onEditConnection?.(int.name)} style={{ height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+                      <button onClick={() => onEditConnection?.(int.name)} className="conn" style={{ marginLeft: 0 }}>
                         {isEditing ? 'Done' : 'Edit'}
                       </button>
                     </div>
@@ -271,7 +271,7 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
                       <button onClick={() => onReconnect?.(int.name)} style={{ flex: 1, height: 32, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
                         Reconnect
                       </button>
-                      <button onClick={() => onDisconnect?.(int.name)} style={{ flex: 1, height: 32, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: '#F87171', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+                      <button onClick={() => onDisconnect?.(int.name)} style={{ flex: 1, height: 32, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--warn)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
                         Disconnect
                       </button>
                     </div>
@@ -285,17 +285,17 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
         {/* Secrets & keys — hidden on the live surface (no real key store wired yet). */}
         {!live && (
           <>
-            <div style={{ marginBottom: 10, fontSize: 11, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>Secrets & keys</div>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Secrets & keys</div>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px' }}>
-                <span style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <div className="row" style={{ borderBottom: 'none' }}>
+                <span className="ico" style={{ background: 'var(--chip)' }}>
                   {KeyIcon()}
                 </span>
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>API keys</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>3 stored . last rotated 12d ago</div>
+                  <div className="nm">API keys</div>
+                  <div className="ds">3 stored . last rotated 12d ago</div>
                 </div>
-                <button onClick={() => onRotateKeys?.()} style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
+                <button onClick={() => onRotateKeys?.()} className="conn" style={{ marginLeft: 'auto', flex: 'none' }}>
                   Edit
                 </button>
               </div>
@@ -312,20 +312,20 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
         {agents?.map((agent) => (
           <div key={agent.id}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 11 }}>
-              <span style={{ width: 34, height: 34, borderRadius: '50%', background: agent.toneBg, color: agent.tone, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+              <span className="av" style={{ width: 34, height: 34, background: agent.toneBg, color: agent.tone, fontSize: 12, fontWeight: 700, flex: 'none' }}>
                 {agent.initials}
               </span>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{agent.id}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{agent.role}</div>
+                <div className="nm">{agent.id}</div>
+                <div className="ds">{agent.role}</div>
               </div>
             </div>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, marginBottom: 22, overflow: 'hidden' }}>
               {['Draft', 'Send', 'Commit', 'File'].map((perm, idx, perms) => (
-                <div key={perm} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', borderBottom: idx < perms.length - 1 ? '1px solid var(--divider)' : 'none' }}>
+                <div key={perm} className="row" style={{ borderBottom: idx < perms.length - 1 ? '1px solid var(--divider)' : 'none' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--fg)' }}>{perm}</div>
-                    <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>
+                    <div className="ds">
                       {perm === 'Draft' && 'Write replies & docs for you'}
                       {perm === 'Send' && 'Send on your behalf without asking'}
                       {perm === 'Commit' && 'Push code changes'}
@@ -346,10 +346,10 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
     return (
       <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, overflow: 'hidden' }}>
         {NOTIFY_OPTIONS.map((opt, idx) => (
-          <div key={opt.k} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', borderBottom: idx < NOTIFY_OPTIONS.length - 1 ? '1px solid var(--divider)' : 'none' }}>
+          <div key={opt.k} className="row" style={{ borderBottom: idx < NOTIFY_OPTIONS.length - 1 ? '1px solid var(--divider)' : 'none' }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{opt.t}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{opt.d}</div>
+              <div className="nm">{opt.t}</div>
+              <div className="ds">{opt.d}</div>
             </div>
             <Toggle on={notifySettings?.[opt.k]} onChange={(on) => onToggleNotify?.(opt.k)} />
           </div>
@@ -365,17 +365,17 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
           const isSelected = theme === t.k;
           let bgColor, c1, c2;
           if (t.k === 'dark') {
-            bgColor = '#0E1116';
-            c1 = '#2A2F37';
-            c2 = '#3B82F6';
+            bgColor = 'var(--ground)';
+            c1 = 'var(--surface)';
+            c2 = 'var(--accent)';
           } else if (t.k === 'light') {
-            bgColor = '#F5F4F1';
-            c1 = '#E2E0DB';
-            c2 = '#0066FF';
+            bgColor = 'var(--ground)';
+            c1 = 'var(--surface)';
+            c2 = 'var(--accent)';
           } else {
-            bgColor = 'linear-gradient(140deg,#0c1a22,#1a1224)';
-            c1 = 'rgba(255,255,255,.18)';
-            c2 = '#5B9BFF';
+            bgColor = 'var(--ground)';
+            c1 = 'var(--surface)';
+            c2 = 'var(--accent)';
           }
           return (
             <button
@@ -415,16 +415,16 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
     return (
       <div>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, marginBottom: 18, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px' }}>
-            <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--avatar)', color: '#fff', fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+          <div className="row" style={{ borderBottom: 'none' }}>
+            <span className="av" style={{ fontSize: 17, fontWeight: 700, flex: 'none' }}>
               {user?.full_name?.[0] || 'P'}
             </span>
             <div>
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{user?.full_name || 'Patrik'}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{user?.email || 'patrik@corner.so'}</div>
+              <div className="ds">{user?.email || 'patrik@corner.so'}</div>
             </div>
             {!live && (
-              <button style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
+              <button className="conn" style={{ marginLeft: 'auto', flex: 'none' }}>
                 Edit
               </button>
             )}
@@ -433,17 +433,17 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, overflow: 'hidden' }}>
           {!live && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', borderBottom: '1px solid var(--divider)' }}>
+            <div className="row" style={{ borderBottom: '1px solid var(--divider)' }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>Workspace</div>
-                <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>Corner . 8 seats</div>
+                <div className="nm">Workspace</div>
+                <div className="ds">Corner . 8 seats</div>
               </div>
-              <button style={{ height: 32, padding: '0 13px', borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', marginLeft: 'auto', flex: 'none' }}>
+              <button className="conn" style={{ marginLeft: 'auto', flex: 'none' }}>
                 Manage
               </button>
             </div>
           )}
-          <button onClick={() => onSignOut?.()} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', cursor: 'pointer', border: 'none', background: 'transparent', fontSize: 14, fontWeight: 600, color: '#F87171', fontFamily: 'var(--font-sans)' }}>
+          <button onClick={() => onSignOut?.()} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px', cursor: 'pointer', border: 'none', background: 'transparent', fontSize: 14, fontWeight: 600, color: 'var(--warn)', fontFamily: 'var(--font-sans)' }}>
             Sign out
           </button>
         </div>
@@ -454,15 +454,15 @@ function SectionContent({ sectionId, live, user, agents, connections, scope, per
   if (sectionId === 'setup') {
     return (
       <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 15px' }}>
-          <span style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+        <div className="row" style={{ borderBottom: 'none' }}>
+          <span className="ico" style={{ background: 'var(--accent-weak)' }}>
             {RefreshIcon('var(--accent)')}
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>Re-run setup</div>
-            <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>Reconnect services, agents, theme and a first goal.</div>
+            <div className="nm">Re-run setup</div>
+            <div className="ds">Reconnect services, agents, theme and a first goal.</div>
           </div>
-          <button onClick={() => onRerunSetup?.()} style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: 'none', background: 'var(--success)', color: '#fff', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
+          <button onClick={() => onRerunSetup?.()} style={{ marginLeft: 'auto', height: 32, padding: '0 13px', borderRadius: 9, border: 'none', background: 'var(--success)', color: 'var(--paper-0)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', flex: 'none' }}>
             Start
           </button>
         </div>
@@ -479,7 +479,7 @@ export function SettingsView({
   user = { full_name: 'Patrik', email: 'patrik@corner.so' },
   agents = [
     { id: 'Elon', initials: 'EL', role: 'Engineering · drives missions', tone: 'var(--success)', toneBg: 'rgba(52,211,153,.2)' },
-    { id: 'Rex', initials: 'RX', role: 'Writing · drafts & digests', tone: '#A3E635', toneBg: 'rgba(163,230,53,.2)' }
+    { id: 'Rex', initials: 'RX', role: 'Writing · drafts & digests', tone: 'var(--lime-400)', toneBg: 'rgba(163,230,53,.2)' }
   ],
   connections = { Email: true, GitHub: true, Calendar: false, Slack: false, Drive: true },
   scope = { Email: 'All rooms', GitHub: '2 rooms', Calendar: 'All rooms', Slack: 'Private', Drive: 'All rooms' },
@@ -520,12 +520,12 @@ export function SettingsView({
         // List view
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '6px 4px 20px' }}>
-            <span style={{ width: 48, height: 48, borderRadius: '50%', background: 'var(--avatar)', color: '#fff', fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+            <span className="av" style={{ fontSize: 17, fontWeight: 700, flex: 'none' }}>
               {user?.full_name?.[0] || 'P'}
             </span>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>{user?.full_name || 'Patrik'}</div>
-              <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>{user?.email || 'patrik@corner.so'}</div>
+              <div className="nm" style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em' }}>{user?.full_name || 'Patrik'}</div>
+              <div className="ds">{user?.email || 'patrik@corner.so'}</div>
             </div>
           </div>
 
@@ -534,22 +534,21 @@ export function SettingsView({
               <div
                 key={s.id}
                 onClick={() => setSection(s.id)}
+                className="row"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
                   height: 'auto',
-                  padding: 14,
                   borderBottom: i < SECTIONS.length - 1 ? '1px solid var(--divider)' : 'none',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  gap: 12,
+                  padding: 14
                 }}
               >
-                <span style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--chip)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--chip)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                   {ICONS[s.icon]?.()}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{s.label}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.35, marginTop: 2 }}>{s.sub}</div>
+                  <div className="nm" style={{ fontSize: 14.5 }}>{s.label}</div>
+                  <div className="ds" style={{ lineHeight: 1.35, marginTop: 2 }}>{s.sub}</div>
                 </div>
                 {ICONS.forward()}
               </div>

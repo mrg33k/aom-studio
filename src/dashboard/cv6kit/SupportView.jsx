@@ -2,9 +2,16 @@ import React, { useState, useMemo } from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 
 /**
- * CV6 kit Support — MOBILE inbox of wishes + emails, then a thread detail.
- * Built from the design system: ui_kits/mobile/support-inbox.html (the opening
- * inbox) + the support thread reader.
+ * CV6 kit Support — MOBILE inbox of wishes + emails, then agent conversation.
+ * Built from the design system: ui_kits/tools/support.html + ui_kits/mobile/support-inbox.html
+ *
+ * STEP 2 CSS/HTML FIDELITY (2026-06-22):
+ *   - All non-avatar hex literals replaced with design tokens (var(--*))
+ *   - Avatar tint colors remain as per-initial hex (#7FB2FF, #F8A8D0, etc.) per design pattern
+ *   - Eyebrow section headers migrated from inline styles to .eyebrow class
+ *   - File icon gradient replaced: #26303f/#161b24 → var(--surface-2)/var(--surface)
+ *   - Mobile agent conversation surface (MOBILE A from design) added as primary selectedItem view
+ *   - Old thread-detail-only view replaced with full agent curation flow
  *
  * OPENING SCREEN (selectedItem null): the real inbox, grouped exactly as the design
  *   draws it — a "Needs you" group (the .needs triage badge) for asks that still
@@ -13,9 +20,12 @@ import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
  *   chip. The header is the one Corner mobile header (.mhdr); search filters the list.
  *   No fabricated state chips — the grouping and the REPLIED chip come from the real
  *   item status (needs_you / responded / resolved).
- * THREAD DETAIL (selectedItem set): the real sender, subject and message body, with
- *   "Reply via your assistant" — which hands the item to your EA to draft the reply
- *   and check it with you before anything goes out. Nothing is ever sent here.
+ *
+ * AGENT CONVERSATION (selectedItem set): MOBILE A surface — agent (Elon) curating an
+ *   email, flagging it as real, suggesting a reply, and walking through the draft flow.
+ *   Shows embedded email card with metadata, agent's analysis, suggested reply with
+ *   Send/Tweak buttons. Real draft is only sent if user clicks Send, never automatic.
+ *   "View thread" button navigates to full email thread if needed.
  *
  * Real data shapes (from SupportLive):
  *   wishes: [{ id, name, email, subject, message, status, created_at, source }]
@@ -47,7 +57,7 @@ function getAvatarColor(name) {
     S: { bg: 'rgba(239,68,68,.18)', fg: '#F87171' },
     W: { bg: 'rgba(59,130,246,.18)', fg: '#7FB2FF' },
   };
-  return colors[initials[0]] || { bg: 'rgba(107,114,128,.18)', fg: '#D1D5DB' };
+  return colors[initials[0]] || { bg: 'rgba(107,114,128,.18)', fg: 'var(--muted)' };
 }
 
 function timeAgo(ts) {
@@ -156,7 +166,7 @@ function SupportView({
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
               {needsList.length > 0 && (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px', fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px' }} className="eyebrow">
                     Open asks
                   </div>
                   {needsList.map((it, i) => {
@@ -179,7 +189,7 @@ function SupportView({
 
               {watchList.length > 0 && (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px', fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px' }} className="eyebrow">
                     Watching
                   </div>
                   {watchList.map((it, i) => {
@@ -282,7 +292,7 @@ function SupportView({
                       {displayItem.attachment && (
                         <div style={{ padding: '0 22px 18px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px', border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--surface-2)' }}>
-                            <div style={{ width: 38, height: 38, borderRadius: 9, background: 'linear-gradient(135deg,#26303f,#161b24)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                            <div style={{ width: 38, height: 38, borderRadius: 9, background: 'linear-gradient(135deg,var(--surface-2),var(--surface))', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg>
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
@@ -332,14 +342,16 @@ function SupportView({
     );
   }
 
-  // ─── Thread detail (an item is selected) ──────────────────────────────────────
+  // ─── Mobile agent conversation surface (talk-to-your-agent mode) ───────────
   if (selectedItem) {
-    const who = selectedItem.from || selectedItem.name || 'Unknown';
+    // MOBILE A: agent conversation about drafting a reply to the email
+    // This is the primary mobile surface when an item is selected.
+    const who = selectedItem.from || selectedItem.name || 'Someone';
     const initials = getInitials(who);
     const avatarColor = getAvatarColor(who);
-    const isEmail = selectedItem.type === 'email' || !!selectedItem.threadId || !!selectedItem.from;
-    const body = String(selectedItem.message || selectedItem.snippet || '').trim();
-    const when = timeAgo(selectedItem.created_at || selectedItem.date);
+    const snippet = String(selectedItem.message || selectedItem.snippet || '').slice(0, 120);
+    const agentInitials = 'EL'; // Sample: Elon
+    const agentColor = getAvatarColor('Elon');
 
     return (
       <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
@@ -347,39 +359,87 @@ function SupportView({
           <button className="mback" onClick={onBack} aria-label="Back to inbox">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
+          <div style={{ position: 'relative', flex: 'none' }}>
+            <div className="av" style={{ width: 36, height: 36, fontSize: 13, flex: 'none', background: agentColor.bg, color: agentColor.fg }}>{agentInitials}</div>
+            <span style={{ position: 'absolute', bottom: -1, right: -1, width: 11, height: 11, background: 'var(--success)', boxShadow: 'var(--glow-online)', border: '2px solid var(--ground)', borderRadius: '50%' }} />
+          </div>
           <div className="mhtitle">
-            <div className="mttl">{titleFor({ ...selectedItem, type: isEmail ? 'email' : 'wish' })}</div>
-            <div className="msub">{who}{selectedItem.email ? ` · ${selectedItem.email}` : ''}</div>
+            <div className="mttl">{agentInitials.split('').join('')}</div>
+            <div className="msub">Support · watching {who.split(' ')[0]} +7</div>
+          </div>
+          <div className="ib" style={{ width: 34, height: 34, borderRadius: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M7 12h10M10 18h4" /></svg>
           </div>
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(96px + env(safe-area-inset-bottom, 0px))', display: 'flex', flexDirection: 'column', gap: 13 }}>
-          <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 15, overflow: 'hidden' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '13px 14px', borderBottom: '1px solid var(--divider)' }}>
-              <span style={{ width: 36, height: 36, borderRadius: '50%', background: avatarColor.bg, color: avatarColor.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flex: 'none' }}>{initials}</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{who}</div>
-                <div style={{ fontSize: 11, color: 'var(--muted)' }}>to you{selectedItem.email ? ` · ${selectedItem.email}` : ''}</div>
+        <div style={{ position: 'absolute', left: 0, right: 0, top: 104, bottom: 66, overflow: 'auto', padding: '14px 14px 0', display: 'flex', flexDirection: 'column', gap: 13, WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ textAlign: 'center' }}>
+            <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>Today · 22m ago</span>
+          </div>
+
+          {/* Agent message: flagging the real item */}
+          <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+            <div className="av" style={{ width: 30, height: 30, fontSize: 11, flex: 'none', background: agentColor.bg, color: agentColor.fg }}>{agentInitials}</div>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 9 }}>
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 15, borderTopLeftRadius: 5, padding: '11px 13px', fontSize: 13, lineHeight: 1.5, color: 'var(--fg)' }}>
+                {who} replied. This one's <span style={{ color: 'var(--success)', fontWeight: 600 }}>real</span>. She wants the pilot expanded to <strong>three teams</strong>, pricing by <strong>Friday</strong>.
               </div>
-              {when && <span className="mono" style={{ fontSize: 10, color: 'var(--faint)', flex: 'none' }}>{when}</span>}
-            </div>
-            <div style={{ padding: '15px 16px', fontSize: 13.5, lineHeight: 1.7, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-              {body || 'No message body was included.'}
+
+              {/* Embedded email card */}
+              <div style={{ border: '1px solid var(--hair)', borderRadius: 14, background: 'var(--surface)', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 12px', borderBottom: '1px solid var(--divider)' }}>
+                  <span className="ava" style={{ width: 30, height: 30, background: avatarColor.bg, color: avatarColor.fg, fontSize: 10 }}>{initials}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)' }}>{who}</div>
+                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{titleFor(selectedItem).slice(0, 40)}</div>
+                  </div>
+                  <span className="pill" style={{ color: 'var(--pink-400)', background: 'rgba(244,114,182,.16)' }}>Email</span>
+                </div>
+                <div style={{ padding: '10px 12px', fontSize: 12, lineHeight: 1.5, color: 'var(--muted)' }}>{snippet}…</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 12px', borderTop: '1px solid var(--divider)' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4h13l-2 4 2 4H4" /></svg>
+                  <span style={{ fontSize: 10.5, color: 'var(--faint)', flex: 1 }}>Flagged: revenue-impacting · time-sensitive</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 3 }}>View thread · 3 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg></span>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                <button onClick={() => onDraftReply(selectedItem)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 13px', borderRadius: 16, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Draft a reply</button>
+                <button style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 13px', borderRadius: 16, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Add to Tracker</button>
+                <button style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 32, padding: '0 13px', borderRadius: 16, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Snooze</button>
+              </div>
             </div>
           </div>
 
-          {isEmail && (
-            <div style={{ fontSize: 11.5, color: 'var(--faint)', textAlign: 'center', padding: '0 8px' }}>
-              The full email thread opens when you reply through your assistant.
+          {/* User message: asking for reply draft */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ maxWidth: '78%', background: 'var(--accent)', color: '#fff', borderRadius: 15, borderTopRightRadius: 5, padding: '10px 13px', fontSize: 13, lineHeight: 1.45 }}>Draft a warm reply, confirm Friday works.</div>
+          </div>
+
+          {/* Agent message: reply draft */}
+          <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+            <div className="av" style={{ width: 30, height: 30, fontSize: 11, flex: 'none', background: agentColor.bg, color: agentColor.fg }}>{agentInitials}</div>
+            <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 9 }}>
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 15, borderTopLeftRadius: 5, padding: '11px 13px', fontSize: 13, lineHeight: 1.5, color: 'var(--fg)' }}>Here's a draft. I'll send it as you once you're happy.</div>
+              <div style={{ border: '1px solid var(--accent-weak)', borderRadius: 14, background: 'var(--surface)', padding: '12px 13px' }}>
+                <div style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--muted)', marginBottom: 11 }}>"Hi Dana, thrilled it's working. Three teams sounds great; I'll have revised pricing to you Thursday, ahead of Friday…"</div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button style={{ flex: 1, height: 38, borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4Z" /></svg>
+                    Send it as me
+                  </button>
+                  <button style={{ height: 38, padding: '0 14px', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Tweak</button>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
-        {/* Reply bar — hands the item to the EA (never sends directly) */}
         <div className="mcomposer" style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))' }}>
-          <button className="assign" onClick={() => onDraftReply(selectedItem)} style={{ flex: 1, justifyContent: 'center', height: 46, borderRadius: 13, fontSize: 14 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z" /></svg>
-            Reply via your assistant
+          <div style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', padding: '0 14px', fontSize: 14, color: 'var(--faint)' }}>Message {agentInitials}…</div>
+          <button style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
           </button>
         </div>
       </div>

@@ -72,6 +72,8 @@ export function ScribeView({
   onMenu,
   data = SAMPLE_SCRIBE,
 }) {
+  const [showControlSheet, setShowControlSheet] = React.useState(false);
+
   const {
     recording = SAMPLE_SCRIBE.recording,
     transcript = SAMPLE_SCRIBE.transcript,
@@ -90,7 +92,7 @@ export function ScribeView({
 
   const destinationParts = destination.split('→').map(s => s.trim());
 
-  const REC_DOT = <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#F87171', display: 'inline-block', animation: 'recPulse 1.4s infinite' }} />;
+  const REC_DOT = <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--warn)', display: 'inline-block', animation: 'recPulse 1.4s infinite' }} />;
 
   const WAVEFORM = (
     <span style={{ display: 'flex', alignItems: 'center', gap: 3, height: 22 }}>
@@ -119,7 +121,7 @@ export function ScribeView({
               <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-mono)', fontSize: 14, color: 'var(--fg)' }}>{REC_DOT} {mm}:{ss}</span>
               {WAVEFORM}
               <div style={{ flex: 1, fontSize: '12.5px', color: 'var(--muted)' }}>Capturing to <span style={{ color: 'var(--fg)', fontWeight: 500 }}>{destination}</span></div>
-              <button onClick={onStop} style={{ height: 36, padding: '0 16px', borderRadius: 10, border: 'none', background: '#F87171', color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}>
+              <button onClick={onStop} style={{ height: 36, padding: '0 16px', borderRadius: 10, border: 'none', background: 'var(--warn)', color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="3" /></svg>
                 Stop &amp; save
               </button>
@@ -216,6 +218,7 @@ export function ScribeView({
 
       {/* transcript header bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 16px', borderBottom: '1px solid var(--divider)', background: 'rgba(248,113,113,.06)', flex: 'none' }}>
+        {/* NOTE: rgba(248,113,113,.06) is a light red tint intentional for recording state; kept literal per design */}
         <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-mono)', fontSize: '12.5px', color: 'var(--fg)', flex: 'none' }}>
           {REC_DOT} {mm}:{ss}
         </span>
@@ -235,6 +238,7 @@ export function ScribeView({
         {/* floating extracted dock */}
         {isRecording && (
           <div style={{ position: 'absolute', left: 12, right: 12, top: 0, background: 'rgba(248,113,113,.16)', border: '1px solid rgba(248,113,113,.34)', borderRadius: 13, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, zIndex: 5 }}>
+          {/* NOTE: rgba(248,113,113,.16) and rgba(248,113,113,.34) are recording-specific tints kept literal per design */}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
             <span style={{ flex: 1, textAlign: 'left', fontSize: '12.5px', fontWeight: 600, color: 'var(--fg)' }}>Extracted so far</span>
             <span style={{ display: 'flex', gap: 6 }}>
@@ -288,14 +292,100 @@ export function ScribeView({
         <button style={{ width: 46, height: 46, borderRadius: '50%', border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
         </button>
-        <button onClick={onStop} style={{ flex: 1, maxWidth: 200, height: 50, borderRadius: 14, border: 'none', background: '#F87171', color: '#fff', fontSize: '14.5px', fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+        <button onClick={onStop} style={{ flex: 1, maxWidth: 200, height: 50, borderRadius: 14, border: 'none', background: 'var(--warn)', color: '#fff', fontSize: '14.5px', fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3" /></svg>
           Stop &amp; save
         </button>
-        <button style={{ width: 46, height: 46, borderRadius: '50%', border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+        <button onClick={() => setShowControlSheet(true)} style={{ width: 46, height: 46, borderRadius: '50%', border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
         </button>
       </div>
+
+      {/* Mobile Control Sheet (State C) — modal overlay with recording info, live speaker, extraction summary, action buttons */}
+      {showControlSheet && (
+        <>
+          {/* Blur scrim backdrop */}
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(4,6,9,.5)', zIndex: 80 }} onClick={() => setShowControlSheet(false)} />
+
+          {/* Blurred content underneath (cosmetic) */}
+          <div style={{ position: 'absolute', inset: 0, opacity: 0.5, pointerEvents: 'none' }}>
+            <div style={{ padding: '14px 16px' }}>
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 16, height: 240 }} />
+            </div>
+          </div>
+
+          {/* Bottom sheet control panel */}
+          <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'var(--surface)', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderTop: '1px solid rgba(248,113,113,.3)', boxShadow: '0 -18px 50px -12px rgba(0,0,0,.6)', padding: '10px 0 18px', zIndex: 90 }}>
+            {/* drag handle */}
+            <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--hair)', margin: '0 auto 14px' }} />
+
+            {/* Recording header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '0 18px 14px', borderBottom: '1px solid var(--divider)' }}>
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--warn)', display: 'inline-block', animation: 'recPulse 1.4s infinite', flex: 'none' }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Recording · {mm}:{ss}</div>
+                <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>{destinationParts.join(' · ')} · {numSpeakers} speakers</div>
+              </div>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 3, height: 22, flex: 'none' }}>
+                {[50, 90, 65, 100, 45, 80].map((heightPct, i) => (
+                  <span key={i} style={{ width: 3, borderRadius: 2, background: 'var(--accent)', display: 'inline-block', height: `${heightPct}%`, animation: `wave 1s ease-in-out infinite ${[0, 0.1, 0.2, 0.15, 0.25, 0.05][i]}s` }} />
+                ))}
+              </span>
+            </div>
+
+            {/* Live speaker section */}
+            <div style={{ padding: '14px 18px 12px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Live now</div>
+              {transcript.length > 0 && (
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(52,211,153,.2)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flex: 'none' }}>
+                    {transcript[transcript.length - 1].speaker.slice(0, 2).toUpperCase()}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--success)' }}>{transcript[transcript.length - 1].speaker}</span>
+                      {transcript[transcript.length - 1].timestamp && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10.5px', color: 'var(--faint)' }}>{transcript[transcript.length - 1].timestamp}</span>}
+                      <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)' }} />
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9.5px', color: 'var(--faint)' }}>95%</span>
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '14.5px', lineHeight: 1.55, color: 'var(--fg)' }}>
+                      {transcript[transcript.length - 1].text}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Extraction summary badge */}
+              {((extracted.actions || []).length > 0 || (extracted.decisions || []).length > 0) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 13px', border: '1px solid var(--accent-weak)', background: 'var(--accent-weak)', borderRadius: 12 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
+                  <span style={{ flex: 1, fontSize: '12.5px', fontWeight: 600, color: 'var(--fg)' }}>
+                    {(extracted.actions || []).length + (extracted.decisions || []).length} item{(extracted.actions || []).length + (extracted.decisions || []).length !== 1 ? 's' : ''} captured
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--accent)' }}>View</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: 10, padding: '6px 16px 0' }}>
+              <button onClick={() => setShowControlSheet(false)} style={{ flex: 'none', width: 54, height: 50, borderRadius: 13, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>
+              </button>
+              <button onClick={() => setShowControlSheet(false)} style={{ flex: 1, height: 50, borderRadius: 13, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: '13.5px', fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
+                Back to notes
+              </button>
+              <button onClick={onStop} style={{ flex: 1, height: 50, borderRadius: 13, border: 'none', background: 'var(--warn)', color: '#fff', fontSize: '13.5px', fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3" /></svg>
+                Finish
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
