@@ -3,8 +3,9 @@ import { authFetch } from '../lib/authFetch.js';
 
 /**
  * useRunningJobs — fetches REAL currently-running jobs from the tasks table.
- * Returns { job, isLoading, error } where job is a single ActivityDock-shaped object
- * or null when no jobs are running. Polls every 2-5s so the dock always shows fresh status.
+ * Returns { job, jobs, isLoading, error }: `jobs` is every running job (ActivityDock-shaped),
+ * for the Command activity rail which shows them all; `job` is jobs[0] (or null) for the single
+ * float dock. Polls every 3s so the dock always shows fresh status.
  *
  * Job shape: { kind, label, detail }
  *   kind: 'recording' | 'working' | 'secondary' | 'drafting'
@@ -73,12 +74,14 @@ function mapTaskToJob(task) {
 
 export function useRunningJobs(worldId = 'aom') {
   const [job, setJob] = useState(null);
+  const [jobs, setJobs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!worldId) {
       setJob(null);
+      setJobs([]);
       return;
     }
 
@@ -91,11 +94,12 @@ export function useRunningJobs(worldId = 'aom') {
         setError(null);
 
         // Query the tasks table for status='running', filtered by client_id=worldId.
-        // Limit 1 since we only show a single dock (topmost running job).
+        // Pull up to 8 so the Command activity rail can show every running job; the
+        // float dock just takes the first.
         const params = new URLSearchParams();
         params.set('status', 'running');
         params.set('client_id', worldId);
-        params.set('limit', '1');
+        params.set('limit', '8');
 
         const res = await authFetch(`/api/dashboard/v2-task-list?${params.toString()}`);
         if (!res || !res.ok) {
@@ -108,16 +112,18 @@ export function useRunningJobs(worldId = 'aom') {
 
         const data = await res.json();
         const tasks = Array.isArray(data?.tasks) ? data.tasks : [];
-        const runningTask = tasks.length > 0 ? tasks[0] : null;
+        const mapped = tasks.map(mapTaskToJob).filter(Boolean);
 
         if (alive) {
-          setJob(runningTask ? mapTaskToJob(runningTask) : null);
+          setJobs(mapped);
+          setJob(mapped.length > 0 ? mapped[0] : null);
           setIsLoading(false);
         }
       } catch (err) {
         if (alive) {
           setError(err.message);
           setJob(null);
+          setJobs([]);
           setIsLoading(false);
         }
       }
@@ -133,5 +139,5 @@ export function useRunningJobs(worldId = 'aom') {
     };
   }, [worldId]);
 
-  return { job, isLoading, error };
+  return { job, jobs, isLoading, error };
 }

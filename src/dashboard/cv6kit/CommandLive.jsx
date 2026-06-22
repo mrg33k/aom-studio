@@ -84,11 +84,15 @@ export function CommandLive({ worldId = 'aom', onSelectRoom, onBack, isDesktop =
     return () => { alive = false; clearInterval(t); };
   }, [worldId]);
 
-  // The design's activity rail: the one real running job from the tasks table.
-  const { job } = useRunningJobs(worldId);
+  // The design's activity rail: every real running job from the tasks table.
+  const { jobs } = useRunningJobs(worldId);
   const activities = useMemo(() => (
-    job ? [{ state: job.kind === 'recording' ? 'recording' : (job.kind === 'drafting' ? 'success' : 'working'), title: job.label, sub: job.detail }] : []
-  ), [job]);
+    (jobs || []).map((j) => ({
+      state: j.kind === 'recording' ? 'recording' : (j.kind === 'drafting' ? 'success' : 'working'),
+      title: j.label,
+      sub: j.detail,
+    }))
+  ), [jobs]);
 
   // Needs-you first, then live, then idle; within a tier, freshest review first.
   const sorted = useMemo(() => {
