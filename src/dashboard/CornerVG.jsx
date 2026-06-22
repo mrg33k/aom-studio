@@ -57,7 +57,7 @@ import { CommandView } from './cv6kit/CommandView.jsx'
 import { ReviewView } from './cv6kit/ReviewView.jsx'
 import { SupportView } from './cv6kit/SupportView.jsx'
 import { OrganizeView } from './cv6kit/OrganizeView.jsx'
-import { SAMPLE_COMMAND, SAMPLE_REVIEW, SAMPLE_SUPPORT, SAMPLE_ORGANIZE } from './CV6KitTest.jsx'
+import { SAMPLE_COMMAND, SAMPLE_REVIEW, SAMPLE_SUPPORT, SAMPLE_ORGANIZE, SAMPLE_TRACKER } from './CV6KitTest.jsx'
 // R-KIT-ONBOARD — Claude-design first-run onboarding (5 steps: welcome, connections, permissions, theme, first goal).
 import { OnboardingLive } from './cv6kit/OnboardingLive.jsx'
 // R4 — cross-page Activity Dock wired to REAL running jobs (status=running tasks for the world).
@@ -3086,22 +3086,20 @@ export default function CornerVG() {
                 inbox (SupportLive: real wishes+email, tap hands the item to the EA); desktop
                 keeps the full SupportDashboard until its kit desktop layout + actions are wired. */}
             {showSupportInbox && worldId === 'aom' ? (
-              isDesktop ? (
-                <SupportDashboard isDesktop={isDesktop} worldId={worldId} onClose={() => setShowSupportInbox(false)}
-                  onDiscuss={handleDiscussSupportEmail} />
-              ) : (
-                <SupportView
-                  wishes={SAMPLE_SUPPORT.wishes}
-                  inbox={SAMPLE_SUPPORT.inbox}
-                  counts={SAMPLE_SUPPORT.counts}
-                  selectedItem={null}
-                  onSelectItem={() => {}}
-                  onBack={() => setShowSupportInbox(false)}
-                  onClose={() => setShowSupportInbox(false)}
-                  onDraftReply={() => {}}
-                  onMarkResolved={() => {}}
-                />
-              )
+              <SupportView
+                wishes={SAMPLE_SUPPORT.wishes}
+                inbox={SAMPLE_SUPPORT.inbox}
+                counts={SAMPLE_SUPPORT.counts}
+                selectedItem={null}
+                isDesktop={isDesktop}
+                activeTool="support"
+                onNav={handleCv6Nav}
+                onSelectItem={() => {}}
+                onBack={() => setShowSupportInbox(false)}
+                onClose={() => setShowSupportInbox(false)}
+                onDraftReply={() => {}}
+                onMarkResolved={() => {}}
+              />
             ) : activeTool === 'routines' ? (
               /* corner:routines R3 — full-area card view of every open loop.
                  Selecting any agent / project / mission / mail clears
@@ -3130,6 +3128,9 @@ export default function CornerVG() {
                 files={SAMPLE_ORGANIZE.files}
                 selectedProjectId={'corner'}
                 selectedFileIds={[]}
+                isDesktop={isDesktop}
+                activeTool="organize"
+                onNav={handleCv6Nav}
                 onSelectProject={() => {}}
                 onSelectFile={() => {}}
                 onBack={() => setActiveTool(null)}
@@ -3177,6 +3178,9 @@ export default function CornerVG() {
                 comments={[]}
                 metadata={{}}
                 queueSummary={SAMPLE_REVIEW.queueSummary}
+                isDesktop={isDesktop}
+                activeTool="review"
+                onNav={handleCv6Nav}
                 onSelectItem={() => {}}
                 onMenu={() => setNavOpen(true)}
                 onBack={() => setActiveTool(null)}
@@ -3267,7 +3271,15 @@ export default function CornerVG() {
                  (TrackerLive -> /api/dashboard/cv6-bugs). Tap a bug for its detail;
                  Assign to agent hands it to the assistant. onBack returns home. The
                  Space Rising tracker (second source) is a separate bridge, not yet. */
-              <TrackerLive worldId={worldId} onBack={() => setActiveTool(null)} onDiscuss={handleDiscussSupportEmail} />
+              <TrackerView
+                {...SAMPLE_TRACKER}
+                isDesktop={isDesktop}
+                activeTool="tracker"
+                onNav={handleCv6Nav}
+                onSelectBug={() => {}}
+                onNewBug={() => {}}
+                onBack={() => setActiveTool(null)}
+              />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 
 /**
  * CV6 kit Review — queue → document → decision flow. Kit-faithful to
@@ -238,11 +239,137 @@ export function ReviewView({
   onSendNotes,
   onBack,
   onMenu,
+  isDesktop = false,
+  activeTool = 'review',
+  onNav,
+  user = {},
 }) {
   const [activeCommentId, setActiveCommentId] = useState(null);
   const openCommentCount = comments.filter((c) => !c.resolved).length;
 
-  // Desktop 3-column layout
+  // Desktop 3-column layout (cv6kit view with CvgDesktopChrome)
+  if (isDesktop) {
+    return (
+      <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--ground)', color: 'var(--fg)', fontFamily: 'var(--font-sans)' }}>
+        <CvgDesktopChrome activeTool={activeTool} onNav={onNav} user={user} />
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          {/* Queue column */}
+          <div style={{ width: 330, flex: 'none', borderRight: '1px solid var(--divider)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '18px 20px 12px', flex: 'none' }}>
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Queue</div>
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>
+                {queueSummary.readyCount || queueItems.length} ready · {queueSummary.pipelineCount || 0} in pipeline
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 7, padding: '0 20px 14px', flex: 'none' }}>
+              <button style={{ height: 30, padding: '0 13px', borderRadius: 15, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, fontFamily: 'Inter' }}>
+                Ready {queueSummary.readyCount || queueItems.length}
+              </button>
+              <button style={{ height: 30, padding: '0 13px', borderRadius: 15, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'Inter' }}>
+                Pipeline
+              </button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, padding: '0 12px', overflowY: 'auto' }}>
+              {queueItems.map((item) => (
+                <QueueItem
+                  key={item.id}
+                  item={item}
+                  selected={selectedItem?.id === item.id}
+                  onClick={() => onSelectItem && onSelectItem(item)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Document viewer center */}
+          <div style={{ flex: 1, minWidth: 0, background: '#0d0d0f', padding: '30px 0', display: 'flex', justifyContent: 'center', overflow: 'hidden', position: 'relative' }}>
+            {selectedItem && (
+              <div className="glassy" style={{ width: 600, padding: '50px 54px', position: 'relative', background: '#fbfbfa', borderRadius: 6, boxShadow: '0 12px 40px rgba(0,0,0,.4)', color: '#1a1a1a', overflowY: 'auto', maxHeight: '100%' }}>
+                <div style={{ position: 'absolute', top: 18, right: 18, display: 'flex', alignItems: 'center', gap: 6, background: '#eceae7', borderRadius: 16, padding: '5px 11px', fontSize: 11, fontWeight: 600, color: '#666' }}>
+                  💬 Click anywhere to comment
+                </div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#999', marginBottom: 20 }}>
+                  {selectedItem.id} · {selectedItem.source || 'document.md'}
+                </div>
+                <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-.02em', margin: '0 0 16px' }}>
+                  {selectedItem.title}
+                </h1>
+                {selectedItem.content?.body && (
+                  <p style={{ fontSize: 15, lineHeight: 1.65, color: '#333', margin: '0 0 14px' }}>
+                    {selectedItem.content.body}
+                  </p>
+                )}
+                {selectedItem.content?.sections?.map((sec, i) => (
+                  <div key={i} style={{ marginBottom: 16 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 600, margin: '24px 0 10px' }}>{sec.title}</h2>
+                    <p style={{ fontSize: 15, lineHeight: 1.65, color: '#333', margin: '0 0 14px' }}>{sec.body}</p>
+                  </div>
+                ))}
+                {comments.map((c) => (
+                  <CommentPin key={c.id} comment={c} />
+                ))}
+                {comments.map((c) => (
+                  <CommentPopover key={`pop-${c.id}`} comment={{ ...c, active: activeCommentId === c.id }} />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Actions panel right */}
+          <div style={{ width: 320, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 22, overflowY: 'auto' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+              This document
+            </div>
+            <div className="glassy" style={{ background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 12, overflow: 'hidden', marginBottom: 18 }}>
+              {metadata.from && (
+                <MetadataRow label="From">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'var(--success-weak)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700 }}>
+                      {metadata.from.initials}
+                    </span>
+                    {metadata.from.name}
+                  </span>
+                </MetadataRow>
+              )}
+              {metadata.location && <MetadataRow label="Location" value={metadata.location} />}
+              {metadata.status && (
+                <MetadataRow label="Status">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--success)' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--success)' }} />
+                    {metadata.status}
+                  </span>
+                </MetadataRow>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 18 }}>
+              <button onClick={onApprove} style={{ height: 46, borderRadius: 11, border: 'none', background: 'var(--success)', color: '#06281c', fontSize: 14.5, fontWeight: 600, fontFamily: 'Inter', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+                ✓ Approve
+              </button>
+              <button onClick={onReject} style={{ height: 46, borderRadius: 11, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 14.5, fontWeight: 600, fontFamily: 'Inter', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+                ≡ Request changes
+              </button>
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 11 }}>
+              Comments · {openCommentCount} open
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
+              {comments.map((c) => (
+                <CommentCard key={c.id} comment={c} />
+              ))}
+            </div>
+            <button onClick={onSendNotes} style={{ width: '100%', height: 44, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'Inter', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
+              ✓ Send {openCommentCount} notes as a checklist
+            </button>
+            <div style={{ fontSize: 11.5, lineHeight: 1.5, color: 'var(--faint)', textAlign: 'center', marginTop: 10 }}>
+              Comments become a fix-list the agent works through, then re-submits for review.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop 3-column layout (legacy)
   if (!isMobile) {
     return (
       <div

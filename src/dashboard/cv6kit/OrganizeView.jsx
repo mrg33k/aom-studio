@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
+import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 
 /**
- * CV6 kit Organize — mobile file browse, multi-select, move-to-folder, and view/review.
- * Pixel-faithful to ui_kits/tools/organize.html MOBILE A/B/C.
+ * CV6 kit Organize — desktop & mobile file browse, multi-select, move-to-folder, and view/review.
+ * Pixel-faithful to ui_kits/tools/organize.html (desktop + mobile A/B/C).
  *
- * Three states:
+ * Desktop: three-column layout (project tree, file list, preview).
+ * Mobile three states:
  *   1. Browse/organize: project breadcrumb + file list with multi-select + bottom action bar
  *   2. Move-to-folder: bottom sheet with destination picker
  *   3. View/review: file preview (text/markdown) with Open in Review, comment, move buttons
@@ -22,6 +24,10 @@ import React, { useState, useMemo } from 'react';
  *   onShare?(fileIds)
  *   onDelete?(fileIds)
  *   activityAgent? = { name, action, status, progress, isLive }
+ *   isDesktop = false
+ *   activeTool = 'organize'
+ *   onNav
+ *   user = {}
  */
 
 function FolderIcon({ color = 'var(--accent)', stroke = 2 }) {
@@ -674,6 +680,10 @@ export function OrganizeView({
   onRename,
   onShare,
   onDelete,
+  isDesktop = false,
+  activeTool = 'organize',
+  onNav,
+  user = {},
 }) {
   // Open on files: always resolve to a project. Use the chosen one, else fall back
   // to the first (most-recent) so there is never a project-list landing or a flash
@@ -694,6 +704,135 @@ export function OrganizeView({
     files.find(f => f.id === previewFileId),
     [files, previewFileId]
   );
+
+  // DESKTOP — ported from ui_kits/tools/organize.html (desktop frame): shared top bar +
+  // project tree (left, 280px) + file list (middle, 380px) + preview (right, flex).
+  // Fed by the same real-data props (projects/files/selectedProjectId) the live wrapper provides.
+  if (isDesktop) {
+    const selectedProject = projects.find(p => p.slug === selectedProjectId || p.id === selectedProjectId) || projects[0];
+    const selectedFile = files.find(f => f.id === previewFileId);
+    const isImageFile = (n) => /\.(png|jpe?g|gif|webp|svg|heic|bmp)$/i.test(n || '');
+
+    return (
+      <div data-cv6kit style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
+        <CvgDesktopChrome activeTool={activeTool} onNav={onNav} user={user} />
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          {/* Project tree (left) */}
+          <div style={{ width: 280, flex: 'none', borderRight: '1px solid var(--divider)', padding: '18px 14px', overflowY: 'auto' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', margin: '0 6px 12px' }}>
+              Projects
+            </div>
+            {projects.map((proj, idx) => {
+              const isSelected = proj.slug === selectedProjectId || proj.id === selectedProjectId;
+              return (
+                <div
+                  key={proj.id || idx}
+                  onClick={() => onSelectProject && onSelectProject(proj)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 9,
+                    padding: '8px',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    color: isSelected ? 'var(--accent)' : 'var(--fg)',
+                    background: isSelected ? 'var(--accent-weak)' : 'transparent',
+                    cursor: 'pointer',
+                    marginBottom: idx < projects.length - 1 ? 2 : 0,
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+                    <path d="m9 6 6 6-6 6" />
+                  </svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isSelected ? 'var(--accent)' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+                    <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+                  </svg>
+                  <span style={{ fontWeight: isSelected ? 600 : 400 }}>{proj.name}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* File list (middle) */}
+          <div style={{ width: 380, flex: 'none', borderRight: '1px solid var(--divider)', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px', borderBottom: '1px solid var(--divider)' }}>
+              <span style={{ color: 'var(--fg)', fontWeight: 600, fontSize: 15 }}>
+                {selectedProject?.name || 'Files'}
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--faint)' }}>
+                {files.length} file{files.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 12px' }}>
+              {files.length === 0 ? (
+                <div style={{ padding: '18px 14px', color: 'var(--faint)', fontSize: 13 }}>No files.</div>
+              ) : (
+                files.map((f, i) => {
+                  const isSelected = f.id === previewFileId;
+                  return (
+                    <div
+                      key={f.id || i}
+                      onClick={() => setPreviewFileId(f.id)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 11,
+                        padding: '11px 12px',
+                        borderRadius: 9,
+                        background: isSelected ? 'var(--accent-weak)' : 'transparent',
+                        cursor: 'pointer',
+                        marginBottom: i < files.length - 1 ? 0 : 0,
+                      }}
+                    >
+                      {isImageFile(f.name) ? (
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={isSelected ? 'var(--accent)' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <circle cx="8.5" cy="8.5" r="1.6" />
+                          <path d="m21 15-5-5L5 21" />
+                        </svg>
+                      ) : (
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={isSelected ? 'var(--accent)' : 'var(--muted)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                          <path d="M14 2v6h6" />
+                          <path d="M9 13h6M9 17h4" />
+                        </svg>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: isSelected ? 'var(--accent)' : 'var(--fg)' }}>
+                          {f.name}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)', marginTop: 1 }}>
+                          {[f.updated, formatSize(f.size)].filter(Boolean).join(' · ')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* Preview (right) */}
+          <div style={{ flex: 1, minWidth: 0, background: 'var(--ground)', display: 'flex', justifyContent: 'center', padding: '32px 0', overflowY: 'auto' }}>
+            {selectedFile ? (
+              <div style={{ width: 520, background: '#fbfbfa', borderRadius: 6, boxShadow: '0 12px 40px rgba(0,0,0,.4)', padding: '44px 48px', color: '#1a1a1a' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#999', marginBottom: 18 }}>
+                  {selectedFile.name}
+                </div>
+                <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 14, lineHeight: 1.6 }}>
+                  {selectedFile.content || '(No content)'}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)', fontSize: 13 }}>
+                Select a file to preview
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // If viewing a file, show the preview screen
   if (previewFileId) {

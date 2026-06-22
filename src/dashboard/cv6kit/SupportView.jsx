@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 
 /**
  * CV6 kit Support — MOBILE inbox of wishes + emails, then a thread detail.
@@ -20,6 +21,9 @@ import React, { useState, useMemo } from 'react';
  *   wishes: [{ id, name, email, subject, message, status, created_at, source }]
  *   inbox:  [{ id, from, email, subject, snippet, threadId, date, status }]
  *   counts: { openWishes, waitingWishes, openEmails, respondedEmails }
+ *
+ * DESKTOP (isDesktop = true): ported from ui_kits/tools/support.html (desktop frame).
+ *   Left sidebar: inbox list. Right panel: email review with AI summary + original email.
  */
 
 function getInitials(name) {
@@ -88,6 +92,9 @@ function SupportView({
   onDraftReply = () => {},
   onMarkResolved = () => {},
   isDesktop = false,
+  activeTool = 'support',
+  onNav = () => {},
+  user = {},
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -105,6 +112,225 @@ function SupportView({
       return bt - at;
     });
   }, [wishes, inbox]);
+
+  // DESKTOP — ported from ui_kits/tools/support.html (desktop frame): shared top bar +
+  // inbox list + email-review panel with AI summary + original email. Fed by the same
+  // real-data props (wishes/inbox/counts/selectedItem) the live wrapper provides.
+  if (isDesktop) {
+    const q = query.trim().toLowerCase();
+    const match = (it) => !q || `${it.subject || ''} ${it.from || it.name || ''} ${it.message || it.snippet || ''}`.toLowerCase().includes(q);
+    const needsList = items.filter((it) => needsYou(it) && match(it));
+    const watchList = items.filter((it) => !needsYou(it) && match(it));
+
+    // Desktop: show first non-resolved item or selected item, or sample data if none
+    const displayItem = selectedItem || (items.length > 0 ? items[0] : null);
+
+    return (
+      <div data-cv6kit style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
+        <CvgDesktopChrome activeTool={activeTool} onNav={onNav} user={user} />
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          {/* Inbox left sidebar */}
+          <div style={{ width: 392, flex: 'none', borderRight: '1px solid var(--divider)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 14px' }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Inbox</div>
+                <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>{needsList.length} open · {watchList.length} waiting on you</div>
+              </div>
+              <div style={{ display: 'flex', gap: 7 }}>
+                <button style={{ height: 32, padding: '0 13px', borderRadius: 16, border: 'none', background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Open</button>
+                <button style={{ height: 32, padding: '0 13px', borderRadius: 16, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Waiting</button>
+              </div>
+            </div>
+
+            {/* Alert box (sample when no items) */}
+            {items.length > 0 && (
+              <div style={{ padding: '0 16px 16px' }}>
+                <div style={{ background: 'var(--accent-weak)', borderRadius: 11, padding: '12px 13px' }}>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>Elon answered a billing question on the Acme thread and flagged a scope item for your follow-up.</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 4 }}>Corner · 22m ago</div>
+                </div>
+              </div>
+            )}
+
+            {/* Inbox list (scrollable) */}
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+              {needsList.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px', fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+                    Open asks
+                  </div>
+                  {needsList.map((it, i) => {
+                    const who = it.from || it.name || 'Someone';
+                    const avatarColor = getAvatarColor(who);
+                    const isPick = displayItem && displayItem.id === it.id;
+                    return (
+                      <div key={i} onClick={() => onSelectItem(it)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', background: isPick ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer' }}>
+                        <span style={{ width: 38, height: 38, borderRadius: '50%', background: avatarColor.bg, color: avatarColor.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flex: 'none' }}>{getInitials(who)}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{titleFor(it)}</div>
+                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{who} · {it.source || 'AOM'} · {timeAgo(it.created_at || it.date)}</div>
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5, color: 'var(--pink-400)', background: 'rgba(244,114,182,.16)', flex: 'none' }}>{it.type === 'email' ? 'Email' : 'Wish'}</span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {watchList.length > 0 && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px', fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+                    Watching
+                  </div>
+                  {watchList.map((it, i) => {
+                    const who = it.from || it.name || 'Someone';
+                    const avatarColor = getAvatarColor(who);
+                    const isPick = displayItem && displayItem.id === it.id;
+                    return (
+                      <div key={i} onClick={() => onSelectItem(it)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', background: isPick ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer', opacity: 0.72 }}>
+                        <span style={{ width: 38, height: 38, borderRadius: '50%', background: avatarColor.bg, color: avatarColor.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flex: 'none' }}>{getInitials(who)}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{titleFor(it)}</div>
+                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{who} · {it.source || 'AOM'} · {timeAgo(it.created_at || it.date)}</div>
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5, color: 'var(--accent)', background: 'var(--accent-weak)', flex: 'none' }}>{it.type === 'email' ? 'Email' : 'Wish'}</span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+
+              {items.length === 0 && (
+                <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>No items yet. Real people only, we assure you.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Email review right panel */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+            {displayItem ? (
+              <>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 26px', borderBottom: '1px solid var(--divider)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.015em', color: 'var(--fg)' }}>{titleFor(displayItem)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{displayItem.source || 'AOM'} · {displayItem.from || displayItem.name || 'Unknown'} · {Math.max(1, (displayItem.threadCount || 1))} message{(displayItem.threadCount || 1) !== 1 ? 's' : ''}</div>
+                  </div>
+                  <button style={{ height: 36, width: 36, borderRadius: 10, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8L3.6 9.6l5.8-.8Z" /></svg>
+                  </button>
+                  <button style={{ height: 36, padding: '0 14px', borderRadius: 10, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Assign</button>
+                  <button style={{ height: 36, padding: '0 15px', borderRadius: 10, border: 'none', background: 'var(--success-weak)', color: 'var(--success)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
+                    Resolve
+                  </button>
+                </div>
+
+                {/* Content area */}
+                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', justifyContent: 'center', padding: '22px 0' }}>
+                  <div style={{ width: 700, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 16, paddingX: 22 }}>
+                    {/* Earlier in thread button */}
+                    <button style={{ display: 'flex', alignItems: 'center', gap: 10, height: 40, padding: '0 14px', borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 7.5V12l3 2" /></svg>
+                      <span style={{ flex: 1, textAlign: 'left', fontSize: 12.5, fontWeight: 500, color: 'var(--muted)' }}>2 earlier messages in this thread</span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)', marginRight: 2 }}>Show</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                    </button>
+
+                    {/* AI summary */}
+                    <div style={{ border: '1px solid var(--accent-weak)', background: 'linear-gradient(180deg,var(--accent-weak),transparent)', borderRadius: 16, padding: '18px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
+                        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)' }}>Summary by your agent</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>3 messages, 2 days</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flex: 'none', marginTop: 7 }} />
+                          <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>Expand the pilot to three teams (CS + Ops, ~40 seats)</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flex: 'none', marginTop: 7 }} />
+                          <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>Needs revised pricing by Friday; locking budget this week</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flex: 'none', marginTop: 7 }} />
+                          <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>Wants the pilot discount to carry over</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--warn)', flex: 'none', marginTop: 7 }} />
+                          <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--warn)' }}>Open risk: their Q3 start vs. our rollout timeline</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Original email reader */}
+                    <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 16, overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '18px 22px', borderBottom: '1px solid var(--divider)' }}>
+                        <span style={{ width: 44, height: 44, borderRadius: '50%', background: getAvatarColor(displayItem.from || displayItem.name || 'U').bg, color: getAvatarColor(displayItem.from || displayItem.name || 'U').fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700 }}>{getInitials(displayItem.from || displayItem.name || 'U')}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{displayItem.from || displayItem.name || 'Unknown'} <span style={{ fontWeight: 400, color: 'var(--faint)', fontSize: 13 }}>&lt;{displayItem.email || 'user@example.com'}&gt;</span></div>
+                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>to Patrik (you) · {displayItem.source || 'AOM'}</div>
+                        </div>
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 7 }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)' }}>{displayItem.created_at || displayItem.date ? new Date(displayItem.created_at || displayItem.date).toLocaleString() : 'Today · 9:18 AM'}</span>
+                        </div>
+                      </div>
+                      <div style={{ padding: '22px 26px', fontSize: 14.5, lineHeight: 1.75, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        {displayItem.message || displayItem.snippet || '(No message body)'}
+                      </div>
+                      {displayItem.attachment && (
+                        <div style={{ padding: '0 22px 18px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 13px', border: '1px solid var(--hair)', borderRadius: 12, background: 'var(--surface-2)' }}>
+                            <div style={{ width: 38, height: 38, borderRadius: 9, background: 'linear-gradient(135deg,#26303f,#161b24)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>partnership-terms.pdf</div>
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)' }}>240 KB</div>
+                            </div>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12M7 11l5 5 5-5" /><path d="M5 21h14" /></svg>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action chips footer */}
+                <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
+                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested</span>
+                    <button onClick={() => onDraftReply(displayItem)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 14px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                      Draft reply
+                    </button>
+                    <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 13px', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+                      Add to Tracker
+                    </button>
+                    <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 34, padding: '0 13px', borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                      Schedule call
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ flex: 1, height: 42, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', padding: '0 14px', fontSize: 14, color: 'var(--faint)', fontFamily: 'var(--font-sans)' }}>Write a reply, or ask your agent…</div>
+                    <button style={{ width: 42, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--faint)', fontSize: 13, textAlign: 'center' }}>Pick an item on the left to see the full thread.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ─── Thread detail (an item is selected) ──────────────────────────────────────
   if (selectedItem) {
