@@ -371,11 +371,17 @@ export default function CornerVG() {
   // override). `setTheme(...)` here is wired to the hook so the legacy
   // moon-toggle button keeps working and the CSS-vars repaint
   // (cv3Colors.js) responds.
-  const { mode: theme, setTheme: setThemeHook, cycleTheme, backdropIndex } = useThemeMode()
+  const { mode: theme, override, setTheme: setThemeHook, cycleTheme, backdropIndex } = useThemeMode()
   const setTheme = useCallback((next) => {
     const resolved = typeof next === 'function' ? next(theme) : next
     setThemeHook(resolved)
   }, [theme, setThemeHook])
+  // corner:corner-ui-cv6 — CV6 is dark-first. Every Claude design .html is
+  // data-theme="dark"; the CV6 surface must NOT inherit CV4's Arizona daytime
+  // light auto-seed (that is what left desktop Home stuck in light mode). Until
+  // the user explicitly picks a theme (override === 'auto'), render dark. A manual
+  // light / dark / glass choice via the toggle is always respected.
+  const effectiveTheme = (cv6Mode && override === 'auto') ? 'dark' : theme
   useEffect(() => {
     if (typeof document === 'undefined') return
     // Keep the cv4 shell scope so all [data-shell="cv4"] CSS applies here too.
@@ -1683,7 +1689,7 @@ export default function CornerVG() {
       <CornerDataProvider value={dataValue}>
         <CornerNavProvider value={navValue}>
           <LiveCallProvider>
-    <div data-testid="dashboard-home-root" data-cv4 data-cv5 data-cv6 data-shell="cv4" data-theme={theme} style={{
+    <div data-testid="dashboard-home-root" data-cv4 data-cv5 data-cv6 data-shell="cv4" data-theme={effectiveTheme} style={{
       width: '100%',
       // 100vh fallback; the @supports rule below upgrades to 100svh which
       // tracks the SMALL viewport (URL bar visible). 100dvh was overshooting
@@ -1699,7 +1705,7 @@ export default function CornerVG() {
     }}>
       {/* Glass theme (3rd mode): the backdrop behind the frosted UI. The toggle
           steps glassIndex; it holds (no auto-drift). Only mounted in glass mode. */}
-      {theme === 'glass' && <GlassBackdrop index={backdropIndex} />}
+      {effectiveTheme === 'glass' && <GlassBackdrop index={backdropIndex} />}
       {/* R5.1 CV4 scoped styles. Everything keyed to [data-shell="cv4"] so the
           shared cv3/ components stay unchanged on /dashboard. */}
       <style>{`
@@ -3234,7 +3240,7 @@ export default function CornerVG() {
                 projectRooms={projectRooms}
                 catchup={buildCatchupNotifications(notifItems)}
                 recentMessages={[]}
-                theme={theme}
+                theme={effectiveTheme}
                 onSelectAgent={handleSelectAgent}
                 onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
                 onCatchupOpen={handleCatchupOpenRoom}
