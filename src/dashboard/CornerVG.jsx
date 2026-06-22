@@ -3302,23 +3302,37 @@ export default function CornerVG() {
               <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
             ) : isHomeMode ? (
               !isDesktop ? (
-                /* corner:corner-ui-cv6 R-KIT-HOME — Claude-design mobile Home (sample
-                   mockup baseline so the screen matches the design exactly; real data
-                   is wired back in at step 2 via MobileHomeWired). */
-                <MobileHomeKit
+                /* corner:corner-ui-cv6 R-WIRE — Claude-design mobile Home, now REAL data
+                   (MobileHomeWired): All Rooms ← your agents + projects; Catch Up ← the
+                   needs-you queue (honest empty when nothing needs you); room search filters
+                   the list; + opens new-project. Tap a room opens it. */
+                <MobileHomeWired
+                  user={currentUser}
+                  agents={agents}
+                  projectRooms={projectRooms}
+                  catchup={buildCatchupNotifications(notifItems)}
+                  onSelectAgent={handleSelectAgent}
+                  onSelectProject={handleSelectProject}
+                  onCatchupOpen={handleCatchupOpenRoom}
                   onNav={handleCv6Nav}
-                  onMenu={() => setNavOpen(true)}
                 />
               ) : (
-              /* corner:corner-ui-cv6 R-KIT-HOME — Claude-design DESKTOP Home, three-column
-                 shell (Catch Up | All Rooms | Conversation) as a faithful port of the
-                 design file. Sample mockup baseline; real data is wired back in at step 2
-                 via DesktopHomeWired. */
-              <DesktopHomeView
-                {...SAMPLE_HOME}
-                activeTool="home"
-                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
+              /* corner:corner-ui-cv6 R-WIRE — Claude-design DESKTOP Home, three-column shell
+                 (All Rooms | Catch Up | Conversation), now REAL data (DesktopHomeWired):
+                 All Rooms ← agents + projects with status; Catch Up ← the needs-you queue
+                 (honest empty); Conversation ← honest "pick a room" until one is opened (the
+                 rich sample goal dashboard is not fabricated). */
+              <DesktopHomeWired
+                user={currentUser}
+                agents={agents}
+                projectRooms={projectRooms}
+                catchup={buildCatchupNotifications(notifItems)}
+                recentMessages={[]}
+                onSelectAgent={handleSelectAgent}
+                onSelectProject={handleSelectProject}
+                onCatchupOpen={handleCatchupOpenRoom}
                 onNav={handleCv6Nav}
+                theme={theme}
               />
               )
             ) : selectedAgent?.slug === 'elon' && deckTab === 'deck' ? (
