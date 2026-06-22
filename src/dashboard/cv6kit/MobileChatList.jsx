@@ -20,10 +20,12 @@ function initials(name) {
  * MobileChatList — the cv6 Chat tool's mobile landing (Patrik 2026-06-21): your
  * CONVERSATIONS list (your assistants with a status dot, then your project rooms
  * with their activity), the design's desktop rooms rail brought to the phone. Tap
- * one to open that conversation (the live chat). Back returns home. Additive and
- * mobile-only; the live chat surface itself is untouched.
+ * one to open it — exactly like the Home screen's All Rooms section: an assistant
+ * opens its live chat (onOpenAgent), a project opens the project room (onOpenProject).
+ * We hand the WHOLE room object straight to the same handlers Home uses, so taps
+ * behave identically. Back returns home. Additive and mobile-only.
  */
-export function MobileChatList({ agents = [], projectRooms = [], onOpen, onBack }) {
+export function MobileChatList({ agents = [], projectRooms = [], onOpenAgent, onOpenProject, onBack }) {
   const [query, setQuery] = useState('');
   const rows = useMemo(() => [
     ...(agents || []).map((a) => ({ kind: 'agent', raw: a, name: a.name || a.slug, status: a.status })),
@@ -70,7 +72,7 @@ export function MobileChatList({ agents = [], projectRooms = [], onOpen, onBack 
             {shown.map((r, i) => (
               <button
                 key={(r.kind === 'agent' ? 'a' : 'p') + (r.raw.slug || i)}
-                onClick={() => onOpen && onOpen(r.kind === 'agent' ? { type: 'agent', slug: r.raw.slug, name: r.name } : { type: 'project', slug: r.raw.slug, name: r.name })}
+                onClick={() => { if (r.kind === 'agent') { onOpenAgent && onOpenAgent(r.raw); } else { onOpenProject && onOpenProject(r.raw); } }}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', border: 'none', borderTop: i === 0 ? 'none' : '1px solid var(--divider)', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
               >
                 {r.kind === 'agent' ? (

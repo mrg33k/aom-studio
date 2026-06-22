@@ -319,7 +319,8 @@ export default function CV6KitTest() {
             { slug: 'space-rising', name: 'Space Rising', color: 'var(--violet-400)', tasks: Array.from({ length: 28 }) },
             { slug: 'corner', name: 'Corner', color: 'var(--accent)', tasks: Array.from({ length: 84 }) },
           ]}
-          onOpen={noop}
+          onOpenAgent={noop}
+          onOpenProject={noop}
           onBack={noop}
         />
       ) : screen === 'chat' ? (
