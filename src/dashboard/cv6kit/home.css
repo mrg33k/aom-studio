@@ -1,0 +1,60 @@
+/* Home (mobile) CSS, ported VERBATIM from the design file
+   ui_kits/mobile/index.html <style> block. Scoped to the Home screen only
+   ([data-cv6kit].cvhome) so the design's plain class names (room, card, rooms,
+   dot, av, glyph) cannot collide with other tools that reuse those names. The
+   component below emits the design's exact markup with these classes, it does
+   not reproduce them inline. The fake iPhone clock row (.statusbar) and the
+   showcase device bezel (.phone fixed 390x844) are intentionally dropped: the
+   live app is full-bleed with real safe-area insets (Patrik: the time row is
+   just for show). Everything else is the design, unchanged. */
+
+[data-cv6kit].cvhome { position: relative; width: 100%; height: 100dvh; overflow: hidden; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+
+[data-cv6kit].cvhome .bg1 { position: absolute; inset: 0;
+  background:
+    radial-gradient(55% 38% at 24% 14%, rgba(74,116,148,.5), transparent 62%),
+    radial-gradient(48% 32% at 84% 22%, rgba(206,148,70,.32), transparent 58%),
+    radial-gradient(42% 30% at 70% 72%, rgba(46,96,128,.4), transparent 62%),
+    linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%); }
+[data-cv6kit].cvhome .bg2 { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,8,11,.32), rgba(5,8,11,.5)); }
+
+/* body: full-bleed, top inset replaces the dropped status row, right rail gutter kept */
+[data-cv6kit].cvhome .body { position: absolute; left: 0; top: 0; right: 72px; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; z-index: 2; padding: calc(env(safe-area-inset-top, 0px) + 10px) 0 calc(env(safe-area-inset-bottom, 0px) + 28px); }
+[data-cv6kit].cvhome .body.full { right: 0; }
+
+[data-cv6kit].cvhome .greet { padding: 0 22px; margin-bottom: 20px; font-size: 29px; line-height: 1.1; font-weight: 700; letter-spacing: -.025em; color: var(--fg); }
+[data-cv6kit].cvhome .secrow { padding: 0 22px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+[data-cv6kit].cvhome .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+[data-cv6kit].cvhome .glyph { width: 38px; height: 38px; border-radius: 11px; background: var(--chip); display: flex; align-items: center; justify-content: center; flex: none; }
+[data-cv6kit].cvhome .roomshdr { padding: 0 22px; display: flex; align-items: center; justify-content: space-between; margin: 30px 0 10px; }
+[data-cv6kit].cvhome .rooms { margin: 0 22px; background: var(--surface); border: 1px solid var(--hair); border-radius: 16px; overflow: hidden; }
+[data-cv6kit].cvhome .room { display: flex; align-items: center; gap: 12px; padding: 0 15px; height: 54px; border-bottom: 1px solid var(--divider); }
+[data-cv6kit].cvhome .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+[data-cv6kit].cvhome .rn { flex: 1; font-size: 14.5px; font-weight: 600; color: var(--fg); }
+[data-cv6kit].cvhome .tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; color: var(--faint); }
+
+/* brand bar (replaces the greeting) */
+[data-cv6kit].cvhome .brandrow { padding: 4px 22px 0; margin-bottom: 20px; display: flex; align-items: center; }
+[data-cv6kit].cvhome .brandrow img { height: 24px; width: auto; display: block; }
+
+/* menu FAB: hamburger + profile, reads unambiguously as open menu */
+[data-cv6kit].cvhome .menufab { position: absolute; right: 18px; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); z-index: 8; display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 9px 0 18px; border: 1px solid rgba(255,255,255,.16); border-radius: 28px; background: rgba(13,17,23,.72); backdrop-filter: blur(18px) saturate(1.2); -webkit-backdrop-filter: blur(18px) saturate(1.2); box-shadow: 0 16px 36px -10px rgba(0,0,0,.7); cursor: pointer; }
+[data-cv6kit].cvhome .menufab .lines { display: flex; flex-direction: column; gap: 4px; }
+[data-cv6kit].cvhome .menufab .lines i { display: block; width: 20px; height: 2px; border-radius: 2px; background: var(--fg); }
+[data-cv6kit].cvhome .menufab .lines i:nth-child(2) { width: 14px; }
+[data-cv6kit].cvhome .menufab .mav { position: relative; width: 40px; height: 40px; border-radius: 50%; background: var(--avatar); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 700; flex: none; }
+[data-cv6kit].cvhome .menufab .mdot { position: absolute; top: 0; right: 0; width: 13px; height: 13px; border-radius: 50%; background: var(--accent); border: 2.5px solid #0d1117; }
+
+/* rail */
+[data-cv6kit].cvhome .rail { position: absolute; right: 0; top: 0; bottom: 0; width: 72px; z-index: 5; background: rgba(8,11,15,.55); backdrop-filter: blur(20px) saturate(1.2); -webkit-backdrop-filter: blur(20px) saturate(1.2); border-left: 1px solid var(--divider); display: flex; flex-direction: column; align-items: center; padding: calc(15px + env(safe-area-inset-top, 0px)) 0 calc(16px + env(safe-area-inset-bottom, 0px)); }
+[data-cv6kit].cvhome .av { width: 44px; height: 44px; border-radius: 50%; background: var(--avatar); box-shadow: 0 0 0 2px var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 15px; font-weight: 700; flex: none; }
+[data-cv6kit].cvhome .rdiv { width: 40px; height: 1.5px; border-radius: 1px; background: rgba(255,255,255,.28); flex: none; }
+[data-cv6kit].cvhome .rnav { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; padding: 6px 0; }
+[data-cv6kit].cvhome .ri { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+[data-cv6kit].cvhome .ind { position: absolute; right: 0; top: 19px; transform: translateY(-50%); width: 4px; height: 24px; border-radius: 4px 0 0 4px; background: var(--fg); }
+[data-cv6kit].cvhome .rsq { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 19px; background: var(--chip); }
+[data-cv6kit].cvhome .rsq.on { background: var(--accent); color: #fff; border-radius: 13px; }
+[data-cv6kit].cvhome .rl { font-size: 9px; font-weight: 600; color: var(--muted); }
+[data-cv6kit].cvhome .rl.on { color: var(--accent); }
+[data-cv6kit].cvhome .util { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: 14px; flex: none; }
+[data-cv6kit].cvhome .ub { position: relative; width: 38px; height: 38px; border-radius: 19px; background: var(--chip); display: flex; align-items: center; justify-content: center; color: var(--muted); }

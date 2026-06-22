@@ -16,6 +16,12 @@
    (ported verbatim from ui_kits/agent-chat/chat.css, scoped [data-cv6kit]). */
 @import './chat.css';
 
+/* Per-tool CSS, ported from each design page's own <style> block (scoped
+   [data-cv6kit]). The graft method: a page uses the design's real classes, these
+   plus the shared cv6-frame.css, never inline reproductions. */
+@import './command.css';
+@import './home.css';
+
 /* Typography & spacing tokens — scoped to [data-cv6kit], theme-independent */
 [data-cv6kit] {
   --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;

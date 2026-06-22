@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx';
+import { MobileHomeExact, SAMPLE_HOME_M } from './cv6kit/MobileHomeExact.jsx';
 import { MobileProjectWired } from './cv6kit/MobileProjectWired.jsx';
 import { NewRoomModal } from './cv6kit/NewRoomModal.jsx';
 import { DesktopHomeWired } from './cv6kit/DesktopHomeWired.jsx';
@@ -459,6 +460,10 @@ export default function CV6KitTest() {
             />
           </div>
         </div>
+      ) : screen === 'homeexact' ? (
+        /* The verbatim transcription of the design's mobile Home (menu-closed frame),
+           rendered with the design's own sample so it matches the file 1:1. */
+        <MobileHomeExact {...SAMPLE_HOME_M} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
       ) : isDesktop ? (
         <DesktopHomeWired {...SAMPLE} recentMessages={SAMPLE_RECENT} onSelectAgent={noop} onSelectProject={noop} onCatchupOpen={noop} onNav={noop} />
       ) : (
