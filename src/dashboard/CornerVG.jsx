@@ -45,6 +45,7 @@ import { CommandLive } from './cv6kit/CommandLive.jsx'
 import { ReviewLive } from './cv6kit/ReviewLive.jsx'
 // R-KIT-18 — Claude-design Tracker screen (opens to an honest empty state until a bugs source exists).
 import { TrackerView } from './cv6kit/TrackerView.jsx'
+import { TrackerLive } from './cv6kit/TrackerLive.jsx'
 // R-KIT-ONBOARD — Claude-design first-run onboarding (5 steps: welcome, connections, permissions, theme, first goal).
 import { OnboardingLive } from './cv6kit/OnboardingLive.jsx'
 // R4 — cross-page Activity Dock wired to REAL running jobs (status=running tasks for the world).
@@ -3147,10 +3148,11 @@ export default function CornerVG() {
                 }}
               />
             ) : (activeTool === 'tracker') ? (
-              /* corner:corner-ui-cv6 R-KIT-18 — Tracker opens to the Claude-design tracker.
-                 There is no bugs/tickets source yet, so it shows an honest empty state
-                 instead of bouncing home. onBack returns home. */
-              <TrackerView tracker={{ openCount: 0 }} bugs={[]} onBack={() => setActiveTool(null)} />
+              /* corner:corner-ui-cv6 R14 — Tracker now wired to the REAL CV6 bug list
+                 (TrackerLive -> /api/dashboard/cv6-bugs). Tap a bug for its detail;
+                 Assign to agent hands it to the assistant. onBack returns home. The
+                 Space Rising tracker (second source) is a separate bridge, not yet. */
+              <TrackerLive worldId={worldId} onBack={() => setActiveTool(null)} onDiscuss={handleDiscussSupportEmail} />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email
                 in the left rail still opens MailRoom in the center column. */

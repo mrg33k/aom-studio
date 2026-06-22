@@ -22,6 +22,7 @@ import { OrganizeView } from './cv6kit/OrganizeView.jsx';
 import { ReviewView } from './cv6kit/ReviewView.jsx';
 import { MobileChatList } from './cv6kit/MobileChatList.jsx';
 import KitGallery from './cv6kit/KitGallery.jsx';
+import { TrackerLive } from './cv6kit/TrackerLive.jsx';
 import { ScribeView } from './cv6kit/ScribeView.jsx';
 import { OnboardingView } from './cv6kit/OnboardingView.jsx';
 import { SettingsView } from './cv6kit/SettingsView.jsx';
@@ -332,6 +333,9 @@ export default function CV6KitTest() {
         <ChatStepThread {...SAMPLE_CHAT} onBack={noop} onSend={noop} onChoice={noop} />
       ) : screen === 'tracker' ? (
         <TrackerView {...SAMPLE_TRACKER} onSelectBug={noop} onNewBug={noop} />
+      ) : screen === 'trackerlive' ? (
+        /* TrackerLive against the real (public) cv6-bugs endpoint — verifies the live wiring. */
+        <TrackerLive worldId="aom" onBack={noop} onDiscuss={noop} />
       ) : screen === 'command' ? (
         stateVar === 'empty' ? (
           <CommandView status="loaded" summary={{ roomCount: 0, liveCount: 0 }} featured={null} rooms={[]} activities={[]} onSelectRoom={noop} />
