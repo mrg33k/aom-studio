@@ -69,6 +69,8 @@ import { ActivityDockLive } from './cv6kit/ActivityDockLive.jsx'
 // R4 — Claude-design Settings (Environment): real integrations, live theme, real per-agent
 // permissions + notification prefs (user_preferences), real sign out.
 import { SettingsLive } from './cv6kit/SettingsLive.jsx'
+import { NotificationPrompt } from './cv6kit/NotificationPrompt.jsx'
+import { AddToHomePrompt } from './cv6kit/AddToHomePrompt.jsx'
 import './cv6kit/kit.css'
 import { useTasks } from './hooks/useTasks'
 import { useDataPipe } from './hooks/useDataPipe'
@@ -220,6 +222,7 @@ export default function CornerVG() {
   // opened by the header menu OR a right-edge swipe). Switches tools; .mback goes
   // up a level within a tool. Mounted once for every cv6 mobile screen.
   const [navOpen, setNavOpen] = useState(false)
+  const [notifPromptOpen, setNotifPromptOpen] = useState(false)
   const [selectedMail, setSelectedMail] = useState(null)
   // corner:support N1 — Support Inbox view (Patrik workspace only)
   // ?support=1 deep-links straight to the Support dashboard (verify-at URL for
@@ -1738,6 +1741,15 @@ export default function CornerVG() {
       {/* Glass theme (3rd mode): the backdrop behind the frosted UI. The toggle
           steps glassIndex; it holds (no auto-drift). Only mounted in glass mode. */}
       {effectiveTheme === 'glass' && <GlassBackdrop index={backdropIndex} />}
+      {/* corner:corner-ui-cv6 — web-to-app nudge (self-gates: hidden when standalone
+          or dismissed) + the notifications permission ask (opened from Settings). */}
+      <AddToHomePrompt />
+      <NotificationPrompt
+        open={notifPromptOpen}
+        isDesktop={isDesktop}
+        onAllow={() => setNotifPromptOpen(false)}
+        onDismiss={() => setNotifPromptOpen(false)}
+      />
       {/* R5.1 CV4 scoped styles. Everything keyed to [data-shell="cv4"] so the
           shared cv3/ components stay unchanged on /dashboard. */}
       <style>{`
@@ -3244,6 +3256,7 @@ export default function CornerVG() {
                 worldId={worldId}
                 isDesktop={isDesktop}
                 onNav={handleCv6Nav}
+                onEnableNotifications={() => setNotifPromptOpen(true)}
                 onBack={() => setActiveTool(null)}
               />
             ) : (activeTool === 'onboarding') ? (
