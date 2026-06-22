@@ -1,0 +1,95 @@
+/* CV6 Frame — the design system's shared shell + interaction-pattern classes,
+   ported verbatim from the Claude Design project's ui_kits/_base/frame.css and
+   scoped to [data-cv6kit] so the LIVE app's CSS IS the design's CSS (no drift).
+
+   Source of truth: corner/missions/corner-ui-cv6/deliverables/design-system-2026-06-21/
+   ui_kits/_base/frame.css. The device-frame wrappers (.stage/.frame/.phone/
+   .desktop/.flbl) are intentionally NOT ported — the live app fills the real
+   viewport; it does not render a phone-in-a-stage. Every other shared class is
+   here so each screen is assembled from the exact pieces the design draws.
+
+   Tokens resolve from kit.css ([data-cv6kit] + [data-theme]). */
+
+/* ---- desktop top bar (one Corner header: logo left · centred tool nav · tool name right) ---- */
+[data-cv6kit] .topbar { flex:none; display:flex; align-items:center; gap:22px; padding:14px 24px; border-bottom:1px solid var(--divider); }
+[data-cv6kit] .tgreet { font-size:20px; font-weight:700; letter-spacing:-.02em; color:var(--fg); white-space:nowrap; }
+[data-cv6kit] .toolname { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; letter-spacing:-.01em; color:var(--fg); white-space:nowrap; padding-right:4px; }
+[data-cv6kit] .toolname::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--accent); flex:none; }
+[data-cv6kit] .toolnav { flex:1; display:flex; justify-content:center; gap:7px; }
+[data-cv6kit] .ctile { width:60px; flex:none; display:flex; flex-direction:column; align-items:center; gap:5px; padding:7px 0 6px; border-radius:var(--radius-control); background:var(--surface); border:1px solid var(--hair); color:var(--muted); }
+[data-cv6kit] .ctile.on { background:var(--accent); border-color:transparent; color:#fff; }
+[data-cv6kit] .clab { font-size:10px; font-weight:600; }
+
+/* ---- shared primitives ---- */
+[data-cv6kit] .ib { width:38px; height:38px; border-radius:11px; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; }
+[data-cv6kit] .av { width:38px; height:38px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:600; }
+[data-cv6kit] .eyebrow { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+[data-cv6kit] .dot { width:8px; height:8px; border-radius:50%; flex:none; }
+[data-cv6kit] .mono { font-family:var(--font-mono); }
+
+/* ---- mobile chrome (fixed status bar + 60px one-Corner header + composer + menu FAB) ---- */
+[data-cv6kit] .mstatus { height:50px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 24px 6px; color:var(--fg); }
+[data-cv6kit] .mhdr { flex:none; height:60px; box-sizing:border-box; display:flex; align-items:center; gap:11px; padding:0 14px; border-bottom:1px solid var(--divider); }
+[data-cv6kit] .mhdr .mhtitle { flex:1; min-width:0; }
+[data-cv6kit] .mhdr .mttl { font-size:17px; font-weight:700; letter-spacing:-.01em; color:var(--fg); line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6kit] .mhdr .msub { font-size:12px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6kit] .mback { width:34px; height:34px; border-radius:10px; border:1px solid var(--hair); background:var(--surface); color:var(--fg); display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; }
+[data-cv6kit] .mcomposer { position:absolute; left:0; right:0; bottom:0; border-top:1px solid var(--divider); padding:12px 16px; display:flex; align-items:center; gap:9px; background:var(--ground); }
+
+[data-cv6kit] .mmenu { position:absolute; right:18px; bottom:26px; z-index:8; display:flex; align-items:center; gap:11px; height:54px; padding:0 9px 0 17px; border:1px solid rgba(255,255,255,.16); border-radius:27px; background:rgba(13,17,23,.74); backdrop-filter:blur(16px) saturate(1.2); -webkit-backdrop-filter:blur(16px) saturate(1.2); box-shadow:0 16px 36px -10px rgba(0,0,0,.7); cursor:pointer; }
+[data-cv6kit] .mmenu .lines { display:flex; flex-direction:column; gap:4px; }
+[data-cv6kit] .mmenu .lines i { display:block; width:20px; height:2px; border-radius:2px; background:var(--fg); }
+[data-cv6kit] .mmenu .lines i:nth-child(2) { width:13px; }
+[data-cv6kit] .mmenu .mav { position:relative; width:38px; height:38px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:700; flex:none; }
+[data-cv6kit] .mmenu .mdot { position:absolute; top:0; right:0; width:12px; height:12px; border-radius:50%; background:var(--accent); border:2.5px solid #0d1117; }
+
+/* ---- background activity dock (one chip, two placements: rail card + float pill) ---- */
+[data-cv6kit] .actdock { display:flex; align-items:center; gap:11px; height:56px; padding:0 10px 0 13px; border-radius:14px; background:var(--surface); border:1px solid var(--hair); box-shadow:var(--shadow-card); }
+[data-cv6kit] .actdock .ad-ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6kit] .actdock .ad-body { flex:1; min-width:0; }
+[data-cv6kit] .actdock .ad-title { font-size:13px; font-weight:600; color:var(--fg); line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6kit] .actdock .ad-sub { font-size:11px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6kit] .actdock.is-float { position:absolute; left:12px; right:12px; z-index:9; height:50px; backdrop-filter:blur(16px) saturate(1.2); -webkit-backdrop-filter:blur(16px) saturate(1.2); box-shadow:0 12px 30px -10px rgba(0,0,0,.6); }
+[data-cv6kit] .actrail { display:flex; gap:10px; overflow:hidden; }
+[data-cv6kit] .ad-spin { animation:cv6spin 1.05s linear infinite; }
+
+/* ---- agent status — ONE vocabulary used everywhere: live / blocked / ready / done ---- */
+@keyframes cv6statPulse { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+[data-cv6kit] .astat { display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; letter-spacing:.02em; padding:3px 9px; border-radius:7px; white-space:nowrap; }
+[data-cv6kit] .astat .sd { width:6px; height:6px; border-radius:50%; flex:none; }
+[data-cv6kit] .astat.is-live { color:var(--success); background:var(--success-weak); }
+[data-cv6kit] .astat.is-live .sd { background:var(--success); animation:cv6statPulse 1.7s infinite; }
+[data-cv6kit] .astat.is-blocked { color:var(--warn); background:var(--warn-weak,rgba(251,191,36,.16)); }
+[data-cv6kit] .astat.is-blocked .sd { background:var(--warn); }
+[data-cv6kit] .astat.is-ready { color:var(--muted); background:var(--chip); }
+[data-cv6kit] .astat.is-ready .sd { background:var(--faint); }
+[data-cv6kit] .astat.is-done { color:var(--accent); background:var(--accent-weak); }
+[data-cv6kit] .astat.is-done .sd { background:var(--accent); }
+[data-cv6kit] .sdot { width:8px; height:8px; border-radius:50%; flex:none; display:inline-block; }
+[data-cv6kit] .sdot.is-live { background:var(--success); box-shadow:var(--glow-online); animation:cv6statPulse 1.7s infinite; }
+[data-cv6kit] .sdot.is-blocked { background:var(--warn); }
+[data-cv6kit] .sdot.is-ready { background:var(--faint); }
+[data-cv6kit] .aspin { animation:cv6spin 1.05s linear infinite; }
+
+/* ---- assign to agent — universal affordance; always "Assign to agent" ---- */
+[data-cv6kit] .assign { display:inline-flex; align-items:center; gap:7px; height:38px; padding:0 14px; border-radius:11px; border:none; background:var(--accent); color:#fff; font-size:13px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6kit] .assign.is-quiet { background:var(--surface-2); color:var(--accent); border:1px solid var(--hair); }
+
+/* ---- needs-you — the one triage signal; Catch Up is its inbox ---- */
+[data-cv6kit] .needs { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-weak); padding:3px 9px; border-radius:8px; }
+[data-cv6kit] .needs-count { min-width:20px; height:20px; padding:0 6px; border-radius:10px; background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; }
+
+/* ---- keyboard arrow-nav (desktop/iPad) ---- */
+[data-cv6kit] .kbd { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; border-radius:6px; border:1px solid var(--hair); background:var(--surface-2); color:var(--muted); font-family:var(--font-mono); font-size:12px; }
+[data-cv6kit] .kbd-row { display:inline-flex; align-items:center; gap:7px; font-size:11.5px; color:var(--faint); }
+[data-cv6kit] .knav-sel { box-shadow:0 0 0 2px var(--accent) inset; }
+
+/* ---- empty / caught-up — the calm zero state ---- */
+[data-cv6kit] .empty { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:12px; padding:40px 24px; }
+[data-cv6kit] .empty .e-ico { width:56px; height:56px; border-radius:16px; background:var(--surface-2); display:flex; align-items:center; justify-content:center; color:var(--success); }
+[data-cv6kit] .empty .e-t { font-size:16px; font-weight:600; color:var(--fg); }
+[data-cv6kit] .empty .e-s { font-size:13px; color:var(--muted); max-width:280px; line-height:1.5; }
+
+/* ---- common animations ---- */
+@keyframes cv6spin { to { transform: rotate(360deg); } }
+@keyframes cv6shimmer { 0%{opacity:.5;} 50%{opacity:1;} 100%{opacity:.5;} }

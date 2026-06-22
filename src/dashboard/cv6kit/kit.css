@@ -8,6 +8,10 @@
 @import './tokens/typography.css';
 @import './tokens/spacing.css';
 
+/* Shared shell + interaction-pattern classes, ported from the design system's
+   ui_kits/_base/frame.css (scoped [data-cv6kit]). Build screens from these. */
+@import './cv6-frame.css';
+
 /* Typography & spacing tokens — scoped to [data-cv6kit], theme-independent */
 [data-cv6kit] {
   --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
