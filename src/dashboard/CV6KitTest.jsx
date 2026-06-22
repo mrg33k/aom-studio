@@ -181,6 +181,7 @@ function ReviewPreview() {
       metadata={item ? { location: item.location } : {}}
       queueSummary={SAMPLE_REVIEW.queueSummary}
       onSelectItem={() => setSel('rv1')}
+      onMenu={() => {}}
       onBack={() => setSel(null)}
     />
   );
@@ -249,14 +250,15 @@ function NavPreview() {
 }
 
 const SAMPLE_REVIEW = {
-  queueSummary: { readyCount: 2, pipelineCount: 4 },
+  queueSummary: { readyCount: 4, pipelineCount: 0 },
   queueItems: [
-    { id: 'rv1', title: 'Support ask — handoff', source: 'Corner → Dashboard', timestamp: '11:15 PM', status: 'ready' },
-    { id: 'rv2', title: 'Included culture deck — batch 03', source: 'Cleo → Included Health', timestamp: '9:40 PM', status: 'ready' },
-    { id: 'rv3', title: 'Andocia proposal copy', source: 'Alex → Andocia', timestamp: '4:02 PM', status: 'pending' },
+    { id: 'rv1', title: 'Support ask · handoff', source: 'Corner / Dashboard', timestamp: '11:15', status: 'ready', typeKey: 'doc', typeLabel: 'Document', tone: '#0066FF' },
+    { id: 'rv2', title: 'Hero photo set · 6 shots', source: 'Space Rising', timestamp: '11:12', status: 'ready', typeKey: 'image', typeLabel: 'Image', tone: '#8B5CF6' },
+    { id: 'rv3', title: 'Onboarding walkthrough', source: 'Corner', timestamp: '10:58', status: 'ready', typeKey: 'video', typeLabel: 'Video', tone: '#EC4899' },
+    { id: 'rv4', title: 'cv6 preview · live site', source: 'Dashboard', timestamp: '10:40', status: 'ready', typeKey: 'live', typeLabel: 'Live URL', tone: '#34D399' },
   ],
   selectedItem: {
-    id: 'rv1', title: 'Support ask — handoff', source: 'handoff.md', location: 'Corner → Dashboard',
+    id: 'rv1', title: 'Support ask · handoff', source: 'handoff.md', location: 'Corner / Dashboard',
     content: {
       body: 'The Claude design is now the single source of truth for the dashboard. Every screen moves to it while keeping the working logic underneath.',
       sections: [

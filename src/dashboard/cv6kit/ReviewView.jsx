@@ -18,6 +18,25 @@ import React, { useState } from 'react';
 const VIEWPORT = typeof window !== 'undefined' ? window.innerWidth : 1440;
 const isMobile = VIEWPORT < 640;
 
+// A translucent tile background from the item's real per-type colour (the
+// review-queue endpoint returns a hex per type: doc/copy/code/image/video).
+function tintBg(tone) {
+  if (typeof tone === 'string' && tone[0] === '#') return tone + '22';
+  return 'var(--accent-weak)';
+}
+
+// The type glyph for a review-queue item, tinted by its real type colour.
+// Faithful to review-list.html (doc / image / video / live-site glyphs).
+function reviewGlyph(typeKey, tone) {
+  const stroke = tone || 'var(--accent)';
+  const c = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke, strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round' };
+  if (typeKey === 'image') return (<svg {...c}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.6" /><path d="m21 15-5-5L5 21" /></svg>);
+  if (typeKey === 'video') return (<svg {...c}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m10 9 5 3-5 3Z" /></svg>);
+  if (typeKey === 'live') return (<svg {...c}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></svg>);
+  if (typeKey === 'code') return (<svg {...c}><path d="m8 9-3 3 3 3M16 9l3 3-3 3" /></svg>);
+  return (<svg {...c}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><path d="M9 13h6M9 17h4" /></svg>);
+}
+
 function QueueItem({ item, selected, onClick }) {
   const isReady = (item.status || '').toLowerCase() === 'ready';
   return (
@@ -218,6 +237,7 @@ export function ReviewView({
   onComment,
   onSendNotes,
   onBack,
+  onMenu,
 }) {
   const [activeCommentId, setActiveCommentId] = useState(null);
   const openCommentCount = comments.filter((c) => !c.resolved).length;
@@ -601,6 +621,11 @@ export function ReviewView({
   // Mobile simplified layout — pixel-faithful to review.html mobile frame
   const [selectedType, setSelectedType] = useState('video');
   const [videoPlayTime, setVideoPlayTime] = useState(0);
+  // R18 — the pick-what-to-review list (review-list.html): Ready / Pipeline
+  // segments + a search filter over the real queue.
+  const [seg, setSeg] = useState('ready');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
 
   const typeChips = [
     { key: 'photo', label: 'Photo' },
@@ -609,7 +634,17 @@ export function ReviewView({
     { key: 'live', label: 'Live site' },
   ];
 
-  const queueCount = Array.isArray(queueItems) ? queueItems.length : 0;
+  const allItems = Array.isArray(queueItems) ? queueItems : [];
+  const queueCount = allItems.length;
+  const readyCount = queueSummary.readyCount ?? queueCount;
+  const pipelineCount = queueSummary.pipelineCount || 0;
+  const subtitle = pipelineCount > 0 ? `${readyCount} ready · ${pipelineCount} in pipeline` : `${readyCount} ready to review`;
+  // Pipeline = items an agent is still building; ReviewLive surfaces only finished
+  // (ready) work today, so the pipeline tab is honestly empty until that feed exists.
+  const isPipeline = (it) => it.status === 'pipeline' || it.status === 'building';
+  const segItems = seg === 'pipeline' ? allItems.filter(isPipeline) : allItems.filter((it) => !isPipeline(it));
+  const q = query.trim().toLowerCase();
+  const visibleItems = q ? segItems.filter((it) => `${it.title || ''} ${it.source || ''} ${it.typeLabel || ''}`.toLowerCase().includes(q)) : segItems;
 
   return (
     <div
@@ -645,63 +680,90 @@ export function ReviewView({
         </span>
       </div>
 
-      {/* Mobile header — back + title/subtitle + search */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          padding: '12px 14px',
-          borderBottom: '1px solid var(--divider)',
-          background: 'var(--ground)',
-          flex: 'none',
-        }}
-      >
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          aria-label="Back"
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            border: 'none',
-            background: 'transparent',
-            color: 'var(--fg)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flex: 'none',
-          }}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-        </button>
-
-        {/* Title + Subtitle */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {selectedItem ? (selectedItem.title || 'Review') : 'Review'}
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.2, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {selectedItem ? (metadata.location || selectedItem.source || 'Reading') : `${queueCount} ready to review`}
-          </div>
+      {/* Mobile header (.mhdr) — a tool home shows the menu (opens the nav drawer);
+          the drilled-in document shows the back chevron (up one level). Title + the
+          real subtitle, with search filtering the queue. */}
+      <div className="mhdr" style={{ background: 'var(--ground)' }}>
+        {selectedItem ? (
+          <button className="mback" onClick={onBack} aria-label="Back">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+          </button>
+        ) : (
+          <button className="ib" onClick={onMenu} aria-label="Menu" style={{ width: 36, height: 36, borderRadius: 10 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+          </button>
+        )}
+        <div className="mhtitle">
+          <div className="mttl">{selectedItem ? (selectedItem.title || 'Review') : 'Review'}</div>
+          <div className="msub">{selectedItem ? (metadata.location || selectedItem.source || 'Reading') : subtitle}</div>
         </div>
+        {!selectedItem && (
+          <div className="mhactions">
+            <button className="ib" onClick={() => setSearchOpen((v) => !v)} aria-label="Search" style={{ width: 36, height: 36, borderRadius: 10, color: searchOpen ? 'var(--accent)' : undefined }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Content: the real queue list when nothing is picked, the real document when one is */}
       {!selectedItem ? (
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '8px 12px calc(16px + env(safe-area-inset-bottom, 0px))' }}>
-          {queueCount === 0 ? (
-            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--faint)', fontSize: 13, padding: '40px 24px', textAlign: 'center' }}>Nothing to review right now.</div>
-          ) : (
-            queueItems.map((it) => (
-              <QueueItem key={it.id} item={{ ...it, status: it.status || 'ready' }} selected={false} onClick={() => onSelectItem && onSelectItem(it)} />
-            ))
+        <>
+          {/* Ready / Pipeline segmented control (real counts) */}
+          <div style={{ display: 'flex', gap: 7, padding: '10px 16px 12px', flex: 'none' }}>
+            {[{ k: 'ready', label: 'Ready', n: readyCount }, { k: 'pipeline', label: 'Pipeline', n: pipelineCount }].map((s) => (
+              <button
+                key={s.k}
+                onClick={() => setSeg(s.k)}
+                style={{ height: 30, padding: '0 14px', borderRadius: 15, fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', border: seg === s.k ? 'none' : '1px solid var(--hair)', background: seg === s.k ? 'var(--accent)' : 'transparent', color: seg === s.k ? '#fff' : 'var(--muted)' }}
+              >
+                {s.label} {s.n}
+              </button>
+            ))}
+          </div>
+
+          {/* search filter (revealed by the header search icon — real filter) */}
+          {searchOpen && (
+            <div style={{ flex: 'none', padding: '0 16px 10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9, height: 40, borderRadius: 12, background: 'var(--surface-2)', border: '1px solid var(--hair)', padding: '0 13px' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+                <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search the queue…" style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--fg)', fontFamily: 'var(--font-sans)', fontSize: 14 }} />
+              </div>
+            </div>
           )}
-        </div>
+
+          {/* the real queue — rich rows faithful to review-list.html */}
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}>
+            {visibleItems.length === 0 ? (
+              <div className="empty" style={{ height: '100%' }}>
+                <div className="e-ico">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                </div>
+                <div className="e-t">{seg === 'pipeline' ? 'Nothing in the pipeline' : (q ? 'No matches' : 'You are all caught up')}</div>
+                <div className="e-s">{seg === 'pipeline' ? 'Work an agent is still building will show up here.' : (q ? 'Try a different search.' : 'Finished work waiting on you will show up here to read and decide on.')}</div>
+              </div>
+            ) : (
+              visibleItems.map((it) => {
+                const tone = it.tone || 'var(--accent)';
+                return (
+                  <div key={it.id} onClick={() => onSelectItem && onSelectItem(it)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderBottom: '1px solid var(--divider)', cursor: 'pointer' }}>
+                    <div style={{ width: 46, height: 46, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', background: tintBg(tone) }}>
+                      {reviewGlyph(it.typeKey, tone)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{[it.typeLabel, it.source].filter(Boolean).join(' · ')}</div>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flex: 'none' }}>
+                      <span className="astat is-live"><span className="sd" />READY</span>
+                      {it.timestamp && <span className="mono" style={{ fontSize: 10, color: 'var(--faint)' }}>{it.timestamp}</span>}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </>
       ) : (
         <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: 'var(--ground)', padding: '14px 14px calc(16px + env(safe-area-inset-bottom, 0px))' }}>
           <div style={{ background: '#fbfbfa', color: '#1a1a1a', borderRadius: 14, padding: '20px 18px', boxShadow: '0 10px 30px rgba(0,0,0,.25)' }}>

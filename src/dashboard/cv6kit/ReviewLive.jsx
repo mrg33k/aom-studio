@@ -35,9 +35,11 @@ function mapItem(it) {
     id: it.path,
     path: it.path,
     title: it.name || it.path || 'Untitled',
-    source: [projectName, missionName].filter(Boolean).join(' / ') || (it.type && it.type.label) || '',
+    source: [projectName, missionName].filter(Boolean).join(' / '),
     timestamp: timeAgo(it.last_modified),
     tone: (it.type && it.type.color) || 'var(--accent)',
+    typeKey: (it.type && it.type.key) || 'doc',
+    typeLabel: (it.type && it.type.label) || 'File',
     projectName,
     missionName,
   };
@@ -84,7 +86,7 @@ function parseDoc(text) {
   };
 }
 
-export function ReviewLive({ worldId = 'aom', onExit }) {
+export function ReviewLive({ worldId = 'aom', onExit, onMenu }) {
   const [queueItems, setQueueItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [metadata, setMetadata] = useState({});
@@ -138,6 +140,7 @@ export function ReviewLive({ worldId = 'aom', onExit }) {
       metadata={metadata}
       queueSummary={{ readyCount: queueItems.length, pipelineCount: 0 }}
       onSelectItem={openItem}
+      onMenu={onMenu}
       onBack={() => { if (selectedItem) { setSelectedItem(null); } else if (onExit) { onExit(); } }}
     />
   );

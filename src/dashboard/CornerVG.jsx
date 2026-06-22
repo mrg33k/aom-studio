@@ -3111,7 +3111,7 @@ export default function CornerVG() {
                  Read-only browse: list of recent finished work, tap to read it. Approve /
                  request-changes held until that action is defined (action bar stays hidden).
                  onExit returns home. */
-              <ReviewLive worldId={worldId} onExit={() => setActiveTool(null)} />
+              <ReviewLive worldId={worldId} onExit={() => setActiveTool(null)} onMenu={() => setNavOpen(true)} />
             ) : (activeTool === 'chat') ? (
               /* corner:corner-ui-cv6 — Chat lands on your CONVERSATIONS LIST (Patrik
                  2026-06-21), the design's rooms rail brought to the phone. On mobile,
