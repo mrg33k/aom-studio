@@ -37,6 +37,24 @@ export function parseEach(expr) {
   return { alias: singularize(list.split('.').pop()), list };
 }
 
+// Build the data-each alias map from a screen's JSON contract `data` block, so the
+// host never hand-writes aliases. A list field declares its item name (`"item"`);
+// nested lists key off the parent item, matching the template's data-each path
+// (e.g. needsYou -> "email", and email.tags -> "tag").
+export function aliasesFromContract(contractData) {
+  const map = {};
+  (function walk(node, itemPrefix) {
+    for (const [key, val] of Object.entries(node || {})) {
+      if (val && typeof val === 'object' && val.list) {
+        const item = val.item || singularize(key);
+        map[itemPrefix ? `${itemPrefix}.${key}` : key] = item;
+        if (val.shape) walk(val.shape, item);
+      }
+    }
+  })(contractData, null);
+  return map;
+}
+
 // Resolve "a.b.c" against a stack of scopes (innermost first). The FIRST scope that
 // owns the leading segment wins, so item scopes shadow the root data.
 export function resolvePath(scopes, path) {
@@ -75,7 +93,11 @@ function applyBindings(el, scopes, ctx) {
   // data-each — this element is the row template; expand it into N bound clones.
   const eachExpr = el.getAttribute('data-each');
   if (eachExpr) {
-    const { alias, list } = parseEach(eachExpr);
+    const parsed = parseEach(eachExpr);
+    // The item alias comes from the screen's JSON contract (e.g. needsYou -> "email"),
+    // falling back to "x in xs" syntax or singularizing the list name.
+    const alias = (ctx.aliases && ctx.aliases[eachExpr]) || parsed.alias;
+    const list = parsed.list;
     const items = resolvePath(scopes, list) || [];
     const parent = el.parentNode;
     if (!parent) return;
@@ -103,6 +125,24 @@ function applyBindings(el, scopes, ctx) {
   const bindPath = el.getAttribute('data-bind');
   if (bindPath) applyValue(el, resolvePath(scopes, bindPath));
 
+  // data-mod — swap a documented per-item modifier class from data. Form
+  // "prefix:path" (e.g. "is-:email.avatarTint" -> replaces any is-* class with
+  // is-<value>). Several allowed, separated by ";". Keeps the look in the design's
+  // own classes; never invents CSS.
+  const mod = el.getAttribute('data-mod');
+  if (mod) {
+    for (const one of mod.split(';')) {
+      const ix = one.indexOf(':');
+      if (ix < 0) continue;
+      const prefix = one.slice(0, ix).trim();
+      const val = resolvePath(scopes, one.slice(ix + 1).trim());
+      if (val == null || !prefix) continue;
+      const classes = (el.getAttribute('class') || '').split(/\s+/).filter((c) => c && !c.startsWith(prefix));
+      classes.push(prefix + val);
+      el.setAttribute('class', classes.join(' '));
+    }
+  }
+
   // data-action — wire the click.
   const action = el.getAttribute('data-action');
   if (action) {
@@ -124,8 +164,8 @@ function applyBindings(el, scopes, ctx) {
 
 // Bind a labeled template that is already in the DOM. Returns a cleanup function
 // that removes every listener it attached.
-export function bindTemplate(root, { data = {}, actions = {}, state = 'ready' } = {}) {
-  const ctx = { actions, state, cleanups: [] };
+export function bindTemplate(root, { data = {}, actions = {}, state = 'ready', aliases = {} } = {}) {
+  const ctx = { actions, state, aliases, cleanups: [] };
   for (const child of Array.from(root.childNodes)) applyBindings(child, [data], ctx);
   return () => { ctx.cleanups.forEach((fn) => fn()); ctx.cleanups.length = 0; };
 }
