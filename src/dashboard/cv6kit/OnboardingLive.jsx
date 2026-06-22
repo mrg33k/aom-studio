@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { OnboardingView } from './OnboardingView';
 import { authFetch } from '../lib/authFetch';
 
@@ -14,7 +14,8 @@ import { authFetch } from '../lib/authFetch';
  *
  * Real wiring:
  *   Step 2 (Connections): OAuth via /api/integrations/oauth/start?slug=<name>
- *   Step 3 (Permissions): Reads are faked for now (no live endpoint); reports missing
+ *   Step 3 (Permissions): persists to user_preferences (key cv6_agent_permissions), the same
+ *     store Settings uses, so grants made here and in Settings stay in sync
  *   Step 4 (Theme): Calls setTheme(theme) live as user selects
  *   Step 5 (First Goal): REAL create-project flow via /api/dashboard/create-project-from-chat
  *   Done: Marks onboarding-complete (posts to onboarding-state or equivalent; if missing, reports)
@@ -30,6 +31,20 @@ export function OnboardingLive({
   const [step, setStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Per-agent permissions persist to the SAME store Settings uses
+  // (user_preferences, key cv6_agent_permissions): a map of { [agent]: { Draft/Send/Commit/File: bool } }.
+  // We keep the whole map in a ref, seeded on mount, and write the merged map back on each toggle
+  // (off-by-default is the safe state). No separate agent-permissions endpoint exists; this is the real one.
+  const permsRef = useRef({});
+  useEffect(() => {
+    let alive = true;
+    authFetch(`/api/dashboard/preferences?key=cv6_agent_permissions&client=${encodeURIComponent(worldId || 'aom')}`)
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => { if (alive && d?.value && typeof d.value === 'object') permsRef.current = d.value; })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [worldId]);
 
   const handleNext = useCallback(async (payload) => {
     const { step: currentStep, state } = payload;
@@ -72,15 +87,23 @@ export function OnboardingLive({
 
   const handlePermissionChange = useCallback(async (payload) => {
     const { agent, perm, value } = payload;
-    // Permissions are agent-specific. The real endpoint would be something like:
-    // /api/dashboard/agent-permissions (PATCH) with { agent, permission, enabled: value }
-    // For now, this is logged as a missing endpoint.
-    console.warn(
-      `[OnboardingLive] Permission change not wired (missing endpoint):`,
-      { agent, perm, value }
-    );
-    // This action should be wired to a real backend once the endpoint exists.
-  }, []);
+    if (!agent || !perm) return;
+    // Merge into the whole permissions map and persist it (same shape + endpoint Settings uses,
+    // so a grant made here shows up in Settings and vice versa).
+    const cur = permsRef.current[agent] || {};
+    const next = { ...permsRef.current, [agent]: { ...cur, [perm]: !!value } };
+    permsRef.current = next;
+    try {
+      await authFetch('/api/dashboard/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: 'cv6_agent_permissions', client_id: worldId || 'aom', value: next }),
+      });
+    } catch (e) {
+      // Non-fatal: the toggle stays visually set; it just did not persist this time.
+      console.warn('[OnboardingLive] Could not save permission change:', e);
+    }
+  }, [worldId]);
 
   const handleThemeChange = useCallback((payload) => {
     const { theme } = payload;
