@@ -60,7 +60,7 @@ import { OrganizeView } from './cv6kit/OrganizeView.jsx'
 import { ChatView, SAMPLE_CHAT } from './cv6kit/ChatView.jsx'
 import { ScribeView, SAMPLE_SCRIBE } from './cv6kit/ScribeView.jsx'
 import { DesktopHomeView, SAMPLE_HOME } from './cv6kit/DesktopHomeView.jsx'
-import { MobileHomeKit } from './cv6kit/MobileHomeKit.jsx'
+import { MobileHomeExact } from './cv6kit/MobileHomeExact.jsx'
 import { SearchLive } from './cv6kit/SearchLive.jsx'
 import { SAMPLE_COMMAND, SAMPLE_REVIEW, SAMPLE_SUPPORT, SAMPLE_ORGANIZE, SAMPLE_TRACKER } from './CV6KitTest.jsx'
 // R-KIT-ONBOARD — Claude-design first-run onboarding (5 steps: welcome, connections, permissions, theme, first goal).
@@ -3333,11 +3333,12 @@ export default function CornerVG() {
               <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
             ) : isHomeMode ? (
               !isDesktop ? (
-                /* corner:corner-ui-cv6 R-WIRE — Claude-design mobile Home, now REAL data
-                   (MobileHomeWired): All Rooms ← your agents + projects; Catch Up ← the
-                   needs-you queue (honest empty when nothing needs you); room search filters
-                   the list; + opens new-project. Tap a room opens it. */
-                <MobileHomeWired
+                /* corner:corner-ui-cv6 — mobile Home is the design transcribed VERBATIM
+                   (MobileHomeExact: the design's own scoped CSS + markup), wired to REAL
+                   data: All Rooms ← your agents + projects, Catch Up ← the needs-you queue,
+                   tap a room opens it. This is the design straight from the file, on the
+                   real /dashboard surface. */
+                <MobileHomeExact
                   user={currentUser}
                   agents={agents}
                   projectRooms={projectRooms}
@@ -3346,6 +3347,7 @@ export default function CornerVG() {
                   onSelectProject={handleSelectProject}
                   onCatchupOpen={handleCatchupOpenRoom}
                   onNav={handleCv6Nav}
+                  theme={effectiveTheme}
                 />
               ) : (
               /* corner:corner-ui-cv6 R-WIRE — Claude-design DESKTOP Home, three-column shell
