@@ -121,7 +121,9 @@ const R65LiveThread = lazy(() => import('./pages/R65LiveThread.jsx'))
 const ConradFoundation = lazy(() => import('./pages/ConradFoundation.jsx'))
 const ConradFoundation2 = lazy(() => import('./pages/ConradFoundation2.jsx'))
 const MissionWaterGame = lazy(() => import('./pages/MissionWaterGame.jsx'))
-const SpaceAvailableGame = lazy(() => import('./pages/SpaceAvailableGame.jsx'))
+// NOTE: SpaceAvailableGame import + routes removed 2026-06-22 — its file was untracked
+// (another workstream's WIP) and broke the Vercel production build (could not resolve
+// ./pages/SpaceAvailableGame.jsx from git). Re-add together with the committed file.
 const MissionWaterPlatform = lazy(() => import('./pages/MissionWaterPlatform.jsx'))
 const MissionWaterLive = lazy(() => import('./pages/MissionWaterLive.jsx'))
 const MissionWaterOffering = lazy(() => import('./pages/MissionWaterOffering.jsx'))
@@ -487,9 +489,6 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/mission-water-offering" element={<MissionWaterOffering />} />
           <Route path="/missionwater/offering" element={<MissionWaterOffering />} />
           <Route path="/missionwater/lets-talk" element={<MissionWaterLetsTalk />} />
-          <Route path="/spaceavailable" element={<SpaceAvailableGame />} />
-          <Route path="/space-available" element={<SpaceAvailableGame />} />
-          <Route path="/SpaceAvailableGame" element={<SpaceAvailableGame />} />
           <Route path="/stats" element={<AOMStats />} />
           <Route path="/hb" element={<HolisticBalance />} />
           <Route path="/holistic-balance" element={<HolisticBalance />} />
