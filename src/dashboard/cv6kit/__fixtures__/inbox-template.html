@@ -1,0 +1,27 @@
+<!-- Fixture: a labeled fill-in template in the format we asked Claude Design for.
+     Stands in for the real pilot (Support inbox) so the engine is proven before it
+     arrives. Real design markup will be richer; the LABELS are what matter here. -->
+<section class="inbox">
+  <header class="inbox__hd">
+    <span class="inbox__title">Inbox</span>
+    <span class="inbox__count" data-bind="unread">0</span>
+    <span class="inbox__assure">Real people only</span>
+  </header>
+
+  <!-- ready: the list -->
+  <ul class="inbox__list" data-state="ready">
+    <li class="row" data-each="email in emails" data-action="openThread" data-arg="email.id">
+      <img class="row__avatar" data-bind="email.avatarUrl" alt="" />
+      <span class="row__from" data-bind="email.fromName">Sender</span>
+      <span class="row__subject" data-bind="email.subject">Subject</span>
+      <button class="row__resolve" data-action="resolve" data-arg="email.id">Resolve</button>
+    </li>
+  </ul>
+
+  <!-- empty / loading / error: the one shared look, switched by state -->
+  <div class="inbox__empty" data-state="empty">You're all caught up</div>
+  <div class="inbox__loading" data-state="loading">Loading your inbox…</div>
+  <div class="inbox__error" data-state="error">
+    Couldn't load the inbox. <button data-action="retry">Try again</button>
+  </div>
+</section>
