@@ -1,0 +1,53 @@
+/* Command tool CSS, ported verbatim from the design's command.html <style> block
+   (ui_kits/tools/command.html), scoped to [data-cv6kit]. These are the only
+   tool-specific classes Command adds on top of the shared shell (cv6-frame.css);
+   the design's own comment says "tool-specific only, shell comes from frame.css".
+   CommandView uses THESE classes, it does not reproduce them inline. */
+
+[data-cv6kit] .thead {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  border-bottom: 1px solid var(--hair);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+[data-cv6kit] .grow {
+  display: flex;
+  align-items: center;
+  height: 64px;
+  border-bottom: 1px solid var(--divider);
+}
+
+[data-cv6kit] .stat {
+  width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+
+[data-cv6kit] .pdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+[data-cv6kit] code {
+  font-family: var(--font-mono);
+  background: var(--chip);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: .85em;
+  color: var(--fg);
+}
+
+@keyframes livePulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes recPulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
