@@ -1,5 +1,6 @@
 import React from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
+import { CvgMobileHeader } from './CvgMobileHeader.jsx';
 
 /**
  * CV6 kit Chat — Rooms rail · Goal thread · Mission goals & files drawer.
@@ -469,18 +470,14 @@ function MobileChat({ data, onNav, user }) {
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>/007</span>
       </div>
 
-      {/* Header */}
-      <div style={{ flex: 'none', height: 60, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 11, padding: '0 14px', borderBottom: '1px solid var(--divider)' }}>
-        <button style={{ width: 36, height: 36, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.back}</button>
-        <div style={{ position: 'relative', flex: 'none' }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: active.avatar, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>{active.initials}</div>
-          <span style={{ position: 'absolute', bottom: -1, right: -1, width: 11, height: 11, background: 'var(--success)', border: '2px solid var(--ground)', borderRadius: '50%' }} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{active.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>working · step 3 of 4</div>
-        </div>
-      </div>
+      {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
+      <CvgMobileHeader
+        title={active.name}
+        sub="working · step 3 of 4"
+        onBack={d.onBack}
+        onSearch={d.onSearch}
+        onMenu={d.onMenu}
+      />
 
       {/* Thread */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 16px 0' }}>

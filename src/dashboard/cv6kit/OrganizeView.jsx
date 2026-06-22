@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
+import { CvgMobileHeader } from './CvgMobileHeader.jsx';
 
 /**
  * CV6 kit Organize — desktop & mobile file browse, multi-select, move-to-folder, and view/review.
@@ -902,83 +903,14 @@ export function OrganizeView({
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>{selectedProject?.name || 'Organize'}</span>
       </div>
 
-      {/* header */}
-      <div style={{
-        flex: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        padding: '0 12px 16px',
-      }}>
-        {/* Tool home: the menu opens the nav drawer (the file preview drill-in shows a back chevron instead). */}
-        <button
-          onClick={onMenu}
-          aria-label="Menu"
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 10,
-            border: '1px solid var(--hair)',
-            background: 'var(--surface-2)',
-            color: 'var(--muted)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flex: 'none',
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-            <path d="M3 6h18M3 12h18M3 18h18"/>
-          </svg>
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg)' }}>
-            {selectedProject?.name || 'Organize'}
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 2 }}>
-            {totalFiles} {totalFiles === 1 ? 'file' : 'files'}
-          </div>
-        </div>
-        <button
-          onClick={() => setSearchOpen((v) => { if (v) setQuery(''); return !v; })}
-          aria-label="Search files"
-          style={{
-            width: 34,
-            height: 34,
-            borderRadius: 10,
-            border: 'none',
-            background: searchOpen ? 'var(--accent)' : 'var(--surface)',
-            color: searchOpen ? '#fff' : 'var(--fg)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            flex: 'none',
-          }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="7"/>
-            <path d="m20 20-3.5-3.5"/>
-          </svg>
-        </button>
-        <button style={{
-          width: 34,
-          height: 34,
-          borderRadius: 10,
-          border: 'none',
-          background: 'var(--surface)',
-          color: 'var(--fg)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          flex: 'none',
-        }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18M6 12h12M9 18h6"/>
-          </svg>
-        </button>
-      </div>
+      {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
+      <CvgMobileHeader
+        title={selectedProject?.name || 'Organize'}
+        sub={`${totalFiles} ${totalFiles === 1 ? 'file' : 'files'}`}
+        onBack={onBack}
+        onSearch={() => setSearchOpen((v) => { if (v) setQuery(''); return !v; })}
+        onMenu={onMenu}
+      />
 
       {/* inline search field */}
       {searchOpen && (

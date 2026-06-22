@@ -3190,20 +3190,31 @@ export default function CornerVG() {
                 onBack={() => setActiveTool(null)}
               />
             ) : (activeTool === 'chat') ? (
-              /* corner:corner-ui-cv6 R-KIT-CHAT — Claude-design Chat (the graphical
-                 Goal thread: rooms rail, step-by-step agent thread, mission goals +
-                 files drawer on desktop). Sample mockup baseline so the screen matches
-                 the design exactly; the live conversation (CvgChatSurface) is wired back
-                 in at step 2. */
-              <ChatView
-                {...SAMPLE_CHAT}
-                isDesktop={isDesktop}
-                activeTool="chat"
-                onNav={handleCv6Nav}
-                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
-                onMenu={() => setNavOpen(true)}
-                onBack={() => setActiveTool(null)}
-              />
+              /* corner:corner-ui-cv6 R-KIT-CHAT — Chat. Mobile lands on the conversations
+                 LIST (chat-list.html canon: .mhdr header, your assistants + project rooms);
+                 tapping a row opens that room. Desktop shows the Claude-design Chat (rooms
+                 rail · graphical Goal thread · mission goals/files drawer) as the sample
+                 mockup baseline; the live conversation is wired back at step 2. */
+              !isDesktop ? (
+                <MobileChatList
+                  agents={agents}
+                  projectRooms={projectRooms}
+                  onOpenAgent={handleSelectAgent}
+                  onOpenProject={(proj) => { setMobileProject(proj); setActiveTool('projectview') }}
+                  onMenu={() => setNavOpen(true)}
+                  onBack={() => setActiveTool(null)}
+                />
+              ) : (
+                <ChatView
+                  {...SAMPLE_CHAT}
+                  isDesktop={isDesktop}
+                  activeTool="chat"
+                  onNav={handleCv6Nav}
+                  user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
+                  onMenu={() => setNavOpen(true)}
+                  onBack={() => setActiveTool(null)}
+                />
+              )
             ) : (activeTool === 'scribe') ? (
               /* corner:corner-ui-cv6 R-KIT-SCRIBE — Claude-design Live Scribe (live
                  transcript + auto-extracted actions/decisions on desktop; the recording

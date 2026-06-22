@@ -1,5 +1,6 @@
 import React from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
+import { CvgMobileHeader } from './CvgMobileHeader.jsx';
 
 /**
  * CV6 kit Scribe — live transcript + auto-extracted action items/quotes/decisions.
@@ -66,6 +67,9 @@ export function ScribeView({
   activeTool = 'scribe',
   onNav,
   user = {},
+  onBack,
+  onSearch,
+  onMenu,
   data = SAMPLE_SCRIBE,
 }) {
   const {
@@ -74,7 +78,6 @@ export function ScribeView({
     extracted = SAMPLE_SCRIBE.extracted,
     onStop,
     onChangeDestination,
-    onBack,
   } = data;
 
   const isRecording = recording?.isRecording ?? true;
@@ -208,20 +211,14 @@ export function ScribeView({
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#F87171' }}>REC {mm}:{ss}</span>
       </div>
 
-      {/* mhdr */}
-      <div style={{ flex: 'none', height: 60, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 11, padding: '0 14px', borderBottom: '1px solid var(--divider)' }}>
-        <button onClick={onBack} style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)', lineHeight: 1.15, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Live Scribe</div>
-          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{destinationParts.join(' · ')}</div>
-        </div>
-        <button onClick={onChangeDestination} style={{ height: 32, padding: '0 11px', borderRadius: 16, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--muted)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6, flex: 'none', cursor: 'pointer' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
-          Change
-        </button>
-      </div>
+      {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
+      <CvgMobileHeader
+        title="Live Scribe"
+        sub={destinationParts.join(' · ')}
+        onBack={onBack}
+        onSearch={onSearch}
+        onMenu={onMenu}
+      />
 
       {/* transcript header bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 16px', borderBottom: '1px solid var(--divider)', background: 'rgba(248,113,113,.06)', flex: 'none' }}>

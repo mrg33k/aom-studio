@@ -810,25 +810,23 @@ export function ReviewView({
       {/* Mobile header (.mhdr) — a tool home shows the menu (opens the nav drawer);
           the drilled-in document shows the back chevron (up one level). Title + the
           real subtitle, with search filtering the queue. */}
+      {/* Canonical .mhdr — .mback left · .mhtitle · .mhactions (search then menu LAST). */}
       <div className="mhdr" style={{ background: 'var(--ground)' }}>
-        {selectedItem ? (
-          <button className="mback" onClick={onBack} aria-label="Back">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-          </button>
-        ) : (
-          <button className="ib" onClick={onMenu} aria-label="Menu" style={{ width: 36, height: 36, borderRadius: 10 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
-          </button>
-        )}
+        <div className="mback" role="button" tabIndex={0} onClick={onBack} aria-label="Back">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+        </div>
         <div className="mhtitle">
           <div className="mttl">{selectedItem ? (selectedItem.title || 'Review') : 'Review'}</div>
           <div className="msub">{selectedItem ? (metadata.location || selectedItem.source || 'Reading') : subtitle}</div>
         </div>
         {!selectedItem && (
           <div className="mhactions">
-            <button className="ib" onClick={() => setSearchOpen((v) => !v)} aria-label="Search" style={{ width: 36, height: 36, borderRadius: 10, color: searchOpen ? 'var(--accent)' : undefined }}>
+            <div className="ib" role="button" tabIndex={0} onClick={() => setSearchOpen((v) => !v)} aria-label="Search" style={{ color: searchOpen ? 'var(--accent)' : undefined }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-            </button>
+            </div>
+            <div className="ib" role="button" tabIndex={0} onClick={onMenu} aria-label="Menu">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+            </div>
           </div>
         )}
       </div>

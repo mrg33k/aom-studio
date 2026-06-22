@@ -1,5 +1,6 @@
 import React from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
+import { CvgMobileHeader } from './CvgMobileHeader.jsx';
 
 /**
  * CV6 kit Tracker — mobile bug/issue list + desktop design baseline.
@@ -112,7 +113,7 @@ function BugListCard({ bug, onSelect }) {
   );
 }
 
-export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, onBack, isDesktop = false, activeTool = 'tracker', onNav, user = {} }) {
+export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, onBack, onMenu, onSearch, isDesktop = false, activeTool = 'tracker', onNav, user = {} }) {
   const open = tracker.openCount != null ? tracker.openCount : bugs.length;
 
   // DESKTOP — ported from ui_kits/tools/tracker.html (desktop frame): shared top bar +
@@ -324,18 +325,14 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>{open} open</span>
       </div>
 
-      {/* Header (mhdr pattern) */}
-      <div style={{ flex: 'none', padding: '0 16px 14px', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '20px', fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)', lineHeight: 1.2 }}>{tracker.name || 'Tracker'}</div>
-            <div style={{ fontSize: '12.5px', color: 'var(--muted)', marginTop: 3 }}>{[tracker.projectName, `${open} open`].filter(Boolean).join(' · ')}</div>
-          </div>
-          <button style={{ width: 36, height: 36, flex: 'none', borderRadius: 10, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18M6 12h12M9 18h6"/></svg>
-          </button>
-        </div>
-      </div>
+      {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
+      <CvgMobileHeader
+        title={tracker.name || 'Tracker'}
+        sub={[tracker.projectName, `${open} open`].filter(Boolean).join(' · ')}
+        onBack={onBack}
+        onSearch={onSearch}
+        onMenu={onMenu}
+      />
 
       {/* List scroll area — full-width */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(96px + env(safe-area-inset-bottom, 0px))', display: 'flex', flexDirection: 'column', gap: 12 }}>
