@@ -281,7 +281,7 @@ function DockCard({ job, onOpen, onExpand, variant = 'float', showTrailingAction
         boxShadow: 'var(--shadow-card)',
         flex: 'none',
         cursor: 'pointer',
-        minWidth: 0,
+        width: 240,
       }}
     >
       {/* Icon tile */}
@@ -372,7 +372,7 @@ export const ActivityDock = memo(function ActivityDock({
           style={{
             display: 'flex',
             gap: '10px',
-            overflow: 'hidden',
+            overflow: 'visible',
           }}
         >
           {jobs.map((j, idx) => (

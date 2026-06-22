@@ -144,18 +144,16 @@ export function CommandView({ status = 'loaded', summary = {}, featured, rooms =
               <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Background activity</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--faint)' }}>{activities.length} running</span>
             </div>
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', padding: '0 16px', marginBottom: 4 }}>
-              {activities.map((a, i) => {
-                const kind = a.state === 'recording' ? 'recording' : a.state === 'success' ? 'drafting' : 'working';
-                return (
-                  <ActivityDock
-                    key={i}
-                    job={{ kind, label: a.title || '', detail: a.sub || '' }}
-                    variant="rail"
-                    onOpen={() => {}}
-                  />
-                );
-              })}
+            <div style={{ overflowX: 'auto', overflowY: 'hidden', WebkitOverflowScrolling: 'touch', padding: '0 16px', marginBottom: 4 }}>
+              <ActivityDock
+                variant="rail"
+                jobs={activities.map((a) => ({
+                  kind: a.state === 'recording' ? 'recording' : a.state === 'success' ? 'drafting' : 'working',
+                  label: a.title || '',
+                  detail: a.sub || '',
+                }))}
+                onSelectJob={() => {}}
+              />
             </div>
           </div>
         )}
