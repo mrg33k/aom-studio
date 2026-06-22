@@ -3242,6 +3242,8 @@ export default function CornerVG() {
                 onRerunSetup={() => setActiveTool('onboarding')}
                 agents={agents}
                 worldId={worldId}
+                isDesktop={isDesktop}
+                onNav={handleCv6Nav}
                 onBack={() => setActiveTool(null)}
               />
             ) : (activeTool === 'onboarding') ? (
