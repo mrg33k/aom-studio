@@ -382,6 +382,23 @@ export default function CornerVG() {
   // the user explicitly picks a theme (override === 'auto'), render dark. A manual
   // light / dark / glass choice via the toggle is always respected.
   const effectiveTheme = (cv6Mode && override === 'auto') ? 'dark' : theme
+  // corner:corner-ui-cv6 — one-time CV6 dark-first migration. CV6 relaunched dark
+  // (every Claude design .html is data-theme="dark"). A stale CV4-era light choice
+  // (cv4-theme + the user-set flag) was carrying the new design into light, and the
+  // real lever is the GLOBAL <html data-theme> that useThemeMode writes from the
+  // saved mode — not the inner div data-theme. So set the actual mode to dark once:
+  // on first cv6 load, unless the saved theme is already an explicit dark/glass,
+  // reset to dark (this repaints <html data-theme>, so EVERY surface goes dark, not
+  // one component). Runs once per browser; the user can toggle afterward and it persists.
+  useEffect(() => {
+    if (!cv6Mode || typeof window === 'undefined') return
+    try {
+      if (window.localStorage.getItem('cv6-theme-init') === '1') return
+      window.localStorage.setItem('cv6-theme-init', '1')
+      const saved = window.localStorage.getItem('cv4-theme')
+      if (saved !== 'dark' && saved !== 'glass') setThemeHook('dark')
+    } catch { /* private mode: skip */ }
+  }, [cv6Mode, setThemeHook])
   useEffect(() => {
     if (typeof document === 'undefined') return
     // Keep the cv4 shell scope so all [data-shell="cv4"] CSS applies here too.
