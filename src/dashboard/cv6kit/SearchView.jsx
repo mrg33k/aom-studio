@@ -35,6 +35,7 @@ export function SearchView({
         <div
           key={`${groupKey}-${idx}`}
           className="sres"
+          ref={(el) => { if (el && globalIdx === selectedIndex) el.scrollIntoView({ block: 'nearest' }); }}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -187,6 +188,7 @@ export function SearchView({
         <div
           key={`${groupKey}-${idx}`}
           className="mres"
+          ref={(el) => { if (el && globalIdx === selectedIndex) el.scrollIntoView({ block: 'nearest' }); }}
           style={{
             display: 'flex',
             alignItems: 'center',
