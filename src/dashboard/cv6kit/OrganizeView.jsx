@@ -351,29 +351,13 @@ function FilePreviewScreen({ file, projectName, onBack, onMove }) {
       color: 'var(--fg)',
       overflow: 'hidden',
     }}>
-      {/* Status bar */}
-      <div style={{
-        flex: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 'calc(env(safe-area-inset-top, 0px) + 8px) 16px 12px',
-        fontSize: 15,
-        fontWeight: 600,
-      }}>
-        <span>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
-          {file.size && file.size > 1000 ? (file.size / 1024).toFixed(1) + ' KB' : file.size + ' B'}
-        </span>
-      </div>
-
-      {/* Header */}
+      {/* Header (file preview drill-in: back + title) */}
       <div style={{
         flex: 'none',
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        padding: '0 12px 16px',
+        padding: 'calc(env(safe-area-inset-top, 0px) + 12px) 12px 16px',
         borderBottom: '1px solid var(--divider)',
       }}>
         <button
@@ -889,20 +873,6 @@ export function OrganizeView({
       color: 'var(--fg)',
       overflow: 'hidden',
     }}>
-      {/* status bar */}
-      <div style={{
-        flex: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: 'calc(env(safe-area-inset-top, 0px) + 8px) 16px 12px',
-        fontSize: 15,
-        fontWeight: 600,
-      }}>
-        <span>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>{selectedProject?.name || 'Organize'}</span>
-      </div>
-
       {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
       <CvgMobileHeader
         title={selectedProject?.name || 'Organize'}

@@ -93,14 +93,8 @@ export function MobileChatList({ agents = [], projectRooms = [], onOpenAgent, on
 
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)', overflow: 'hidden' }}>
-      {/* status bar (real device safe-area top) */}
-      <div className="mstatus" style={{ height: 'auto', paddingTop: 'calc(env(safe-area-inset-top, 0px) + 10px)' }}>
-        <span style={{ fontSize: 15, fontWeight: 600 }}>9:41</span>
-        <span className="mono" style={{ fontSize: 12, color: 'var(--muted)' }}>{total} {total === 1 ? 'room' : 'rooms'}</span>
-      </div>
-
       {/* Canonical mobile header (chat-list.html): .mback left · .mhtitle · .mhactions (search then menu LAST) */}
-      <div className="mhdr">
+      <div className="mhdr" style={{ height: 'auto', minHeight: 60, boxSizing: 'border-box', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="mback" role="button" tabIndex={0} aria-label="Back" onClick={onBack}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </div>

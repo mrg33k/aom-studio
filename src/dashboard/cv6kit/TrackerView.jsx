@@ -319,12 +319,6 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
 
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
-      {/* Status bar */}
-      <div style={{ flex: 'none', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 15, fontWeight: 600 }}>
-        <span>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>{open} open</span>
-      </div>
-
       {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
       <CvgMobileHeader
         title={tracker.name || 'Tracker'}

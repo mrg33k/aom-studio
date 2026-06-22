@@ -205,12 +205,6 @@ export function ScribeView({
         @keyframes wave { 0%,100%{transform:scaleY(.4);} 50%{transform:scaleY(1);} }
       `}</style>
 
-      {/* mstatus bar */}
-      <div style={{ height: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 24px 6px', color: 'var(--fg)', flex: 'none' }}>
-        <span style={{ fontSize: 15, fontWeight: 600 }}>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#F87171' }}>REC {mm}:{ss}</span>
-      </div>
-
       {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
       <CvgMobileHeader
         title="Live Scribe"

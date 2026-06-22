@@ -68,14 +68,8 @@ export function ChatStepThread({ goal = {}, target = {}, steps = [], onBack, onS
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
       <style>{'@keyframes cv6spin{to{transform:rotate(360deg)}}@keyframes cv6bar{0%,100%{opacity:.85}50%{opacity:1}}'}</style>
 
-      {/* mobile status bar (time + mission tag) */}
-      <div style={{ height: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 24px 6px', color: 'var(--fg)', fontSize: 15, fontWeight: 600 }}>
-        <span>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>/007</span>
-      </div>
-
       {/* header (back + agent avatar + title + status) — mobile chrome */}
-      <div style={{ flex: 'none', height: 60, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 11, padding: '0 14px', borderBottom: '1px solid var(--divider)' }}>
+      <div style={{ flex: 'none', height: 'auto', minHeight: 60, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 11, padding: '0 14px', paddingTop: 'env(safe-area-inset-top, 0px)', borderBottom: '1px solid var(--divider)' }}>
         <div onClick={onBack} role="button" aria-label="Back" style={{ width: 34, height: 34, borderRadius: 10, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>{ICON.back}</div>
         <div style={{ position: 'relative', flex: 'none' }}>
           <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--avatar)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>{target.initials || 'EL'}</div>

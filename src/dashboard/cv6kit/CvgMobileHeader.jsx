@@ -27,7 +27,7 @@ export function CvgMobileHeader({
   showMenu = true,
 }) {
   return (
-    <div className="mhdr">
+    <div className="mhdr" style={{ height: 'auto', minHeight: 60, boxSizing: 'border-box', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {showBack && (
         <div className="mback" role="button" tabIndex={0} aria-label="Back" onClick={onBack}>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>

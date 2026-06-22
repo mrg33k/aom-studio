@@ -790,28 +790,8 @@ export function ReviewView({
         color: 'var(--fg)',
       }}
     >
-      {/* Status bar (safe-area top + time/progress) */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: `calc(env(safe-area-inset-top, 0px) + 8px) 16px 8px`,
-          background: 'var(--ground)',
-          borderBottom: '1px solid var(--divider)',
-        }}
-      >
-        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>
-          {queueCount} ready
-        </span>
-      </div>
-
-      {/* Mobile header (.mhdr) — a tool home shows the menu (opens the nav drawer);
-          the drilled-in document shows the back chevron (up one level). Title + the
-          real subtitle, with search filtering the queue. */}
       {/* Canonical .mhdr — .mback left · .mhtitle · .mhactions (search then menu LAST). */}
-      <div className="mhdr" style={{ background: 'var(--ground)' }}>
+      <div className="mhdr" style={{ background: 'var(--ground)', height: 'auto', minHeight: 60, boxSizing: 'border-box', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="mback" role="button" tabIndex={0} onClick={onBack} aria-label="Back">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </div>

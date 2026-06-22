@@ -464,12 +464,6 @@ function MobileChat({ data, onNav, user }) {
         @keyframes livePulse { 0%,100%{opacity:1;} 50%{opacity:.5;} }
       `}</style>
 
-      {/* Status bar */}
-      <div style={{ height: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 24px 6px', fontSize: 15, fontWeight: 600 }}>
-        <span>9:41</span>
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>/007</span>
-      </div>
-
       {/* Canonical mobile header: .mback left · .mhtitle · .mhactions (search then menu) */}
       <CvgMobileHeader
         title={active.name}
