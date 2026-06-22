@@ -7,8 +7,8 @@ import { DesktopHomeView } from './cv6kit/DesktopHomeView.jsx';
 
 // Sample for the /cv6kit?screen=project preview (the "project opened, missions
 // inside" design — FRAME 3). Live CornerVG feeds real missions; this is no-auth.
-const SAMPLE_PROJECT = { slug: 'space-rising', name: 'Space Rising', color: 'var(--violet-400)' };
-const SAMPLE_PROJECT_MISSIONS = [
+export const SAMPLE_PROJECT = { slug: 'space-rising', name: 'Space Rising', color: 'var(--violet-400)' };
+export const SAMPLE_PROJECT_MISSIONS = [
   { slug: 'lock-print-framing', name: 'Lock the print framing', status: 'running', agent: 'Elon' },
   { slug: 'resolver-patch', name: 'Resolver patch & tests', status: 'running', agent: 'Rex' },
   { slug: 'changelog-v6', name: 'Changelog for v6', status: 'idle', agent: 'Gary' },
@@ -34,7 +34,7 @@ import './cv6kit/kit.css';
 
 // Sample Step Thread (the kit Chat view) — used to verify the layout in
 // isolation. The real wiring waits on a step-emission feed (BUILD.md R-KIT-5).
-const SAMPLE_CHAT = {
+export const SAMPLE_CHAT = {
   goal: { name: 'Lock the print framing', stepDone: 2, stepTotal: 4 },
   target: { name: 'Elon', initials: 'EL', statusLine: 'working · step 3 of 4' },
   steps: [
@@ -48,7 +48,7 @@ const SAMPLE_CHAT = {
   ],
 };
 
-const SAMPLE_TRACKER = {
+export const SAMPLE_TRACKER = {
   tracker: { name: 'CV6 Bugs', projectName: 'Corner CV6', openCount: 12 },
   bugs: [
     { id: 'CV6-142', title: 'Repo resolver drops docs-only projects', status: 'open', priority: 'high', assignee: { initials: 'EL', name: 'Elon', tone: 'var(--success)', toneBg: 'rgba(52,211,153,.2)' }, updated: '2h' },
@@ -58,7 +58,7 @@ const SAMPLE_TRACKER = {
   ],
 };
 
-const SAMPLE_COMMAND = {
+export const SAMPLE_COMMAND = {
   summary: { roomCount: 6, liveCount: 3 },
   featured: {
     room: 'Space Rising', color: 'var(--violet-400)', status: 'live',
@@ -94,7 +94,7 @@ const SAMPLE_COMMAND = {
  * narrow — mirroring the isDesktop gate in CornerVG. On /dashboard the same
  * components are fed live data.
  */
-const SAMPLE = {
+export const SAMPLE = {
   user: { user_metadata: { full_name: 'Patrik Matheson' } },
   agents: [
     { slug: 'elon', name: 'Elon', status: 'online' },
@@ -109,13 +109,13 @@ const SAMPLE = {
   ],
 };
 
-const SAMPLE_RECENT = [
+export const SAMPLE_RECENT = [
   { from: 'agent', author: 'Elon', initials: 'EL', time: '9:24', text: 'Pulled the latest numbers — the launch deck is ready for your review.' },
   { from: 'me', time: '9:26', text: 'Looks good. Send it once the cover slide is updated.' },
   { from: 'agent', author: 'Elon', initials: 'EL', time: '9:27', text: 'On it. Cover swapped and out the door in five.' },
 ];
 
-const SAMPLE_SUPPORT = {
+export const SAMPLE_SUPPORT = {
   counts: { openWishes: 3, waitingWishes: 1, openEmails: 2, respondedEmails: 5 },
   wishes: [
     { id: 'w1', name: 'Dana Reyes', email: 'dana@included.health', subject: 'Can the EA pull weekly numbers automatically?', message: 'Love the dashboard. Is there a way to have my assistant compile the Monday metrics without me asking each week?', status: 'needs_you', created_at: '2026-06-20T14:10:00Z', access_code: 'WISH-4821', source: 'web' },
@@ -128,7 +128,7 @@ const SAMPLE_SUPPORT = {
   ],
 };
 
-const SAMPLE_ORGANIZE = {
+export const SAMPLE_ORGANIZE = {
   projects: [
     { id: 'corner', slug: 'corner', name: 'Corner', color: 'var(--accent)', status: 'WORKING', tasks: Array.from({ length: 14 }) },
     { id: 'included', slug: 'included-health', name: 'Included Health', color: 'var(--pink-400, #F472B6)', status: 'IDLE', tasks: Array.from({ length: 6 }) },
@@ -250,7 +250,7 @@ function NavPreview() {
   );
 }
 
-const SAMPLE_REVIEW = {
+export const SAMPLE_REVIEW = {
   queueSummary: { readyCount: 4, pipelineCount: 0 },
   queueItems: [
     { id: 'rv1', title: 'Support ask · handoff', source: 'Corner / Dashboard', timestamp: '11:15', status: 'ready', typeKey: 'doc', typeLabel: 'Document', tone: '#0066FF' },
@@ -275,7 +275,7 @@ const SAMPLE_REVIEW = {
   metadata: { from: { name: 'Elon', initials: 'EL' }, location: 'Corner → Dashboard', status: 'Ready' },
 };
 
-const SAMPLE_SCRIBE = {
+export const SAMPLE_SCRIBE = {
   recording: { isRecording: true, elapsed: 1287, destination: 'Space Rising · Mission /007' },
   transcript: [
     { speaker: 'Patrik', timestamp: '00:21', text: 'Let’s lock the framing before the print date. Interactive and community lead.' },
@@ -300,7 +300,7 @@ const SAMPLE_SCRIBE = {
 // on the phone, now wearing the kit glass skin (kit prop). previewMessages seeds the
 // thread so /cv6kit?screen=cvgchat shows it with no auth. This is what taps on Chat
 // render on /dashboard; the only difference here is the messages are sample, not live.
-const SAMPLE_CVG_MESSAGES = [
+export const SAMPLE_CVG_MESSAGES = [
   { id: 'm1', role: 'assistant', sender: 'Elon', timestamp: '2026-06-20T09:24:00Z', text: 'Pulled the latest numbers. The launch deck is ready for your review whenever you want to take a look.' },
   { id: 'm2', role: 'user', timestamp: '2026-06-20T09:26:00Z', text: 'Looks good. Send it once the cover slide is updated.' },
   { id: 'm3', role: 'assistant', sender: 'Elon', timestamp: '2026-06-20T09:27:00Z', text: 'On it. Cover swapped and out the door in five.' },

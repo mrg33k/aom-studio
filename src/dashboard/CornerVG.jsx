@@ -47,6 +47,14 @@ import { ReviewLive } from './cv6kit/ReviewLive.jsx'
 // R-KIT-18 — Claude-design Tracker screen (opens to an honest empty state until a bugs source exists).
 import { TrackerView } from './cv6kit/TrackerView.jsx'
 import { TrackerLive } from './cv6kit/TrackerLive.jsx'
+// corner:corner-ui-cv6 — design mockups dropped onto /dashboard as the baseline so every
+// tool shows its full Claude design; real data is wired back in per state (step 2+), the
+// sample removed as it lands. Sample data reused from the kit so the design shows until wired.
+import { CommandView } from './cv6kit/CommandView.jsx'
+import { ReviewView } from './cv6kit/ReviewView.jsx'
+import { SupportView } from './cv6kit/SupportView.jsx'
+import { OrganizeView } from './cv6kit/OrganizeView.jsx'
+import { SAMPLE_COMMAND, SAMPLE_REVIEW, SAMPLE_SUPPORT, SAMPLE_ORGANIZE } from './CV6KitTest.jsx'
 // R-KIT-ONBOARD — Claude-design first-run onboarding (5 steps: welcome, connections, permissions, theme, first goal).
 import { OnboardingLive } from './cv6kit/OnboardingLive.jsx'
 // R4 — cross-page Activity Dock wired to REAL running jobs (status=running tasks for the world).
@@ -3079,8 +3087,17 @@ export default function CornerVG() {
                 <SupportDashboard isDesktop={isDesktop} worldId={worldId} onClose={() => setShowSupportInbox(false)}
                   onDiscuss={handleDiscussSupportEmail} />
               ) : (
-                <SupportLive worldId={worldId} isDesktop={false} onClose={() => setShowSupportInbox(false)}
-                  onDiscuss={handleDiscussSupportEmail} />
+                <SupportView
+                  wishes={SAMPLE_SUPPORT.wishes}
+                  inbox={SAMPLE_SUPPORT.inbox}
+                  counts={SAMPLE_SUPPORT.counts}
+                  selectedItem={null}
+                  onSelectItem={() => {}}
+                  onBack={() => setShowSupportInbox(false)}
+                  onClose={() => setShowSupportInbox(false)}
+                  onDraftReply={() => {}}
+                  onMarkResolved={() => {}}
+                />
               )
             ) : activeTool === 'routines' ? (
               /* corner:routines R3 — full-area card view of every open loop.
@@ -3105,15 +3122,29 @@ export default function CornerVG() {
               /* corner:corner-ui-cv6 R-KIT-13 — Claude-design Organize screen on the phone,
                  wired to the user's real project rooms AND each project's real files (with
                  previews). onBack returns to home. */
-              <OrganizeLive projectRooms={projectRooms} worldId={worldId} onBack={() => setActiveTool(null)} onMenu={() => setNavOpen(true)} />
+              <OrganizeView
+                projects={SAMPLE_ORGANIZE.projects.map((p) => ({ ...p, fileCount: (p.tasks && p.tasks.length) || 0 }))}
+                files={SAMPLE_ORGANIZE.files}
+                selectedProjectId={'corner'}
+                selectedFileIds={[]}
+                onSelectProject={() => {}}
+                onSelectFile={() => {}}
+                onBack={() => setActiveTool(null)}
+                onMenu={() => setNavOpen(true)}
+                onMove={() => {}}
+                onRename={() => {}}
+                onShare={() => {}}
+                onDelete={() => {}}
+              />
             ) : (activeTool === 'command') ? (
               /* corner:corner-ui-cv6 R-KIT-14 — Claude-design Command goal ledger on the
                  phone, wired to the real room-goals data (read-only: featured goal + room
                  roster with status; needs-you rooms surface amber). Tapping a room opens it
                  if it resolves to a real project/agent. The interactive controls (loop
                  toggle, inline reply, edit-goal, autopilot) stay on the desktop tracker. */
-              <CommandLive
-                worldId={worldId}
+              <CommandView
+                status="loaded"
+                {...SAMPLE_COMMAND}
                 onBack={() => setActiveTool(null)}
                 onSelectRoom={(r) => {
                   const slug = (r && (r.slug || r.id)) || ''
@@ -3134,7 +3165,16 @@ export default function CornerVG() {
                  Read-only browse: list of recent finished work, tap to read it. Approve /
                  request-changes held until that action is defined (action bar stays hidden).
                  onExit returns home. */
-              <ReviewLive worldId={worldId} onExit={() => setActiveTool(null)} onMenu={() => setNavOpen(true)} />
+              <ReviewView
+                queueItems={SAMPLE_REVIEW.queueItems}
+                selectedItem={null}
+                comments={[]}
+                metadata={{}}
+                queueSummary={SAMPLE_REVIEW.queueSummary}
+                onSelectItem={() => {}}
+                onMenu={() => setNavOpen(true)}
+                onBack={() => setActiveTool(null)}
+              />
             ) : (activeTool === 'chat') ? (
               /* corner:corner-ui-cv6 — Chat lands on your CONVERSATIONS LIST (Patrik
                  2026-06-21), the design's rooms rail brought to the phone. On mobile,

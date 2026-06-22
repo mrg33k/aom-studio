@@ -121,6 +121,7 @@ const R65LiveThread = lazy(() => import('./pages/R65LiveThread.jsx'))
 const ConradFoundation = lazy(() => import('./pages/ConradFoundation.jsx'))
 const ConradFoundation2 = lazy(() => import('./pages/ConradFoundation2.jsx'))
 const MissionWaterGame = lazy(() => import('./pages/MissionWaterGame.jsx'))
+const SpaceAvailableGame = lazy(() => import('./pages/SpaceAvailableGame.jsx'))
 const MissionWaterPlatform = lazy(() => import('./pages/MissionWaterPlatform.jsx'))
 const MissionWaterLive = lazy(() => import('./pages/MissionWaterLive.jsx'))
 const MissionWaterOffering = lazy(() => import('./pages/MissionWaterOffering.jsx'))
@@ -486,6 +487,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/mission-water-offering" element={<MissionWaterOffering />} />
           <Route path="/missionwater/offering" element={<MissionWaterOffering />} />
           <Route path="/missionwater/lets-talk" element={<MissionWaterLetsTalk />} />
+          <Route path="/spaceavailable" element={<SpaceAvailableGame />} />
+          <Route path="/space-available" element={<SpaceAvailableGame />} />
+          <Route path="/SpaceAvailableGame" element={<SpaceAvailableGame />} />
           <Route path="/stats" element={<AOMStats />} />
           <Route path="/hb" element={<HolisticBalance />} />
           <Route path="/holistic-balance" element={<HolisticBalance />} />
@@ -549,9 +553,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           {/* corner:corner-ui-cv6 — /cv6 component gallery. Public (no user
               data) so it renders frictionlessly for design review. */}
           <Route path="/cv6" element={<CV6Gallery />} />
-          {/* corner:corner-ui-cv6 — /cv6kit test route. Isolated kit component test;
-              renders the design kit's mobile Home screen as-is for pixel-perfect verification. */}
-          <Route path="/cv6kit" element={<CV6KitTest />} />
+          {/* corner:corner-ui-cv6 — /cv6kit route removed (Patrik 2026-06-22): the design
+              mockups now mount on the live /dashboard surface itself; no parallel preview. */}
           {/* CV3 escape hatch — rollback path during R7.21 transition. */}
           <Route path="/cv3" element={<AuthGuard><CornerV3 /></AuthGuard>} />
           <Route path="/cv3/project/:projectId" element={<AuthGuard><CornerV3 /></AuthGuard>} />
