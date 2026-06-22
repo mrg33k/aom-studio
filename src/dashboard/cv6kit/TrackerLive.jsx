@@ -35,7 +35,7 @@ function assigneeOf(owner) {
   return { initials, name: owner, tone: 'var(--accent)', toneBg: 'var(--accent-weak)' };
 }
 
-export function TrackerLive({ worldId = 'aom', onBack, onDiscuss }) {
+export function TrackerLive({ worldId = 'aom', onBack, onDiscuss, isDesktop = false, activeTool = 'tracker', onNav, onMenu, user = {} }) {
   const [raw, setRaw] = useState(null); // null = loading
   const [selectedId, setSelectedId] = useState(null);
 
@@ -97,6 +97,11 @@ export function TrackerLive({ worldId = 'aom', onBack, onDiscuss }) {
       bugs={raw === null ? [] : bugs}
       onSelectBug={(b) => b && b.id && setSelectedId(b.id)}
       onBack={onBack}
+      isDesktop={isDesktop}
+      activeTool={activeTool}
+      onNav={onNav}
+      onMenu={onMenu}
+      user={user}
     />
   );
 }

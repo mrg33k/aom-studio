@@ -130,7 +130,7 @@ function useSupportLiveData(worldId) {
 // Main component
 // ──────────────────────────────────────────────────────────────────────────────
 
-export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDiscuss }) {
+export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDiscuss, activeTool = 'support', onNav, onMenu, user = {} }) {
   const { wishes, mailboxes } = useSupportLiveData(worldId);
   const [selectedId, setSelectedId] = useState(null);
 
@@ -205,6 +205,10 @@ export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDis
       onDraftReply={handleDraftReply}
       onMarkResolved={handleMarkResolved}
       isDesktop={isDesktop}
+      activeTool={activeTool}
+      onNav={onNav}
+      onMenu={onMenu}
+      user={user}
     />
   );
 }

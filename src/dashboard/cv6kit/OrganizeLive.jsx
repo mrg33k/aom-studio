@@ -39,7 +39,7 @@ function mapFile(f) {
   };
 }
 
-export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack, onMenu }) {
+export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack, onMenu, isDesktop = false, activeTool = 'organize', onNav, user = {} }) {
   // Organize opens ON FILES (Patrik 2026-06-21, "open on files, switch from top"):
   // it lands inside your most-recent project's files, and you change projects from
   // the breadcrumb at the top. So we auto-select the first (recency-sorted) project
@@ -99,6 +99,10 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack, onMen
       onSelectProject={(proj) => { setSelectedProjectId(proj.slug || proj.id); setSelectedFileIds([]); }}
       onBack={onBack}
       onMenu={onMenu}
+      isDesktop={isDesktop}
+      activeTool={activeTool}
+      onNav={onNav}
+      user={user}
       onMove={(fileIds, destinationId) => {
         console.warn('[OrganizeLive] onMove not yet wired to backend:', { fileIds, destinationId });
         // TODO: wire to /api/dashboard/files/move or similar

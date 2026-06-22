@@ -59,7 +59,7 @@ function mapRoom([slug, v], i) {
   };
 }
 
-export function CommandLive({ worldId = 'aom', onSelectRoom, onBack }) {
+export function CommandLive({ worldId = 'aom', onSelectRoom, onBack, isDesktop = false, activeTool = 'command', onNav, onMenu, user = {} }) {
   const [rooms, setRooms] = useState([]);
   // Load status drives the loading / empty / error states so the screen is NEVER
   // a blank dark page (the "black screen" bug). On a refresh failure we keep the
@@ -133,6 +133,11 @@ export function CommandLive({ worldId = 'aom', onSelectRoom, onBack }) {
       activities={activities}
       onSelectRoom={(r) => onSelectRoom && onSelectRoom(r)}
       onBack={onBack}
+      isDesktop={isDesktop}
+      activeTool={activeTool}
+      onNav={onNav}
+      onMenu={onMenu}
+      user={user}
     />
   );
 }

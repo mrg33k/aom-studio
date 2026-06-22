@@ -3102,19 +3102,19 @@ export default function CornerVG() {
                 inbox (SupportLive: real wishes+email, tap hands the item to the EA); desktop
                 keeps the full SupportDashboard until its kit desktop layout + actions are wired. */}
             {showSupportInbox && worldId === 'aom' ? (
-              <SupportView
-                wishes={SAMPLE_SUPPORT.wishes}
-                inbox={SAMPLE_SUPPORT.inbox}
-                counts={SAMPLE_SUPPORT.counts}
-                selectedItem={null}
+              /* corner:corner-ui-cv6 R-WIRE — Support now wired to REAL data on desktop AND
+                 mobile via SupportLive (wishes + filtered mailbox feed, real-people-only).
+                 Tapping an item hands it to the EA to draft a reply and check with Patrik;
+                 nothing sends to the customer from here. */
+              <SupportLive
+                worldId={worldId}
                 isDesktop={isDesktop}
                 activeTool="support"
                 onNav={handleCv6Nav}
-                onSelectItem={() => {}}
-                onBack={() => setShowSupportInbox(false)}
+                onMenu={() => setNavOpen(true)}
                 onClose={() => setShowSupportInbox(false)}
-                onDraftReply={() => {}}
-                onMarkResolved={() => {}}
+                onDiscuss={handleDiscussSupportEmail}
+                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
               />
             ) : activeTool === 'routines' ? (
               /* corner:routines R3 — full-area card view of every open loop.
@@ -3136,25 +3136,20 @@ export default function CornerVG() {
                 onNewMission={(p) => setNewRoomModal({ kind: 'mission', parentSlug: p.slug, parentName: p.name })}
               />
             ) : (activeTool === 'organize') ? (
-              /* corner:corner-ui-cv6 R-KIT-13 — Claude-design Organize screen on the phone,
-                 wired to the user's real project rooms AND each project's real files (with
-                 previews). onBack returns to home. */
-              <OrganizeView
-                projects={SAMPLE_ORGANIZE.projects.map((p) => ({ ...p, fileCount: (p.tasks && p.tasks.length) || 0 }))}
-                files={SAMPLE_ORGANIZE.files}
-                selectedProjectId={'corner'}
-                selectedFileIds={[]}
+              /* corner:corner-ui-cv6 R-WIRE — Organize wired to REAL data on desktop AND
+                 mobile via OrganizeLive: your real project rooms + each project's real text
+                 files (content rides along for the preview). Opens on files (first project),
+                 switch from the top. Move/Rename/Share/Delete are stubbed (console.warn) until
+                 their endpoints are defined. onBack returns home. */
+              <OrganizeLive
+                projectRooms={projectRooms}
+                worldId={worldId}
                 isDesktop={isDesktop}
                 activeTool="organize"
                 onNav={handleCv6Nav}
-                onSelectProject={() => {}}
-                onSelectFile={() => {}}
-                onBack={() => setActiveTool(null)}
                 onMenu={() => setNavOpen(true)}
-                onMove={() => {}}
-                onRename={() => {}}
-                onShare={() => {}}
-                onDelete={() => {}}
+                onBack={() => setActiveTool(null)}
+                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
               />
             ) : (activeTool === 'command') ? (
               /* corner:corner-ui-cv6 R-KIT-14 — Claude-design Command goal ledger on the
@@ -3162,13 +3157,14 @@ export default function CornerVG() {
                  roster with status; needs-you rooms surface amber). Tapping a room opens it
                  if it resolves to a real project/agent. The interactive controls (loop
                  toggle, inline reply, edit-goal, autopilot) stay on the desktop tracker. */
-              <CommandView
-                status="loaded"
-                {...SAMPLE_COMMAND}
+              <CommandLive
+                worldId={worldId}
                 isDesktop={isDesktop}
                 activeTool="command"
                 onNav={handleCv6Nav}
+                onMenu={() => setNavOpen(true)}
                 onBack={() => setActiveTool(null)}
+                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
                 onSelectRoom={(r) => {
                   const slug = (r && (r.slug || r.id)) || ''
                   if (!slug) return
@@ -3188,18 +3184,14 @@ export default function CornerVG() {
                  Read-only browse: list of recent finished work, tap to read it. Approve /
                  request-changes held until that action is defined (action bar stays hidden).
                  onExit returns home. */
-              <ReviewView
-                queueItems={SAMPLE_REVIEW.queueItems}
-                selectedItem={null}
-                comments={[]}
-                metadata={{}}
-                queueSummary={SAMPLE_REVIEW.queueSummary}
+              <ReviewLive
+                worldId={worldId}
                 isDesktop={isDesktop}
                 activeTool="review"
                 onNav={handleCv6Nav}
-                onSelectItem={() => {}}
                 onMenu={() => setNavOpen(true)}
-                onBack={() => setActiveTool(null)}
+                onExit={() => setActiveTool(null)}
+                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
               />
             ) : (activeTool === 'chat') ? (
               /* corner:corner-ui-cv6 R-KIT-CHAT — Chat. Mobile lands on the conversations
@@ -3289,14 +3281,15 @@ export default function CornerVG() {
                  (TrackerLive -> /api/dashboard/cv6-bugs). Tap a bug for its detail;
                  Assign to agent hands it to the assistant. onBack returns home. The
                  Space Rising tracker (second source) is a separate bridge, not yet. */
-              <TrackerView
-                {...SAMPLE_TRACKER}
+              <TrackerLive
+                worldId={worldId}
                 isDesktop={isDesktop}
                 activeTool="tracker"
                 onNav={handleCv6Nav}
-                onSelectBug={() => {}}
-                onNewBug={() => {}}
+                onMenu={() => setNavOpen(true)}
                 onBack={() => setActiveTool(null)}
+                onDiscuss={handleDiscussSupportEmail}
+                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
               />
             ) : /* R10 — Mail list moved to the left rail. Right rail / mobile
                 'tasks' tab no longer renders MailListPanel. Clicking an email

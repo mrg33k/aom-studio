@@ -86,7 +86,7 @@ function parseDoc(text) {
   };
 }
 
-export function ReviewLive({ worldId = 'aom', onExit, onMenu }) {
+export function ReviewLive({ worldId = 'aom', onExit, onMenu, isDesktop = false, activeTool = 'review', onNav, user = {} }) {
   const [queueItems, setQueueItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [metadata, setMetadata] = useState({});
@@ -142,6 +142,10 @@ export function ReviewLive({ worldId = 'aom', onExit, onMenu }) {
       onSelectItem={openItem}
       onMenu={onMenu}
       onBack={() => { if (selectedItem) { setSelectedItem(null); } else if (onExit) { onExit(); } }}
+      isDesktop={isDesktop}
+      activeTool={activeTool}
+      onNav={onNav}
+      user={user}
     />
   );
 }
