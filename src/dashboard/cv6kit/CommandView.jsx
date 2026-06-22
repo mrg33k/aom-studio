@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityDock } from './ActivityDock.jsx';
+import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 
 /**
  * CV6 kit Command — the goal ledger (mobile). Kit-faithful to
@@ -99,10 +100,101 @@ function WatcherRow({ watcher, onToggle }) {
   );
 }
 
-export function CommandView({ status = 'loaded', summary = {}, featured, rooms = [], activities = [], onSelectRoom, onBack, onRetask, onWatcherToggle }) {
+export function CommandView({ status = 'loaded', summary = {}, featured, rooms = [], activities = [], onSelectRoom, onBack, onRetask, onWatcherToggle, isDesktop = false, activeTool = 'command', onNav, user = {} }) {
   // Nothing to show yet: loading (spinner), error (it retries), or genuinely empty.
   // This is what stops the screen from rendering as a blank dark page.
   const emptyBody = !featured && (!rooms || rooms.length === 0) && (!activities || activities.length === 0);
+
+  // DESKTOP — ported from ui_kits/tools/command.html (desktop frame): shared top bar +
+  // goal ledger (with the background-activity rail) + goal-detail panel. Fed by the same
+  // real-data props (summary/featured/rooms/activities) the live wrapper provides.
+  if (isDesktop) {
+    const ledger = [
+      ...(featured ? [{ name: featured.room, color: featured.color, goal: featured.goal, setBy: featured.setBy, status: featured.status, featured: true }] : []),
+      ...rooms.map((r) => ({ name: r.name, color: r.color, goal: r.sub, setBy: r.setBy, status: r.status })),
+    ];
+    const liveN = summary.liveCount;
+    const blockedN = ledger.filter((r) => r.status === 'blocked').length;
+    return (
+      <div data-cv6kit style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
+        <style>{'@keyframes cmdPulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes spin{to{transform:rotate(360deg)}}'}</style>
+        <CvgDesktopChrome activeTool={activeTool} onNav={onNav} user={user} />
+        <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, borderRight: '1px solid var(--divider)', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 16px' }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Goal ledger</div>
+                <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>{[summary.roomCount != null ? `${summary.roomCount} rooms` : null, liveN != null ? `${liveN} live` : null].filter(Boolean).join(' · ')}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 7 }}>
+                {liveN != null && <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--success)', background: 'var(--success-weak)', padding: '5px 11px', borderRadius: 14 }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--success)', animation: 'cmdPulse 1.8s infinite' }} />{liveN} live</span>}
+                {blockedN > 0 && <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--warn)', background: 'var(--warn-weak,rgba(251,191,36,.16))', padding: '5px 11px', borderRadius: 14 }}>{blockedN} blocked</span>}
+              </div>
+            </div>
+            {Array.isArray(activities) && activities.length > 0 && (
+              <div style={{ padding: '0 24px 6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Background activity</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)' }}>{activities.length} running</span>
+                </div>
+                <div style={{ overflowX: 'auto' }}>
+                  <ActivityDock variant="rail" jobs={activities.map((a) => ({ kind: a.state === 'recording' ? 'recording' : a.state === 'success' ? 'drafting' : 'working', label: a.title || '', detail: a.sub || '' }))} onSelectJob={() => {}} />
+                </div>
+              </div>
+            )}
+            <div style={{ padding: '14px 24px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', height: 34, borderBottom: '1px solid var(--hair)', fontSize: 11, fontWeight: 600, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+                <div style={{ width: 160, flex: 'none' }}>Room</div><div style={{ flex: 1 }}>Current goal</div><div style={{ width: 110, flex: 'none' }}>Set by</div><div style={{ width: 90, flex: 'none' }}>Status</div>
+              </div>
+              {ledger.map((r, i) => (
+                <div key={i} onClick={() => onSelectRoom && onSelectRoom(r)} style={{ display: 'flex', alignItems: 'center', height: 64, borderBottom: '1px solid var(--divider)', cursor: onSelectRoom ? 'pointer' : 'default', ...(r.featured ? { background: 'var(--accent-weak)', margin: '0 -8px', padding: '0 8px', borderRadius: 8 } : {}) }}>
+                  <div style={{ width: 160, flex: 'none', display: 'flex', alignItems: 'center', gap: 9 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: r.color || 'var(--faint)' }} /><span style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{r.name}</span></div>
+                  <div style={{ flex: 1, minWidth: 0, paddingRight: 14, fontSize: 13.5, color: r.goal ? 'var(--fg)' : 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.goal || 'No goal set'}</div>
+                  <div style={{ width: 110, flex: 'none', fontSize: 12.5, color: 'var(--muted)' }}>{r.setBy || ''}</div>
+                  <div style={{ width: 90, flex: 'none' }}><StatusChip status={r.status} /></div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ width: 400, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 22, overflowY: 'auto' }}>
+            {featured ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}><span style={{ width: 8, height: 8, borderRadius: '50%', background: featured.color || 'var(--violet-400)' }} /><span style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', flex: 1 }}>{featured.room}</span><StatusChip status={featured.status} /></div>
+                <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 8 }}>Current goal</div>
+                <div style={{ fontSize: 17, lineHeight: 1.4, fontWeight: 600, color: 'var(--fg)', marginBottom: 16 }}>{featured.goal}</div>
+                {Array.isArray(featured.checklist) && featured.checklist.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 13 }}>Checklist · {featured.checklist.length} steps</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 13, marginBottom: 18 }}>
+                      {featured.checklist.map((it, i) => <ChecklistRow key={i} item={it} onQueueClick={featured.onQueueClick} />)}
+                    </div>
+                  </>
+                )}
+                {Array.isArray(featured.watchers) && featured.watchers.length > 0 && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 11 }}><span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Master-loop watchers</span><span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600 }}>{featured.watchers.filter((w) => w.active !== false).length} active</span></div>
+                    <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--muted)', marginBottom: 13 }}>The loop drives these conversations toward the goal and verifies each finished step. Toggle who it watches.</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 16 }}>
+                      {featured.watchers.map((w, i) => <WatcherRow key={i} watcher={w} onToggle={() => onWatcherToggle && onWatcherToggle(w)} />)}
+                    </div>
+                  </>
+                )}
+                {onRetask && (
+                  <div style={{ display: 'flex', gap: 9 }}>
+                    <button style={{ flex: 'none', width: 46, height: 42, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg></button>
+                    <button onClick={onRetask} style={{ flex: 1, height: 42, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 13.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>Re-task</button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--faint)', fontSize: 13, textAlign: 'center' }}>Pick a room on the left to see its goal.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
       <style>{'@keyframes cmdPulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes spin{to{transform:rotate(360deg)}}'}</style>

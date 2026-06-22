@@ -3145,6 +3145,9 @@ export default function CornerVG() {
               <CommandView
                 status="loaded"
                 {...SAMPLE_COMMAND}
+                isDesktop={isDesktop}
+                activeTool="command"
+                onNav={handleCv6Nav}
                 onBack={() => setActiveTool(null)}
                 onSelectRoom={(r) => {
                   const slug = (r && (r.slug || r.id)) || ''
