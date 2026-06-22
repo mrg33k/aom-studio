@@ -15,7 +15,10 @@
 // Plan: corner/missions/corner-ui-cv5/CONTEXT.md
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import './cv5.css'
+// cv5.css removed 2026-06-22 (Patrik: remove old stylesheets not associated with CV6).
+// The CV5 sheet defined [data-cv5] tokens (serif font, emerald accent, CV5 ground) on the
+// same root as CV6 and was a drift source. CV6 screens are self-scoped ([data-cv6kit]) so
+// they do not need it.
 import './cv6.css'  // CV6 design tokens — needed when cv6 mode is on (?cv6=1). Scoped to [data-cv6], inert otherwise.
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import skillsData from '../data/skills.json'
@@ -1714,7 +1717,7 @@ export default function CornerVG() {
       <CornerDataProvider value={dataValue}>
         <CornerNavProvider value={navValue}>
           <LiveCallProvider>
-    <div data-testid="dashboard-home-root" data-cv4 data-cv5 data-cv6 data-shell="cv4" data-theme={effectiveTheme} style={{
+    <div data-testid="dashboard-home-root" data-cv6 data-shell="cv4" data-theme={effectiveTheme} style={{
       width: '100%',
       // 100vh fallback; the @supports rule below upgrades to 100svh which
       // tracks the SMALL viewport (URL bar visible). 100dvh was overshooting
