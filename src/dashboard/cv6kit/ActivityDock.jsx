@@ -157,7 +157,7 @@ function DockCard({ job, onOpen, onExpand, variant = 'float', showTrailingAction
             alignItems: 'center',
             justifyContent: 'center',
             flex: 'none',
-            background: isRecording ? 'transparent' : colors.accentColor,
+            background: colors.bgColor,
             color: colors.accentColor,
           }}
         >
@@ -295,7 +295,7 @@ function DockCard({ job, onOpen, onExpand, variant = 'float', showTrailingAction
           alignItems: 'center',
           justifyContent: 'center',
           flex: 'none',
-          background: colors.accentColor,
+          background: colors.bgColor,
           color: colors.accentColor,
         }}
       >

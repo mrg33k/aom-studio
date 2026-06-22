@@ -447,4 +447,14 @@ export function DesktopHomeView({
   );
 }
 
+export const SAMPLE_HOME = {
+  greeting: 'Good evening, Patrik.',
+  catchTotal: 5,
+  agentTotal: 11,
+  projectTotal: 84,
+  roomTotal: 95,
+  agents: SAMPLE_AGENTS,
+  projects: SAMPLE_PROJECTS,
+};
+
 export default DesktopHomeView;

@@ -57,6 +57,10 @@ import { CommandView } from './cv6kit/CommandView.jsx'
 import { ReviewView } from './cv6kit/ReviewView.jsx'
 import { SupportView } from './cv6kit/SupportView.jsx'
 import { OrganizeView } from './cv6kit/OrganizeView.jsx'
+import { ChatView, SAMPLE_CHAT } from './cv6kit/ChatView.jsx'
+import { ScribeView, SAMPLE_SCRIBE } from './cv6kit/ScribeView.jsx'
+import { DesktopHomeView, SAMPLE_HOME } from './cv6kit/DesktopHomeView.jsx'
+import { MobileHomeKit } from './cv6kit/MobileHomeKit.jsx'
 import { SAMPLE_COMMAND, SAMPLE_REVIEW, SAMPLE_SUPPORT, SAMPLE_ORGANIZE, SAMPLE_TRACKER } from './CV6KitTest.jsx'
 // R-KIT-ONBOARD — Claude-design first-run onboarding (5 steps: welcome, connections, permissions, theme, first goal).
 import { OnboardingLive } from './cv6kit/OnboardingLive.jsx'
@@ -1392,7 +1396,7 @@ export default function CornerVG() {
     else if (key === 'onboarding') { setShowSupportInbox(false); setActiveTool('onboarding'); }
     else if (key === 'settings' || key === 'profile') { setShowSupportInbox(false); setActiveTool('settings'); }
     else if (key === 'newproject') { setActiveTool(null); setShowSupportInbox(false); setNewRoomModal({ kind: 'project' }); }
-    else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
+    else if (key === 'scribe') { setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('scribe'); }
     else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
   }, [telephone])
 
@@ -3186,46 +3190,34 @@ export default function CornerVG() {
                 onBack={() => setActiveTool(null)}
               />
             ) : (activeTool === 'chat') ? (
-              /* corner:corner-ui-cv6 — Chat lands on your CONVERSATIONS LIST (Patrik
-                 2026-06-21), the design's rooms rail brought to the phone. On mobile,
-                 with nothing picked yet, show MobileChatList (your assistants + project
-                 rooms); tapping one opens the live chat for it and back returns to the
-                 list. Desktop keeps opening the conversation directly. The live chat
-                 surface (CvgChatSurface) itself is untouched. */
-              (() => {
-                if (!isDesktop) {
-                  // Mobile Chat lands on the conversations list. Tapping a row uses the
-                  // SAME handlers as Home's All Rooms (Patrik 2026-06-21): an assistant
-                  // opens its live chat (handleSelectAgent clears activeTool, so the
-                  // conversation branch below takes over); a project opens the project
-                  // room view. No custom open path — it behaves exactly like Home.
-                  return (
-                    <MobileChatList
-                      agents={agents}
-                      projectRooms={projectRooms}
-                      onOpenAgent={handleSelectAgent}
-                      onOpenProject={(proj) => { setMobileProject(proj); setActiveTool('projectview') }}
-                      onMenu={() => setNavOpen(true)}
-                      onBack={() => setActiveTool(null)}
-                    />
-                  )
-                }
-                // Desktop Chat tool: open the EA conversation directly (unchanged).
-                const ea = agents?.find(a => a.is_ea && a.is_terminal) || agents?.find(a => a.is_ea) || agents?.[0]
-                return ea ? (
-                  <CvgChatSurface
-                    key={`agent:${ea.slug}`}
-                    worldId={worldId}
-                    target={{ type: 'agent', slug: ea.slug, name: ea.name }}
-                    theme={theme}
-                    kit
-                    onSend={handleCvgChatSend}
-                    onBack={() => setActiveTool(null)}
-                  />
-                ) : (
-                  <div style={{ position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--cv6-text-tertiary)', fontSize: 14 }}>Loading your conversation…</div>
-                )
-              })()
+              /* corner:corner-ui-cv6 R-KIT-CHAT — Claude-design Chat (the graphical
+                 Goal thread: rooms rail, step-by-step agent thread, mission goals +
+                 files drawer on desktop). Sample mockup baseline so the screen matches
+                 the design exactly; the live conversation (CvgChatSurface) is wired back
+                 in at step 2. */
+              <ChatView
+                {...SAMPLE_CHAT}
+                isDesktop={isDesktop}
+                activeTool="chat"
+                onNav={handleCv6Nav}
+                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
+                onMenu={() => setNavOpen(true)}
+                onBack={() => setActiveTool(null)}
+              />
+            ) : (activeTool === 'scribe') ? (
+              /* corner:corner-ui-cv6 R-KIT-SCRIBE — Claude-design Live Scribe (live
+                 transcript + auto-extracted actions/decisions on desktop; the recording
+                 screen on mobile). Sample mockup baseline; live recording is wired at
+                 step 2. */
+              <ScribeView
+                {...SAMPLE_SCRIBE}
+                isDesktop={isDesktop}
+                activeTool="scribe"
+                onNav={handleCv6Nav}
+                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
+                onMenu={() => setNavOpen(true)}
+                onBack={() => setActiveTool(null)}
+              />
             ) : (activeTool === 'settings') ? (
               /* corner:corner-ui-cv6 R4 — Claude-design Settings (Environment). Real wiring:
                  integrations list + OAuth connect/disconnect, live theme switch, per-agent
@@ -3291,34 +3283,22 @@ export default function CornerVG() {
               <MailRoom email={selectedMail} onBack={handleBackFromMailRoom} />
             ) : isHomeMode ? (
               !isDesktop ? (
-                /* corner:corner-ui-cv6 R-KIT-2 — wired Claude mobile Home (real data). */
-                <MobileHomeWired
-                  user={currentUser}
-                  agents={agents}
-                  projectRooms={projectRooms}
-                  catchup={buildCatchupNotifications(notifItems)}
-                  onSelectAgent={handleSelectAgent}
-                  onSelectProject={(proj, mission) => { if (mission && mission.slug) { handleSelectMission(mission, proj); } else { setMobileProject(proj); setActiveTool('projectview'); } }}
-                  onCatchupOpen={handleCatchupOpenRoom}
+                /* corner:corner-ui-cv6 R-KIT-HOME — Claude-design mobile Home (sample
+                   mockup baseline so the screen matches the design exactly; real data
+                   is wired back in at step 2 via MobileHomeWired). */
+                <MobileHomeKit
                   onNav={handleCv6Nav}
+                  onMenu={() => setNavOpen(true)}
                 />
               ) : (
-              /* corner:corner-ui-cv6 R5 — Claude-design DESKTOP Home. Three-column
-                 shell (Catch Up | All Rooms | Conversation) wired to real data,
-                 self-scoped data-cv6kit so tokens resolve. Tool tiles route through
-                 onNav to the same wired surfaces as the mobile Home menu (rendered at
-                 desktop width for now; per-tool desktop layouts come in a later round).
-                 Replaces the old cv4 HomeView on desktop. */
-              <DesktopHomeWired
-                user={currentUser}
-                agents={agents}
-                projectRooms={projectRooms}
-                catchup={buildCatchupNotifications(notifItems)}
-                recentMessages={[]}
-                theme={effectiveTheme}
-                onSelectAgent={handleSelectAgent}
-                onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
-                onCatchupOpen={handleCatchupOpenRoom}
+              /* corner:corner-ui-cv6 R-KIT-HOME — Claude-design DESKTOP Home, three-column
+                 shell (Catch Up | All Rooms | Conversation) as a faithful port of the
+                 design file. Sample mockup baseline; real data is wired back in at step 2
+                 via DesktopHomeWired. */
+              <DesktopHomeView
+                {...SAMPLE_HOME}
+                activeTool="home"
+                user={{ initial: (currentUser?.user_metadata?.full_name || 'P').charAt(0) }}
                 onNav={handleCv6Nav}
               />
               )
