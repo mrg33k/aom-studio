@@ -21,6 +21,7 @@ import { SupportView } from './cv6kit/SupportView.jsx';
 import { OrganizeView } from './cv6kit/OrganizeView.jsx';
 import { ReviewView } from './cv6kit/ReviewView.jsx';
 import { MobileChatList } from './cv6kit/MobileChatList.jsx';
+import MobileNavDrawer from './cv6kit/MobileNavDrawer.jsx';
 import KitGallery from './cv6kit/KitGallery.jsx';
 import { TrackerLive } from './cv6kit/TrackerLive.jsx';
 import { ScribeView } from './cv6kit/ScribeView.jsx';
@@ -209,6 +210,44 @@ function SupportPreview() {
   );
 }
 
+// Interactive Navigation preview: the mobile global nav drawer (right-anchored)
+// open over a real chat-list backdrop, so the scrim + tool rows + status badges
+// read in context — the design's "open" state. Tap the scrim to close (reveals the
+// edge grabber), tap the grabber to reopen, tap a row to switch the active tool.
+// This is the SAME component mounted globally in CornerVG on every cv6 phone screen.
+function NavPreview() {
+  const [open, setOpen] = useState(true);
+  const [active, setActive] = useState('chat');
+  return (
+    <div style={{ position: 'relative', height: '100dvh', overflow: 'hidden' }}>
+      <MobileChatList
+        agents={[
+          { slug: 'elon', name: 'Elon', status: 'working' },
+          { slug: 'rex', name: 'Rex', status: 'working' },
+          { slug: 'gary', name: 'Gary', status: 'idle' },
+        ]}
+        projectRooms={[
+          { slug: 'space-rising', name: 'Space Rising', color: 'var(--violet-400)', tasks: Array.from({ length: 28 }) },
+          { slug: 'corner', name: 'Corner', color: 'var(--accent)', tasks: Array.from({ length: 84 }) },
+        ]}
+        onOpenAgent={() => {}}
+        onOpenProject={() => {}}
+        onMenu={() => setOpen(true)}
+        onBack={() => {}}
+      />
+      <MobileNavDrawer
+        open={open}
+        onOpen={() => setOpen(true)}
+        onClose={() => setOpen(false)}
+        onNav={(k) => setActive(k)}
+        activeKey={active}
+        user={{ initials: 'P', name: 'Patrik' }}
+        badges={{ chat: { kind: 'live', count: 3 }, review: { kind: 'done', count: 40 }, support: { needs: 3 }, command: { kind: 'live', count: 4 } }}
+      />
+    </div>
+  );
+}
+
 const SAMPLE_REVIEW = {
   queueSummary: { readyCount: 2, pipelineCount: 4 },
   queueItems: [
@@ -329,6 +368,8 @@ export default function CV6KitTest() {
           onOpenProject={noop}
           onBack={noop}
         />
+      ) : screen === 'nav' ? (
+        <NavPreview />
       ) : screen === 'chat' ? (
         <ChatStepThread {...SAMPLE_CHAT} onBack={noop} onSend={noop} onChoice={noop} />
       ) : screen === 'tracker' ? (

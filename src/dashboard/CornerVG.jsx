@@ -31,6 +31,7 @@ import { OVERLAY } from './cv4/lib/uiKit.jsx'
 // corner:corner-ui-cv6 R-KIT-2 — wired Claude-design mobile Home (real data, kit look).
 import { MobileHomeWired } from './cv6kit/MobileHomeWired.jsx'
 import { MobileChatList } from './cv6kit/MobileChatList.jsx'
+import MobileNavDrawer from './cv6kit/MobileNavDrawer.jsx'
 import { MobileProjectWired } from './cv6kit/MobileProjectWired.jsx'
 import { NewRoomModal } from './cv6kit/NewRoomModal.jsx'
 // R5 — Claude-design DESKTOP Home (3-column shell, real data, self-scoped data-cv6kit).
@@ -200,6 +201,10 @@ export default function CornerVG() {
   // selectedMail is the email the user just clicked — pinned as a chat chip
   // until the EA sends a reply or the user clears it.
   const [activeTool, setActiveTool] = useState(null)
+  // corner:corner-ui-cv6 R17 — the mobile global-nav drawer (right-anchored,
+  // opened by the header menu OR a right-edge swipe). Switches tools; .mback goes
+  // up a level within a tool. Mounted once for every cv6 mobile screen.
+  const [navOpen, setNavOpen] = useState(false)
   const [selectedMail, setSelectedMail] = useState(null)
   // corner:support N1 — Support Inbox view (Patrik workspace only)
   // ?support=1 deep-links straight to the Support dashboard (verify-at URL for
@@ -1336,6 +1341,26 @@ export default function CornerVG() {
     setActiveTool(tool)
     if (tool !== 'mail') setSelectedMail(null)
   }, [])
+
+  // corner:corner-ui-cv6 R17 — ONE tool-switch map shared by the Home menu, the
+  // desktop Home tiles, and the mobile nav drawer. Every key lands on its real
+  // wired surface (never the old CV4 tasks/files screen). Closes the nav drawer.
+  const handleCv6Nav = useCallback((key) => {
+    setNavOpen(false)
+    setSelectedMail(null)
+    if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
+    else if (key === 'chat') { setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('chat'); }
+    else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
+    else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
+    else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
+    else if (key === 'review') { setShowSupportInbox(false); setActiveTool('review'); }
+    else if (key === 'tracker') { setShowSupportInbox(false); setActiveTool('tracker'); }
+    else if (key === 'onboarding') { setShowSupportInbox(false); setActiveTool('onboarding'); }
+    else if (key === 'settings' || key === 'profile') { setShowSupportInbox(false); setActiveTool('settings'); }
+    else if (key === 'newproject') { setActiveTool(null); setShowSupportInbox(false); setNewRoomModal({ kind: 'project' }); }
+    else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
+    else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
+  }, [telephone])
 
   // Called by LeftMailPanel / MailListPanel when the user clicks an email.
   // R15 (2026-05-25): also flip activeTool='mail' so the existing wiring
@@ -2870,6 +2895,26 @@ export default function CornerVG() {
         </div>
       )}
 
+      {/* corner:corner-ui-cv6 R17 — mobile global nav drawer (right-anchored).
+          Mounted ONCE above every cv6 mobile screen (z above the z:50 screens and
+          the z:55 float dock) so the right-edge swipe + grabber and the header menu
+          all open the same tool switcher from anywhere. Self-scoped data-cv6kit so
+          the ported nav classes + tokens resolve; pointerEvents:none lets the screen
+          beneath stay live until the grabber/drawer is touched. */}
+      {cv6Mode && !isDesktop && (
+        <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 60, pointerEvents: 'none' }}>
+          <MobileNavDrawer
+            open={navOpen}
+            onOpen={() => setNavOpen(true)}
+            onClose={() => setNavOpen(false)}
+            onNav={handleCv6Nav}
+            activeKey={showSupportInbox ? 'support' : (activeTool === 'chat' ? 'chat' : activeTool === 'organize' ? 'organize' : activeTool === 'command' ? 'command' : activeTool === 'review' ? 'review' : activeTool === 'tracker' ? 'tracker' : activeTool === 'settings' ? 'settings' : 'home')}
+            user={{ initials: ((currentUser?.name || 'P').trim()[0] || 'P').toUpperCase(), name: currentUser?.name || 'You' }}
+            badges={supportPending > 0 ? { support: { needs: supportPending } } : {}}
+          />
+        </div>
+      )}
+
       {/* ── CV4 CONTEXT NAV (second row: hamburger + title · Chat|Tasks · slot) */}
       {!cv6Mode && <CV4ContextNav
         tab={tab}
@@ -3087,6 +3132,7 @@ export default function CornerVG() {
                       projectRooms={projectRooms}
                       onOpenAgent={handleSelectAgent}
                       onOpenProject={(proj) => { setMobileProject(proj); setActiveTool('projectview') }}
+                      onMenu={() => setNavOpen(true)}
                       onBack={() => setActiveTool(null)}
                     />
                   )
@@ -3173,33 +3219,7 @@ export default function CornerVG() {
                   onSelectAgent={handleSelectAgent}
                   onSelectProject={(proj, mission) => { if (mission && mission.slug) { handleSelectMission(mission, proj); } else { setMobileProject(proj); setActiveTool('projectview'); } }}
                   onCatchupOpen={handleCatchupOpenRoom}
-                  onNav={(key) => {
-                    // Every menu item lands on its real surface — never the old CV4
-                    // tasks/files screen. home → kit Home; chat → the live EA
-                    // conversation; organize/support/command → their wired kit screens;
-                    // scribe → the real voice recorder. review/tracker have no data
-                    // model yet, so they return home (parked) rather than show old UI.
-                    // onboarding → first-run setup flow on phones.
-                    setSelectedMail(null)
-                    if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
-                    else if (key === 'chat') {
-                      // Route chat through activeTool (reliable, like the other tools)
-                      // instead of the selectedAgent path, which could land on the old
-                      // ChatPanel if agents had not loaded yet. The EA is resolved at
-                      // render time in the activeTool==='chat' branch.
-                      setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('chat')
-                    }
-                    else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
-                    else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
-                    else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
-                    else if (key === 'review') { setShowSupportInbox(false); setActiveTool('review'); }
-                    else if (key === 'tracker') { setShowSupportInbox(false); setActiveTool('tracker'); }
-                    else if (key === 'onboarding') { setShowSupportInbox(false); setActiveTool('onboarding'); }
-                    else if (key === 'settings' || key === 'profile') { setShowSupportInbox(false); setActiveTool('settings'); }
-                    else if (key === 'newproject') { setActiveTool(null); setShowSupportInbox(false); setNewRoomModal({ kind: 'project' }); }
-                    else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
-                    else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
-                  }}
+                  onNav={handleCv6Nav}
                 />
               ) : (
               /* corner:corner-ui-cv6 R5 — Claude-design DESKTOP Home. Three-column
@@ -3218,20 +3238,7 @@ export default function CornerVG() {
                 onSelectAgent={handleSelectAgent}
                 onSelectProject={(proj, mission) => { if (mission && mission.slug) handleSelectMission(mission, proj); else handleSelectProject(proj); }}
                 onCatchupOpen={handleCatchupOpenRoom}
-                onNav={(key) => {
-                  setSelectedMail(null)
-                  if (key === 'home') { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
-                  else if (key === 'chat') { setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setActiveTool('chat') }
-                  else if (key === 'support') { setActiveTool(null); setShowSupportInbox(true); }
-                  else if (key === 'organize') { setShowSupportInbox(false); setActiveTool('organize'); }
-                  else if (key === 'command') { setShowSupportInbox(false); setActiveTool('command'); }
-                  else if (key === 'review') { setShowSupportInbox(false); setActiveTool('review'); }
-                  else if (key === 'tracker') { setShowSupportInbox(false); setActiveTool('tracker'); }
-                  else if (key === 'onboarding') { setShowSupportInbox(false); setActiveTool('onboarding'); }
-                  else if (key === 'settings' || key === 'profile') { setShowSupportInbox(false); setActiveTool('settings'); }
-                  else if (key === 'scribe') { setActiveTool(null); setShowSupportInbox(false); setPhoneOverlayOpen(true); if (!telephone.isRecording) telephone.toggle(); }
-                  else { setActiveTool(null); setShowSupportInbox(false); setSelectedAgent(null); setConversationTarget(null); setTab('chat'); }
-                }}
+                onNav={handleCv6Nav}
               />
               )
             ) : selectedAgent?.slug === 'elon' && deckTab === 'deck' ? (

@@ -43,6 +43,27 @@
 [data-cv6kit] .mmenu .mav { position:relative; width:38px; height:38px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:700; flex:none; }
 [data-cv6kit] .mmenu .mdot { position:absolute; top:0; right:0; width:12px; height:12px; border-radius:50%; background:var(--accent); border:2.5px solid #0d1117; }
 
+/* ---- mobile header actions slot (search then menu LAST, so menu sits far right) ---- */
+[data-cv6kit] .mhdr .mhactions { display:flex; align-items:center; gap:8px; flex:none; }
+[data-cv6kit] .mhdr .mhactions .ib, [data-cv6kit] .mhdr > .ib { width:36px; height:36px; border-radius:10px; }
+
+/* ---- mobile global navigation — right drawer + edge-swipe ----
+   Mobile has no room for the desktop 8-tool top nav, so the SAME tools live in a
+   right-anchored drawer. Open it two ways: tap the header menu, OR swipe in from
+   the right edge (the .edgehint grabber makes it discoverable). The drawer SWITCHES
+   tools; .mback goes UP a level within a tool. (The design's always-on .phone::after
+   handle is rendered as the live .edgehint grabber since the live app has no phone
+   wrapper.) */
+[data-cv6kit] .edgehint { position:absolute; top:50%; right:0; transform:translateY(-50%); z-index:7; display:flex; align-items:center; gap:7px; height:46px; padding:0 11px 0 13px; border-radius:23px 0 0 23px; background:rgba(13,17,23,.72); border:1px solid rgba(255,255,255,.14); border-right:none; backdrop-filter:blur(14px) saturate(1.2); -webkit-backdrop-filter:blur(14px) saturate(1.2); color:var(--muted); box-shadow:-8px 0 24px -8px rgba(0,0,0,.6); cursor:pointer; }
+[data-cv6kit] .edgehint .grip { width:4px; height:22px; border-radius:3px; background:var(--faint); flex:none; }
+[data-cv6kit] .navscrim { position:absolute; inset:0; z-index:8; background:rgba(4,6,9,.55); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); }
+[data-cv6kit] .navdrawer { position:absolute; top:0; right:0; bottom:0; z-index:9; width:300px; max-width:85%; background:var(--ground); border-left:1px solid var(--hair); box-shadow:-26px 0 64px -16px rgba(0,0,0,.72); display:flex; flex-direction:column; }
+[data-cv6kit] .navrow { display:flex; align-items:center; gap:13px; padding:10px 14px; border-radius:12px; cursor:pointer; }
+[data-cv6kit] .navrow.on { background:var(--accent-weak); }
+[data-cv6kit] .navrow .ni { width:38px; height:38px; border-radius:11px; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6kit] .navrow.on .ni { background:var(--accent); border-color:transparent; color:#fff; }
+[data-cv6kit] .navrow .nl { flex:1; font-size:15px; font-weight:600; color:var(--fg); }
+
 /* ---- background activity dock (one chip, two placements: rail card + float pill) ---- */
 [data-cv6kit] .actdock { display:flex; align-items:center; gap:11px; height:56px; padding:0 10px 0 13px; border-radius:14px; background:var(--surface); border:1px solid var(--hair); box-shadow:var(--shadow-card); }
 [data-cv6kit] .actdock .ad-ico { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }

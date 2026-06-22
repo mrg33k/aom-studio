@@ -59,7 +59,7 @@ function projectCount(p) {
   return (p && p.tasks && p.tasks.length) || (p && p.count) || (p && p.missions && p.missions.length) || 0;
 }
 
-export function MobileChatList({ agents = [], projectRooms = [], onOpenAgent, onOpenProject, onBack }) {
+export function MobileChatList({ agents = [], projectRooms = [], onOpenAgent, onOpenProject, onBack, onMenu }) {
   const [query, setQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const q = query.trim().toLowerCase();
@@ -101,7 +101,7 @@ export function MobileChatList({ agents = [], projectRooms = [], onOpenAgent, on
 
       {/* one Corner header: menu · Chat + counts · search */}
       <div className="mhdr">
-        <button className="ib" onClick={onBack} aria-label="Menu" style={{ width: 36, height: 36, borderRadius: 10 }}>
+        <button className="ib" onClick={onMenu || onBack} aria-label="Menu" style={{ width: 36, height: 36, borderRadius: 10 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
         </button>
         <div className="mhtitle">
