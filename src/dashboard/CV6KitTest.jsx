@@ -21,6 +21,7 @@ import { SupportView } from './cv6kit/SupportView.jsx';
 import { OrganizeView } from './cv6kit/OrganizeView.jsx';
 import { ReviewView } from './cv6kit/ReviewView.jsx';
 import { MobileChatList } from './cv6kit/MobileChatList.jsx';
+import KitGallery from './cv6kit/KitGallery.jsx';
 import { ScribeView } from './cv6kit/ScribeView.jsx';
 import { OnboardingView } from './cv6kit/OnboardingView.jsx';
 import { SettingsView } from './cv6kit/SettingsView.jsx';
@@ -278,6 +279,10 @@ export default function CV6KitTest() {
   const newRoomKind = (typeof window !== 'undefined' && (window.location.search.match(/[?&]kind=([a-z]+)/) || [])[1]) || 'project';
   // ?state=empty|loading|error lets us preview a tool's empty / loading / error states.
   const stateVar = (typeof window !== 'undefined' && (window.location.search.match(/[?&]state=([a-z]+)/) || [])[1]) || '';
+  // ?theme=dark|light|glass for the kit gallery (defaults glass).
+  const themeVar = (typeof window !== 'undefined' && (window.location.search.match(/[?&]theme=([a-z]+)/) || [])[1]) || 'glass';
+
+  if (screen === 'kit') return <KitGallery theme={themeVar} />;
 
   return (
     <div data-cv6kit data-theme="glass" style={{ minHeight: '100dvh', background: 'var(--ground)' }}>

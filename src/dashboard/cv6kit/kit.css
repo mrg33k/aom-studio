@@ -128,6 +128,7 @@
   --status-online: var(--green-500);
   --status-working: var(--lime-400);
   --status-attention: var(--amber-400);
+  --status-ready: var(--faint);
   --status-idle: var(--faint);
 }
 
