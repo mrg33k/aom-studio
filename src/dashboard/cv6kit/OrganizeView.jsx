@@ -575,95 +575,76 @@ function FilePreviewScreen({ file, projectName, onBack, onMove }) {
 // opens inside a project's files; tapping the project name in the breadcrumb opens
 // this bottom sheet to switch to another project. Same sheet language as MoveToSheet
 // so they read as siblings — grab handle, title, radio-selected list.
-function ProjectSwitcherSheet({ projects = [], selectedProjectId, onClose, onSelect }) {
+// ProjectSwitcherDropdown — Patrik 2026-06-21: switch project from a small dropdown
+// UNDER the project name, not a full-screen bottom-sheet takeover. Anchored to the
+// breadcrumb name button (its parent is position:relative); a transparent full-screen
+// layer catches the outside-tap to close. Picking a project switches the files in
+// place (onSelect -> onSelectProject), the breadcrumb name updates, the menu closes.
+function ProjectSwitcherDropdown({ projects = [], selectedProjectId, onClose, onSelect }) {
   return (
     <>
-      {/* Scrim */}
+      {/* outside-tap catcher (transparent, no dimming — this is a dropdown, not a sheet) */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'transparent' }} />
+      {/* dropdown panel, anchored under the name */}
       <div
-        onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(4, 6, 9, 0.55)', zIndex: 100 }}
-      />
-      {/* Sheet */}
-      <div style={{
-        position: 'fixed',
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'var(--surface)',
-        borderTopLeftRadius: 22,
-        borderTopRightRadius: 22,
-        borderTop: '1px solid var(--hair)',
-        boxShadow: '0 -18px 50px -12px rgba(0,0,0,.6)',
-        padding: '10px 0 calc(16px + env(safe-area-inset-bottom, 0px))',
-        zIndex: 101,
-      }}>
-        {/* Handle */}
-        <div style={{ width: 38, height: 4, borderRadius: 2, background: 'var(--hair)', margin: '0 auto 14px' }} />
-
-        {/* Title + close */}
-        <div style={{ display: 'flex', alignItems: 'center', padding: '0 18px 12px' }}>
-          <div style={{ flex: 1, fontSize: 16, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>
-            Switch project
-          </div>
-          <button
-            onClick={onClose}
-            style={{ width: 30, height: 30, borderRadius: 9, border: 'none', background: 'transparent', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-          >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 6l12 12M18 6 6 18"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* Project list */}
-        <div style={{ padding: '0 12px', maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          {projects.length === 0 ? (
-            <div style={{ padding: '16px 14px', color: 'var(--faint)', fontSize: 13 }}>No projects yet.</div>
-          ) : projects.map((proj, idx) => {
-            const isCurrent = proj.slug === selectedProjectId || proj.id === selectedProjectId;
-            return (
-              <div
-                key={proj.id || proj.slug || idx}
-                onClick={() => onSelect && onSelect(proj)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: '0 12px',
-                  height: 54,
-                  borderRadius: 11,
-                  background: isCurrent ? 'var(--accent-weak)' : 'transparent',
-                  cursor: 'pointer',
-                  marginBottom: idx < projects.length - 1 ? 4 : 0,
-                }}
-              >
-                <FolderIcon color={isCurrent ? 'var(--accent)' : 'var(--muted)'} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: isCurrent ? 600 : 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {proj.name || proj.slug}
-                  </div>
-                  {typeof proj.fileCount === 'number' && proj.fileCount > 0 && (
-                    <div style={{ fontSize: 11, color: 'var(--muted)' }}>{proj.fileCount} file{proj.fileCount === 1 ? '' : 's'}</div>
-                  )}
+        role="menu"
+        style={{
+          position: 'absolute',
+          top: 'calc(100% + 6px)',
+          left: 0,
+          zIndex: 61,
+          minWidth: 224,
+          maxWidth: 300,
+          maxHeight: 320,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          background: 'var(--surface)',
+          border: '1px solid var(--hair)',
+          borderRadius: 14,
+          boxShadow: '0 18px 44px -14px rgba(0,0,0,.6)',
+          padding: 6,
+        }}
+      >
+        {projects.length === 0 ? (
+          <div style={{ padding: '12px', color: 'var(--faint)', fontSize: 13 }}>No projects yet.</div>
+        ) : projects.map((proj, idx) => {
+          const isCurrent = proj.slug === selectedProjectId || proj.id === selectedProjectId;
+          return (
+            <button
+              key={proj.id || proj.slug || idx}
+              role="menuitem"
+              onClick={() => { if (!isCurrent) onSelect && onSelect(proj); else onClose && onClose(); }}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '9px 10px',
+                borderRadius: 10,
+                border: 'none',
+                background: isCurrent ? 'var(--accent-weak)' : 'transparent',
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontFamily: 'var(--font-sans)',
+              }}
+            >
+              <FolderIcon color={isCurrent ? 'var(--accent)' : 'var(--muted)'} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13.5, fontWeight: isCurrent ? 600 : 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {proj.name || proj.slug}
                 </div>
-                <span style={{
-                  width: 21,
-                  height: 21,
-                  borderRadius: '50%',
-                  border: `2px solid ${isCurrent ? 'var(--accent)' : 'var(--hair)'}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flex: 'none',
-                }}>
-                  {isCurrent && (
-                    <span style={{ width: 11, height: 11, borderRadius: '50%', background: 'var(--accent)' }} />
-                  )}
-                </span>
+                {typeof proj.fileCount === 'number' && proj.fileCount > 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--muted)' }}>{proj.fileCount} file{proj.fileCount === 1 ? '' : 's'}</div>
+                )}
               </div>
-            );
-          })}
-        </div>
+              {isCurrent && (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+                  <path d="m5 13 4 4L19 7"/>
+                </svg>
+              )}
+            </button>
+          );
+        })}
       </div>
     </>
   );
@@ -958,30 +939,44 @@ export function OrganizeView({
               </svg>
             </>
           )}
-          <button
-            onClick={() => setShowSwitcher(true)}
-            aria-label="Switch project"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '2px 4px',
-              margin: '-2px -2px -2px -4px',
-              borderRadius: 8,
-              border: 'none',
-              background: 'transparent',
-              color: 'var(--fg)',
-              fontWeight: 500,
-              fontSize: 12,
-              fontFamily: 'var(--font-sans)',
-              cursor: 'pointer',
-            }}
-          >
-            {selectedProject?.name || 'Dashboard'}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 9l6 6 6-6"/>
-            </svg>
-          </button>
+          <span style={{ position: 'relative', display: 'inline-flex' }}>
+            <button
+              onClick={() => setShowSwitcher((v) => !v)}
+              aria-label="Switch project"
+              aria-expanded={showSwitcher}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '2px 4px',
+                margin: '-2px -2px -2px -4px',
+                borderRadius: 8,
+                border: 'none',
+                background: showSwitcher ? 'var(--surface-2)' : 'transparent',
+                color: 'var(--fg)',
+                fontWeight: 500,
+                fontSize: 12,
+                fontFamily: 'var(--font-sans)',
+                cursor: 'pointer',
+              }}
+            >
+              {selectedProject?.name || 'Dashboard'}
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showSwitcher ? 'rotate(180deg)' : 'none', transition: 'transform .15s' }}>
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+            {showSwitcher && (
+              <ProjectSwitcherDropdown
+                projects={projects}
+                selectedProjectId={selectedProject?.slug || selectedProject?.id}
+                onClose={() => setShowSwitcher(false)}
+                onSelect={(p) => {
+                  onSelectProject && onSelectProject(p);
+                  setShowSwitcher(false);
+                }}
+              />
+            )}
+          </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           {[
@@ -1242,18 +1237,7 @@ export function OrganizeView({
         />
       )}
 
-      {/* Project switcher sheet (tap the breadcrumb project name) */}
-      {showSwitcher && (
-        <ProjectSwitcherSheet
-          projects={projects}
-          selectedProjectId={selectedProject?.slug || selectedProject?.id}
-          onClose={() => setShowSwitcher(false)}
-          onSelect={(p) => {
-            onSelectProject && onSelectProject(p);
-            setShowSwitcher(false);
-          }}
-        />
-      )}
+      {/* Project switcher is now a dropdown under the breadcrumb name (see above). */}
 
       <style>{`
         @keyframes spin {
