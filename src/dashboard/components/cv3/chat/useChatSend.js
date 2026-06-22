@@ -32,11 +32,10 @@ import { getProjectEA } from '../../../data/project-ea.js'
 // the turn on the Gemini lane regardless of the room's saved model pref.
 // The live /dashboard surface sends no override and rides the saved prefs.
 function cvgModelOverride() {
-  if (typeof window === 'undefined') return {}
-  if (!window.location.pathname.startsWith('/cvg')) return {}
-  let m = null
-  try { m = window.localStorage.getItem('cvgModel') } catch { /* private mode */ }
-  return { model: m || 'gemini-3.5-flash' }
+  // Gemini turned OFF for cost (2026-06-22, corner:corner-ui-cv6). No override —
+  // every surface rides the room's saved Claude pref. Rebuild the Gemini lane
+  // later per corner/missions/corner-ui-cv6/GEMINI-WIRING-PRESERVED.md.
+  return {}
 }
 
 // Wraps an email into a Mail Room context block prepended to the user's

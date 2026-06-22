@@ -66,8 +66,7 @@ export const MODEL_OPTIONS = [
 // "discuss") so those /cvg actions run Gemini like the rest of /cvg, instead of
 // silently falling to the room's Claude pref. The bridge + listener honor it.
 export function surfaceModel() {
-  if (typeof window === 'undefined') return ''
-  if (!window.location.pathname.startsWith('/cvg')) return ''
-  try { return window.localStorage.getItem('cvgModel') || 'gemini-3.5-flash' }
-  catch { return 'gemini-3.5-flash' }
+  // Gemini turned OFF for cost (2026-06-22, corner:corner-ui-cv6). No override —
+  // all sends ride the room's saved Claude pref. Rebuild per GEMINI-WIRING-PRESERVED.md.
+  return ''
 }
