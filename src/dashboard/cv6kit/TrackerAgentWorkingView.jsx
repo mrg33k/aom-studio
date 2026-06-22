@@ -53,7 +53,7 @@ export function TrackerAgentWorkingView({ bug = {}, onBack, onPause, onOpenInCom
         </div>
 
         {/* Master loop label */}
-        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 11 }}>
+        <div className="eyebrow" style={{ marginBottom: 11 }}>
           Master loop · verifies each step
         </div>
 
@@ -65,7 +65,7 @@ export function TrackerAgentWorkingView({ bug = {}, onBack, onPause, onOpenInCom
               {step.done ? (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--success)" stroke="none" style={{ flex: 'none', marginTop: 1 }}>
                   <circle cx="12" cy="12" r="10"/>
-                  <path d="m8 12 3 3 5-6" stroke="#0A0A0B" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="m8 12 3 3 5-6" stroke="var(--ground)" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               ) : step.working ? (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" style={{ animation: 'spin 1.05s linear infinite', flex: 'none', marginTop: 1 }}>

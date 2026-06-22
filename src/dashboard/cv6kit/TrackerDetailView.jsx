@@ -98,7 +98,7 @@ export function TrackerDetailView({ bug = {}, onBack, onAssignAgent }) {
             <div style={{ display: 'flex', gap: 10 }}>
               {bug.attachments.map((att, j) => (
                 <div key={j} style={{ flex: 1, border: '1px solid var(--hair)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
-                  <div style={{ height: 54, background: 'linear-gradient(135deg,#2a2030,#15161a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="att-bg" style={{ height: 54, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {att.type === 'image' ? (
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg>
                     ) : (

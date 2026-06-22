@@ -75,7 +75,7 @@ function BugListCard({ bug, onSelect }) {
           <div style={{ display: 'flex', gap: 8 }}>
             {bug.attachments.map((att, j) => (
               <div key={j} style={{ flex: 1, border: '1px solid var(--hair)', borderRadius: 10, overflow: 'hidden', background: 'var(--surface)' }}>
-                <div style={{ height: 54, background: 'linear-gradient(135deg,#2a2030,#15161a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ height: 54, background: 'linear-gradient(135deg,#2a2030,#15161a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }} className="att-bg">
                   {att.type === 'image' ? (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg>
                   ) : (
@@ -150,7 +150,7 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           {/* Switcher — 300px left panel */}
           <div style={{ width: 300, flex: 'none', borderRight: '1px solid var(--divider)', padding: '20px 16px', overflow: 'hidden' }}>
-            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', margin: '0 6px 8px' }}>Project trackers</div>
+            <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Project trackers</div>
             <div style={{ marginBottom: 20 }}>
               {trackers.slice(0, 3).map((t, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 12px', borderRadius: 10, ...(t.active ? { background: 'var(--accent-weak)' } : {}) }}>
@@ -163,7 +163,7 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', margin: '0 6px 8px' }}>Mission trackers</div>
+            <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Mission trackers</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 12px', borderRadius: 10 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--faint)' }} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -190,7 +190,7 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
               </button>
             </div>
             <div style={{ padding: '0 24px', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', height: 34, borderBottom: '1px solid var(--hair)', fontSize: 11, fontWeight: 600, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--muted)' }}>
+              <div className="eyebrow" style={{ display: 'flex', alignItems: 'center', height: 34, borderBottom: '1px solid var(--hair)' }}>
                 <div style={{ flex: 1 }}>Bug</div>
                 <div style={{ width: 120, flex: 'none' }}>Status</div>
                 <div style={{ width: 90, flex: 'none' }}>Priority</div>
@@ -253,12 +253,12 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12.5, color: 'var(--fg)' }}>Jun 17 · 11:15 PM</span>
               </div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 9 }}>Description</div>
+            <div className="eyebrow" style={{ marginBottom: 9 }}>Description</div>
             <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--fg)', margin: '0 0 18px' }}>
               Repo <code style={{ fontFamily: 'var(--font-mono)', background: 'var(--chip)', padding: '1px 6px', borderRadius: 5, fontSize: '.85em', color: 'var(--fg)' }}>space-rising</code> isn't found in the <code style={{ fontFamily: 'var(--font-mono)', background: 'var(--chip)', padding: '1px 6px', borderRadius: 5, fontSize: '.85em', color: 'var(--fg)' }}>task-runner.sh</code> resolver. Add a case in <code style={{ fontFamily: 'var(--font-mono)', background: 'var(--chip)', padding: '1px 6px', borderRadius: 5, fontSize: '.85em', color: 'var(--fg)' }}>resolve_repo_path()</code> or create <code style={{ fontFamily: 'var(--font-mono)', background: 'var(--chip)', padding: '1px 6px', borderRadius: 5, fontSize: '.85em', color: 'var(--fg)' }}>projects/space-rising/</code>.
             </p>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Checklist · 1 of 3</span>
+              <span className="eyebrow">Checklist · 1 of 3</span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                 Add
@@ -268,7 +268,7 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="var(--success)" stroke="none" style={{ flex: 'none', marginTop: 1 }}>
                   <circle cx="12" cy="12" r="10" />
-                  <path d="m8 12 3 3 5-6" stroke="#0A0A0B" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="m8 12 3 3 5-6" stroke="var(--ground)" strokeWidth="2.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 <span style={{ flex: 1, fontSize: 13, lineHeight: 1.4, color: 'var(--muted)', textDecoration: 'line-through' }}>Reproduce on docs-only project</span>
               </div>
@@ -283,7 +283,7 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
                 <span style={{ flex: 1, fontSize: 13, lineHeight: 1.4, color: 'var(--muted)' }}>Add a regression test</span>
               </div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 10 }}>Attachments · 2</div>
+            <div className="eyebrow" style={{ marginBottom: 10 }}>Attachments · 2</div>
             <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
               <div style={{ flex: 1, border: '1px solid var(--hair)', borderRadius: 11, overflow: 'hidden', background: 'var(--surface)' }}>
                 <div style={{ height: 60, background: 'linear-gradient(135deg,#2a2030,#15161a)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -345,6 +345,119 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
           {PLUS}
         </button>
       )}
+    </div>
+  );
+}
+
+/**
+ * MOBILE FRAME A: Tracker Switcher Screen — list of available trackers with status pills
+ * Status: 3 HIGH (red), 1 LIVE (green), 5 READY (gray), 2 DONE (accent)
+ * Static shell with sample data.
+ */
+export function TrackerSwitcherView({ onSelect, onBack }) {
+  const trackers = [
+    { name: 'CV6 Bugs', project: 'Corner CV6', statuses: [{ label: '3 HIGH', tone: '#F87171' }, { label: '1 LIVE', tone: 'var(--success)' }] },
+    { name: 'Space Rising Tickets', project: 'Space Rising', statuses: [{ label: '5 READY', tone: 'var(--muted)' }] },
+    { name: 'Launch bugs', project: 'Loop Test', statuses: [{ label: '2 DONE', tone: 'var(--accent)' }] },
+  ];
+
+  return (
+    <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
+      <CvgMobileHeader title="Trackers" onBack={onBack} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(20px + env(safe-area-inset-bottom, 0px))', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {trackers.map((t, i) => (
+          <div key={i} onClick={() => onSelect(t)} style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 15, padding: '14px 16px', cursor: 'pointer' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 9 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)', marginBottom: 2 }}>{t.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--muted)' }}>{t.project}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {t.statuses.map((s, j) => (
+                <span key={j} style={{ fontSize: 10, fontWeight: 700, padding: '4px 8px', borderRadius: 6, color: s.tone, background: s.tone === '#F87171' ? 'rgba(248,113,113,.16)' : s.tone === 'var(--success)' ? 'var(--success-weak)' : s.tone === 'var(--muted)' ? 'var(--chip)' : 'var(--accent-weak)' }}>
+                  {s.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * MOBILE FRAME B: New Issue Form Screen — create new bug with title, description, priority, assignee, attachments
+ * Static shell with sample data and form structure.
+ */
+export function NewIssueView({ onSubmit, onBack }) {
+  const [title, setTitle] = React.useState('');
+  const [priority, setPriority] = React.useState('med');
+
+  return (
+    <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
+      <CvgMobileHeader title="New Issue" sub="CV6 Bugs · Corner CV6" onBack={onBack} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 16px calc(80px + env(safe-area-inset-bottom, 0px))' }}>
+
+        {/* Title field */}
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 6 }} className="eyebrow">Title</label>
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Brief description of the issue" style={{ width: '100%', height: 44, padding: '10px 12px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box' }} />
+        </div>
+
+        {/* Description field */}
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 6 }} className="eyebrow">Description</label>
+          <textarea placeholder="More details about what's broken or needed" style={{ width: '100%', minHeight: 100, padding: '10px 12px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 14, fontFamily: 'var(--font-sans)', boxSizing: 'border-box', resize: 'none' }} />
+        </div>
+
+        {/* Priority selector */}
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 9 }} className="eyebrow">Priority</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[{ val: 'high', label: 'High', color: '#F87171' }, { val: 'med', label: 'Med', color: 'var(--warn)' }, { val: 'low', label: 'Low', color: 'var(--accent)' }].map((p) => (
+              <button key={p.val} onClick={() => setPriority(p.val)} style={{ flex: 1, height: 40, border: priority === p.val ? `2px solid ${p.color}` : `1px solid var(--hair)`, borderRadius: 10, background: priority === p.val ? 'var(--surface)' : 'transparent', color: p.color, fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Assign card (mock) */}
+        <div style={{ border: '1px solid var(--accent-weak)', background: 'linear-gradient(180deg,var(--accent-weak),transparent)', borderRadius: 15, padding: 14, marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, background: 'rgba(52,211,153,.22)', color: 'var(--success)' }}>
+              EL
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>Assign to agent</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.4 }}>Works autonomously, asks when blocked</div>
+            </div>
+          </div>
+          <button style={{ width: '100%', height: 40, marginTop: 12, borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+            Assign Agent
+          </button>
+        </div>
+
+        {/* Attachments placeholder */}
+        <div style={{ marginBottom: 10 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 9 }} className="eyebrow">Attachments</label>
+          <div style={{ border: '2px dashed var(--hair)', borderRadius: 10, padding: '20px 14px', textAlign: 'center', cursor: 'pointer' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="1.8" style={{ margin: '0 auto 8px', display: 'block' }} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>Drag files or tap to attach</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Submit button — fixed bottom */}
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, padding: '12px 16px calc(20px + env(safe-area-inset-bottom, 0px))', background: 'linear-gradient(180deg,transparent,var(--ground))', zIndex: 20 }}>
+        <button onClick={() => onSubmit?.({ title, priority })} style={{ width: '100%', height: 48, borderRadius: 11, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 15, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+          Create Issue
+        </button>
+      </div>
     </div>
   );
 }
