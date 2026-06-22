@@ -12,6 +12,10 @@
    ui_kits/_base/frame.css (scoped [data-cv6kit]). Build screens from these. */
 @import './cv6-frame.css';
 
+/* Agent Chat element kit — the typed-block vocabulary the agent speaks in
+   (ported verbatim from ui_kits/agent-chat/chat.css, scoped [data-cv6kit]). */
+@import './chat.css';
+
 /* Typography & spacing tokens — scoped to [data-cv6kit], theme-independent */
 [data-cv6kit] {
   --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;

@@ -1,0 +1,201 @@
+/* Corner CV6 · Agent Chat element kit.
+   The reusable vocabulary for how an AGENT speaks to a human. This is the core of
+   the product: the agent should feel like a great colleague who explains things
+   well, so its messages are STRUCTURED ELEMENTS, never walls of text. Every card
+   in the \"Agent Chat\" group composes these classes. Link order: styles.css →
+   frame.css → chat.css. Everything is token-driven so all three themes work.
+
+   Mental model: a \"turn\" is one agent message = avatar + stacked blocks. Reach for
+   the block that matches the moment; never bury a decision or data in prose. */
+
+/* ---- canvas + showcase scaffold ---- */
+[data-cv6kit] .cc { background:var(--ground); border-radius:var(--radius-phone); border:1px solid var(--hair); padding:22px 20px; display:flex; flex-direction:column; gap:18px; box-sizing:border-box; }
+[data-cv6kit] .cc-cap { display:flex; align-items:baseline; gap:10px; margin-bottom:2px; }
+[data-cv6kit] .cc-cap .k { font-size:11px; font-weight:600; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); flex:none; }
+[data-cv6kit] .cc-cap .d { font-size:12.5px; color:var(--muted); line-height:1.5; }
+
+/* ---- the message turn ---- */
+[data-cv6kit] .turn { display:flex; gap:11px; align-items:flex-start; }
+[data-cv6kit] .turn .tav { width:34px; height:34px; border-radius:10px; background:rgba(52,211,153,.2); color:var(--success); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6kit] .turn .tbody { flex:1; min-width:0; display:flex; flex-direction:column; gap:9px; }
+[data-cv6kit] .turn .tname { display:flex; align-items:center; gap:8px; }
+[data-cv6kit] .turn .tname b { font-size:13.5px; font-weight:600; color:var(--fg); }
+[data-cv6kit] .turn .tname .tt { font-family:var(--font-mono); font-size:10.5px; color:var(--faint); }
+[data-cv6kit] .bubble { background:var(--surface); border:1px solid var(--hair); border-radius:15px; border-top-left-radius:5px; padding:11px 14px; font-size:13.5px; line-height:1.55; color:var(--fg); }
+[data-cv6kit] .umsg { align-self:flex-end; max-width:78%; background:var(--accent); color:#fff; border-radius:15px; border-top-right-radius:5px; padding:10px 13px; font-size:13.5px; line-height:1.45; }
+
+/* ---- communication blocks: success / question / snag ---- */
+[data-cv6kit] .cblk { border:1px solid var(--hair); border-radius:14px; padding:13px 14px; background:var(--surface); }
+[data-cv6kit] .cblk-h { display:flex; align-items:center; gap:8px; margin-bottom:9px; }
+[data-cv6kit] .cblk-h .ci { width:24px; height:24px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6kit] .cblk-h .ct { font-size:12px; font-weight:700; letter-spacing:.04em; }
+[data-cv6kit] .cblk-b { font-size:13.5px; line-height:1.55; color:var(--fg); }
+[data-cv6kit] .cblk.is-success { border-color:var(--success-weak); background:linear-gradient(180deg,var(--success-weak),transparent); }
+[data-cv6kit] .cblk.is-success .ci { background:var(--success-weak); color:var(--success); }
+[data-cv6kit] .cblk.is-success .ct { color:var(--success); }
+[data-cv6kit] .cblk.is-question { border-color:var(--accent-weak); background:linear-gradient(180deg,var(--accent-weak),transparent); }
+[data-cv6kit] .cblk.is-question .ci { background:var(--accent-weak); color:var(--accent); }
+[data-cv6kit] .cblk.is-question .ct { color:var(--accent); }
+[data-cv6kit] .cblk.is-snag { border-color:rgba(251,191,36,.28); background:linear-gradient(180deg,rgba(251,191,36,.12),transparent); }
+[data-cv6kit] .cblk.is-snag .ci { background:rgba(251,191,36,.18); color:var(--warn); }
+[data-cv6kit] .cblk.is-snag .ct { color:var(--warn); }
+
+/* option chips (questions, quick replies) */
+[data-cv6kit] .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:11px; }
+[data-cv6kit] .chip-btn { height:34px; padding:0 13px; border-radius:9px; border:1px solid var(--accent-weak); background:var(--surface); color:var(--accent); font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+[data-cv6kit] .chip-btn.is-primary { background:var(--accent); border-color:transparent; color:#fff; }
+[data-cv6kit] .chip-btn.is-rec::after { content:\"Recommended\"; font-size:10px; font-weight:700; opacity:.7; margin-left:2px; }
+
+/* recommended-path note inside a snag */
+[data-cv6kit] .cpath { display:flex; align-items:center; gap:8px; margin-top:10px; padding:9px 11px; border:1px solid var(--hair); border-radius:10px; background:var(--surface-2); font-size:12px; color:var(--muted); }
+
+/* ---- summary + action items ---- */
+[data-cv6kit] .csum { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; }
+[data-cv6kit] .csum-h { display:flex; align-items:center; gap:8px; padding:13px 15px 0; }
+[data-cv6kit] .csum-h .se { font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--accent); }
+[data-cv6kit] .csum-body { padding:12px 15px; display:flex; flex-direction:column; gap:9px; }
+[data-cv6kit] .sbullet { display:flex; gap:10px; align-items:flex-start; font-size:13px; line-height:1.5; color:var(--fg); }
+[data-cv6kit] .sbullet .sd { width:6px; height:6px; border-radius:50%; background:var(--accent); flex:none; margin-top:7px; }
+[data-cv6kit] .sbullet.is-warn { color:var(--warn); }
+[data-cv6kit] .sbullet.is-warn .sd { background:var(--warn); }
+[data-cv6kit] .cact { border-top:1px solid var(--divider); padding:12px 15px; }
+[data-cv6kit] .aitem { display:flex; align-items:flex-start; gap:9px; font-size:13px; color:var(--fg); line-height:1.4; padding:5px 0; }
+[data-cv6kit] .aitem .ck { width:18px; height:18px; border-radius:5px; border:2px solid var(--accent); flex:none; margin-top:1px; }
+[data-cv6kit] .aitem.is-done .ck { background:var(--accent); border-color:transparent; }
+
+/* ---- data table / spreadsheet ---- */
+[data-cv6kit] .cdata { border:1px solid var(--hair); border-radius:14px; background:var(--surface); padding:13px 14px; }
+[data-cv6kit] .cdata-h { display:flex; align-items:center; gap:8px; margin-bottom:11px; }
+[data-cv6kit] .cdata-h .dt { font-size:13.5px; font-weight:600; color:var(--fg); flex:1; }
+[data-cv6kit] .toggle { display:flex; gap:3px; background:var(--surface-2); border-radius:9px; padding:3px; }
+[data-cv6kit] .toggle button { height:26px; padding:0 12px; border-radius:6px; border:none; background:transparent; color:var(--muted); font-size:11.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6kit] .toggle button.on { background:var(--accent); color:#fff; }
+[data-cv6kit] .tbl { border:1px solid var(--hair); border-radius:10px; overflow:hidden; }
+[data-cv6kit] .tbl .tr { display:grid; gap:6px; padding:9px 12px; border-bottom:1px solid var(--divider); font-size:12.5px; color:var(--fg); }
+[data-cv6kit] .tbl .tr:last-child { border-bottom:none; }
+[data-cv6kit] .tbl .tr.th { background:var(--surface-2); font-size:9.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+[data-cv6kit] .tbl .tr.tf { background:var(--surface-2); font-weight:700; }
+[data-cv6kit] .tbl .num { text-align:right; font-family:var(--font-mono); }
+[data-cv6kit] .tbl .pos { color:var(--accent); }
+/* mini bar chart */
+[data-cv6kit] .bars { display:flex; align-items:flex-end; gap:10px; height:120px; padding:10px 4px 0; }
+[data-cv6kit] .bars .bar { flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; height:100%; justify-content:flex-end; }
+[data-cv6kit] .bars .bar i { width:100%; max-width:34px; border-radius:6px 6px 0 0; background:linear-gradient(180deg,var(--accent),#6366F1); display:block; }
+[data-cv6kit] .bars .bar span { font-size:10.5px; color:var(--muted); }
+
+/* ---- email element ---- */
+[data-cv6kit] .cmail { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; }
+[data-cv6kit] .cmail-h { display:flex; align-items:center; gap:11px; padding:13px 14px; border-bottom:1px solid var(--divider); }
+[data-cv6kit] .cmail-h .ma { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:none; }
+[data-cv6kit] .cmail-h .mfrom { font-size:13px; font-weight:600; color:var(--fg); }
+[data-cv6kit] .cmail-h .msub { font-size:11.5px; color:var(--muted); margin-top:1px; }
+[data-cv6kit] .cmail-tag { font-size:9.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; flex:none; color:var(--pink-400); background:rgba(244,114,182,.16); }
+[data-cv6kit] .cmail-q { padding:13px 14px; font-size:13px; line-height:1.6; color:var(--fg); border-left:2px solid var(--accent-weak); margin:13px 14px; background:var(--surface-2); border-radius:0 10px 10px 0; }
+[data-cv6kit] .cmail-f { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--divider); }
+
+/* ---- photo gallery ---- */
+[data-cv6kit] .cgal { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; border-radius:12px; overflow:hidden; max-width:340px; }
+[data-cv6kit] .cgal .ph { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; background:linear-gradient(135deg,#2a3340,#171b22); display:flex; align-items:center; justify-content:center; }
+[data-cv6kit] .cgal .ph.span2 { grid-column:span 2; aspect-ratio:2; }
+[data-cv6kit] .cgal .ph .more { position:absolute; inset:0; background:rgba(4,6,9,.62); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; font-weight:700; }
+[data-cv6kit] .gal-cap { display:flex; align-items:center; gap:7px; margin-top:9px; font-size:12px; color:var(--muted); }
+
+/* ---- media: audio + video ---- */
+[data-cv6kit] .caudio { display:flex; align-items:center; gap:12px; border:1px solid var(--hair); border-radius:14px; background:var(--surface); padding:11px 13px; }
+[data-cv6kit] .caudio .play { width:40px; height:40px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; flex:none; border:none; cursor:pointer; }
+[data-cv6kit] .wave { display:flex; align-items:center; gap:2.5px; height:30px; flex:1; }
+[data-cv6kit] .wave i { width:3px; border-radius:2px; background:var(--accent); opacity:.5; }
+[data-cv6kit] .wave i.on { opacity:1; }
+[data-cv6kit] .cvideo { position:relative; border-radius:14px; overflow:hidden; max-width:360px; border:1px solid var(--hair); background:linear-gradient(135deg,#26303f,#13161c); aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; }
+[data-cv6kit] .cvideo .vplay { width:54px; height:54px; border-radius:50%; background:rgba(255,255,255,.16); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); border:1.5px solid rgba(255,255,255,.4); display:flex; align-items:center; justify-content:center; }
+[data-cv6kit] .cvideo .vmeta { position:absolute; left:12px; bottom:11px; right:12px; display:flex; align-items:center; gap:8px; }
+[data-cv6kit] .vchip { font-family:var(--font-mono); font-size:10.5px; color:#fff; background:rgba(4,6,9,.6); padding:3px 7px; border-radius:6px; }
+
+/* ---- code block (show only when it matters) ---- */
+[data-cv6kit] .ccode { border:1px solid var(--hair); border-radius:12px; overflow:hidden; background:#0c0f14; }
+[data-cv6kit] .ccode-h { display:flex; align-items:center; gap:9px; padding:9px 12px; border-bottom:1px solid rgba(255,255,255,.07); }
+[data-cv6kit] .ccode-h .fn { font-family:var(--font-mono); font-size:11.5px; color:#cbd2dc; flex:1; }
+[data-cv6kit] .ccode-h .lang { font-family:var(--font-mono); font-size:10px; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; }
+[data-cv6kit] .ccode-h .cbtn { width:26px; height:26px; border-radius:7px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.04); color:#9aa3af; display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6kit] .ccode pre { margin:0; padding:13px 14px; overflow:hidden; font-family:var(--font-mono); font-size:11.5px; line-height:1.7; color:#c9d1d9; }
+[data-cv6kit] .ccode .cl { color:#8b949e; }   /* comment */
+[data-cv6kit] .ccode .kw { color:#ff7b72; }   /* keyword */
+[data-cv6kit] .ccode .fnname { color:#d2a8ff; }
+[data-cv6kit] .ccode .st { color:#a5d6ff; }   /* string */
+[data-cv6kit] .ccode .nm { color:#79c0ff; }
+/* collapsed code chip */
+[data-cv6kit] .codechip { display:flex; align-items:center; gap:10px; border:1px solid var(--hair); border-radius:11px; background:var(--surface); padding:10px 12px; cursor:pointer; }
+[data-cv6kit] .codechip .cg { width:32px; height:32px; border-radius:8px; background:#0c0f14; border:1px solid rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; flex:none; }
+
+/* ---- thinking / typing ---- */
+[data-cv6kit] .thinking { display:inline-flex; align-items:center; gap:8px; padding:9px 13px; border-radius:15px; border-top-left-radius:5px; background:var(--surface); border:1px solid var(--hair); }
+[data-cv6kit] .thinking .dot3 { display:flex; gap:4px; }
+[data-cv6kit] .thinking .dot3 i { width:6px; height:6px; border-radius:50%; background:var(--muted); animation:think 1.2s infinite; }
+[data-cv6kit] .thinking .dot3 i:nth-child(2){ animation-delay:.18s; }
+[data-cv6kit] .thinking .dot3 i:nth-child(3){ animation-delay:.36s; }
+@keyframes think { 0%,60%,100%{ opacity:.3; transform:translateY(0);} 30%{ opacity:1; transform:translateY(-3px);} }
+
+/* small file row reused across elements */
+.frowm { display:flex; align-items:center; gap:11px; padding:9px 11px; border:1px solid var(--hair); border-radius:11px; background:var(--surface-2); }
+.frowm .fg { width:36px; height:36px; border-radius:9px; background:linear-gradient(135deg,#26303f,#161b24); display:flex; align-items:center; justify-content:center; flex:none; }
+.pillbtn { height:30px; padding:0 12px; border-radius:8px; border:none; background:var(--accent-weak); color:var(--accent); font-size:11.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; flex:none; }
+
+/* ---- reviewable artifacts (screenshot, link, webpage) ----
+   Anything the agent sends that the human might want to mark up carries a Review
+   affordance. Opening it lands in the Review tool with a pin layer. */
+.cartifact { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; }
+.cart-canvas { position:relative; aspect-ratio:16/10; background:linear-gradient(135deg,#26303f,#13161c); display:flex; align-items:center; justify-content:center; }
+.cart-canvas.is-shot { background:#fbfbfa; }
+.cart-pin { position:absolute; width:24px; height:24px; border-radius:50% 50% 50% 3px; background:var(--accent); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -4px rgba(0,0,0,.5); transform:rotate(0); }
+.cart-bar { display:flex; align-items:center; gap:10px; padding:11px 13px; border-top:1px solid var(--divider); }
+.cart-kind { display:inline-flex; align-items:center; gap:5px; font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px; border-radius:6px; color:var(--accent); background:var(--accent-weak); flex:none; }
+.review-btn { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:9px; border:none; background:var(--accent); color:#fff; font-size:12px; font-weight:600; font-family:var(--font-sans); cursor:pointer; flex:none; }
+/* a browser-ish chrome strip for link/webpage artifacts */
+.cart-omni { display:flex; align-items:center; gap:8px; padding:8px 12px; background:var(--surface-2); border-bottom:1px solid var(--divider); }
+.cart-omni .lights { display:flex; gap:5px; }
+.cart-omni .lights i { width:9px; height:9px; border-radius:50%; background:var(--hair); }
+.cart-omni .url { flex:1; font-family:var(--font-mono); font-size:11px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* reply-to-this-artifact affordance */
+.replyto { display:flex; align-items:center; gap:9px; padding:8px 11px; border:1px dashed var(--hair); border-radius:11px; background:var(--surface-2); }
+.replyto .q { width:3px; align-self:stretch; border-radius:2px; background:var(--accent); flex:none; }
+
+/* ---- the Goal / Step Thread (canonical) ----
+   The spine of every agent conversation: a goal header with a progress bar, then a
+   vertical thread of steps that move pending → working → done in real time. Used in
+   Chat, and animated in the step-thread component. The connector line is drawn down
+   the icon rail so the thread reads as one continuous spine. */
+.gthread { display:flex; flex-direction:column; }
+.gthead { display:flex; align-items:center; gap:11px; padding-bottom:14px; margin-bottom:6px; border-bottom:1px solid var(--divider); }
+.gthead .gtico { width:34px; height:34px; border-radius:10px; background:var(--accent-weak); display:flex; align-items:center; justify-content:center; flex:none; color:var(--accent); }
+.gthead .gttitle { font-size:15px; font-weight:700; letter-spacing:-.01em; color:var(--fg); flex:1; min-width:0; }
+.gthead .gttitle .gk { color:var(--muted); font-weight:600; }
+.gtcount { font-family:var(--font-mono); font-size:11px; color:var(--muted); white-space:nowrap; }
+/* segmented progress bar */
+.gtbar { display:flex; gap:3px; }
+.gtbar i { width:18px; height:4px; border-radius:2px; background:var(--surface-2); transition:background .4s ease; }
+.gtbar i.done { background:var(--success); }
+.gtbar i.active { background:var(--accent); }
+/* continuous progress bar variant */
+.gtprog { height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
+.gtprog > i { display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--accent),#6366F1); width:0; transition:width .6s cubic-bezier(.4,0,.2,1); }
+
+.gstep { display:flex; gap:12px; align-items:flex-start; padding:9px 0; position:relative; }
+.gstep .gsrail { display:flex; flex-direction:column; align-items:center; flex:none; align-self:stretch; }
+.gstep .gsico { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); transition:background .3s, border-color .3s; }
+.gstep .gsline { width:2px; flex:1; min-height:8px; background:var(--divider); margin:4px 0 -13px; }
+.gstep:last-child .gsline { display:none; }
+.gstep .gsbody { flex:1; min-width:0; padding-top:4px; }
+.gstep .gstitle { font-size:13.5px; font-weight:600; color:var(--fg); }
+.gstep .gssub { font-size:12px; color:var(--muted); line-height:1.45; margin-top:3px; }
+/* states */
+.gstep.is-pending .gstitle { color:var(--muted); }
+.gstep.is-pending .gsico { opacity:.7; }
+.gstep.is-active .gsico { background:var(--accent-weak); border-color:transparent; color:var(--accent); }
+.gstep.is-done .gsico { background:var(--success-weak); border-color:transparent; color:var(--success); }
+.gstep.is-done .gstitle { color:var(--muted); }
+.gstep .gschip { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:700; letter-spacing:.03em; padding:2px 7px; border-radius:6px; margin-left:8px; vertical-align:1px; }
+/* a step can carry a nested element (success block, table, file) once it completes */
+.gstep .gsattach { margin-top:9px; }
+/* entrance for a newly-revealed step / attachment */
+@keyframes stepIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+.step-in { animation:stepIn .42s cubic-bezier(.2,.7,.2,1) both; }
