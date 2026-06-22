@@ -31,8 +31,10 @@ function hueFor(key) {
 }
 function initials(name) {
   const p = String(name || '').trim().split(/\s+/).filter(Boolean);
-  const two = ((p[0] && p[0][0]) || '') + ((p[1] && p[1][0]) || '');
-  return (two || String(name || '?')[0] || '?').toUpperCase();
+  // Two-letter monogram, matching the design (EL, RX, GA): two words -> initials,
+  // one word -> its first two letters.
+  if (p.length >= 2) return (p[0][0] + p[1][0]).toUpperCase();
+  return (p[0] || String(name || '?')).slice(0, 2).toUpperCase();
 }
 
 // Map an agent's free-form status onto the fixed vocabulary: live / blocked / ready.
