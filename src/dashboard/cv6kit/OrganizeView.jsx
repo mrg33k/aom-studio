@@ -676,6 +676,8 @@ export function OrganizeView({
   activeTool = 'organize',
   onNav,
   user = {},
+  status = 'loaded',
+  onRetry,
 }) {
   // Open on files: always resolve to a project. Use the chosen one, else fall back
   // to the first (most-recent) so there is never a project-list landing or a flash
@@ -707,6 +709,7 @@ export function OrganizeView({
 
     return (
       <div data-cv6kit style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
+        <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
         <CvgDesktopChrome activeTool={activeTool} onNav={onNav} user={user} />
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           {/* Project tree (left) */}
@@ -756,7 +759,16 @@ export function OrganizeView({
               </span>
             </div>
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '0 12px' }}>
-              {files.length === 0 ? (
+              {status === 'loading' && (!files || files.length === 0) ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
+                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
+                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your files…</div>
+                </div>
+              ) : status === 'error' && (!files || files.length === 0) ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your files just now. It keeps trying on its own.</div>
+                </div>
+              ) : files.length === 0 ? (
                 <div style={{ padding: '18px 14px', color: 'var(--faint)', fontSize: 13 }}>No files.</div>
               ) : (
                 files.map((f, i) => {

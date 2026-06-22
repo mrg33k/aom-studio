@@ -105,6 +105,8 @@ function SupportView({
   activeTool = 'support',
   onNav = () => {},
   user = {},
+  status = 'loaded',
+  onRetry,
 }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -137,6 +139,7 @@ function SupportView({
 
     return (
       <div data-cv6kit style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', height: '100dvh', overflow: 'hidden', background: 'var(--ground)', fontFamily: 'var(--font-sans)', color: 'var(--fg)' }}>
+        <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
         <CvgDesktopChrome activeTool={activeTool} onNav={onNav} user={user} />
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           {/* Inbox left sidebar */}
@@ -164,54 +167,67 @@ function SupportView({
 
             {/* Inbox list (scrollable) */}
             <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-              {needsList.length > 0 && (
+              {status === 'loading' && items.length === 0 ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
+                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
+                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your inbox…</div>
+                </div>
+              ) : status === 'error' && items.length === 0 ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your inbox just now. It keeps trying on its own.</div>
+                </div>
+              ) : (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px' }} className="eyebrow">
-                    Open asks
-                  </div>
-                  {needsList.map((it, i) => {
-                    const who = it.from || it.name || 'Someone';
-                    const avatarColor = getAvatarColor(who);
-                    const isPick = displayItem && displayItem.id === it.id;
-                    return (
-                      <div key={i} onClick={() => onSelectItem(it)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', background: isPick ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer' }}>
-                        <span style={{ width: 38, height: 38, borderRadius: '50%', background: avatarColor.bg, color: avatarColor.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flex: 'none' }}>{getInitials(who)}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{titleFor(it)}</div>
-                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{who} · {it.source || 'AOM'} · {timeAgo(it.created_at || it.date)}</div>
-                        </div>
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5, color: 'var(--pink-400)', background: 'rgba(244,114,182,.16)', flex: 'none' }}>{it.type === 'email' ? 'Email' : 'Wish'}</span>
+                  {needsList.length > 0 && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px' }} className="eyebrow">
+                        Open asks
                       </div>
-                    );
-                  })}
-                </>
-              )}
+                      {needsList.map((it, i) => {
+                        const who = it.from || it.name || 'Someone';
+                        const avatarColor = getAvatarColor(who);
+                        const isPick = displayItem && displayItem.id === it.id;
+                        return (
+                          <div key={i} onClick={() => onSelectItem(it)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', background: isPick ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer' }}>
+                            <span style={{ width: 38, height: 38, borderRadius: '50%', background: avatarColor.bg, color: avatarColor.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flex: 'none' }}>{getInitials(who)}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{titleFor(it)}</div>
+                              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{who} · {it.source || 'AOM'} · {timeAgo(it.created_at || it.date)}</div>
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5, color: 'var(--pink-400)', background: 'rgba(244,114,182,.16)', flex: 'none' }}>{it.type === 'email' ? 'Email' : 'Wish'}</span>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
 
-              {watchList.length > 0 && (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px' }} className="eyebrow">
-                    Watching
-                  </div>
-                  {watchList.map((it, i) => {
-                    const who = it.from || it.name || 'Someone';
-                    const avatarColor = getAvatarColor(who);
-                    const isPick = displayItem && displayItem.id === it.id;
-                    return (
-                      <div key={i} onClick={() => onSelectItem(it)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', background: isPick ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer', opacity: 0.72 }}>
-                        <span style={{ width: 38, height: 38, borderRadius: '50%', background: avatarColor.bg, color: avatarColor.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flex: 'none' }}>{getInitials(who)}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{titleFor(it)}</div>
-                          <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{who} · {it.source || 'AOM'} · {timeAgo(it.created_at || it.date)}</div>
-                        </div>
-                        <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5, color: 'var(--accent)', background: 'var(--accent-weak)', flex: 'none' }}>{it.type === 'email' ? 'Email' : 'Wish'}</span>
+                  {watchList.length > 0 && (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 16px 8px' }} className="eyebrow">
+                        Watching
                       </div>
-                    );
-                  })}
-                </>
-              )}
+                      {watchList.map((it, i) => {
+                        const who = it.from || it.name || 'Someone';
+                        const avatarColor = getAvatarColor(who);
+                        const isPick = displayItem && displayItem.id === it.id;
+                        return (
+                          <div key={i} onClick={() => onSelectItem(it)} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '13px 14px', background: isPick ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer', opacity: 0.72 }}>
+                            <span style={{ width: 38, height: 38, borderRadius: '50%', background: avatarColor.bg, color: avatarColor.fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flex: 'none' }}>{getInitials(who)}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{titleFor(it)}</div>
+                              <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{who} · {it.source || 'AOM'} · {timeAgo(it.created_at || it.date)}</div>
+                            </div>
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 5, color: 'var(--accent)', background: 'var(--accent-weak)', flex: 'none' }}>{it.type === 'email' ? 'Email' : 'Wish'}</span>
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
 
-              {items.length === 0 && (
-                <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>No items yet. Real people only, we assure you.</div>
+                  {items.length === 0 && (
+                    <div style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--faint)', fontSize: 13 }}>No items yet. Real people only, we assure you.</div>
+                  )}
+                </>
               )}
             </div>
           </div>

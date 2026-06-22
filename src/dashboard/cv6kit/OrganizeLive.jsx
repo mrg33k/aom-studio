@@ -47,6 +47,7 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack, onMen
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [allFiles, setAllFiles] = useState([]);
   const [selectedFileIds, setSelectedFileIds] = useState([]);
+  const [status, setStatus] = useState('loading');
 
   // Fetch the WHOLE world's text/scaffold files once. The endpoint is world-scoped
   // (client=<world>) and tags each file with its own project; passing a project
@@ -56,10 +57,10 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack, onMen
     let alive = true;
     authFetch(`/api/dashboard/files?type=text&client=${encodeURIComponent(worldId || 'aom')}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (alive) setAllFiles((((d && d.files)) || []).map(mapFile)); })
-      .catch(() => { if (alive) setAllFiles([]); });
+      .then((d) => { if (alive) { setAllFiles((((d && d.files)) || []).map(mapFile)); setStatus('loaded'); } })
+      .catch(() => { if (alive) { if (!allFiles.length) setStatus('error'); setAllFiles([]); } });
     return () => { alive = false; };
-  }, [worldId]);
+  }, [worldId, allFiles.length]);
 
   // The selected project's files (real). Content rides along for the preview.
   const files = useMemo(
@@ -82,6 +83,11 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack, onMen
       setSelectedProjectId(projects[0].slug || projects[0].id);
     }
   }, [projects, selectedProjectId]);
+
+  const handleRetry = () => {
+    setStatus('loading');
+    setAllFiles([]);
+  };
 
   return (
     <OrganizeView
@@ -119,6 +125,8 @@ export function OrganizeLive({ projectRooms = [], worldId = 'aom', onBack, onMen
         console.warn('[OrganizeLive] onDelete not yet wired to backend:', { fileIds });
         // TODO: wire to delete endpoint
       }}
+      status={status}
+      onRetry={handleRetry}
     />
   );
 }

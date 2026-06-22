@@ -87,13 +87,17 @@ function useSupportLiveData(worldId) {
   const isAom = worldId === 'aom';
   const [wishes, setWishes] = useState(null);
   const [mailboxes, setMailboxes] = useState(null);
+  const [status, setStatus] = useState('loading');
 
   const load = useCallback(async () => {
+    let wishesOk = false;
+    let mailboxesOk = false;
+
     // Fetch wishes
     try {
       const r = await fetch('/api/support/wishes');
       const d = await r.json();
-      if (d.ok) setWishes(d.wishes || []);
+      if (d.ok) { setWishes(d.wishes || []); wishesOk = true; }
     } catch {
       /* keep last */
     }
@@ -108,14 +112,22 @@ function useSupportLiveData(worldId) {
           body: JSON.stringify({ email: 'patrikmatheson@gmail.com', days: 7 }),
         });
         const d2 = await r2.json();
-        if (d2.ok) setMailboxes(d2.mailboxes || []);
+        if (d2.ok) { setMailboxes(d2.mailboxes || []); mailboxesOk = true; }
       } catch {
         /* keep last */
       }
     } else {
       setMailboxes([]);
+      mailboxesOk = true;
     }
-  }, [isAom]);
+
+    // Status: loaded if either succeeded, error only if both failed with nothing loaded
+    if (wishesOk || mailboxesOk) {
+      setStatus('loaded');
+    } else if (!wishes && !mailboxes) {
+      setStatus('error');
+    }
+  }, [isAom, wishes, mailboxes]);
 
   useEffect(() => {
     load();
@@ -123,7 +135,7 @@ function useSupportLiveData(worldId) {
     return () => clearInterval(t);
   }, [load]);
 
-  return { wishes, mailboxes };
+  return { wishes, mailboxes, status };
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -131,7 +143,7 @@ function useSupportLiveData(worldId) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDiscuss, activeTool = 'support', onNav, onMenu, user = {} }) {
-  const { wishes, mailboxes } = useSupportLiveData(worldId);
+  const { wishes, mailboxes, status } = useSupportLiveData(worldId);
   const [selectedId, setSelectedId] = useState(null);
 
   // Build wishes array (filter out non-support)
@@ -192,6 +204,11 @@ export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDis
   const handleSelectItem = (item) => { if (item && item.id) setSelectedId(item.id); };
   const handleDraftReply = (item) => discussItem(item);
   const handleMarkResolved = () => { /* held: resolve runs from the full Support screen until wired + verified */ };
+  const handleRetry = () => {
+    // Reset to loading and clear data to force reload
+    setWishes(null);
+    setMailboxes(null);
+  };
 
   return (
     <SupportView
@@ -209,6 +226,8 @@ export function SupportLive({ worldId = 'aom', isDesktop = false, onClose, onDis
       onNav={onNav}
       onMenu={onMenu}
       user={user}
+      status={status}
+      onRetry={handleRetry}
     />
   );
 }

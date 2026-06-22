@@ -90,22 +90,23 @@ export function ReviewLive({ worldId = 'aom', onExit, onMenu, isDesktop = false,
   const [queueItems, setQueueItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [metadata, setMetadata] = useState({});
+  const [status, setStatus] = useState('loading');
 
   useEffect(() => {
     let alive = true;
     const load = async () => {
       try {
         const res = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId)}`);
-        if (!res || !res.ok) { if (alive) setQueueItems([]); return; }
+        if (!res || !res.ok) { if (alive) { if (!queueItems.length) setStatus('error'); setQueueItems([]); } return; }
         const data = await res.json();
         const items = Array.isArray(data.items) ? data.items : [];
-        if (alive) setQueueItems(items.map(mapItem));
-      } catch { if (alive) setQueueItems([]); }
+        if (alive) { setQueueItems(items.map(mapItem)); setStatus('loaded'); }
+      } catch { if (alive) { if (!queueItems.length) setStatus('error'); setQueueItems([]); } }
     };
     load();
     const t = setInterval(load, 60000);
     return () => { alive = false; clearInterval(t); };
-  }, [worldId]);
+  }, [worldId, queueItems.length]);
 
   const openItem = useCallback(async (item) => {
     // Show the item shell immediately, then fill the body from the real file.
@@ -132,6 +133,11 @@ export function ReviewLive({ worldId = 'aom', onExit, onMenu, isDesktop = false,
     }
   }, []);
 
+  const handleRetry = () => {
+    setStatus('loading');
+    setQueueItems([]);
+  };
+
   return (
     <ReviewView
       queueItems={queueItems}
@@ -146,6 +152,8 @@ export function ReviewLive({ worldId = 'aom', onExit, onMenu, isDesktop = false,
       activeTool={activeTool}
       onNav={onNav}
       user={user}
+      status={status}
+      onRetry={handleRetry}
     />
   );
 }

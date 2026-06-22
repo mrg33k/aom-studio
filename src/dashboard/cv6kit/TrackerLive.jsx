@@ -39,15 +39,18 @@ export function TrackerLive({ worldId = 'aom', onBack, onDiscuss, isDesktop = fa
   const [raw, setRaw] = useState(null); // null = loading
   const [selectedId, setSelectedId] = useState(null);
   const [showNew, setShowNew] = useState(false);
+  const [status, setStatus] = useState('loading');
 
   const load = useCallback(async () => {
     try {
       const r = await fetch('/api/dashboard/cv6-bugs');
-      if (!r.ok) { setRaw((p) => p || []); return; }
+      if (!r.ok) { setRaw((p) => { if (!p) setStatus('error'); return p || []; }); return; }
       const d = await r.json();
-      setRaw(d && Array.isArray(d.bugs) ? d.bugs : []);
+      const bugs = d && Array.isArray(d.bugs) ? d.bugs : [];
+      setRaw(bugs);
+      setStatus('loaded');
     } catch {
-      setRaw((p) => p || []);
+      setRaw((p) => { if (!p) setStatus('error'); return p || []; });
     }
   }, []);
 
@@ -129,6 +132,11 @@ export function TrackerLive({ worldId = 'aom', onBack, onDiscuss, isDesktop = fa
     );
   }
 
+  const handleRetry = () => {
+    setStatus('loading');
+    setRaw(null);
+  };
+
   return (
     <TrackerView
       tracker={tracker}
@@ -141,6 +149,8 @@ export function TrackerLive({ worldId = 'aom', onBack, onDiscuss, isDesktop = fa
       onNav={onNav}
       onMenu={onMenu}
       user={user}
+      status={status}
+      onRetry={handleRetry}
     />
   );
 }

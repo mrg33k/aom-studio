@@ -236,6 +236,8 @@ export function ReviewView({
   activeTool = 'review',
   onNav,
   user = {},
+  status = 'loaded',
+  onRetry,
 }) {
   const [activeCommentId, setActiveCommentId] = useState(null);
   const openCommentCount = comments.filter((c) => !c.resolved).length;
@@ -244,6 +246,7 @@ export function ReviewView({
   if (isDesktop) {
     return (
       <div data-cv6kit data-theme="glass" style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--ground)', color: 'var(--fg)', fontFamily: 'var(--font-sans)' }}>
+        <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
         <CvgDesktopChrome activeTool={activeTool} onNav={onNav} user={user} />
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           {/* Queue column */}
@@ -263,14 +266,25 @@ export function ReviewView({
               </button>
             </div>
             <div style={{ flex: 1, minHeight: 0, padding: '0 12px', overflowY: 'auto' }}>
-              {queueItems.map((item) => (
-                <QueueItem
-                  key={item.id}
-                  item={item}
-                  selected={selectedItem?.id === item.id}
-                  onClick={() => onSelectItem && onSelectItem(item)}
-                />
-              ))}
+              {status === 'loading' && (!queueItems || queueItems.length === 0) ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center' }}>
+                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
+                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your review queue…</div>
+                </div>
+              ) : status === 'error' && (!queueItems || queueItems.length === 0) ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your review queue just now. It keeps trying on its own.</div>
+                </div>
+              ) : (
+                queueItems.map((item) => (
+                  <QueueItem
+                    key={item.id}
+                    item={item}
+                    selected={selectedItem?.id === item.id}
+                    onClick={() => onSelectItem && onSelectItem(item)}
+                  />
+                ))
+              )}
             </div>
           </div>
 
@@ -386,6 +400,7 @@ export function ReviewView({
           fontFamily: 'var(--font-sans)',
         }}
       >
+        <style>{'@keyframes spin{to{transform:rotate(360deg)}}'}</style>
         {/* topbar */}
         <div
           style={{
@@ -509,14 +524,25 @@ export function ReviewView({
               </button>
             </div>
             <div style={{ padding: '0 12px', overflowY: 'auto', maxHeight: 'calc(100% - 100px)' }}>
-              {queueItems.map((item) => (
-                <QueueItem
-                  key={item.id}
-                  item={item}
-                  selected={selectedItem?.id === item.id}
-                  onClick={() => onSelectItem && onSelectItem(item)}
-                />
-              ))}
+              {status === 'loading' && (!queueItems || queueItems.length === 0) ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center', paddingTop: 40 }}>
+                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
+                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your review queue…</div>
+                </div>
+              ) : status === 'error' && (!queueItems || queueItems.length === 0) ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your review queue just now. It keeps trying on its own.</div>
+                </div>
+              ) : (
+                queueItems.map((item) => (
+                  <QueueItem
+                    key={item.id}
+                    item={item}
+                    selected={selectedItem?.id === item.id}
+                    onClick={() => onSelectItem && onSelectItem(item)}
+                  />
+                ))
+              )}
             </div>
           </div>
 

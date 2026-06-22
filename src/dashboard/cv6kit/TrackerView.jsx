@@ -113,7 +113,7 @@ function BugListCard({ bug, onSelect }) {
   );
 }
 
-export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, onBack, onMenu, onSearch, isDesktop = false, activeTool = 'tracker', onNav, user = {} }) {
+export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, onBack, onMenu, onSearch, isDesktop = false, activeTool = 'tracker', onNav, user = {}, status = 'loaded', onRetry }) {
   const open = tracker.openCount != null ? tracker.openCount : bugs.length;
 
   // DESKTOP — ported from ui_kits/tools/tracker.html (desktop frame): shared top bar +
@@ -197,31 +197,42 @@ export function TrackerView({ tracker = {}, bugs = [], onSelectBug, onNewBug, on
                 <div style={{ width: 110, flex: 'none' }}>Assignee</div>
                 <div style={{ width: 50, flex: 'none' }}>Upd</div>
               </div>
-              {tableData.map((bug, i) => {
-                const statusColor = bug.status === 'in_progress' ? { color: 'var(--warn)', bg: 'var(--warn-weak,rgba(251,191,36,.16))', label: 'In progress' } : { color: '#F87171', bg: 'rgba(248,113,113,.16)', label: 'Open' };
-                const priorityColor = bug.priority === 'high' ? '#F87171' : bug.priority === 'med' ? 'var(--warn)' : 'var(--accent)';
-                const priorityLabel = bug.priority === 'high' ? 'High' : bug.priority === 'med' ? 'Med' : 'Low';
-                return (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', height: 60, borderBottom: '1px solid var(--divider)', ...(i === 0 ? { background: 'var(--accent-weak)', margin: '0 -8px', padding: '0 8px', borderRadius: 8 } : {}) }}>
-                    <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{bug.title}</div>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)', marginTop: 2 }}>{bug.id}</div>
+              {status === 'loading' && (!tableData || tableData.length === 0) ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, textAlign: 'center', paddingTop: 40 }}>
+                  <span style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid var(--hair)', borderTopColor: 'var(--accent)', animation: 'spin .8s linear infinite' }} />
+                  <div style={{ fontSize: 13, color: 'var(--muted)' }}>Gathering your issues…</div>
+                </div>
+              ) : status === 'error' && (!tableData || tableData.length === 0) ? (
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '40px 28px', textAlign: 'center' }}>
+                  <div style={{ fontSize: 13, color: 'var(--muted)', maxWidth: 240, lineHeight: 1.5 }}>Could not load your issues just now. It keeps trying on its own.</div>
+                </div>
+              ) : (
+                tableData.map((bug, i) => {
+                  const statusColor = bug.status === 'in_progress' ? { color: 'var(--warn)', bg: 'var(--warn-weak,rgba(251,191,36,.16))', label: 'In progress' } : { color: '#F87171', bg: 'rgba(248,113,113,.16)', label: 'Open' };
+                  const priorityColor = bug.priority === 'high' ? '#F87171' : bug.priority === 'med' ? 'var(--warn)' : 'var(--accent)';
+                  const priorityLabel = bug.priority === 'high' ? 'High' : bug.priority === 'med' ? 'Med' : 'Low';
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', height: 60, borderBottom: '1px solid var(--divider)', ...(i === 0 ? { background: 'var(--accent-weak)', margin: '0 -8px', padding: '0 8px', borderRadius: 8 } : {}) }}>
+                      <div style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{bug.title}</div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)', marginTop: 2 }}>{bug.id}</div>
+                      </div>
+                      <div style={{ width: 120, flex: 'none' }}>
+                        <span style={{ fontSize: 11.5, fontWeight: 600, padding: '3px 9px', borderRadius: 13, color: statusColor.color, background: statusColor.bg }}>{statusColor.label}</span>
+                      </div>
+                      <div style={{ width: 90, flex: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: priorityColor }} />
+                        <span style={{ fontSize: 13, color: 'var(--fg)' }}>{priorityLabel}</span>
+                      </div>
+                      <div style={{ width: 110, flex: 'none', display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <span style={{ width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 700, background: bug.assignee.toneBg, color: bug.assignee.tone }}>{bug.assignee.initials}</span>
+                        <span style={{ fontSize: 13, color: 'var(--fg)' }}>{bug.assignee.name}</span>
+                      </div>
+                      <div style={{ width: 50, flex: 'none', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>{bug.updated}</div>
                     </div>
-                    <div style={{ width: 120, flex: 'none' }}>
-                      <span style={{ fontSize: 11.5, fontWeight: 600, padding: '3px 9px', borderRadius: 13, color: statusColor.color, background: statusColor.bg }}>{statusColor.label}</span>
-                    </div>
-                    <div style={{ width: 90, flex: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: priorityColor }} />
-                      <span style={{ fontSize: 13, color: 'var(--fg)' }}>{priorityLabel}</span>
-                    </div>
-                    <div style={{ width: 110, flex: 'none', display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <span style={{ width: 22, height: 22, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, fontWeight: 700, background: bug.assignee.toneBg, color: bug.assignee.tone }}>{bug.assignee.initials}</span>
-                      <span style={{ fontSize: 13, color: 'var(--fg)' }}>{bug.assignee.name}</span>
-                    </div>
-                    <div style={{ width: 50, flex: 'none', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--muted)' }}>{bug.updated}</div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
