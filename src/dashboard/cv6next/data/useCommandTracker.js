@@ -1,13 +1,16 @@
-// cv6next — real data for Command (activity dock) + Tracker (bug list).
-// Command's activity dock = real running jobs (useRunningJobs). Its goal ledger needs the
-// structured goal source we don't have yet, so goals bind honestly empty (no fake).
-// Tracker = the real CV6 bug tracker (/api/dashboard/cv6-bugs). No fake data.
+// cv6next — real data for Command (activity dock + ledger) + Tracker (bug list).
+// Command's activity dock = live Claude agent sessions (active_processes, heartbeat-backed).
+// Command's ledger = rooms that had a message in the last 24h, with each room's latest line.
+// The focused goal/checklist still has no honest structured source, so it binds to an honest
+// summary (no invented steps). Tracker = the real CV6 bug tracker (/api/dashboard/cv6-bugs).
+// No fake data.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
-import { useRunningJobs } from '../../cv6kit/useRunningJobs.js';
+import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
+import { useDataPipe } from '../../hooks/useDataPipe';
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -16,6 +19,20 @@ function initials(name) {
 }
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function tintFor(seed) { let h = 0; for (const c of String(seed || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return TINTS[h % TINTS.length]; }
+function titleCase(s) { return String(s || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()); }
+function cap(s) { const v = String(s || ''); return v ? v[0].toUpperCase() + v.slice(1) : ''; }
+function firstLine(s) { return String(s || '').split('\n')[0]; }
+function relTime(ts) {
+  if (!ts) return '';
+  const ms = Date.now() - (typeof ts === 'number' ? ts : new Date(ts).getTime());
+  if (Number.isNaN(ms)) return '';
+  const m = Math.round(ms / 60000);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.round(h / 24)}d`;
+}
 
 // Resolve the viewer's world the same way Home does (auth -> world cache -> getClientId).
 export function useWorldId() {
@@ -32,22 +49,122 @@ export function useWorldId() {
   return worldId;
 }
 
-// ── Command: real activity dock from running jobs; ledger/goal honest ──
-const JOB_KIND = { recording: 'rec', working: 'agent', drafting: 'agent', secondary: 'build', review: 'review' };
-export function useCommand(worldId) {
-  const { jobs } = useRunningJobs(worldId || 'aom');
-  const dockJobs = (jobs || []).map((j, i) => {
-    const kind = JOB_KIND[String(j.kind || '').toLowerCase()] || 'agent';
-    return { id: j.id || `job-${i}`, kind, title: j.label || 'Working', shortTitle: j.label || 'Working', sub: j.detail || '', badge: kind.toUpperCase() };
+// ── Command: real live agent sessions (activity dock) + rooms active in 24h (ledger) ──
+// For the aom world the dock is NOT empty: it shows every live Claude agent session
+// (active_processes, heartbeat < 90s) and the ledger lists every room that had a message
+// in the last 24h, with the room's latest line + who. No fake data; goal/watchers have no
+// honest structured source yet, so they bind to honest placeholders, not invented steps.
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {} }) {
+  // Activity dock = live agent sessions. Each is one running Claude session.
+  const jobs = (sessions || []).map((s) => {
+    const name = titleCase(s.agent);
+    return {
+      id: s.agent, kind: 'agent', title: name, shortTitle: name,
+      sub: firstLine(s.task_text) || 'Active session', badge: 'LIVE',
+    };
   });
-  const data = {
-    ledger: { roomCount: '', liveCount: dockJobs.length, blockedCount: 0, rooms: [], others: [] },
-    activity: { count: dockJobs.length, jobs: dockJobs },
-    // goal/checklist have no honest source yet (structured goal output) -> empty, not faked.
-    goal: { id: '', roomName: dockJobs[0]?.title || 'No active goal', tint: 'violet', status: 'ready', statusLabel: '', title: dockJobs.length ? 'Agents are working' : 'Nothing running right now', driverLine: dockJobs[0]?.sub || '', stepCount: '', queueNote: '', checklist: [] },
+
+  // Ledger = rooms active in the last 24h (project/mission rooms with a recent message).
+  const now = Date.now();
+  const liveAgents = new Set((sessions || []).map((s) => String(s.agent || '').toLowerCase()));
+  const active = (projectRooms || [])
+    .filter((p) => p.last_message_at && (now - p.last_message_at) <= DAY_MS)
+    .sort((a, b) => b.last_message_at - a.last_message_at);
+
+  const rooms = active.map((p) => {
+    const last = lastByRoom[p.slug] || {};
+    const setBy = cap(last.agent) || '';
+    const live = last.agent && liveAgents.has(String(last.agent).toLowerCase());
+    const status = live ? 'live' : 'ready';
+    const line = firstLine(last.text).slice(0, 90);
+    return {
+      id: p.slug, name: p.name || titleCase(p.slug), tint: tintFor(p.name || p.slug),
+      goal: line, setBy, age: relTime(p.last_message_at),
+      status, statusLabel: status.toUpperCase(),
+      goalShort: line.slice(0, 48),
+    };
+  });
+  const liveCount = rooms.filter((r) => r.status === 'live').length;
+
+  // Focused goal = honest summary of what's live right now (no fabricated checklist).
+  const lead = sessions[0];
+  const goal = lead
+    ? { id: lead.agent, roomName: titleCase(lead.agent), tint: 'violet', status: 'live', statusLabel: 'LIVE',
+        title: `${sessions.length} agent session${sessions.length > 1 ? 's' : ''} active`,
+        driverLine: `${titleCase(lead.agent)} · ${firstLine(lead.task_text) || 'working'}`,
+        stepCount: '', queueNote: '', checklist: [] }
+    : { id: '', roomName: active[0]?.name || 'No active session', tint: 'violet', status: 'ready', statusLabel: '',
+        title: active.length ? 'No agent sessions running right now' : 'Nothing active right now',
+        driverLine: '', stepCount: '', queueNote: '', checklist: [] };
+
+  return {
+    ledger: { roomCount: rooms.length, liveCount, blockedCount: 0, rooms, others: rooms },
+    activity: { count: jobs.length, jobs },
+    goal,
     watchers: { activeCount: 0, list: [] },
   };
-  const state = 'ready';
+}
+
+export function useCommand(worldIdArg) {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [worldId, setWorldId] = useState(worldIdArg || null);
+  const [sessions, setSessions] = useState([]);
+  const [lastByRoom, setLastByRoom] = useState({});
+
+  // Resolve the viewer + world the same way Home does so we ride the auth-derived world.
+  useEffect(() => {
+    if (worldIdArg) setWorldId(worldIdArg);
+    if (!supabase) return undefined;
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!alive || !data?.user) return;
+      setClientIdFromUser(data.user); setCurrentUser(data.user); setWorldId(getClientId());
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [worldIdArg]);
+
+  const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
+  const { projectRooms } = useDataPipe(null, worldId, currentUserSlug);
+
+  // Live agent sessions — poll the heartbeat-backed active-processes endpoint.
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    const load = () => authFetch('/api/dashboard/active-agents?client=' + encodeURIComponent(worldId))
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => { if (alive && d) setSessions(Array.isArray(d.active) ? d.active : []); })
+      .catch(() => {});
+    load();
+    const id = setInterval(load, 5000);
+    return () => { alive = false; clearInterval(id); };
+  }, [worldId]);
+
+  // Latest line + who, per room, from the recent-messages feed (for the ledger rows).
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    const load = () => authFetch('/api/dashboard/supabase-status?client=' + encodeURIComponent(worldId))
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d || !Array.isArray(d.messages)) return;
+        const map = {};
+        for (const m of d.messages) {
+          const key = m.project; if (!key || !m.timestamp) continue;
+          const t = new Date(m.timestamp).getTime();
+          if (!map[key] || t > map[key].t) map[key] = { t, text: m.text || '', agent: m.agent || '' };
+        }
+        setLastByRoom(map);
+      })
+      .catch(() => {});
+    load();
+    const id = setInterval(load, 15000);
+    return () => { alive = false; clearInterval(id); };
+  }, [worldId]);
+
+  const data = useMemo(() => shapeCommand({ sessions, projectRooms, lastByRoom }), [sessions, projectRooms, lastByRoom]);
+  const state = worldId ? 'ready' : 'loading';
   return { state, data };
 }
 
