@@ -43,11 +43,21 @@ function useIsDesktop() {
 // declares width/height:100%), and append the shared loading/error/empty blocks so
 // data-state switching covers every state from one mounted tree. NOT a design change:
 // the layout inside is untouched; only the specimen frame's fixed px box is dropped.
+// The live view machine only routes these nav targets today. The design chrome (the
+// desktop top bar + rails) hardcodes the full 8-tool set, so any tile pointing at a
+// tool we haven't wired to /dashboard yet would be a dead control ("doesn't open").
+// Until those screens are built live, drop those tiles so the nav only shows what works.
+const LIVE_NAV = new Set(['home', 'chat', 'support', 'command', 'tracker', 'back']);
+
 function composeScreen(raw, { mobile = false, pick = 0 } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const nodes = doc.querySelectorAll('[data-cv6]');
   const screen = nodes[pick] || nodes[0];
   if (!screen) return '';
+  // Strip nav tiles that point at not-yet-built tools (no dead ends).
+  screen.querySelectorAll('[data-action="nav"][data-target]').forEach((tile) => {
+    if (!LIVE_NAV.has(tile.getAttribute('data-target'))) tile.remove();
+  });
   screen.setAttribute('style', mobile
     ? 'position:relative;width:100%;height:100%;background:#05080b;overflow:hidden'
     : 'width:100%;height:100%');
@@ -375,11 +385,16 @@ function Tracker({ worldId, onNav, onOpenNav }) {
   const detailHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 4 }), []);
   const newBugHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 6 }), []);
   // Detail (bug preview) gets just the opened bug + its tracker; attachments are honestly empty.
-  const detailData = useMemo(() => ({
-    bug: selectedBug || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '' },
-    activeTracker: data.activeTracker,
-    attachments: { count: 0, list: [] },
-  }), [selectedBug, data.activeTracker]);
+  const detailData = useMemo(() => {
+    // attachments: an array carrying .count (design binds both data-each + .count);
+    // a {count,list} object would throw on .forEach in the engine. See useCommandTracker.
+    const atts = []; atts.count = 0;
+    return {
+      bug: selectedBug || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '' },
+      activeTracker: data.activeTracker,
+      attachments: atts,
+    };
+  }, [selectedBug, data.activeTracker]);
   const openBug = (id) => {
     const bug = (data.bugs || []).find((b) => String(b.id) === String(id));
     if (bug) { setSelectedBug(bug); setSheet('detail'); }

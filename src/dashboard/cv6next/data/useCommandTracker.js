@@ -17,6 +17,9 @@ function initials(name) {
   if (!parts.length) return '·';
   return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();
 }
+// An array that also carries a `.count` prop, for designs that bind both
+// `data-each="x"` (iterate the rows) and `x.count` (a header count) on one path.
+function withCount(arr, count) { const a = Array.isArray(arr) ? arr.slice() : []; a.count = count; return a; }
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function tintFor(seed) { let h = 0; for (const c of String(seed || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return TINTS[h % TINTS.length]; }
 function titleCase(s) { return String(s || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()); }
@@ -373,7 +376,11 @@ export function useTrackerBugs(worldId) {
     assignableAgents,
     bugs: listBugs,
     featuredBug: listBugs[0] ? { ...listBugs[0], agentStep: '', agentTotal: '', attachments: [] } : { id: '', title: '', attachments: [] },
-    attachments: { count: 0, list: [] },
+    // The design binds both `data-each="attachments"` (the rows) and
+    // `attachments.count` (the header). So attachments is an ARRAY that also carries
+    // a `.count` prop — iterates empty, count reads 0 — not a {count,list} object
+    // (which would throw on .forEach in the engine and crash the desktop screen).
+    attachments: withCount([], 0),
     agent: { name: '', initials: '·', tint: 'violet', step: '', total: '', pct: 0, pctLabel: '', checklist: [] },
     loading: { label: 'Loading the tracker…' },
     empty: { title: 'No bugs in this tracker', body: 'Nothing logged yet. New issues land here.', actionLabel: '' },

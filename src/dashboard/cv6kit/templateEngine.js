@@ -98,7 +98,12 @@ function applyBindings(el, scopes, ctx) {
     // falling back to "x in xs" syntax or singularizing the list name.
     const alias = (ctx.aliases && ctx.aliases[eachExpr]) || parsed.alias;
     const list = parsed.list;
-    const items = resolvePath(scopes, list) || [];
+    // Tolerate a non-array binding (e.g. a path that resolves to an object or a
+    // scalar): treat it as empty rather than letting `.forEach` throw and take the
+    // whole screen down via the error boundary. A list path should be an array; if
+    // it isn't, render zero rows (the same as an empty list) instead of crashing.
+    const resolved = resolvePath(scopes, list);
+    const items = Array.isArray(resolved) ? resolved : [];
     const parent = el.parentNode;
     if (!parent) return;
     const anchor = el.ownerDocument.createComment('each:' + list);
