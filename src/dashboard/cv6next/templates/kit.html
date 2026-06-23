@@ -1,0 +1,279 @@
+<!-- @dsCard group="Wired Templates" viewport="640x1480" subtitle="The agent-chat element kit, labeled ONCE. Every block with its data-bind / data-each / data-action. Wire once, reuse across Chat / Support / Command / Live Scribe." name="Wired · Agent-chat kit" -->
+<!--
+  ============================================================================
+  WIRED — Agent-chat element kit
+  Source: ui_kits/agent-chat/*   ·   Contract: wired/agent-chat/kit.json
+  ----------------------------------------------------------------------------
+  The reusable vocabulary for how an agent speaks. Each block is a labeled
+  template the host clones into a conversation. A turn = avatar + stacked blocks.
+  Conventions identical to every other wired screen. Per-item variation is
+  data-mod="is-:path" on a base class whose CSS owns the look (no inline color).
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+<style> body { margin:0; background:#e8e6e2; padding:24px; display:flex; flex-direction:column; align-items:center; gap:22px; } [data-cv6].kit { width:600px; max-width:100%; } </style>
+</head>
+<body>
+
+<!-- ============ 1 · TURN (anatomy) ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Turn" class="kit cc">
+  <div class="cc-cap"><span class="k">Turn</span><span class="d">One agent message = avatar + name + stacked typed blocks.</span></div>
+  <div class="turn" data-each="messages">
+    <div class="tav" data-mod="is-:message.agentTint" data-bind="message.agentInitials">EL</div>
+    <div class="tbody">
+      <div class="tname"><b data-bind="message.agentName">Elon</b><span class="astat is-live" data-mod="is-:message.status"><span class="sd"></span><span data-bind="message.statusLabel">LIVE</span></span><span class="tt" data-bind="message.time">9:41</span></div>
+      <div class="bubble" data-bind="message.text">On it. I pulled the repo and found the resolver skips docs-only projects.</div>
+    </div>
+  </div>
+  <div class="umsg" data-each="userMessages" data-bind="userMessage.text">Go ahead and patch it, keep it reversible.</div>
+</div>
+
+<!-- ============ 2 · COMMUNICATION BLOCKS (success / question / snag) ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Comm blocks" class="kit cc">
+  <div class="cc-cap"><span class="k">Communication blocks</span><span class="d">success · question · snag — one base class, is-:kind swaps the look.</span></div>
+  <div class="cblk is-success" data-each="blocks" data-mod="is-:block.kind">
+    <div class="cblk-h"><span class="ci"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span><span class="ct" data-bind="block.label">DONE · STEP 2 OF 4</span></div>
+    <div class="cblk-b" data-bind="block.body">Patched the resolver and the docs-only build routes again. Reversible.</div>
+    <div class="cpath" data-each="block.paths"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg><span data-bind="path.text">Rotate the key in Settings</span></div>
+    <div class="chips"><button class="chip-btn is-primary" data-each="block.choices" data-mod="is-:choice.style" data-action="chooseOption" data-arg="choice.id" data-bind="choice.label">View diff</button></div>
+  </div>
+</div>
+
+<!-- ============ 3 · SUMMARY & ACTION ITEMS ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Summary" class="kit cc">
+  <div class="cc-cap"><span class="k">Summary &amp; actions</span><span class="d">Digest something long into bullets + checkable actions.</span></div>
+  <div class="turn">
+    <div class="tav" data-bind="summary.agentInitials">EL</div>
+    <div class="tbody">
+      <div class="tname"><b data-bind="summary.agentName">Elon</b><span class="tt" data-bind="summary.context">caught up on the Acme thread</span></div>
+      <div class="csum">
+        <div class="csum-h"><svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z"/></svg><span class="se">Summary</span><span style="margin-left:auto;font-size:11.5px;color:var(--muted);" data-bind="summary.meta">3 messages · 2 days</span></div>
+        <div class="csum-body">
+          <div class="sbullet" data-each="summary.bullets" data-mod="is-:bullet.tone"><span class="sd"></span><div data-bind="bullet.text">Wants to expand the pilot to three teams</div></div>
+        </div>
+        <div class="cact">
+          <div class="eyebrow" style="margin-bottom:6px;">Action items</div>
+          <div class="aitem" data-each="summary.actionItems" data-mod="is-:actionItem.done" data-action="toggleActionItem" data-arg="actionItem.id"><span class="ck"></span><span data-bind="actionItem.text">Send revised 3-team pricing by Friday</span></div>
+        </div>
+      </div>
+      <div class="chips"><button class="chip-btn is-primary" data-action="draftReply" data-arg="summary.sourceId">Draft the reply</button><button class="chip-btn" data-action="addToTracker" data-arg="summary.sourceId">Add to Tracker</button><button class="chip-btn" data-action="openThread" data-arg="summary.sourceId">Open thread</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 4 · DATA & SPREADSHEET (table ⇄ chart) ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Data" class="kit cc">
+  <div class="cc-cap"><span class="k">Data &amp; spreadsheets</span><span class="d">Numbers → structured table with a Table ⇄ Chart toggle.</span></div>
+  <div class="turn">
+    <div class="tav" data-mod="is-:data.agentTint" data-bind="data.agentInitials">RX</div>
+    <div class="tbody">
+      <div class="tname"><b data-bind="data.agentName">Rex</b><span class="tt" data-bind="data.context">build log, last 4 days</span></div>
+      <div class="cdata">
+        <div class="cdata-h"><span class="dt" data-bind="data.title">Build log</span><div class="toggle"><button class="on" data-action="setDataView" data-arg="table">Table</button><button data-action="setDataView" data-arg="chart">Chart</button></div></div>
+        <div class="view on" data-view="table">
+          <div class="tbl">
+            <div class="tr th" style="grid-template-columns:1.1fr .9fr .9fr .8fr;"><div data-each="data.columns" data-bind="column.label">Day</div></div>
+            <div class="tr" style="grid-template-columns:1.1fr .9fr .9fr .8fr;" data-each="data.rows"><div data-bind="row.label">Mon</div><div class="num" data-bind="row.built">12</div><div class="num" data-bind="row.verified">10</div><div class="num" data-bind="row.open">2</div></div>
+            <div class="tr tf" style="grid-template-columns:1.1fr .9fr .9fr .8fr;"><div data-bind="data.totals.label">Total</div><div class="num pos" data-bind="data.totals.built">75</div><div class="num pos" data-bind="data.totals.verified">68</div><div class="num pos" data-bind="data.totals.open">6</div></div>
+          </div>
+        </div>
+        <div class="view" data-view="chart">
+          <div class="bars"><div class="bar" data-each="data.rows"><i style="height:42%;" data-mod="height:row.pct"></i><span data-bind="row.label">Mon</span></div></div>
+          <div style="text-align:center;font-size:11px;color:var(--faint);margin-top:8px;" data-bind="data.chartCaption">Verified per day</div>
+        </div>
+      </div>
+      <div class="chips"><button class="chip-btn" data-action="recutData" data-arg="data.id">Re-cut by agent</button><button class="chip-btn" data-action="exportCsv" data-arg="data.id">Export CSV</button><button class="chip-btn" data-action="addToDoc" data-arg="data.id">Add to a doc</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 5 · EMAIL ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Email" class="kit cc">
+  <div class="cc-cap"><span class="k">Email</span><span class="d">Surface a real email in chat; read &amp; draft, never compose raw.</span></div>
+  <div class="turn">
+    <div class="tav" data-bind="email.agentInitials">EL</div>
+    <div class="tbody">
+      <div class="bubble" data-bind="email.lede">Dana at Acme replied, and this one is real, revenue-impacting and time-sensitive.</div>
+      <div class="cmail">
+        <div class="cmail-h">
+          <span class="ma" data-mod="is-:email.fromTint" data-bind="email.fromInitials">DW</span>
+          <div style="flex:1;min-width:0;"><div class="mfrom" data-bind="email.fromName">Dana Whitfield · Acme</div><div class="msub" data-bind="email.subject">Re: Q2 partnership scope</div></div>
+          <span class="cmail-tag" data-bind="email.kindLabel">Email</span>
+        </div>
+        <div class="cmail-q" data-bind="email.quote">"We'd love to bring CS and Ops in too. Could you get me revised pricing before Friday?"</div>
+        <div style="padding:0 14px 12px;"><div class="frowm" data-each="email.attachments" data-action="openAttachment" data-arg="attachment.id"><span class="fg"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;font-weight:600;color:var(--fg);" data-bind="attachment.name">current-pricing.pdf</div><div class="mono" style="font-size:10px;color:var(--faint);" data-bind="attachment.size">180 KB</div></div><button class="pillbtn" data-action="openAttachment" data-arg="attachment.id">Open</button></div></div>
+        <div class="cmail-f">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M4 22V4h13l-2 4 2 4H4"/></svg>
+          <span style="flex:1;font-size:11px;color:var(--faint);" data-bind="email.flags">Flagged: revenue-impacting · time-sensitive</span>
+          <button style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--font-sans);" data-action="openThread" data-arg="email.id">View thread · <span data-bind="email.threadCount">3</span></button>
+        </div>
+      </div>
+      <div class="chips"><button class="chip-btn is-primary" data-action="draftReply" data-arg="email.id">Draft a reply</button><button class="chip-btn" data-action="summarizeThread" data-arg="email.id">Summarize thread</button><button class="chip-btn" data-action="addToTracker" data-arg="email.id">Add to Tracker</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 6 · PHOTO GALLERY ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Gallery" class="kit cc">
+  <div class="cc-cap"><span class="k">Photo gallery</span><span class="d">Many images collapse into one grid, never an endless stack.</span></div>
+  <div class="turn">
+    <div class="tav" data-mod="is-:gallery.agentTint" data-bind="gallery.agentInitials">GA</div>
+    <div class="tbody">
+      <div class="tname"><b data-bind="gallery.agentName">Gary</b><span class="tt" data-bind="gallery.context">shot the hero set · 6 images</span></div>
+      <div class="bubble" style="padding-bottom:13px;"><span data-bind="gallery.lede">Here's the hero set: six options, two crops each.</span>
+        <div class="cgal" style="margin-top:11px;">
+          <!-- ONE tile per image; data-bind the real src onto the img, click opens it -->
+          <div class="gtile" data-each="gallery.images" data-action="openImage" data-arg="image.id">
+            <img data-bind="image.url" alt="" style="width:100%;height:100%;object-fit:cover;display:none;">
+            <span class="phglyph"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.8"/><path d="m21 15-5-5L5 21"/></svg></span>
+          </div>
+        </div>
+      </div>
+      <div class="chips"><button class="chip-btn is-primary" data-action="pickImages" data-arg="gallery.id">Pick favorites</button><button class="chip-btn" data-action="downloadAll" data-arg="gallery.id">Download all</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 7 · AUDIO & VIDEO ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Media" class="kit cc">
+  <div class="cc-cap"><span class="k">Audio &amp; video</span><span class="d">A voice note plays inline with a scrubbable waveform.</span></div>
+  <div class="turn">
+    <div class="tav" data-mod="is-:media.agentTint" data-bind="media.agentInitials">VX</div>
+    <div class="tbody">
+      <div class="tname"><b data-bind="media.agentName">Vera</b><span class="tt" data-bind="media.context">left a 0:42 voice note</span></div>
+      <div class="cmedia">
+        <button class="mplay" data-action="togglePlay" data-arg="media.id"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+        <div style="flex:1;">
+          <div class="wave" data-action="seekMedia" data-arg="media.id"><i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:90%"></i><i style="height:60%"></i><i style="height:80%"></i><i style="height:45%"></i><i style="height:72%"></i><i style="height:50%"></i><i style="height:85%"></i><i style="height:62%"></i><i style="height:38%"></i></div>
+          <div class="mmeta"><span data-bind="media.position">0:00</span><span class="mono" data-bind="media.duration">0:42</span></div>
+        </div>
+      </div>
+      <div class="cmedia-tr" data-bind="media.transcript">"Quick thought on the framing — let's keep the left margin generous so the headline breathes."</div>
+      <div class="chips"><button class="chip-btn" data-action="showTranscript" data-arg="media.id">Full transcript</button><button class="chip-btn" data-action="summarize" data-arg="media.id">Summarize</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 8 · CODE ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Code" class="kit cc">
+  <div class="cc-cap"><span class="k">Code</span><span class="d">Shown only when it matters; collapsed to a titled card.</span></div>
+  <div class="turn">
+    <div class="tav" data-mod="is-:code.agentTint" data-bind="code.agentInitials">RX</div>
+    <div class="tbody">
+      <div class="bubble" data-bind="code.lede">Here's the one-line fix to the resolver — it now keeps docs-only projects.</div>
+      <div class="ccode">
+        <div class="ccode-h"><span class="cfile" data-bind="code.filename">resolver.ts</span><span class="clang" data-bind="code.lang">TypeScript</span><button class="ccopy" data-action="copyCode" data-arg="code.id">Copy</button></div>
+        <!-- ONE line per row; host renders the lines from code.lines -->
+        <pre class="ccode-b"><code><span class="cline" data-each="code.lines"><span class="cln" data-bind="line.no">12</span><span data-bind="line.text">  if (project.kind === 'docs') return keep(project);</span></span></code></pre>
+      </div>
+      <div class="chips"><button class="chip-btn is-primary" data-action="applyPatch" data-arg="code.id">Apply patch</button><button class="chip-btn" data-action="openDiff" data-arg="code.id">View diff</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 9 · CHOICES, QUICK REPLIES & THINKING ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Choices" class="kit cc">
+  <div class="cc-cap"><span class="k">Choices &amp; thinking</span><span class="d">Give the human something to tap; show the agent is working.</span></div>
+  <div class="turn">
+    <div class="tav" data-bind="choices.agentInitials">EL</div>
+    <div class="tbody">
+      <div class="bubble" data-bind="choices.prompt">Want me to send the revised pricing now, or hold for your review?</div>
+      <!-- quick replies — ONE chip per option; is-:option.style → is-primary | (default) -->
+      <div class="chips"><button class="chip-btn is-primary" data-each="choices.options" data-mod="is-:option.style" data-action="chooseOption" data-arg="option.id" data-bind="option.label">Send it now</button></div>
+    </div>
+  </div>
+  <!-- thinking / working indicator (data-state) -->
+  <div class="turn" data-state="thinking">
+    <div class="tav" data-bind="choices.agentInitials">EL</div>
+    <div class="tbody"><div class="cthink"><span class="td"></span><span class="td"></span><span class="td"></span><span style="margin-left:6px;font-size:12px;color:var(--muted);" data-bind="choices.thinkingLabel">drafting the reply…</span></div></div>
+  </div>
+</div>
+
+<!-- ============ 10 · STEP / GOAL THREAD ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Step thread" class="kit cc">
+  <div class="cc-cap"><span class="k">Goal / step thread</span><span class="d">What the agent is doing, step by step. data-mod is-:step.state drives icon + chip (CSS owns it); width:goal.pct fills the bar.</span></div>
+  <div class="turn">
+    <div class="tav" data-mod="is-:goal.agentTint" data-bind="goal.agentInitials">EL</div>
+    <div class="tbody">
+      <div class="tname"><b data-bind="goal.agentName">Elon</b><span class="astat is-live" data-mod="is-:goal.status"><span class="sd"></span><span data-bind="goal.statusLabel">LIVE</span></span><span class="tt" data-bind="goal.context">working now</span></div>
+      <div class="gthread">
+        <div class="gthead">
+          <span class="gtico"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg></span>
+          <span class="gttitle"><span class="gk">Goal:</span> <span data-bind="goal.title">Lock the print framing</span></span>
+          <span class="gtcount"><span data-bind="goal.doneCount">2</span> of <span data-bind="goal.total">4</span></span>
+        </div>
+        <div class="gtprog" style="margin:0 0 14px;"><i style="width:50%;" data-mod="width:goal.pct"></i></div>
+        <!-- ONE step per item; data-mod is-:step.state → is-pending | is-active | is-done -->
+        <div class="gstep is-done" data-each="goal.steps" data-mod="is-:step.state">
+          <div class="gsrail">
+            <span class="gsico">
+              <span class="i-pend"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/></svg></span>
+              <span class="i-work"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg></span>
+              <span class="i-done"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span>
+            </span>
+            <span class="gsline"></span>
+          </div>
+          <div class="gsbody">
+            <div><span class="gstitle" data-bind="step.title">Patch the resolver</span><span class="gschip c-work">Working</span><span class="gschip c-done">Done</span></div>
+            <div class="gssub" data-bind="step.detail">Wired the project into the runner; docs-only build routes again.</div>
+            <!-- optional result surfaced when the step completes (shown on is-done) -->
+            <div class="gsattach show-on-done" data-each="step.attachments" data-action="openAttachment" data-arg="attachment.id">
+              <div class="frowm"><span class="fg"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span><span style="flex:1;font-size:12px;font-weight:600;color:var(--fg);" data-bind="attachment.name">resolver.diff</span><button class="pillbtn" data-action="openDiff" data-arg="attachment.id">View</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 11 · REVIEW & RESPOND TO ANYTHING ============ -->
+<div data-cv6 data-theme="dark" data-screen="agent-chat" data-screen-label="Kit · Review" class="kit cc">
+  <div class="cc-cap"><span class="k">Review &amp; respond</span><span class="d">Anything the agent sends can be opened in Review with a pin layer; replies land as context on the artifact itself.</span></div>
+
+  <!-- a) screenshot artifact to confirm -->
+  <div class="turn">
+    <div class="tav" data-mod="is-:artifact.agentTint" data-bind="artifact.agentInitials">EL</div>
+    <div class="tbody">
+      <div class="bubble" data-bind="artifact.lede">Here's the finished Home with the new Catch Up card. Want to mark anything up?</div>
+      <div class="cartifact">
+        <div class="cart-canvas is-shot">
+          <img data-bind="artifact.imageUrl" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c9ccd1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          <!-- ONE pin per comment; position set inline from the pin's coords -->
+          <div class="cart-pin" style="top:24%;left:62%;" data-each="artifact.pins" data-mod="pos:pin.at" data-action="openPin" data-arg="pin.id" data-bind="pin.n">1</div>
+        </div>
+        <div class="cart-bar"><span class="cart-kind"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg><span data-bind="artifact.kindLabel">Screenshot</span></span><span style="flex:1;font-size:11.5px;color:var(--muted);"><span data-bind="artifact.name">home-final.png</span> · <span data-bind="artifact.commentCount">1</span> comment</span><button class="review-btn" data-action="openInReview" data-arg="artifact.id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Review</button></div>
+      </div>
+      <!-- the human pins a comment on the exact spot, replying TO the artifact -->
+      <div class="replyto" data-each="artifact.replies" style="align-self:flex-end;max-width:86%;background:var(--accent);border-color:transparent;">
+        <span class="q" style="background:rgba(255,255,255,.6);"></span>
+        <div style="flex:1;min-width:0;"><div style="font-size:10.5px;font-weight:700;color:rgba(255,255,255,.85);display:flex;align-items:center;gap:5px;"><span style="width:16px;height:16px;border-radius:50% 50% 50% 2px;background:rgba(255,255,255,.25);display:inline-flex;align-items:center;justify-content:center;font-size:9px;" data-bind="reply.pinN">1</span>On <span data-bind="reply.target">home-final.png</span></div><div style="font-size:13px;color:#fff;line-height:1.4;margin-top:3px;" data-bind="reply.text">Make this card a touch shorter so two fit above the fold.</div></div>
+      </div>
+      <div class="chips"><button class="chip-btn is-primary" data-action="approve" data-arg="artifact.id">Looks good</button><button class="chip-btn" data-action="requestChanges" data-arg="artifact.id">Request changes</button></div>
+    </div>
+  </div>
+
+  <!-- b) webpage / link artifact (browser chrome variant) -->
+  <div class="turn">
+    <div class="tav" data-mod="is-:webArtifact.agentTint" data-bind="webArtifact.agentInitials">RX</div>
+    <div class="tbody">
+      <div class="bubble" data-bind="webArtifact.lede">The preview site is live. Open it right here and pin notes on any element.</div>
+      <div class="cartifact">
+        <div class="cart-omni"><span class="lights"><i></i><i></i><i></i></span><span class="url" data-bind="webArtifact.url">cv6-preview.corner.so</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></div>
+        <div class="cart-canvas" style="aspect-ratio:16/9;background:linear-gradient(160deg,#101822,#0a0e14);">
+          <img data-bind="webArtifact.thumbUrl" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;">
+          <div class="cart-pin" style="top:30%;left:38%;" data-each="webArtifact.pins" data-mod="pos:pin.at" data-action="openPin" data-arg="pin.id" data-bind="pin.n">1</div>
+        </div>
+        <div class="cart-bar"><span class="cart-kind"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span data-bind="webArtifact.kindLabel">Live site</span></span><span style="flex:1;font-size:11.5px;color:var(--muted);" data-bind="webArtifact.meta">2 pins · desktop &amp; mobile</span><button class="review-btn" data-action="openInReview" data-arg="webArtifact.id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Open in Review</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

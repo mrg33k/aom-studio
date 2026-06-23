@@ -11,9 +11,12 @@ import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useHome, useProjectMissions, shapeProjectState } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
+import { useRoomThread } from './data/useRoomThread.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
 import inboxRaw from './templates/support-inbox.html?raw';
+import chatRaw from './templates/chat.html?raw';
+import kitRaw from './templates/kit.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
 // ── viewport: desktop layout at >=900px, the phone layout below ──
@@ -62,6 +65,36 @@ function composeScreen(raw, { mobile = false, pick = 0 } = {}) {
   return screen.outerHTML;
 }
 
+// Compose the real-conversation Chat (mobile): the chat tool's chrome (header +
+// composer) with the thread body replaced by the agent-chat kit's real message
+// element (data-each="messages"). The design's sample thread is the structured
+// Goal Thread (live steps, decision cards, data tables) — that needs the agent to
+// emit structured blocks, which it doesn't yet, so we honestly show the room's real
+// messages instead of faking that thread. The per-message live-status pill is dropped
+// (it means a live agent, not a past message).
+function composeChatMobile() {
+  const doc = new DOMParser().parseFromString(chatRaw, 'text/html');
+  const screen = [...doc.querySelectorAll('[data-cv6]')].find((n) => n.getAttribute('data-screen') === 'chat-mobile');
+  if (!screen) return '';
+  screen.setAttribute('style', 'position:relative;width:100%;height:100%;background:#05080b;overflow:hidden');
+  const body = screen.querySelector('.scrbody');
+  const kitDoc = new DOMParser().parseFromString(kitRaw, 'text/html');
+  const turn = kitDoc.querySelector('.turn[data-each="messages"]');
+  if (body && turn) {
+    const t = turn.cloneNode(true);
+    t.querySelector('.astat')?.remove();
+    body.innerHTML = '';
+    body.setAttribute('style', `${body.getAttribute('style') || ''};overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(20px, env(safe-area-inset-bottom, 0px))`);
+    body.appendChild(t);
+  }
+  // append shared loading/error/empty states for the thread
+  if (body) {
+    const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
+    sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => screen.appendChild(b.cloneNode(true)));
+  }
+  return screen.outerHTML;
+}
+
 // ── Home (desktop + mobile share one data shape + one set of actions) ──
 const HOME_ALIASES = {
   agents: 'room', projects: 'room',
@@ -72,7 +105,7 @@ const HOME_ALIASES = {
   missions: 'mission',
 };
 
-function Home({ onNav }) {
+function Home({ onNav, onOpenRoom }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
   const missionsByProject = useProjectMissions(worldId);
@@ -90,9 +123,11 @@ function Home({ onNav }) {
 
   const actions = useMemo(() => ({
     nav: (target) => { if (target === 'back') setOpenedProjectId(null); else onNav?.(target); },
-    // Tap a project on mobile -> open its real mission list. Agents + desktop projects
-    // open the conversation, which is the Chat screen (next design) -> no-op for now.
+    // Tap an agent -> open its real conversation (Chat). Tap a project on mobile ->
+    // its mission list (state B). Project conversation on desktop waits for desktop Chat.
     openRoom: (id) => {
+      const agent = (data.agents || []).find((a) => a.id === id);
+      if (agent) { onOpenRoom?.(agent, worldId); return; }
       const proj = (data.projects || []).find((p) => p.id === id);
       if (proj && !isDesktop) setOpenedProjectId(id);
     },
@@ -104,7 +139,7 @@ function Home({ onNav }) {
     review: () => {}, openAttachment: () => {},
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
     openProjectChat: () => {}, openMission: () => {}, newMission: () => {},
-  }), [onNav, data.projects, isDesktop]);
+  }), [onNav, onOpenRoom, data.projects, data.agents, worldId, isDesktop]);
 
   if (openedProject) {
     const pdata = shapeProjectState(openedProject, missionsByProject[openedProject.slug]);
@@ -130,12 +165,46 @@ function SupportInbox({ onNav }) {
     aliases={SUPPORT_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
 }
 
+// ── Chat: a room's real conversation (mobile). The structured Goal Thread (live steps,
+// decision cards, data tables) needs the agent to emit structured blocks; until then we
+// show the real messages honestly. ──
+function Chat({ room, worldId, onNav }) {
+  const { messages, status } = useRoomThread(worldId, room);
+  const html = useMemo(composeChatMobile, []);
+  const data = useMemo(() => ({
+    room: { name: room.name, initials: room.initials || '·', statusText: room.statusText || '', count: '' },
+    messages,
+    user: { initials: 'PM' },
+    loading: { label: `Opening ${room.name}…` },
+    empty: { title: `No messages with ${room.name} yet`, body: 'Start the conversation below.', actionLabel: '' },
+    error: { title: "Couldn't load this conversation", body: 'Your connection dropped. Nothing was lost.', code: 'chat · retry' },
+  }), [room, messages]);
+  const actions = useMemo(() => ({
+    nav: (t) => onNav(t === 'back' ? 'home' : t),
+    search: () => {}, openNav: () => {}, openProfile: () => {}, openCommandK: () => {},
+    voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
+    chooseOption: () => {}, openAgentMenu: () => {}, pauseAgent: () => {}, retaskAgent: () => {},
+    approvePlan: () => {}, handoffAgent: () => {}, addContext: () => {}, addAttachment: () => {},
+    openAttachment: () => {}, review: () => {}, setDataView: () => {}, toggleFollow: () => {}, retry: () => {},
+  }), [onNav]);
+  return <TemplateScreen html={html} data={data} actions={actions} state={status}
+    style={{ width: '100%', height: '100%' }} />;
+}
+
 export default function CornerCV6() {
-  const [screen, setScreen] = useState('home');
-  // Only Home + Support are wired today; other nav targets stay put until built.
+  const [view, setView] = useState('home'); // 'home' | 'support'
+  const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
   const onNav = (target) => {
-    if (target === 'home' || target === 'support') setScreen(target);
+    if (target === 'home') { setOpenedRoom(null); setView('home'); }
+    else if (target === 'support') { setOpenedRoom(null); setView('support'); }
   };
+  const onOpenRoom = (room, worldId) => setOpenedRoom({ room, worldId });
+
+  let body;
+  if (openedRoom) body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} />;
+  else if (view === 'support') body = <SupportInbox onNav={onNav} />;
+  else body = <Home onNav={onNav} onOpenRoom={onOpenRoom} />;
+
   return (
     <div data-cv6 data-theme="dark" style={{
       minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)',
@@ -143,7 +212,7 @@ export default function CornerCV6() {
       paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
-        {screen === 'support' ? <SupportInbox onNav={onNav} /> : <Home onNav={onNav} />}
+        {body}
       </div>
     </div>
   );

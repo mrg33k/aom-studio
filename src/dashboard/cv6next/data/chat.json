@@ -1,0 +1,54 @@
+{
+  "screen": "chat",
+  "title": "Chat · Goal Thread tool",
+  "source": "ui_kits/tools/chat.html",
+  "fragment": "wired/tools/chat.html",
+  "stylesheet": "wired/cv6.css",
+  "screens": {
+    "desktop": { "selector": "[data-cv6][data-screen=\"chat-desktop\"]", "regions": "rooms rail · conversation (Goal thread) · control drawer" },
+    "mobile": { "selector": "[data-cv6][data-screen=\"chat-mobile\"]", "regions": "header · thread · composer" }
+  },
+  "composesFrom": "wired/agent-chat/kit.json — the thread's message blocks are the agent-chat kit rendered into this tool's chrome. The sample thread here is the canonical arrangement.",
+  "sharesVocabularyWith": "wired/desktop/home.json (rooms/agents/projects/goal)",
+
+  "data": {
+    "agents": "list of room (is-:room.status on .sdot); see home.json room shape + room.statusText",
+    "projects": "list of room (is-:room.tint on .folder)",
+    "room": { "note": "the open room", "id": "string", "name": "string", "initials": "string", "status": "enum live|working|blocked|ready", "statusText": "string", "project": "string", "mission": "string (mono /007)", "role": "string (Driver)", "avatarTint": "enum → is-:room.avatarTint on .ava" },
+    "goal": { "id": "string", "title": "string", "step": "int", "doneCount": "int", "total": "int", "pct": "int (0-100 → width:goal.pct)", "checklist": { "list": true, "item": "item", "shape": { "label": "string", "state": "enum: done|active|pending → is-:item.state on .gchk" } } },
+    "step": { "note": "a completed thread step (sample)", "title": "string", "detail": "string" },
+    "activeStep": { "title": "string", "detail": "string", "pct": "int (0-100 → width:activeStep.pct)" },
+    "nextStep": { "title": "string" },
+    "snag": { "detail": "string", "chosenEcho": "string", "choices": { "list": true, "item": "choice", "shape": { "id": "string", "title": "string", "label": "string", "detail": "string", "style": "enum: rec|alt → is-:choice.style on .choice-card (choice-rec | choice-alt)" } } },
+    "question": { "text": "string", "options": { "list": true, "item": "option", "shape": { "id": "string", "label": "string" } } },
+    "buildLog": { "note": "mobile · kit data element", "title": "string", "columns": { "list": true, "item": "column", "shape": { "label": "string" } }, "rows": { "list": true, "item": "row", "shape": { "label": "string", "built": "int", "verified": "int", "open": "int" } }, "totals": { "label": "string", "built": "int", "verified": "int", "open": "int" } },
+    "attachments": { "count": "int", "list": true, "item": "attachment", "shape": { "id": "string", "name": "string", "size": "string (mono)" } },
+    "user": { "initials": "string" }
+  },
+
+  "actions": [
+    { "name": "nav", "target": "home|chat|organize|review|support|tracker|command|livescribe|back", "from": "8-tool nav + mobile back" },
+    { "name": "openCommandK", "from": "search field / header" },
+    { "name": "openProfile", "from": "avatar" },
+    { "name": "openRoom", "arg": "room.id", "from": "rooms rail rows" },
+    { "name": "toggleFollow", "arg": "room.id", "from": "Following along" },
+    { "name": "chooseOption", "arg": "choice.id | option.id", "from": "snag choices + question chips" },
+    { "name": "openAgentMenu", "arg": "room.id" },
+    { "name": "pauseAgent", "arg": "room.id" },
+    { "name": "retaskAgent", "arg": "room.id" },
+    { "name": "approvePlan", "arg": "goal.id" },
+    { "name": "handoffAgent", "arg": "room.id" },
+    { "name": "addContext", "arg": "goal.id" },
+    { "name": "addAttachment", "arg": "goal.id" },
+    { "name": "openAttachment", "arg": "attachment.id" },
+    { "name": "review", "arg": "attachment.id" },
+    { "name": "setDataView", "arg": "table|chart", "from": "mobile build-log toggle" },
+    { "name": "voiceInput" }, { "name": "composeMessage" }, { "name": "sendMessage" }
+  ],
+
+  "states": {
+    "ready": { "region": "[data-state=\"ready\"]" },
+    "empty/loading/error": { "in": "wired/_base/states.html" }
+  },
+  "modifierRule": "every data-mod is is-:path → toggle is-<value> on a base class; no inline color default. Exceptions set inline: width:goal.pct, width:activeStep.pct."
+}

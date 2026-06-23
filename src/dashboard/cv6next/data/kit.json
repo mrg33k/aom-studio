@@ -1,0 +1,73 @@
+{
+  "kit": "agent-chat",
+  "title": "Agent-chat element kit",
+  "source": "ui_kits/agent-chat/*",
+  "fragment": "wired/agent-chat/kit.html",
+  "stylesheet": "wired/cv6.css",
+  "note": "The shared vocabulary for how an agent speaks. Each element is a labeled template the host clones into a conversation, reused across Chat, Support, Command, Live Scribe. All element classes are GLOBAL under [data-cv6] (from chat.css). A turn = avatar + stacked blocks.",
+  "wrapper": { "selector": "[data-cv6][data-screen=\"agent-chat\"]", "theme": "dark|light|glass" },
+
+  "elements": {
+    "turn": {
+      "what": "one agent message: avatar + name + status + stacked blocks; plus the human reply bubble (.umsg)",
+      "data": { "messages": { "list": true, "item": "message", "shape": { "agentName": "string", "agentInitials": "string", "agentTint": "enum: green|lime|violet|pink → is-:message.agentTint on .tav", "status": "enum: live|idle|done → is-:message.status on .astat", "statusLabel": "string", "time": "string", "text": "string" } }, "userMessages": { "list": true, "item": "userMessage", "shape": { "text": "string" } } }
+    },
+    "comm-blocks": {
+      "what": "success | question | snag — one .cblk base, is-:block.kind swaps the look",
+      "data": { "blocks": { "list": true, "item": "block", "shape": { "kind": "enum: success|question|snag → is-:block.kind on .cblk", "label": "string (UPPERCASE)", "body": "string", "paths": { "list": true, "item": "path", "shape": { "text": "string" } }, "choices": { "list": true, "item": "choice", "shape": { "id": "string", "label": "string", "style": "enum: primary|(default) → is-:choice.style on .chip-btn" } } } } },
+      "actions": [ { "name": "chooseOption", "arg": "choice.id" } ]
+    },
+    "summary": {
+      "what": "bullets + checkable action items",
+      "data": { "summary": { "agentName": "string", "agentInitials": "string", "context": "string", "meta": "string", "sourceId": "string", "bullets": { "list": true, "item": "bullet", "shape": { "text": "string", "tone": "enum: default|warn → is-:bullet.tone on .sbullet" } }, "actionItems": { "list": true, "item": "actionItem", "shape": { "id": "string", "text": "string", "done": "enum: done|(empty) → is-:actionItem.done on .aitem" } } } },
+      "actions": [ { "name": "toggleActionItem", "arg": "actionItem.id" }, { "name": "draftReply", "arg": "summary.sourceId" }, { "name": "addToTracker", "arg": "summary.sourceId" }, { "name": "openThread", "arg": "summary.sourceId" } ]
+    },
+    "data": {
+      "what": "structured table with a working Table ⇄ Chart toggle (.cdata .view.on)",
+      "data": { "data": { "id": "string", "agentName": "string", "agentInitials": "string", "agentTint": "enum → is-:data.agentTint", "context": "string", "title": "string", "chartCaption": "string", "columns": { "list": true, "item": "column", "shape": { "label": "string" } }, "rows": { "list": true, "item": "row", "shape": { "label": "string", "built": "int", "verified": "int", "open": "int", "pct": "int (0-100, data-mod height:row.pct on the chart bar)" } }, "totals": { "label": "string", "built": "int", "verified": "int", "open": "int" } } },
+      "actions": [ { "name": "setDataView", "arg": "table|chart" }, { "name": "recutData", "arg": "data.id" }, { "name": "exportCsv", "arg": "data.id" }, { "name": "addToDoc", "arg": "data.id" } ]
+    },
+    "email": {
+      "what": "a real email surfaced in chat; read & draft only",
+      "data": { "email": { "id": "string", "agentInitials": "string", "lede": "string", "fromInitials": "string", "fromTint": "enum: pink|green|violet → is-:email.fromTint on .ma", "fromName": "string", "subject": "string", "kindLabel": "string", "quote": "string", "flags": "string", "threadCount": "int", "attachments": { "list": true, "item": "attachment", "shape": { "id": "string", "name": "string", "size": "string" } } } },
+      "actions": [ { "name": "openAttachment", "arg": "attachment.id" }, { "name": "draftReply", "arg": "email.id" }, { "name": "summarizeThread", "arg": "email.id" }, { "name": "addToTracker", "arg": "email.id" }, { "name": "openThread", "arg": "email.id" } ]
+    },
+    "gallery": {
+      "what": "many images collapse to one grid; bind real src onto each <img> (display:none until set)",
+      "data": { "gallery": { "id": "string", "agentName": "string", "agentInitials": "string", "agentTint": "enum → is-:gallery.agentTint", "context": "string", "lede": "string", "images": { "list": true, "item": "image", "shape": { "id": "string", "url": "string (img src)" } } } },
+      "actions": [ { "name": "openImage", "arg": "image.id" }, { "name": "pickImages", "arg": "gallery.id" }, { "name": "downloadAll", "arg": "gallery.id" } ]
+    },
+    "media": {
+      "what": "voice note / video with a scrubbable waveform + transcript",
+      "data": { "media": { "id": "string", "agentName": "string", "agentInitials": "string", "agentTint": "enum → is-:media.agentTint", "context": "string", "position": "string (mono 0:00)", "duration": "string (mono)", "transcript": "string" } },
+      "actions": [ { "name": "togglePlay", "arg": "media.id" }, { "name": "seekMedia", "arg": "media.id" }, { "name": "showTranscript", "arg": "media.id" }, { "name": "summarize", "arg": "media.id" } ]
+    },
+    "code": {
+      "what": "titled code card, collapsed; one .cline per line",
+      "data": { "code": { "id": "string", "agentInitials": "string", "agentTint": "enum → is-:code.agentTint", "lede": "string", "filename": "string", "lang": "string", "lines": { "list": true, "item": "line", "shape": { "no": "int", "text": "string" } } } },
+      "actions": [ { "name": "copyCode", "arg": "code.id" }, { "name": "applyPatch", "arg": "code.id" }, { "name": "openDiff", "arg": "code.id" } ]
+    },
+    "choices": {
+      "what": "quick replies + a thinking/working indicator (data-state=\"thinking\")",
+      "data": { "choices": { "agentInitials": "string", "prompt": "string", "thinkingLabel": "string", "options": { "list": true, "item": "option", "shape": { "id": "string", "label": "string", "style": "enum: primary|(default) → is-:option.style on .chip-btn" } } } },
+      "actions": [ { "name": "chooseOption", "arg": "option.id" } ],
+      "states": { "thinking": "[data-state=\"thinking\"] turn shown while the agent works" }
+    },
+    "step-thread": {
+      "what": "the Goal thread: progress bar + steps that go pending → active → done, each attaching its result. is-:step.state drives icon + chip ENTIRELY in CSS; width:goal.pct fills the bar.",
+      "data": { "goal": { "agentName": "string", "agentInitials": "string", "agentTint": "enum → is-:goal.agentTint", "status": "enum → is-:goal.status on .astat", "statusLabel": "string", "context": "string", "title": "string", "doneCount": "int", "total": "int", "pct": "int (0-100 → width:goal.pct on .gtprog>i)", "steps": { "list": true, "item": "step", "shape": { "state": "enum: pending|active|done → is-:step.state on .gstep", "title": "string", "detail": "string", "attachments": { "list": true, "item": "attachment", "shape": { "id": "string", "name": "string" } } } } } },
+      "actions": [ { "name": "openAttachment", "arg": "attachment.id" }, { "name": "openDiff", "arg": "attachment.id" } ]
+    },
+    "review-respond": {
+      "what": "any artifact (screenshot / live webpage) the agent sends, openable in Review with a pin layer; replies land as context on the artifact",
+      "data": {
+        "artifact": { "id": "string", "agentInitials": "string", "agentTint": "enum → is-:artifact.agentTint", "lede": "string", "imageUrl": "string (img src)", "kindLabel": "string", "name": "string", "commentCount": "int", "pins": { "list": true, "item": "pin", "shape": { "id": "string", "n": "int", "at": "object {top,left as %} → data-mod pos:pin.at sets inline top/left" } }, "replies": { "list": true, "item": "reply", "shape": { "pinN": "int", "target": "string", "text": "string" } } },
+        "webArtifact": { "id": "string", "agentInitials": "string", "agentTint": "enum → is-:webArtifact.agentTint", "lede": "string", "url": "string", "thumbUrl": "string (img src)", "kindLabel": "string", "meta": "string", "pins": "same shape as artifact.pins" }
+      },
+      "actions": [ { "name": "openInReview", "arg": "artifact.id | webArtifact.id" }, { "name": "openPin", "arg": "pin.id" }, { "name": "approve", "arg": "artifact.id" }, { "name": "requestChanges", "arg": "artifact.id" } ]
+    }
+  },
+
+  "modifierRule": "every data-mod is is-:path → engine toggles is-<value> on a base class whose CSS owns the look; no inline color default. Exceptions (continuous values set inline): width:goal.pct, height:row.pct, pos:pin.at.",
+  "states": { "empty/loading/error": { "in": "wired/_base/states.html" } }
+}

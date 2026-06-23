@@ -1,0 +1,217 @@
+<!-- @dsCard group="Wired Templates" viewport="1480x940" subtitle="Chat / Goal Thread tool · desktop (rooms rail + thread + control drawer) and mobile. Stripped, scoped [data-cv6], labeled. Thread blocks compose from the agent-chat kit." name="Wired · Chat (Goal thread)" -->
+<!--
+  ============================================================================
+  WIRED — Chat / Goal Thread tool   ·   Source: ui_kits/tools/chat.html
+  Contract: wired/tools/chat.json
+  ----------------------------------------------------------------------------
+  Two screens: desktop (rooms rail · conversation/Goal thread · control drawer)
+  and mobile. Stripped of stage/window/phone bezel + fake status bar.
+  The thread's message blocks are the agent-chat kit (see wired/agent-chat/kit
+  .html + kit.json) rendered into this tool's chrome; the sample thread here is
+  the canonical arrangement. Per-item lists use data-each; per-item visuals use
+  data-mod="is-:path". Tool step visuals use the .step* classes (namespaced).
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+<style> body { margin:0; background:#e8e6e2; padding:40px; box-sizing:border-box; min-width:max-content; } .wrap { display:flex; flex-direction:column; gap:36px; align-items:flex-start; } </style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ DESKTOP ============ -->
+<div data-cv6 data-theme="dark" data-screen="chat-desktop" data-screen-label="Chat · Desktop" class="cv6-screen" style="width:1440px;height:860px;flex:none;border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="topbar">
+    <div class="tgreet"><img src="/cv6/assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
+    <div class="toolnav">
+      <div class="ctile" data-action="nav" data-target="home"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg><span class="clab">Home</span></div>
+      <div class="ctile on" data-action="nav" data-target="chat"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg><span class="clab">Chat</span></div>
+      <div class="ctile" data-action="nav" data-target="organize"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 8l9 4 9-4-9-4Z"/><path d="m3 12 9 4 9-4"/></svg><span class="clab">Organize</span></div>
+      <div class="ctile" data-action="nav" data-target="review"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="clab">Review</span></div>
+      <div class="ctile" data-action="nav" data-target="support"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg><span class="clab">Support</span></div>
+      <div class="ctile" data-action="nav" data-target="tracker"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="clab">Tracker</span></div>
+      <div class="ctile" data-action="nav" data-target="command"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4H4v16h3M17 4h3v16h-3"/></svg><span class="clab">Command</span></div>
+      <div class="ctile" data-action="nav" data-target="livescribe"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="clab">Scribe</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="ib" data-action="openCommandK"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+      <div class="av" data-action="openProfile">P</div>
+    </div>
+  </div>
+  <div style="display:flex;flex:1;min-height:0;">
+    <!-- rooms rail -->
+    <div style="width:264px;flex:none;border-right:1px solid var(--divider);padding:18px 12px;overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:9px;height:38px;border-radius:11px;background:var(--surface-2);border:1px solid var(--hair);padding:0 13px;margin-bottom:16px;color:var(--faint);" data-action="openCommandK"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="font-size:13px;">Search rooms…</span></div>
+      <div class="eyebrow" style="margin:0 6px 8px;">Agents</div>
+      <div style="margin-bottom:16px;">
+        <!-- ONE row per agent; is-active marks the open room -->
+        <div class="room is-open" style="background:var(--accent-weak);" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" style="font-weight:600;" data-bind="room.name">Elon</span><span style="font-size:10.5px;color:var(--accent);font-weight:600;" data-bind="room.statusText">on step 3</span></div>
+      </div>
+      <div class="eyebrow" style="margin:0 6px 8px;">Projects</div>
+      <!-- ONE row per project -->
+      <div class="room" data-each="projects" data-action="openRoom" data-arg="room.id"><svg class="folder is-violet" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span class="rn" data-bind="room.name">Space Rising</span><span style="font-size:11.5px;color:var(--faint);" data-bind="room.count">28</span></div>
+    </div>
+    <!-- conversation -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:11px;padding:15px 24px;border-bottom:1px solid var(--divider);">
+        <div style="position:relative;flex:none;"><div style="width:40px;height:40px;border-radius:50%;background:var(--avatar);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;" data-bind="room.initials">EL</div><span class="sdot is-live" data-mod="is-:room.status" style="position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border:2.5px solid var(--ground);"></span></div>
+        <div style="flex:1;"><div style="font-size:16px;font-weight:600;color:var(--fg);" data-bind="room.name">Elon</div><div style="font-size:12px;color:var(--muted);"><span data-bind="room.project">Space Rising</span> · Mission <span data-bind="room.mission">/007</span> · <span data-bind="room.statusText">working now</span></div></div>
+        <div style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--success);background:var(--success-weak);padding:6px 12px;border-radius:18px;" data-action="toggleFollow" data-arg="room.id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Following along</div>
+      </div>
+      <div style="flex:1;overflow:hidden;padding:22px 24px;" data-state="ready">
+        <div style="max-width:660px;">
+          <div class="thread-head">
+            <span style="width:34px;height:34px;border-radius:10px;background:var(--accent-weak);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg></span>
+            <span class="thread-title"><span style="color:var(--muted);font-weight:600;">Goal:</span> <span data-bind="goal.title">Lock the print framing</span></span>
+            <span style="margin-left:auto;display:flex;align-items:center;gap:11px;"><span class="mono" style="font-size:11px;color:var(--muted);"><span data-bind="goal.doneCount">2</span> of <span data-bind="goal.total">4</span> done</span><span style="display:flex;gap:3px;"><span style="width:18px;height:4px;border-radius:2px;background:var(--success);"></span><span style="width:18px;height:4px;border-radius:2px;background:var(--success);"></span><span style="width:18px;height:4px;border-radius:2px;background:var(--accent);"></span><span style="width:18px;height:4px;border-radius:2px;background:var(--surface-2);"></span></span></span>
+          </div>
+          <!-- THREAD · the sample is the canonical arrangement; blocks compose from the agent-chat kit. -->
+          <!-- step · done -->
+          <div class="step">
+            <div class="step-ico" style="background:var(--success-weak);"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></div>
+            <div class="step-card" style="background:transparent;padding-top:8px;">
+              <div style="display:flex;align-items:center;gap:9px;"><span class="step-title" data-bind="step.title">Read the brief &amp; pulled the repo</span><span class="pill-chip" style="color:var(--success);background:var(--success-weak);">Done</span></div>
+              <div class="step-sub" data-bind="step.detail">Scanned 28 missions and the task-runner. Everything lined up except one thing…</div>
+            </div>
+          </div>
+          <!-- step · snag + decision -->
+          <div class="step">
+            <div class="step-ico" style="background:var(--warn-weak,rgba(251,191,36,.16));"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17v.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/></svg></div>
+            <div class="step-card" style="background:var(--surface);border:1px solid var(--hair);">
+              <div style="display:flex;align-items:center;gap:9px;"><span class="step-title">Hit a snag</span><span class="pill-chip" style="color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));">Needs you</span></div>
+              <div class="step-sub">The <span style="color:var(--fg);font-weight:500;">Space Rising</span> repo isn't wired into the task runner yet, so the print can't build. Two ways forward · your call:</div>
+              <div class="choice">
+                <!-- ONE choice-card per option; is-:choice.style → choice-rec | choice-alt -->
+                <div class="choice-card choice-rec" data-each="snag.choices" data-mod="is-:choice.style" data-action="chooseOption" data-arg="choice.id">
+                  <div class="choice-h" style="color:#fff;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span data-bind="choice.title">Quick reversible fix</span></div>
+                  <div class="choice-s" style="color:rgba(255,255,255,.85);" data-bind="choice.detail">Wire it in now, migrate cleanly later. Unblocks the print. Recommended.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- step · your choice (echoed) -->
+          <div class="step">
+            <div class="step-ico" style="background:var(--avatar);color:#fff;font-size:12px;font-weight:700;" data-bind="user.initials">P</div>
+            <div class="step-card" style="background:var(--accent-weak);border:1px solid var(--accent-weak);">
+              <div style="font-size:14px;color:var(--fg);line-height:1.5;" data-bind="snag.chosenEcho"><span style="font-weight:600;">You chose the quick fix</span> · "but pin the framing first."</div>
+            </div>
+          </div>
+          <!-- step · working -->
+          <div class="step">
+            <div class="step-ico" style="background:var(--accent-weak);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" style="animation:spin 1.1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg></div>
+            <div class="step-card" style="background:var(--surface);border:1px solid var(--hair);">
+              <div style="display:flex;align-items:center;gap:9px;"><span class="step-title" data-bind="activeStep.title">Patching the resolver</span><span class="pill-chip" style="color:var(--accent);background:var(--accent-weak);">Working</span></div>
+              <div class="step-sub" data-bind="activeStep.detail">Pinned your framing, now teaching the task runner where the repo lives.</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:11px;">
+                <div style="flex:1;height:7px;border-radius:4px;background:var(--surface-2);overflow:hidden;"><div style="width:64%;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#6366F1);animation:barGlow 1.6s ease-in-out infinite;" data-mod="width:activeStep.pct"></div></div>
+                <span class="mono" style="font-size:11px;color:var(--muted);">step <span data-bind="goal.step">3</span> of <span data-bind="goal.total">4</span></span>
+              </div>
+            </div>
+          </div>
+          <!-- step · upcoming -->
+          <div class="step">
+            <div class="step-ico" style="background:var(--chip);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg></div>
+            <div class="step-card" style="background:transparent;padding-top:9px;">
+              <div style="display:flex;align-items:center;gap:9px;"><span class="step-title" style="color:var(--muted);" data-bind="nextStep.title">Re-run the print build</span><span class="pill-chip" style="color:var(--faint);background:var(--chip);">Up next</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--divider);padding:14px 24px;display:flex;align-items:center;gap:10px;"><button style="width:42px;height:42px;border-radius:11px;border:none;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:var(--ring-accent);" data-action="voiceInput"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M9.5 9.5c.8-1.2 4.2-1.2 5 0"/></svg></button><div style="flex:1;height:44px;border-radius:12px;border:1px solid var(--hair);background:var(--surface-2);display:flex;align-items:center;padding:0 16px;font-size:15px;color:var(--faint);" data-action="composeMessage">Nudge <span data-bind="room.name">Elon</span>, or jump in…</div><button style="width:44px;height:44px;border-radius:12px;border:none;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;" data-action="sendMessage"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
+    </div>
+    <!-- control drawer -->
+    <div style="width:316px;flex:none;border-left:1px solid var(--divider);display:flex;flex-direction:column;overflow:hidden;">
+      <div style="flex:1;overflow:hidden;padding:20px;">
+        <div class="eyebrow" style="color:var(--muted);margin-bottom:10px;">Agent on this goal</div>
+        <div style="border:1px solid var(--hair);background:var(--surface);border-radius:14px;padding:14px;margin-bottom:20px;box-shadow:var(--shadow-card);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:13px;">
+            <div style="position:relative;flex:none;"><span class="ava is-green" style="width:34px;height:34px;font-size:12px;" data-mod="is-:room.avatarTint" data-bind="room.initials">EL</span><span class="sdot is-live" data-mod="is-:room.status" style="position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;border:2px solid var(--surface);"></span></div>
+            <div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="room.name">Elon</div><div style="font-size:11.5px;color:var(--muted);"><span data-bind="room.role">Driver</span> · <span data-bind="activeStep.title">patching resolver</span></div></div>
+            <button style="width:28px;height:28px;border-radius:8px;border:1px solid var(--hair);background:var(--surface-2);color:var(--muted);display:flex;align-items:center;justify-content:center;flex:none;" data-action="openAgentMenu" data-arg="room.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="flex:1;height:7px;border-radius:4px;background:var(--surface-2);overflow:hidden;"><div style="width:64%;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#6366F1);animation:barGlow 1.6s ease-in-out infinite;" data-mod="width:goal.pct"></div></div><span class="mono" style="font-size:11px;color:var(--muted);">step <span data-bind="goal.step">3</span>/<span data-bind="goal.total">4</span></span></div>
+          <div style="display:flex;gap:8px;">
+            <button style="flex:1;height:40px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" data-action="pauseAgent" data-arg="room.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pause</button>
+            <button style="flex:1;height:40px;border-radius:11px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" data-action="retaskAgent" data-arg="room.id"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Re-task</button>
+          </div>
+        </div>
+        <div class="eyebrow" style="color:var(--muted);margin-bottom:10px;">Quick actions</div>
+        <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:22px;">
+          <button style="display:flex;align-items:center;gap:11px;width:100%;height:44px;padding:0 12px;border-radius:11px;border:1px solid var(--hair);background:var(--surface);cursor:pointer;text-align:left;" data-action="approvePlan" data-arg="goal.id"><span style="width:28px;height:28px;border-radius:8px;background:var(--success-weak);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></span><span style="flex:1;font-size:13px;font-weight:500;color:var(--fg);">Approve current plan</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+          <button style="display:flex;align-items:center;gap:11px;width:100%;height:44px;padding:0 12px;border-radius:11px;border:1px solid var(--hair);background:var(--surface);cursor:pointer;text-align:left;" data-action="handoffAgent" data-arg="room.id"><span style="width:28px;height:28px;border-radius:8px;background:var(--accent-weak);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg></span><span style="flex:1;font-size:13px;font-weight:500;color:var(--fg);">Hand off to another agent</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+          <button style="display:flex;align-items:center;gap:11px;width:100%;height:44px;padding:0 12px;border-radius:11px;border:1px solid var(--hair);background:var(--surface);cursor:pointer;text-align:left;" data-action="addContext" data-arg="goal.id"><span style="width:28px;height:28px;border-radius:8px;background:var(--chip);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M12 12v6M9 15h6"/></svg></span><span style="flex:1;font-size:13px;font-weight:500;color:var(--fg);">Add a file or context</span><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><span class="eyebrow" style="color:var(--muted);">Mission goals</span><span class="mono" style="font-size:10.5px;color:var(--faint);"><span data-bind="goal.doneCount">2</span> of <span data-bind="goal.total">4</span></span></div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:22px;">
+          <!-- ONE row per checklist item; is-:item.state → done | active | pending -->
+          <div class="gchk is-done" style="display:flex;align-items:center;gap:10px;" data-each="goal.checklist" data-mod="is-:item.state"><span class="gchk-mark"></span><span class="gchk-label" style="flex:1;font-size:13px;" data-bind="item.label">Frame the print spec</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;"><span class="eyebrow" style="color:var(--muted);">Attachments</span><span class="mono" style="font-size:10.5px;color:var(--faint);" data-bind="attachments.count">2</span><button style="margin-left:auto;display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;font-family:var(--font-sans);" data-action="addAttachment" data-arg="goal.id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add</button></div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <!-- ONE row per attachment -->
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--hair);border-radius:11px;background:var(--surface);" data-each="attachments" data-action="openAttachment" data-arg="attachment.id"><span style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#1e2433,#11151c);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;font-weight:600;color:var(--fg);" data-bind="attachment.name">handoff.md</div><div class="mono" style="font-size:10px;color:var(--faint);" data-bind="attachment.size">8 KB</div></div><button style="height:28px;padding:0 11px;border-radius:8px;border:none;background:var(--accent-weak);color:var(--accent);font-size:11.5px;font-weight:600;font-family:var(--font-sans);" data-action="review" data-arg="attachment.id">Review</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE ============ -->
+<div data-cv6 data-theme="dark" data-screen="chat-mobile" data-screen-label="Chat · Mobile" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr"><div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div style="position:relative;flex:none;"><div style="width:34px;height:34px;border-radius:50%;background:var(--avatar);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;" data-bind="room.initials">EL</div><span class="sdot is-live" data-mod="is-:room.status" style="position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;border:2px solid var(--ground);"></span></div><div class="mhtitle"><div class="mttl" data-bind="room.name">Elon</div><div class="msub"><span data-bind="room.statusText">working</span> · step <span data-bind="goal.step">3</span> of <span data-bind="goal.total">4</span></div></div><div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div></div>
+  <div class="scrbody" data-state="ready" style="padding:16px 16px 0;">
+    <div class="thread-head" style="margin-bottom:18px;">
+      <span style="width:30px;height:30px;border-radius:9px;background:var(--accent-weak);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/></svg></span>
+      <span class="thread-title" style="font-size:15px;"><span style="color:var(--muted);font-weight:600;">Goal:</span> <span data-bind="goal.title">Lock the print framing</span></span><span class="mono" style="margin-left:auto;font-size:11px;color:var(--muted);"><span data-bind="goal.doneCount">2</span>/<span data-bind="goal.total">4</span></span>
+    </div>
+    <div class="step">
+      <div class="step-ico" style="background:var(--success-weak);width:34px;height:34px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></div>
+      <div class="step-card" style="background:transparent;padding:7px 0 0;"><div style="display:flex;align-items:center;gap:8px;"><span class="step-title" style="font-size:14px;" data-bind="step.title">Read brief &amp; pulled repo</span></div><div class="step-sub" style="font-size:12.5px;" data-bind="step.detail">Scanned 28 missions.</div></div>
+    </div>
+    <div class="step">
+      <div class="step-ico" style="background:var(--warn-weak,rgba(251,191,36,.16));width:34px;height:34px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17v.01"/><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z"/></svg></div>
+      <div class="step-card" style="background:var(--surface);border:1px solid var(--hair);padding:12px 13px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span class="step-title" style="font-size:14px;">Hit a snag</span><span class="pill-chip" style="color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));">Needs you</span></div>
+        <div class="step-sub" style="font-size:12.5px;" data-bind="snag.detail">Repo isn't wired into the runner yet. Your call:</div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:11px;">
+          <!-- ONE choice-card per option -->
+          <div class="choice-card choice-rec" style="padding:11px 12px;" data-each="snag.choices" data-mod="is-:choice.style" data-action="chooseOption" data-arg="choice.id"><div class="choice-h" style="color:#fff;font-size:13px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg><span data-bind="choice.label">Quick reversible fix · Recommended</span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-ico" style="background:var(--accent-weak);width:34px;height:34px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" style="animation:spin 1.1s linear infinite;"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg></div>
+      <div class="step-card" style="background:var(--surface);border:1px solid var(--hair);padding:12px 13px;">
+        <div style="display:flex;align-items:center;gap:8px;"><span class="step-title" style="font-size:14px;" data-bind="activeStep.title">Patching the resolver</span><span class="pill-chip" style="color:var(--accent);background:var(--accent-weak);">Working</span></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-top:10px;"><div style="flex:1;height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden;"><div style="width:64%;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#6366F1);" data-mod="width:activeStep.pct"></div></div><span class="mono" style="font-size:10.5px;color:var(--muted);"><span data-bind="goal.step">3</span>/<span data-bind="goal.total">4</span></span></div>
+      </div>
+    </div>
+    <!-- agent DATA output (kit · data element) -->
+    <div style="background:var(--surface);border:1px solid var(--hair);border-radius:13px;padding:12px 13px;margin:2px 0 14px;box-shadow:var(--shadow-card);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="font-size:13px;font-weight:600;color:var(--fg);flex:1;" data-bind="buildLog.title">Build log</span><div style="display:flex;gap:3px;background:var(--surface-2);border-radius:8px;padding:3px;"><button style="height:24px;padding:0 11px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:600;font-family:var(--font-sans);" data-action="setDataView" data-arg="table">Table</button><button style="height:24px;padding:0 11px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-size:11px;font-weight:600;font-family:var(--font-sans);" data-action="setDataView" data-arg="chart">Chart</button></div></div>
+      <div style="border:1px solid var(--hair);border-radius:10px;overflow:hidden;">
+        <div style="display:grid;grid-template-columns:1.1fr .9fr .9fr .8fr;gap:6px;padding:8px 11px;background:var(--surface-2);border-bottom:1px solid var(--hair);font-size:9.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);"><div data-each="buildLog.columns" data-bind="column.label">Day</div></div>
+        <!-- ONE row per record -->
+        <div style="display:grid;grid-template-columns:1.1fr .9fr .9fr .8fr;gap:6px;padding:8px 11px;border-bottom:1px solid var(--divider);font-size:12px;color:var(--fg);" data-each="buildLog.rows"><div style="font-weight:500;" data-bind="row.label">Mon</div><div class="mono" style="text-align:right;" data-bind="row.built">12</div><div class="mono" style="text-align:right;" data-bind="row.verified">10</div><div class="mono" style="text-align:right;" data-bind="row.open">2</div></div>
+        <div style="display:grid;grid-template-columns:1.1fr .9fr .9fr .8fr;gap:6px;padding:8px 11px;background:var(--surface-2);font-size:12px;font-weight:700;"><div style="color:var(--muted);" data-bind="buildLog.totals.label">Total</div><div class="mono" style="text-align:right;color:var(--accent);" data-bind="buildLog.totals.built">51</div><div class="mono" style="text-align:right;color:var(--accent);" data-bind="buildLog.totals.verified">45</div><div class="mono" style="text-align:right;color:var(--accent);" data-bind="buildLog.totals.open">5</div></div>
+      </div>
+    </div>
+    <!-- agent QUESTION block (kit · comm-block question) -->
+    <div style="border:1px solid var(--accent-weak);background:var(--accent-weak);border-radius:13px;padding:12px 13px;margin-bottom:6px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.8.4-1 .8-1 1.6"/><path d="M12 17h.01"/></svg><span style="font-size:13px;font-weight:600;color:var(--accent);">Quick question</span></div>
+      <div style="font-size:13.5px;line-height:1.5;color:var(--fg);" data-bind="question.text">Migrate to a projects/ entry now, or after the print?</div>
+      <div style="display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;">
+        <!-- ONE chip per option -->
+        <button style="height:34px;padding:0 13px;border-radius:9px;border:1px solid var(--accent-weak);background:var(--surface);color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);" data-each="question.options" data-action="chooseOption" data-arg="option.id" data-bind="option.label">After the print</button>
+      </div>
+    </div>
+  </div>
+  <div class="mcomposer"><button style="width:42px;height:42px;border-radius:12px;border:none;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:var(--ring-accent);" data-action="voiceInput"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M9.5 9.5c.8-1.2 4.2-1.2 5 0"/></svg></button><div style="flex:1;height:42px;border-radius:12px;border:1px solid var(--hair);background:var(--surface-2);display:flex;align-items:center;padding:0 14px;font-size:14px;color:var(--faint);" data-action="composeMessage">Nudge <span data-bind="room.name">Elon</span>, or jump in…</div><button style="width:42px;height:42px;border-radius:12px;border:none;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;" data-action="sendMessage"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button></div>
+</div>
+
+</div>
+</body>
+</html>
