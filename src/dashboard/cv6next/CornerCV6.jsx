@@ -596,10 +596,23 @@ class ScreenBoundary extends Component {
   }
 }
 
+// Initial view from the URL (?view=command), so each tool is deep-linkable: a refresh
+// keeps you on the page, and the screen can be linked/screenshotted directly. 'chat'
+// maps to the conversations list. Unknown values fall back to Home.
+function initialViewFromUrl() {
+  try {
+    const v = new URLSearchParams(window.location.search).get('view');
+    if (!v) return 'home';
+    if (v === 'chat' || v === 'chatlist') return 'chatlist';
+    if (['home', 'support', 'command', 'tracker'].includes(v)) return v;
+  } catch { /* no window */ }
+  return 'home';
+}
+
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
-  const [view, setView] = useState('home'); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
+  const [view, setView] = useState(initialViewFromUrl); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
