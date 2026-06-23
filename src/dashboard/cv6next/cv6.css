@@ -438,3 +438,7 @@
 /* new-tracker form · type segmented control */
 [data-cv6][data-screen^="tracker"] .tkseg { color:var(--muted); background:var(--surface); }
 [data-cv6][data-screen^="tracker"] .tkseg.is-on { color:var(--fg); background:var(--accent-weak); border-color:var(--accent) !important; }
+/* new-issue form · assignee pick check (revealed when the agent is picked) */
+[data-cv6][data-screen^="tracker"] .tkcheck { opacity:0; display:flex; align-items:center; transition:opacity .12s ease; }
+[data-cv6][data-screen^="tracker"] .tkcheck.is-on { opacity:1; }
+[data-cv6][data-screen^="tracker"] .trk.is-on { border-color:var(--accent) !important; background:var(--accent-weak); }

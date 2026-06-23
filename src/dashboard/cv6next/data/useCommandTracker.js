@@ -207,12 +207,25 @@ export function useTrackerBugs(worldId) {
   const [customTrackers, setCustomTrackers] = useState([]);
   const [activeId, setActiveId] = useState(CV6_BOARD_ID);
   const [reloadKey, setReloadKey] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Resolve the viewer for the data pipe (gives us the assignable-agents list).
+  useEffect(() => {
+    if (!supabase) return undefined;
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (alive && data?.user) { setClientIdFromUser(data.user); setCurrentUser(data.user); }
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
+  const { agents } = useDataPipe(null, worldId, currentUserSlug);
 
   // CV6 bug board.
   useEffect(() => {
     if (!worldId) return undefined;
     let alive = true;
-    setStatus('loading');
+    setStatus((s) => (s === 'ready' ? s : 'loading'));
     authFetch('/api/dashboard/cv6-bugs').then((r) => (r.ok ? r.json() : null)).then((d) => {
       if (!alive) return;
       const raw = Array.isArray(d?.bugs) ? d.bugs : [];
@@ -232,7 +245,8 @@ export function useTrackerBugs(worldId) {
       }));
       setStatus(raw.length ? 'ready' : 'empty');
     }).catch(() => { if (alive) setStatus('error'); });
-  }, [worldId]);
+    return () => { alive = false; };
+  }, [worldId, reloadKey]);
 
   // Space Rising ticket board (read-only, behind admin-tickets).
   useEffect(() => {
@@ -291,6 +305,37 @@ export function useTrackerBugs(worldId) {
     } catch { return null; }
   };
 
+  // Assignable agents for the new-issue form (real agents from the data pipe).
+  const assignableAgents = (agents || []).map((a) => {
+    const name = a.name || a.slug || 'Agent';
+    return { id: a.slug || a.id || name, name, initials: initials(name), tint: tintFor(name), picked: 'off' };
+  });
+  const agentNameById = {};
+  for (const a of assignableAgents) agentNameById[a.id] = a.name;
+
+  // Create an issue for real. CV6 board -> cv6-bugs add; custom board -> trackers add-row.
+  // Space Rising is read-only (the "+" never opens there). Then refetch.
+  const SEVERITY = { high: 'high', med: 'medium', low: 'low' };
+  const createBug = async ({ title, description, priority, assigneeId }) => {
+    if (!title || showingSpace) return null;
+    const owner = assigneeId ? (agentNameById[assigneeId] || '') : '';
+    try {
+      if (showingCv6) {
+        await authFetch('/api/dashboard/cv6-bugs', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'add', world: worldId, page: 'mobile', title, expected: description || '', severity: SEVERITY[priority] || 'medium', owner }),
+        });
+      } else {
+        await authFetch('/api/dashboard/trackers', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'add-row', world: worldId, id: activeId, row: { Title: title, Description: description || '', Priority: priority || 'med', __assignee: owner } }),
+        });
+      }
+      setReloadKey((n) => n + 1);
+      return true;
+    } catch { return null; }
+  };
+
   const open = bugs.filter((b) => b.status !== 'done');
   const spaceOpen = spaceTickets.filter((b) => b.status !== 'done');
   const cv6Board = { id: CV6_BOARD_ID, name: 'CV6 Bugs', scope: 'Corner CV6', count: open.length };
@@ -322,6 +367,10 @@ export function useTrackerBugs(worldId) {
     // Default draft state; the new-tracker form is uncontrolled (name/scope/kind read from
     // the DOM at create time), so this only seeds the initial Project selection.
     draftTracker: { name: '', scope: '', kind: 'project', isProject: 'on', isMission: 'off' },
+    // New-issue form: default priority High, no agent picked. Uncontrolled in the component
+    // (title/description from inputs, priority/assignee toggled in the DOM), so this only seeds.
+    draftBug: { title: '', description: '', priority: 'high', isHigh: 'on', isMed: 'off', isLow: 'off' },
+    assignableAgents,
     bugs: listBugs,
     featuredBug: listBugs[0] ? { ...listBugs[0], agentStep: '', agentTotal: '', attachments: [] } : { id: '', title: '', attachments: [] },
     attachments: { count: 0, list: [] },
@@ -330,5 +379,5 @@ export function useTrackerBugs(worldId) {
     empty: { title: 'No bugs in this tracker', body: 'Nothing logged yet. New issues land here.', actionLabel: '' },
     error: { title: "Couldn't load the tracker", body: 'Your connection dropped. Nothing was lost.', code: 'tracker · retry' },
   };
-  return { state: listState, data, switchTracker, createTracker };
+  return { state: listState, data, switchTracker, createTracker, createBug, canCreate: !showingSpace };
 }

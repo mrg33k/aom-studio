@@ -215,19 +215,25 @@ const TRACKER_ALIASES = {
   bugs: 'bug', 'bug.checklist': 'item', 'agent.checklist': 'item',
   attachments: 'attachment', 'featuredBug.attachments': 'attachment',
   projectTrackers: 'tracker', missionTrackers: 'tracker',
+  assignableAgents: 'agent',
 };
 function Tracker({ worldId, onNav, onOpenNav }) {
-  const { state, data, switchTracker, createTracker } = useTrackerBugs(worldId);
-  // sheet: null | 'switch' (tracker picker) | 'new' (create-tracker form) | 'detail' (bug preview)
+  const { state, data, switchTracker, createTracker, createBug, canCreate } = useTrackerBugs(worldId);
+  // sheet: null | 'switch' | 'new' (create-tracker) | 'detail' (bug preview) | 'newbug' (new-issue)
   const [sheet, setSheet] = useState(null);
   const [selectedBug, setSelectedBug] = useState(null);
+  const [bugFormSeed, setBugFormSeed] = useState(null);
   const newFormRef = useRef(null);
+  const bugFormRef = useRef(null);
   const draftKindRef = useRef('project'); // the new-tracker form is uncontrolled
+  const bugPriorityRef = useRef('high');  // the new-issue form is uncontrolled
+  const bugAssigneeRef = useRef('');
 
   const listHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 1 }), []);
   const switchHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 2 }), []);
   const newHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 3 }), []);
   const detailHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 4 }), []);
+  const newBugHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 6 }), []);
   // Detail (bug preview) gets just the opened bug + its tracker; attachments are honestly empty.
   const detailData = useMemo(() => ({
     bug: selectedBug || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '' },
@@ -237,6 +243,18 @@ function Tracker({ worldId, onNav, onOpenNav }) {
   const openBug = (id) => {
     const bug = (data.bugs || []).find((b) => String(b.id) === String(id));
     if (bug) { setSelectedBug(bug); setSheet('detail'); }
+  };
+  // Snapshot the form data (real agents + active tracker name) when the "+" opens, so the
+  // uncontrolled form stays stable while open and a data tick never wipes what's typed.
+  const openNewBug = () => {
+    if (!canCreate) return; // read-only board (Space Rising)
+    bugPriorityRef.current = 'high'; bugAssigneeRef.current = '';
+    setBugFormSeed({
+      draftBug: { title: '', description: '', priority: 'high', isHigh: 'on', isMed: 'off', isLow: 'off' },
+      assignableAgents: (data.assignableAgents || []).map((a) => ({ ...a, picked: 'off' })),
+      activeTracker: data.activeTracker,
+    });
+    setSheet('newbug');
   };
   // Stable seed for the uncontrolled new-tracker form so a data tick never rebuilds it
   // and wipes what the user typed.
@@ -248,16 +266,47 @@ function Tracker({ worldId, onNav, onOpenNav }) {
     nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openSwitcher: () => setSheet('switch'),
     openBug: (id) => openBug(id),
-    newBug: () => {}, assignAgent: () => {}, pauseAgent: () => {},
+    newBug: () => openNewBug(), assignAgent: () => {}, pauseAgent: () => {},
     openAttachment: () => {}, retry: () => {},
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenNav, data.bugs]);
+  }), [onNav, onOpenNav, data.bugs, data.assignableAgents, data.activeTracker, canCreate]);
 
   const detailActions = useMemo(() => ({
     nav: () => setSheet(null),
     // Assign-to-agent is a separate designed action, not yet wired; keep it inert (not faked).
     assignAgent: () => {}, openAttachment: () => {},
   }), []);
+
+  const newBugActions = useMemo(() => ({
+    nav: () => setSheet(null),
+    // Priority + assignee are toggled directly in the DOM (e.currentTarget) so typed text
+    // in the title/description survives — no React re-render of the form.
+    setBugPriority: (p, e) => {
+      bugPriorityRef.current = p === 'low' ? 'low' : p === 'med' ? 'med' : 'high';
+      const root = bugFormRef.current;
+      root?.querySelectorAll('.tkseg').forEach((seg) => seg.classList.toggle('is-on', seg === e?.currentTarget));
+    },
+    setBugAssignee: (id, e) => {
+      const row = e?.currentTarget;
+      const already = bugAssigneeRef.current && bugAssigneeRef.current === String(id);
+      bugAssigneeRef.current = already ? '' : String(id);
+      const root = bugFormRef.current;
+      root?.querySelectorAll('.trk').forEach((r) => {
+        const on = !already && r === row;
+        r.classList.toggle('is-on', on);
+        r.querySelector('.tkcheck')?.classList.toggle('is-on', on);
+      });
+    },
+    createBug: () => {
+      const root = bugFormRef.current;
+      const title = root?.querySelector('[data-bind="draftBug.title"]')?.value?.trim() || '';
+      const description = root?.querySelector('[data-bind="draftBug.description"]')?.value?.trim() || '';
+      if (!title) return; // an issue needs a title
+      createBug({ title, description, priority: bugPriorityRef.current, assigneeId: bugAssigneeRef.current });
+      setSheet(null);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [createBug]);
 
   const switchActions = useMemo(() => ({
     nav: () => setSheet(null), closeSwitcher: () => setSheet(null),
@@ -307,6 +356,12 @@ function Tracker({ worldId, onNav, onOpenNav }) {
       {sheet === 'detail' && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
           <TemplateScreen html={detailHtml} data={detailData} actions={detailActions} state="ready"
+            aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
+        </div>
+      )}
+      {sheet === 'newbug' && bugFormSeed && (
+        <div ref={bugFormRef} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
+          <TemplateScreen html={newBugHtml} data={bugFormSeed} actions={newBugActions} state="ready"
             aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
         </div>
       )}

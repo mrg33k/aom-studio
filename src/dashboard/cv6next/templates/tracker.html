@@ -213,5 +213,41 @@
 </div>
 
 </div>
+
+<!-- ============ MOBILE A4 · new-issue form (authored from the New-tracker pattern;
+     Claude Design shipped the spec + raw mockup, the wired node was not regenerated) ============ -->
+<div data-cv6 data-theme="dark" data-screen="tracker-mobile" data-screen-label="Tracker · New issue" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr"><div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mhtitle"><div class="mttl">New issue</div><div class="msub" data-bind="activeTracker.name">CV6 Bugs</div></div></div>
+  <div class="scrbody" data-state="ready" style="padding:18px 16px 0;display:flex;flex-direction:column;gap:18px;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <div>
+      <div class="eyebrow" style="margin-bottom:9px;">Title</div>
+      <input data-bind="draftBug.title" placeholder="Short summary of the issue" style="width:100%;height:46px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:11px;padding:0 14px;color:var(--fg);font-size:14.5px;font-family:var(--font-sans);outline:none;">
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:9px;">Description</div>
+      <textarea data-bind="draftBug.description" placeholder="What's expected, and what's happening instead" style="width:100%;height:90px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:11px;padding:11px 14px;color:var(--fg);font-size:13.5px;line-height:1.5;font-family:var(--font-sans);outline:none;resize:none;"></textarea>
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:9px;">Priority</div>
+      <div style="display:flex;gap:8px;">
+        <div class="tkseg" data-mod="is-:draftBug.isLow" data-action="setBugPriority" data-arg="low" style="flex:1;height:44px;border-radius:11px;border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;"><span class="pdot is-low"></span><span style="font-size:13.5px;font-weight:600;">Low</span></div>
+        <div class="tkseg" data-mod="is-:draftBug.isMed" data-action="setBugPriority" data-arg="med" style="flex:1;height:44px;border-radius:11px;border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;"><span class="pdot is-med"></span><span style="font-size:13.5px;font-weight:600;">Med</span></div>
+        <div class="tkseg is-on" data-mod="is-:draftBug.isHigh" data-action="setBugPriority" data-arg="high" style="flex:1;height:44px;border-radius:11px;border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;"><span class="pdot is-high"></span><span style="font-size:13.5px;font-weight:600;">High</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:9px;">Assign to agent <span style="color:var(--faint);font-weight:500;">· optional</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <!-- ONE row per assignable agent; tap to pick (is-:agent.picked reveals the check) -->
+        <div class="trk" data-each="assignableAgents" data-action="setBugAssignee" data-arg="agent.id" style="cursor:pointer;gap:11px;"><span class="ava is-violet" data-mod="is-:agent.tint" style="width:30px;height:30px;font-size:11px;" data-bind="agent.initials">EL</span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="agent.name">Elon</div><div style="font-size:11px;color:var(--muted);">Starts on create</div></div><span class="tkcheck" data-mod="is-:agent.picked"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--divider);background:var(--ground);padding:14px 16px max(14px, env(safe-area-inset-bottom, 0px));box-sizing:border-box;display:flex;gap:10px;">
+    <button data-action="nav" data-target="back" style="width:104px;flex:none;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:600;font-family:var(--font-sans);">Cancel</button>
+    <button data-action="createBug" data-arg="activeTracker.id" style="flex:1;height:48px;border-radius:13px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Create issue</button>
+  </div>
+</div>
+
 </body>
 </html>
