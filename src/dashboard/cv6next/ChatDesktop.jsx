@@ -92,16 +92,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
   return (
     <SendCtx.Provider value={send || (() => {})}>
       <div data-cv6 data-theme="dark" className="cv6-screen" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        {/* topbar */}
-        <div className="topbar">
-          <div className="tgreet"><img src="/cv6/assets/corner-logo-white.svg" alt="Corner" style={{ height: 22, width: 'auto', display: 'block' }} /></div>
-          <div className="toolnav">{NAV.map((it) => <NavTile key={it.k} item={it} active={it.k === 'chat'} onNav={onNav} />)}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="ib" onClick={() => onOpenNav?.()} style={{ cursor: 'pointer' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></div>
-            <div className="av" onClick={() => onOpenNav?.()} style={{ cursor: 'pointer' }}>P</div>
-          </div>
-        </div>
-
+        {/* topbar now mounted once in the shell (SharedNav DesktopNav) */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           {/* rooms rail */}
           <div style={{ width: 264, flex: 'none', borderRight: '1px solid var(--divider)', padding: '18px 12px', overflowY: 'auto' }}>

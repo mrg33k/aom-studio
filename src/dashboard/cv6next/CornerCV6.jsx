@@ -12,7 +12,7 @@ import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import ChatGoalThread from './ChatGoalThread.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
-import { MobileNav } from './SharedNav.jsx';
+import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -52,7 +52,7 @@ function useIsDesktop() {
 // Until those screens are built live, drop those tiles so the nav only shows what works.
 const LIVE_NAV = new Set(['home', 'chat', 'support', 'command', 'tracker', 'back']);
 
-function composeScreen(raw, { mobile = false, pick = 0 } = {}) {
+function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const nodes = doc.querySelectorAll('[data-cv6]');
   const screen = nodes[pick] || nodes[0];
@@ -61,6 +61,9 @@ function composeScreen(raw, { mobile = false, pick = 0 } = {}) {
   screen.querySelectorAll('[data-action="nav"][data-target]').forEach((tile) => {
     if (!LIVE_NAV.has(tile.getAttribute('data-target'))) tile.remove();
   });
+  // One shared nav (design item 7): the desktop top bar is now mounted once in the
+  // shell, so strip this screen's baked-in .topbar to avoid a double bar.
+  if (sharedNav && !mobile) screen.querySelector('.topbar')?.remove();
   screen.setAttribute('style', mobile
     ? 'position:relative;width:100%;height:100%;background:#05080b;overflow:hidden'
     : 'width:100%;height:100%');
@@ -159,7 +162,7 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
 
   const homeHtml = useMemo(
     () => (isDesktop
-      ? composeScreen(homeDesktopRaw, { mobile: false, pick: 0 })
+      ? composeScreen(homeDesktopRaw, { mobile: false, pick: 0, sharedNav: true })
       : composeScreen(homeMobileRaw, { mobile: true, pick: 0 })),
     [isDesktop],
   );
@@ -348,7 +351,7 @@ const COMMAND_ALIASES = {
 function Command({ worldId, onNav, onOpenNav }) {
   const { state, data } = useCommand(worldId);
   const isDesktop = useIsDesktop();
-  const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1 }), [isDesktop]);
+  const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openCommandK: () => onOpenNav?.(), openProfile: () => onOpenNav?.(),
@@ -381,7 +384,7 @@ function Tracker({ worldId, onNav, onOpenNav }) {
   const bugPriorityRef = useRef('high');  // the new-issue form is uncontrolled
   const bugAssigneeRef = useRef('');
 
-  const desktopHtml = useMemo(() => composeScreen(trackerRaw, { mobile: false, pick: 0 }), []);
+  const desktopHtml = useMemo(() => composeScreen(trackerRaw, { mobile: false, pick: 0, sharedNav: true }), []);
   const listHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 1 }), []);
   const switchHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 2 }), []);
   const newHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 3 }), []);
@@ -647,6 +650,9 @@ export default function CornerCV6() {
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
       paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
+      {/* One shared desktop bar (design item 7), mounted once for every desktop
+          screen; each screen's baked topbar was stripped so this is the only nav. */}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} />}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
