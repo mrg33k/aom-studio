@@ -15,16 +15,16 @@
 import { useRef, useLayoutEffect } from 'react';
 import { bindTemplate } from './templateEngine.js';
 
-export function TemplateScreen({ html, data, actions, state = 'ready', className = '', style }) {
+export function TemplateScreen({ html, data, actions, state = 'ready', aliases, className = '', style }) {
   const ref = useRef(null);
 
   useLayoutEffect(() => {
     const root = ref.current;
     if (!root) return undefined;
     root.innerHTML = html || '';
-    const cleanup = bindTemplate(root, { data: data || {}, actions: actions || {}, state });
+    const cleanup = bindTemplate(root, { data: data || {}, actions: actions || {}, state, aliases: aliases || {} });
     return cleanup;
-  }, [html, data, actions, state]);
+  }, [html, data, actions, state, aliases]);
 
   return <div ref={ref} data-cv6="" className={className} style={style} />;
 }

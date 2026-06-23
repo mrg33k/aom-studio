@@ -42,14 +42,19 @@ function tintFor(seed) {
   for (const c of String(seed || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return TINTS[h % TINTS.length];
 }
-// inbox badge/sender -> the catch-up source kind (email|agent|review|support|tracker)
-function cardKind(it) {
-  const b = String(it?.badgeType || '').toLowerCase();
-  if (b === 'task') return 'tracker';
-  if (String(it?.senderType || '').toLowerCase() === 'human') return 'support';
-  return 'agent';
-}
+function cap(s) { const v = String(s || ''); return v ? v[0].toUpperCase() + v.slice(1) : ''; }
 function firstLine(s) { return String(s || '').split('\n')[0].slice(0, 160); }
+function relTime(ts) {
+  if (!ts) return '';
+  const ms = Date.now() - new Date(ts).getTime();
+  if (Number.isNaN(ms)) return '';
+  const m = Math.round(ms / 60000);
+  if (m < 1) return 'now';
+  if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.round(h / 24)}d`;
+}
 
 export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = {}) {
   const agentRooms = (agents || []).map((a) => {
@@ -61,20 +66,22 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
   });
   const projects = (projectRooms || []).map((p) => ({
     id: p.id || p.slug, name: p.name || p.slug || 'Project',
-    tint: tintFor(p.name || p.id), count: p.taskCount ?? p.count ?? 0,
+    // no real item-count source on this list (tasks not loaded here) -> blank, not a fake 0.
+    tint: tintFor(p.name || p.id), count: (p.tasks?.length || p.taskCount || '') || '',
   }));
 
-  const cards = (inboxItems || []).map((it) => {
-    const kind = cardKind(it);
-    return {
-      id: it.id, kind, kindLabel: kind.toUpperCase(),
-      from: it.senderName || it.roomName || 'Someone',
-      subject: it.roomName || firstLine(it.messagePreview) || 'New activity',
-      summary: firstLine(it.messagePreview),
-      time: it.timeAgo || '',
-      actionItems: [], attachments: [],
-    };
-  });
+  // inboxItems shape (from useDataPipe): { agent, project, missionSlug, roomKey, text, timestamp, id }.
+  // Each is an unread agent message in a room — the "needs you" feed. The agent who
+  // pinged is the sender; the room (project/mission/agent thread) is the subject.
+  const cards = (inboxItems || []).map((it) => ({
+    id: it.id,
+    kind: 'agent', kindLabel: 'AGENT',
+    from: cap(it.agent) || 'Your agent',
+    subject: it.project ? cap(it.project) : (it.missionSlug || `${cap(it.agent)} thread`),
+    summary: firstLine(it.text),
+    time: relTime(it.timestamp),
+    actionItems: [], attachments: [],
+  }));
 
   const catchUp = {
     count: cards.length,
