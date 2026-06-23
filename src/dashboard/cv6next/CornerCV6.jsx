@@ -11,6 +11,7 @@ import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import ChatGoalThread from './ChatGoalThread.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
+import SupportDesktop from './SupportDesktop.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -639,7 +640,7 @@ export default function CornerCV6() {
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { body = <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
+  else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'chatlist'; }
