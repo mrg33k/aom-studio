@@ -16,6 +16,25 @@ export const SAMPLE_PROJECT_MISSIONS = [
   { slug: 'print-spec', name: 'Print spec summary', status: 'done', is_done: true, agent: 'Elon' },
 ];
 import { ChatStepThread } from './cv6kit/ChatStepThread.jsx';
+import ChatGoalThread from './cv6next/ChatGoalThread.jsx';
+
+// The live agent-talk schema (metadata.blocks) the real Chat renders. Mirrors
+// corner/missions/corner-ui-cv6/agent-talk-sample-payload.json so the no-auth
+// preview shows exactly what an agent emits: steps + success + generic data table
+// + choice + question, grouped by stepIndex.
+export const SAMPLE_BLOCKS = [
+  { type: 'step', stepIndex: 0, title: 'Read the brief and pulled the repo', state: 'done', detail: 'Scanned 28 missions and the task runner.' },
+  { type: 'success', stepIndex: 0, title: 'Repo is clean', detail: 'Everything lined up except one thing.' },
+  { type: 'step', stepIndex: 1, title: 'Wire the resolver', state: 'active', detail: 'Patching the task runner so docs only projects route.' },
+  { type: 'data', stepIndex: 1, title: 'Build log', columns: ['Area', 'Built', 'Verified', 'Open'], rows: [['Home', 6, 6, 0], ['Tracker', 4, 3, 1], ['Chat', 5, 4, 1]], totals: ['Total', 15, 13, 2] },
+  { type: 'step', stepIndex: 2, title: 'Lock the print framing', state: 'pending' },
+  { type: 'choice', stepIndex: 2, prompt: 'Two ways to frame the print, your call:', choices: [
+    { id: 'a', title: 'Full bleed', label: 'Recommended', detail: 'Edge to edge, no border.', style: 'rec' },
+    { id: 'b', title: 'Bordered', label: 'Alternative', detail: 'Thin keyline.', style: 'alt' },
+  ] },
+  { type: 'question', stepIndex: 2, text: 'Expand the pilot to which teams?', options: [{ id: 'cs', label: 'CS' }, { id: 'ops', label: 'Ops' }] },
+];
+export const SAMPLE_GOAL_THREAD = { title: 'Lock the print framing', step: 3, doneCount: 2, total: 4, pct: 55 };
 import { TrackerView } from './cv6kit/TrackerView.jsx';
 import { CommandView } from './cv6kit/CommandView.jsx';
 import { SupportView } from './cv6kit/SupportView.jsx';
@@ -375,6 +394,14 @@ export default function CV6KitTest() {
       ) : screen === 'nav' ? (
         <NavPreview />
       ) : screen === 'chat' ? (
+        /* The LIVE Goal Thread renderer (the real Chat mounts this when an agent emits
+           metadata.blocks). Full agent-talk schema: steps + success + data + choice +
+           question. ?screen=chatlegacy shows the earlier kind-based sketch. */
+        <div style={{ height: '100dvh', width: '100%', maxWidth: 430, margin: '0 auto' }}>
+          <ChatGoalThread room={{ name: 'Elon', initials: 'EL', statusText: 'working', status: 'live' }}
+            goal={SAMPLE_GOAL_THREAD} blocks={SAMPLE_BLOCKS} onBack={noop} onOpenNav={noop} onSend={noop} />
+        </div>
+      ) : screen === 'chatlegacy' ? (
         <ChatStepThread {...SAMPLE_CHAT} onBack={noop} onSend={noop} onChoice={noop} />
       ) : screen === 'tracker' ? (
         <TrackerView {...SAMPLE_TRACKER} onSelectBug={noop} onNewBug={noop} />

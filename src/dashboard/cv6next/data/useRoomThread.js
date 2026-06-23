@@ -3,7 +3,7 @@
 // /api/dashboard/supabase-messages endpoint (the same one the dashboard uses). No fake
 // data: messages are the room's real thread, oldest -> newest.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { authFetch } from '../../lib/authFetch';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
@@ -29,23 +29,52 @@ function hhmm(ts) {
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.
 export function useRoomThread(worldId, room) {
   const [messages, setMessages] = useState([]);
+  const [blocks, setBlocks] = useState(null);
   const [status, setStatus] = useState('loading');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // Post a real user message into this room (composer + choice/question taps).
+  // Agent rooms POST to the agent slug; project rooms to the project slug. After
+  // the write, bump reloadKey so the thread refetches and the message appears.
+  const send = useCallback(async (text) => {
+    const body = String(text || '').trim();
+    if (!worldId || !room?.id || !body) return false;
+    const payload = room.isProject
+      ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard' }
+      : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard' };
+    try {
+      const r = await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      setReloadKey((k) => k + 1);
+      return !!(r && r.ok);
+    } catch { return false; }
+  }, [worldId, room?.id, room?.isProject]);
 
   useEffect(() => {
     if (!worldId || !room?.id) { setMessages([]); setStatus('loading'); return undefined; }
     let alive = true;
-    setStatus('loading');
+    setStatus((s) => (s === 'ready' ? s : 'loading'));
     const params = new URLSearchParams();
     params.set('client', worldId);
     // Agent rooms key on the agent slug; project rooms key on the project slug.
     if (room.isProject) params.set('project', room.id);
     else params.set('agent', room.id);
     params.set('limit', '40');
-    authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
+    const load = () => authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!alive) return;
         const raw = Array.isArray(d?.messages) ? d.messages : [];
+        // The live Goal Thread (agent-talk): structured blocks ride on a message's
+        // metadata.blocks. The agent re-emits the current thread state in its latest
+        // structured reply, so the freshest message that carries blocks IS the thread.
+        let liveBlocks = null;
+        for (let i = raw.length - 1; i >= 0; i -= 1) {
+          const b = raw[i]?.metadata?.blocks;
+          if (Array.isArray(b) && b.length) { liveBlocks = b; break; }
+        }
+        setBlocks(liveBlocks);
         const msgs = raw.map((m) => {
           const isUser = m.role === 'user' || !!m.user_name;
           const name = isUser ? (m.user_name || 'You') : cap(m.agent || room.name);
@@ -61,10 +90,14 @@ export function useRoomThread(worldId, room) {
         setStatus(msgs.length ? 'ready' : 'empty');
       })
       .catch(() => { if (alive) setStatus('error'); });
-    return () => { alive = false; };
-  }, [worldId, room?.id, room?.name, room?.isProject]);
+    load();
+    // Live thread: poll so new agent messages + structured blocks (the step thread
+    // animating from real state) appear without a manual refresh.
+    const t = setInterval(load, 3000);
+    return () => { alive = false; clearInterval(t); };
+  }, [worldId, room?.id, room?.name, room?.isProject, reloadKey]);
 
-  return { messages, status };
+  return { messages, blocks, status, send };
 }
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──

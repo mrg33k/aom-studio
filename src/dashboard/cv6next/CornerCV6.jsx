@@ -9,6 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
+import ChatGoalThread from './ChatGoalThread.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -284,14 +285,15 @@ function SupportInbox({ onNav, onOpenNav }) {
     aliases={SUPPORT_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
 }
 
-// ── Chat: a room's real conversation (mobile). The structured Goal Thread (live steps,
-// decision cards, data tables) needs the agent to emit structured blocks; until then we
-// show the real messages honestly. ──
+// ── Chat: a room's real conversation (mobile). When the agent emits structured blocks
+// (the live Goal Thread: steps, decision cards, data tables) we render the rich thread
+// from that real output. Otherwise we show the real messages honestly. ──
 const CHAT_ALIASES = { 'goal.checklist': 'item' };
 function Chat({ room, worldId, onNav, onOpenNav }) {
-  const { messages, status } = useRoomThread(worldId, room);
+  const { messages, blocks, status, send } = useRoomThread(worldId, room);
   const goal = useGoalThread(worldId, room);
   const hasGoal = !!goal;
+  const liveThread = Array.isArray(blocks) && blocks.length > 0;
   const html = useMemo(() => composeChatMobile(hasGoal), [hasGoal]);
   const data = useMemo(() => ({
     room: { name: room.name, initials: room.initials || '·', statusText: room.statusText || '', count: '' },
@@ -310,6 +312,17 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
     approvePlan: () => {}, handoffAgent: () => {}, addContext: () => {}, addAttachment: () => {},
     openAttachment: () => {}, review: () => {}, setDataView: () => {}, toggleFollow: () => {}, retry: () => {},
   }), [onNav, onOpenNav]);
+  // Live Goal Thread: the agent is emitting structured blocks for this room -> render
+  // the rich step thread from that real output. Else the honest plain-message thread.
+  if (liveThread) {
+    return (
+      <ChatGoalThread
+        room={{ name: room.name, initials: room.initials || '·', statusText: room.statusText || '', status: room.status || 'ready' }}
+        goal={goal} blocks={blocks}
+        onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
+      />
+    );
+  }
   return <TemplateScreen html={html} data={data} actions={actions} state={status}
     aliases={CHAT_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
