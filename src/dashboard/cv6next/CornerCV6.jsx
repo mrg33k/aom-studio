@@ -218,14 +218,26 @@ const TRACKER_ALIASES = {
 };
 function Tracker({ worldId, onNav, onOpenNav }) {
   const { state, data, switchTracker, createTracker } = useTrackerBugs(worldId);
-  // sheet: null | 'switch' (tracker picker) | 'new' (create-tracker form)
+  // sheet: null | 'switch' (tracker picker) | 'new' (create-tracker form) | 'detail' (bug preview)
   const [sheet, setSheet] = useState(null);
+  const [selectedBug, setSelectedBug] = useState(null);
   const newFormRef = useRef(null);
   const draftKindRef = useRef('project'); // the new-tracker form is uncontrolled
 
   const listHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 1 }), []);
   const switchHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 2 }), []);
   const newHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 3 }), []);
+  const detailHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 4 }), []);
+  // Detail (bug preview) gets just the opened bug + its tracker; attachments are honestly empty.
+  const detailData = useMemo(() => ({
+    bug: selectedBug || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '' },
+    activeTracker: data.activeTracker,
+    attachments: { count: 0, list: [] },
+  }), [selectedBug, data.activeTracker]);
+  const openBug = (id) => {
+    const bug = (data.bugs || []).find((b) => String(b.id) === String(id));
+    if (bug) { setSelectedBug(bug); setSheet('detail'); }
+  };
   // Stable seed for the uncontrolled new-tracker form so a data tick never rebuilds it
   // and wipes what the user typed.
   const newData = useMemo(() => ({ draftTracker: { name: '', scope: '', kind: 'project', isProject: 'on', isMission: 'off' } }), []);
@@ -235,9 +247,17 @@ function Tracker({ worldId, onNav, onOpenNav }) {
   const listActions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openSwitcher: () => setSheet('switch'),
-    openBug: () => {}, newBug: () => {}, assignAgent: () => {}, pauseAgent: () => {},
+    openBug: (id) => openBug(id),
+    newBug: () => {}, assignAgent: () => {}, pauseAgent: () => {},
     openAttachment: () => {}, retry: () => {},
-  }), [onNav, onOpenNav]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [onNav, onOpenNav, data.bugs]);
+
+  const detailActions = useMemo(() => ({
+    nav: () => setSheet(null),
+    // Assign-to-agent is a separate designed action, not yet wired; keep it inert (not faked).
+    assignAgent: () => {}, openAttachment: () => {},
+  }), []);
 
   const switchActions = useMemo(() => ({
     nav: () => setSheet(null), closeSwitcher: () => setSheet(null),
@@ -281,6 +301,12 @@ function Tracker({ worldId, onNav, onOpenNav }) {
       {sheet === 'new' && (
         <div ref={newFormRef} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
           <TemplateScreen html={newHtml} data={newData} actions={newActions} state="ready"
+            aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
+        </div>
+      )}
+      {sheet === 'detail' && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
+          <TemplateScreen html={detailHtml} data={detailData} actions={detailActions} state="ready"
             aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
         </div>
       )}

@@ -180,6 +180,17 @@ function severityToPriority(sev) {
 // The CV6 Bugs board is always present as a project tracker; it lives behind its own
 // endpoint (cv6-bugs). User-created trackers come from /api/dashboard/trackers and persist.
 const CV6_BOARD_ID = 'cv6';
+// Space Rising is a second always-present board (read-only client ticket tracker behind
+// admin-tickets). Its tickets render in OUR CV6 bug-card design.
+const SPACE_BOARD_ID = 'space-rising';
+const TICKET_STATUS = { needs_fix: 'open', working: 'progress', in_review: 'progress', done: 'done' };
+const TICKET_STATUS_LABEL = { needs_fix: 'Needs fix', working: 'Working', in_review: 'In review', done: 'Done' };
+function ticketPriority(p) {
+  const v = String(p || '').toLowerCase();
+  if (v === 'high' || v === 'urgent' || v === 'critical') return 'high';
+  if (v === 'low') return 'low';
+  return 'med';
+}
 function trackerShape(t, activeId) {
   return {
     id: t.id, name: t.name, scope: t.scope || '',
@@ -191,6 +202,8 @@ function trackerShape(t, activeId) {
 export function useTrackerBugs(worldId) {
   const [bugs, setBugs] = useState([]);
   const [status, setStatus] = useState('loading');
+  const [spaceTickets, setSpaceTickets] = useState([]);
+  const [spaceStatus, setSpaceStatus] = useState('loading');
   const [customTrackers, setCustomTrackers] = useState([]);
   const [activeId, setActiveId] = useState(CV6_BOARD_ID);
   const [reloadKey, setReloadKey] = useState(0);
@@ -219,6 +232,34 @@ export function useTrackerBugs(worldId) {
       }));
       setStatus(raw.length ? 'ready' : 'empty');
     }).catch(() => { if (alive) setStatus('error'); });
+  }, [worldId]);
+
+  // Space Rising ticket board (read-only, behind admin-tickets).
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    setSpaceStatus('loading');
+    authFetch('/api/dashboard/admin-tickets').then((r) => (r && r.ok ? r.json() : null)).then((d) => {
+      if (!alive) return;
+      const raw = Array.isArray(d?.tickets) ? d.tickets : [];
+      setSpaceTickets(raw.map((t) => {
+        const key = String(t.status || 'needs_fix').toLowerCase();
+        const st = TICKET_STATUS[key] || 'open';
+        const pr = ticketPriority(t.priority);
+        const owner = t.owner || '';
+        return {
+          id: t.id != null ? String(t.id) : '', title: t.title || 'Untitled',
+          status: st, statusLabel: TICKET_STATUS_LABEL[key] || (t.status || 'Open'),
+          priority: pr, priorityLabel: pr[0].toUpperCase() + pr.slice(1),
+          assignee: owner, assigneeInitials: owner ? initials(owner) : '·',
+          assigneeTint: tintFor(owner || String(t.id)), updated: relTime(t.updatedAt),
+          mission: t.area || 'Space Rising', opened: '', description: t.description || '',
+          doneCount: '', stepCount: '', checklist: [],
+        };
+      }));
+      setSpaceStatus(raw.length ? 'ready' : 'empty');
+    }).catch(() => { if (alive) setSpaceStatus('error'); });
+    return () => { alive = false; };
   }, [worldId]);
 
   // User-created custom trackers (persisted). Refetched after a create.
@@ -251,21 +292,30 @@ export function useTrackerBugs(worldId) {
   };
 
   const open = bugs.filter((b) => b.status !== 'done');
+  const spaceOpen = spaceTickets.filter((b) => b.status !== 'done');
   const cv6Board = { id: CV6_BOARD_ID, name: 'CV6 Bugs', scope: 'Corner CV6', count: open.length };
+  const spaceBoard = { id: SPACE_BOARD_ID, name: 'Space Rising', scope: 'Space Rising', count: spaceOpen.length };
   const projectCustom = customTrackers.filter((t) => t.template !== 'mission');
   const missionCustom = customTrackers.filter((t) => t.template === 'mission');
-  const projectTrackers = [cv6Board, ...projectCustom].map((t) => trackerShape(t, activeId));
+  const projectTrackers = [cv6Board, spaceBoard, ...projectCustom].map((t) => trackerShape(t, activeId));
   const missionTrackers = missionCustom.map((t) => trackerShape(t, activeId));
 
-  // Resolve the active tracker + the bugs it shows. The bug-shaped List only has real
-  // content for the CV6 board; a freshly-created custom tracker is an empty board (honest).
+  // Resolve the active tracker + the bugs it shows. The CV6 and Space Rising boards have real
+  // bug-shaped rows; a freshly-created custom tracker is an honest empty board.
   const activeCustom = customTrackers.find((t) => t.id === activeId);
   const showingCv6 = activeId === CV6_BOARD_ID;
-  const activeTracker = showingCv6
-    ? { id: CV6_BOARD_ID, name: 'CV6 Bugs', scope: 'Corner CV6', openCount: open.length }
-    : { id: activeId, name: activeCustom?.name || 'Tracker', scope: activeCustom?.scope || '', openCount: Array.isArray(activeCustom?.rows) ? activeCustom.rows.length : 0 };
-  const listBugs = showingCv6 ? bugs : [];
-  const listState = showingCv6 ? status : 'empty';
+  const showingSpace = activeId === SPACE_BOARD_ID;
+  let activeTracker, listBugs, listState;
+  if (showingCv6) {
+    activeTracker = { id: CV6_BOARD_ID, name: 'CV6 Bugs', scope: 'Corner CV6', openCount: open.length };
+    listBugs = bugs; listState = status;
+  } else if (showingSpace) {
+    activeTracker = { id: SPACE_BOARD_ID, name: 'Space Rising', scope: 'Space Rising', openCount: spaceOpen.length };
+    listBugs = spaceTickets; listState = spaceStatus;
+  } else {
+    activeTracker = { id: activeId, name: activeCustom?.name || 'Tracker', scope: activeCustom?.scope || '', openCount: Array.isArray(activeCustom?.rows) ? activeCustom.rows.length : 0 };
+    listBugs = []; listState = 'empty';
+  }
 
   const data = {
     projectTrackers, missionTrackers, activeTracker,
