@@ -8,7 +8,7 @@
 // is not exposed), so we bind it to honest empties (no fabricated steps/bullets)
 // instead of leaving the design's sample text on screen. No fake data.
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
@@ -141,10 +141,13 @@ export function useHome() {
   const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
   const { agents, projectRooms, inboxItems } = useDataPipe(null, worldId, currentUserSlug);
 
-  const { state, data } = shapeHome({ agents, projectRooms, inboxItems });
-  // Honest loading until the world resolves and the first pipe read lands.
+  // Memoize the shaped data so its identity is stable between renders (it only changes
+  // when the underlying pipe arrays change). Without this, `data` was a new object every
+  // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
+  // list under the user's finger and making taps miss (the "can't open a chat" bug).
+  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems }), [agents, projectRooms, inboxItems]);
   const loading = !worldId || (!agents && !projectRooms && !inboxItems);
-  return { state: loading ? 'loading' : state, data, worldId };
+  return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 
 // ── Project-opened state (mobile Home state B): real missions for one project ──

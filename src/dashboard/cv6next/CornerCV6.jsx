@@ -6,7 +6,7 @@
 // Live screens: Home (desktop 3-column + mobile), the front door — real rooms, real
 // agents, the real needs-you Catch Up. Support inbox reachable from the nav.
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useCallback, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useHome, useProjectMissions, shapeProjectState } from './data/useHomeData.js';
@@ -191,19 +191,39 @@ function Chat({ room, worldId, onNav }) {
     style={{ width: '100%', height: '100%' }} />;
 }
 
+// A screen render error must not blank the whole app — show a recoverable message.
+class ScreenBoundary extends Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidUpdate(prev) { if (prev.viewKey !== this.props.viewKey && this.state.err) this.setState({ err: null }); }
+  render() {
+    if (this.state.err) {
+      return (
+        <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted,#8b95a3)', font: '13px/1.5 system-ui', padding: '0 28px' }}>
+          <div style={{ color: 'var(--fg,#fff)', fontSize: 15, marginBottom: 6 }}>This screen hit a snag</div>
+          <div>Tap back and try again. Nothing was lost.</div>
+          <button onClick={() => this.props.onHome?.()} style={{ marginTop: 14, height: 36, padding: '0 16px', borderRadius: 9, border: '1px solid var(--hair,#222)', background: 'var(--surface-2,#161b24)', color: 'var(--accent,#5b9)', font: '600 13px system-ui' }}>Back to rooms</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function CornerCV6() {
   const [view, setView] = useState('home'); // 'home' | 'support'
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
-  const onNav = (target) => {
+  const onNav = useCallback((target) => {
     if (target === 'home') { setOpenedRoom(null); setView('home'); }
     else if (target === 'support') { setOpenedRoom(null); setView('support'); }
-  };
-  const onOpenRoom = (room, worldId) => setOpenedRoom({ room, worldId });
+  }, []);
+  const onOpenRoom = useCallback((room, worldId) => setOpenedRoom({ room, worldId }), []);
+  const goHome = useCallback(() => { setOpenedRoom(null); setView('home'); }, []);
 
-  let body;
-  if (openedRoom) body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} />;
-  else if (view === 'support') body = <SupportInbox onNav={onNav} />;
-  else body = <Home onNav={onNav} onOpenRoom={onOpenRoom} />;
+  let body; let viewKey;
+  if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
+  else if (view === 'support') { body = <SupportInbox onNav={onNav} />; viewKey = 'support'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} />; viewKey = 'home'; }
 
   return (
     <div data-cv6 data-theme="dark" style={{
@@ -212,7 +232,7 @@ export default function CornerCV6() {
       paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
-        {body}
+        <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
     </div>
   );
