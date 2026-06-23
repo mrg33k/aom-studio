@@ -505,16 +505,34 @@ export default function CornerCV6() {
   const worldId = useWorldId();
   const [view, setView] = useState('home'); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
+  const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
-  const onNav = useCallback((target) => {
-    if (['home', 'support', 'command', 'tracker'].includes(target)) { setOpenedRoom(null); setView(target); }
-    // Chat from the menu opens the conversations list; a row there opens the Goal Thread.
-    else if (target === 'chat') { setOpenedRoom(null); setView('chatlist'); }
+
+  // Go to a new location, remembering where we were so Back is a real page-undo.
+  const goTo = useCallback((nextView, nextRoom = null) => {
+    setHistory((h) => [...h, { view, openedRoom }]);
+    setView(nextView); setOpenedRoom(nextRoom);
+  }, [view, openedRoom]);
+  // Back pops to the previous location; if the stack is empty we land on Home.
+  const back = useCallback(() => {
+    setHistory((h) => {
+      if (!h.length) { setView('home'); setOpenedRoom(null); return h; }
+      const prev = h[h.length - 1];
+      setView(prev.view); setOpenedRoom(prev.openedRoom || null);
+      return h.slice(0, -1);
+    });
   }, []);
-  const onOpenRoom = useCallback((room, wid) => setOpenedRoom({ room, worldId: wid || worldId }), [worldId]);
+  const onNav = useCallback((target) => {
+    if (target === 'back') { back(); return; }
+    if (['home', 'support', 'command', 'tracker'].includes(target)) goTo(target, null);
+    // Chat from the menu opens the conversations list; a row there opens the Goal Thread.
+    else if (target === 'chat') goTo('chatlist', null);
+  }, [back, goTo]);
+  // Opening a room keeps the current view underneath so Back returns to where you tapped from.
+  const onOpenRoom = useCallback((room, wid) => goTo(view, { room, worldId: wid || worldId }), [goTo, view, worldId]);
   const onOpenNav = useCallback(() => setNavOpen(true), []);
   const closeNav = useCallback(() => setNavOpen(false), []);
-  const goHome = useCallback(() => { setOpenedRoom(null); setView('home'); }, []);
+  const goHome = useCallback(() => { setHistory([]); setOpenedRoom(null); setView('home'); }, []);
 
   let body; let viewKey;
   if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
