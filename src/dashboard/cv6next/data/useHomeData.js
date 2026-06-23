@@ -89,6 +89,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
     position: cards.length ? 1 : 0,
     current: cards[0] || { id: '', kind: 'agent', kindLabel: 'AGENT', from: '', subject: '', summary: '', actionItems: [], attachments: [] },
     rest: cards.slice(1),
+    all: cards, // full deck, for the Catch Up full-deck screen
   };
 
   // agents/projects are bound BOTH as lists (data-each) and as `.count` /

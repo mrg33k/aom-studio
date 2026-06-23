@@ -123,6 +123,7 @@ const HOME_ALIASES = {
   'goal.summary': 'summary', 'goal.checklist': 'step',
   missions: 'mission',
   assignableAgents: 'agentPick',
+  'catchUp.items': 'item',
 };
 
 function Home({ onNav, onOpenRoom, onOpenNav }) {
@@ -137,6 +138,10 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   const [missionSeed, setMissionSeed] = useState(null);
   const missionFormRef = useRef(null);
   const missionAgentRef = useRef('');
+  // Catch Up full deck (Home state D): cycle the real needs-you cards.
+  const [catchUpOpen, setCatchUpOpen] = useState(false);
+  const [catchUpIndex, setCatchUpIndex] = useState(0);
+  const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
     () => (isDesktop
@@ -158,7 +163,15 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   };
 
   const actions = useMemo(() => ({
-    nav: (target) => { if (target === 'back') setOpenedProjectId(null); else onNav?.(target); },
+    // Back closes the deepest open sub-state first, then defers to the top-level history.
+    nav: (target) => {
+      if (target === 'back') {
+        if (catchUpOpen) { setCatchUpOpen(false); return; }
+        if (openedProjectId) { setOpenedProjectId(null); return; }
+        onNav?.('back'); return;
+      }
+      onNav?.(target);
+    },
     // Tap an agent -> open its real conversation (Chat). Tap a project on mobile ->
     // its mission list (state B). Project conversation on desktop waits for desktop Chat.
     openRoom: (id) => {
@@ -167,7 +180,11 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
       const proj = (data.projects || []).find((p) => p.id === id);
       if (proj && !isDesktop) setOpenedProjectId(id);
     },
-    openCatchUp: () => {},
+    openCatchUp: () => { setCatchUpIndex(0); setCatchUpOpen(true); },
+    nextCatchUp: () => setCatchUpIndex((i) => Math.min(i + 1, Math.max(0, (data.catchUp?.all?.length || 1) - 1))),
+    prevCatchUp: () => setCatchUpIndex((i) => Math.max(0, i - 1)),
+    snoozeCatchUp: () => setCatchUpIndex((i) => Math.min(i + 1, Math.max(0, (data.catchUp?.all?.length || 1) - 1))),
+    snoozeAll: () => setCatchUpOpen(false),
     openCommandK: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
     newRoom: () => {}, showMoreProjects: () => {},
@@ -178,7 +195,7 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
     openProjectChat: () => {}, openMission: () => {}, newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenNav, data.projects, data.agents, worldId, isDesktop, openedProject]);
+  }), [onNav, onOpenRoom, onOpenNav, data.projects, data.agents, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),
@@ -201,6 +218,20 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [worldId, openedProject, missionSeed]);
 
+  if (catchUpOpen) {
+    const allCards = data.catchUp?.all || [];
+    const cuIdx = Math.min(catchUpIndex, Math.max(0, allCards.length - 1));
+    const catchUpData = {
+      catchUp: {
+        count: allCards.length,
+        position: allCards.length ? cuIdx + 1 : 0,
+        current: allCards[cuIdx] || { id: '', kind: 'agent', kindLabel: 'AGENT', from: '', subject: '', summary: '', actionItems: [], attachments: [] },
+        items: allCards.map((c, i) => ({ ...c, deckState: i === cuIdx ? 'current' : (i < cuIdx ? 'prev' : 'next') })),
+      },
+    };
+    return <TemplateScreen html={catchUpHtml} data={catchUpData} actions={actions} state="ready"
+      aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
+  }
   if (missionSeed) {
     return (
       <div ref={missionFormRef} style={{ width: '100%', height: '100%' }}>
