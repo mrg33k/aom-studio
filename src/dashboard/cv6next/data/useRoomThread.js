@@ -37,7 +37,9 @@ export function useRoomThread(worldId, room) {
     setStatus('loading');
     const params = new URLSearchParams();
     params.set('client', worldId);
-    params.set('agent', room.id);
+    // Agent rooms key on the agent slug; project rooms key on the project slug.
+    if (room.isProject) params.set('project', room.id);
+    else params.set('agent', room.id);
     params.set('limit', '40');
     authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
@@ -60,7 +62,7 @@ export function useRoomThread(worldId, room) {
       })
       .catch(() => { if (alive) setStatus('error'); });
     return () => { alive = false; };
-  }, [worldId, room?.id, room?.name]);
+  }, [worldId, room?.id, room?.name, room?.isProject]);
 
   return { messages, status };
 }

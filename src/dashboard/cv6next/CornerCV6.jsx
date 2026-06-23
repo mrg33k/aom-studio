@@ -9,7 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import { useHome, useProjectMissions, shapeProjectState, createMissionInProject } from './data/useHomeData.js';
+import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
@@ -20,6 +20,7 @@ import chatRaw from './templates/chat.html?raw';
 import kitRaw from './templates/kit.html?raw';
 import commandRaw from './templates/command.html?raw';
 import trackerRaw from './templates/tracker.html?raw';
+import chatListRaw from './templates/chat-list.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
 // ── viewport: desktop layout at >=900px, the phone layout below ──
@@ -109,13 +110,9 @@ const HOME_ALIASES = {
   assignableAgents: 'agentPick',
 };
 
-function Home({ onNav, onOpenRoom, onOpenNav, chatPending }) {
+function Home({ onNav, onOpenRoom, onOpenNav }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
-  // Chat tapped from the menu with no prior conversation -> open the most recent room.
-  useEffect(() => {
-    if (chatPending && (data.agents || []).length) onOpenRoom?.(data.agents[0], worldId);
-  }, [chatPending, data.agents, worldId, onOpenRoom]);
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
   // Mobile "project opened" state (Home state B): tap a project -> its missions.
@@ -204,6 +201,26 @@ function Home({ onNav, onOpenRoom, onOpenNav, chatPending }) {
   }
   return <TemplateScreen html={homeHtml} data={data} actions={actions} state={state}
     aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
+}
+
+// ── Chat list (mobile): the conversations list the Chat menu opens to ──
+const CHATLIST_ALIASES = { agents: 'agent', projects: 'project' };
+function ChatList({ onNav, onOpenRoom, onOpenNav }) {
+  const { state, data, worldId } = useChatList();
+  const html = useMemo(() => composeScreen(chatListRaw, { mobile: true, pick: 0 }), []);
+  const actions = useMemo(() => ({
+    nav: (t) => onNav(t === 'back' ? 'home' : t),
+    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    openRoom: (id) => {
+      const agent = (data.agents || []).find((a) => String(a.id) === String(id));
+      if (agent) { onOpenRoom?.(agent, worldId); return; }
+      const proj = (data.projects || []).find((p) => String(p.id) === String(id));
+      if (proj) onOpenRoom?.({ id: proj.id, name: proj.name, isProject: true }, worldId);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [onNav, onOpenNav, onOpenRoom, data.agents, data.projects, worldId]);
+  return <TemplateScreen html={html} data={data} actions={actions} state={state}
+    aliases={CHATLIST_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
 
 // ── Support inbox (the proven pilot), reachable from the nav ──
@@ -467,24 +484,15 @@ class ScreenBoundary extends Component {
 
 export default function CornerCV6() {
   const worldId = useWorldId();
-  const [view, setView] = useState('home'); // 'home' | 'support' | 'command' | 'tracker'
+  const [view, setView] = useState('home'); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
-  const [lastRoom, setLastRoom] = useState(null);      // last conversation opened (for the Chat menu)
-  const [chatPending, setChatPending] = useState(false); // Chat tapped with no history -> open latest on Home
   const [navOpen, setNavOpen] = useState(false);
   const onNav = useCallback((target) => {
     if (['home', 'support', 'command', 'tracker'].includes(target)) { setOpenedRoom(null); setView(target); }
-    // Chat from the menu reopens your latest conversation; if you have not opened one yet,
-    // land on Home and auto-open the most recent room there.
-    else if (target === 'chat') {
-      if (lastRoom) setOpenedRoom(lastRoom);
-      else { setOpenedRoom(null); setView('home'); setChatPending(true); }
-    }
-  }, [lastRoom]);
-  const onOpenRoom = useCallback((room, wid) => {
-    const r = { room, worldId: wid || worldId };
-    setOpenedRoom(r); setLastRoom(r); setChatPending(false);
-  }, [worldId]);
+    // Chat from the menu opens the conversations list; a row there opens the Goal Thread.
+    else if (target === 'chat') { setOpenedRoom(null); setView('chatlist'); }
+  }, []);
+  const onOpenRoom = useCallback((room, wid) => setOpenedRoom({ room, worldId: wid || worldId }), [worldId]);
   const onOpenNav = useCallback(() => setNavOpen(true), []);
   const closeNav = useCallback(() => setNavOpen(false), []);
   const goHome = useCallback(() => { setOpenedRoom(null); setView('home'); }, []);
@@ -494,9 +502,10 @@ export default function CornerCV6() {
   else if (view === 'support') { body = <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} chatPending={chatPending} />; viewKey = 'home'; }
+  else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'chatlist'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'home'; }
 
-  const current = openedRoom ? 'chat' : view;
+  const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
   return (
     <div data-cv6 data-theme="dark" style={{
       minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)',

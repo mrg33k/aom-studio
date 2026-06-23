@@ -150,6 +150,62 @@ export function useHome() {
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 
+// ── Chat list (mobile conversations): the rooms list that Chat opens to ──
+const CHAT_STATUS = { online: 'live', live: 'live', working: 'live', running: 'live', blocked: 'blocked', needs_you: 'blocked', 'needs you': 'blocked', done: 'done', complete: 'done' };
+function chatStatus(s) { return CHAT_STATUS[String(s || '').toLowerCase()] || 'ready'; }
+const CHAT_STATUS_LABEL = { live: 'LIVE', blocked: 'NEEDS YOU', ready: 'READY', done: 'DONE' };
+
+export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] } = {}) {
+  // last needs-you message + count per agent (the only per-room snippet we have without a
+  // separate fetch); rooms with no unread show no snippet rather than a fabricated one.
+  const byAgent = {};
+  for (const it of inboxItems || []) {
+    const k = String(it.agent || '').toLowerCase(); if (!k) continue;
+    if (!byAgent[k]) byAgent[k] = { count: 0, text: '', time: '' };
+    byAgent[k].count += 1;
+    if (!byAgent[k].text) { byAgent[k].text = firstLine(it.text); byAgent[k].time = relTime(it.timestamp); }
+  }
+  const agentRows = (agents || []).map((a) => {
+    const status = chatStatus(a.status);
+    const inb = byAgent[String(a.slug || a.name || '').toLowerCase()] || null;
+    return {
+      id: a.id || a.slug, name: a.name || a.slug || 'Agent', initials: initials(a.name || a.slug),
+      tint: tintFor(a.name || a.id), status, statusLabel: CHAT_STATUS_LABEL[status] || 'READY',
+      snippet: inb?.text || '', time: inb?.time || '', needsCount: a.unread || inb?.count || 0,
+    };
+  });
+  const projectRows = (projectRooms || []).map((p) => ({
+    id: p.id || p.slug, name: p.name || p.slug || 'Project', snippet: '',
+    tint: tintFor(p.name || p.id), status: 'ready',
+  }));
+  agentRows.count = agentRows.length;
+  projectRows.count = projectRows.length;
+  const live = agentRows.filter((a) => a.status === 'live').length;
+  const needsYou = agentRows.filter((a) => a.status === 'blocked').length || (inboxItems || []).length;
+  const data = { counts: { live, needsYou }, agents: agentRows, projects: projectRows };
+  const state = (agentRows.length || projectRows.length) ? 'ready' : 'empty';
+  return { state, data };
+}
+
+export function useChatList() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [worldId, setWorldId] = useState(null);
+  useEffect(() => {
+    if (!supabase) return undefined;
+    let alive = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!alive || !data?.user) return;
+      setClientIdFromUser(data.user); setCurrentUser(data.user); setWorldId(getClientId());
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
+  const { agents, projectRooms, inboxItems } = useDataPipe(null, worldId, currentUserSlug);
+  const shaped = useMemo(() => shapeChatList({ agents, projectRooms, inboxItems }), [agents, projectRooms, inboxItems]);
+  const loading = !worldId || (!agents && !projectRooms && !inboxItems);
+  return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
+}
+
 // ── Project-opened state (mobile Home state B): real missions for one project ──
 const MISSION_STATUS = {
   running: 'live', building: 'live', active: 'live',

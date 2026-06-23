@@ -1,0 +1,39 @@
+{
+  "screen": "chat-list",
+  "title": "Chat · Mobile · conversations list",
+  "source": "ui_kits/mobile/chat-list.html",
+  "fragment": "wired/mobile/chat-list.html",
+  "stylesheet": "wired/cv6.css",
+  "wrapper": { "selector": "[data-cv6][data-screen=\"chat-list\"]", "theme": "dark|light|glass" },
+  "note": "Rows open the Goal Thread in wired/tools/chat.html. Shares room/agent/project vocabulary with desktop + mobile Home.",
+
+  "data": {
+    "counts": { "live": "int", "needsYou": "int" },
+    "agents": { "count": "int", "list": true, "item": "agent", "shape": {
+      "id": "string", "name": "string", "initials": "string",
+      "tint": "enum: green|violet|amber|neutral → is-:agent.tint on .av",
+      "status": "enum: live|blocked|ready|done → is-:agent.status on .sdot AND .astat — never 'idle'",
+      "statusLabel": "string (UPPERCASE: LIVE | NEEDS YOU | READY | DONE)",
+      "snippet": "string (last message)", "time": "string (mono, relative)",
+      "needsCount": "int (render .needs-count only when > 0)"
+    } },
+    "projects": { "count": "int", "list": true, "item": "project", "shape": {
+      "id": "string", "name": "string", "snippet": "string (sub-line)",
+      "tint": "enum: violet|accent|pink → is-:project.tint on .gly",
+      "status": "enum: live|ready|done → is-:project.status on .sdot (rollup)"
+    } }
+  },
+
+  "actions": [
+    { "name": "nav", "target": "back", "from": ".mback" },
+    { "name": "search", "from": "header search (a)" },
+    { "name": "openNav", "from": "header menu · right-drawer tool switcher" },
+    { "name": "openRoom", "arg": "agent.id | project.id", "from": "row → opens Goal Thread (tools/chat)" }
+  ],
+
+  "states": {
+    "ready": { "region": "[data-state=\"ready\"]" },
+    "empty/loading/error": { "in": "wired/_base/states.html" }
+  },
+  "modifierRule": "every data-mod is is-:path → toggle is-<value> on a base class; no inline color default."
+}
