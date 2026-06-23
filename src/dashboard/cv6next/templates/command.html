@@ -1,0 +1,115 @@
+<!-- @dsCard group="Wired Templates" viewport="1480x940" subtitle="Command tool · desktop (goal ledger + background-activity dock + goal detail) and mobile. Stripped, scoped [data-cv6], labeled." name="Wired · Command" -->
+<!--
+  ============================================================================
+  WIRED — Command tool   ·   Source: ui_kits/tools/command.html
+  Contract: wired/tools/command.json
+  ----------------------------------------------------------------------------
+  Master view: the background-activity dock aggregates every running job, the
+  goal ledger lists each room's current goal, and the detail panel drives the
+  master-loop. Stripped of stage/window/phone bezel + fake status bar.
+  Lists use data-each; per-item visuals use data-mod="is-:path"; the activity
+  dock + status chips are the shared frame.css classes (global).
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+<style> body { margin:0; background:#e8e6e2; padding:40px; box-sizing:border-box; min-width:max-content; } .wrap { display:flex; gap:36px; align-items:flex-start; } </style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ DESKTOP ============ -->
+<div data-cv6 data-theme="dark" data-screen="command-desktop" data-screen-label="Command · Desktop" class="cv6-screen" style="width:1440px;height:860px;flex:none;border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="topbar">
+    <div class="tgreet"><img src="../../assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
+    <div class="toolnav">
+      <div class="ctile" data-action="nav" data-target="home"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg><span class="clab">Home</span></div>
+      <div class="ctile" data-action="nav" data-target="chat"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg><span class="clab">Chat</span></div>
+      <div class="ctile" data-action="nav" data-target="organize"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 8l9 4 9-4-9-4Z"/><path d="m3 12 9 4 9-4"/></svg><span class="clab">Organize</span></div>
+      <div class="ctile" data-action="nav" data-target="review"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="clab">Review</span></div>
+      <div class="ctile" data-action="nav" data-target="support"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg><span class="clab">Support</span></div>
+      <div class="ctile" data-action="nav" data-target="tracker"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="clab">Tracker</span></div>
+      <div class="ctile on" data-action="nav" data-target="command"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4H4v16h3M17 4h3v16h-3"/></svg><span class="clab">Command</span></div>
+      <div class="ctile" data-action="nav" data-target="livescribe"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="clab">Scribe</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;"><span class="toolname">Command</span><div class="ib" data-action="openCommandK"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="av" data-action="openProfile">P</div></div>
+  </div>
+  <div style="display:flex;flex:1;min-height:0;">
+    <!-- ledger -->
+    <div style="flex:1;min-width:0;border-right:1px solid var(--divider);overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;"><div><div style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Goal ledger</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;"><span data-bind="ledger.roomCount">6</span> rooms · <span data-bind="ledger.liveCount">3</span> live</div></div><div style="display:flex;gap:7px;"><span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--success);background:var(--success-weak);padding:5px 11px;border-radius:14px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);animation:livePulse 1.8s infinite;"></span><span data-bind="ledger.liveCount">3</span> live</span><span style="font-size:12px;font-weight:600;color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));padding:5px 11px;border-radius:14px;"><span data-bind="ledger.blockedCount">1</span> blocked</span></div></div>
+      <div style="padding:18px 24px 6px;">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span class="eyebrow">Background activity</span><span class="mono" style="font-size:11px;color:var(--faint);"><span data-bind="activity.count">4</span> running</span><span style="margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);" data-action="manageActivity">Manage</span></div>
+        <div class="actrail">
+          <!-- ONE dock card per running job; is-:job.kind drives the icon tile + badge -->
+          <div class="actdock" style="width:288px;flex:none;" data-each="activity.jobs" data-action="openJob" data-arg="job.id"><span class="ad-ico is-rec" data-mod="is-:job.kind"><span class="rec" style="width:10px;height:10px;border-radius:50%;background:#F87171;animation:recPulse 1.4s infinite;flex:none;"></span></span><div class="ad-body"><div class="ad-title" data-bind="job.title">Live Scribe · recording</div><div class="ad-sub" data-bind="job.sub">Corner · Dashboard · 08:42</div></div><span class="ad-badge is-rec" data-mod="is-:job.kind" data-bind="job.badge">REC</span></div>
+        </div>
+      </div>
+      <div style="padding:14px 24px 0;">
+        <div class="thead"><div style="width:160px;flex:none;">Room</div><div style="flex:1;">Current goal</div><div style="width:110px;flex:none;">Set by</div><div style="width:90px;flex:none;">Status</div></div>
+        <!-- ONE row per room; is-active marks the open room; is-:room.status on the status chip; is-:room.tint on the dot -->
+        <div class="grow is-open" style="background:var(--accent-weak);margin:0 -8px;padding:0 8px;border-radius:8px;" data-each="ledger.rooms" data-action="openGoal" data-arg="room.id"><div style="width:160px;flex:none;display:flex;align-items:center;gap:9px;"><span class="pdot is-violet" data-mod="is-:room.tint"></span><span style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="room.name">Space Rising</span></div><div style="flex:1;min-width:0;padding-right:14px;font-size:13.5px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="room.goal">Lock Interactive/community framing before Apr 29 print</div><div style="width:110px;flex:none;font-size:12.5px;color:var(--muted);"><span data-bind="room.setBy">Patrik</span> · <span data-bind="room.age">2h</span></div><div style="width:90px;flex:none;"><span class="astat is-live" data-mod="is-:room.status"><span class="sd"></span><span data-bind="room.statusLabel">LIVE</span></span></div></div>
+      </div>
+    </div>
+    <!-- goal detail -->
+    <div style="width:400px;flex:none;border-left:1px solid var(--divider);padding:22px;overflow:hidden;" data-state="ready">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;"><span class="pdot is-violet" data-mod="is-:goal.tint"></span><span style="font-size:16px;font-weight:600;color:var(--fg);flex:1;" data-bind="goal.roomName">Space Rising</span><span class="astat is-live" data-mod="is-:goal.status"><span class="sd"></span><span data-bind="goal.statusLabel">LIVE</span></span></div>
+      <div class="eyebrow" style="margin-bottom:8px;">Current goal</div>
+      <div style="font-size:17px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:16px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
+      <div style="background:var(--surface-2);border-radius:11px;padding:12px 14px;margin-bottom:20px;display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--success);" data-bind="goal.driverLine"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 7 10 12 5 17"/><line x1="13" y1="17" x2="19" y2="17"/></svg>Elon · patching resolver</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;"><span class="eyebrow">Checklist · <span data-bind="goal.stepCount">4</span> steps</span><span class="stat" style="color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span data-bind="goal.queueNote">1 in master-loop queue</span></span></div>
+      <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:18px;">
+        <!-- ONE row per checklist step; is-:step.state → done | queued | active | pending -->
+        <div class="cstep is-done" style="display:flex;align-items:center;gap:11px;" data-each="goal.checklist" data-mod="is-:step.state"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag">Verified</span></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;"><span class="eyebrow">Master-loop watchers</span><span style="font-size:11px;color:var(--success);font-weight:600;"><span data-bind="watchers.activeCount">2</span> active</span></div>
+      <div style="font-size:12px;line-height:1.5;color:var(--muted);margin-bottom:13px;">The loop drives these conversations toward the goal and verifies each finished step. Toggle who it watches.</div>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px;">
+        <!-- ONE row per watcher; the toggle reflects watcher.on (is-on) -->
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-2);border-radius:11px;" data-each="watchers"><span class="ava is-green" data-mod="is-:watcher.tint" style="width:26px;height:26px;" data-bind="watcher.initials">EL</span><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--fg);" data-bind="watcher.name">Elon</div><div style="font-size:11px;color:var(--muted);" data-bind="watcher.role">Driver · patching</div></div><span class="wtog is-on" data-mod="is-:watcher.on" data-action="toggleWatcher" data-arg="watcher.id"><span class="wtog-knob"></span></span></div>
+      </div>
+      <div style="display:flex;gap:9px;">
+        <button style="flex:none;width:46px;height:42px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--accent);display:flex;align-items:center;justify-content:center;" data-action="addWatcher" data-arg="goal.id"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button style="flex:1;height:42px;border-radius:11px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;" data-action="retaskGoal" data-arg="goal.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Re-task</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE ============ -->
+<div data-cv6 data-theme="dark" data-screen="command-mobile" data-screen-label="Command · Mobile" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl">Command</div><div class="msub"><span data-bind="ledger.roomCount">6</span> rooms · <span data-bind="ledger.liveCount">3</span> live</div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <div class="scrbody" data-state="ready">
+    <div style="padding:14px 0 4px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:0 16px;margin-bottom:10px;"><span class="eyebrow">Background activity</span><span class="mono" style="font-size:10.5px;color:var(--faint);"><span data-bind="activity.count">4</span> running</span></div>
+      <div class="actrail" style="padding:0 16px;">
+        <!-- ONE dock card per running job -->
+        <div class="actdock" style="width:248px;flex:none;" data-each="activity.jobs" data-action="openJob" data-arg="job.id"><span class="ad-ico is-rec" data-mod="is-:job.kind"><span class="rec" style="width:10px;height:10px;border-radius:50%;background:#F87171;animation:recPulse 1.4s infinite;flex:none;"></span></span><div class="ad-body"><div class="ad-title" data-bind="job.shortTitle">Recording</div><div class="ad-sub" data-bind="job.sub">Corner · Dashboard · 08:42</div></div><span class="ad-badge is-rec" data-mod="is-:job.kind" data-bind="job.badge">REC</span></div>
+      </div>
+    </div>
+    <div style="padding:8px 16px 16px;">
+      <!-- focused live goal card -->
+      <div style="background:var(--surface);border:1px solid var(--hair);border-radius:16px;padding:16px;margin-bottom:12px;" data-action="openGoal" data-arg="goal.id">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><span class="pdot is-violet" data-mod="is-:goal.tint"></span><span style="font-size:15px;font-weight:600;color:var(--fg);flex:1;" data-bind="goal.roomName">Space Rising</span><span class="astat is-live" data-mod="is-:goal.status"><span class="sd"></span><span data-bind="goal.statusLabel">LIVE</span></span></div>
+        <div style="font-size:15.5px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:14px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
+        <div style="display:flex;flex-direction:column;gap:11px;">
+          <!-- ONE row per checklist step -->
+          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;" data-each="goal.checklist" data-mod="is-:step.state"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag"></span></div>
+        </div>
+      </div>
+      <!-- ONE row per other ledger room (compact) -->
+      <div style="display:flex;align-items:center;gap:11px;padding:13px 15px;background:var(--surface);border:1px solid var(--hair);border-radius:14px;" data-each="ledger.others" data-action="openGoal" data-arg="room.id"><span class="pdot is-pink" data-mod="is-:room.tint"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="room.name">Included Health</div><div style="font-size:12px;color:var(--muted);" data-bind="room.goalShort">Batch02 culture deck</div></div><span class="astat is-blocked" data-mod="is-:room.status"><span class="sd"></span><span data-bind="room.statusLabel">BLOCKED</span></span></div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

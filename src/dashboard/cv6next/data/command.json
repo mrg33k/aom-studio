@@ -1,0 +1,37 @@
+{
+  "screen": "command",
+  "title": "Command tool",
+  "source": "ui_kits/tools/command.html",
+  "fragment": "wired/tools/command.html",
+  "stylesheet": "wired/cv6.css",
+  "screens": {
+    "desktop": { "selector": "[data-cv6][data-screen=\"command-desktop\"]", "regions": "goal ledger · background-activity dock · goal detail (master-loop)" },
+    "mobile": { "selector": "[data-cv6][data-screen=\"command-mobile\"]", "regions": "activity dock · focused live goal · other rooms" }
+  },
+  "sharesVocabularyWith": "wired/desktop/home.json (rooms), wired/tools/chat.json (goal/checklist)",
+
+  "data": {
+    "ledger": { "roomCount": "int", "liveCount": "int", "blockedCount": "int",
+      "rooms": { "list": true, "item": "room", "shape": { "id": "string", "name": "string", "tint": "enum: violet|accent|pink|faint → is-:room.tint on .pdot", "goal": "string", "setBy": "string", "age": "string", "status": "enum: live|blocked|ready → is-:room.status on .astat", "statusLabel": "string (UPPERCASE)" } },
+      "others": { "list": true, "item": "room", "note": "mobile · compact rows below the focused goal", "shape": { "id": "string", "name": "string", "tint": "enum → is-:room.tint", "goalShort": "string", "status": "enum → is-:room.status", "statusLabel": "string" } }
+    },
+    "activity": { "count": "int", "jobs": { "list": true, "item": "job", "shape": { "id": "string", "kind": "enum: rec|agent|build|review → is-:job.kind on .ad-ico AND .ad-badge", "title": "string", "shortTitle": "string (mobile)", "sub": "string", "badge": "string (UPPERCASE: REC|REVIEW|…)" } } },
+    "goal": { "id": "string", "roomName": "string", "tint": "enum → is-:goal.tint on .pdot", "status": "enum → is-:goal.status", "statusLabel": "string", "title": "string", "driverLine": "string (mono, e.g. 'Elon · patching resolver')", "stepCount": "int", "queueNote": "string",
+      "checklist": { "list": true, "item": "step", "shape": { "state": "enum: done|queued|active|pending → is-:step.state on .cstep", "label": "string", "tag": "string (Verified|Queued|Elon|Pending)" } } },
+    "watchers": { "activeCount": "int", "list": true, "item": "watcher", "shape": { "id": "string", "initials": "string", "tint": "enum: green|lime|neutral → is-:watcher.tint on .ava", "name": "string", "role": "string", "on": "enum: on|(off) → is-:watcher.on on .wtog" } }
+  },
+
+  "actions": [
+    { "name": "nav", "target": "home|chat|organize|review|support|tracker|command|livescribe|back" },
+    { "name": "openCommandK" }, { "name": "openProfile" }, { "name": "search" }, { "name": "openNav" },
+    { "name": "manageActivity", "from": "Manage" },
+    { "name": "openJob", "arg": "job.id", "from": "activity dock card" },
+    { "name": "openGoal", "arg": "room.id | goal.id", "from": "ledger row / mobile goal card" },
+    { "name": "toggleWatcher", "arg": "watcher.id", "from": "watcher toggle" },
+    { "name": "addWatcher", "arg": "goal.id" },
+    { "name": "retaskGoal", "arg": "goal.id", "from": "Re-task" }
+  ],
+
+  "states": { "ready": { "region": "[data-state=\"ready\"]" }, "empty/loading/error": { "in": "wired/_base/states.html" } },
+  "modifierRule": "every data-mod is is-:path → toggle is-<value> on a base class; no inline color default."
+}

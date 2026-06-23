@@ -249,6 +249,17 @@
 [data-cv6] .sk { border-radius:8px; background:var(--surface-2); animation:cv6shimmer 1.4s ease-in-out infinite; }
 [data-cv6] .sk-row { display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--divider); }
 
+/* shared activity-dock badge + icon tint (is-:job.kind) — used by Command */
+[data-cv6] .ad-badge { font-size:10px; font-weight:700; padding:3px 7px; border-radius:7px; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6] .ad-badge.is-rec    { color:#F87171;        background:rgba(248,113,113,.16); }
+[data-cv6] .ad-badge.is-agent  { color:var(--accent);  background:var(--accent-weak); }
+[data-cv6] .ad-badge.is-build  { color:var(--violet-400); background:rgba(139,124,246,.16); }
+[data-cv6] .ad-badge.is-review { color:var(--success); background:var(--success-weak); }
+[data-cv6] .ad-ico.is-rec    { background:rgba(248,113,113,.16); }
+[data-cv6] .ad-ico.is-agent  { background:var(--accent-weak); }
+[data-cv6] .ad-ico.is-build  { background:rgba(139,124,246,.16); }
+[data-cv6] .ad-ico.is-review { background:rgba(52,211,153,.18); }
+
 /* ============================================================
    data-mod TARGETS — per-item variation is a class swap, never inline.
    The engine toggles is-<value> on the element; these rules own the look.
@@ -353,3 +364,74 @@
 [data-cv6][data-screen^="chat"] .gchk.is-active .gchk-mark::after { content:''; width:6px; height:6px; border-radius:50%; background:var(--accent); }
 [data-cv6][data-screen^="chat"] .gchk.is-active .gchk-label { color:var(--fg); font-weight:500; }
 [data-cv6][data-screen^="chat"] .room { display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:9px; }[data-cv6][data-screen^="chat"] .rn { flex:1; font-size:14px; color:var(--fg); }[data-cv6][data-screen^="chat"] .thread-head { display:flex; align-items:center; gap:11px; margin-bottom:22px; }[data-cv6][data-screen^="chat"] .thread-title { font-size:17px; font-weight:700; letter-spacing:-.01em; color:var(--fg); }[data-cv6][data-screen^="chat"] .new-badge { font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:#fff; background:linear-gradient(135deg,var(--accent),#6366F1); padding:4px 9px; border-radius:7px; box-shadow:0 4px 12px -3px rgba(59,130,246,.5); }[data-cv6][data-screen^="chat"] .step { position:relative; padding-left:50px; padding-bottom:16px; }[data-cv6][data-screen^="chat"] .step::before { content:''; position:absolute; left:18px; top:38px; bottom:-4px; width:2px; background:var(--divider); }[data-cv6][data-screen^="chat"] .step:last-child::before { display:none; }[data-cv6][data-screen^="chat"] .step-ico { position:absolute; left:0; top:0; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; z-index:1; }[data-cv6][data-screen^="chat"] .step-card { border-radius:14px; padding:13px 16px; }[data-cv6][data-screen^="chat"] .step-title { font-size:14.5px; font-weight:600; color:var(--fg); }[data-cv6][data-screen^="chat"] .step-sub { font-size:13px; line-height:1.5; color:var(--muted); margin-top:3px; }[data-cv6][data-screen^="chat"] .pill-chip { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; }[data-cv6][data-screen^="chat"] .choice { display:flex; gap:10px; margin-top:13px; }[data-cv6][data-screen^="chat"] .choice-card { flex:1; border-radius:12px; padding:12px 13px; cursor:pointer; transition:transform .12s ease; }[data-cv6][data-screen^="chat"] .choice-card:active { transform:scale(.98); }[data-cv6][data-screen^="chat"] .choice-rec { background:var(--accent); }[data-cv6][data-screen^="chat"] .choice-alt { background:var(--surface-2); border:1px solid var(--hair); }[data-cv6][data-screen^="chat"] .choice-h { display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:600; }[data-cv6][data-screen^="chat"] .choice-s { font-size:11.5px; line-height:1.4; margin-top:4px; }
+
+/* ---- Command tool screen (ledger · activity dock · goal detail) ---- */
+[data-cv6][data-screen^="command"] code { font-family:var(--font-mono); background:var(--chip); padding:1px 6px; border-radius:5px; font-size:.85em; color:var(--fg); }[data-cv6][data-screen^="command"] .thead { display:flex; align-items:center; height:34px; border-bottom:1px solid var(--hair); font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }[data-cv6][data-screen^="command"] .grow { display:flex; align-items:center; height:64px; border-bottom:1px solid var(--divider); }[data-cv6][data-screen^="command"] .stat { width:fit-content; display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:6px; }[data-cv6][data-screen^="command"] .pdot { width:8px; height:8px; border-radius:50%; }
+@keyframes livePulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
+@keyframes recPulse { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
+/* command per-item helpers: pdot tints · open row · checklist · watcher toggle */
+[data-cv6][data-screen^="command"] .grow.is-open { background:var(--accent-weak); }
+[data-cv6][data-screen^="command"] .pdot.is-violet { background:var(--violet-400); }
+[data-cv6][data-screen^="command"] .pdot.is-accent { background:var(--accent); }
+[data-cv6][data-screen^="command"] .pdot.is-pink   { background:var(--pink-400); }
+[data-cv6][data-screen^="command"] .pdot.is-faint  { background:var(--faint); }
+[data-cv6][data-screen^="command"] .pdot.is-success { background:var(--success); }
+[data-cv6][data-screen^="command"] .cstep-mark { width:19px; height:19px; border-radius:50%; flex:none; box-sizing:border-box; border:2px solid var(--divider); display:flex; align-items:center; justify-content:center; }
+[data-cv6][data-screen^="command"] .cstep-label { color:var(--muted); }
+[data-cv6][data-screen^="command"] .cstep-tag { font-size:11px; color:var(--faint); flex:none; }
+[data-cv6][data-screen^="command"] .cstep.is-done .cstep-mark { border-color:var(--success); background:var(--success); }
+[data-cv6][data-screen^="command"] .cstep.is-done .cstep-label { text-decoration:line-through; }
+[data-cv6][data-screen^="command"] .cstep.is-done .cstep-tag { color:var(--success); }
+[data-cv6][data-screen^="command"] .cstep.is-queued .cstep-mark { border-color:var(--warn); }
+[data-cv6][data-screen^="command"] .cstep.is-queued .cstep-mark::after { content:''; width:7px; height:7px; border-radius:1px; background:var(--warn); }
+[data-cv6][data-screen^="command"] .cstep.is-queued .cstep-label { color:var(--fg); font-weight:500; }
+[data-cv6][data-screen^="command"] .cstep.is-queued .cstep-tag { color:var(--warn); background:var(--warn-weak,rgba(251,191,36,.16)); padding:3px 9px; border-radius:6px; }
+[data-cv6][data-screen^="command"] .cstep.is-active .cstep-mark { border-color:var(--success); }
+[data-cv6][data-screen^="command"] .cstep.is-active .cstep-mark::after { content:''; width:7px; height:7px; border-radius:50%; background:var(--success); animation:livePulse 1.6s infinite; }
+[data-cv6][data-screen^="command"] .cstep.is-active .cstep-label { color:var(--fg); font-weight:500; }
+[data-cv6][data-screen^="command"] .cstep.is-active .cstep-tag { color:var(--success); }
+[data-cv6][data-screen^="command"] .wtog { width:38px; height:22px; border-radius:11px; position:relative; flex:none; background:var(--chip); border:1px solid var(--hair); transition:background .15s; cursor:pointer; }
+[data-cv6][data-screen^="command"] .wtog-knob { position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--faint); transition:left .15s,background .15s; }
+[data-cv6][data-screen^="command"] .wtog.is-on { background:var(--accent); border-color:transparent; }
+[data-cv6][data-screen^="command"] .wtog.is-on .wtog-knob { left:18px; background:#fff; }
+
+/* ---- Tracker tool screen (switcher · bug table · detail · mobile A/B/C) ---- */
+[data-cv6][data-screen^="tracker"] code { font-family:var(--font-mono); background:var(--chip); padding:1px 6px; border-radius:5px; font-size:.85em; color:var(--fg); }[data-cv6][data-screen^="tracker"] .trk { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; }[data-cv6][data-screen^="tracker"] .thead { display:flex; align-items:center; height:34px; border-bottom:1px solid var(--hair); font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }[data-cv6][data-screen^="tracker"] .trow { display:flex; align-items:center; height:60px; border-bottom:1px solid var(--divider); }[data-cv6][data-screen^="tracker"] .bid { font-family:var(--font-mono); font-size:11px; color:var(--faint); margin-top:2px; }[data-cv6][data-screen^="tracker"] .chip { font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:13px; }[data-cv6][data-screen^="tracker"] .ava { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; }[data-cv6][data-screen^="tracker"] .pdot { width:7px; height:7px; border-radius:50%; }
+
+/* tracker per-item helpers */
+[data-cv6][data-screen^="tracker"] .trk.is-open { background:var(--accent-weak); }
+[data-cv6][data-screen^="tracker"] .trow.is-open { background:var(--accent-weak); }
+/* tracker dot tints (switcher + priority) */
+[data-cv6][data-screen^="tracker"] .pdot.is-success { background:var(--success); }
+[data-cv6][data-screen^="tracker"] .pdot.is-faint   { background:var(--faint); }
+[data-cv6][data-screen^="tracker"] .pdot.is-high { background:#F87171; }
+[data-cv6][data-screen^="tracker"] .pdot.is-med  { background:var(--warn); }
+[data-cv6][data-screen^="tracker"] .pdot.is-low  { background:var(--accent); }
+/* bug status chip (.bchip) */
+[data-cv6][data-screen^="tracker"] .bchip { font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:13px; flex:none; }
+[data-cv6][data-screen^="tracker"] .bchip.is-open     { color:#F87171; background:rgba(248,113,113,.16); }
+[data-cv6][data-screen^="tracker"] .bchip.is-openlow  { color:var(--accent); background:var(--accent-weak); }
+[data-cv6][data-screen^="tracker"] .bchip.is-progress { color:var(--warn); background:var(--warn-weak,rgba(251,191,36,.16)); }
+[data-cv6][data-screen^="tracker"] .bchip.is-done     { color:var(--success); background:var(--success-weak); }
+/* assignee avatar tints (.ava reused; add tints) */
+[data-cv6][data-screen^="tracker"] .ava.is-green  { background:rgba(52,211,153,.2); color:var(--success); }
+[data-cv6][data-screen^="tracker"] .ava.is-lime   { background:rgba(163,230,53,.2); color:#A3E635; }
+[data-cv6][data-screen^="tracker"] .ava.is-amber  { background:rgba(251,191,36,.2); color:var(--warn); }
+[data-cv6][data-screen^="tracker"] .ava.is-violet { background:rgba(139,124,246,.22); color:var(--violet-400); }
+[data-cv6][data-screen^="tracker"] .av.is-green  { background:rgba(52,211,153,.22); color:var(--success); }
+[data-cv6][data-screen^="tracker"] .av.is-lime   { background:rgba(163,230,53,.2); color:#A3E635; }
+/* bug checklist (.bchk) — is-done | is-active (live) | is-pending */
+[data-cv6][data-screen^="tracker"] .bchk-mark { width:17px; height:17px; border-radius:5px; flex:none; box-sizing:border-box; border:2px solid var(--divider); display:flex; align-items:center; justify-content:center; }
+[data-cv6][data-screen^="tracker"] .bchk-label { color:var(--fg); }
+[data-cv6][data-screen^="tracker"] .bchk.is-done .bchk-mark { border-color:var(--success); background:var(--success); }
+[data-cv6][data-screen^="tracker"] .bchk.is-done .bchk-label { color:var(--muted); text-decoration:line-through; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-mark { border:none; border-radius:50%; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-mark::after { content:''; width:16px; height:16px; border-radius:50%; border:2.4px solid var(--accent); border-top-color:transparent; animation:spin 1.05s linear infinite; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-label { font-weight:600; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-detail { display:block !important; }
+[data-cv6][data-screen^="tracker"] .bchk.is-active .bchk-log { display:block !important; }
+[data-cv6][data-screen^="tracker"] .bchk.is-pending .bchk-mark { border-radius:50%; }
+[data-cv6][data-screen^="tracker"] .bchk.is-pending .bchk-label { color:var(--muted); }
+[data-cv6][data-screen^="tracker"] .bchk-detail { color:var(--muted); }
+

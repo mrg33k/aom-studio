@@ -12,11 +12,14 @@ import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useHome, useProjectMissions, shapeProjectState } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread } from './data/useRoomThread.js';
+import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
 import inboxRaw from './templates/support-inbox.html?raw';
 import chatRaw from './templates/chat.html?raw';
 import kitRaw from './templates/kit.html?raw';
+import commandRaw from './templates/command.html?raw';
+import trackerRaw from './templates/tracker.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
 // ── viewport: desktop layout at >=900px, the phone layout below ──
@@ -105,7 +108,7 @@ const HOME_ALIASES = {
   missions: 'mission',
 };
 
-function Home({ onNav, onOpenRoom }) {
+function Home({ onNav, onOpenRoom, onOpenNav }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
   const missionsByProject = useProjectMissions(worldId);
@@ -132,14 +135,14 @@ function Home({ onNav, onOpenRoom }) {
       if (proj && !isDesktop) setOpenedProjectId(id);
     },
     openCatchUp: () => {},
-    openCommandK: () => {}, search: () => {}, openNav: () => {},
+    openCommandK: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
     newRoom: () => {}, showMoreProjects: () => {},
     draftReply: () => {}, addToTracker: () => {}, assignAgent: () => {}, snooze: () => {},
     review: () => {}, openAttachment: () => {},
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
     openProjectChat: () => {}, openMission: () => {}, newMission: () => {},
-  }), [onNav, onOpenRoom, data.projects, data.agents, worldId, isDesktop]);
+  }), [onNav, onOpenRoom, onOpenNav, data.projects, data.agents, worldId, isDesktop]);
 
   if (openedProject) {
     const pdata = shapeProjectState(openedProject, missionsByProject[openedProject.slug]);
@@ -153,14 +156,14 @@ function Home({ onNav, onOpenRoom }) {
 // ── Support inbox (the proven pilot), reachable from the nav ──
 const SUPPORT_ALIASES = { needsYou: 'email', watching: 'email', 'email.tags': 'tag' };
 
-function SupportInbox({ onNav }) {
+function SupportInbox({ onNav, onOpenNav }) {
   const { state, data, reload } = useSupportInbox('aom');
   const html = useMemo(() => composeScreen(inboxRaw, { mobile: true }), []);
   const actions = useMemo(() => ({
-    openThread: () => {}, search: () => {}, openNav: () => {},
+    openThread: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     nav: (t) => onNav?.(t), browseWatching: () => {}, emptyAction: () => {},
     retry: () => reload(), viewOffline: () => {},
-  }), [onNav, reload]);
+  }), [onNav, onOpenNav, reload]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={SUPPORT_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
 }
@@ -168,7 +171,7 @@ function SupportInbox({ onNav }) {
 // ── Chat: a room's real conversation (mobile). The structured Goal Thread (live steps,
 // decision cards, data tables) needs the agent to emit structured blocks; until then we
 // show the real messages honestly. ──
-function Chat({ room, worldId, onNav }) {
+function Chat({ room, worldId, onNav, onOpenNav }) {
   const { messages, status } = useRoomThread(worldId, room);
   const html = useMemo(composeChatMobile, []);
   const data = useMemo(() => ({
@@ -181,14 +184,71 @@ function Chat({ room, worldId, onNav }) {
   }), [room, messages]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t),
-    search: () => {}, openNav: () => {}, openProfile: () => {}, openCommandK: () => {},
+    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(), openProfile: () => {}, openCommandK: () => {},
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
     chooseOption: () => {}, openAgentMenu: () => {}, pauseAgent: () => {}, retaskAgent: () => {},
     approvePlan: () => {}, handoffAgent: () => {}, addContext: () => {}, addAttachment: () => {},
     openAttachment: () => {}, review: () => {}, setDataView: () => {}, toggleFollow: () => {}, retry: () => {},
-  }), [onNav]);
+  }), [onNav, onOpenNav]);
   return <TemplateScreen html={html} data={data} actions={actions} state={status}
     style={{ width: '100%', height: '100%' }} />;
+}
+
+// ── Command (mobile): real activity dock (running jobs); goal ledger honest ──
+const COMMAND_ALIASES = {
+  'activity.jobs': 'job', 'goal.checklist': 'step',
+  'ledger.others': 'room', 'ledger.rooms': 'room', watchers: 'watcher',
+};
+function Command({ worldId, onNav, onOpenNav }) {
+  const { state, data } = useCommand(worldId);
+  const html = useMemo(() => composeScreen(commandRaw, { mobile: true, pick: 1 }), []);
+  const actions = useMemo(() => ({
+    nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    openGoal: () => {}, openJob: () => {}, toggleWatcher: () => {}, openProfile: () => {},
+  }), [onNav, onOpenNav]);
+  return <TemplateScreen html={html} data={data} actions={actions} state={state}
+    aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
+}
+
+// ── Tracker (mobile): the real CV6 bug list ──
+const TRACKER_ALIASES = {
+  bugs: 'bug', 'bug.checklist': 'item', 'agent.checklist': 'item',
+  attachments: 'attachment', 'featuredBug.attachments': 'attachment',
+  projectTrackers: 'tracker', missionTrackers: 'tracker',
+};
+function Tracker({ worldId, onNav, onOpenNav }) {
+  const { state, data } = useTrackerBugs(worldId);
+  const html = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 1 }), []);
+  const actions = useMemo(() => ({
+    nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    openBug: () => {}, newBug: () => {}, assignAgent: () => {}, pauseAgent: () => {},
+    openAttachment: () => {}, retry: () => {},
+  }), [onNav, onOpenNav]);
+  return <TemplateScreen html={html} data={data} actions={actions} state={state}
+    aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />;
+}
+
+// Tool switcher (mobile): built from the design's own nav-drawer classes until Batch 5's
+// navigation.html lands. Slides over the current screen; tapping a tool switches + closes.
+function NavDrawer({ open, current, onPick, onClose }) {
+  if (!open) return null;
+  const tools = [
+    { k: 'home', label: 'Home' }, { k: 'support', label: 'Support' },
+    { k: 'command', label: 'Command' }, { k: 'tracker', label: 'Tracker' },
+  ];
+  return (
+    <div className="navscrim" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
+      <div className="navdrawer" onClick={(e) => e.stopPropagation()}
+        style={{ paddingTop: 'max(16px, env(safe-area-inset-top, 0px))', paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
+        <div style={{ padding: '6px 14px 12px', font: '700 13px system-ui', letterSpacing: '.04em', color: 'var(--muted,#8b95a3)', textTransform: 'uppercase' }}>Go to</div>
+        {tools.map((t) => (
+          <div key={t.k} className={`navrow ${t.k === current ? 'on' : ''}`} onClick={() => { onPick(t.k); onClose(); }}>
+            <span className="ni">{t.label[0]}</span><span className="nl">{t.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // A screen render error must not blank the whole app — show a recoverable message.
@@ -211,20 +271,27 @@ class ScreenBoundary extends Component {
 }
 
 export default function CornerCV6() {
-  const [view, setView] = useState('home'); // 'home' | 'support'
+  const worldId = useWorldId();
+  const [view, setView] = useState('home'); // 'home' | 'support' | 'command' | 'tracker'
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
+  const [navOpen, setNavOpen] = useState(false);
   const onNav = useCallback((target) => {
-    if (target === 'home') { setOpenedRoom(null); setView('home'); }
-    else if (target === 'support') { setOpenedRoom(null); setView('support'); }
+    if (['home', 'support', 'command', 'tracker'].includes(target)) { setOpenedRoom(null); setView(target); }
+    else if (target === 'chat') { setOpenedRoom(null); setView('home'); } // rooms live on Home
   }, []);
-  const onOpenRoom = useCallback((room, worldId) => setOpenedRoom({ room, worldId }), []);
+  const onOpenRoom = useCallback((room, wid) => setOpenedRoom({ room, worldId: wid || worldId }), [worldId]);
+  const onOpenNav = useCallback(() => setNavOpen(true), []);
+  const closeNav = useCallback(() => setNavOpen(false), []);
   const goHome = useCallback(() => { setOpenedRoom(null); setView('home'); }, []);
 
   let body; let viewKey;
-  if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { body = <SupportInbox onNav={onNav} />; viewKey = 'support'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} />; viewKey = 'home'; }
+  if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
+  else if (view === 'support') { body = <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
+  else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
+  else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'home'; }
 
+  const current = openedRoom ? 'chat' : view;
   return (
     <div data-cv6 data-theme="dark" style={{
       minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)',
@@ -234,6 +301,7 @@ export default function CornerCV6() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
+      <NavDrawer open={navOpen} current={current} onPick={onNav} onClose={closeNav} />
     </div>
   );
 }

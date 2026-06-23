@@ -1,0 +1,162 @@
+<!-- @dsCard group="Wired Templates" viewport="1480x940" subtitle="Tracker tool · desktop (switcher + bug table + detail) and mobile A/B/C (list · detail+assign · agent live). Stripped, scoped [data-cv6], labeled." name="Wired · Tracker" -->
+<!--
+  ============================================================================
+  WIRED — Tracker tool   ·   Source: ui_kits/tools/tracker.html
+  Contract: wired/tools/tracker.json
+  ----------------------------------------------------------------------------
+  Desktop: tracker switcher · bug table · bug detail. Mobile: A) bug list with
+  attachments + live-agent strip, B) bug detail + assign-to-agent, C) agent
+  working live. Stripped of stage/window/phone bezel + fake status bar.
+  Lists use data-each; per-item visuals use data-mod="is-:path".
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+<style> body { margin:0; background:#e8e6e2; padding:40px; box-sizing:border-box; min-width:max-content; } .wrap { display:flex; gap:36px; align-items:flex-start; } </style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ DESKTOP ============ -->
+<div data-cv6 data-theme="dark" data-screen="tracker-desktop" data-screen-label="Tracker · Desktop" class="cv6-screen" style="width:1440px;height:860px;flex:none;border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="topbar">
+    <div class="tgreet"><img src="../../assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
+    <div class="toolnav">
+      <div class="ctile" data-action="nav" data-target="home"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg><span class="clab">Home</span></div>
+      <div class="ctile" data-action="nav" data-target="chat"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg><span class="clab">Chat</span></div>
+      <div class="ctile" data-action="nav" data-target="organize"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 8l9 4 9-4-9-4Z"/><path d="m3 12 9 4 9-4"/></svg><span class="clab">Organize</span></div>
+      <div class="ctile" data-action="nav" data-target="review"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="clab">Review</span></div>
+      <div class="ctile" data-action="nav" data-target="support"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg><span class="clab">Support</span></div>
+      <div class="ctile on" data-action="nav" data-target="tracker"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="clab">Tracker</span></div>
+      <div class="ctile" data-action="nav" data-target="command"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4H4v16h3M17 4h3v16h-3"/></svg><span class="clab">Command</span></div>
+      <div class="ctile" data-action="nav" data-target="livescribe"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="clab">Scribe</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;"><span class="toolname">Tracker</span><div class="ib" data-action="openCommandK"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="av" data-action="openProfile">P</div></div>
+  </div>
+  <div style="display:flex;flex:1;min-height:0;">
+    <!-- switcher -->
+    <div style="width:300px;flex:none;border-right:1px solid var(--divider);padding:20px 16px;overflow:hidden;">
+      <div class="eyebrow" style="margin:0 6px 8px;">Project trackers</div>
+      <div style="margin-bottom:20px;">
+        <!-- ONE row per project tracker; is-open marks the active tracker -->
+        <div class="trk is-open" style="background:var(--accent-weak);" data-each="projectTrackers" data-action="openTracker" data-arg="tracker.id"><span class="pdot is-success" data-mod="is-:tracker.dot"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="tracker.name">CV6 Bugs</div><div style="font-size:11.5px;color:var(--muted);" data-bind="tracker.scope">Corner CV6</div></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--accent);" data-bind="tracker.count">12</span></div>
+      </div>
+      <div class="eyebrow" style="margin:0 6px 8px;">Mission trackers</div>
+      <!-- ONE row per mission tracker -->
+      <div class="trk" data-each="missionTrackers" data-action="openTracker" data-arg="tracker.id"><span class="pdot is-faint" data-mod="is-:tracker.dot"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:500;color:var(--fg);" data-bind="tracker.name">Resolver bugs</div><div style="font-size:11.5px;color:var(--muted);" data-bind="tracker.scope">Space Rising → /007</div></div><span style="font-family:var(--font-mono);font-size:11px;color:var(--faint);" data-bind="tracker.count">2</span></div>
+    </div>
+    <!-- table -->
+    <div style="flex:1;min-width:0;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;"><div><div style="display:flex;align-items:center;gap:8px;"><span style="width:9px;height:9px;border-radius:50%;background:var(--success);"></span><span style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);" data-bind="activeTracker.name">CV6 Bugs</span></div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;"><span data-bind="activeTracker.scope">Corner CV6</span> · <span data-bind="activeTracker.openCount">12</span> open</div></div><button style="height:38px;padding:0 16px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;gap:7px;" data-action="newBug" data-arg="activeTracker.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New bug</button></div>
+      <div style="padding:0 24px;">
+        <div class="thead"><div style="flex:1;">Bug</div><div style="width:120px;flex:none;">Status</div><div style="width:90px;flex:none;">Priority</div><div style="width:110px;flex:none;">Assignee</div><div style="width:50px;flex:none;">Upd</div></div>
+        <!-- ONE row per bug; is-open marks the selected; is-:bug.status on .chip; is-:bug.priority on the priority dot; is-:bug.assigneeTint on the avatar -->
+        <div class="trow is-open" style="background:var(--accent-weak);margin:0 -8px;padding:0 8px;border-radius:8px;" data-each="bugs" data-action="openBug" data-arg="bug.id"><div style="flex:1;min-width:0;padding-right:12px;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="bug.title">Repo resolver drops docs-only projects</div><div class="bid" data-bind="bug.id">CV6-142</div></div><div style="width:120px;flex:none;"><span class="bchip is-open" data-mod="is-:bug.status" data-bind="bug.statusLabel">Open</span></div><div style="width:90px;flex:none;display:flex;align-items:center;gap:6px;"><span class="pdot is-high" data-mod="is-:bug.priority"></span><span style="font-size:13px;color:var(--fg);" data-bind="bug.priorityLabel">High</span></div><div style="width:110px;flex:none;display:flex;align-items:center;gap:7px;"><span class="ava is-green" data-mod="is-:bug.assigneeTint" data-bind="bug.assigneeInitials">EL</span><span style="font-size:13px;color:var(--fg);" data-bind="bug.assignee">Elon</span></div><div style="width:50px;flex:none;font-family:var(--font-mono);font-size:12px;color:var(--muted);" data-bind="bug.updated">2h</div></div>
+      </div>
+    </div>
+    <!-- detail -->
+    <div style="width:360px;flex:none;border-left:1px solid var(--divider);padding:22px;overflow:hidden;" data-state="ready">
+      <div style="font-family:var(--font-mono);font-size:12px;color:var(--faint);margin-bottom:8px;" data-bind="bug.id">CV6-142</div>
+      <h2 style="font-size:18px;line-height:1.3;font-weight:700;color:var(--fg);margin:0 0 12px;" data-bind="bug.title">Repo resolver drops docs-only projects</h2>
+      <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:20px;"><span style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#F87171;background:rgba(248,113,113,.16);padding:4px 10px;border-radius:7px;"><span class="pdot" style="background:#F87171;"></span><span data-bind="bug.statusLabel">Open</span></span><span style="font-size:11.5px;font-weight:600;color:#F87171;background:rgba(248,113,113,.16);padding:4px 10px;border-radius:7px;"><span data-bind="bug.priorityLabel">High</span> priority</span></div>
+      <div style="background:var(--surface-2);border-radius:12px;overflow:hidden;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;border-bottom:1px solid var(--divider);"><span style="font-size:13px;color:var(--muted);">Assignee</span><span style="display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;color:var(--fg);"><span class="ava is-green" data-mod="is-:bug.assigneeTint" style="width:20px;height:20px;" data-bind="bug.assigneeInitials">EL</span><span data-bind="bug.assignee">Elon</span></span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;border-bottom:1px solid var(--divider);"><span style="font-size:13px;color:var(--muted);">Mission</span><span style="font-size:13.5px;font-weight:500;color:var(--fg);" data-bind="bug.mission">Space Rising · /007</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;"><span style="font-size:13px;color:var(--muted);">Opened</span><span style="font-family:var(--font-mono);font-size:12.5px;color:var(--fg);" data-bind="bug.opened">Jun 17 · 11:15 PM</span></div>
+      </div>
+      <div class="eyebrow" style="margin-bottom:9px;">Description</div>
+      <p style="font-size:14px;line-height:1.6;color:var(--fg);margin:0 0 18px;" data-bind="bug.description">Repo space-rising isn't found in the task-runner.sh resolver. Add a case in resolve_repo_path() or create projects/space-rising/.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><span class="eyebrow">Checklist · <span data-bind="bug.doneCount">1</span> of <span data-bind="bug.stepCount">3</span></span><span style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--accent);" data-action="addChecklistItem" data-arg="bug.id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add</span></div>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:20px;">
+        <!-- ONE row per checklist item; is-:item.done → done | (open) -->
+        <div class="bchk is-done" style="display:flex;align-items:flex-start;gap:9px;" data-each="bug.checklist" data-mod="is-:item.done" data-action="toggleChecklistItem" data-arg="item.id"><span class="bchk-mark"></span><span class="bchk-label" style="flex:1;font-size:13px;line-height:1.4;" data-bind="item.label">Reproduce on docs-only project</span></div>
+      </div>
+      <div class="eyebrow" style="margin-bottom:10px;">Attachments · <span data-bind="attachments.count">2</span></div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <!-- ONE card per attachment -->
+        <div style="flex:1;border:1px solid var(--hair);border-radius:11px;overflow:hidden;background:var(--surface);" data-each="attachments" data-action="openAttachment" data-arg="attachment.id"><div style="height:60px;background:linear-gradient(135deg,#2a2030,#15161a);display:flex;align-items:center;justify-content:center;"><img data-bind="attachment.thumbUrl" alt="" style="width:100%;height:100%;object-fit:cover;display:none;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></div><div style="display:flex;align-items:center;gap:6px;padding:7px 9px;"><span style="flex:1;min-width:0;font-size:11.5px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="attachment.name">resolver-trace.png</span><button style="height:24px;padding:0 8px;border-radius:7px;border:none;background:var(--accent-weak);color:var(--accent);font-size:10.5px;font-weight:600;font-family:var(--font-sans);" data-action="review" data-arg="attachment.id">Review</button></div></div>
+      </div>
+      <button style="width:100%;height:42px;border-radius:11px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-sans);" data-action="changeStatus" data-arg="bug.id">Change status</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE A · bug list (attachments + live agent) ============ -->
+<div data-cv6 data-theme="dark" data-screen="tracker-mobile" data-screen-label="Tracker · List" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl" data-bind="activeTracker.name">CV6 Bugs</div><div class="msub"><span data-bind="activeTracker.scope">Corner CV6</span> · <span data-bind="activeTracker.openCount">12</span> open</div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <div class="scrbody" data-state="ready" style="padding:14px 16px 0;display:flex;flex-direction:column;gap:12px;">
+    <!-- featured bug with attachments + live-agent strip (bug.agentWorking) -->
+    <div style="border:1px solid var(--accent-weak);background:var(--surface);border-radius:15px;overflow:hidden;" data-action="openBug" data-arg="featuredBug.id">
+      <div style="padding:13px 14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="bchip is-open" data-mod="is-:featuredBug.status" data-bind="featuredBug.statusLabel">Open</span><span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--fg);"><span class="pdot is-high" data-mod="is-:featuredBug.priority"></span><span data-bind="featuredBug.priorityLabel">High</span></span><span class="mono" style="margin-left:auto;font-size:11px;color:var(--faint);" data-bind="featuredBug.id">CV6-142</span></div>
+        <div style="font-size:14.5px;font-weight:600;color:var(--fg);line-height:1.4;" data-bind="featuredBug.title">Repo resolver drops docs-only projects</div>
+        <div style="display:flex;gap:8px;margin-top:11px;">
+          <!-- ONE card per attachment -->
+          <div style="flex:1;border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface);" data-each="featuredBug.attachments" data-action="openAttachment" data-arg="attachment.id"><div style="height:54px;background:linear-gradient(135deg,#2a2030,#15161a);display:flex;align-items:center;justify-content:center;"><img data-bind="attachment.thumbUrl" alt="" style="width:100%;height:100%;object-fit:cover;display:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></div><div style="display:flex;align-items:center;gap:5px;padding:7px 8px;"><span style="flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="attachment.name">resolver-trace.png</span><button style="height:24px;padding:0 8px;border-radius:7px;border:none;background:var(--accent-weak);color:var(--accent);font-size:10px;font-weight:600;font-family:var(--font-sans);" data-action="openAttachment" data-arg="attachment.id">View</button></div></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--divider);background:var(--accent-weak);"><div style="position:relative;flex:none;"><div class="av is-green" data-mod="is-:featuredBug.assigneeTint" style="width:24px;height:24px;font-size:9px;" data-bind="featuredBug.assigneeInitials">EL</div><span style="position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;background:var(--success);box-shadow:var(--glow-online);border:2px solid var(--ground);border-radius:50%;"></span></div><span style="flex:1;font-size:12px;color:var(--fg);"><strong data-bind="featuredBug.assignee">Elon</strong> is working this · step <span data-bind="featuredBug.agentStep">2</span> of <span data-bind="featuredBug.agentTotal">3</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1.05s linear infinite;"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg></div>
+    </div>
+    <!-- ONE compact card per other bug -->
+    <div style="border:1px solid var(--hair);background:var(--surface);border-radius:15px;padding:13px 14px;" data-each="bugs" data-action="openBug" data-arg="bug.id">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span class="bchip is-progress" data-mod="is-:bug.status" data-bind="bug.statusLabel">In progress</span><span style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--fg);"><span class="pdot is-med" data-mod="is-:bug.priority"></span><span data-bind="bug.priorityLabel">Med</span></span><span class="mono" style="margin-left:auto;font-size:11px;color:var(--faint);" data-bind="bug.id">CV6-138</span></div>
+      <div style="font-size:14.5px;font-weight:600;color:var(--fg);line-height:1.4;" data-bind="bug.title">Catch Up cards crowd All Rooms</div>
+      <div style="display:flex;align-items:center;gap:7px;margin-top:9px;"><span class="ava is-lime" data-mod="is-:bug.assigneeTint" style="width:20px;height:20px;" data-bind="bug.assigneeInitials">RX</span><span style="font-size:12px;color:var(--muted);"><span data-bind="bug.assignee">Rex</span> · <span data-bind="bug.updated">5h</span></span></div>
+    </div>
+  </div>
+  <button style="position:absolute;right:18px;bottom:26px;width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 32px -8px rgba(0,0,0,.6);" data-action="newBug" data-arg="activeTracker.id"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+
+<!-- ============ MOBILE B · bug detail + assign to agent ============ -->
+<div data-cv6 data-theme="dark" data-screen="tracker-mobile" data-screen-label="Tracker · Detail" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr"><div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mhtitle"><div class="mttl" data-bind="bug.id">CV6-142</div><div class="msub"><span data-bind="activeTracker.name">CV6 Bugs</span> · Corner</div></div></div>
+  <div class="scrbody" data-state="ready" style="padding:14px 16px 0;">
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px;"><span style="display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:#F87171;background:rgba(248,113,113,.16);padding:4px 10px;border-radius:7px;"><span class="pdot" style="background:#F87171;"></span><span data-bind="bug.statusLabel">Open</span></span><span style="font-size:11.5px;font-weight:600;color:#F87171;background:rgba(248,113,113,.16);padding:4px 10px;border-radius:7px;"><span data-bind="bug.priorityLabel">High</span> priority</span></div>
+    <h2 style="font-size:19px;line-height:1.3;font-weight:700;color:var(--fg);margin:0 0 14px;" data-bind="bug.title">Repo resolver drops docs-only projects</h2>
+    <!-- assign to agent -->
+    <div style="border:1px solid var(--accent-weak);background:linear-gradient(180deg,var(--accent-weak),transparent);border-radius:15px;padding:14px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:11px;"><div class="av is-green" data-mod="is-:bug.assigneeTint" style="width:40px;height:40px;font-size:14px;" data-bind="bug.assigneeInitials">EL</div><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);">Assign to agent</div><div style="font-size:11.5px;color:var(--muted);line-height:1.4;">Works the checklist autonomously, asks when it needs you</div></div></div>
+      <button style="width:100%;height:44px;margin-top:12px;border-radius:11px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;" data-action="assignAgent" data-arg="bug.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5v9"/><path d="M6.8 6.8a8 8 0 1 0 10.4 0"/></svg>Assign <span data-bind="bug.assignee">Elon</span></button>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--hair);border-radius:12px;overflow:hidden;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 13px;height:44px;border-bottom:1px solid var(--divider);"><span style="font-size:12.5px;color:var(--muted);">Mission</span><span style="font-size:13px;font-weight:500;color:var(--fg);" data-bind="bug.mission">Space Rising · /007</span></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 13px;height:44px;"><span style="font-size:12.5px;color:var(--muted);">Opened</span><span class="mono" style="font-size:12px;color:var(--fg);" data-bind="bug.opened">Jun 17 · 11:15 PM</span></div>
+    </div>
+    <div class="eyebrow" style="margin-bottom:10px;">Attachments · <span data-bind="attachments.count">2</span></div>
+    <div style="display:flex;gap:10px;">
+      <!-- ONE card per attachment -->
+      <div style="flex:1;border:1px solid var(--hair);border-radius:10px;overflow:hidden;background:var(--surface);" data-each="attachments" data-action="openAttachment" data-arg="attachment.id"><div style="height:54px;background:linear-gradient(135deg,#2a2030,#15161a);display:flex;align-items:center;justify-content:center;"><img data-bind="attachment.thumbUrl" alt="" style="width:100%;height:100%;object-fit:cover;display:none;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg></div><div style="display:flex;align-items:center;gap:5px;padding:7px 8px;"><span style="flex:1;min-width:0;font-size:11px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="attachment.name">resolver-trace.png</span><button style="height:24px;padding:0 8px;border-radius:7px;border:none;background:var(--accent-weak);color:var(--accent);font-size:10px;font-weight:600;font-family:var(--font-sans);" data-action="openAttachment" data-arg="attachment.id">View</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE C · agent working (live) ============ -->
+<div data-cv6 data-theme="dark" data-screen="tracker-mobile" data-screen-label="Tracker · Agent live" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div style="display:flex;align-items:center;gap:11px;padding:12px 16px;border-bottom:1px solid var(--divider);background:var(--accent-weak);"><div style="position:relative;flex:none;"><div class="av is-green" data-mod="is-:agent.tint" style="width:38px;height:38px;font-size:13px;" data-bind="agent.initials">EL</div><span style="position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;background:var(--success);box-shadow:var(--glow-online);border:2px solid var(--ground);border-radius:50%;"></span></div><div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:var(--fg);"><span data-bind="agent.name">Elon</span> is on it</div><div style="font-size:11.5px;color:var(--accent);font-weight:500;">Working <span data-bind="bug.id">CV6-142</span> · step <span data-bind="agent.step">2</span> of <span data-bind="agent.total">3</span></div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1.05s linear infinite;"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg></div>
+  <div class="scrbody" data-state="ready" style="padding:14px 16px 0;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;"><div style="flex:1;height:7px;border-radius:4px;background:var(--surface-2);overflow:hidden;"><div style="width:58%;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#6366F1);" data-mod="width:agent.pct"></div></div><span class="mono" style="font-size:11px;color:var(--muted);" data-bind="agent.pctLabel">58%</span></div>
+    <div class="eyebrow" style="margin-bottom:11px;">Master loop · verifies each step</div>
+    <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:18px;">
+      <!-- ONE row per checklist item; is-:item.state → done | active | pending -->
+      <div class="bchk is-done" style="display:flex;align-items:flex-start;gap:10px;" data-each="agent.checklist" data-mod="is-:item.state">
+        <span class="bchk-mark" style="margin-top:1px;"></span>
+        <div style="flex:1;"><div class="bchk-label" style="font-size:13.5px;" data-bind="item.label">Reproduce on docs-only project</div><div class="bchk-detail" style="font-size:12px;color:var(--muted);margin-top:3px;line-height:1.45;" data-bind="item.detail"></div><div class="bchk-log mono" style="display:none;font-size:10.5px;color:var(--faint);background:var(--surface-2);border-radius:7px;padding:7px 9px;margin-top:7px;" data-bind="item.log"></div></div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:10px;padding:0 16px;">
+    <button style="flex:1;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;" data-action="pauseAgent" data-arg="bug.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pause</button>
+    <button style="flex:1;height:48px;border-radius:13px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;" data-action="nav" data-target="command"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4H4v16h3M17 4h3v16h-3"/></svg>Open in Command</button>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

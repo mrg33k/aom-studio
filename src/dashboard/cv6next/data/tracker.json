@@ -1,0 +1,62 @@
+{
+  "screen": "tracker",
+  "title": "Tracker tool",
+  "source": "ui_kits/tools/tracker.html",
+  "fragment": "wired/tools/tracker.html",
+  "stylesheet": "wired/cv6.css",
+  "screens": {
+    "desktop": { "selector": "[data-cv6][data-screen=\"tracker-desktop\"]", "regions": "tracker switcher · bug table · bug detail" },
+    "mobile": {
+      "selector": "[data-cv6][data-screen=\"tracker-mobile\"]",
+      "note": "three states, each its own mountable node",
+      "states": [
+        { "label": "Tracker · List", "what": "bug list with attachments + live-agent strip" },
+        { "label": "Tracker · Detail", "what": "bug detail + assign-to-agent" },
+        { "label": "Tracker · Agent live", "what": "agent working the checklist live (Command extension)" }
+      ]
+    }
+  },
+
+  "data": {
+    "projectTrackers": { "list": true, "item": "tracker", "shape": { "id": "string", "name": "string", "scope": "string", "count": "int", "dot": "enum: success|faint → is-:tracker.dot on .pdot" } },
+    "missionTrackers": { "list": true, "item": "tracker", "note": "same tracker shape" },
+    "activeTracker": { "id": "string", "name": "string", "scope": "string", "openCount": "int" },
+    "bugs": { "list": true, "item": "bug", "shape": {
+      "id": "string (CV6-142)",
+      "title": "string",
+      "status": "enum: open|openlow|progress|done → is-:bug.status on .bchip",
+      "statusLabel": "string (Open|In progress|…)",
+      "priority": "enum: high|med|low → is-:bug.priority on .pdot",
+      "priorityLabel": "string (High|Med|Low)",
+      "assignee": "string", "assigneeInitials": "string",
+      "assigneeTint": "enum: green|lime|amber|violet → is-:bug.assigneeTint on .ava",
+      "updated": "string (mono)",
+      "mission": "string", "opened": "string (mono)", "description": "string",
+      "doneCount": "int", "stepCount": "int",
+      "checklist": { "list": true, "item": "item", "shape": { "id": "string", "label": "string", "done": "enum: done|(open) → is-:item.done on .bchk" } }
+    } },
+    "featuredBug": { "note": "mobile List · the bug an agent is actively working", "shape": "same as bug + agentStep:int, agentTotal:int, attachments[]" },
+    "bug": { "note": "the open bug in desktop detail + mobile Detail — same shape as bugs.item" },
+    "attachments": { "count": "int", "list": true, "item": "attachment", "shape": { "id": "string", "name": "string", "thumbUrl": "string (img src; placeholder until set)" } },
+    "agent": { "note": "mobile Agent-live", "name": "string", "initials": "string", "tint": "enum → is-:agent.tint on .av", "step": "int", "total": "int", "pct": "int (0-100 → width:agent.pct)", "pctLabel": "string",
+      "checklist": { "list": true, "item": "item", "shape": { "state": "enum: done|active|pending → is-:item.state on .bchk (active shows detail + mono log)", "label": "string", "detail": "string", "log": "string (mono)" } } }
+  },
+
+  "actions": [
+    { "name": "nav", "target": "home|chat|organize|review|support|tracker|command|livescribe|back" },
+    { "name": "openCommandK" }, { "name": "openProfile" }, { "name": "search" }, { "name": "openNav" },
+    { "name": "openTracker", "arg": "tracker.id", "from": "switcher rows" },
+    { "name": "openBug", "arg": "bug.id | featuredBug.id", "from": "table rows / mobile cards" },
+    { "name": "newBug", "arg": "activeTracker.id", "from": "New bug / FAB" },
+    { "name": "addChecklistItem", "arg": "bug.id" },
+    { "name": "toggleChecklistItem", "arg": "item.id" },
+    { "name": "openAttachment", "arg": "attachment.id" },
+    { "name": "review", "arg": "attachment.id" },
+    { "name": "changeStatus", "arg": "bug.id" },
+    { "name": "assignAgent", "arg": "bug.id", "from": "mobile Detail · Assign <agent>" },
+    { "name": "pauseAgent", "arg": "bug.id", "from": "mobile Agent-live" }
+  ],
+
+  "states": { "ready": { "region": "[data-state=\"ready\"]" }, "empty/loading/error": { "in": "wired/_base/states.html" } },
+  "modifierRule": "every data-mod is is-:path → toggle is-<value> on a base class; no inline color default. Exception: width:agent.pct (inline)."
+}
