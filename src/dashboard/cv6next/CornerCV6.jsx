@@ -339,6 +339,7 @@ const TRACKER_ALIASES = {
 };
 function Tracker({ worldId, onNav, onOpenNav }) {
   const { state, data, switchTracker, createTracker, createBug, canCreate } = useTrackerBugs(worldId);
+  const isDesktop = useIsDesktop();
   // sheet: null | 'switch' | 'new' (create-tracker) | 'detail' (bug preview) | 'newbug' (new-issue)
   const [sheet, setSheet] = useState(null);
   const [selectedBug, setSelectedBug] = useState(null);
@@ -349,6 +350,7 @@ function Tracker({ worldId, onNav, onOpenNav }) {
   const bugPriorityRef = useRef('high');  // the new-issue form is uncontrolled
   const bugAssigneeRef = useRef('');
 
+  const desktopHtml = useMemo(() => composeScreen(trackerRaw, { mobile: false, pick: 0 }), []);
   const listHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 1 }), []);
   const switchHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 2 }), []);
   const newHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 3 }), []);
@@ -456,6 +458,33 @@ function Tracker({ worldId, onNav, onOpenNav }) {
       setSheet(null);
     },
   }), [switchTracker, createTracker]);
+
+  // Desktop: the real 3-region layout (switcher rail + bug table + bug detail), same data.
+  if (isDesktop) {
+    const dbug = selectedBug || (data.bugs || [])[0] || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '', description: '', doneCount: '', stepCount: '', checklist: [] };
+    const ddata = { ...data, bug: dbug };
+    const dActions = {
+      nav: (t) => onNav(t === 'back' ? 'home' : t), openCommandK: () => {}, openProfile: () => onOpenNav?.(),
+      openTracker: (id) => switchTracker(id),
+      openBug: (id) => { const b = (data.bugs || []).find((x) => String(x.id) === String(id)); if (b) setSelectedBug(b); },
+      newBug: () => openNewBug(),
+      // status change + per-bug checklist have no honest store yet -> inert (not faked).
+      changeStatus: () => {}, addChecklistItem: () => {}, toggleChecklistItem: () => {},
+      openAttachment: () => {}, review: () => {},
+    };
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <TemplateScreen html={desktopHtml} data={ddata} actions={dActions} state={state}
+          aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
+        {sheet === 'newbug' && bugFormSeed && (
+          <div ref={bugFormRef} style={{ position: 'absolute', inset: 0, zIndex: 10, maxWidth: 430, margin: '0 auto' }}>
+            <TemplateScreen html={newBugHtml} data={bugFormSeed} actions={newBugActions} state="ready"
+              aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
