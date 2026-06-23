@@ -663,3 +663,13 @@
 [data-cv6] .staterow { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .12s ease; }
 [data-cv6] .staterow:hover { background:var(--surface-2); }
 [data-cv6] .staterow.is-selected { background:var(--accent-weak); box-shadow:0 0 0 2px var(--accent) inset; }
+
+/* ============================================================
+   PAGE TRANSITION  (R-CDS6 polish)
+   A slight fade + rise when the screen swaps between tools. The shared desktop
+   bar sits outside the swap wrapper, so only the body animates -- the nav stays
+   put while the page changes under it. Keyed on viewKey in the shell.
+   ============================================================ */
+@keyframes cv6ScreenIn { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+[data-cv6] .cv6-screenswap { animation:cv6ScreenIn .2s cubic-bezier(.22,.61,.36,1) both; }
+@media (prefers-reduced-motion: reduce) { [data-cv6] .cv6-screenswap { animation:none; } }
