@@ -46,6 +46,13 @@ function composeScreen(raw, { mobile = false, pick = 0 } = {}) {
   // append shared states next to this screen's ready region
   const ready = screen.querySelector('[data-state="ready"]');
   const host = ready?.parentNode || screen;
+  // The design body is overflow:hidden (fine for a fixed mockup, wrong for the live app
+  // with many rooms). On mobile make the scroll body actually scroll, and pad the bottom
+  // so the last row clears the home indicator. Desktop columns scroll on their own.
+  if (mobile && ready) {
+    const base = ready.getAttribute('style') || '';
+    ready.setAttribute('style', `${base};overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(20px, env(safe-area-inset-bottom, 0px))`);
+  }
   if (ready) {
     const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
     sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => {
