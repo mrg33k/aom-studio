@@ -109,9 +109,13 @@ const HOME_ALIASES = {
   assignableAgents: 'agentPick',
 };
 
-function Home({ onNav, onOpenRoom, onOpenNav }) {
+function Home({ onNav, onOpenRoom, onOpenNav, chatPending }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
+  // Chat tapped from the menu with no prior conversation -> open the most recent room.
+  useEffect(() => {
+    if (chatPending && (data.agents || []).length) onOpenRoom?.(data.agents[0], worldId);
+  }, [chatPending, data.agents, worldId, onOpenRoom]);
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
   // Mobile "project opened" state (Home state B): tap a project -> its missions.
@@ -423,7 +427,8 @@ function Tracker({ worldId, onNav, onOpenNav }) {
 function NavDrawer({ open, current, onPick, onClose }) {
   if (!open) return null;
   const tools = [
-    { k: 'home', label: 'Home' }, { k: 'support', label: 'Support' },
+    { k: 'home', label: 'Home' }, { k: 'chat', label: 'Chat' },
+    { k: 'support', label: 'Support' },
     { k: 'command', label: 'Command' }, { k: 'tracker', label: 'Tracker' },
   ];
   return (
@@ -464,12 +469,22 @@ export default function CornerCV6() {
   const worldId = useWorldId();
   const [view, setView] = useState('home'); // 'home' | 'support' | 'command' | 'tracker'
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
+  const [lastRoom, setLastRoom] = useState(null);      // last conversation opened (for the Chat menu)
+  const [chatPending, setChatPending] = useState(false); // Chat tapped with no history -> open latest on Home
   const [navOpen, setNavOpen] = useState(false);
   const onNav = useCallback((target) => {
     if (['home', 'support', 'command', 'tracker'].includes(target)) { setOpenedRoom(null); setView(target); }
-    else if (target === 'chat') { setOpenedRoom(null); setView('home'); } // rooms live on Home
-  }, []);
-  const onOpenRoom = useCallback((room, wid) => setOpenedRoom({ room, worldId: wid || worldId }), [worldId]);
+    // Chat from the menu reopens your latest conversation; if you have not opened one yet,
+    // land on Home and auto-open the most recent room there.
+    else if (target === 'chat') {
+      if (lastRoom) setOpenedRoom(lastRoom);
+      else { setOpenedRoom(null); setView('home'); setChatPending(true); }
+    }
+  }, [lastRoom]);
+  const onOpenRoom = useCallback((room, wid) => {
+    const r = { room, worldId: wid || worldId };
+    setOpenedRoom(r); setLastRoom(r); setChatPending(false);
+  }, [worldId]);
   const onOpenNav = useCallback(() => setNavOpen(true), []);
   const closeNav = useCallback(() => setNavOpen(false), []);
   const goHome = useCallback(() => { setOpenedRoom(null); setView('home'); }, []);
@@ -479,7 +494,7 @@ export default function CornerCV6() {
   else if (view === 'support') { body = <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'home'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} chatPending={chatPending} />; viewKey = 'home'; }
 
   const current = openedRoom ? 'chat' : view;
   return (
