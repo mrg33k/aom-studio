@@ -101,7 +101,7 @@
         <div class="subhdr">Agents · <span data-bind="agents.count">11</span></div>
         <div style="margin-bottom:16px;">
           <!-- ONE template row per agent -->
-          <div class="room knav-sel" style="background:var(--accent-weak);" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" style="font-weight:600;" data-bind="room.name">Elon</span><span style="font-size:11px;color:var(--accent);font-weight:600;" data-bind="room.statusText">on step 3</span><span class="kbd" style="margin-left:8px;">→</span></div>
+          <div class="room" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" style="font-weight:600;" data-bind="room.name">Elon</span><span style="font-size:11px;color:var(--accent);font-weight:600;" data-bind="room.statusText">on step 3</span><span class="kbd" style="margin-left:8px;">→</span></div>
         </div>
         <div class="subhdr">Projects · <span data-bind="projects.count">84</span></div>
         <!-- ONE template row per project -->

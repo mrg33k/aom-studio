@@ -272,7 +272,13 @@
 [data-cv6] .sdot.is-done { background:var(--accent); }
 
 /* project / room folder tint — class drives the SVG stroke */
-[data-cv6] .folder { stroke:var(--muted); }
+[data-cv6] .folder { stroke:var(--muted); flex:none; }
+/* Generic base for rooms-rail rows. The templates scope .room/.rn per data-screen, but
+   the React surfaces (ChatDesktop/SupportDesktop/Search) carry no data-screen, so without
+   a generic rule .room had no flex (folder/icon stacked above the name) and .rn no flex/
+   ellipsis (name + status jammed, long names wrapped). Scoped rules still override these. */
+[data-cv6] .room { display:flex; align-items:center; gap:11px; padding:9px 12px; border-radius:10px; min-width:0; }
+[data-cv6] .rn { flex:1; min-width:0; font-size:14px; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 [data-cv6] .folder.is-violet { stroke:var(--violet-400); }
 [data-cv6] .folder.is-accent { stroke:var(--accent); }
 [data-cv6] .folder.is-pink   { stroke:var(--pink-400); }
