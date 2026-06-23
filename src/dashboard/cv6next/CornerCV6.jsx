@@ -10,6 +10,7 @@ import { useMemo, useState, useEffect, useCallback, useRef, Component } from 're
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import ChatGoalThread from './ChatGoalThread.jsx';
+import ChatDesktop from './ChatDesktop.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -596,6 +597,7 @@ class ScreenBoundary extends Component {
 
 export default function CornerCV6() {
   const worldId = useWorldId();
+  const isDesktop = useIsDesktop();
   const [view, setView] = useState('home'); // 'home' | 'chatlist' | 'support' | 'command' | 'tracker'
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
@@ -628,7 +630,15 @@ export default function CornerCV6() {
   const goHome = useCallback(() => { setHistory([]); setOpenedRoom(null); setView('home'); }, []);
 
   let body; let viewKey;
-  if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
+  // Desktop Chat is the real 3-column layout (rooms rail + thread + drawer), with its own
+  // room selection. Both the conversations list and an opened room route to it on desktop.
+  if (isDesktop && (view === 'chatlist' || openedRoom)) {
+    body = <ChatDesktop worldId={worldId}
+      initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText } : null}
+      onNav={onNav} onOpenNav={onOpenNav} />;
+    viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
+  }
+  else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
   else if (view === 'support') { body = <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }

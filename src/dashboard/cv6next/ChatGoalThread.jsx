@@ -199,11 +199,31 @@ function QuestionBlock({ block }) {
 const SendCtx = React.createContext(() => {});
 function useThreadSend() { return React.useContext(SendCtx); }
 
-export default function ChatGoalThread({ room, goal, blocks, onBack, onOpenNav, onSend }) {
+// The thread itself (goal header + steps with their results), shared by the mobile screen
+// and the desktop 3-column layout. Wrap in a SendCtx provider so taps post real messages.
+export function GoalThreadBody({ goal, blocks }) {
   const steps = useMemo(() => buildSteps(blocks), [blocks]);
+  const headTitle = goal?.title || 'Working thread';
+  return (
+    <>
+      <div className="thread-head" style={{ marginBottom: 18 }}>
+        <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></svg>
+        </span>
+        <span className="thread-title" style={{ fontSize: 15 }}><span style={{ color: 'var(--muted)', fontWeight: 600 }}>Goal:</span> {headTitle}</span>
+        {goal?.total ? <span className="mono" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)' }}>{goal.doneCount}/{goal.total}</span> : null}
+      </div>
+      {steps.map((s) => <StepRow key={s.index} step={s} goal={goal} />)}
+      <div style={{ height: 8 }} />
+    </>
+  );
+}
+
+export { SendCtx };
+
+export default function ChatGoalThread({ room, goal, blocks, onBack, onOpenNav, onSend }) {
   const [draft, setDraft] = useState('');
   const submit = () => { const t = draft.trim(); if (!t) return; onSend?.(t); setDraft(''); };
-  const headTitle = goal?.title || 'Working thread';
   return (
     <SendCtx.Provider value={onSend || (() => {})}>
       <div data-cv6 data-theme="dark" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: '#05080b', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -222,15 +242,7 @@ export default function ChatGoalThread({ room, goal, blocks, onBack, onOpenNav, 
           </div>
         </div>
         <div className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 16px 0' }}>
-          <div className="thread-head" style={{ marginBottom: 18 }}>
-            <span style={{ width: 30, height: 30, borderRadius: 9, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></svg>
-            </span>
-            <span className="thread-title" style={{ fontSize: 15 }}><span style={{ color: 'var(--muted)', fontWeight: 600 }}>Goal:</span> {headTitle}</span>
-            {goal?.total ? <span className="mono" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)' }}>{goal.doneCount}/{goal.total}</span> : null}
-          </div>
-          {steps.map((s) => <StepRow key={s.index} step={s} goal={goal} />)}
-          <div style={{ height: 8 }} />
+          <GoalThreadBody goal={goal} blocks={blocks} />
         </div>
         <div className="mcomposer">
           <button onClick={submit} style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', boxShadow: 'var(--ring-accent)' }}>
