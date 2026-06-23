@@ -82,6 +82,12 @@ export function useRoomThread(worldId, room) {
         const msgs = raw.map((m) => {
           const isUser = m.role === 'user' || !!m.user_name;
           const name = isUser ? (m.user_name || 'You') : cap(m.agent || room.name);
+          // A file an agent made shows in the thread (rule: files live in the room).
+          // It arrives either as a real attachment (attachment_url) or as an
+          // "Attached file: <name>" note. Either way we render it as a file card.
+          const fileMatch = /^\s*attached file:\s*(.+?)\s*$/i.exec(m.text || '');
+          const fileName = m.attachment_name || (fileMatch ? fileMatch[1] : '');
+          const isFile = !!m.attachment_url || !!fileMatch;
           return {
             agentInitials: initials(name),
             agentName: name,
@@ -90,8 +96,13 @@ export function useRoomThread(worldId, room) {
             text: m.text || '',
             time: hhmm(m.timestamp),
             ts: m.timestamp || null,
+            isFile,
+            fileName,
+            attachmentUrl: m.attachment_url || '',
+            fileMime: m.file_mime_type || '',
+            fileSize: m.file_size || 0,
           };
-        }).filter((m) => m.text);
+        }).filter((m) => m.text || m.isFile);
         setMessages(msgs);
         setStatus(msgs.length ? 'ready' : 'empty');
       })

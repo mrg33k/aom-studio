@@ -217,14 +217,17 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
       if (!proj) return;
       onOpenRoom?.({ id: proj.slug || proj.id, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: proj.status || 'ready', statusText: 'project chat' }, worldId);
     },
-    // Open a mission's own conversation (its real thread, scoped by mission_slug).
+    // Open a mission's own conversation. Messages tag mission_slug in
+    // "<project>:<mission>" form (e.g. space-rising:deal-bank), so the room must
+    // query that prefixed key, not the bare folder slug, or it reads empty.
     openMission: (id) => {
       const proj = openedProject; if (!proj) return;
       const slug = String(id || '').replace(/^\//, '');
       const list = missionsByProject[proj.slug] || [];
       const m = list.find((x) => x.slug === slug);
       const name = m?.name || slug;
-      onOpenRoom?.({ id: slug, name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: slug, projectSlug: proj.slug, status: m?.status || 'ready', statusText: proj.name }, worldId);
+      const missionSlug = slug.includes(':') ? slug : `${proj.slug}:${slug}`;
+      onOpenRoom?.({ id: slug, name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug: proj.slug, status: m?.status || 'ready', statusText: proj.name }, worldId);
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
