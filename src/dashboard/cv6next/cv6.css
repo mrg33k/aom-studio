@@ -250,6 +250,51 @@
 [data-cv6] .sk-row { display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--divider); }
 
 /* ============================================================
+   data-mod TARGETS — per-item variation is a class swap, never inline.
+   The engine toggles is-<value> on the element; these rules own the look.
+   Reuse the base class + add is-<value> to a screen's markup. No inline
+   color/stroke defaults on anything that varies by data.
+   ============================================================ */
+
+/* status dot — reuse .sdot (frame.css has is-live/is-blocked/is-ready) + working */
+[data-cv6] .sdot.is-working { background:var(--status-working); }
+[data-cv6] .sdot.is-done { background:var(--accent); }
+
+/* project / room folder tint — class drives the SVG stroke */
+[data-cv6] .folder { stroke:var(--muted); }
+[data-cv6] .folder.is-violet { stroke:var(--violet-400); }
+[data-cv6] .folder.is-accent { stroke:var(--accent); }
+[data-cv6] .folder.is-pink   { stroke:var(--pink-400); }
+[data-cv6] .folder.is-teal   { stroke:var(--teal-400); }
+[data-cv6] .folder.is-lime   { stroke:var(--lime-400); }
+[data-cv6] .folder.is-amber  { stroke:var(--amber-400); }
+
+/* catch-up source glyph — tile bg + icon color (inner svg uses stroke=currentColor) */
+[data-cv6] .glyph { display:flex; align-items:center; justify-content:center; flex:none; border-radius:9px; background:var(--chip); color:var(--muted); }
+[data-cv6] .glyph.is-email   { background:rgba(244,114,182,.16); color:var(--pink-400); }
+[data-cv6] .glyph.is-agent   { background:var(--accent-weak); color:var(--accent); }
+[data-cv6] .glyph.is-review  { background:rgba(139,124,246,.18); color:var(--violet-400); }
+[data-cv6] .glyph.is-support { background:var(--success-weak); color:var(--success); }
+[data-cv6] .glyph.is-tracker { background:var(--accent-weak); color:var(--accent); }
+
+/* catch-up kind chip */
+[data-cv6] .tag-pill { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6] .tag-pill.is-email   { color:var(--pink-400);   background:rgba(244,114,182,.16); }
+[data-cv6] .tag-pill.is-agent   { color:var(--accent);     background:var(--accent-weak); }
+[data-cv6] .tag-pill.is-review  { color:var(--violet-400); background:rgba(139,124,246,.18); }
+[data-cv6] .tag-pill.is-support { color:var(--success);    background:var(--success-weak); }
+[data-cv6] .tag-pill.is-tracker { color:var(--accent);     background:var(--accent-weak); }
+
+/* mission status pill (.stp) */
+[data-cv6] .stp { font-size:10px; font-weight:700; padding:3px 8px; border-radius:7px; flex:none; background:var(--chip); color:var(--muted); }
+[data-cv6] .stp.is-live  { color:var(--success); background:var(--success-weak); }
+[data-cv6] .stp.is-ready { color:var(--muted);   background:var(--chip); }
+[data-cv6] .stp.is-done  { color:var(--accent);  background:var(--accent-weak); }
+
+/* checklist row state (goal column) */
+[data-cv6] .chkrow.is-done .chk-label { text-decoration:line-through; color:var(--muted); }
+
+/* ============================================================
    PER-SCREEN STYLES — each tool's named classes, namespaced under its
    [data-screen] so identical class names never collide across screens.
    Inline styles in the fragments are the LOCKED visuals (tokens only) and

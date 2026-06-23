@@ -15,7 +15,7 @@
       "shape": {
         "id": "string",
         "name": "string",
-        "status": "enum: live | working | blocked | ready  → data-mod dot:room.status swaps the .dot color",
+        "status": "enum: live | working | blocked | ready  → data-mod=\"is-:room.status\" on .sdot",
         "statusText": "string (e.g. 'on step 3', 'drafting', 'needs you')",
         "initials": "string (used in the conversation header)"
       }
@@ -27,7 +27,7 @@
       "shape": {
         "id": "string",
         "name": "string",
-        "tint": "enum: violet | accent | pink | teal | lime | amber → data-mod stroke:room.tint on the folder glyph",
+        "tint": "enum: violet | accent | pink | teal | lime | amber → data-mod=\"is-:room.tint\" on .folder (SVG stroke)",
         "count": "int (missions/items in the project)"
       }
     },
@@ -36,7 +36,7 @@
       "position": "int (1-based index of the focused card)",
       "current": {
         "id": "string",
-        "kind": "enum: email | agent | review | support | tracker → data-mod glyph:.. and tag:..",
+        "kind": "enum: email | agent | review | support | tracker → data-mod=\"is-:..kind\" on .glyph (tile+icon) and .tag-pill (chip)",
         "kindLabel": "string (UPPERCASE chip text)",
         "from": "string",
         "subject": "string",
@@ -53,7 +53,7 @@
     "goal": {
       "title": "string", "step": "int", "total": "int", "pct": "int (0-100, data-mod width:goal.pct on the progress fill)",
       "summary": { "list": true, "item": "summary", "shape": { "text": "string" } },
-      "checklist": { "list": true, "item": "step", "shape": { "label": "string", "state": "enum: done | working | pending → data-mod state:step.state" } }
+      "checklist": { "list": true, "item": "step", "shape": { "label": "string", "state": "enum: done | working | pending → data-mod=\"is-:step.state\" on .chkrow" } }
     }
   },
 
@@ -86,10 +86,11 @@
   },
 
   "modifiers": {
-    "dot:room.status": "live→var(--success)+glow · working→var(--status-working) · blocked→var(--warn) · ready→var(--faint)",
-    "stroke:room.tint": "sets the folder SVG stroke to the project tint var",
-    "glyph:..": "swaps the catch-up source glyph + tint by kind",
-    "width:goal.pct": "sets the progress-fill width %",
-    "state:step.state": "checklist row: done (struck) / working (live ring) / pending (empty ring)"
-  }
+    "is-:room.status": ".sdot — live | working | blocked | ready | done",
+    "is-:room.tint": ".folder — violet | accent | pink | teal | lime | amber (SVG stroke)",
+    "is-:catchUp.*.kind": ".glyph + .tag-pill — email | agent | review | support | tracker (host also swaps the glyph icon per kind)",
+    "is-:step.state": ".chkrow — done | working | pending",
+    "width:goal.pct": "the ONE non-class verb — engine sets the progress-fill width % inline"
+  },
+  "modifierRule": "every data-mod is is-:path → engine toggles is-<value> on a base class whose CSS owns the look; no inline color/stroke default. Exception: width:goal.pct."
 }

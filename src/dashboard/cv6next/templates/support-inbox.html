@@ -1,4 +1,40 @@
-<div data-cv6 data-theme="dark" class="cv6-screen" data-screen="support-inbox" data-screen-label="Support · inbox" style="width:100%;height:100%;overflow:hidden;">
+<!-- @dsCard group="Wired Templates" viewport="430x780" subtitle="PILOT fill-in template · stripped fragment, scoped [data-cv6], with data-bind / data-each / data-state / data-action. Visuals unchanged from the design." name="Wired · Support inbox (mobile)" -->
+<!--
+  ============================================================================
+  PILOT FILL-IN TEMPLATE — Support mobile inbox
+  Source design: ui_kits/mobile/support-inbox.html
+  Contract:      wired/mobile/support-inbox.json
+  ----------------------------------------------------------------------------
+  This is the SHIPPABLE fragment: everything inside the device EXCEPT the
+  specimen framing. The gray stage, the frame label, the phone bezel and the
+  fake 9:41 status bar are gone. Mount the [data-cv6] wrapper directly.
+
+  WIRING LEGEND (added labels only — visuals are unchanged):
+    data-bind="path"        element text/content is dynamic (sample = default)
+    data-each="list"        the ONE row that repeats (host renders N from data)
+    data-state="..."        a switchable region: ready | empty | loading | error
+    data-action="name"      a control; host attaches a handler by this name
+    data-arg="path"         the item the action acts on
+    data-action="nav" data-target="..."   navigation between tools / levels
+
+  Modifier classes the host swaps PER ITEM (no new CSS — all in cv6.css):
+    avatar tint  → .ava.is-pink | .is-green | .is-violet   (email.avatarTint)
+    status chip  → .astat.is-live | .is-blocked | .is-done | .is-ready (tag.kind)
+    open item    → .erow.is-active   (the thread currently open)
+
+  empty/loading/error reuse the SHARED fragment wired/_base/states.html — do not
+  redraw them here. The empty block below is that same markup with support copy.
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+</head>
+<body style="margin:0;background:#e8e6e2;display:flex;justify-content:center;padding:40px;">
+
+<div data-cv6 data-theme="dark" class="cv6-screen" data-screen="support-inbox" data-screen-label="Support · inbox" style="width:390px;height:700px;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
   <div class="scr">
 
     <!-- ONE Corner mobile header (constant across states) -->
@@ -31,7 +67,7 @@
 
         <!-- needs-you list — ONE template row; host renders one per item -->
         <div class="erow is-active" data-each="needsYou" data-action="openThread" data-arg="email.id">
-          <div class="ava is-pink" data-bind="email.initials" data-mod="is-:email.avatarTint">DW</div>
+          <div class="ava is-pink" data-mod="is-:email.avatarTint" data-bind="email.initials">DW</div>
           <div class="einfo">
             <div class="etop">
               <span class="esubj" data-bind="email.subject">Expand the pilot to three teams</span>
@@ -79,3 +115,6 @@
     </div>
   </div>
 </div>
+
+</body>
+</html>
