@@ -39,9 +39,11 @@ export function useRoomThread(worldId, room) {
   const send = useCallback(async (text) => {
     const body = String(text || '').trim();
     if (!worldId || !room?.id || !body) return false;
-    const payload = room.isProject
-      ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard' }
-      : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard' };
+    const payload = room.isMission
+      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: room.missionSlug || room.id } }
+      : room.isProject
+        ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard' }
+        : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard' };
     try {
       const r = await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -49,7 +51,7 @@ export function useRoomThread(worldId, room) {
       setReloadKey((k) => k + 1);
       return !!(r && r.ok);
     } catch { return false; }
-  }, [worldId, room?.id, room?.isProject]);
+  }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug]);
 
   useEffect(() => {
     if (!worldId || !room?.id) { setMessages([]); setStatus('loading'); return undefined; }
@@ -57,8 +59,10 @@ export function useRoomThread(worldId, room) {
     setStatus((s) => (s === 'ready' ? s : 'loading'));
     const params = new URLSearchParams();
     params.set('client', worldId);
-    // Agent rooms key on the agent slug; project rooms key on the project slug.
-    if (room.isProject) params.set('project', room.id);
+    // Mission rooms key on the mission slug; project rooms on the project slug;
+    // everything else is an agent thread.
+    if (room.isMission) params.set('mission_slug', room.missionSlug || room.id);
+    else if (room.isProject) params.set('project', room.id);
     else params.set('agent', room.id);
     params.set('limit', '40');
     const load = () => authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
@@ -97,7 +101,7 @@ export function useRoomThread(worldId, room) {
     // animating from real state) appear without a manual refresh.
     const t = setInterval(load, 3000);
     return () => { alive = false; clearInterval(t); };
-  }, [worldId, room?.id, room?.name, room?.isProject, reloadKey]);
+  }, [worldId, room?.id, room?.name, room?.isProject, room?.isMission, room?.missionSlug, reloadKey]);
 
   return { messages, blocks, status, send };
 }
