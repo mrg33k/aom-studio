@@ -267,8 +267,10 @@
    color/stroke defaults on anything that varies by data.
    ============================================================ */
 
-/* status dot — reuse .sdot (frame.css has is-live/is-blocked/is-ready) + working */
-[data-cv6] .sdot.is-working { background:var(--status-working); }
+/* status dot — reuse .sdot (frame.css has is-live/is-blocked/is-ready) + working.
+   State system v6 (design-system-2026-06-23 item 8): "working" is an accent ring,
+   visually distinct from green "live" — an agent actively running vs online. */
+[data-cv6] .sdot.is-working { background:var(--accent); box-shadow:0 0 0 3px var(--accent-weak); }
 [data-cv6] .sdot.is-done { background:var(--accent); }
 
 /* project / room folder tint — class drives the SVG stroke */
@@ -646,3 +648,18 @@
 [data-cv6][data-screen^="tracker"] .tkcheck { opacity:0; display:flex; align-items:center; transition:opacity .12s ease; }
 [data-cv6][data-screen^="tracker"] .tkcheck.is-on { opacity:1; }
 [data-cv6][data-screen^="tracker"] .trk.is-on { border-color:var(--accent) !important; background:var(--accent-weak); }
+
+/* ============================================================
+   STATE SYSTEM v6  (design-system-2026-06-23, item 8)
+   One vocabulary for status + one for selection. The rule that kills
+   "every row looks selected": selection != status. Exactly ONE row in a
+   list may be .is-selected; status (.astat / .sdot is-*) is independent;
+   hover is transient. Generic [data-cv6] scope so React surfaces inherit.
+   ============================================================ */
+/* working = accent spinner chip, distinct from green live */
+[data-cv6] .astat.is-working { color:var(--accent); background:var(--accent-weak); }
+[data-cv6] .astat.is-working .sd { width:11px; height:11px; border:1.6px solid var(--accent); border-top-color:transparent; background:none; border-radius:50%; animation:spin 1.05s linear infinite; }
+/* interaction state — every list row + card: rest / hover / selected */
+[data-cv6] .staterow { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .12s ease; }
+[data-cv6] .staterow:hover { background:var(--surface-2); }
+[data-cv6] .staterow.is-selected { background:var(--accent-weak); box-shadow:0 0 0 2px var(--accent) inset; }
