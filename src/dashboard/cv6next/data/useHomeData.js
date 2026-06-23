@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
@@ -65,7 +66,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
     };
   });
   const projects = (projectRooms || []).map((p) => ({
-    id: p.id || p.slug, name: p.name || p.slug || 'Project',
+    id: p.id || p.slug, slug: p.slug, name: p.name || p.slug || 'Project',
     // no real item-count source on this list (tasks not loaded here) -> blank, not a fake 0.
     tint: tintFor(p.name || p.id), count: (p.tasks?.length || p.taskCount || '') || '',
   }));
@@ -144,4 +145,47 @@ export function useHome() {
   // Honest loading until the world resolves and the first pipe read lands.
   const loading = !worldId || (!agents && !projectRooms && !inboxItems);
   return { state: loading ? 'loading' : state, data, worldId };
+}
+
+// ── Project-opened state (mobile Home state B): real missions for one project ──
+const MISSION_STATUS = {
+  running: 'live', building: 'live', active: 'live',
+  queued: 'ready', planning: 'ready', classifying: 'ready', 'in-progress': 'ready', idle: 'ready',
+  done: 'done', complete: 'done', completed: 'done',
+};
+function missionStatus(s) { return MISSION_STATUS[String(s || '').toLowerCase()] || 'ready'; }
+
+export function shapeProjectState(project, missions) {
+  const ms = (missions || []).map((m) => {
+    const status = missionStatus(m.status);
+    return {
+      id: m.slug ? `/${m.slug}` : '', title: m.name || m.slug || 'Mission',
+      agent: m.agent || '', status, statusLabel: status.toUpperCase(),
+    };
+  });
+  return {
+    project: { id: project?.id, name: project?.name || 'Project', missionCount: ms.length, tint: project?.tint || 'violet' },
+    missions: ms,
+  };
+}
+
+// Fetch missions per project from the existing missions-tree endpoint (the same one
+// the CV4 home uses). Returns a { [projectSlug]: missions[] } map.
+export function useProjectMissions(worldId) {
+  const [byProject, setByProject] = useState({});
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    authFetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId), { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!alive || !j || !Array.isArray(j.projects)) return;
+        const next = {};
+        for (const proj of j.projects) { if (proj?.slug) next[proj.slug] = proj.missions || []; }
+        setByProject(next);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [worldId]);
+  return byProject;
 }

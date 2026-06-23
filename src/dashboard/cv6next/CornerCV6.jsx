@@ -9,7 +9,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import { useHome } from './data/useHomeData.js';
+import { useHome, useProjectMissions, shapeProjectState } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
@@ -35,10 +35,10 @@ function useIsDesktop() {
 // declares width/height:100%), and append the shared loading/error/empty blocks so
 // data-state switching covers every state from one mounted tree. NOT a design change:
 // the layout inside is untouched; only the specimen frame's fixed px box is dropped.
-function composeScreen(raw, { mobile = false, takeFirst = false } = {}) {
+function composeScreen(raw, { mobile = false, pick = 0 } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const nodes = doc.querySelectorAll('[data-cv6]');
-  const screen = takeFirst ? nodes[0] : nodes[nodes.length ? nodes.length - 1 : 0] || nodes[0];
+  const screen = nodes[pick] || nodes[0];
   if (!screen) return '';
   screen.setAttribute('style', mobile
     ? 'position:relative;width:100%;height:100%;background:#05080b;overflow:hidden'
@@ -67,16 +67,28 @@ const HOME_ALIASES = {
 
 function Home({ onNav }) {
   const isDesktop = useIsDesktop();
-  const { state, data } = useHome();
-  const html = useMemo(
+  const { state, data, worldId } = useHome();
+  const missionsByProject = useProjectMissions(worldId);
+  // Mobile "project opened" state (Home state B): tap a project -> its missions.
+  const [openedProjectId, setOpenedProjectId] = useState(null);
+  const openedProject = openedProjectId ? (data.projects || []).find((p) => p.id === openedProjectId) : null;
+
+  const homeHtml = useMemo(
     () => (isDesktop
-      ? composeScreen(homeDesktopRaw, { mobile: false })
-      : composeScreen(homeMobileRaw, { mobile: true, takeFirst: true })),
+      ? composeScreen(homeDesktopRaw, { mobile: false, pick: 0 })
+      : composeScreen(homeMobileRaw, { mobile: true, pick: 0 })),
     [isDesktop],
   );
+  const projectHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 1 }), []);
+
   const actions = useMemo(() => ({
-    nav: (target) => onNav?.(target),
-    openRoom: () => {},          // room -> conversation is the next wire
+    nav: (target) => { if (target === 'back') setOpenedProjectId(null); else onNav?.(target); },
+    // Tap a project on mobile -> open its real mission list. Agents + desktop projects
+    // open the conversation, which is the Chat screen (next design) -> no-op for now.
+    openRoom: (id) => {
+      const proj = (data.projects || []).find((p) => p.id === id);
+      if (proj && !isDesktop) setOpenedProjectId(id);
+    },
     openCatchUp: () => {},
     openCommandK: () => {}, search: () => {}, openNav: () => {},
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
@@ -85,8 +97,14 @@ function Home({ onNav }) {
     review: () => {}, openAttachment: () => {},
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
     openProjectChat: () => {}, openMission: () => {}, newMission: () => {},
-  }), [onNav]);
-  return <TemplateScreen html={html} data={data} actions={actions} state={state}
+  }), [onNav, data.projects, isDesktop]);
+
+  if (openedProject) {
+    const pdata = shapeProjectState(openedProject, missionsByProject[openedProject.slug]);
+    return <TemplateScreen html={projectHtml} data={pdata} actions={actions} state="ready"
+      aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
+  }
+  return <TemplateScreen html={homeHtml} data={data} actions={actions} state={state}
     aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
 
