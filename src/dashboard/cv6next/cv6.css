@@ -673,3 +673,31 @@
 @keyframes cv6ScreenIn { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
 [data-cv6] .cv6-screenswap { animation:cv6ScreenIn .2s cubic-bezier(.22,.61,.36,1) both; }
 @media (prefers-reduced-motion: reduce) { [data-cv6] .cv6-screenswap { animation:none; } }
+
+/* ============================================================
+   CHAT LIFECYCLE  (design-system-2026-06-23, item 1)
+   The conversation over its whole life: settled history collapses into day
+   groups under dividers; the latest stays open; a glowing "live tail" pins the
+   active thread. Ported from agent-chat/chat.css. Generic [data-cv6] scope.
+   ============================================================ */
+[data-cv6] .daydiv { display:flex; align-items:center; gap:12px; margin:18px 0 14px; }
+[data-cv6] .daydiv::before, [data-cv6] .daydiv::after { content:""; height:1px; flex:1; background:var(--divider); }
+[data-cv6] .daydiv span { font-family:var(--font-mono); font-size:10.5px; letter-spacing:.04em; color:var(--faint); white-space:nowrap; }
+[data-cv6] .goalcard { border:1px solid var(--hair); border-radius:13px; background:var(--surface); overflow:hidden; }
+[data-cv6] .goalcard .gc-head { display:flex; align-items:center; gap:11px; padding:12px 14px; cursor:pointer; }
+[data-cv6] .goalcard .gc-check { width:24px; height:24px; border-radius:50%; background:var(--success-weak); color:var(--success); display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6] .goalcard .gc-title { flex:1; min-width:0; font-size:13.5px; font-weight:600; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+[data-cv6] .goalcard .gc-title .gk { color:var(--muted); font-weight:600; }
+[data-cv6] .goalcard .gc-meta { font-family:var(--font-mono); font-size:10.5px; color:var(--faint); white-space:nowrap; flex:none; }
+[data-cv6] .goalcard .gc-chev { color:var(--faint); flex:none; transition:transform .2s; }
+[data-cv6] .goalcard.is-open .gc-chev { transform:rotate(90deg); }
+[data-cv6] .goalcard .gc-body { display:none; padding:0 14px 14px; }
+[data-cv6] .goalcard.is-open .gc-body { display:block; }
+[data-cv6] .livediv { position:sticky; top:0; z-index:4; display:flex; align-items:center; justify-content:center; gap:8px; padding:8px 0; margin-bottom:4px; }
+[data-cv6] .livediv .lv { display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; letter-spacing:.06em; color:var(--success); background:var(--success-weak); border:1px solid var(--success-weak); border-radius:13px; padding:4px 11px; backdrop-filter:blur(8px); }
+[data-cv6] .livediv .lv .sd { width:7px; height:7px; border-radius:50%; background:var(--success); animation:statPulse 1.7s infinite; }
+[data-cv6] .livewrap { border:1px solid var(--success-weak); border-radius:16px; background:linear-gradient(180deg,rgba(52,211,153,.06),transparent 60%); padding:14px; }
+[data-cv6] .longmsg { position:relative; max-height:168px; overflow:hidden; }
+[data-cv6] .longmsg.is-clamped::after { content:""; position:absolute; left:0; right:0; bottom:0; height:64px; background:linear-gradient(transparent,var(--surface)); pointer-events:none; }
+[data-cv6] .longmsg-more { display:inline-flex; align-items:center; gap:6px; margin-top:9px; font-size:12px; font-weight:600; color:var(--accent); background:none; border:none; cursor:pointer; font-family:var(--font-sans); }
+[data-cv6] .jumplive { position:absolute; left:50%; transform:translateX(-50%); bottom:84px; z-index:9; display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border-radius:18px; background:var(--accent); color:#fff; font-size:12.5px; font-weight:600; border:none; box-shadow:0 10px 26px -8px rgba(0,0,0,.5); cursor:pointer; }

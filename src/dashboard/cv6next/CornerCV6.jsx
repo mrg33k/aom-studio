@@ -10,6 +10,7 @@ import { useMemo, useState, useEffect, useCallback, useRef, Component } from 're
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import ChatGoalThread from './ChatGoalThread.jsx';
+import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
@@ -339,8 +340,15 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
       />
     );
   }
-  return <TemplateScreen html={html} data={data} actions={actions} state={status}
-    aliases={CHAT_ALIASES} style={{ width: '100%', height: '100%' }} />;
+  // Plain conversation: the lifecycle renderer -- real messages folded by day so a
+  // long room stops being a wall of text (design item 1), with jump-to-latest.
+  return (
+    <ChatLifecycle
+      room={{ name: room.name, initials: room.initials || '·', statusText: room.statusText || '', status: room.status || 'ready' }}
+      messages={messages} status={status}
+      onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
+    />
+  );
 }
 
 // ── Command (mobile): real activity dock (running jobs); goal ledger honest ──

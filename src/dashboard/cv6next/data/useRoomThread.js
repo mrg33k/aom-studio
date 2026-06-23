@@ -82,8 +82,10 @@ export function useRoomThread(worldId, room) {
             agentInitials: initials(name),
             agentName: name,
             agentTint: isUser ? 'accent' : tintFor(m.agent || room.name),
+            isUser,
             text: m.text || '',
             time: hhmm(m.timestamp),
+            ts: m.timestamp || null,
           };
         }).filter((m) => m.text);
         setMessages(msgs);
