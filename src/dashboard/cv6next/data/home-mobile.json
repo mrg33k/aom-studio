@@ -26,7 +26,9 @@
         "status": "enum: live | ready | done → data-mod=\"is-:mission.status\" on .sdot AND .stp",
         "statusLabel": "string (UPPERCASE: LIVE | READY | DONE)"
       }
-    }
+    },
+    "draftMission": { "note": "state C · New-mission form (destination of newMission)", "title": "string", "goal": "string", "agentId": "string (the picked agent)" },
+    "assignableAgents": { "list": true, "item": "agentPick", "note": "state C · mission agent picker", "shape": { "id": "string", "name": "string", "status": "enum: live|ready|done → is-:agentPick.status on .sdot", "picked": "enum: on|(off) → is-:agentPick.picked on .pickrow (reveals .pickchk)" } }
   },
 
   "actions": [
@@ -41,12 +43,15 @@
     { "name": "openAttachment", "arg": "attachment.id" },
     { "name": "openProjectChat", "arg": "project.id", "from": "state B general project chat" },
     { "name": "openMission", "arg": "mission.id", "from": "state B mission rows" },
-    { "name": "newMission", "arg": "project.id", "from": "state B New mission" }
+    { "name": "newMission", "arg": "project.id", "from": "state B New mission · opens state C form" },
+    { "name": "setMissionAgent", "arg": "agentPick.id", "from": "state C · agent picker" },
+    { "name": "createMission", "arg": "project.id", "from": "state C · Create mission" }
   ],
 
   "states": {
     "A_home": { "label": "Home", "region": "first [data-screen=\"home-mobile\"]" },
     "B_project": { "label": "Project opened", "region": "second [data-screen=\"home-mobile\"]" },
+    "C_newMission": { "label": "New mission", "region": "third [data-screen=\"home-mobile\"]" },
     "empty/loading/error": { "in": "wired/_base/states.html" }
   },
   "modifierRule": "every data-mod is is-:path → engine toggles is-<value> on a base class whose CSS owns the look; no inline color/stroke default."

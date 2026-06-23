@@ -1,0 +1,102 @@
+{
+  "screen": "support-inbox",
+  "title": "Support · Mobile · inbox",
+  "source": "ui_kits/mobile/support-inbox.html",
+  "fragment": "wired/mobile/support-inbox.html",
+  "stylesheet": "wired/cv6.css",
+  "wrapper": { "selector": "[data-cv6][data-screen=\"support-inbox\"]", "theme": "dark|light|glass" },
+  "screens": {
+    "inbox": { "selector": "[data-cv6][data-screen=\"support-inbox\"]", "regions": "Needs you + Watching lists" },
+    "draftReply": { "selector": "[data-cv6][data-screen=\"support-draft\"]", "regions": "approve-and-send · destination of draftReply; agent-drafted editable body, tone, Redo / Approve & send" }
+  },
+
+  "data": {
+    "counts": {
+      "needYou": "int",
+      "watching": "int"
+    },
+    "needsYou": {
+      "list": true,
+      "item": "email",
+      "shape": {
+        "id": "string",
+        "initials": "string",
+        "avatarTint": "enum: pink | green | violet | neutral  → data-mod=\"is-:email.avatarTint\" on .ava",
+        "subject": "string",
+        "time": "string (mono, relative: 22m | 1h | 3h)",
+        "snippet": "string",
+        "tags": {
+          "list": true,
+          "item": "tag",
+          "shape": {
+            "label": "string (UPPERCASE, e.g. REAL, DRAFT READY, DECISION)",
+            "kind": "enum: live | blocked | done | ready  → data-mod=\"is-:tag.kind\" on .astat"
+          }
+        }
+      }
+    },
+    "watching": {
+      "list": true,
+      "item": "email",
+      "note": "same email shape as needsYou; rows render dimmed (.erow.is-muted) with an envelope avatar; typically no tags",
+      "shape": {
+        "id": "string",
+        "subject": "string",
+        "time": "string",
+        "snippet": "string"
+      }
+    },
+    "empty": {
+      "title": "string",
+      "body": "string",
+      "actionLabel": "string"
+    },
+    "draft": {
+      "note": "Draft-reply screen (support-draft) — the agent's drafted reply, awaiting your approval",
+      "id": "string",
+      "to": "string (recipient · company)",
+      "initials": "string",
+      "avatarTint": "enum: pink | green | violet | neutral → is-:draft.avatarTint on .ava",
+      "subject": "string (the thread being replied to)",
+      "body": "string (editable; the drafted reply text)",
+      "tone": "enum: warm | brief | formal",
+      "isWarm": "enum: on|(off) → is-:draft.isWarm on .fseg",
+      "isBrief": "enum: on|(off) → is-:draft.isBrief on .fseg",
+      "isFormal": "enum: on|(off) → is-:draft.isFormal on .fseg"
+    }
+  },
+
+  "actions": [
+    { "name": "openThread", "arg": "email.id", "from": ".erow", "does": "open the email-thread view for this ask" },
+    { "name": "draftReply", "arg": "email.id", "does": "open the Draft-reply screen (support-draft) with the agent's draft" },
+    { "name": "setDraftTone", "arg": "warm|brief|formal", "from": "Draft-reply · tone segmented" },
+    { "name": "regenerateDraft", "arg": "draft.id", "from": "Draft-reply · Redo" },
+    { "name": "sendDraft", "arg": "draft.id", "from": "Draft-reply · Approve & send" },
+    { "name": "search", "arg": null, "from": "header .ib (search)", "does": "open inbox search" },
+    { "name": "openNav", "arg": null, "from": "header .ib (menu)", "does": "open the right-drawer tool switcher" },
+    { "name": "nav", "arg": null, "target": "back", "from": ".mback", "does": "go up a level" },
+    { "name": "browseWatching", "arg": null, "from": "empty-state button", "does": "show the watching list when caught up" },
+    { "name": "emptyAction", "arg": null, "from": "shared empty", "does": "alias of browseWatching in _base/states.html" },
+    { "name": "retry", "arg": null, "from": "shared error", "does": "reload the inbox (see _base/states.html)" },
+    { "name": "viewOffline", "arg": null, "from": "shared error", "does": "show last cached view (see _base/states.html)" }
+  ],
+
+  "states": {
+    "ready": { "in": "fragment", "region": "[data-state=\"ready\"]" },
+    "empty": { "in": "fragment", "region": "[data-state=\"empty\"]", "binds": ["empty.title", "empty.body", "empty.actionLabel"] },
+    "loading": { "in": "wired/_base/states.html", "region": "[data-state=\"loading\"]", "binds": ["loading.label"] },
+    "error": { "in": "wired/_base/states.html", "region": "[data-state=\"error\"]", "binds": ["error.title", "error.body", "error.code"] }
+  },
+
+  "shared": [
+    "wired/_base/states.html  (empty / loading / error — label once, reused everywhere)"
+  ],
+
+  "rules": [
+    "every data-mod is is-:path — engine toggles is-<value> on a base class whose CSS owns the look; no inline color default.",
+    "Only real people reach Support; no spam / no-reply / automated mail.",
+    "Mail asking for your presence or a decision is flagged → needs-you (Catch Up).",
+    "Never compose raw email here; the agent drafts and acts on approval.",
+    "Names like Dana, Priya, Marco and company names are sample data."
+  ]
+}

@@ -172,9 +172,37 @@ export function shapeProjectState(project, missions) {
   };
 }
 
+// Create a mission inside a project, for real, via the self-serve drawer endpoint. The
+// endpoint only takes a name, so the typed goal + chosen agent are captured as the opening
+// note in the new mission room (so nothing the user typed is lost). No fake.
+function slugify(s) {
+  let v = String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!/^[a-z]/.test(v)) v = 'm-' + v;       // slug must start with a letter
+  return v.slice(0, 48);
+}
+export async function createMissionInProject({ worldId, projectSlug, title, goal, agentName }) {
+  const mission_slug = slugify(title);
+  if (!worldId || !projectSlug || !mission_slug) return null;
+  try {
+    const r = await authFetch('/api/dashboard/create-mission-from-drawer', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parent_slug: projectSlug, mission_slug, name: title, client_id: worldId }),
+    });
+    const d = r && r.ok ? await r.json() : null;
+    if (d?.ok && (goal || agentName)) {
+      const note = [goal ? `Goal: ${goal}` : '', agentName ? `Assigned: ${agentName}` : ''].filter(Boolean).join(' · ');
+      await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: worldId, agent: 'corner', project: projectSlug, text: note, role: 'user', source: 'corner-dashboard', metadata: { mission_slug } }),
+      }).catch(() => {});
+    }
+    return d;
+  } catch { return null; }
+}
+
 // Fetch missions per project from the existing missions-tree endpoint (the same one
 // the CV4 home uses). Returns a { [projectSlug]: missions[] } map.
-export function useProjectMissions(worldId) {
+export function useProjectMissions(worldId, reloadKey = 0) {
   const [byProject, setByProject] = useState({});
   useEffect(() => {
     if (!worldId) return undefined;
@@ -189,6 +217,6 @@ export function useProjectMissions(worldId) {
       })
       .catch(() => {});
     return () => { alive = false; };
-  }, [worldId]);
+  }, [worldId, reloadKey]);
   return byProject;
 }

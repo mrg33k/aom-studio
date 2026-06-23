@@ -9,7 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import { useHome, useProjectMissions, shapeProjectState } from './data/useHomeData.js';
+import { useHome, useProjectMissions, shapeProjectState, createMissionInProject } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
@@ -106,15 +106,21 @@ const HOME_ALIASES = {
   'catchUp.current.attachments': 'attachment',
   'goal.summary': 'summary', 'goal.checklist': 'step',
   missions: 'mission',
+  assignableAgents: 'agentPick',
 };
 
 function Home({ onNav, onOpenRoom, onOpenNav }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
-  const missionsByProject = useProjectMissions(worldId);
+  const [missionReload, setMissionReload] = useState(0);
+  const missionsByProject = useProjectMissions(worldId, missionReload);
   // Mobile "project opened" state (Home state B): tap a project -> its missions.
   const [openedProjectId, setOpenedProjectId] = useState(null);
   const openedProject = openedProjectId ? (data.projects || []).find((p) => p.id === openedProjectId) : null;
+  // New-mission form (Home state C). Seeded on open so it stays stable + uncontrolled.
+  const [missionSeed, setMissionSeed] = useState(null);
+  const missionFormRef = useRef(null);
+  const missionAgentRef = useRef('');
 
   const homeHtml = useMemo(
     () => (isDesktop
@@ -123,6 +129,17 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
     [isDesktop],
   );
   const projectHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 1 }), []);
+  const missionHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 2 }), []);
+
+  const openNewMission = () => {
+    if (!openedProject) return;
+    missionAgentRef.current = '';
+    setMissionSeed({
+      project: { id: openedProject.slug, name: openedProject.name, slug: openedProject.slug },
+      draftMission: { title: '', goal: '' },
+      assignableAgents: (data.agents || []).map((a) => ({ id: a.id, name: a.name, status: a.status || 'ready', picked: 'off' })),
+    });
+  };
 
   const actions = useMemo(() => ({
     nav: (target) => { if (target === 'back') setOpenedProjectId(null); else onNav?.(target); },
@@ -138,12 +155,44 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
     openCommandK: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
     newRoom: () => {}, showMoreProjects: () => {},
+    // draftReply (approve-and-send) sends real client email + needs an agent-drafted body;
+    // held until that path + an explicit OK exist (see mission BUILD). Not faked.
     draftReply: () => {}, addToTracker: () => {}, assignAgent: () => {}, snooze: () => {},
     review: () => {}, openAttachment: () => {},
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
-    openProjectChat: () => {}, openMission: () => {}, newMission: () => {},
-  }), [onNav, onOpenRoom, onOpenNav, data.projects, data.agents, worldId, isDesktop]);
+    openProjectChat: () => {}, openMission: () => {}, newMission: () => openNewMission(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [onNav, onOpenRoom, onOpenNav, data.projects, data.agents, worldId, isDesktop, openedProject]);
 
+  const missionActions = useMemo(() => ({
+    nav: () => setMissionSeed(null),
+    setMissionAgent: (id, e) => {
+      const row = e?.currentTarget;
+      const already = missionAgentRef.current && missionAgentRef.current === String(id);
+      missionAgentRef.current = already ? '' : String(id);
+      missionFormRef.current?.querySelectorAll('.pickrow').forEach((r) => r.classList.toggle('is-on', !already && r === row));
+    },
+    createMission: () => {
+      const root = missionFormRef.current;
+      const title = root?.querySelector('[data-bind="draftMission.title"]')?.value?.trim() || '';
+      const goal = root?.querySelector('[data-bind="draftMission.goal"]')?.value?.trim() || '';
+      if (!title || !openedProject) return; // a mission needs a title
+      const picked = (missionSeed?.assignableAgents || []).find((a) => String(a.id) === missionAgentRef.current);
+      createMissionInProject({ worldId, projectSlug: openedProject.slug, title, goal, agentName: picked?.name || '' });
+      setMissionSeed(null);
+      setMissionReload((k) => k + 1);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [worldId, openedProject, missionSeed]);
+
+  if (missionSeed) {
+    return (
+      <div ref={missionFormRef} style={{ width: '100%', height: '100%' }}>
+        <TemplateScreen html={missionHtml} data={missionSeed} actions={missionActions} state="ready"
+          aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
+      </div>
+    );
+  }
   if (openedProject) {
     const pdata = shapeProjectState(openedProject, missionsByProject[openedProject.slug]);
     return <TemplateScreen html={projectHtml} data={pdata} actions={actions} state="ready"
