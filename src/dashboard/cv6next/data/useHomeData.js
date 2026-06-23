@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { getClientId } from '../../lib/clientConfig';
+import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
 
@@ -115,13 +115,16 @@ export function useHome() {
   useEffect(() => {
     if (!supabase) return undefined;
     let alive = true;
+    // setClientIdFromUser seeds the auth-derived world cache that getClientId()
+    // reads — without it getClientId() returns null, useDataPipe never fetches, and
+    // Home is stuck on the loading skeleton (the bug Patrik's screenshot caught).
     supabase.auth.getUser().then(({ data }) => {
       if (!alive) return;
-      if (data?.user) { setCurrentUser(data.user); setWorldId(getClientId()); }
+      if (data?.user) { setClientIdFromUser(data.user); setCurrentUser(data.user); setWorldId(getClientId()); }
     }).catch(() => {});
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
       if (!alive) return;
-      if (session?.user) { setCurrentUser(session.user); setWorldId(getClientId()); }
+      if (session?.user) { setClientIdFromUser(session.user); setCurrentUser(session.user); setWorldId(getClientId()); }
       else { setCurrentUser(null); setWorldId(null); }
     });
     return () => { alive = false; sub?.subscription?.unsubscribe?.(); };
