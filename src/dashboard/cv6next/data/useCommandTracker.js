@@ -177,9 +177,25 @@ function severityToPriority(sev) {
   if (v === 'low' || v === '4' || v === '5') return 'low';
   return 'med';
 }
+// The CV6 Bugs board is always present as a project tracker; it lives behind its own
+// endpoint (cv6-bugs). User-created trackers come from /api/dashboard/trackers and persist.
+const CV6_BOARD_ID = 'cv6';
+function trackerShape(t, activeId) {
+  return {
+    id: t.id, name: t.name, scope: t.scope || '',
+    count: t.count != null ? t.count : (Array.isArray(t.rows) ? t.rows.length : 0),
+    dot: t.id === activeId ? 'success' : 'faint',
+  };
+}
+
 export function useTrackerBugs(worldId) {
   const [bugs, setBugs] = useState([]);
   const [status, setStatus] = useState('loading');
+  const [customTrackers, setCustomTrackers] = useState([]);
+  const [activeId, setActiveId] = useState(CV6_BOARD_ID);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  // CV6 bug board.
   useEffect(() => {
     if (!worldId) return undefined;
     let alive = true;
@@ -205,17 +221,64 @@ export function useTrackerBugs(worldId) {
     }).catch(() => { if (alive) setStatus('error'); });
   }, [worldId]);
 
+  // User-created custom trackers (persisted). Refetched after a create.
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    authFetch('/api/dashboard/trackers?world=' + encodeURIComponent(worldId))
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => { if (alive && d) setCustomTrackers(Array.isArray(d.trackers) ? d.trackers : []); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [worldId, reloadKey]);
+
+  // Switch which tracker the List is showing.
+  const switchTracker = (id) => setActiveId(id || CV6_BOARD_ID);
+  // Create a tracker for real, then refetch + switch to it. The new-tracker form is
+  // uncontrolled in the component (so typing isn't wiped on a re-bind); kind is passed in.
+  const createTracker = async ({ name, scope, kind }) => {
+    const k = kind === 'mission' ? 'mission' : 'project';
+    try {
+      const r = await authFetch('/api/dashboard/trackers', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create', world: worldId, name, scope, template: k }),
+      });
+      const d = r && r.ok ? await r.json() : null;
+      setReloadKey((n) => n + 1);
+      if (d?.tracker?.id) setActiveId(d.tracker.id);
+      return d?.tracker || null;
+    } catch { return null; }
+  };
+
   const open = bugs.filter((b) => b.status !== 'done');
+  const cv6Board = { id: CV6_BOARD_ID, name: 'CV6 Bugs', scope: 'Corner CV6', count: open.length };
+  const projectCustom = customTrackers.filter((t) => t.template !== 'mission');
+  const missionCustom = customTrackers.filter((t) => t.template === 'mission');
+  const projectTrackers = [cv6Board, ...projectCustom].map((t) => trackerShape(t, activeId));
+  const missionTrackers = missionCustom.map((t) => trackerShape(t, activeId));
+
+  // Resolve the active tracker + the bugs it shows. The bug-shaped List only has real
+  // content for the CV6 board; a freshly-created custom tracker is an empty board (honest).
+  const activeCustom = customTrackers.find((t) => t.id === activeId);
+  const showingCv6 = activeId === CV6_BOARD_ID;
+  const activeTracker = showingCv6
+    ? { id: CV6_BOARD_ID, name: 'CV6 Bugs', scope: 'Corner CV6', openCount: open.length }
+    : { id: activeId, name: activeCustom?.name || 'Tracker', scope: activeCustom?.scope || '', openCount: Array.isArray(activeCustom?.rows) ? activeCustom.rows.length : 0 };
+  const listBugs = showingCv6 ? bugs : [];
+  const listState = showingCv6 ? status : 'empty';
+
   const data = {
-    projectTrackers: [], missionTrackers: [],
-    activeTracker: { id: 'cv6', name: 'CV6 Bugs', scope: 'corner', openCount: open.length },
-    bugs,
-    featuredBug: bugs[0] ? { ...bugs[0], agentStep: '', agentTotal: '', attachments: [] } : { id: '', title: '', attachments: [] },
+    projectTrackers, missionTrackers, activeTracker,
+    // Default draft state; the new-tracker form is uncontrolled (name/scope/kind read from
+    // the DOM at create time), so this only seeds the initial Project selection.
+    draftTracker: { name: '', scope: '', kind: 'project', isProject: 'on', isMission: 'off' },
+    bugs: listBugs,
+    featuredBug: listBugs[0] ? { ...listBugs[0], agentStep: '', agentTotal: '', attachments: [] } : { id: '', title: '', attachments: [] },
     attachments: { count: 0, list: [] },
     agent: { name: '', initials: '·', tint: 'violet', step: '', total: '', pct: 0, pctLabel: '', checklist: [] },
     loading: { label: 'Loading the tracker…' },
-    empty: { title: 'No bugs in the tracker', body: 'Nothing logged yet. New issues land here.', actionLabel: '' },
+    empty: { title: 'No bugs in this tracker', body: 'Nothing logged yet. New issues land here.', actionLabel: '' },
     error: { title: "Couldn't load the tracker", body: 'Your connection dropped. Nothing was lost.', code: 'tracker · retry' },
   };
-  return { state: status, data };
+  return { state: listState, data, switchTracker, createTracker };
 }

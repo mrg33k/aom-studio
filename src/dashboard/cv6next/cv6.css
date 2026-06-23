@@ -435,3 +435,6 @@
 [data-cv6][data-screen^="tracker"] .bchk.is-pending .bchk-label { color:var(--muted); }
 [data-cv6][data-screen^="tracker"] .bchk-detail { color:var(--muted); }
 
+/* new-tracker form · type segmented control */
+[data-cv6][data-screen^="tracker"] .tkseg { color:var(--muted); background:var(--surface); }
+[data-cv6][data-screen^="tracker"] .tkseg.is-on { color:var(--fg); background:var(--accent-weak); border-color:var(--accent) !important; }

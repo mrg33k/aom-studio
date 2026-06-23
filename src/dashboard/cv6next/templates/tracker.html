@@ -23,7 +23,7 @@
 <!-- ============ DESKTOP ============ -->
 <div data-cv6 data-theme="dark" data-screen="tracker-desktop" data-screen-label="Tracker · Desktop" class="cv6-screen" style="width:1440px;height:860px;flex:none;border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
   <div class="topbar">
-    <div class="tgreet"><img src="../../assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
+    <div class="tgreet"><img src="/cv6/assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
     <div class="toolnav">
       <div class="ctile" data-action="nav" data-target="home"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg><span class="clab">Home</span></div>
       <div class="ctile" data-action="nav" data-target="chat"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg><span class="clab">Chat</span></div>
@@ -88,7 +88,8 @@
 <div data-cv6 data-theme="dark" data-screen="tracker-mobile" data-screen-label="Tracker · List" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
   <div class="mhdr">
     <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
-    <div class="mhtitle"><div class="mttl" data-bind="activeTracker.name">CV6 Bugs</div><div class="msub"><span data-bind="activeTracker.scope">Corner CV6</span> · <span data-bind="activeTracker.openCount">12</span> open</div></div>
+    <!-- tappable title opens the tracker switcher -->
+    <div class="mhtitle" data-action="openSwitcher" style="cursor:pointer;"><div style="display:flex;align-items:center;gap:6px;min-width:0;"><div class="mttl" data-bind="activeTracker.name">CV6 Bugs</div><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;color:var(--muted);"><path d="m6 9 6 6 6-6"/></svg></div><div class="msub"><span data-bind="activeTracker.scope">Corner CV6</span> · <span data-bind="activeTracker.openCount">12</span> open</div></div>
     <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
   <div class="scrbody" data-state="ready" style="padding:14px 16px 0;display:flex;flex-direction:column;gap:12px;">
@@ -112,6 +113,60 @@
     </div>
   </div>
   <button style="position:absolute;right:18px;bottom:26px;width:56px;height:56px;border-radius:50%;border:none;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 14px 32px -8px rgba(0,0,0,.6);" data-action="newBug" data-arg="activeTracker.id"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+
+<!-- ============ MOBILE A2 · tracker switcher sheet ============ -->
+<div data-cv6 data-theme="dark" data-screen="tracker-mobile" data-screen-label="Tracker · Switch" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <!-- the list, dimmed behind the sheet -->
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl" data-bind="activeTracker.name">CV6 Bugs</div><div class="msub"><span data-bind="activeTracker.scope">Corner CV6</span> · <span data-bind="activeTracker.openCount">12</span> open</div></div>
+  </div>
+  <!-- scrim -->
+  <div data-action="closeSwitcher" style="position:absolute;inset:0;background:rgba(0,0,0,.55);"></div>
+  <!-- bottom sheet -->
+  <div style="position:absolute;left:0;right:0;bottom:0;background:var(--ground);border-top-left-radius:22px;border-top-right-radius:22px;border-top:1px solid var(--hair);padding:8px 16px 22px;box-shadow:0 -22px 54px -22px rgba(0,0,0,.65);">
+    <div style="width:38px;height:4px;border-radius:3px;background:var(--divider);margin:6px auto 14px;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"><span style="font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Switch tracker</span><div class="ib" style="width:32px;height:32px;border-radius:9px;" data-action="closeSwitcher"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></div></div>
+    <div class="eyebrow" style="margin:0 2px 8px;">Project trackers</div>
+    <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:16px;">
+      <!-- ONE row per project tracker; is-open marks the active tracker -->
+      <div class="trk is-open" data-each="projectTrackers" data-action="openTracker" data-arg="tracker.id"><span class="pdot is-success" data-mod="is-:tracker.dot"></span><div style="flex:1;min-width:0;"><div style="font-size:14.5px;font-weight:600;color:var(--fg);" data-bind="tracker.name">CV6 Bugs</div><div style="font-size:11.5px;color:var(--muted);" data-bind="tracker.scope">Corner CV6</div></div><span class="mono" style="font-size:11px;color:var(--accent);" data-bind="tracker.count">12</span></div>
+    </div>
+    <div class="eyebrow" style="margin:0 2px 8px;">Mission trackers</div>
+    <div style="display:flex;flex-direction:column;gap:2px;margin-bottom:16px;">
+      <!-- ONE row per mission tracker -->
+      <div class="trk" data-each="missionTrackers" data-action="openTracker" data-arg="tracker.id"><span class="pdot is-faint" data-mod="is-:tracker.dot"></span><div style="flex:1;min-width:0;"><div style="font-size:14.5px;font-weight:500;color:var(--fg);" data-bind="tracker.name">Resolver bugs</div><div style="font-size:11.5px;color:var(--muted);" data-bind="tracker.scope">Space Rising → /007</div></div><span class="mono" style="font-size:11px;color:var(--faint);" data-bind="tracker.count">2</span></div>
+    </div>
+    <!-- create-tracker affordance -->
+    <div class="trk" data-action="newTracker" style="border:1px dashed var(--hair);gap:11px;cursor:pointer;"><span style="width:27px;height:27px;border-radius:8px;background:var(--accent-weak);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span style="font-size:14px;font-weight:600;color:var(--accent);">New tracker</span></div>
+  </div>
+</div>
+
+<!-- ============ MOBILE A3 · new-tracker form ============ -->
+<div data-cv6 data-theme="dark" data-screen="tracker-mobile" data-screen-label="Tracker · New tracker" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr"><div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="mhtitle"><div class="mttl">New tracker</div><div class="msub">Create a tracker board</div></div></div>
+  <div class="scrbody" data-state="ready" style="padding:18px 16px 0;display:flex;flex-direction:column;gap:20px;">
+    <div>
+      <div class="eyebrow" style="margin-bottom:9px;">Tracker name</div>
+      <input data-bind="draftTracker.name" placeholder="e.g. CV6 Bugs" style="width:100%;height:46px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:11px;padding:0 14px;color:var(--fg);font-size:14.5px;font-family:var(--font-sans);outline:none;">
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:9px;">Scope</div>
+      <input data-bind="draftTracker.scope" placeholder="e.g. Corner CV6" style="width:100%;height:46px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:11px;padding:0 14px;color:var(--fg);font-size:14.5px;font-family:var(--font-sans);outline:none;">
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:9px;">Type</div>
+      <!-- segmented; is-on marks the chosen kind (is-:draftTracker.kind) -->
+      <div style="display:flex;gap:8px;">
+        <div class="tkseg is-on" data-mod="is-:draftTracker.isProject" data-action="setTrackerKind" data-arg="project" style="flex:1;height:44px;border-radius:11px;border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;"><span class="pdot is-success"></span><span style="font-size:13.5px;font-weight:600;">Project</span></div>
+        <div class="tkseg" data-mod="is-:draftTracker.isMission" data-action="setTrackerKind" data-arg="mission" style="flex:1;height:44px;border-radius:11px;border:1px solid var(--hair);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;"><span class="pdot is-faint"></span><span style="font-size:13.5px;font-weight:600;">Mission</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--divider);background:var(--ground);padding:14px 16px;box-sizing:border-box;">
+    <button style="width:100%;height:48px;border-radius:13px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;" data-action="createTracker"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Create tracker</button>
+  </div>
 </div>
 
 <!-- ============ MOBILE B · bug detail + assign to agent ============ -->

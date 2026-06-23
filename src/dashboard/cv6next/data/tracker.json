@@ -10,7 +10,9 @@
       "selector": "[data-cv6][data-screen=\"tracker-mobile\"]",
       "note": "three states, each its own mountable node",
       "states": [
-        { "label": "Tracker · List", "what": "bug list with attachments + live-agent strip" },
+        { "label": "Tracker · List", "what": "bug list with attachments + live-agent strip; header title taps openSwitcher" },
+        { "label": "Tracker · Switch", "what": "bottom-sheet tracker switcher (project + mission trackers) with New tracker row" },
+        { "label": "Tracker · New tracker", "what": "create-tracker form (name + scope + project|mission type)" },
         { "label": "Tracker · Detail", "what": "bug detail + assign-to-agent" },
         { "label": "Tracker · Agent live", "what": "agent working the checklist live (Command extension)" }
       ]
@@ -21,6 +23,7 @@
     "projectTrackers": { "list": true, "item": "tracker", "shape": { "id": "string", "name": "string", "scope": "string", "count": "int", "dot": "enum: success|faint → is-:tracker.dot on .pdot" } },
     "missionTrackers": { "list": true, "item": "tracker", "note": "same tracker shape" },
     "activeTracker": { "id": "string", "name": "string", "scope": "string", "openCount": "int" },
+    "draftTracker": { "note": "mobile New-tracker form", "name": "string", "scope": "string", "kind": "enum: project|mission", "isProject": "enum: on|(off) → is-:draftTracker.isProject on .tkseg", "isMission": "enum: on|(off) → is-:draftTracker.isMission on .tkseg" },
     "bugs": { "list": true, "item": "bug", "shape": {
       "id": "string (CV6-142)",
       "title": "string",
@@ -48,6 +51,11 @@
     { "name": "openTracker", "arg": "tracker.id", "from": "switcher rows" },
     { "name": "openBug", "arg": "bug.id | featuredBug.id", "from": "table rows / mobile cards" },
     { "name": "newBug", "arg": "activeTracker.id", "from": "New bug / FAB" },
+    { "name": "openSwitcher", "from": "mobile List header title" },
+    { "name": "closeSwitcher", "from": "mobile switcher scrim / close" },
+    { "name": "newTracker", "from": "switcher · New tracker row" },
+    { "name": "setTrackerKind", "arg": "project|mission", "from": "New-tracker form · type segmented" },
+    { "name": "createTracker", "from": "New-tracker form · Create" },
     { "name": "addChecklistItem", "arg": "bug.id" },
     { "name": "toggleChecklistItem", "arg": "item.id" },
     { "name": "openAttachment", "arg": "attachment.id" },

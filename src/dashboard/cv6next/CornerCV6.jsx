@@ -6,7 +6,7 @@
 // Live screens: Home (desktop 3-column + mobile), the front door — real rooms, real
 // agents, the real needs-you Catch Up. Support inbox reachable from the nav.
 
-import { useMemo, useState, useEffect, useCallback, Component } from 'react';
+import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useHome, useProjectMissions, shapeProjectState } from './data/useHomeData.js';
@@ -217,15 +217,75 @@ const TRACKER_ALIASES = {
   projectTrackers: 'tracker', missionTrackers: 'tracker',
 };
 function Tracker({ worldId, onNav, onOpenNav }) {
-  const { state, data } = useTrackerBugs(worldId);
-  const html = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 1 }), []);
-  const actions = useMemo(() => ({
+  const { state, data, switchTracker, createTracker } = useTrackerBugs(worldId);
+  // sheet: null | 'switch' (tracker picker) | 'new' (create-tracker form)
+  const [sheet, setSheet] = useState(null);
+  const newFormRef = useRef(null);
+  const draftKindRef = useRef('project'); // the new-tracker form is uncontrolled
+
+  const listHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 1 }), []);
+  const switchHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 2 }), []);
+  const newHtml = useMemo(() => composeScreen(trackerRaw, { mobile: true, pick: 3 }), []);
+  // Stable seed for the uncontrolled new-tracker form so a data tick never rebuilds it
+  // and wipes what the user typed.
+  const newData = useMemo(() => ({ draftTracker: { name: '', scope: '', kind: 'project', isProject: 'on', isMission: 'off' } }), []);
+
+  const openNew = () => { draftKindRef.current = 'project'; setSheet('new'); };
+
+  const listActions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    openSwitcher: () => setSheet('switch'),
     openBug: () => {}, newBug: () => {}, assignAgent: () => {}, pauseAgent: () => {},
     openAttachment: () => {}, retry: () => {},
   }), [onNav, onOpenNav]);
-  return <TemplateScreen html={html} data={data} actions={actions} state={state}
-    aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />;
+
+  const switchActions = useMemo(() => ({
+    nav: () => setSheet(null), closeSwitcher: () => setSheet(null),
+    openTracker: (id) => { switchTracker(id); setSheet(null); },
+    newTracker: () => openNew(),
+  }), [switchTracker]);
+
+  const newActions = useMemo(() => ({
+    nav: () => setSheet('switch'),
+    // Toggle the segmented control in the DOM (no React re-render → typed text survives).
+    setTrackerKind: (k) => {
+      const kind = k === 'mission' ? 'mission' : 'project';
+      draftKindRef.current = kind;
+      const root = newFormRef.current;
+      root?.querySelectorAll('.tkseg').forEach((seg) => {
+        const on = seg.getAttribute('data-arg') === kind;
+        seg.classList.toggle('is-on', on);
+        seg.classList.toggle('is-off', !on);
+      });
+    },
+    createTracker: () => {
+      const root = newFormRef.current;
+      const name = root?.querySelector('input[data-bind="draftTracker.name"]')?.value?.trim() || '';
+      const scope = root?.querySelector('input[data-bind="draftTracker.scope"]')?.value?.trim() || '';
+      if (!name) return; // a tracker needs a name
+      createTracker({ name, scope, kind: draftKindRef.current });
+      setSheet(null);
+    },
+  }), [switchTracker, createTracker]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <TemplateScreen html={listHtml} data={data} actions={listActions} state={state}
+        aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
+      {sheet === 'switch' && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
+          <TemplateScreen html={switchHtml} data={data} actions={switchActions} state="ready"
+            aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
+        </div>
+      )}
+      {sheet === 'new' && (
+        <div ref={newFormRef} style={{ position: 'absolute', inset: 0, zIndex: 10 }}>
+          <TemplateScreen html={newHtml} data={newData} actions={newActions} state="ready"
+            aliases={TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 // Tool switcher (mobile): built from the design's own nav-drawer classes until Batch 5's
