@@ -321,10 +321,15 @@ const COMMAND_ALIASES = {
 };
 function Command({ worldId, onNav, onOpenNav }) {
   const { state, data } = useCommand(worldId);
-  const html = useMemo(() => composeScreen(commandRaw, { mobile: true, pick: 1 }), []);
+  const isDesktop = useIsDesktop();
+  const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1 }), [isDesktop]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
-    openGoal: () => {}, openJob: () => {}, toggleWatcher: () => {}, openProfile: () => {},
+    openCommandK: () => onOpenNav?.(), openProfile: () => onOpenNav?.(),
+    // ledger rooms open their conversation is desktop-Chat work; goal/job/watcher mutations have
+    // no honest store yet -> inert (not faked). The dock + ledger render real data.
+    openGoal: () => {}, openJob: () => {}, toggleWatcher: () => {}, addWatcher: () => {},
+    manageActivity: () => {}, retaskGoal: () => {},
   }), [onNav, onOpenNav]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
