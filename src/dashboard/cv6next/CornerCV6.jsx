@@ -12,6 +12,7 @@ import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import ChatGoalThread from './ChatGoalThread.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
+import { MobileNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -553,29 +554,9 @@ function Tracker({ worldId, onNav, onOpenNav }) {
   );
 }
 
-// Tool switcher (mobile): built from the design's own nav-drawer classes until Batch 5's
-// navigation.html lands. Slides over the current screen; tapping a tool switches + closes.
-function NavDrawer({ open, current, onPick, onClose }) {
-  if (!open) return null;
-  const tools = [
-    { k: 'home', label: 'Home' }, { k: 'chat', label: 'Chat' },
-    { k: 'support', label: 'Support' },
-    { k: 'command', label: 'Command' }, { k: 'tracker', label: 'Tracker' },
-  ];
-  return (
-    <div className="navscrim" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
-      <div className="navdrawer" onClick={(e) => e.stopPropagation()}
-        style={{ paddingTop: 'max(16px, env(safe-area-inset-top, 0px))', paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
-        <div style={{ padding: '6px 14px 12px', font: '700 13px system-ui', letterSpacing: '.04em', color: 'var(--muted,#8b95a3)', textTransform: 'uppercase' }}>Go to</div>
-        {tools.map((t) => (
-          <div key={t.k} className={`navrow ${t.k === current ? 'on' : ''}`} onClick={() => { onPick(t.k); onClose(); }}>
-            <span className="ni">{t.label[0]}</span><span className="nl">{t.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// Mobile tool switcher now lives in SharedNav (MobileNav) -- one tool list, two
+// forms. The old hand-rolled NavDrawer was retired here so there is a single nav
+// source (design-system-2026-06-23 item 7).
 
 // A screen render error must not blank the whole app — show a recoverable message.
 class ScreenBoundary extends Component {
@@ -669,7 +650,7 @@ export default function CornerCV6() {
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
-      <NavDrawer open={navOpen} current={current} onPick={onNav} onClose={closeNav} />
+      <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} />
     </div>
   );
 }
