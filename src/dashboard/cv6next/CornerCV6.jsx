@@ -661,7 +661,7 @@ export default function CornerCV6() {
       {/* One shared desktop bar (design item 7), mounted once for every desktop
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {isDesktop && <DesktopNav current={current} onPick={onNav} />}
-      <div key={viewKey} className="cv6-screenswap" style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
       <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} />
