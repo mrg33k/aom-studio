@@ -11,7 +11,7 @@ import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
-import { useRoomThread } from './data/useRoomThread.js';
+import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
@@ -76,7 +76,21 @@ function composeScreen(raw, { mobile = false, pick = 0 } = {}) {
 // emit structured blocks, which it doesn't yet, so we honestly show the room's real
 // messages instead of faking that thread. The per-message live-status pill is dropped
 // (it means a live agent, not a past message).
-function composeChatMobile() {
+// The Goal Thread (step thread): the wired thread-title + progress bar + the goal.checklist
+// rendered with the design's own classes (.thread-title/.gchk/.gchk-mark, width:goal.pct,
+// is-:item.state). Bound to REAL per-room step state; the step's state drives its look, no timer.
+const GOAL_THREAD_HTML = `
+<div class="cv6-goalthread" data-state="ready" style="border:1px solid var(--hair);background:var(--surface);border-radius:14px;padding:13px 14px;margin-bottom:14px;">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:11px;">
+    <span class="thread-title" style="font-size:14.5px;"><span style="color:var(--muted);font-weight:600;">Goal:</span> <span data-bind="goal.title">Current goal</span></span>
+    <span class="mono" style="margin-left:auto;font-size:11px;color:var(--muted);"><span data-bind="goal.doneCount">0</span>/<span data-bind="goal.total">0</span></span>
+  </div>
+  <div style="height:6px;border-radius:4px;background:var(--surface-2);overflow:hidden;margin-bottom:13px;"><div style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),#6366F1);" data-mod="width:goal.pct"></div></div>
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div class="gchk is-pending" style="display:flex;align-items:center;gap:10px;" data-each="goal.checklist" data-mod="is-:item.state"><span class="gchk-mark"></span><span class="gchk-label" style="flex:1;font-size:13px;" data-bind="item.label">Step</span></div>
+  </div>
+</div>`;
+function composeChatMobile(withGoal) {
   const doc = new DOMParser().parseFromString(chatRaw, 'text/html');
   const screen = [...doc.querySelectorAll('[data-cv6]')].find((n) => n.getAttribute('data-screen') === 'chat-mobile');
   if (!screen) return '';
@@ -89,6 +103,7 @@ function composeChatMobile() {
     t.querySelector('.astat')?.remove();
     body.innerHTML = '';
     body.setAttribute('style', `${body.getAttribute('style') || ''};overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(20px, env(safe-area-inset-bottom, 0px))`);
+    if (withGoal) body.insertAdjacentHTML('beforeend', GOAL_THREAD_HTML);
     body.appendChild(t);
   }
   // append shared loading/error/empty states for the thread
@@ -241,17 +256,21 @@ function SupportInbox({ onNav, onOpenNav }) {
 // ── Chat: a room's real conversation (mobile). The structured Goal Thread (live steps,
 // decision cards, data tables) needs the agent to emit structured blocks; until then we
 // show the real messages honestly. ──
+const CHAT_ALIASES = { 'goal.checklist': 'item' };
 function Chat({ room, worldId, onNav, onOpenNav }) {
   const { messages, status } = useRoomThread(worldId, room);
-  const html = useMemo(composeChatMobile, []);
+  const goal = useGoalThread(worldId, room);
+  const hasGoal = !!goal;
+  const html = useMemo(() => composeChatMobile(hasGoal), [hasGoal]);
   const data = useMemo(() => ({
     room: { name: room.name, initials: room.initials || '·', statusText: room.statusText || '', count: '' },
     messages,
+    goal: goal || { title: '', step: '', doneCount: '', total: '', pct: 0, checklist: [] },
     user: { initials: 'PM' },
     loading: { label: `Opening ${room.name}…` },
     empty: { title: `No messages with ${room.name} yet`, body: 'Start the conversation below.', actionLabel: '' },
     error: { title: "Couldn't load this conversation", body: 'Your connection dropped. Nothing was lost.', code: 'chat · retry' },
-  }), [room, messages]);
+  }), [room, messages, goal]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t),
     search: () => onOpenNav?.(), openNav: () => onOpenNav?.(), openProfile: () => {}, openCommandK: () => {},
@@ -261,7 +280,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
     openAttachment: () => {}, review: () => {}, setDataView: () => {}, toggleFollow: () => {}, retry: () => {},
   }), [onNav, onOpenNav]);
   return <TemplateScreen html={html} data={data} actions={actions} state={status}
-    style={{ width: '100%', height: '100%' }} />;
+    aliases={CHAT_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
 
 // ── Command (mobile): real activity dock (running jobs); goal ledger honest ──

@@ -66,3 +66,48 @@ export function useRoomThread(worldId, room) {
 
   return { messages, status };
 }
+
+// ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──
+// Steps come from room-goal-steps (the ordered checklist the agent works); the goal title
+// from room-goals. Per the design guardrail, a step animates (active/spinner) ONLY when the
+// agent is live right now; otherwise it renders its static state (done or pending), never a
+// fake loop. Returns null when the room has no goal/steps (so the thread simply doesn't show).
+function roomKeyFor(room) {
+  if (!room?.id) return '';
+  return room.isProject ? String(room.id) : `agent:${room.id}`;
+}
+const LIVE = new Set(['live', 'working', 'online', 'running']);
+export function useGoalThread(worldId, room) {
+  const [goal, setGoal] = useState(null);
+  useEffect(() => {
+    const roomKey = roomKeyFor(room);
+    if (!worldId || !roomKey) { setGoal(null); return undefined; }
+    let alive = true;
+    Promise.all([
+      authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}&room=${encodeURIComponent(roomKey)}`).then((r) => (r && r.ok ? r.json() : null)).catch(() => null),
+      authFetch(`/api/dashboard/room-goals?world=${encodeURIComponent(worldId)}`).then((r) => (r && r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([stepsD, goalsD]) => {
+      if (!alive) return;
+      const list = Array.isArray(stepsD?.list) ? stepsD.list : [];
+      const goalText = goalsD?.rooms?.[roomKey]?.goal || '';
+      if (!list.length && !goalText) { setGoal(null); return; }
+      const live = LIVE.has(String(room.status || '').toLowerCase());
+      const doneCount = list.filter((s) => s.done).length;
+      const total = list.length;
+      let activeAssigned = false;
+      const checklist = list.map((s) => {
+        let state = s.done ? 'done' : 'pending';
+        if (!s.done && !activeAssigned && live) { state = 'active'; activeAssigned = true; }
+        return { label: s.text || '', state };
+      });
+      setGoal({
+        id: roomKey, title: goalText || 'Current goal',
+        step: Math.min(doneCount + 1, total || 1), doneCount, total,
+        pct: total ? Math.round((doneCount / total) * 100) : 0,
+        checklist,
+      });
+    });
+    return () => { alive = false; };
+  }, [worldId, room?.id, room?.isProject, room?.status]);
+  return goal;
+}
