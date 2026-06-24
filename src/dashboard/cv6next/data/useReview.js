@@ -263,7 +263,11 @@ export function useReview(worldId = 'aom') {
   };
 
   return {
-    state: status,
+    // The templates gate the happy-path viewer on data-state="ready"; map our
+    // internal 'loaded' to 'ready' so the document/image viewer actually shows
+    // (otherwise 'loaded' matches no data-state branch and the viewer stays hidden,
+    // which read as a blank read view). loading/error pass through for their branches.
+    state: status === 'loaded' ? 'ready' : status,
     data,
     actions: {
       setQueueFilter: (f) => { setFilter(f); setOpenDelId(null); },

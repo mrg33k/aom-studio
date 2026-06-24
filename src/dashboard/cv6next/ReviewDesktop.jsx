@@ -42,7 +42,10 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
         whoTint: i.whoTint || 'green',
       })),
     },
-    deliverable: pickedId ? (data.queue.items.find((i) => i.id === pickedId) || data.deliverable) : data.deliverable,
+    // Use the hook's merged deliverable (it carries the fetched bodyHtml for the
+    // open item). The old override re-derived from queue.items, whose bodyHtml is
+    // the hardcoded blank, so the viewer never got real content.
+    deliverable: data.deliverable,
   };
 
   const aliases = {
