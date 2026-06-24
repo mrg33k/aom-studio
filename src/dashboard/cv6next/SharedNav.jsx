@@ -57,8 +57,36 @@ function Badge({ badge }) {
 
 const LOGO = '/cv6/assets/corner-logo-white.svg';
 
+// --- Theme switcher (drop 7): Dark / Light / Glass segmented control. Lives in the
+// mobile drawer and the desktop nav; flips data-app-theme on the shell root. Token-
+// styled so it reads right in every theme.
+const THEMES = [
+  { id: 'dark', label: 'Dark' },
+  { id: 'light', label: 'Light' },
+  { id: 'glass', label: 'Glass' },
+];
+function ThemeSeg({ theme, onTheme, compact }) {
+  if (!onTheme) return null;
+  return (
+    <div role="group" aria-label="Theme"
+      style={{ display: 'inline-flex', gap: 4, padding: 4, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--hair)' }}>
+      {THEMES.map((t) => {
+        const on = t.id === theme;
+        return (
+          <button key={t.id} onClick={() => onTheme(t.id)} aria-pressed={on} role="button"
+            style={{ height: compact ? 28 : 34, padding: compact ? '0 11px' : '0 14px', borderRadius: 9, border: 'none', cursor: 'pointer',
+              fontSize: compact ? 12 : 13, fontWeight: 600, fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap',
+              background: on ? 'var(--accent)' : 'transparent', color: on ? '#fff' : 'var(--muted)' }}>
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // --- DESKTOP: the top tool bar -------------------------------------------------
-export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, userInitials = 'P', badges = {} }) {
+export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, userInitials = 'P', badges = {}, theme, onTheme }) {
   return (
     <div className="topbar">
       <div className="tgreet" style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -74,6 +102,7 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, use
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <ThemeSeg theme={theme} onTheme={onTheme} compact />
         <div className="ib" onClick={() => onOpenCommandK?.()} role="button" aria-label="Search"><SearchGlyph /></div>
         <div className="av" onClick={() => onOpenProfile?.()} role="button" aria-label="Profile">{userInitials}</div>
       </div>
@@ -82,7 +111,7 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, use
 }
 
 // --- MOBILE: the drawer --------------------------------------------------------
-export function MobileNav({ open, current, onPick, onClose, badges = {} }) {
+export function MobileNav({ open, current, onPick, onClose, badges = {}, theme, onTheme }) {
   if (!open) return null;
   return (
     <div className="navscrim" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
@@ -103,6 +132,12 @@ export function MobileNav({ open, current, onPick, onClose, badges = {} }) {
             <Badge badge={badges[t.id]} />
           </div>
         ))}
+        {onTheme && (
+          <div style={{ padding: '14px 14px 4px', borderTop: '1px solid var(--divider)', marginTop: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 9 }}>Theme</div>
+            <ThemeSeg theme={theme} onTheme={onTheme} />
+          </div>
+        )}
       </div>
     </div>
   );

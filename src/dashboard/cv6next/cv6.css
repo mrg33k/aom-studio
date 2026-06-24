@@ -759,3 +759,49 @@
 [data-cv6] .mhchip { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:16px; border:1px solid var(--hair); background:var(--surface); color:var(--muted); font-size:12.5px; font-weight:600; font-family:var(--font-sans); white-space:nowrap; cursor:pointer; flex:none; }
 [data-cv6] .mhchip.on { background:var(--accent); border-color:transparent; color:#fff; }
 [data-cv6] .mhchip .ct { font-family:var(--font-mono); font-size:10.5px; opacity:.8; }
+
+
+/* ---- Theme switcher (drop 7): same complete palettes, re-scoped under a single
+   [data-app-theme] on the app root so flipping it re-skins every screen WITHOUT
+   editing the per-screen data-theme="dark". Dark = no override (default unchanged). */
+[data-cv6][data-app-theme="light"], [data-app-theme="light"] [data-cv6] {
+  --ground: #F6F6F7; 
+  --surface: #FFFFFF;
+  --surface-2: #F0F0F2;
+  --fg: #18181B;
+  --muted: #6a6a72;
+  --faint: #a0a0a8;
+  --divider: rgba(0,0,0,.07);
+  --hair: rgba(0,0,0,.08);
+  --chip: rgba(0,0,0,.04);
+  --accent: #0066FF;
+  --accent-weak: rgba(0,102,255,.1);
+  --warn: #B45309;
+  --success: #10B981;
+  --success-weak: rgba(16,185,129,.12);
+  --avatar: linear-gradient(135deg, #0066FF, #003D99);
+}
+
+[data-cv6][data-app-theme="glass"], [data-app-theme="glass"] [data-cv6] {
+  --ground:
+    radial-gradient(54% 40% at 22% 12%, rgba(74,116,148,.55), transparent 62%),
+    radial-gradient(50% 34% at 86% 20%, rgba(206,148,70,.34), transparent 58%),
+    radial-gradient(46% 34% at 72% 86%, rgba(46,96,128,.45), transparent 64%),
+    linear-gradient(180deg, #0c1218 0%, #080b10 55%, #05080b 100%); 
+  --surface: rgba(22,26,33,.55);
+  --surface-2: rgba(255,255,255,.08);
+  --fg: #F3F4F6;
+  --muted: #c0c4cc;
+  --faint: #828690;
+  --divider: rgba(255,255,255,.1);
+  --hair: rgba(255,255,255,.16);
+  --chip: rgba(255,255,255,.1);
+  --accent: #5B9BFF;
+  --accent-weak: rgba(91,155,255,.22);
+  --warn: #FBBF24;
+  --success: #46E0A8;
+  --success-weak: rgba(70,224,168,.16);
+  --avatar: linear-gradient(135deg, #5B9BFF, #2563EB);
+}
+
+[data-app-theme="glass"] .glassy { backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3); }

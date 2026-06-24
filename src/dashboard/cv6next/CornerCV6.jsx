@@ -686,6 +686,16 @@ export default function CornerCV6() {
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
 
+  // Theme (drop 7): dark | light | glass, persisted. Applied as data-app-theme on the
+  // shell root; the cv6.css override blocks re-skin every screen. Default dark = no override.
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('cv6-theme') || 'dark'; } catch { return 'dark'; }
+  });
+  const changeTheme = useCallback((t) => {
+    setTheme(t);
+    try { localStorage.setItem('cv6-theme', t); } catch { /* private mode */ }
+  }, []);
+
   // Go to a new location, remembering where we were so Back is a real page-undo.
   const goTo = useCallback((nextView, nextRoom = null) => {
     setHistory((h) => [...h, { view, openedRoom }]);
@@ -745,18 +755,18 @@ export default function CornerCV6() {
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
   return (
-    <div data-cv6 data-theme="dark" style={{
+    <div data-cv6 data-theme="dark" data-app-theme={theme} style={{
       minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
       paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
       {/* One shared desktop bar (design item 7), mounted once for every desktop
           screen; each screen's baked topbar was stripped so this is the only nav. */}
-      {isDesktop && <DesktopNav current={current} onPick={onNav} />}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} theme={theme} onTheme={changeTheme} />}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
-      <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} />
+      <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} />
     </div>
   );
 }
