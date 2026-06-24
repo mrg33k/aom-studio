@@ -5,8 +5,8 @@
 import React, { useState, useMemo } from 'react';
 import { useReview } from './data/useReview.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import reviewRaw from '../templates/review.html?raw';
-import statesRaw from '../templates/states-extra.html?raw';
+import reviewRaw from './templates/review.html?raw';
+import statesRaw from './templates/states-extra.html?raw';
 
 function composeDesktopReview(raw) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -24,8 +24,8 @@ function composeDesktopReview(raw) {
   return screen.outerHTML;
 }
 
-export default function ReviewDesktop({ onNav, onOpenNav }) {
-  const { state, data, actions } = useReview('aom');
+export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
+  const { state, data, actions } = useReview(worldId || 'aom');
   const [pickedId, setPickedId] = useState(null);
 
   const desktopHtml = useMemo(() => composeDesktopReview(reviewRaw), []);

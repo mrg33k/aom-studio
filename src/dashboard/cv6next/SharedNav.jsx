@@ -16,7 +16,7 @@ export const NAV_TOOLS = [
   { id: 'home',       label: 'Home',     route: 'home',       wired: true },
   { id: 'chat',       label: 'Chat',     route: 'chat',       wired: true },
   { id: 'organize',   label: 'Organize', route: 'organize',   wired: false },
-  { id: 'review',     label: 'Review',   route: 'review',     wired: false },
+  { id: 'review',     label: 'Review',   route: 'review',     wired: true },
   { id: 'support',    label: 'Support',  route: 'support',    wired: true },
   { id: 'tracker',    label: 'Tracker',  route: 'tracker',    wired: true },
   { id: 'command',    label: 'Command',  route: 'command',    wired: true },

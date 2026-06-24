@@ -5,8 +5,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useReview } from './data/useReview.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import reviewRaw from '../templates/review.html?raw';
-import statesRaw from '../templates/states-extra.html?raw';
+import reviewRaw from './templates/review.html?raw';
+import statesRaw from './templates/states-extra.html?raw';
 
 function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -23,8 +23,8 @@ function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
   return screen.outerHTML;
 }
 
-export default function Review({ onNav, onOpenNav }) {
-  const { state, data, actions } = useReview('aom');
+export default function Review({ worldId, onNav, onOpenNav }) {
+  const { state, data, actions } = useReview(worldId || 'aom');
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
 

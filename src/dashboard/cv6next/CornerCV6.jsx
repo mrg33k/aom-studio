@@ -10,6 +10,8 @@ import { useMemo, useState, useEffect, useCallback, useRef, Component } from 're
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
+import Review from './Review.jsx';
+import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
@@ -734,6 +736,7 @@ export default function CornerCV6() {
   else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
+  else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'review'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'chatlist'; }
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'home'; }
 
