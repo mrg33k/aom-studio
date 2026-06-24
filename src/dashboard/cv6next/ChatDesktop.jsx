@@ -10,6 +10,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useChatList } from './data/useHomeData.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
+import { Result } from './BlockRenderer.jsx';
 
 const NAV = [
   { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
@@ -77,20 +78,27 @@ function groupByDayD(messages) {
 }
 
 // One desktop message row (shared by the open latest day and expanded older days).
-function MsgRow({ m }) {
+function MsgRow({ m, onSend }) {
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
       <span className={`ava is-${m.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{m.agentInitials}</span>
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 2 }}>{m.agentName}<span style={{ marginLeft: 8, color: 'var(--faint)' }}>{m.time}</span></div>
         <div style={{ fontSize: 14, color: 'var(--fg)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.text}</div>
+        {m.blocks?.length ? (
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {m.blocks.map((b, i) => (
+              <Result key={i} block={b} onAction={onSend} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );
 }
 
 // An older day, folded into a one-line card you tap to open (reuses the .goalcard CSS).
-function DesktopDayCard({ group }) {
+function DesktopDayCard({ group, onSend }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`goalcard${open ? ' is-open' : ''}`}>
@@ -101,7 +109,7 @@ function DesktopDayCard({ group }) {
       </div>
       <div className="gc-body">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 8 }}>
-          {group.items.map((m, i) => <MsgRow key={i} m={m} />)}
+          {group.items.map((m, i) => <MsgRow key={i} m={m} onSend={onSend} />)}
         </div>
       </div>
     </div>
@@ -109,18 +117,18 @@ function DesktopDayCard({ group }) {
 }
 
 // Plain message list (desktop) for rooms without a live structured thread.
-function PlainThread({ messages }) {
+function PlainThread({ messages, onSend }) {
   if (!messages?.length) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>No messages in this room yet. Start the conversation below.</div>;
   const groups = groupByDayD(messages);
   const older = groups.slice(0, -1);
   const latest = groups[groups.length - 1] || null;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 660 }}>
-      {older.map((g, i) => <DesktopDayCard key={`${g.key}-${i}`} group={g} />)}
+      {older.map((g, i) => <DesktopDayCard key={`${g.key}-${i}`} group={g} onSend={onSend} />)}
       {latest && (
         <>
           <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
-          {latest.items.map((m, i) => <MsgRow key={i} m={m} />)}
+          {latest.items.map((m, i) => <MsgRow key={i} m={m} onSend={onSend} />)}
         </>
       )}
     </div>
@@ -204,7 +212,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                   {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
                       the thread + its tables/charts centered instead of stretched. */}
                   <div style={{ maxWidth: 720, margin: '0 auto' }}>
-                    {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} />}
+                    {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} onSend={send} />}
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>

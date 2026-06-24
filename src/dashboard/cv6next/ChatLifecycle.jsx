@@ -9,6 +9,7 @@
 // data: we fold by DAY (which we have), not by past "goals" (never stored).
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
+import { Result } from './BlockRenderer.jsx';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -60,7 +61,7 @@ function Avatar({ m }) {
 }
 
 // One message. Long bodies clamp until expanded (design .longmsg containment).
-function Message({ m }) {
+function Message({ m, onSend }) {
   const ref = useRef(null);
   const [clamped, setClamped] = useState(false);
   const [open, setOpen] = useState(false);
@@ -82,6 +83,13 @@ function Message({ m }) {
         {clamped && (
           <button className="longmsg-more" onClick={() => setOpen((v) => !v)}>{open ? 'Show less' : 'Show more'}</button>
         )}
+        {m.blocks?.length ? (
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {m.blocks.map((b, i) => (
+              <Result key={i} block={b} onAction={onSend} />
+            ))}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -256,20 +264,20 @@ function ThinkingTurn({ room }) {
 
 // Walk a run of messages; collapse consecutive file messages into one gallery, and render
 // any structured (Goal Thread) message inline as its step thread.
-function renderItems(items, onOpenFile, goal, onReview) {
+function renderItems(items, onOpenFile, goal, onReview, onSend) {
   const out = []; let run = [];
   const flush = (key) => { if (run.length) { out.push(<FileGallery key={`g${key}`} files={run} sender={run[0]} onOpen={onOpenFile} onReview={onReview} />); run = []; } };
   items.forEach((m, i) => {
     if (m.isFile) { run.push(m); }
     else if (m.blocks && m.blocks.length) { flush(i); out.push(<GoalTurn key={i} m={m} goal={goal} />); }
-    else { flush(i); out.push(<Message key={i} m={m} />); }
+    else { flush(i); out.push(<Message key={i} m={m} onSend={onSend} />); }
   });
   flush('end');
   return out;
 }
 
 // An older day, folded into a one-line card you tap to open.
-function DayCard({ group, onOpenFile, goal, onReview }) {
+function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`goalcard${open ? ' is-open' : ''}`} style={{ marginBottom: 10 }}>
@@ -279,7 +287,7 @@ function DayCard({ group, onOpenFile, goal, onReview }) {
         <svg className="gc-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
       </div>
       <div className="gc-body">
-        {renderItems(group.items, onOpenFile, goal, onReview)}
+        {renderItems(group.items, onOpenFile, goal, onReview, onSend)}
       </div>
     </div>
   );
@@ -413,13 +421,13 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
               {older.map((g, i) => (
                 <React.Fragment key={g.key + i}>
                   <div className="daydiv"><span>{g.label.toUpperCase()}</span></div>
-                  <DayCard group={g} onOpenFile={openFile} goal={threadGoal} onReview={reviewHandoff} />
+                  <DayCard group={g} onOpenFile={openFile} goal={threadGoal} onReview={reviewHandoff} onSend={onSend} />
                 </React.Fragment>
               ))}
               {latest && (
                 <>
                   <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
-                  {renderItems(latest.items, openFile, threadGoal, reviewHandoff)}
+                  {renderItems(latest.items, openFile, threadGoal, reviewHandoff, onSend)}
                 </>
               )}
               {/* Reply pending: the agent is on it, shown right under the pinned question. */}

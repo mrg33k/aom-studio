@@ -24,6 +24,7 @@ import { useHome, useProjectMissions, shapeProjectState, createMissionInProject,
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
+import { useDemoBlocksFeed } from './data/useDemoBlocks.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
 import inboxRaw from './templates/support-inbox.html?raw';
@@ -421,20 +422,26 @@ function SupportInbox({ onNav, onOpenNav }) {
 // from that real output. Otherwise we show the real messages honestly. ──
 const CHAT_ALIASES = { 'goal.checklist': 'item' };
 function Chat({ room, worldId, onNav, onOpenNav }) {
-  const { messages, blocks, status, send } = useRoomThread(worldId, room);
+  // Demo mode: check for ?demo=blocks query param
+  const demoFeed = useDemoBlocksFeed();
+  const isDemo = !!demoFeed;
+
+  // If demo mode, use demo feed; otherwise use real thread
+  const messages = isDemo ? demoFeed : useRoomThread(worldId, room).messages;
+  const { status, send } = isDemo ? { status: 'ready', send: () => {} } : useRoomThread(worldId, room);
   const goal = useGoalThread(worldId, room);
   const hasGoal = !!goal;
-  const liveThread = Array.isArray(blocks) && blocks.length > 0;
+  const liveThread = Array.isArray(messages) && messages.some((m) => m.blocks?.length > 0);
   const html = useMemo(() => composeChatMobile(hasGoal), [hasGoal]);
   const data = useMemo(() => ({
-    room: { name: room.name, initials: room.initials || '·', statusText: room.statusText || '', count: '' },
+    room: { name: isDemo ? 'DEMO: Block Showcase' : room.name, initials: room.initials || '·', statusText: isDemo ? 'demo' : room.statusText || '', count: '' },
     messages,
     goal: goal || { title: '', step: '', doneCount: '', total: '', pct: 0, checklist: [] },
     user: { initials: 'PM' },
     loading: { label: `Opening ${room.name}…` },
     empty: { title: `No messages with ${room.name} yet`, body: 'Start the conversation below.', actionLabel: '' },
     error: { title: "Couldn't load this conversation", body: 'Your connection dropped. Nothing was lost.', code: 'chat · retry' },
-  }), [room, messages, goal]);
+  }), [isDemo, room, messages, goal]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t),
     search: () => onOpenNav?.(), openNav: () => onOpenNav?.(), openProfile: () => {}, openCommandK: () => {},
@@ -450,7 +457,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
   // and the goal thread is just the latest turn (design: the visual chat language).
   return (
     <ChatLifecycle
-      room={{ name: room.name, initials: room.initials || '·', statusText: room.statusText || '', status: room.status || 'ready' }}
+      room={{ name: isDemo ? 'DEMO: Block Showcase' : room.name, initials: room.initials || '·', statusText: isDemo ? 'demo' : room.statusText || '', status: room.status || 'ready' }}
       messages={messages} status={status} goal={liveThread ? goal : null}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
       onOpenReview={() => onNav('review')}
