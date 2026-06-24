@@ -3,10 +3,56 @@
 // approve / request-changes as real decision events. No fake data.
 
 import { useState, useEffect, useCallback } from 'react';
+import { marked } from 'marked';
 import { authFetch } from '../../lib/authFetch';
 import { titleForAgent } from './agentTitles';
 
+marked.setOptions({ gfm: true, breaks: false });
+
 const TINTS = ['green', 'lime', 'amber', 'violet'];
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+}
+
+// Build the read-view innerHTML for one deliverable from its real file. Images
+// and video stream raw bytes through the tenant-gated project-file endpoint;
+// markdown renders to HTML; code/text shows preformatted; other binaries (pdf,
+// docx) open in place or honestly hand off to their room. `path` is the relative
+// corner/users/... path the review queue already carries (item.id).
+async function buildDeliverableBody(item) {
+  const path = item?.id || '';
+  if (!path) return '';
+  const enc = encodeURIComponent(path);
+  const raw = `/api/dashboard/project-file?path=${enc}&raw=1`;
+  const type = item.type;
+
+  if (type === 'image' || type === 'photo') {
+    return `<img src="${raw}" alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
+  }
+  if (type === 'video') {
+    return `<video src="${raw}" controls style="max-width:100%;border-radius:10px;display:block;"></video>`;
+  }
+  if (type === 'doc') {
+    if (/\.pdf$/i.test(path)) {
+      return `<iframe src="${raw}" title="${escapeHtml(item.title)}" style="width:100%;height:60vh;border:0;border-radius:10px;"></iframe>`;
+    }
+    return `<div style="padding:14px 0;color:#666;">This file opens in its room. <a href="${raw}" target="_blank" rel="noopener" style="color:#0066FF;">Open ${escapeHtml(item.title)}</a></div>`;
+  }
+  // text: copy (.md / .txt) or code
+  try {
+    const r = await authFetch(`/api/dashboard/project-file?path=${enc}`);
+    if (!r?.ok) return `<div style="padding:14px 0;color:#666;">This file's contents could not be loaded right now.</div>`;
+    const d = await r.json();
+    const content = d?.content || '';
+    if (/\.md$/i.test(path)) {
+      try { return marked.parse(content); } catch { /* fall through to pre */ }
+    }
+    return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono,monospace);font-size:13px;line-height:1.6;margin:0;">${escapeHtml(content)}</pre>`;
+  } catch {
+    return `<div style="padding:14px 0;color:#666;">This file's contents could not be loaded right now.</div>`;
+  }
+}
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -65,6 +111,7 @@ export function useReview(worldId = 'aom') {
   const [openDelId, setOpenDelId] = useState(null);
   const [filter, setFilter] = useState('ready'); // ready | pipeline
   const [status, setStatus] = useState('loading'); // loading | loaded | error
+  const [bodies, setBodies] = useState({}); // path -> rendered innerHTML ('' while loading)
 
   const load = useCallback(async () => {
     let ok = false;
@@ -114,6 +161,20 @@ export function useReview(worldId = 'aom') {
     const t = setInterval(load, 30000);
     return () => clearInterval(t);
   }, [load]);
+
+  // Fetch the opened deliverable's real content once, cache it by path.
+  useEffect(() => {
+    if (!openDelId) return;
+    if (bodies[openDelId] !== undefined) return; // already loading or loaded
+    const item = (queue?.items || []).find((i) => i.id === openDelId);
+    if (!item) return;
+    let cancelled = false;
+    setBodies((b) => ({ ...b, [openDelId]: '' })); // '' = loading sentinel
+    buildDeliverableBody(item).then((html) => {
+      if (!cancelled) setBodies((b) => ({ ...b, [openDelId]: html || ' ' }));
+    });
+    return () => { cancelled = true; };
+  }, [openDelId, queue, bodies]);
 
   const approve = useCallback(async (deliverableId) => {
     try {
@@ -180,23 +241,22 @@ export function useReview(worldId = 'aom') {
       isPipeline: filter === 'pipeline' ? 'on' : 'off',
       items: (queue?.items || []).filter((i) => filter === 'ready' ? i.status === 'ready' : i.status === 'live'),
     },
-    deliverable: (queue?.items || []).find((i) => i.id === openDelId) || {
-      id: '',
-      file: '',
-      title: '',
-      bodyHtml: '',
-      type: 'doc',
-      typeLabel: 'Document',
-      who: '',
-      whoInitials: '',
-      whoTint: 'green',
-      location: '',
-      commentsLabel: 'Pin-comments',
-      commentsLabelLower: 'pin-comments',
-      openCount: 0,
-      pins: [],
-      comments: [],
-    },
+    deliverable: (() => {
+      const open = (queue?.items || []).find((i) => i.id === openDelId);
+      if (!open) {
+        return {
+          id: '', file: '', title: '', bodyHtml: '', type: 'doc', typeLabel: 'Document',
+          who: '', whoInitials: '', whoTint: 'green', location: '',
+          commentsLabel: 'Pin-comments', commentsLabelLower: 'pin-comments',
+          openCount: 0, pins: [], comments: [],
+        };
+      }
+      const loaded = bodies[openDelId];
+      const bodyHtml = (loaded === undefined || loaded === '')
+        ? '<div style="padding:14px 0;color:#888;">Loading the file…</div>'
+        : loaded;
+      return { ...open, bodyHtml };
+    })(),
     empty: { title: "You're all caught up", body: 'Nothing needs your review right now. New deliverables the agent flags will land here.', actionLabel: 'Browse waiting' },
     loading: { label: 'Gathering deliverables…' },
     error: { title: "We couldn't load your review queue", body: 'Your connection dropped. Nothing was lost. Your last view is saved.', code: 'review · retrying' },

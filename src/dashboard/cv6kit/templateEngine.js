@@ -130,6 +130,17 @@ function applyBindings(el, scopes, ctx) {
   const bindPath = el.getAttribute('data-bind');
   if (bindPath) applyValue(el, resolvePath(scopes, bindPath));
 
+  // data-html — fill this element's innerHTML from data (rendered content:
+  // a document's markdown rendered to HTML, an <img>/<video> viewer, etc).
+  // Distinct from data-bind (which sets textContent). The host stays agnostic;
+  // the source must already be trusted/rendered HTML built by the screen's data
+  // hook (same-tenant files via the tenant-gated project-file endpoint).
+  const htmlPath = el.getAttribute('data-html');
+  if (htmlPath != null) {
+    const v = resolvePath(scopes, htmlPath);
+    if (v != null) el.innerHTML = String(v);
+  }
+
   // data-mod — drive a documented per-item visual variation from data. Form
   // "verb:path", several allowed, separated by ";". The host stays design-agnostic:
   // every verb just toggles the design's `is-<value>` modifier class (the verb —
