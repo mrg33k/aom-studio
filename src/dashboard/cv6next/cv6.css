@@ -810,5 +810,6 @@
    there is no real goal (goal.has='none' => .convo-ready.is-none), instead of a goal
    panel with blank checklist counts. Default (goal present) shows the goal body. */
 [data-cv6] .convo-ready .convo-rest2 { display:none; }
+[data-cv6] .convo-ready .convo-goalbody { display:flex; }
 [data-cv6] .convo-ready.is-none .convo-rest2 { flex:1; display:flex; align-items:center; justify-content:center; }
 [data-cv6] .convo-ready.is-none .convo-goalbody { display:none; }
