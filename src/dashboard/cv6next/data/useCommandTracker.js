@@ -207,7 +207,12 @@ export function useCommand(worldIdArg) {
       })
       .catch(() => {});
     load();
-    const id = setInterval(load, 15000);
+    // corner:corner-ui-cv6 (2026-06-24): this poll pulls the FULL supabase-status
+    // payload (agents/projects/tasks/messages) only to derive the latest line per
+    // room for the ledger. That does not need 15s freshness — 60s matches useDataPipe
+    // and cuts this heavy fetch 4x. Combined with the unchanged-data bailout above,
+    // the command surface now re-renders only on a real change. Part of the load fix.
+    const id = setInterval(load, 60000);
     return () => { alive = false; clearInterval(id); };
   }, [worldId]);
 
