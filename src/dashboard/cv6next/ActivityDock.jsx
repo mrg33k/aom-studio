@@ -64,6 +64,12 @@ function ActivityDock({ worldId, onOpenJob }) {
     setExpandedJobId(expandedJobId ? null : currentJob.id);
   };
 
+  // When no real agent job is running, the only "job" is the labelled SAMPLE demo. Showing a
+  // fake job bar pinned to the top of every screen (which also overlaps the top content row)
+  // is worse than showing nothing, so hide the dock entirely while idle. It reappears the
+  // moment a real job lands (jobs has entries -> isDemonstration is false). (QA #7, Patrik OK.)
+  if (isDemonstration) return null;
+
   return (
     <div
       ref={dockRef}
