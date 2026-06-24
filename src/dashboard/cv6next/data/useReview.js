@@ -296,7 +296,10 @@ export function useReview(worldId = 'aom') {
     // internal 'loaded' to 'ready' so the document/image viewer actually shows
     // (otherwise 'loaded' matches no data-state branch and the viewer stays hidden,
     // which read as a blank read view). loading/error pass through for their branches.
-    state: status === 'loaded' ? 'ready' : status,
+    // When the queue has loaded but the current filter has ZERO deliverables, resolve
+    // to 'empty' so the shared "You're all caught up" branch shows (both Review.jsx and
+    // ReviewDesktop.jsx inject it) instead of a blank ready viewer. (QA #15)
+    state: status === 'loaded' ? (data.queue.items.length > 0 ? 'ready' : 'empty') : status,
     data,
     actions: {
       setQueueFilter: (f) => { setFilter(f); setOpenDelId(null); },
