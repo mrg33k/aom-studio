@@ -11,10 +11,14 @@
   .rec { width:10px; height:10px; border-radius:50%; background:#F87171; animation:recPulse 1.4s infinite; }
   .wave span { width:3px; border-radius:2px; background:var(--accent); display:inline-block; }
   .turn-name { font-size:14px; font-weight:600; }
+  /* safe-area insets for notch/home indicator */
+  [data-cv6][data-screen="livescribe-mobile"] .mhdr { padding-top:max(0px,env(safe-area-inset-top,0px)); }
+  [data-cv6][data-screen="livescribe-mobile"] > [style*="bottom:0"] { padding-bottom:max(0px,env(safe-area-inset-bottom,0px)); }
 </style>
 </head>
-<body data-cv6 data-screen="livescribe-desktop">
-<div style="width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;">
+<body data-cv6>
+<!-- Desktop screen -->
+<div data-cv6 data-screen="livescribe-desktop" style="width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;">
   <!-- Header with timer + waveform + Stop button -->
   <div style="display:flex;align-items:center;gap:14px;padding:18px 24px;border-bottom:1px solid var(--divider);">
     <span style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:14px;color:var(--fg);"><span class="rec"></span><span data-bind="session.elapsed">00:00</span></span>
@@ -112,6 +116,78 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Send to <span data-bind="session.targetShort">—</span>
       </button>
     </div>
+  </div>
+</div>
+</div>
+
+<!-- Mobile screen (Recording) -->
+<div data-cv6 data-screen="livescribe-mobile" style="width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;">
+  <!-- Header with back, title, search, nav menu -->
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl">Live Scribe</div><div class="msub" data-bind="session.target">Corner · Dashboard</div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <!-- Recording status bar with timer, waveform, speaker count -->
+  <div style="display:flex;align-items:center;gap:11px;padding:11px 16px;border-bottom:1px solid var(--divider);background:rgba(248,113,113,.06);">
+    <span style="display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:12.5px;color:var(--fg);flex:none;"><span class="rec"></span><span data-bind="session.elapsed">00:00</span></span>
+    <span class="wave" style="height:20px;flex:1;display:flex;align-items:center;gap:2.5px;">
+      <span style="height:50%;animation:wave 1s ease-in-out infinite 0s;"></span>
+      <span style="height:90%;animation:wave 1s ease-in-out infinite .1s;"></span>
+      <span style="height:65%;animation:wave 1s ease-in-out infinite .2s;"></span>
+      <span style="height:100%;animation:wave 1s ease-in-out infinite .15s;"></span>
+      <span style="height:45%;animation:wave 1s ease-in-out infinite .25s;"></span>
+      <span style="height:80%;animation:wave 1s ease-in-out infinite .05s;"></span>
+    </span>
+    <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--success);flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:var(--glow-online);"></span><span data-bind="session.speakerCount">—</span> speakers</span>
+  </div>
+  <!-- Transcript scroll area -->
+  <div style="position:absolute;left:0;right:0;top:132px;bottom:148px;overflow-y:auto;padding:16px 16px 0;display:flex;flex-direction:column;gap:16px;">
+    <!-- Transcript turns -->
+    <div style="display:contents;">
+      <div data-each="transcript">
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span class="scav" data-bind="turn.initials">—</span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span class="turn-name" style="font-size:13.5px;" data-bind="turn.speaker">Speaker</span>
+              <span class="mono" style="font-size:10.5px;color:var(--faint);" data-bind="turn.at">00:00</span>
+              <span style="margin-left:auto;display:flex;align-items:center;gap:3px;">
+                <span style="width:5px;height:5px;border-radius:50%;background:var(--success);"></span>
+                <span class="mono" style="font-size:9.5px;color:var(--faint);" data-bind="turn.confidence">—%</span>
+              </span>
+            </div>
+            <div style="font-size:14.5px;line-height:1.55;color:var(--fg);" data-bind="turn.textHtml">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div data-state="empty" style="color:var(--muted);font-size:13.5px;padding:20px;text-align:center;">
+      Waiting for the meeting to start. When you speak, your transcript will appear here.
+    </div>
+  </div>
+  <!-- Extracted so far button (held-c) -->
+  <button style="position:absolute;left:12px;right:12px;bottom:86px;z-index:5;display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:13px;border:1px solid var(--accent-weak);background:linear-gradient(180deg,var(--accent-weak),var(--surface));box-shadow:0 10px 26px -10px rgba(0,0,0,.5);cursor:not-allowed;opacity:.5;" title="not wired yet" disabled>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z"/></svg><span style="flex:1;text-align:left;font-size:12.5px;font-weight:600;color:var(--fg);">Extracted so far</span><span style="display:flex;gap:6px;"><span style="font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-weak);padding:3px 8px;border-radius:9px;"><span data-bind="extracted.actionCount">0</span> actions</span><span style="font-size:11px;font-weight:600;color:var(--success);background:var(--success-weak);padding:3px 8px;border-radius:9px;"><span data-bind="extracted.decisionCount">0</span> decisions</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
+  </button>
+  <!-- Control bar with pause, stop, ask helper (all held-c) -->
+  <div style="position:absolute;left:0;right:0;bottom:0;height:80px;background:var(--ground);border-top:1px solid var(--divider);display:flex;align-items:center;justify-content:center;gap:16px;padding:0 18px;">
+    <button style="width:46px;height:46px;border-radius:50%;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:not-allowed;opacity:.5;" title="not wired yet" disabled>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+    </button>
+    <button style="flex:1;max-width:200px;height:50px;border-radius:14px;border:none;background:#F87171;color:#fff;font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:not-allowed;opacity:.5;" title="not wired yet" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>Stop &amp; save
+    </button>
+    <button style="width:46px;height:46px;border-radius:50%;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:not-allowed;opacity:.5;" title="not wired yet" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+  </div>
+  <!-- Shared loading/error states (injected by TemplateScreen) -->
+  <div data-state="loading" style="color:var(--muted);font-size:13.5px;padding:20px;text-align:center;">
+    Connecting to the meeting…
+  </div>
+  <div data-state="error" style="color:var(--warn);font-size:13.5px;padding:20px;text-align:center;">
+    Recording not available. Check your connection.
   </div>
 </div>
 </body>

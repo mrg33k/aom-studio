@@ -6,6 +6,7 @@
 // reads; the Stop / Ask helper / Send controls are disabled with "not wired yet" tooltips.
 // When a real backend lands, useLiveScribe flips state to 'ready' and binds live turns.
 
+import { useMediaQuery } from '../cv6kit/useMediaQuery.js';
 import { useLiveScribe } from './data/useLiveScribe.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/livescribe.html?raw';
@@ -35,26 +36,31 @@ function composeLiveScribe(raw, screenName) {
   return screen.outerHTML;
 }
 
-const HTML = composeLiveScribe(template, 'livescribe-desktop');
+const HTML_DESKTOP = composeLiveScribe(template, 'livescribe-desktop');
+const HTML_MOBILE = composeLiveScribe(template, 'livescribe-mobile');
 
 export default function LiveScribe({ onNav, onOpenNav }) {
   const { state, data } = useLiveScribe('aom');
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
     openNav: () => onOpenNav?.(),
     openCommandK: () => {},
+    search: () => {},
     // Held-c (no transcription backend yet): inert, never faked. The template also
     // renders these controls disabled with "not wired yet" tooltips.
-    stopRecording: () => {},
-    changeTarget: () => {},
+    openExtracted: () => {},
+    pauseRecording: () => {},
+    stopAndSave: () => {},
     askHelper: () => {},
-    pushToRoom: () => {},
   };
+
+  const html = isMobile ? HTML_MOBILE : HTML_DESKTOP;
 
   return (
     <TemplateScreen
-      html={HTML}
+      html={html}
       data={data}
       actions={actions}
       state={state}
