@@ -1,0 +1,184 @@
+<!-- @dsCard group="Wired Templates" viewport="1480x940" subtitle="Organize tool · desktop (tree → files → preview) and mobile (browse+select, move-to-folder sheet, view/review). Stripped, scoped [data-cv6], labeled." name="Wired · Organize" -->
+<!--
+  ============================================================================
+  WIRED — Organize tool   ·   Source: ui_kits/tools/organize.html
+  Contract: wired/tools/organize.json
+  ----------------------------------------------------------------------------
+  Desktop: project tree · file list · file preview.
+  Mobile:  A) browse + multi-select with the action bar (Move/Rename/Share/Delete)
+           B) move-to-folder sheet   C) view/review a file.
+  Stripped of stage/window/phone bezel + fake status bar + tweaks panel.
+  Lists use data-each; per-item visuals use data-mod="is-:path"; no inline color
+  on data-driven bits.
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+<style> body { margin:0; background:#e8e6e2; padding:40px; box-sizing:border-box; min-width:max-content; } .wrap { display:flex; gap:36px; align-items:flex-start; } </style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ DESKTOP · tree → files → preview ============ -->
+<div data-cv6 data-theme="dark" data-screen="organize-desktop" data-screen-label="Organize · Desktop" class="cv6-screen" style="width:1440px;height:860px;flex:none;border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="topbar">
+    <div class="tgreet"><img src="../../assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
+    <div class="toolnav">
+      <div class="ctile" data-action="nav" data-target="home"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg><span class="clab">Home</span></div>
+      <div class="ctile" data-action="nav" data-target="chat"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg><span class="clab">Chat</span></div>
+      <div class="ctile on" data-action="nav" data-target="organize"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 8l9 4 9-4-9-4Z"/><path d="m3 12 9 4 9-4"/></svg><span class="clab">Organize</span></div>
+      <div class="ctile" data-action="nav" data-target="review"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="clab">Review</span></div>
+      <div class="ctile" data-action="nav" data-target="support"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg><span class="clab">Support</span></div>
+      <div class="ctile" data-action="nav" data-target="tracker"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="clab">Tracker</span></div>
+      <div class="ctile" data-action="nav" data-target="command"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4H4v16h3M17 4h3v16h-3"/></svg><span class="clab">Command</span></div>
+      <div class="ctile" data-action="nav" data-target="livescribe"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="clab">Scribe</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;"><span class="toolname">Organize</span><div class="ib" data-action="openCommandK"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="av" data-action="openProfile">P</div></div>
+  </div>
+  <div style="display:flex;flex:1;min-height:0;">
+    <!-- tree -->
+    <div style="width:280px;flex:none;border-right:1px solid var(--divider);padding:18px 14px;overflow:hidden;">
+      <div class="eyebrow" style="margin:0 6px 12px;">Projects</div>
+      <!-- ONE row per tree node; is-:node.depth → indent (is-d1|is-d2); is-open marks the selected node; is-:node.tint on the folder glyph; the chevron reflects node.collapsed -->
+      <div class="trow is-open" data-each="tree" data-action="openTreeNode" data-arg="node.id" data-mod="is-:node.depth"><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.chev"><path d="m9 6 6 6-6 6"/></svg><svg class="folder is-violet" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span data-bind="node.name">Dashboard</span></div>
+    </div>
+    <!-- file list -->
+    <div style="width:380px;flex:none;border-right:1px solid var(--divider);overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;"><span style="color:var(--fg);font-weight:600;font-size:15px;" data-bind="folder.name">Dashboard</span><span style="font-family:var(--font-mono);font-size:11.5px;color:var(--faint);"><span data-bind="folder.fileCount">12</span> files</span></div>
+      <div style="padding:0 12px;">
+        <!-- ONE row per file; is-open marks the previewed file; is-:file.kind on the glyph -->
+        <div class="file is-open" data-each="files" data-action="openFile" data-arg="file.id"><svg class="fglyph is-doc" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:file.kind"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div class="fn" data-bind="file.name">dashboard-port-plan.md</div><div class="fm"><span data-bind="file.edited">34m</span> · <span data-bind="file.size">8 KB</span></div></div></div>
+      </div>
+    </div>
+    <!-- preview -->
+    <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;justify-content:center;padding:32px 0;overflow:hidden;" data-state="ready">
+      <div style="width:520px;background:#fbfbfa;border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,.4);padding:44px 48px;color:#1a1a1a;">
+        <div style="font-family:var(--font-mono);font-size:12px;color:#999;margin-bottom:18px;" data-bind="preview.fileName">dashboard-port-plan.md</div>
+        <h1 style="font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0 0 14px;" data-bind="preview.title">Dashboard port plan</h1>
+        <div style="font-size:15px;line-height:1.65;color:#333;" data-bind="preview.bodyHtml"><p style="margin:0 0 14px;">Port CV6 to mobile parity: dynamic viewport units, safe-area insets, the side menu, and the swipe-deck Catch Up.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE A · browse & multi-select ============ -->
+<div data-cv6 data-theme="dark" data-screen="organize-mobile" data-screen-label="Organize · Browse" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl" data-bind="folder.name">Dashboard</div><div class="msub"><span data-bind="folder.fileCount">12</span> files · <span data-bind="folder.folderCount">1</span> folder</div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <!-- live filing job (background activity, floating) -->
+  <div class="actdock is-float" style="top:74px;" data-action="openJob" data-arg="activeJob.id"><span class="ad-ico" style="background:var(--accent-weak);"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round" style="animation:spin 1.05s linear infinite;"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg></span><div class="ad-body"><div class="ad-title" data-bind="activeJob.title">Elon · filing 40 files</div><div class="ad-sub" data-bind="activeJob.sub">into Projects · 28 done</div></div><span style="font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-weak);padding:3px 8px;border-radius:8px;flex:none;">LIVE</span></div>
+  <div style="position:absolute;left:0;right:0;top:138px;bottom:82px;overflow:hidden;padding:12px 16px 0;">
+    <!-- breadcrumb -->
+    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:12px;" data-each="breadcrumb" data-action="openCrumb" data-arg="crumb.id"><span data-bind="crumb.name">Corner</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    <!-- filter chips -->
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:14px;">
+      <!-- ONE chip per filter; is-on marks the active filter -->
+      <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active"><span data-bind="filter.label">All 12</span></button>
+      <span style="margin-left:auto;font-size:12.5px;font-weight:600;color:var(--accent);" data-action="toggleSelectMode">Done</span>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--hair);border-radius:16px;overflow:hidden;">
+      <!-- folder row (leads into the folder) -->
+      <div class="selrow" data-each="folders" data-action="openFolder" data-arg="subfolder.id"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="subfolder.name">cv6</div><div style="font-size:11px;color:var(--muted);"><span data-bind="subfolder.fileCount">12</span> files</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+      <!-- ONE file row; is-on marks selected; is-:file.kind on the glyph; tap toggles selection -->
+      <div class="selrow is-on" data-each="files" data-action="toggleSelect" data-arg="file.id" data-mod="is-:file.selected"><span class="selbox"><svg class="ck" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 7"/></svg></span><svg class="fglyph is-doc" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted);" data-mod="is-:file.kind"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="file.name">dashboard-port-plan.md</div><div class="mono" style="font-size:10.5px;color:var(--faint);"><span data-bind="file.edited">34m</span> · <span data-bind="file.size">8 KB</span></div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="var(--faint)" data-action="openFileMenu" data-arg="file.id"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg></div>
+    </div>
+  </div>
+  <!-- selection action bar -->
+  <div style="position:absolute;left:0;right:0;bottom:0;height:82px;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:12px;padding:0 16px;">
+    <span style="font-size:13px;font-weight:600;color:var(--fg);white-space:nowrap;"><span data-bind="selection.count">1</span> selected</span>
+    <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:18px;">
+      <button class="obar" data-action="moveSelection"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M13 17h8M18 14l3 3-3 3"/></svg>Move</button>
+      <button class="obar" data-action="renameSelection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Rename</button>
+      <button class="obar" data-action="shareSelection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="m8 7 4-4 4 4"/><path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/></svg>Share</button>
+      <button class="obar" data-action="deleteSelection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M18 6l-1 14H7L6 6"/></svg>Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE B · move-to-folder sheet ============ -->
+<div data-cv6 data-theme="dark" data-screen="organize-mobile" data-screen-label="Organize · Move" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <!-- dimmed browse behind -->
+  <div style="position:absolute;inset:0;opacity:.45;padding:24px 16px 0;">
+    <div style="background:var(--surface);border:1px solid var(--hair);border-radius:16px;height:240px;"></div>
+  </div>
+  <div data-action="cancelMove" style="position:absolute;inset:0;background:rgba(4,6,9,.55);"></div>
+  <!-- sheet -->
+  <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top-left-radius:22px;border-top-right-radius:22px;border-top:1px solid var(--hair);box-shadow:0 -18px 50px -12px rgba(0,0,0,.6);padding:10px 0 16px;">
+    <div style="width:38px;height:4px;border-radius:2px;background:var(--hair);margin:0 auto 14px;"></div>
+    <div style="display:flex;align-items:center;padding:0 18px 12px;"><div style="flex:1;font-size:16px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Move to…</div><div class="ib" style="width:30px;height:30px;border-radius:9px;" data-action="cancelMove"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg></div></div>
+    <!-- the item being moved -->
+    <div style="margin:0 16px 14px;display:flex;align-items:center;gap:11px;padding:11px 13px;border:1px solid var(--accent-weak);background:var(--accent-weak);border-radius:13px;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:var(--fg);" data-bind="moving.name">dashboard-port-plan.md</div><div style="font-size:11px;color:var(--muted);">from <span data-bind="moving.from">Corner · Dashboard</span></div></div></div>
+    <div class="eyebrow" style="margin:0 18px 8px;">Choose destination</div>
+    <div style="padding:0 12px;">
+      <!-- ONE destrow per destination; is-on marks the chosen one (radio) -->
+      <div class="destrow is-on" data-each="destinations" data-action="pickDestination" data-arg="dest.id" data-mod="is-:dest.picked"><svg class="folder is-accent" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:dest.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="dest.name">cv6</div><div style="font-size:11px;color:var(--muted);" data-bind="dest.path">Corner · Dashboard</div></div><span class="radio"></span></div>
+      <!-- new folder -->
+      <div style="display:flex;align-items:center;gap:12px;padding:0 12px;height:54px;border-radius:11px;color:var(--accent);cursor:pointer;" data-action="newFolder"><span style="width:19px;height:19px;display:flex;align-items:center;justify-content:center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span><div style="font-size:14px;font-weight:600;">New folder…</div></div>
+    </div>
+    <div style="display:flex;gap:10px;padding:12px 16px 0;"><button style="flex:none;width:104px;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="cancelMove">Cancel</button><button style="flex:1;height:48px;border-radius:13px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="confirmMove" data-arg="moving.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M13 17h8M18 14l3 3-3 3"/></svg>Move to <span data-bind="movePick.name">cv6</span></button></div>
+  </div>
+</div>
+
+<!-- ============ MOBILE C · view / review a file ============ -->
+<div data-cv6 data-theme="dark" data-screen="organize-mobile" data-screen-label="Organize · View file" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl" data-bind="viewFile.name">dashboard-port-plan.md</div><div class="msub" data-bind="viewFile.path">Corner · Dashboard</div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--divider);"><span class="ava is-green" data-mod="is-:viewFile.editorTint" style="width:22px;height:22px;font-size:9px;flex:none;" data-bind="viewFile.editorInitials">EL</span><span style="font-size:12px;color:var(--muted);flex:1;">Edited by <span data-bind="viewFile.editor">Elon</span> · <span data-bind="viewFile.edited">34m ago</span></span><span class="astat is-ready" data-mod="is-:viewFile.status"><span class="sd"></span><span data-bind="viewFile.statusLabel">READY</span></span></div>
+  <div style="position:absolute;left:0;right:0;top:158px;bottom:78px;overflow:hidden;padding:16px;" data-state="ready">
+    <div style="background:#fbfbfa;border-radius:8px;height:100%;box-shadow:0 12px 36px rgba(0,0,0,.4);padding:24px 22px;color:#1a1a1a;overflow:hidden;">
+      <div style="font-family:var(--font-mono);font-size:11px;color:#999;margin-bottom:14px;" data-bind="viewFile.name">dashboard-port-plan.md</div>
+      <h1 style="font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0 0 12px;" data-bind="viewFile.title">Dashboard port plan</h1>
+      <div style="font-size:13.5px;line-height:1.6;color:#333;" data-bind="viewFile.bodyHtml"><p style="margin:0;">Port CV6 to mobile parity: dynamic viewport units, safe-area insets, the side menu, and the swipe-deck Catch Up.</p></div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;height:78px;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:10px;padding:0 16px;">
+    <button style="flex:1;height:48px;border-radius:13px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="openInReview" data-arg="viewFile.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Open in Review</button>
+    <button style="width:48px;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;" data-action="commentFile" data-arg="viewFile.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg></button>
+    <button style="width:48px;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;" data-action="moveFile" data-arg="viewFile.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M13 17h8M18 14l3 3-3 3"/></svg></button>
+  </div>
+</div>
+
+<!-- ============ MOBILE D · project switcher ============ -->
+<div data-cv6 data-theme="dark" data-screen="organize-mobile" data-screen-label="Organize · Projects" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);display:flex;flex-direction:column;">
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl">Organize</div><div class="msub">Pick a project</div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <div data-state="ready" style="flex:1;overflow:hidden;">
+    <!-- ONE row per project; is-:project.tint on .pgly -->
+    <div class="prow" data-each="projects" data-action="openProject" data-arg="project.id"><div class="pgly is-accent" data-mod="is-:project.tint"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></div><div style="flex:1;min-width:0;"><div class="pname" data-bind="project.name">Corner CV6</div><div class="pmeta"><span data-bind="project.fileCount">34</span> files · <span data-bind="project.folderCount">3</span> folders</div></div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9 18l6-6-6-6"/></svg></div>
+  </div>
+  <div style="flex:none;padding:14px 16px;border-top:1px solid var(--divider);background:var(--ground);"><button style="width:100%;height:46px;border-radius:13px;border:1px dashed var(--hair);background:transparent;color:var(--accent);font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="newProject"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New project</button></div>
+</div>
+
+<!-- ============ MOBILE E · inside a folder ============ -->
+<div data-cv6 data-theme="dark" data-screen="organize-mobile" data-screen-label="Organize · Folder" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);display:flex;flex-direction:column;">
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl" data-bind="folder.name">Dashboard</div><div class="msub"><span data-bind="folder.fileCount">12</span> files · <span data-bind="folder.folderCount">1</span> folder</div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <!-- breadcrumb -->
+  <div class="crumb" data-each="breadcrumb" data-action="openCrumb" data-arg="crumb.id"><span data-bind="crumb.name">Corner CV6</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+  <div data-state="ready" style="flex:1;overflow:hidden;">
+    <!-- subfolder row (drills in) -->
+    <div class="frow" data-each="folders" data-action="openFolder" data-arg="subfolder.id"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="subfolder.name">cv6</div><div style="font-size:11px;color:var(--muted);"><span data-bind="subfolder.fileCount">12</span> files</div></div><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><path d="M9 18l6-6-6-6"/></svg></div>
+    <!-- ONE file row; is-:file.kind on the glyph; is-:file.status on the chip (Ready files) -->
+    <div class="frow" data-each="files" data-action="openFile" data-arg="file.id"><svg class="fglyph is-doc" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;color:var(--muted);" data-mod="is-:file.kind"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);" data-bind="file.name">dashboard-port-plan.md</div><div class="mono" style="font-size:10.5px;color:var(--faint);"><span data-bind="file.edited">34m</span> · <span data-bind="file.size">8 KB</span></div></div><span class="astat is-ready" data-mod="is-:file.status" style="flex:none;"><span class="sd"></span><span data-bind="file.statusLabel">READY</span></span></div>
+  </div>
+  <div style="flex:none;padding:14px 16px;border-top:1px solid var(--divider);background:var(--ground);display:flex;gap:10px;"><button style="flex:1;height:46px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="toggleSelectMode">Select</button><button style="flex:1;height:46px;border-radius:13px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="addFile" data-arg="folder.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Add file</button></div>
+</div>
+
+</div>
+</body>
+</html>
