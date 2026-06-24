@@ -51,28 +51,38 @@ export default async function handler(req, res) {
   // Until those columns exist, Supabase silently ignores the filter -- safe to include always.
   const clientFilter = `&client_id=eq.${encodeURIComponent(clientId)}`;
 
+  // corner:corner-ui-cv6 (2026-06-24): per-query timing so we fix the REAL slow
+  // query (Patrik: "load time is real bad waiting for projects"). Additive only —
+  // wraps each parallel query in a timer; the response carries `_timings` (ms) and
+  // the slowest query is logged. Safe to leave in; remove once the bottleneck is fixed.
+  const _timings = {};
+  const _timed = async (label, p) => { const s = Date.now(); const r = await p; _timings[label] = Date.now() - s; return r; };
+  const _tAll = Date.now();
   try {
     const [agents, messages, activeTasks, recentDone, projectDefs, rawEvents, tasksV2Active, tasksV2Done] = await Promise.all([
-      supabaseGet('agent_status', `order=slug${clientFilter}`),
-      supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`),
+      _timed('agent_status', supabaseGet('agent_status', `order=slug${clientFilter}`)),
+      _timed('messages', supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`)),
       // Legacy active tasks ONLY. Allowlist (not denylist) so v2 terminal
       // statuses (done/failed/cancelled) can never slip through unbounded -- that
       // bug pulled 700+ stale rows / 4MB per dashboard load (2026-05-18).
-      supabaseGet('tasks', `status=in.(queued,active,todo,working,needs_input)&order=created_at.desc&limit=100${clientFilter}`),
+      _timed('tasks_active', supabaseGet('tasks', `status=in.(queued,active,todo,working,needs_input)&order=created_at.desc&limit=100${clientFilter}`)),
       // Recent completed tasks (legacy: status=completed only -- v2 done/failed fetched below)
-      supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`),
-      supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc${clientFilter}`),
+      _timed('tasks_done', supabaseGet('tasks', `status=eq.completed&order=completed_at.desc&limit=50${clientFilter}`)),
+      _timed('projects', supabaseGet('projects', `is_active=eq.true&order=recency_weight.desc${clientFilter}`)),
       // Events table: for activity feed display ONLY. NOT used for status derivation or RNB.
       // agent_status table is the sole source of truth for all agent status.
       // client_id column added by migration 010 -- filter applies to all tenants including AOM.
-      supabaseGet('events', `order=timestamp.desc&limit=200&timestamp=gte.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}${clientFilter}`),
+      _timed('events', supabaseGet('events', `order=timestamp.desc&limit=200&timestamp=gte.${new Date(Date.now() - 30 * 60 * 1000).toISOString()}${clientFilter}`)),
       // Architecture v2: tasks with v2 statuses (source of truth for Right Now bar).
       // Right Now bar = status building | running | qa. running is set by task-runner.sh claim.
       // These rows have agent_identity + title columns (v2 schema added by migration 20260401000001).
-      supabaseGet('tasks', `status=in.(queued,classifying,planning,building,running,qa)&order=priority.desc,sort_order.asc,created_at.asc&limit=100${clientFilter}`).catch(() => []),
+      _timed('tasksV2_active', supabaseGet('tasks', `status=in.(queued,classifying,planning,building,running,qa)&order=priority.desc,sort_order.asc,created_at.asc&limit=100${clientFilter}`).catch(() => [])),
       // V2 done/failed tasks for completed section
-      supabaseGet('tasks', `status=in.(done,failed)&order=completed_at.desc&limit=50${clientFilter}`).catch(() => []),
+      _timed('tasksV2_done', supabaseGet('tasks', `status=in.(done,failed)&order=completed_at.desc&limit=50${clientFilter}`).catch(() => [])),
     ]);
+    _timings._total = Date.now() - _tAll;
+    { const slowest = Object.entries(_timings).filter(([k]) => k !== '_total').sort((a, b) => b[1] - a[1])[0];
+      console.log(`[supabase-status] client=${clientId} total=${_timings._total}ms slowest=${slowest ? slowest[0] + ':' + slowest[1] + 'ms' : 'n/a'} all=${JSON.stringify(_timings)}`); }
     // corner:dashboard-speed (2026-06-02): task rows carry the full brief in
     // `text` and `description` (~3.6KB each). The dashboard feed/bar only render
     // a single line from them, but the raw payload was ~427KB for tasksV2 alone
@@ -162,6 +172,7 @@ export default async function handler(req, res) {
       lastUpdated: new Date().toISOString(),
       source: 'supabase',
       clientId,   // echo back which tenant was served
+      _timings,   // per-query ms + _total; diagnostic for the projects load-time fix
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
