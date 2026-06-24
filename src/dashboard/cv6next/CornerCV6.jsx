@@ -159,6 +159,9 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   // Catch Up full deck (Home state D): cycle the real needs-you cards.
   const [catchUpOpen, setCatchUpOpen] = useState(false);
   const [catchUpIndex, setCatchUpIndex] = useState(0);
+  // Agents accordion (top of Home): one "Agents" row that expands its roster in place,
+  // default collapsed so the front door stays calm. (Decided 2026-06-23.)
+  const [agentsOpen, setAgentsOpen] = useState(false);
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
@@ -198,6 +201,7 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
       const proj = (data.projects || []).find((p) => p.id === id);
       if (proj && !isDesktop) setOpenedProjectId(id);
     },
+    toggleAgents: () => setAgentsOpen((o) => !o),
     openCatchUp: () => { setCatchUpIndex(0); setCatchUpOpen(true); },
     nextCatchUp: () => setCatchUpIndex((i) => Math.min(i + 1, Math.max(0, (data.catchUp?.all?.length || 1) - 1))),
     prevCatchUp: () => setCatchUpIndex((i) => Math.max(0, i - 1)),
@@ -281,7 +285,16 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
     return <TemplateScreen html={projectHtml} data={pdata} actions={actions} state="ready"
       aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
   }
-  return <TemplateScreen html={homeHtml} data={data} actions={actions} state={state}
+  // Agents accordion: the roster collapses (rows hidden) but the count + caret stay. The
+  // header binds agentsTotal (always the full count) and agentsOpen drives the caret rotate.
+  const agentsTotal = (data.agents && data.agents.length) || 0;
+  const homeData = {
+    ...data,
+    agents: agentsOpen ? data.agents : [],
+    agentsTotal,
+    agentsOpen: agentsOpen ? 'open' : 'closed',
+  };
+  return <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
     aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
 

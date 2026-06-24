@@ -14,6 +14,7 @@ import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
+import { curateTitledAgents } from './agentTitles.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -58,11 +59,13 @@ function relTime(ts) {
 }
 
 export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = {}) {
-  const agentRooms = (agents || []).map((a) => {
+  // Agents render as TITLES (curated set), never names. id stays the agent slug so the chat
+  // opens the right thread. (Agents-as-titles + Agents accordion, decided 2026-06-23.)
+  const agentRooms = curateTitledAgents(agents).map((a) => {
     const status = agentStatus(a.status);
     return {
-      id: a.id || a.slug, name: a.name || a.slug || 'Agent',
-      status, statusText: statusText(status, a.unread), initials: initials(a.name || a.slug),
+      id: a.slug, name: a.title,
+      status, statusText: statusText(status, a.unread), initials: initials(a.title),
     };
   });
   const projects = (projectRooms || []).map((p) => ({
@@ -166,12 +169,12 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] 
     byAgent[k].count += 1;
     if (!byAgent[k].text) { byAgent[k].text = firstLine(it.text); byAgent[k].time = relTime(it.timestamp); }
   }
-  const agentRows = (agents || []).map((a) => {
+  const agentRows = curateTitledAgents(agents).map((a) => {
     const status = chatStatus(a.status);
     const inb = byAgent[String(a.slug || a.name || '').toLowerCase()] || null;
     return {
-      id: a.id || a.slug, name: a.name || a.slug || 'Agent', initials: initials(a.name || a.slug),
-      tint: tintFor(a.name || a.id), status, statusLabel: CHAT_STATUS_LABEL[status] || 'READY',
+      id: a.slug, name: a.title, initials: initials(a.title),
+      tint: tintFor(a.title || a.slug), status, statusLabel: CHAT_STATUS_LABEL[status] || 'READY',
       snippet: inb?.text || '', time: inb?.time || '', needsCount: a.unread || inb?.count || 0,
     };
   });

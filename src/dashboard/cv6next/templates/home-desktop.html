@@ -98,10 +98,14 @@
       <div style="flex:none;display:flex;align-items:center;gap:8px;height:38px;margin-bottom:14px;padding:0 12px;border-radius:11px;background:var(--surface-2);border:1px solid var(--hair);" data-action="openCommandK"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span style="flex:1;font-size:13px;color:var(--faint);">Search rooms &amp; agents…</span><span class="mono" style="font-size:10px;color:var(--faint);border:1px solid var(--hair);border-radius:5px;padding:1px 5px;">⌘K</span></div>
       <div style="flex:none;display:flex;align-items:center;gap:14px;margin-bottom:13px;padding:0 2px;"><span class="kbd-row"><span class="kbd">↑</span><span class="kbd">↓</span> move</span><span class="kbd-row"><span class="kbd">→</span> open</span><span class="kbd-row"><span class="kbd">⌘K</span> jump</span></div>
       <div style="flex:1;overflow:hidden;" class="scrollcap">
-        <div class="subhdr">Agents · <span data-bind="agents.count">11</span></div>
+        <div class="subhdr agentgrp" data-action="toggleAgents" data-mod="is-:agentsOpen" style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+          <span class="agentppl"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.1"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.2a3 3 0 0 1 0 5.6"/><path d="M17.5 19a5.5 5.5 0 0 0-3-4.9"/></svg></span>
+          <span>Agents · <span data-bind="agentsTotal">6</span></span>
+          <span class="agentcaret" style="margin-left:auto;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+        </div>
         <div style="margin-bottom:16px;">
-          <!-- ONE template row per agent -->
-          <div class="room" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" style="font-weight:600;" data-bind="room.name">Elon</span><span style="font-size:11px;color:var(--accent);font-weight:600;" data-bind="room.statusText">on step 3</span><span class="kbd" style="margin-left:8px;">→</span></div>
+          <!-- ONE row per curated agent (titles), shown only while the accordion is open -->
+          <div class="room agentrow" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" style="font-weight:500;" data-bind="room.name">Web</span><span style="font-size:11px;color:var(--accent);font-weight:600;" data-bind="room.statusText">on step 3</span><span class="kbd" style="margin-left:8px;">→</span></div>
         </div>
         <div class="subhdr">Projects · <span data-bind="projects.count">84</span></div>
         <!-- ONE template row per project -->

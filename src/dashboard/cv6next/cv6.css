@@ -701,3 +701,17 @@
 [data-cv6] .longmsg.is-clamped::after { content:""; position:absolute; left:0; right:0; bottom:0; height:64px; background:linear-gradient(transparent,var(--surface)); pointer-events:none; }
 [data-cv6] .longmsg-more { display:inline-flex; align-items:center; gap:6px; margin-top:9px; font-size:12px; font-weight:600; color:var(--accent); background:none; border:none; cursor:pointer; font-family:var(--font-sans); }
 [data-cv6] .jumplive { position:absolute; left:50%; transform:translateX(-50%); bottom:84px; z-index:9; display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 14px; border-radius:18px; background:var(--accent); color:#fff; font-size:12.5px; font-weight:600; border:none; box-shadow:0 10px 26px -8px rgba(0,0,0,.5); cursor:pointer; }
+
+/* ---- Agents accordion (Home): one header row that expands its titled roster in place ---- */
+[data-cv6] .agentgrp { cursor:pointer; }
+[data-cv6] .agentgrp .agentppl { display:flex; align-items:center; justify-content:center; color:var(--muted); flex:none; }
+[data-cv6] .agentgrp .agentcaret { display:flex; align-items:center; justify-content:center; color:var(--faint); flex:none; transition:transform .22s cubic-bezier(.4,0,.2,1); }
+[data-cv6] .agentgrp.is-open .agentcaret { transform:rotate(180deg); }
+[data-cv6] .agentgrp.is-open .agentppl { color:var(--accent); }
+[data-cv6][data-screen="home-mobile"] .room.agentrow { height:46px; padding-left:30px; background:var(--surface-2); }
+[data-cv6][data-screen="home-mobile"] .room.agentrow .rn { font-weight:500; }
+[data-cv6][data-screen="home-mobile"] .room.agentgrp .tag { font-family:var(--font-sans); font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-weak); padding:1px 8px; border-radius:8px; letter-spacing:0; }
+[data-cv6][data-screen="home-desktop"] .room.agentrow { padding-left:26px; }
+[data-cv6][data-screen="home-desktop"] .room.agentrow .rn { font-weight:500; }
+[data-cv6][data-screen="home-desktop"] .agentgrp { padding:9px 12px; }
+[data-cv6][data-screen="home-desktop"] .agentgrp .tag { margin-left:auto; font-family:var(--font-sans); font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-weak); padding:1px 8px; border-radius:8px; }
