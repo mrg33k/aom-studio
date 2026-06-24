@@ -275,6 +275,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                     </span>
                     Hand off
                   </button>
+                  <button disabled style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--faint)', fontSize: 12.5, fontWeight: 500, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent file attach backend is ready">
+                    <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                    </span>
+                    Add a file
+                  </button>
                 </div>
 
                 {/* 3. Context / Goals */}

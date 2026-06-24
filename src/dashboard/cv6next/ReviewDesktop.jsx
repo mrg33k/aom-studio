@@ -79,6 +79,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
         anchor: p.anchor,
       })),
       openCount: pins.length,
+      notesWord: pins.length === 1 ? 'note' : 'notes',
     },
   };
 
