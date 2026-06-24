@@ -6,6 +6,27 @@ import React, { useState, useMemo } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/organize.html?raw';
+import statesRaw from './templates/states-extra.html?raw';
+
+// data-each item aliases the engine can't derive (tree→node, breadcrumb→crumb, etc.).
+const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder' };
+
+function composeOrganize(raw, screenName) {
+  const doc = new DOMParser().parseFromString(raw, 'text/html');
+  const screen = [...doc.querySelectorAll('[data-cv6][data-screen]')].find((n) => n.getAttribute('data-screen') === screenName);
+  if (!screen) return '';
+  screen.setAttribute('style', 'position:relative;width:100%;height:100%;background:#05080b;overflow:hidden');
+  const ready = screen.querySelector('[data-state="ready"]');
+  if (ready) {
+    const base = ready.getAttribute('style') || '';
+    ready.setAttribute('style', `${base};overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:max(20px, env(safe-area-inset-bottom, 0px))`);
+  }
+  const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
+  sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => screen.appendChild(b.cloneNode(true)));
+  return screen.outerHTML;
+}
+
+const MOBILE_HTML = composeOrganize(template, 'organize-mobile');
 
 export default function OrganizeMobile({ onNav, onOpenNav }) {
   const { state, data } = useOrganize('aom');
@@ -96,14 +117,5 @@ export default function OrganizeMobile({ onNav, onOpenNav }) {
     openJob: (jobId) => console.log('job:', jobId),
   };
 
-  return (
-    <TemplateScreen
-      state={state}
-      data={bindData}
-      template={template}
-      screen="organize-mobile"
-      onAction={handleActions}
-      fallback={<div style={{ padding: 24, color: 'var(--muted)' }}>Loading Organize…</div>}
-    />
-  );
+  return <TemplateScreen html={MOBILE_HTML} data={bindData} actions={handleActions} state={state} aliases={ORG_ALIASES} />;
 }

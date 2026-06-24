@@ -1,65 +1,69 @@
 // cv6next — Organize, desktop (tree → files → preview).
-// Structure from design-system-2026-06-24 wired/tools/organize.html
-// mounted via TemplateScreen with real data from useOrganize.
+// Structure from design-system-2026-06-24 wired/tools/organize.html, mounted via
+// TemplateScreen with real data from useOrganize. We extract the organize-desktop
+// screen node from the design fragment, inject the shared loading/error/empty states,
+// and bind real data + actions behind it (no redraw).
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/organize.html?raw';
+import statesRaw from './templates/states-extra.html?raw';
 
-const NAV = [
-  { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
-  { k: 'chat', label: 'Chat', d: 'M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z' },
-  { k: 'organize', label: 'Organize', d: 'M12 4 3 8l9 4 9-4-9-4Z|m3 8 9 4 9-4' },
-  { k: 'review', label: 'Review', d: 'M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z|circle cx="12" cy="12" r="2.6"' },
-  { k: 'support', label: 'Support', d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
-  { k: 'tracker', label: 'Tracker', d: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z|M12 2v3M12 19v3M2 12h3M19 12h3' },
-  { k: 'command', label: 'Command', d: 'M7 4H4v16h3M17 4h3v16h-3' },
-  { k: 'livescribe', label: 'Scribe', d: 'M9 2h6v12H9Z|path d="M5 11a7 7 0 0 0 14 0M12 18v3"' },
-];
+// data-each item aliases the engine can't derive (tree→node, breadcrumb→crumb,
+// destinations→dest, folders→subfolder); the singularizable ones are kept explicit too.
+const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder' };
+
+function composeOrganize(raw, screenName) {
+  const doc = new DOMParser().parseFromString(raw, 'text/html');
+  const screen = [...doc.querySelectorAll('[data-cv6][data-screen]')].find((n) => n.getAttribute('data-screen') === screenName);
+  if (!screen) return '';
+  screen.setAttribute('style', 'width:100%;height:100%');
+  const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
+  sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => screen.appendChild(b.cloneNode(true)));
+  return screen.outerHTML;
+}
+
+const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
 export default function OrganizeDesktop({ onNav, onOpenNav }) {
   const { state, data } = useOrganize('aom');
-  const [pickedFile, setPickedFile] = useState(null);
-  const selectedFile = useMemo(() => pickedFile || data?.files?.[0] || null, [pickedFile, data?.files]);
+  const [pickedId, setPickedId] = useState(null);
 
-  // Bind template data
-  const bindData = {
-    tree: data?.tree || [],
-    folder: data?.folder || { name: 'Projects', fileCount: 0, folderCount: 0 },
-    files: data?.files || [],
-    preview: selectedFile?.preview || data?.preview || {},
-    // ... other bindings as needed
+  // The full real data shape from useOrganize, with the picked file's preview swapped in.
+  const bindData = useMemo(() => {
+    if (!pickedId) return data;
+    const f = (data.files || []).find((x) => x.id === pickedId);
+    if (!f) return data;
+    return {
+      ...data,
+      preview: f.preview,
+      viewFile: { ...(data.viewFile || {}), id: f.id, name: f.name, title: f.preview?.title, bodyHtml: f.preview?.bodyHtml, edited: f.edited },
+    };
+  }, [data, pickedId]);
+
+  const actions = {
+    nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
+    openNav: () => onOpenNav?.(),
+    openCommandK: () => {},
+    openProfile: () => {},
+    search: () => {},
+    openFile: (id) => setPickedId(id),
+    openTreeNode: () => {},
+    openProject: () => setPickedId(null),
+    openFolder: () => {},
+    openCrumb: () => {},
+    openFileMenu: () => {},
+    openJob: () => {},
+    setFilter: () => {},
+    toggleSelect: () => {},
+    toggleSelectMode: () => {},
+    openInReview: () => onNav?.('review'),
+    // Held-c (the file store is flat — no folder tree): inert, never faked.
+    addFile: () => {}, newFolder: () => {}, newProject: () => {}, commentFile: () => {},
+    moveFile: () => {}, moveSelection: () => {}, confirmMove: () => {}, cancelMove: () => {},
+    pickDestination: () => {}, deleteSelection: () => {}, renameSelection: () => {}, shareSelection: () => {},
   };
 
-  const handleNav = (target) => {
-    if (target === 'back') onNav?.('home');
-    else onNav?.(target);
-  };
-
-  const handleOpenFile = (fileId) => {
-    const f = data?.files?.find((x) => x.id === fileId);
-    setPickedFile(f);
-  };
-
-  const handleActions = {
-    nav: (target) => handleNav(target),
-    openCommandK: () => console.log('command-k'),
-    openProfile: () => console.log('profile'),
-    openTreeNode: (nodeId) => console.log('tree node:', nodeId),
-    openFile: (fileId) => handleOpenFile(fileId),
-  };
-
-  // For now, render the mounted template via TemplateScreen
-  // This is the simplest integration that follows SupportDesktop pattern
-  return (
-    <TemplateScreen
-      state={state}
-      data={bindData}
-      template={template}
-      screen="organize-desktop"
-      onAction={handleActions}
-      fallback={<div style={{ padding: 24, color: 'var(--muted)' }}>Loading Organize…</div>}
-    />
-  );
+  return <TemplateScreen html={DESKTOP_HTML} data={bindData} actions={actions} state={state} aliases={ORG_ALIASES} />;
 }
