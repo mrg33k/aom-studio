@@ -57,7 +57,7 @@ function Message({ m }) {
     if (el && !open) setClamped(el.scrollHeight > 168 + 4);
   }, [m.text, open]);
   return (
-    <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+    <div data-userturn={m.isUser ? '' : undefined} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
       <Avatar m={m} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
@@ -190,6 +190,26 @@ function GoalTurn({ m, goal }) {
   );
 }
 
+// While a reply is pending, the space under the pinned question shows the agent is on it
+// (kit .thinking dot pulse), so a fresh send never looks dead. Replaced the moment the real
+// reply (bubble / Goal Thread) starts arriving.
+function ThinkingTurn({ room }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+      <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flex: 'none' }}>{room?.initials || '·'}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{room?.name}</span>
+        </div>
+        <div className="thinking">
+          <span className="dot3"><i /><i /><i /></span>
+          <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>Working on it…</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Walk a run of messages; collapse consecutive file messages into one gallery, and render
 // any structured (Goal Thread) message inline as its step thread.
 function renderItems(items, onOpenFile, goal) {
@@ -243,9 +263,36 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
   }, [goal, messages]);
 
   const submit = () => { const t = draft.trim(); if (!t) return; onSend?.(t); setDraft(''); };
-  const jumpToLatest = useCallback(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), []);
 
-  // The jump-to-latest pill shows only when scrolled up away from the tail.
+  // Send behavior (design contract, drop 7): a fresh message is NOT bottom-stuck. We pin
+  // the just-sent user message to the TOP of the view and let the agent's reply grow
+  // downward beneath it (thinking, then bubble / Goal Thread). It stays pinned until you
+  // scroll or send again. So while a reply is pending we reserve a viewport of room below.
+  const lastMsg = messages?.length ? messages[messages.length - 1] : null;
+  const awaiting = !!lastMsg && lastMsg.isUser; // sent, no agent reply yet
+  const lastUserSig = useMemo(() => {
+    for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
+      if (messages[i]?.isUser) return `${i}:${messages[i].ts || messages[i].text || ''}`;
+    }
+    return '';
+  }, [messages]);
+
+  // Scroll so the latest user message sits ~12px under the header (its top edge).
+  const pinLastUser = useCallback((behavior = 'smooth') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const nodes = el.querySelectorAll('[data-userturn]');
+    const node = nodes[nodes.length - 1];
+    if (!node) return;
+    const delta = node.getBoundingClientRect().top - el.getBoundingClientRect().top - 12;
+    el.scrollBy({ top: delta, behavior });
+  }, []);
+  const jumpToLatest = useCallback(() => {
+    if (awaiting) pinLastUser('smooth');
+    else bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [awaiting, pinLastUser]);
+
+  // The pill shows when scrolled away from the active exchange.
   const onScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
@@ -253,25 +300,28 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
     setShowJump(fromBottom > 240);
   }, []);
 
-  // Land at the latest message — the tail is home. This has to fire AFTER messages load
-  // (they arrive async, so scrolling on room-change alone lands on an empty thread), and
-  // again whenever a new message appears (so your just-sent message is never hidden just
-  // below the fold). When you've scrolled up to read history we leave you there.
   const prevLenRef = useRef(0);
+  const prevUserSigRef = useRef('');
   const roomKey = room?.id || room?.name;
-  useEffect(() => { prevLenRef.current = 0; }, [roomKey]);
+  useEffect(() => { prevLenRef.current = 0; prevUserSigRef.current = ''; }, [roomKey]);
   useEffect(() => {
     const el = scrollRef.current;
     const len = messages?.length || 0;
     const prev = prevLenRef.current;
     prevLenRef.current = len;
+    const prevSig = prevUserSigRef.current;
+    prevUserSigRef.current = lastUserSig;
     if (!el || !len) return;
+    // First load for this room: land on the active exchange (pin the question if a reply
+    // is pending, else the tail).
+    if (prev === 0) { if (awaiting) pinLastUser('auto'); else bottomRef.current?.scrollIntoView(); return; }
+    // A NEW user message was just sent -> pin it to the top; the answer fills in below.
+    if (lastUserSig && lastUserSig !== prevSig && awaiting) { pinLastUser('smooth'); return; }
+    // Agent reply streaming in beneath the pinned question: leave the scroll alone unless
+    // you're right at the tail watching it (then keep the newest in view).
     const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    // First load for this room (prev 0) snaps instantly; new messages while near the tail
-    // glide down. Scrolled-up reading (far from bottom) is left undisturbed.
-    if (prev === 0) bottomRef.current?.scrollIntoView();
-    else if (fromBottom < 260) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, roomKey]);
+    if (!awaiting && fromBottom < 200) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, roomKey, awaiting, lastUserSig, pinLastUser]);
 
   const empty = status === 'empty' || !messages?.length;
   const [preview, setPreview] = useState(null);
@@ -318,8 +368,14 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
                   {renderItems(latest.items, openFile, threadGoal)}
                 </>
               )}
+              {/* Reply pending: the agent is on it, shown right under the pinned question. */}
+              {awaiting && <ThinkingTurn room={room} />}
             </>
           )}
+          {/* Reserve a viewport of room below the pinned question while a reply is pending,
+              so the just-sent message can sit at the top and the answer grows into the space
+              beneath it (design send-behavior). Collapses once the reply has landed. */}
+          <div style={{ height: awaiting ? '78vh' : 4 }} />
           <div ref={bottomRef} style={{ height: 4 }} />
         </div>
         </SendCtx.Provider>
