@@ -10,12 +10,12 @@ import { setClientIdFromUser } from '../../lib/clientConfig';
 
 const STEP_SEQUENCE = ['welcome', 'connect', 'agents', 'theme', 'goal', 'done'];
 const STEP_LABELS = {
-  welcome: { eyebrow: 'Welcome', title: 'Meet your agent workspace', sub: 'Corner runs a team of AI agents across your projects. They work, then bring you the decisions. Let's set up your environment — it takes a minute.', nextLabel: 'Continue' },
-  connect: { eyebrow: 'Step 2 of 5 · Environment', title: 'Connect your environment', sub: 'Your environment is everything the agents can read and act on. Connect the services you use — you can change these anytime.', nextLabel: 'Continue' },
-  agents: { eyebrow: 'Step 3 of 5 · Trust', title: 'What can agents do on their own?', sub: 'Set the guardrails. Anything left off still gets done — the agent just asks you first.', nextLabel: 'Continue' },
+  welcome: { eyebrow: 'Welcome', title: 'Meet your agent workspace', sub: 'Corner runs a team of AI agents across your projects. They work, then bring you the decisions. Let\'s set up your environment - it takes a minute.', nextLabel: 'Continue' },
+  connect: { eyebrow: 'Step 2 of 5 · Environment', title: 'Connect your environment', sub: 'Your environment is everything the agents can read and act on. Connect the services you use - you can change these anytime.', nextLabel: 'Continue' },
+  agents: { eyebrow: 'Step 3 of 5 · Trust', title: 'What can agents do on their own?', sub: 'Set the guardrails. Anything left off still gets done - the agent just asks you first.', nextLabel: 'Continue' },
   theme: { eyebrow: 'Step 4 of 5 · Appearance', title: 'Choose your look', sub: 'Dark, Light and Glass are all first-class. Tap one to preview it live.', nextLabel: 'Continue' },
-  goal: { eyebrow: 'Step 5 of 5 · First goal', title: 'Assign your first goal', sub: 'Pick a project, describe the outcome, and assign it to an agent. You'll see it run in Command.', nextLabel: 'Finish setup' },
-  done: { eyebrow: 'All set', title: 'You're ready to go', sub: '', nextLabel: 'Take me to Corner' },
+  goal: { eyebrow: 'Step 5 of 5 · First goal', title: 'Assign your first goal', sub: 'Pick a project, describe the outcome, and assign it to an agent. You\'ll see it run in Command.', nextLabel: 'Finish setup' },
+  done: { eyebrow: 'All set', title: 'You\'re ready to go', sub: '', nextLabel: 'Take me to Corner' },
 };
 
 export function useOnboarding(worldId = 'aom') {
