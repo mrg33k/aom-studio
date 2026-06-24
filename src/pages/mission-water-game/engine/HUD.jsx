@@ -31,7 +31,7 @@ import { SUPPLY_DEFS } from './PhaseManager.js';
  * (every screen). The HUD gained a compact SUPPLIES readout in the top bar —
  * food/power/parts/tools at a glance, with a LOW SUPPLIES warning state.
  */
-export default function HUD({ phase, hud, onChoose, resources, playerName }) {
+export default function HUD({ phase, hud, onChoose, resources, playerName, missionLabel = 'MISSION WATER' }) {
   const [focusIdx, setFocusIdx] = useState(0);
   const [hoverIdx, setHoverIdx] = useState(-1);
   const btnsRef = useRef([]);
@@ -103,7 +103,7 @@ export default function HUD({ phase, hud, onChoose, resources, playerName }) {
 
       {/* ── TOP INSTRUMENT BAR ──────────────────────────────────── */}
       <div style={styles.topBar}>
-        <MissionIdent chapter={phase.chapter} playerName={playerName} />
+        <MissionIdent chapter={phase.chapter} playerName={playerName} missionLabel={missionLabel} />
         <InstrumentRow hud={hud} chapter={phase.chapter} />
         <div style={styles.topBarRight}>
           {/* R18b — survival supplies at a glance (full detail in MANIFEST) */}
@@ -197,12 +197,12 @@ export default function HUD({ phase, hud, onChoose, resources, playerName }) {
 
 // ─── subcomponents ────────────────────────────────────────────────────────────
 
-function MissionIdent({ chapter, playerName }) {
+function MissionIdent({ chapter, playerName, missionLabel = 'MISSION WATER' }) {
   const n = String(chapter || 1).padStart(2, '0');
   return (
     <div style={styles.missionIdent}>
       <div style={styles.identBadge}>
-        <div style={styles.identTopLine}>MISSION WATER</div>
+        <div style={styles.identTopLine}>{missionLabel}</div>
         {playerName ? (
           <div style={styles.identCadet}>CADET: {playerName}</div>
         ) : null}

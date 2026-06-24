@@ -1,0 +1,510 @@
+{
+  "start_phase": "sa_intro",
+  "phases": {
+    "sa_intro": {
+      "id": "sa_intro",
+      "chapter": 2,
+      "title": "A Voyage to the Moon",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#02040A",
+          "far": "#0B132B",
+          "mid": "#1C2541",
+          "ground": "#0D0D1A",
+          "accents": ["stars", "earth", "horizon_glow"]
+        },
+        "parallax_offset": 0.0
+      },
+      "hud_state": {
+        "water_res": 100,
+        "o2": 95,
+        "dist": 0,
+        "hull": 50
+      },
+      "narrative": "Pete Conrad believed anyone could reach the stars — if they trained hard enough and dreamed big enough. SpaceAvailable is that mission. You are a student cadet, chosen to design, build, and govern a sustainable lunar outpost. The Conrad Foundation invites students ages 13–18 to compete across Health & Nutrition, Energy & Environment, and Cyber-Technology. Your mission begins now. The Moon is 240,000 miles away. Let's close the distance.",
+      "choices": [
+        { "id": "register", "text": "Register for the Mission", "next_phase": "sa_patch_design" }
+      ]
+    },
+    "sa_patch_design": {
+      "id": "sa_patch_design",
+      "chapter": 2,
+      "title": "Design Your Mission Patch",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#02040A",
+          "far": "#0B132B",
+          "mid": "#1C2541",
+          "ground": "#0D0D1A",
+          "accents": ["stars", "satellite_grid"]
+        },
+        "parallax_offset": 0.1
+      },
+      "hud_state": {
+        "water_res": 100,
+        "o2": 95,
+        "dist": 5,
+        "hull": 50
+      },
+      "narrative": "Every Apollo mission had a patch — a symbol of who you are and what you stand for. Pete Conrad's Apollo 12 patch showed lightning bolts and a clipper ship: explorers, not conquerors. Now it is your turn. Your mission patch is your identity. It will travel with your team all the way to the Conrad Foundation finals and into the NASA event hall.",
+      "choices": [
+        { "id": "design_patch", "text": "Create My Mission Patch", "next_phase": "sa_track_select", "discovery": "mission_patch" }
+      ]
+    },
+    "sa_track_select": {
+      "id": "sa_track_select",
+      "chapter": 2,
+      "title": "Choose Your Specialty Track",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#02040A",
+          "far": "#0B132B",
+          "mid": "#1C2541",
+          "ground": "#0D0D1A",
+          "accents": ["stars", "earth", "moon"]
+        },
+        "parallax_offset": 0.15
+      },
+      "hud_state": {
+        "water_res": 100,
+        "o2": 92,
+        "dist": 10,
+        "hull": 50
+      },
+      "narrative": "A lunar outpost needs specialists. The Conrad Foundation has identified three critical challenge areas for student teams. Health & Nutrition: keeping crew alive and thriving in zero-g. Energy & Environment: powering the colony and protecting the Moon. Cyber-Technology & Security: connecting the outpost to Earth and defending its systems. Teams of 2–5 students compete within one category. Which track calls to you?",
+      "choices": [
+        { "id": "choose_health", "text": "Health & Nutrition Specialist", "next_phase": "sa_health_module" },
+        { "id": "choose_energy", "text": "Energy & Environment Engineer", "next_phase": "sa_energy_module" },
+        { "id": "choose_cyber", "text": "Cyber-Technology Architect", "next_phase": "sa_cyber_module" }
+      ]
+    },
+    "sa_health_module": {
+      "id": "sa_health_module",
+      "chapter": 2,
+      "title": "Health & Nutrition Module",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#02040A",
+          "far": "#0B132B",
+          "mid": "#1C2541",
+          "ground": "#0D0D1A",
+          "accents": ["stars", "satellite_grid", "horizon_glow"]
+        },
+        "parallax_offset": 0.2
+      },
+      "hud_state": {
+        "water_res": 85,
+        "o2": 88,
+        "dist": 20,
+        "hull": 55,
+        "region": "Health & Nutrition"
+      },
+      "narrative": "In deep space, the human body faces extraordinary stress: muscle atrophy, bone density loss, radiation exposure, and psychological isolation. Your challenge: design a nutrition and wellness program for a lunar crew of 6. What do they eat? How do they exercise? How do you grow food in a sealed environment with 1/6th Earth gravity? Study the Apollo health briefings, then submit your solution to the Conrad Foundation council.",
+      "choices": [
+        { "id": "complete_health", "text": "Submit Health & Nutrition Plan", "next_phase": "sa_portal_complete", "discovery": "health_specialist", "resource_cost": { "type": "sampling_kits", "amount": 1 } }
+      ]
+    },
+    "sa_energy_module": {
+      "id": "sa_energy_module",
+      "chapter": 2,
+      "title": "Energy & Environment Module",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#020408",
+          "far": "#0A1A2B",
+          "mid": "#1A2E41",
+          "ground": "#0D0D1A",
+          "accents": ["stars", "sun", "satellite_grid"]
+        },
+        "parallax_offset": 0.2
+      },
+      "hud_state": {
+        "water_res": 80,
+        "o2": 90,
+        "dist": 20,
+        "hull": 55,
+        "region": "Energy & Environment"
+      },
+      "narrative": "The Moon has no breathable atmosphere, extreme temperature swings (–173°C to +127°C), and constant solar radiation. But it also has 14 days of uninterrupted sunlight — and water ice locked in its southern polar craters. Your challenge: design the energy grid and environmental control system for a sustainable lunar outpost. Solar arrays? Nuclear fission? How do you maintain life support through the 14-day lunar night?",
+      "choices": [
+        { "id": "complete_energy", "text": "Submit Energy & Environment Plan", "next_phase": "sa_portal_complete", "discovery": "energy_engineer", "resource_cost": { "type": "data_access", "amount": 1 } }
+      ]
+    },
+    "sa_cyber_module": {
+      "id": "sa_cyber_module",
+      "chapter": 2,
+      "title": "Cyber-Technology & Security Module",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#020408",
+          "far": "#0A0B2B",
+          "mid": "#1A1E41",
+          "ground": "#0D0D1A",
+          "accents": ["stars", "satellite_grid", "earth"]
+        },
+        "parallax_offset": 0.2
+      },
+      "hud_state": {
+        "water_res": 75,
+        "o2": 91,
+        "dist": 20,
+        "hull": 58,
+        "region": "Cyber-Technology"
+      },
+      "narrative": "A 1.3-second communications delay between Earth and the Moon. Cyber attacks on space infrastructure are real — the 2022 Viasat hack took out satellite comms across Europe minutes before the Ukraine invasion. Your challenge: design the communications, navigation, and cybersecurity architecture for a lunar outpost that must operate autonomously for up to 30 minutes, protect crew data, and stay connected to mission control under adversarial conditions.",
+      "choices": [
+        { "id": "complete_cyber", "text": "Submit Cyber-Technology Plan", "next_phase": "sa_portal_complete", "discovery": "cyber_architect", "resource_cost": { "type": "community_partnerships", "amount": 1 } }
+      ]
+    },
+    "sa_portal_complete": {
+      "id": "sa_portal_complete",
+      "chapter": 2,
+      "title": "Lunar Learning Portal — Complete",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#02040A",
+          "far": "#0B132B",
+          "mid": "#1C2541",
+          "ground": "#0D0D1A",
+          "accents": ["stars", "moon", "horizon_glow"]
+        },
+        "parallax_offset": 0.25
+      },
+      "hud_state": {
+        "water_res": 90,
+        "o2": 93,
+        "dist": 35,
+        "hull": 65
+      },
+      "narrative": "Portal complete. The Conrad Foundation has reviewed your specialty submission and logged your Mission Patch. Pete Conrad said the difference between a good astronaut and a great one was preparation. You are prepared. Now comes the real challenge: designing the outpost itself. Your team will design the life support, habitat, and food systems that determine whether your crew survives 90 days on the Moon. Construction begins.",
+      "choices": [
+        { "id": "begin_build", "text": "Begin Lunar Outpost Design", "next_phase": "sa_build_intro" }
+      ]
+    },
+    "sa_build_intro": {
+      "id": "sa_build_intro",
+      "chapter": 3,
+      "title": "Lunar Outpost Blueprint",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "moon", "earth"]
+        },
+        "parallax_offset": 0.3
+      },
+      "hud_state": {
+        "water_res": 90,
+        "o2": 95,
+        "dist": 40,
+        "hull": 60
+      },
+      "narrative": "You are standing on the rim of Shackleton Crater, South Pole of the Moon — permanently lit by sunlight, close to water ice deposits, and protected from extreme temperature swings by the crater walls. This is where your outpost will be built. Your team of 2–5 students must now design three critical systems: Life Support, Habitat, and Food Production. Each system you design will be evaluated by the Conrad Foundation for sustainability, innovation, and real-world feasibility.",
+      "choices": [
+        { "id": "design_life_support", "text": "Design Life Support Systems", "next_phase": "sa_life_support" }
+      ]
+    },
+    "sa_life_support": {
+      "id": "sa_life_support",
+      "chapter": 3,
+      "title": "Life Support Systems",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "satellite_grid", "horizon_glow"]
+        },
+        "parallax_offset": 0.35
+      },
+      "hud_state": {
+        "water_res": 85,
+        "o2": 90,
+        "dist": 50,
+        "hull": 60,
+        "region": "Life Support"
+      },
+      "narrative": "Life support is the beating heart of a lunar outpost. You need oxygen generation, CO2 scrubbing, water recycling, and pressure management — all running 24/7. NASA's ISS ECLSS system recycles 93% of water including astronaut urine and sweat. Your design challenge: propose a life support architecture that sustains 6 crew for a 90-day mission. Every critical function must have two redundant backup systems. Failure is not an option.",
+      "choices": [
+        { "id": "submit_life_support", "text": "Submit Life Support Design", "next_phase": "sa_habitat", "discovery": "life_support_certified", "resource_cost": { "type": "sampling_kits", "amount": 1 } }
+      ]
+    },
+    "sa_habitat": {
+      "id": "sa_habitat",
+      "chapter": 3,
+      "title": "Habitat & Housing Design",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "moon", "satellite_grid"]
+        },
+        "parallax_offset": 0.4
+      },
+      "hud_state": {
+        "water_res": 80,
+        "o2": 88,
+        "dist": 58,
+        "hull": 65,
+        "region": "Habitat"
+      },
+      "narrative": "Where will your crew live? Lunar habitats must withstand micrometeorite impacts, radiation, seismic moonquakes, and the psychological weight of isolation. Some designs propose inflatable modules like Bigelow BEAM. Others favor lava tube shelters carved by ancient volcanic activity. NASA is testing 3D-printed regolith structures. Your challenge: design the living quarters, common areas, and emergency shelter for a crew of 6 on a 90-day rotation.",
+      "choices": [
+        { "id": "submit_habitat", "text": "Submit Habitat Design", "next_phase": "sa_food_systems", "discovery": "habitat_architect", "resource_cost": { "type": "data_access", "amount": 1 } }
+      ]
+    },
+    "sa_food_systems": {
+      "id": "sa_food_systems",
+      "chapter": 3,
+      "title": "Food Production Systems",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "horizon_glow", "earth"]
+        },
+        "parallax_offset": 0.45
+      },
+      "hud_state": {
+        "water_res": 75,
+        "o2": 86,
+        "dist": 66,
+        "hull": 68,
+        "region": "Food Systems"
+      },
+      "narrative": "A lunar outpost cannot survive on Earth resupply alone — cost and transit time make it unsustainable at scale. Your crew must grow a percentage of its own food. NASA's VEGGIE experiment on the ISS has grown romaine lettuce, kale, and radishes in microgravity. Hydroponics, aeroponics, and bioregenerative systems can work in lunar gravity. Design a food production module that provides at least 20% of the crew's daily caloric needs.",
+      "choices": [
+        { "id": "submit_food", "text": "Submit Food Systems Plan", "next_phase": "sa_build_reveal", "discovery": "food_scientist", "resource_cost": { "type": "community_partnerships", "amount": 1 } }
+      ]
+    },
+    "sa_build_reveal": {
+      "id": "sa_build_reveal",
+      "chapter": 3,
+      "title": "Outpost Design Council Review",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "moon", "earth", "horizon_glow"]
+        },
+        "parallax_offset": 0.5
+      },
+      "hud_state": {
+        "water_res": 85,
+        "o2": 90,
+        "dist": 75,
+        "hull": 75
+      },
+      "narrative": "The Conrad Foundation council has reviewed your outpost designs. Your life support architecture, habitat layout, and food systems have been assessed for sustainability, innovation, and real-world feasibility. NASA advisors noted your team's redundancy planning and crew wellbeing protocols. You have earned your Outpost Builder certification. One challenge remains: you must take your colony global and build an international alliance.",
+      "choices": [
+        { "id": "go_global", "text": "Connect with the Global Alliance", "next_phase": "sa_global_intro", "discoveries": ["outpost_builder"] }
+      ]
+    },
+    "sa_global_intro": {
+      "id": "sa_global_intro",
+      "chapter": 4,
+      "title": "International Collaboration",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "earth", "satellite_grid"]
+        },
+        "parallax_offset": 0.55
+      },
+      "hud_state": {
+        "water_res": 90,
+        "o2": 92,
+        "dist": 82,
+        "hull": 78
+      },
+      "narrative": "Space exploration is a global endeavor. The Artemis Accords now unite 47 nations committed to peaceful lunar exploration. SpaceAvailable connects student teams across three continents. Your outpost cannot stand alone — it needs trade agreements, shared research protocols, and international emergency response plans. Connect with one of SpaceAvailable's three global partner teams to form your alliance and present a unified proposal to the council.",
+      "choices": [
+        { "id": "connect_europe", "text": "Link with European Space Team", "next_phase": "sa_europe_link" },
+        { "id": "connect_apac", "text": "Link with Asia Pacific Team", "next_phase": "sa_apac_link" },
+        { "id": "connect_latam", "text": "Link with Latin American Team", "next_phase": "sa_latam_link" }
+      ]
+    },
+    "sa_europe_link": {
+      "id": "sa_europe_link",
+      "chapter": 4,
+      "title": "European Space Partnership",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "satellite_grid", "earth"]
+        },
+        "parallax_offset": 0.6
+      },
+      "hud_state": {
+        "water_res": 92,
+        "o2": 93,
+        "dist": 87,
+        "hull": 80,
+        "region": "European Alliance"
+      },
+      "narrative": "The ESA student team from Germany and France has been developing advanced solar panel arrays that sustain power through the 14-day lunar night using next-generation battery storage. Their agricultural module uses fungal networks to break down lunar regolith into viable growing substrate. Exchange your outpost designs, propose a joint emergency response protocol, and negotiate a shared resource policy between your two colonies.",
+      "choices": [
+        { "id": "form_eu_alliance", "text": "Form Alliance & Share Designs", "next_phase": "sa_summit", "discovery": "global_alliance" }
+      ]
+    },
+    "sa_apac_link": {
+      "id": "sa_apac_link",
+      "chapter": 4,
+      "title": "Asia Pacific Partnership",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "satellite_grid", "earth"]
+        },
+        "parallax_offset": 0.6
+      },
+      "hud_state": {
+        "water_res": 88,
+        "o2": 91,
+        "dist": 87,
+        "hull": 79,
+        "region": "Asia Pacific Alliance"
+      },
+      "narrative": "The JAXA-affiliated student team from Japan and South Korea has pioneered compact autonomous robotics for outpost construction and maintenance — robots that repair exterior systems during solar flares without risking crew. Their cybersecurity module uses post-quantum encryption protocols for all Earth-Moon communications. Exchange your outpost schematics, propose a joint robotics deployment strategy, and align on data sovereignty agreements.",
+      "choices": [
+        { "id": "form_apac_alliance", "text": "Form Alliance & Share Designs", "next_phase": "sa_summit", "discovery": "global_alliance" }
+      ]
+    },
+    "sa_latam_link": {
+      "id": "sa_latam_link",
+      "chapter": 4,
+      "title": "Latin American Partnership",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "satellite_grid", "earth"]
+        },
+        "parallax_offset": 0.6
+      },
+      "hud_state": {
+        "water_res": 86,
+        "o2": 90,
+        "dist": 87,
+        "hull": 78,
+        "region": "Latin American Alliance"
+      },
+      "narrative": "The CONAE student team from Argentina and Brazil has developed advanced water extraction protocols for lunar polar ice — combining microwave heating with centrifuge separation to yield clean water at 10 liters per day. Their governance model, structured on international treaty frameworks, ensures equitable resource distribution across allied outposts. Exchange your water and food systems designs and align on crew welfare standards.",
+      "choices": [
+        { "id": "form_latam_alliance", "text": "Form Alliance & Share Designs", "next_phase": "sa_summit", "discovery": "global_alliance" }
+      ]
+    },
+    "sa_summit": {
+      "id": "sa_summit",
+      "chapter": 4,
+      "title": "Global Summit: Joint Presentation",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "earth", "moon", "horizon_glow"]
+        },
+        "parallax_offset": 0.65
+      },
+      "hud_state": {
+        "water_res": 95,
+        "o2": 95,
+        "dist": 92,
+        "hull": 85
+      },
+      "narrative": "Your team and your global partners have aligned on a unified outpost design — pooling specialty knowledge across health, energy, and cyber-security. You will now present your joint proposal to the Conrad Foundation Council: a complete, international, sustainable lunar community. This is what Pete Conrad dreamed of. Students from around the world, making space a place for everyone.",
+      "choices": [
+        { "id": "present_to_council", "text": "Present to the Conrad Foundation", "next_phase": "sa_celebrate_intro" }
+      ]
+    },
+    "sa_celebrate_intro": {
+      "id": "sa_celebrate_intro",
+      "chapter": 4,
+      "title": "Finalist Announcement",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "moon", "earth", "horizon_glow"]
+        },
+        "parallax_offset": 0.7
+      },
+      "hud_state": {
+        "water_res": 100,
+        "o2": 98,
+        "dist": 96,
+        "hull": 90
+      },
+      "narrative": "The Conrad Foundation has reviewed all submissions from student teams across the globe. Your outpost design — your life support architecture, habitat model, food systems, and global alliance proposal — has been selected as a finalist. Top teams will be invited to present in person at a real NASA Space Center event. Pete Conrad's legacy was that the Moon belongs to all of us. Your team just proved it.",
+      "choices": [
+        { "id": "accept_invitation", "text": "Accept the NASA Event Invitation", "next_phase": "sa_end", "discovery": "astronaut_finalist" }
+      ]
+    },
+    "sa_end": {
+      "id": "sa_end",
+      "chapter": 4,
+      "title": "Mission Complete",
+      "visuals": {
+        "background": null,
+        "procedural": {
+          "sky": "#01020A",
+          "far": "#08101E",
+          "mid": "#101E2E",
+          "ground": "#070B14",
+          "accents": ["stars", "moon", "earth", "horizon_glow"]
+        },
+        "parallax_offset": 1.0
+      },
+      "hud_state": {
+        "water_res": 100,
+        "o2": 100,
+        "dist": 100,
+        "hull": 100
+      },
+      "narrative": "MISSION COMPLETE. You are a SpaceAvailable astronaut. Your design lives in the Conrad Foundation record. The best teams will be presenting at a real NASA event — meeting mission controllers, engineers, and explorers who walked the same halls as Pete Conrad. Space is available. For you. For your team. For every student who dared to imagine they could go.",
+      "choices": []
+    }
+  }
+}

@@ -172,6 +172,9 @@ function applyBindings(el, scopes, ctx) {
     const handler = (e) => {
       const fn = ctx.actions[action];
       if (typeof fn !== 'function') return;
+      // A nested data-action (e.g. an Assign button inside a click-to-open row) must NOT
+      // also fire its container's action. Stop bubbling once a real action handles the click.
+      e.stopPropagation();
       const arg = argPath ? resolvePath(scopes, argPath) : (target != null ? target : undefined);
       fn(arg, e);
     };

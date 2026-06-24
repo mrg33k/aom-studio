@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-18T15:25:38.202Z",
+  "generated_at": "2026-06-24T17:07:56.782Z",
   "missions": [
     {
       "slug": "corner:about-screens",
@@ -1024,6 +1024,20 @@
       "path": "corner/users/aom/projects/agent-hooks/missions/communications-hook"
     },
     {
+      "slug": "agent-hooks:context-handles",
+      "raw_slug": "context-handles",
+      "folder_name": "context-handles",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Context Handles",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/context-handles"
+    },
+    {
       "slug": "agent-hooks:design-hook",
       "raw_slug": "design-hook",
       "folder_name": "design-hook",
@@ -1036,6 +1050,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/agent-hooks/missions/design-hook"
+    },
+    {
+      "slug": "agent-hooks:force",
+      "raw_slug": "force",
+      "folder_name": "force",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Force",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/force"
     },
     {
       "slug": "agent-hooks:learning-hook",
@@ -1092,6 +1120,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/agent-hooks/missions/router"
+    },
+    {
+      "slug": "agent-hooks:scribe",
+      "raw_slug": "scribe",
+      "folder_name": "scribe",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "agent-hooks",
+      "workstream": null,
+      "name": "Scribe",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/agent-hooks/missions/scribe"
     },
     {
       "slug": "aheadofmarket.com:AOM-ai",
@@ -3488,6 +3530,20 @@
       "path": "corner/users/aom/projects/space-rising/missions/nat-geo-uplift"
     },
     {
+      "slug": "space-rising:open-design-eval",
+      "raw_slug": "open-design-eval",
+      "folder_name": "open-design-eval",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Open Design Eval",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/open-design-eval"
+    },
+    {
       "slug": "space-rising:podcast-pipeline",
       "raw_slug": "podcast-pipeline",
       "folder_name": "podcast-pipeline",
@@ -3637,8 +3693,8 @@
     },
     {
       "slug": "agent-hooks",
-      "total": 7,
-      "in_flight": 7,
+      "total": 10,
+      "in_flight": 10,
       "done": 0
     },
     {
@@ -3757,8 +3813,8 @@
     },
     {
       "slug": "space-rising",
-      "total": 28,
-      "in_flight": 28,
+      "total": 29,
+      "in_flight": 29,
       "done": 0
     },
     {

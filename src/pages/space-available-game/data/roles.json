@@ -1,0 +1,80 @@
+{
+  "roles": [
+    {
+      "id": "mission_biologist",
+      "name": "Mission Biologist",
+      "description": "I study how humans survive and thrive in space — nutrition, exercise, medical systems, and the science of keeping a crew healthy 240,000 miles from home.",
+      "flavor": "Crew health specialist. Designs the nutrition systems. Keeps the team mission-ready.",
+      "image": "/space-available/roles/role_biologist.png",
+      "ring_color": "#00E5CC",
+      "starting_resources": {
+        "sampling_kits": 3,
+        "data_access": 2,
+        "community_partnerships": 1,
+        "media_coverage": 1
+      },
+      "starting_supplies": {
+        "food": 5,
+        "power": 4,
+        "spare_parts": 3,
+        "tools": 4
+      }
+    },
+    {
+      "id": "systems_engineer",
+      "name": "Systems Engineer",
+      "description": "I design and manage the power grids, life support, and environmental systems that keep a lunar colony running. Without me, the lights go out.",
+      "flavor": "Colony backbone. Powers everything. When systems fail, I fix them.",
+      "image": "/space-available/roles/role_engineer.png",
+      "ring_color": "#FFB703",
+      "starting_resources": {
+        "sampling_kits": 1,
+        "data_access": 2,
+        "community_partnerships": 3,
+        "media_coverage": 1
+      },
+      "starting_supplies": {
+        "food": 5,
+        "power": 5,
+        "spare_parts": 3,
+        "tools": 3
+      }
+    },
+    {
+      "id": "cyber_architect",
+      "name": "Cyber Architect",
+      "description": "I build the networks, secure the systems, and make sure nothing takes our colony offline. From comms to navigation — I keep the mission connected.",
+      "flavor": "Digital defender. Wires the outpost. Keeps Earth in the loop.",
+      "image": "/space-available/roles/role_cyber.png",
+      "ring_color": "#A855F7",
+      "starting_resources": {
+        "sampling_kits": 1,
+        "data_access": 1,
+        "community_partnerships": 3,
+        "media_coverage": 2
+      },
+      "starting_supplies": {
+        "food": 5,
+        "power": 4,
+        "spare_parts": 4,
+        "tools": 3
+      }
+    }
+  ],
+  "resource_labels": {
+    "sampling_kits": "RESEARCH KITS",
+    "data_access": "TECH MODULES",
+    "community_partnerships": "CREW LINKS",
+    "media_coverage": "COMMS REACH"
+  },
+  "resource_icons": {
+    "sampling_kits": "flask",
+    "data_access": "database",
+    "community_partnerships": "people",
+    "media_coverage": "broadcast"
+  },
+  "budget_total": 10,
+  "budget_per_type_max": 4,
+  "supply_budget": 16,
+  "supply_per_type_max": 5
+}
