@@ -10,6 +10,18 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 
+// Mobile-header avatar tint + live ring keyed to the room's agent status
+// (drop-7 redesign: avatar feels present, ring pulses when live/working).
+const AV_TINT = {
+  live:    { background: 'rgba(52,211,153,.18)', color: 'var(--success)' },
+  working: { background: 'rgba(245,176,93,.18)', color: 'var(--accent)' },
+  blocked: { background: 'rgba(251,191,36,.18)', color: 'var(--warn)' },
+};
+const DOT = { live: 'var(--success)', working: 'var(--accent)', blocked: 'var(--warn)' };
+const avTint = (s) => AV_TINT[s] || { background: 'var(--surface-2)', color: 'var(--muted)' };
+const avRing = (s) => (s === 'live' ? 'live' : s === 'working' ? 'working' : 'ready');
+const dotColor = (s) => DOT[s] || 'var(--muted)';
+
 function dayKey(ts) {
   const d = ts ? new Date(ts) : null;
   if (!d || Number.isNaN(d.getTime())) return 'unknown';
@@ -364,12 +376,18 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
     <div data-cv6 data-theme="dark" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: '#05080b', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div className="mhdr">
         <div className="mback" onClick={onBack}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></div>
-        <div style={{ position: 'relative', flex: 'none' }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--avatar)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700 }}>{room.initials || '·'}</div>
-          <span className={`sdot is-${room.status || 'ready'}`} style={{ position: 'absolute', bottom: -1, right: -1, width: 11, height: 11, border: '2px solid var(--ground)' }} />
+        <div className={`mh-av is-${avRing(room.status)}`} style={avTint(room.status)}>
+          {room.initials || '·'}
+          <span className="mh-ring" />
+          <span className="mh-dot" style={{ background: dotColor(room.status) }} />
         </div>
         <div className="mhtitle">
-          <div className="mttl">{room.name}</div>
+          <div className="mhname">
+            <span className="mttl">{room.name}</span>
+            {room.status && room.status !== 'ready' && (
+              <span className={`astat is-${room.status}`}><span className="sd" />{String(room.status).toUpperCase()}</span>
+            )}
+          </div>
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
         <div className="mhactions">
