@@ -746,7 +746,9 @@ export default function CornerCV6() {
     if (target === 'back') { back(); return; }
     if (['home', 'support', 'command', 'tracker', 'organize', 'review', 'settings'].includes(target)) goTo(target, null);
     // Chat from the menu opens the conversations list; a row there opens the Goal Thread.
-    else if (target === 'chat') goTo('chatlist', null);
+    // "See all" rooms (Home All Rooms header) routes to the same full rooms list (was a
+    // dead 'rooms' target that fell through to nothing).
+    else if (target === 'chat' || target === 'rooms') goTo('chatlist', null);
   }, [back, goTo]);
   // Opening a room keeps the current view underneath so Back returns to where you tapped from.
   const onOpenRoom = useCallback((room, wid) => goTo(view, { room, worldId: wid || worldId }), [goTo, view, worldId]);
