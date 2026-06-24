@@ -95,12 +95,29 @@ export default async function handler(req, res) {
     // two text columns to a display length here; the full brief is fetched
     // separately by any task-detail surface that needs it. All other fields
     // (id/status/title/agent_identity/project/error/metadata/...) pass through.
+    // corner:corner-ui-cv6 (2026-06-24): measured the live payload — tasksV2 was 127KB of a
+    // 256KB response (50 rows). Per row: metadata 48KB total (nested plans/logs/sub-results
+    // NOTHING in the dashboard reads — only the scalar metadata.project is used), result 14KB,
+    // text/description already trimmed. The big page can't process that fast (load felt slow).
+    // So: truncate the long text fields AND slim metadata to scalar keys only (drop nested
+    // objects/arrays — the dead weight), keeping metadata.project + any small scalar.
     const TASK_TEXT_MAX = 280;
+    const slimMeta = (md) => {
+      if (!md || typeof md !== 'object' || Array.isArray(md)) return md;
+      const out = {};
+      for (const [k, v] of Object.entries(md)) {
+        if (v == null || typeof v === 'object') continue; // drop nested objects/arrays (the bulk)
+        out[k] = (typeof v === 'string' && v.length > TASK_TEXT_MAX) ? v.slice(0, TASK_TEXT_MAX) : v;
+      }
+      return out;
+    };
     const slimTask = (t) => {
       if (!t || typeof t !== 'object') return t;
       const out = { ...t };
-      if (typeof out.text === 'string' && out.text.length > TASK_TEXT_MAX) out.text = out.text.slice(0, TASK_TEXT_MAX);
-      if (typeof out.description === 'string' && out.description.length > TASK_TEXT_MAX) out.description = out.description.slice(0, TASK_TEXT_MAX);
+      for (const f of ['text', 'description', 'result', 'error']) {
+        if (typeof out[f] === 'string' && out[f].length > TASK_TEXT_MAX) out[f] = out[f].slice(0, TASK_TEXT_MAX);
+      }
+      if (out.metadata && typeof out.metadata === 'object') out.metadata = slimMeta(out.metadata);
       return out;
     };
     const tasks = [...activeTasks, ...recentDone].map(slimTask);
