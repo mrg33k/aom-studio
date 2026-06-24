@@ -1029,7 +1029,7 @@ export default function CornerCV6() {
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={(emailId) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent' })} />; viewKey = 'support'; }
+  else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={(emailId) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent' })} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={(emailId) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent' })} />; viewKey = 'support'; }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onAssignFile={(fileId) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent' })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }

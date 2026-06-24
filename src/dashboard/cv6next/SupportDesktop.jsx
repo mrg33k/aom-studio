@@ -30,7 +30,7 @@ function InboxRow({ it, open, onClick }) {
   );
 }
 
-export default function SupportDesktop({ onNav, onOpenNav }) {
+export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
   const { state, data } = useSupportInbox('aom');
   const needsYou = data?.needsYou || [];
   const watching = data?.watching || [];
@@ -67,9 +67,12 @@ export default function SupportDesktop({ onNav, onOpenNav }) {
         <div style={{ width: 520, flex: 'none', display: 'flex', flexDirection: 'column' }}>
           {selected ? (
             <>
-              <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--divider)' }}>
-                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{selected.subject}</div>
-                <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{selected.time}</div>
+              <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--divider)', display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{selected.subject}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{selected.time}</div>
+                </div>
+                <button className="assign" onClick={() => onAssignEmail?.(selected.id)} style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 13px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>Assign to agent</button>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: 22 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
