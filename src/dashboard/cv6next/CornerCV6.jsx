@@ -428,11 +428,11 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   const agentsLen = agentsList.length;
   const agentsWithNav = agentsList.map((a, i) => ({
     ...a,
-    knavSelected: knavSelectedIdx === i,
+    knavSel: knavSelectedIdx === i ? 'sel' : 'off',
   }));
   const projectsWithNav = projShown.map((p, i) => ({
     ...p,
-    knavSelected: knavSelectedIdx === agentsLen + i,
+    knavSel: knavSelectedIdx === agentsLen + i ? 'sel' : 'off',
   }));
 
   // When a room is opened via keyboard nav, override the room/goal data for col3 display
