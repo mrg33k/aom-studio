@@ -13,6 +13,9 @@ function composeDesktopReview(raw) {
   const screen = doc.querySelector('[data-cv6][data-screen="review-desktop"]');
   if (!screen) return '';
   screen.setAttribute('style', 'width:100%;height:100%');
+  // Strip the baked-in topbar — the shell renders the shared DesktopNav, so the
+  // template's own nav would stack a second header (matches composeScreen line 73).
+  screen.querySelector('.topbar')?.remove();
   // Append shared states to the viewer region
   const ready = screen.querySelector('[data-state="ready"]');
   if (ready) {
