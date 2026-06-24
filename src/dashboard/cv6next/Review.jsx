@@ -29,7 +29,7 @@ function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
   return screen.outerHTML;
 }
 
-export default function Review({ worldId, onNav, onOpenNav }) {
+export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable }) {
   const { state, data, actions } = useReview(worldId || 'aom');
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
@@ -153,6 +153,7 @@ export default function Review({ worldId, onNav, onOpenNav }) {
       if (notes) actions.requestChanges(id, notes);
     },
     sendChecklist: (id) => actions.sendChecklist(id),
+    assignAgent: (id) => onAssignDeliverable?.(id),
   };
 
   return (

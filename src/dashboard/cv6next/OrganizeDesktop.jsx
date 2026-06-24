@@ -29,7 +29,7 @@ function composeOrganize(raw, screenName) {
 
 const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
-export default function OrganizeDesktop({ onNav, onOpenNav }) {
+export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
   const { state, data } = useOrganize('aom');
   const [pickedId, setPickedId] = useState(null);
 
@@ -62,6 +62,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav }) {
     toggleSelect: () => {},
     toggleSelectMode: () => {},
     openInReview: () => onNav?.('review'),
+    assignAgent: (fileId) => onAssignFile?.(fileId),
     // Held-c (the file store is flat — no folder tree): inert, never faked.
     addFile: () => {}, newFolder: () => {}, newProject: () => {}, commentFile: () => {},
     moveFile: () => {}, moveSelection: () => {}, confirmMove: () => {}, cancelMove: () => {},

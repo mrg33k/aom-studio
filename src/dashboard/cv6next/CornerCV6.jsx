@@ -9,6 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
+import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
@@ -558,7 +559,7 @@ function ChatList({ onNav, onOpenRoom, onOpenNav, onCommandK }) {
 // ── Support inbox (the proven pilot), reachable from the nav ──
 const SUPPORT_ALIASES = { needsYou: 'email', watching: 'email', 'email.tags': 'tag' };
 
-function SupportInbox({ onNav, onOpenNav }) {
+function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
   const { state, data, reload } = useSupportInbox('aom');
   const html = useMemo(() => composeScreen(inboxRaw, { mobile: true }), []);
   // Header filter chips: All (default, both sections) / Needs you / Watching — real filter
@@ -587,7 +588,8 @@ function SupportInbox({ onNav, onOpenNav }) {
     nav: (t) => onNav?.(t), browseWatching: () => setFilter('watching'), emptyAction: () => {},
     setFilter: (f) => setFilter(f || 'all'),
     retry: () => reload(), viewOffline: () => {},
-  }), [onNav, onOpenNav, reload]);
+    assignAgent: (emailId) => onAssignEmail?.(emailId),
+  }), [onNav, onOpenNav, reload, onAssignEmail]);
   return <TemplateScreen html={html} data={view} actions={actions} state={state}
     aliases={SUPPORT_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
 }
@@ -668,7 +670,7 @@ const TRACKER_ALIASES = {
   projectTrackers: 'tracker', missionTrackers: 'tracker',
   assignableAgents: 'agent',
 };
-function Tracker({ worldId, onNav, onOpenNav }) {
+function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
   const { state, data, switchTracker, createTracker, createBug, canCreate } = useTrackerBugs(worldId);
   const isDesktop = useIsDesktop();
   // sheet: null | 'switch' | 'new' (create-tracker) | 'detail' (bug preview) | 'newbug' (new-issue)
@@ -724,16 +726,15 @@ function Tracker({ worldId, onNav, onOpenNav }) {
     nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openSwitcher: () => setSheet('switch'),
     openBug: (id) => openBug(id),
-    newBug: () => openNewBug(), assignAgent: () => {}, pauseAgent: () => {},
+    newBug: () => openNewBug(), assignAgent: (bugId) => onAssignBug?.(bugId), pauseAgent: () => {},
     openAttachment: () => {}, retry: () => {},
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenNav, data.bugs, data.assignableAgents, data.activeTracker, canCreate]);
+  }), [onNav, onOpenNav, data.bugs, data.assignableAgents, data.activeTracker, canCreate, onAssignBug]);
 
   const detailActions = useMemo(() => ({
     nav: () => setSheet(null),
-    // Assign-to-agent is a separate designed action, not yet wired; keep it inert (not faked).
-    assignAgent: () => {}, openAttachment: () => {},
-  }), []);
+    assignAgent: (bugId) => onAssignBug?.(bugId), openAttachment: () => {},
+  }), [onAssignBug]);
 
   const newBugActions = useMemo(() => ({
     nav: () => setSheet(null),
@@ -804,6 +805,7 @@ function Tracker({ worldId, onNav, onOpenNav }) {
       openTracker: (id) => switchTracker(id),
       openBug: (id) => { const b = (data.bugs || []).find((x) => String(x.id) === String(id)); if (b) setSelectedBug(b); },
       newBug: () => openNewBug(),
+      assignAgent: (bugId) => onAssignBug?.(bugId),
       // status change + per-bug checklist have no honest store yet -> inert (not faked).
       changeStatus: () => {}, addChecklistItem: () => {}, toggleChecklistItem: () => {},
       openAttachment: () => {}, review: () => {},
@@ -951,6 +953,7 @@ export default function CornerCV6() {
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
+  const [assignConfig, setAssignConfig] = useState(null); // { type, id, title } for AssignButton overlay
 
   // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
   // nav's search icon opens it too (onOpenCommandK below). Escape closes inside Search.
@@ -1026,13 +1029,13 @@ export default function CornerCV6() {
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
-  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'organize'; }
+  else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={(emailId) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent' })} />; viewKey = 'support'; }
+  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onAssignFile={(fileId) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent' })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
-  else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
-  else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'review'; }
+  else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent' })} />; viewKey = 'tracker'; }
+  else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} />; viewKey = 'review'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'home'; }
 
@@ -1056,6 +1059,17 @@ export default function CornerCV6() {
         <Search
           onClose={() => setSearchOpen(false)}
           onOpenRoom={(room, wid) => { setSearchOpen(false); onOpenRoom(room, wid); }}
+        />
+      )}
+      {/* AssignButton overlay — opened by artifact surfaces (review, tracker, support, organize). */}
+      {assignConfig && (
+        <AssignButton
+          artifactType={assignConfig.type}
+          artifactId={assignConfig.id}
+          title={assignConfig.title}
+          onClose={() => setAssignConfig(null)}
+          onSuccess={() => setAssignConfig(null)}
+          onError={() => setAssignConfig(null)}
         />
       )}
     </div>

@@ -29,7 +29,7 @@ function composeDesktopReview(raw) {
   return screen.outerHTML;
 }
 
-export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
+export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliverable }) {
   const { state, data, actions } = useReview(worldId || 'aom');
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin, updatePin, deletePin } = usePins(pickedId);
@@ -117,6 +117,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
       if (notes) actions.requestChanges(id, notes);
     },
     sendChecklist: (id) => actions.sendChecklist(id),
+    assignAgent: (id) => onAssignDeliverable?.(id),
   };
 
   // Add a ref to handle click interactions for pin creation

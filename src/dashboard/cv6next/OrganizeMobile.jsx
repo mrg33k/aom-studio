@@ -28,7 +28,7 @@ function composeOrganize(raw, screenName) {
 
 const MOBILE_HTML = composeOrganize(template, 'organize-mobile');
 
-export default function OrganizeMobile({ onNav, onOpenNav }) {
+export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
   const { state, data } = useOrganize('aom');
   const [pickedFile, setPickedFile] = useState(null);
   const [selectedFileIds, setSelectedFileIds] = useState([]);
@@ -115,6 +115,7 @@ export default function OrganizeMobile({ onNav, onOpenNav }) {
     search: () => console.log('search'),
     openNav: () => onOpenNav?.(),
     openJob: (jobId) => console.log('job:', jobId),
+    assignAgent: (fileId) => onAssignFile?.(fileId),
   };
 
   return <TemplateScreen html={MOBILE_HTML} data={bindData} actions={handleActions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />;

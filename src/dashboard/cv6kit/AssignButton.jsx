@@ -566,30 +566,19 @@ export function AssignButton({
     fetch('/api/dashboard/active-agents?client=aom')
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
       .then((data) => {
-        // Map active agents + add some known agents as fallback
+        // Map active agents from the real endpoint
         const active = (data.active || []).map((a) => ({
           slug: a.agent,
           status: 'live',
         }));
 
-        // If no active agents, use a sensible fallback
-        if (active.length === 0) {
-          setAgentList([
-            { slug: 'elon', status: 'ready' },
-            { slug: 'bobby', status: 'ready' },
-            { slug: 'cleo', status: 'ready' },
-          ]);
-        } else {
-          setAgentList(active);
-        }
+        // Only show agents that are actually active; do NOT fabricate fallback agents
+        setAgentList(active);
       })
       .catch((err) => {
-        // Fallback to sensible defaults on error
-        setAgentList([
-          { slug: 'elon', status: 'ready' },
-          { slug: 'bobby', status: 'ready' },
-          { slug: 'cleo', status: 'ready' },
-        ]);
+        // On error, show empty list (not fabricated fallbacks)
+        console.error('[AssignButton] failed to fetch active agents:', err);
+        setAgentList([]);
       })
       .finally(() => setIsLoading(false));
   }, [showPicker, agents]);

@@ -6,12 +6,12 @@ import { useMediaQuery } from '../cv6kit/useMediaQuery.js';
 import OrganizeDesktop from './OrganizeDesktop';
 import OrganizeMobile from './OrganizeMobile';
 
-export default function Organize({ onNav, onOpenNav }) {
+export default function Organize({ onNav, onOpenNav, onAssignFile }) {
   const isMobile = useMediaQuery('(max-width: 768px)');
 
   if (isMobile) {
-    return <OrganizeMobile onNav={onNav} onOpenNav={onOpenNav} />;
+    return <OrganizeMobile onNav={onNav} onOpenNav={onOpenNav} onAssignFile={onAssignFile} />;
   }
 
-  return <OrganizeDesktop onNav={onNav} onOpenNav={onOpenNav} />;
+  return <OrganizeDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignFile={onAssignFile} />;
 }
