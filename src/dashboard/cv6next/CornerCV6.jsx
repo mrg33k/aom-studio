@@ -619,6 +619,46 @@ function initialViewFromUrl() {
   return 'home';
 }
 
+// ?demo=blocks — a no-auth preview of the live Goal Thread that renders one of EVERY chat
+// element through the REAL renderer (ChatGoalThread / GoalThreadBody), so the whole agent
+// chat vocabulary can be verified on one screen without firing into a real conversation.
+function demoBlocksRequested() {
+  try { return new URLSearchParams(window.location.search).get('demo') === 'blocks'; }
+  catch { return false; }
+}
+const DEMO_GOAL = { title: 'Show every chat element', step: 4, doneCount: 2, total: 8, pct: 25, checklist: [] };
+const DEMO_BLOCKS = [
+  { type: 'step', stepIndex: 0, title: 'Read the brief and pull the repo', state: 'done', detail: 'Scanned 28 missions and the task runner.' },
+  { type: 'step', stepIndex: 1, title: 'Wire the resolver', state: 'done', detail: 'Patched the runner so docs-only projects route again.' },
+  { type: 'success', stepIndex: 1, title: 'Resolver fixed', detail: 'Docs-only projects now rescan cleanly. +12 −3.' },
+  { type: 'data', stepIndex: 1, title: 'Build log', columns: ['Area', 'Built', 'Verified', 'Open'], rows: [['Home', 6, 6, 0], ['Tracker', 4, 3, 1], ['Support', 5, 5, 0]], totals: ['Total', 15, 14, 1] },
+  { type: 'step', stepIndex: 2, title: 'Confirm the print framing', state: 'active', detail: 'Two ways to frame it — your call.' },
+  { type: 'choice', stepIndex: 2, prompt: 'Two ways to frame the print', choices: [{ id: 'a', title: 'Full bleed', label: 'Recommended', style: 'rec' }, { id: 'b', title: 'Bordered', label: 'Alternative', style: 'alt' }] },
+  { type: 'question', stepIndex: 2, text: 'Expand the pilot to which teams?', options: [{ id: 'cs', label: 'CS' }, { id: 'ops', label: 'Ops' }, { id: 'both', label: 'Both' }] },
+  { type: 'step', stepIndex: 3, title: 'Read the Acme email', state: 'active', detail: 'Dana replied — real, revenue-impacting, time-sensitive.' },
+  { type: 'email', stepIndex: 3, from: 'Dana Whitfield', org: 'Acme', subject: 'Re: Q2 partnership scope', quote: '“Great results so far — could you get me revised pricing before Friday? We\'re locking budget this week.”', attachments: [{ name: 'current-pricing.pdf', size: '180 KB' }], flagged: 'Flagged: revenue-impacting · time-sensitive', actions: ['Draft a reply', 'Summarize thread', 'Add to Tracker'] },
+  { type: 'step', stepIndex: 4, title: 'Summarize the thread', state: 'active', detail: 'Digested 3 messages into the essentials.' },
+  { type: 'summary', stepIndex: 4, meta: '3 messages · 2 days', bullets: ['Wants to expand the pilot to three teams (~40 seats)', 'Needs revised pricing by Friday to lock budget', { text: 'Risk: their Q3 start vs. our rollout timeline', warn: true }], actions: [{ text: 'Send revised 3-team pricing by Friday' }, { text: 'Confirm rollout timeline works for Q3' }, { text: 'Pull current pricing sheet', done: true }], chips: ['Draft the reply', 'Add to Tracker'] },
+  { type: 'step', stepIndex: 5, title: 'Show the finished Home', state: 'active', detail: 'Sent the screenshot to confirm.' },
+  { type: 'artifact', stepIndex: 5, kind: 'screenshot', name: 'home-final.png · 1 comment' },
+  { type: 'step', stepIndex: 6, title: 'Flag a snag', state: 'active', detail: 'One thing needs your eyes.' },
+  { type: 'snag', stepIndex: 6, title: 'NEEDS A KEY', detail: 'The print service needs an API key before the run can start.' },
+  { type: 'step', stepIndex: 7, title: 'Leave a voice + screen recap', state: 'active', detail: 'Audio note and a screen recording.' },
+  { type: 'audio', stepIndex: 7, duration: '0:24', transcript: '“Quick update: the resolver patch is in and verified. Starting the regression test now.”' },
+  { type: 'video', stepIndex: 7, duration: '1:48', title: 'Onboarding walkthrough' },
+];
+
+function DemoChatBlocks() {
+  const noop = () => {};
+  return (
+    <ChatGoalThread
+      room={{ name: 'Elon', initials: 'EL', statusText: 'working now', status: 'live' }}
+      goal={DEMO_GOAL} blocks={DEMO_BLOCKS}
+      onBack={noop} onOpenNav={noop} onSend={noop}
+    />
+  );
+}
+
 export default function CornerCV6() {
   const worldId = useWorldId();
   const isDesktop = useIsDesktop();
@@ -652,6 +692,17 @@ export default function CornerCV6() {
   const onOpenNav = useCallback(() => setNavOpen(true), []);
   const closeNav = useCallback(() => setNavOpen(false), []);
   const goHome = useCallback(() => { setHistory([]); setOpenedRoom(null); setView('home'); }, []);
+
+  // ?demo=blocks — render the full chat-element preview through the real renderer and stop.
+  // (After all hooks above, so hook order stays stable; the flag is constant per load.)
+  const demoBlocks = useMemo(() => demoBlocksRequested(), []);
+  if (demoBlocks) {
+    return (
+      <div data-cv6 data-theme="dark" style={{ minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <DemoChatBlocks />
+      </div>
+    );
+  }
 
   let body; let viewKey;
   // Desktop Chat is the real 3-column layout (rooms rail + thread + drawer), with its own
