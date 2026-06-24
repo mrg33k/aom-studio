@@ -2,7 +2,7 @@
 // Built from wired/tools/review.html + review.json, fed by real useReview.
 // No design changes, only data wiring.
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useReview } from './data/useReview.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import reviewRaw from './templates/review.html?raw';
@@ -27,6 +27,17 @@ function composeDesktopReview(raw) {
 export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
   const { state, data, actions } = useReview(worldId || 'aom');
   const [pickedId, setPickedId] = useState(null);
+
+  // Auto-open the first deliverable on entry (mirrors Organize previewing the first
+  // file), so you land on something to review instead of a blank viewer.
+  const firstId = data.queue.items[0]?.id || null;
+  useEffect(() => {
+    if (!pickedId && firstId) {
+      setPickedId(firstId);
+      actions.openDeliverable(firstId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickedId, firstId]);
 
   const desktopHtml = useMemo(() => composeDesktopReview(reviewRaw), []);
 
