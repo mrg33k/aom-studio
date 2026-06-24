@@ -168,6 +168,9 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   // Agents accordion (top of Home): one "Agents" row that expands its roster in place,
   // default collapsed so the front door stays calm. (Decided 2026-06-23.)
   const [agentsOpen, setAgentsOpen] = useState(false);
+  // All Rooms is built for hundreds: show a first page of projects with a real
+  // "Show N more" that expands the rest in place (default collapsed = calm front door).
+  const [projShowAll, setProjShowAll] = useState(false);
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
@@ -215,7 +218,7 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
     snoozeAll: () => setCatchUpOpen(false),
     openCommandK: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
-    newRoom: () => {}, showMoreProjects: () => {},
+    newRoom: () => {}, showMoreProjects: () => setProjShowAll(true),
     // draftReply (approve-and-send) sends real client email + needs an agent-drafted body;
     // held until that path + an explicit OK exist (see mission BUILD). Not faked.
     draftReply: () => {}, addToTracker: () => {}, assignAgent: () => {}, snooze: () => {},
@@ -294,11 +297,20 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   // Agents accordion: the roster collapses (rows hidden) but the count + caret stay. The
   // header binds agentsTotal (always the full count) and agentsOpen drives the caret rotate.
   const agentsTotal = (data.agents && data.agents.length) || 0;
+  // Projects: first PROJ_LIMIT by default, the rest behind a real "Show N more".
+  const PROJ_LIMIT = 8;
+  const allProjects = data.projects || [];
+  const projShown = projShowAll ? allProjects.slice() : allProjects.slice(0, PROJ_LIMIT);
+  // arrays carry their bound scalars as props (the engine reads projects.moreCount /
+  // projects.moreState); set them on the sliced array we actually pass through.
+  projShown.moreCount = projShowAll ? 0 : Math.max(0, allProjects.length - PROJ_LIMIT);
+  projShown.moreState = projShown.moreCount > 0 ? 'has' : 'none';
   const homeData = {
     ...data,
     agents: agentsOpen ? data.agents : [],
     agentsTotal,
     agentsOpen: agentsOpen ? 'open' : 'closed',
+    projects: projShown,
   };
   return <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
     aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
