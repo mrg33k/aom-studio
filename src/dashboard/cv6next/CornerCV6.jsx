@@ -10,6 +10,7 @@ import { useMemo, useState, useEffect, useCallback, useRef, Component } from 're
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
+import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
@@ -1050,6 +1051,8 @@ export default function CornerCV6() {
       {/* One shared desktop bar (design item 7), mounted once for every desktop
           screen; each screen's baked topbar was stripped so this is the only nav. */}
       {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={() => setSearchOpen(true)} theme={theme} onTheme={changeTheme} />}
+      {/* P7: Activity dock — background activity tracking (floating across all screens) */}
+      <ActivityDock worldId={worldId} onOpenJob={(jobId) => onNav?.('command')} />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
