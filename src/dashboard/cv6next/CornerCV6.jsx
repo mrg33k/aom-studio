@@ -16,6 +16,7 @@ import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
 import Organize from './Organize.jsx';
+import Settings from './Settings.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
@@ -623,7 +624,7 @@ function initialViewFromUrl() {
     const v = new URLSearchParams(window.location.search).get('view');
     if (!v) return 'home';
     if (v === 'chat' || v === 'chatlist') return 'chatlist';
-    if (['home', 'support', 'organize', 'command', 'tracker'].includes(v)) return v;
+    if (['home', 'support', 'organize', 'command', 'tracker', 'review', 'settings'].includes(v)) return v;
   } catch { /* no window */ }
   return 'home';
 }
@@ -712,7 +713,7 @@ export default function CornerCV6() {
   }, []);
   const onNav = useCallback((target) => {
     if (target === 'back') { back(); return; }
-    if (['home', 'support', 'command', 'tracker', 'organize', 'review'].includes(target)) goTo(target, null);
+    if (['home', 'support', 'command', 'tracker', 'organize', 'review', 'settings'].includes(target)) goTo(target, null);
     // Chat from the menu opens the conversations list; a row there opens the Goal Thread.
     else if (target === 'chat') goTo('chatlist', null);
   }, [back, goTo]);
@@ -747,6 +748,7 @@ export default function CornerCV6() {
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
   else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'organize'; }
+  else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
   else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'review'; }

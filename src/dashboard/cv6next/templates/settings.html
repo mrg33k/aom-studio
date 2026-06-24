@@ -1,0 +1,92 @@
+<!-- Wired Settings template from design-system-2026-06-24/wired/settings/index.html -->
+<!-- Structure only; data bindings and state swaps via the engine. -->
+
+<!-- ============ DESKTOP · Environment (master surface) ============ -->
+<div data-cv6 data-theme="dark" data-screen="settings-desktop" data-screen-label="Settings · Environment" class="cv6-screen set" style="width:100%;height:100%;display:flex;flex-direction:column;">
+  <div class="topbar">
+    <div class="tgreet"><img src="../../assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
+    <div class="toolnav" style="opacity:.5;"></div>
+    <div style="display:flex;align-items:center;gap:14px;"><span class="toolname">Settings</span><div class="av" data-action="openProfile">P</div></div>
+  </div>
+  <div style="flex:1;min-height:0;display:flex;">
+    <!-- section nav -->
+    <div style="width:236px;flex:none;border-right:1px solid var(--divider);padding:18px 14px;overflow:hidden;">
+      <div class="navitem is-on" data-each="sections" data-action="openSection" data-arg="section.id" data-mod="is-:section.active"><svg class="sicon is-env" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:section.id"><path d="M12 2 2 7l10 5 10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg><span style="flex:1;" data-bind="section.label">Environment</span></div>
+    </div>
+    <!-- content (swaps by section · Environment shown) -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;" data-state="ready">
+      <div style="flex:none;padding:24px 30px 16px;border-bottom:1px solid var(--divider);"><div style="font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--fg);" data-bind="activeSection.title">Environment</div><div style="font-size:13px;color:var(--muted);margin-top:3px;" data-bind="activeSection.sub">Everything your agents can see and act on. This is the master surface.</div></div>
+      <div style="flex:1;min-height:0;overflow:hidden;padding:24px 30px;">
+        <!-- shared-room awareness -->
+        <div style="display:flex;gap:11px;padding:13px 14px;border:1px solid var(--accent-weak);background:var(--accent-weak);border-radius:13px;margin-bottom:20px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 6a3 3 0 0 1 0 6M18 20a6 6 0 0 0-3-5.2"/></svg><div style="font-size:12.5px;line-height:1.5;color:var(--fg);">Connections are <strong>shared with everyone in a shared room</strong>. Scope each one to control which rooms, and which people, can reach it.</div></div>
+        <!-- connections -->
+        <div class="eyebrow" style="margin-bottom:10px;">Connections</div>
+        <div class="card" style="margin-bottom:22px;">
+          <div class="srow" data-each="connections" data-action="openConnection" data-arg="conn.id"><span class="ico is-pink" data-mod="is-:conn.tint"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4Z"/><path d="m4 7 8 6 8-6"/></svg></span><div style="min-width:0;flex:1;"><div class="nm" data-bind="conn.name">Email</div><div class="ds" data-bind="conn.desc">Read & draft replies</div></div><div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex:none;"><button class="scopepill" data-mod="is-:conn.scopePrivate" data-action="cycleScope" data-arg="conn.id"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 6a3 3 0 0 1 0 6M18 20a6 6 0 0 0-3-5.2"/></svg><span data-bind="conn.scope">All rooms</span></button><button class="conn" data-action="editConnection" data-arg="conn.id">Edit</button></div></div>
+        </div>
+        <!-- rooms & scope -->
+        <div class="eyebrow" style="margin-bottom:10px;">Rooms &amp; scope</div>
+        <div class="card" style="margin-bottom:22px;">
+          <div class="srow" data-each="rooms" data-action="scopeRoom" data-arg="room.id"><span class="ico"><svg class="folder is-violet" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span><div style="min-width:0;flex:1;"><div class="nm" data-bind="room.name">Space Rising</div><div style="font-size:11px;color:var(--faint);margin-top:3px;" data-bind="room.caution">Your connections here are visible to 4 members.</div></div><span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-weak);padding:4px 9px;border-radius:8px;flex:none;" data-bind="room.scopeLabel">Shared · 4</span><button class="conn" data-action="scopeRoom" data-arg="room.id">Scope</button></div>
+        </div>
+        <!-- secrets -->
+        <div class="eyebrow" style="margin-bottom:10px;">Secrets &amp; keys</div>
+        <div class="card"><div class="srow"><span class="ico is-warn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5c0 1 .2 1.7.5 2.4L3 14v3h3l1-1h2l1-1v-2l1.5-1.5A5 5 0 1 0 12 2Z"/><circle cx="15" cy="7" r="1"/></svg></span><div style="min-width:0;flex:1;"><div class="nm">API keys</div><div class="ds"><span data-bind="secrets.count">3</span> stored · last rotated <span data-bind="secrets.lastRotated">12d ago</span></div></div><button class="conn" data-action="editSecrets">Edit</button></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ DESKTOP · Agents & permissions (switches) ============ -->
+<div data-cv6 data-theme="dark" data-screen="settings-desktop" data-screen-label="Settings · Agents & permissions" class="cv6-screen set" style="width:100%;height:100%;display:flex;flex-direction:column;">
+  <div class="topbar">
+    <div class="tgreet"><img src="../../assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
+    <div class="toolnav" style="opacity:.5;"></div>
+    <div style="display:flex;align-items:center;gap:14px;"><span class="toolname">Settings</span><div class="av" data-action="openProfile">P</div></div>
+  </div>
+  <div style="flex:1;min-height:0;display:flex;">
+    <div style="width:236px;flex:none;border-right:1px solid var(--divider);padding:18px 14px;overflow:hidden;">
+      <div class="navitem" data-each="sections" data-action="openSection" data-arg="section.id" data-mod="is-:section.active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:section.id"><path d="M12 2 2 7l10 5 10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg><span style="flex:1;" data-bind="section.label">Agents & permissions</span></div>
+    </div>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+      <div style="flex:none;padding:24px 30px 16px;border-bottom:1px solid var(--divider);"><div style="font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--fg);">Agents &amp; permissions</div><div style="font-size:13px;color:var(--muted);margin-top:3px;">What each agent may do on its own, and what needs your nod.</div></div>
+      <div style="flex:1;min-height:0;overflow:hidden;padding:24px 30px;">
+        <div data-each="agents">
+          <div style="display:flex;align-items:center;gap:11px;margin-bottom:11px;"><span class="ava is-green" data-mod="is-:agent.tint" style="width:34px;height:34px;font-size:12px;" data-bind="agent.initials">EL</span><div><div class="nm" data-bind="agent.name">Elon</div><div class="ds" data-bind="agent.role">Engineering · drives missions</div></div></div>
+          <div class="card" style="margin-bottom:22px;">
+            <div class="srow" data-each="agent.permissions"><div style="flex:1;"><div class="nm" style="font-weight:500;" data-bind="perm.label">Draft</div><div class="ds" data-bind="perm.desc">Write replies & docs for you</div></div><span class="sw is-on" data-mod="is-:perm.on" data-action="togglePermission" data-arg="perm.id"><i></i></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE A · sections list ============ -->
+<div data-cv6 data-theme="dark" data-screen="settings-mobile" data-screen-label="Settings · List" class="cv6-screen set" style="width:100%;height:100%;display:flex;flex-direction:column;">
+  <div class="mhdr">
+    <img class="hlogo" src="../../assets/corner-logo-white.svg" alt="Corner" style="height:20px;">
+    <div class="mhtitle"></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <div style="flex:1;min-height:0;overflow:auto;padding:16px;-webkit-overflow-scrolling:touch;">
+    <div style="display:flex;align-items:center;gap:13px;padding:6px 4px 20px;"><span style="width:48px;height:48px;border-radius:50%;background:var(--avatar);color:#fff;font-size:17px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none;" data-bind="profile.initials">P</span><div style="min-width:0;"><div style="font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--fg);" data-bind="profile.name">Patrik</div><div style="font-size:12.5px;color:var(--muted);" data-bind="profile.email">patrik@corner.so</div></div></div>
+    <div class="card">
+      <div class="mrow" data-each="sections" data-action="openSection" data-arg="section.id"><span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:section.id"><path d="M12 2 2 7l10 5 10-5Z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></svg></span><div style="flex:1;min-width:0;"><div class="nm" style="font-size:14.5px;" data-bind="section.label">Environment</div><div style="font-size:11.5px;color:var(--muted);line-height:1.35;margin-top:2px;" data-bind="section.sub">Everything your agents can see and act on.</div></div><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE B · Appearance (theme picker) ============ -->
+<div data-cv6 data-theme="dark" data-screen="settings-mobile" data-screen-label="Settings · Appearance" class="cv6-screen set" style="width:100%;height:100%;display:flex;flex-direction:column;">
+  <div class="mhdr">
+    <div class="mback" data-action="backToList"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl">Appearance</div></div>
+  </div>
+  <div style="flex:1;min-height:0;overflow:auto;padding:16px;-webkit-overflow-scrolling:touch;padding-bottom:max(16px, env(safe-area-inset-bottom, 0px));">
+    <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px;">Three co-equal themes. Switch whenever you like.</div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="theme-opt is-sel" data-each="themes" data-action="setTheme" data-arg="theme.id" data-mod="is-:theme.selected"><div class="theme-prev" style="background:#0E1116;"><div class="tl" style="width:60%;background:#2A2F37;"></div><div class="tl" style="width:85%;background:#2A2F37;"></div><div class="tl" style="width:40%;background:#3B82F6;"></div></div><div class="theme-foot"><span data-bind="theme.label">Dark</span><span class="theme-check"><svg class="ck" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 4 4L19 7"/></svg></span></div></div>
+    </div>
+  </div>
+</div>
