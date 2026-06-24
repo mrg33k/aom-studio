@@ -36,7 +36,7 @@ function statusText(status, unread) {
   if (status === 'live') return unread ? `${unread} new` : 'online';
   if (status === 'working') return 'working';
   if (status === 'blocked') return 'needs you';
-  return 'idle';
+  return 'ready';
 }
 // project color (hex or css var) -> one of the 6 design tints, stable per name
 function tintFor(seed) {

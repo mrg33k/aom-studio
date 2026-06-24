@@ -24,7 +24,7 @@ export const AGENT_TITLES = {
 };
 
 // The curated set shown in the Home Agents accordion, in display order. The roster is the
-// FULL set every time (you reach them at different moments, so they show even when idle);
+// FULL set every time (you reach them at different moments, so they show even when quiet);
 // `aomOnly` agents (Systems) appear only when they actually exist in this world's live list,
 // which keeps them out of external/client worlds.
 export const DASHBOARD_AGENTS = [
@@ -50,7 +50,7 @@ export function titleForAgent(a) {
 }
 
 // Build the dashboard's curated agent roster, in order. The FULL set always shows (titles, with
-// live status merged from the real agent list when present, else idle), so you see every agent
+// live status merged from the real agent list when present, else ready), so you see every agent
 // you reach for even when they're quiet. `aomOnly` agents only show when they actually exist in
 // this world's live list. Each row carries its real `slug` so the chat opens the right thread.
 export function curateTitledAgents(agents = []) {
@@ -64,7 +64,7 @@ export function curateTitledAgents(agents = []) {
       ...(live || {}),
       slug: d.slug,
       title: AGENT_TITLES[d.slug] || cap(d.slug),
-      status: live?.status || 'idle',
+      status: live?.status || 'ready',
       unread: live?.unread || 0,
       _order: d.order,
     });
