@@ -18,6 +18,7 @@ import SupportDesktop from './SupportDesktop.jsx';
 import Organize from './Organize.jsx';
 import Settings from './Settings.jsx';
 import Onboarding from './Onboarding.jsx';
+import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
@@ -687,6 +688,20 @@ export default function CornerCV6() {
   const [openedRoom, setOpenedRoom] = useState(null); // { room, worldId } -> Chat
   const [history, setHistory] = useState([]); // nav stack of { view, openedRoom } for Back
   const [navOpen, setNavOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
+
+  // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
+  // nav's search icon opens it too (onOpenCommandK below). Escape closes inside Search.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setSearchOpen((s) => !s);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Theme (drop 7): dark | light | glass, persisted. Applied as data-app-theme on the
   // shell root; the cv6.css override blocks re-skin every screen. Default dark = no override.
@@ -760,17 +775,25 @@ export default function CornerCV6() {
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
   return (
     <div data-cv6 data-theme="dark" data-app-theme={theme} style={{
+      position: 'relative',
       minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)',
       display: 'flex', flexDirection: 'column', overflow: 'hidden',
       paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
       {/* One shared desktop bar (design item 7), mounted once for every desktop
           screen; each screen's baked topbar was stripped so this is the only nav. */}
-      {isDesktop && <DesktopNav current={current} onPick={onNav} theme={theme} onTheme={changeTheme} />}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={() => setSearchOpen(true)} theme={theme} onTheme={changeTheme} />}
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>
         <ScreenBoundary viewKey={viewKey} onHome={goHome}>{body}</ScreenBoundary>
       </div>
       <MobileNav open={navOpen} current={current} onPick={onNav} onClose={closeNav} theme={theme} onTheme={changeTheme} />
+      {/* ⌘K command palette — jump to any room or mission. Opens its own data. */}
+      {searchOpen && (
+        <Search
+          onClose={() => setSearchOpen(false)}
+          onOpenRoom={(room, wid) => { setSearchOpen(false); onOpenRoom(room, wid); }}
+        />
+      )}
     </div>
   );
 }
