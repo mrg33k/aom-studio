@@ -22,7 +22,7 @@ export function buildSteps(blocks) {
   const byIndex = new Map();
   const ensure = (i) => {
     const key = Number.isFinite(+i) ? +i : 0;
-    if (!byIndex.has(key)) byIndex.set(key, { index: key, title: '', detail: '', state: 'pending', results: [] });
+    if (!byIndex.has(key)) byIndex.set(key, { index: key, title: '', detail: '', state: 'pending', results: [], progress: null });
     return byIndex.get(key);
   };
   for (const b of blocks) {
@@ -32,6 +32,7 @@ export function buildSteps(blocks) {
       step.title = b.title || step.title;
       step.detail = b.detail || step.detail;
       step.state = b.state || step.state;
+      if (b.progress != null) step.progress = b.progress;
     } else {
       step.results.push(b);
       // A step with no explicit step block still gets a heading from its first result.
@@ -67,8 +68,11 @@ const StepIcons = (
 // One step on the rail (real kit .gstep). State drives the icon + chip via CSS classes.
 // Result blocks attach under the step in .gsattach (always shown when present, because a
 // real result only exists because the agent emitted it — no demo show-on-done gate).
+// Active/working steps render an inline progress bar showing real work in progress.
 function StepRow({ step }) {
-  const state = step.state === 'done' ? 'done' : (step.state === 'active' || step.state === 'working') ? 'active' : 'pending';
+  const state = step.state === 'done' ? 'done' : (step.state === 'active' || step.state === 'working') ? 'active' : (step.state === 'queued') ? 'queued' : 'pending';
+  const isActive = state === 'active';
+  const progress = step.progress != null ? Math.min(100, Math.max(0, step.progress)) : 0;
   return (
     <div className={`gstep is-${state}`} data-step={step.index}>
       <div className="gsrail">
@@ -80,8 +84,16 @@ function StepRow({ step }) {
           <span className="gstitle">{step.title || 'Step'}</span>
           <span className="gschip c-work">Working</span>
           <span className="gschip c-done">Done</span>
+          <span className="gschip c-queued">Queued</span>
         </div>
         {step.detail ? <div className="gssub">{step.detail}</div> : null}
+        {isActive ? (
+          <div style={{ marginTop: 8, marginBottom: 6 }}>
+            <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'var(--surface-2)', overflow: 'hidden' }}>
+              <i style={{ display: 'block', width: `${progress}%`, height: '100%', background: 'var(--accent)', transition: 'width 0.3s ease' }} />
+            </div>
+          </div>
+        ) : null}
         {step.results.length ? (
           <div className="gsattach step-in" style={{ display: 'block' }}>
             {step.results.map((r, i) => <Result key={i} block={r} />)}
@@ -117,6 +129,7 @@ function Result({ block }) {
   }
   if (block.type === 'data') return <DataBlock block={block} />;
   if (block.type === 'choice') return <ChoiceBlock block={block} />;
+  if (block.type === 'choiceEcho') return <ChoiceEchoBlock block={block} />;
   if (block.type === 'question') return <QuestionBlock block={block} />;
   if (block.type === 'email') return <EmailBlock block={block} />;
   if (block.type === 'summary') return <SummaryBlock block={block} />;
@@ -356,6 +369,20 @@ function ChoiceBlock({ block }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Echo of the user's choice (rendered after they tap). Shows what they selected so the
+// thread shows the full lifecycle (agent asks, user chooses, choice echoed back).
+function ChoiceEchoBlock({ block }) {
+  return (
+    <div className="cblk is-success" style={{ marginTop: 4 }}>
+      <div className="cblk-h">
+        <span className="ci"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg></span>
+        <span className="ct">{block.title || 'Your choice'}</span>
+      </div>
+      {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}>{block.detail}</div> : null}
     </div>
   );
 }

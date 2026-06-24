@@ -80,6 +80,14 @@
  */
 
 /**
+ * @typedef {Object} ChoiceEchoBlock
+ * @property {number} [stepIndex]
+ * @property {'choiceEcho'} type
+ * @property {string} [title] - Default 'Your choice'.
+ * @property {string} [detail] - The selected choice echoed back to the user.
+ */
+
+/**
  * @typedef {Object} DataBlock
  * @property {number} [stepIndex]
  * @property {'data'} type
@@ -193,6 +201,7 @@ export const BLOCK_TYPES = [
   'snag',
   'question',
   'choice',
+  'choiceEcho',
   'data',
   'summary',
   'email',
@@ -241,6 +250,10 @@ export function createCodeBlock(index, code, file = 'code', lang = 'js', explain
 
 export function createChoiceBlock(index, prompt = '', choices = []) {
   return { stepIndex: index, type: 'choice', prompt, choices };
+}
+
+export function createChoiceEchoBlock(index, title = 'Your choice', detail = '') {
+  return { stepIndex: index, type: 'choiceEcho', title, detail };
 }
 
 export function createGalleryBlock(index, images = [], caption = '') {

@@ -14,6 +14,7 @@ import {
   createSummaryBlock,
   createCodeBlock,
   createChoiceBlock,
+  createChoiceEchoBlock,
   createGalleryBlock,
 } from './blockSchema.js';
 
@@ -188,7 +189,58 @@ export function useDemoBlocks() {
         ]),
       ],
     },
+
+    // Message 9: P2 Full Goal Thread Lifecycle — shows all states
+    {
+      id: 'demo-9',
+      text: 'DEMO P2: Complete goal thread lifecycle with all states.',
+      agentName: 'Demo Agent',
+      agentInitials: 'DA',
+      agentTint: 'violet',
+      time: makeTime(0),
+      ts: makeTs(0),
+      isUser: false,
+      blocks: [
+        // Step 0: Done (completed)
+        createStepBlock(0, 'Review stakeholder feedback', 'done', 'Analyzed 12 responses'),
+        createSuccessBlock(0, 'Feedback reviewed', 'All stakeholder input captured'),
+
+        // Step 1: Snag encountered, then decision offered
+        createStepBlock(1, 'Build prototype', 'done', 'Initial version complete'),
+        createSnagBlock(1, 'Feature gate needed', 'Users want mobile support. Options available.'),
+        createChoiceBlock(1, 'Add mobile support?', [
+          { id: 'yes', title: 'Yes, add it now', label: 'Add now', style: 'primary' },
+          { id: 'later', title: 'Later release', label: 'Later' },
+        ]),
+
+        // Step 2: Your choice echoed back
+        createStepBlock(2, 'Implement chosen path', 'done', 'Completed as requested'),
+        createChoiceEchoBlock(2, 'Your choice', 'You chose: Add now'),
+        createSuccessBlock(2, 'Implementation done', 'Mobile support integrated and tested'),
+
+        // Step 3: Active/working with live progress bar
+        createStepBlock(3, 'Quality assurance', 'active', 'Testing in progress'),
+        // The inline progress bar is driven by the step's progress property:
+        // { ...step, progress: 65 } would show 65% on the bar
+
+        // Step 4: Queued/upcoming step
+        createStepBlock(4, 'Deploy to production', 'queued', 'Waiting for QA clearance'),
+
+        // Step 5: Upcoming step with no detail yet
+        createStepBlock(5, 'Monitor live metrics', 'pending', ''),
+      ],
+    },
   ];
+
+  // Add progress tracking to the last few steps for the inline progress bar demo
+  // Note: This is demo data only; real progress comes from agent updates
+  messages[messages.length - 1].blocks = messages[messages.length - 1].blocks.map((b, i) => {
+    if (b.stepIndex === 3) {
+      // Add progress property to the active step so it renders the inline bar at 65%
+      return { ...b, progress: 65 };
+    }
+    return b;
+  });
 
   return messages;
 }
