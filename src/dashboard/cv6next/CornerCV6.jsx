@@ -301,8 +301,11 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   const PROJ_LIMIT = 8;
   const allProjects = data.projects || [];
   const projShown = projShowAll ? allProjects.slice() : allProjects.slice(0, PROJ_LIMIT);
-  // arrays carry their bound scalars as props (the engine reads projects.moreCount /
-  // projects.moreState); set them on the sliced array we actually pass through.
+  // arrays carry their bound scalars as props (the engine reads projects.count /
+  // projects.moreCount / projects.moreState); set them on the sliced array we pass
+  // through. count = the TRUE total (header "Projects · N"), independent of how many
+  // rows are shown; moreCount = how many are still hidden.
+  projShown.count = allProjects.length;
   projShown.moreCount = projShowAll ? 0 : Math.max(0, allProjects.length - PROJ_LIMIT);
   projShown.moreState = projShown.moreCount > 0 ? 'has' : 'none';
   const homeData = {
