@@ -234,6 +234,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
           <div style={{ width: 316, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 20, overflowY: 'auto' }}>
             {selected ? (
               <>
+                {/* 1. Agent on it */}
                 <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>Agent on this goal</div>
                 <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -249,24 +250,86 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                       <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>step {goal.step}/{goal.total}</span>
                     </div>
                   ) : null}
+                  {/* Pause / Re-task buttons (held-c: agent-control backend doesn't exist yet) */}
+                  <div style={{ display: 'flex', gap: 7, marginTop: 13 }}>
+                    <button disabled style={{ flex: 1, height: 34, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--faint)', fontSize: 12, fontWeight: 600, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent control backend is ready">Pause</button>
+                    <button disabled style={{ flex: 1, height: 34, borderRadius: 9, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent control backend is ready">Re-task</button>
+                  </div>
+                </div>
+
+                {/* 2. Quick actions (held-c: agent task approval backend doesn't exist) */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>2</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Quick actions</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
+                  <button disabled style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--faint)', fontSize: 12.5, fontWeight: 500, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent supports task approval">
+                    <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--success-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+                    </span>
+                    Approve plan
+                  </button>
+                  <button disabled style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--faint)', fontSize: 12.5, fontWeight: 500, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent supports task handoff">
+                    <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg>
+                    </span>
+                    Hand off
+                  </button>
+                </div>
+
+                {/* 3. Context / Goals */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>3</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Context / goals</span>
                 </div>
                 {goal?.checklist?.length ? (
-                  <>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                      <span className="eyebrow" style={{ color: 'var(--muted)' }}>Mission goals</span>
-                      <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{goal.doneCount} of {goal.total}</span>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                      {goal.checklist.map((it, i) => (
-                        <div key={i} className={`gchk is-${it.state || 'pending'}`} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <span className="gchk-mark" /><span className="gchk-label" style={{ flex: 1, fontSize: 13 }}>{it.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 20 }}>
+                    {goal.checklist.map((it, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                        <span style={{ width: 15, height: 15, borderRadius: '50%', background: it.state === 'done' ? 'var(--success)' : 'transparent', border: it.state !== 'done' ? '2px solid var(--accent)' : 'none', flex: 'none' }} />
+                        <span style={{ flex: 1, fontSize: 12.5, color: it.state === 'done' ? 'var(--muted)' : 'var(--fg)', textDecoration: it.state === 'done' ? 'line-through' : 'none', fontWeight: it.state === 'done' ? 400 : 500 }}>{it.label}</span>
+                      </div>
+                    ))}
+                  </div>
                 ) : (
-                  <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>No goal set for this room yet.</div>
+                  <div style={{ color: 'var(--faint)', fontSize: 12.5, marginBottom: 20 }}>No goal set for this room yet.</div>
                 )}
+
+                {/* 4. Attachments */}
+                {(() => {
+                  const attachments = [];
+                  if (messages?.length) {
+                    for (const m of messages) {
+                      if (m.attachmentUrl && m.fileName) {
+                        attachments.push({ url: m.attachmentUrl, name: m.fileName, mime: m.fileMime });
+                      }
+                    }
+                  }
+                  return (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>4</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Attachments</span>
+                      </div>
+                      {attachments.length ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {attachments.map((att, i) => (
+                            <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--accent)', textDecoration: 'none', cursor: 'pointer' }}>
+                              <span style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+                              </span>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</div>
+                              </div>
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>No attachments in this conversation yet.</div>
+                      )}
+                    </>
+                  );
+                })()}
               </>
             ) : null}
           </div>
