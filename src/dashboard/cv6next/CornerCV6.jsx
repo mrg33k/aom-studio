@@ -15,6 +15,7 @@ import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
+import Organize from './Organize.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
@@ -53,7 +54,7 @@ function useIsDesktop() {
 // desktop top bar + rails) hardcodes the full 8-tool set, so any tile pointing at a
 // tool we haven't wired to /dashboard yet would be a dead control ("doesn't open").
 // Until those screens are built live, drop those tiles so the nav only shows what works.
-const LIVE_NAV = new Set(['home', 'chat', 'support', 'command', 'tracker', 'back']);
+const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'back']);
 
 function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -622,7 +623,7 @@ function initialViewFromUrl() {
     const v = new URLSearchParams(window.location.search).get('view');
     if (!v) return 'home';
     if (v === 'chat' || v === 'chatlist') return 'chatlist';
-    if (['home', 'support', 'command', 'tracker'].includes(v)) return v;
+    if (['home', 'support', 'organize', 'command', 'tracker'].includes(v)) return v;
   } catch { /* no window */ }
   return 'home';
 }
@@ -735,6 +736,7 @@ export default function CornerCV6() {
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
   else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'support'; }
+  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'organize'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
   else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'review'; }
