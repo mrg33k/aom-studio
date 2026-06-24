@@ -101,6 +101,20 @@ export default async function handler(req, res) {
     };
     const tasks = [...activeTasks, ...recentDone].map(slimTask);
 
+    // corner:corner-ui-cv6 (2026-06-24): same payload-slim for messages. The feed renders
+    // ONLY a one-line preview (Command ledger firstLine, recency by timestamp/project), but
+    // the query returned 100 FULL message bodies (agent messages run long). Mirror slimTask:
+    // truncate text to a preview length; all other fields (project/timestamp/agent/metadata/
+    // id) pass through. Cuts the largest remaining response payload Patrik waits on.
+    const MSG_TEXT_MAX = 240;
+    const slimMessage = (m) => {
+      if (!m || typeof m !== 'object') return m;
+      const out = { ...m };
+      if (typeof out.text === 'string' && out.text.length > MSG_TEXT_MAX) out.text = out.text.slice(0, MSG_TEXT_MAX);
+      if (typeof out.content === 'string' && out.content.length > MSG_TEXT_MAX) out.content = out.content.slice(0, MSG_TEXT_MAX);
+      return out;
+    };
+
     // Architecture v2: task-runner tasks (building/qa = Right Now, queued/planning = queue)
     // Separate from legacy tasks to avoid double-counting in existing pill logic.
     const tasksV2 = [...tasksV2Active, ...tasksV2Done].map(slimTask);
@@ -159,7 +173,7 @@ export default async function handler(req, res) {
       agents: agentStatuses,
       projects: projectList,
       projectDefs,
-      messages: messages.reverse(), // oldest first
+      messages: messages.map(slimMessage).reverse(), // oldest first, text trimmed to preview length
       tasks,
       events: recentEvents, // newest-first; for activity feed ONLY -- NOT for status or RNB derivation
       tasksV2,              // Architecture v2: task-runner tasks. Right Now = status building|qa only.
