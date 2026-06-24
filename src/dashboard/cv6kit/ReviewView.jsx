@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
+import { AssignButton } from './AssignButton.jsx';
 
 /**
  * CV6 kit Review — queue → document → decision flow. Kit-faithful to
@@ -363,6 +364,11 @@ export function ReviewView({
               <button onClick={onReject} style={{ height: 46, borderRadius: 11, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 14.5, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer' }}>
                 ≡ Request changes
               </button>
+              <AssignButton
+                artifactType="doc"
+                artifactId={selectedItem?.id}
+                artifactTitle={selectedItem?.title || 'Document'}
+              />
             </div>
             <div className="eyebrow" style={{ marginBottom: 11 }}>
               Comments · {openCommentCount} open

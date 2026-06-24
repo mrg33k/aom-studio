@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
+import { AssignButton } from './AssignButton.jsx';
 
 /**
  * CV6 kit Support — MOBILE inbox of wishes + emails, then agent conversation.
@@ -245,7 +246,11 @@ function SupportView({
                   <button style={{ height: 36, width: 36, borderRadius: 10, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8L3.6 9.6l5.8-.8Z" /></svg>
                   </button>
-                  <button style={{ height: 36, padding: '0 14px', borderRadius: 10, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Assign</button>
+                  <AssignButton
+                    artifactType="email"
+                    artifactId={displayItem.id}
+                    artifactTitle={titleFor(displayItem)}
+                  />
                   <button style={{ height: 36, padding: '0 15px', borderRadius: 10, border: 'none', background: 'var(--success-weak)', color: 'var(--success)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
                     Resolve

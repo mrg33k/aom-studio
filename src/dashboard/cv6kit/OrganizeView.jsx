@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 import { CvgMobileHeader } from './CvgMobileHeader.jsx';
+import { AssignButton } from './AssignButton.jsx';
 
 /**
  * CV6 kit Organize — desktop & mobile file browse, multi-select, move-to-folder, and view/review.
@@ -1248,6 +1249,12 @@ export function OrganizeView({
               </svg>
               Delete
             </button>
+            <div style={{ width: 1, height: 32, background: 'var(--divider)' }} />
+            <AssignButton
+              artifactType="file"
+              artifactId={selectedFileIds[0]}
+              artifactTitle={files?.find(f => f.id === selectedFileIds[0])?.name || 'File'}
+            />
           </div>
         </div>
       )}

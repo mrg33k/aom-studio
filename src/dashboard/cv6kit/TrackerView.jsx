@@ -1,6 +1,7 @@
 import React from 'react';
 import { CvgDesktopChrome } from './CvgDesktopChrome.jsx';
 import { CvgMobileHeader } from './CvgMobileHeader.jsx';
+import { AssignButton } from './AssignButton.jsx';
 
 /**
  * CV6 kit Tracker — mobile bug/issue list + desktop design baseline.
@@ -436,20 +437,14 @@ export function NewIssueView({ onSubmit, onBack }) {
           </div>
         </div>
 
-        {/* Assign card (mock) */}
-        <div style={{ border: '1px solid var(--accent-weak)', background: 'linear-gradient(180deg,var(--accent-weak),transparent)', borderRadius: 15, padding: 14, marginBottom: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-            <div style={{ width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, background: 'rgba(52,211,153,.22)', color: 'var(--success)' }}>
-              EL
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>Assign to agent</div>
-              <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.4 }}>Works autonomously, asks when blocked</div>
-            </div>
-          </div>
-          <button style={{ width: '100%', height: 40, marginTop: 12, borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
-            Assign Agent
-          </button>
+        {/* Assign to agent */}
+        <div style={{ marginBottom: 18 }}>
+          <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--muted)', display: 'block', marginBottom: 9 }} className="eyebrow">Agent dispatch</label>
+          <AssignButton
+            artifactType="bug"
+            artifactId={selectedBug?.id}
+            artifactTitle={selectedBug?.title || 'Bug'}
+          />
         </div>
 
         {/* Attachments placeholder */}
