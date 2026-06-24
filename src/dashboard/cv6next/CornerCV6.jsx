@@ -151,6 +151,9 @@ const HOME_ALIASES = {
   'catchUp.items': 'item',
 };
 
+// Projects pagination: show this many by default, rest behind "Show N more".
+const PROJ_LIMIT = 8;
+
 function Home({ onNav, onOpenRoom, onOpenNav }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
@@ -172,6 +175,13 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   // All Rooms is built for hundreds: show a first page of projects with a real
   // "Show N more" that expands the rest in place (default collapsed = calm front door).
   const [projShowAll, setProjShowAll] = useState(false);
+  // Keyboard navigation state (desktop only): tracks selected row in All Rooms list.
+  // -1 = nothing selected. 0..agentsLen-1 = agents. agentsLen..agentsLen+projLen-1 = projects.
+  const [knavSelectedIdx, setKnavSelectedIdx] = useState(-1);
+  // Track keyboard nav room open state and which room is opened for col3 view.
+  // null = no room open. 'col3' = room displayed in Conversation col. 'full' = full Chat opened.
+  const [knavRoomOpenState, setKnavRoomOpenState] = useState(null);
+  const [knavOpenedRoom, setKnavOpenedRoom] = useState(null); // shape: { id, name, initials, isProject, ... }
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
@@ -182,6 +192,109 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   );
   const projectHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 1 }), []);
   const missionHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 2 }), []);
+
+  // Keyboard navigation for All Rooms list (desktop only). Combines agents + projects
+  // into a single list for ↑/↓ navigation. → opens quick chat (col 3), → again opens full Chat.
+  // ← steps back. Arrow keys only work when NOT typing in an input/search.
+  useEffect(() => {
+    if (!isDesktop) return; // keyboard nav desktop-only
+    const handleKeyDown = (e) => {
+      // Guard: ignore if focused on input, textarea, contenteditable, or search palette
+      const focused = document.activeElement;
+      const isTextInput = focused && (
+        focused.tagName === 'INPUT' ||
+        focused.tagName === 'TEXTAREA' ||
+        focused.contentEditable === 'true' ||
+        focused.getAttribute('role') === 'searchbox' ||
+        focused.closest('[role="combobox"]') // ⌘K palette
+      );
+      if (isTextInput) return;
+
+      const agentsList = agentsOpen ? (data.agents || []) : [];
+      const projectsList = projShowAll
+        ? (data.projects || [])
+        : (data.projects || []).slice(0, PROJ_LIMIT);
+      const totalLen = agentsList.length + projectsList.length;
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setKnavSelectedIdx((prev) => {
+          let next = prev - 1;
+          if (next < 0) next = totalLen - 1; // wrap to end
+          return next;
+        });
+        setKnavRoomOpenState(null); // reset open state on nav
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setKnavSelectedIdx((prev) => {
+          let next = prev + 1;
+          if (next >= totalLen) next = 0; // wrap to start
+          return next;
+        });
+        setKnavRoomOpenState(null); // reset open state on nav
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        // First → opens quick chat in col 3. Second → opens full Chat.
+        if (knavSelectedIdx >= 0 && knavSelectedIdx < totalLen) {
+          if (knavRoomOpenState === 'col3') {
+            // Second →: open full Chat
+            let roomObj;
+            if (knavSelectedIdx < agentsList.length) {
+              const agent = agentsList[knavSelectedIdx];
+              roomObj = agent;
+            } else {
+              const projIdx = knavSelectedIdx - agentsList.length;
+              const proj = projectsList[projIdx];
+              roomObj = {
+                id: proj.slug || proj.id,
+                name: proj.name,
+                initials: (proj.name || '?').slice(0, 2).toUpperCase(),
+                isProject: true,
+                status: proj.status || 'ready',
+                statusText: 'project chat'
+              };
+            }
+            onOpenRoom?.(roomObj, worldId);
+            setKnavRoomOpenState('full');
+          } else {
+            // First →: open quick chat in col 3
+            let roomObj;
+            if (knavSelectedIdx < agentsList.length) {
+              const agent = agentsList[knavSelectedIdx];
+              roomObj = agent;
+            } else {
+              const projIdx = knavSelectedIdx - agentsList.length;
+              const proj = projectsList[projIdx];
+              roomObj = {
+                id: proj.slug || proj.id,
+                name: proj.name,
+                initials: (proj.name || '?').slice(0, 2).toUpperCase(),
+                isProject: true,
+                status: proj.status || 'ready',
+                statusText: 'project chat'
+              };
+            }
+            setKnavOpenedRoom(roomObj);
+            setKnavRoomOpenState('col3');
+          }
+        }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        // First ← closes full Chat back to col3. Second ← clears col3 and deselects.
+        if (knavRoomOpenState === 'full') {
+          setKnavRoomOpenState('col3');
+        } else if (knavRoomOpenState === 'col3') {
+          setKnavRoomOpenState(null);
+          setKnavOpenedRoom(null);
+          setKnavSelectedIdx(-1);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDesktop, agentsOpen, projShowAll, data.agents, data.projects, knavSelectedIdx, knavRoomOpenState, onOpenRoom, worldId]);
 
   const openNewMission = () => {
     if (!openedProject) return;
@@ -299,7 +412,6 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   // header binds agentsTotal (always the full count) and agentsOpen drives the caret rotate.
   const agentsTotal = (data.agents && data.agents.length) || 0;
   // Projects: first PROJ_LIMIT by default, the rest behind a real "Show N more".
-  const PROJ_LIMIT = 8;
   const allProjects = data.projects || [];
   const projShown = projShowAll ? allProjects.slice() : allProjects.slice(0, PROJ_LIMIT);
   // arrays carry their bound scalars as props (the engine reads projects.count /
@@ -309,12 +421,34 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   projShown.count = allProjects.length;
   projShown.moreCount = projShowAll ? 0 : Math.max(0, allProjects.length - PROJ_LIMIT);
   projShown.moreState = projShown.moreCount > 0 ? 'has' : 'none';
+
+  // Keyboard nav: tag each agent/project row with its selected state.
+  // Index 0..agentsLen-1 are agents, agentsLen..end are projects.
+  const agentsList = agentsOpen ? (data.agents || []) : [];
+  const agentsLen = agentsList.length;
+  const agentsWithNav = agentsList.map((a, i) => ({
+    ...a,
+    knavSelected: knavSelectedIdx === i,
+  }));
+  const projectsWithNav = projShown.map((p, i) => ({
+    ...p,
+    knavSelected: knavSelectedIdx === agentsLen + i,
+  }));
+
+  // When a room is opened via keyboard nav, override the room/goal data for col3 display
+  const displayedRoom = knavOpenedRoom || data.room || { name: '', initials: '', statusText: '', status: 'ready' };
+  const displayedGoal = knavOpenedRoom
+    ? { has: 'active', title: 'Select an agent to see their goal', step: '', total: '', pct: 0, summary: [], checklist: [] }
+    : (data.goal || { has: 'none', title: 'Pick a room to see its goal', step: '', total: '', pct: 0, summary: [], checklist: [] });
+
   const homeData = {
     ...data,
-    agents: agentsOpen ? data.agents : [],
+    agents: agentsWithNav,
     agentsTotal,
     agentsOpen: agentsOpen ? 'open' : 'closed',
-    projects: projShown,
+    projects: projectsWithNav,
+    room: displayedRoom,
+    goal: displayedGoal,
   };
   return <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
     aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
