@@ -18,6 +18,9 @@ function composeOrganize(raw, screenName) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const screen = [...doc.querySelectorAll('[data-cv6][data-screen]')].find((n) => n.getAttribute('data-screen') === screenName);
   if (!screen) return '';
+  // The shared desktop nav is mounted once by the shell, so drop this screen's baked-in
+  // top bar (otherwise the page shows two stacked nav rows).
+  screen.querySelector('.topbar')?.remove();
   screen.setAttribute('style', 'width:100%;height:100%');
   const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
   sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => screen.appendChild(b.cloneNode(true)));
