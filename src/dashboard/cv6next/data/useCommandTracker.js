@@ -11,6 +11,7 @@ import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
+import { titleForAgent } from './agentTitles.js';
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -62,7 +63,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {} }) {
   // Activity dock = live agent sessions. Each is one running Claude session.
   const jobs = (sessions || []).map((s) => {
-    const name = titleCase(s.agent);
+    const name = titleForAgent(s.agent);
     return {
       id: s.agent, kind: 'agent', title: name, shortTitle: name,
       sub: firstLine(s.task_text) || 'Active session', badge: 'LIVE',
@@ -78,7 +79,7 @@ function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {} }) {
 
   const rooms = active.map((p) => {
     const last = lastByRoom[p.slug] || {};
-    const setBy = cap(last.agent) || '';
+    const setBy = last.agent ? titleForAgent(last.agent) : '';
     const live = last.agent && liveAgents.has(String(last.agent).toLowerCase());
     const status = live ? 'live' : 'ready';
     const line = firstLine(last.text).slice(0, 90);
@@ -94,9 +95,9 @@ function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {} }) {
   // Focused goal = honest summary of what's live right now (no fabricated checklist).
   const lead = sessions[0];
   const goal = lead
-    ? { id: lead.agent, roomName: titleCase(lead.agent), tint: 'violet', status: 'live', statusLabel: 'LIVE',
+    ? { id: lead.agent, roomName: titleForAgent(lead.agent), tint: 'violet', status: 'live', statusLabel: 'LIVE',
         title: `${sessions.length} agent session${sessions.length > 1 ? 's' : ''} active`,
-        driverLine: `${titleCase(lead.agent)} · ${firstLine(lead.task_text) || 'working'}`,
+        driverLine: `${titleForAgent(lead.agent)} · ${firstLine(lead.task_text) || 'working'}`,
         stepCount: '', queueNote: '', checklist: [] }
     : { id: '', roomName: active[0]?.name || 'No active session', tint: 'violet', status: 'ready', statusLabel: '',
         title: active.length ? 'No agent sessions running right now' : 'Nothing active right now',

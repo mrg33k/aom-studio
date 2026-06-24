@@ -14,7 +14,7 @@ import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
-import { curateTitledAgents } from './agentTitles.js';
+import { curateTitledAgents, titleForAgent } from './agentTitles.js';
 
 const TINTS = ['violet', 'accent', 'pink', 'teal', 'lime', 'amber'];
 
@@ -80,8 +80,8 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
   const cards = (inboxItems || []).map((it) => ({
     id: it.id,
     kind: 'agent', kindLabel: 'AGENT',
-    from: cap(it.agent) || 'Your agent',
-    subject: it.project ? cap(it.project) : (it.missionSlug || `${cap(it.agent)} thread`),
+    from: it.agent ? titleForAgent(it.agent) : 'Your agent',
+    subject: it.project ? cap(it.project) : (it.missionSlug || `${titleForAgent(it.agent)} thread`),
     summary: firstLine(it.text),
     time: relTime(it.timestamp),
     actionItems: [], attachments: [],
