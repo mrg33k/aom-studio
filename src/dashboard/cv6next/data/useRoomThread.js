@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { authFetch } from '../../lib/authFetch';
+import { titleForAgent } from './agentTitles.js';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
 function initials(name) {
@@ -81,7 +82,9 @@ export function useRoomThread(worldId, room) {
         setBlocks(liveBlocks);
         const msgs = raw.map((m) => {
           const isUser = m.role === 'user' || !!m.user_name;
-          const name = isUser ? (m.user_name || 'You') : cap(m.agent || room.name);
+          // Agent messages show the agent's ROLE TITLE, never its persona name (titles
+          // everywhere, decided 2026-06-23).
+          const name = isUser ? (m.user_name || 'You') : titleForAgent(m.agent || room.name);
           // A file an agent made shows in the thread (rule: files live in the room).
           // It arrives either as a real attachment (attachment_url) or as an
           // "Attached file: <name>" note. Either way we render it as a file card.
