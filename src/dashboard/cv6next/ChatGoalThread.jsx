@@ -104,10 +104,186 @@ function Result({ block }) {
       </div>
     );
   }
+  if (block.type === 'snag') {
+    return (
+      <div className="cblk is-snag" style={{ marginTop: 4 }}>
+        <div className="cblk-h">
+          <span className="ci"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 9v4M12 17v.01" /><path d="M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" /></svg></span>
+          <span className="ct">{block.title || 'Snag'}</span>
+        </div>
+        {block.detail ? <div className="cblk-b" style={{ fontSize: 12.5 }}>{block.detail}</div> : null}
+      </div>
+    );
+  }
   if (block.type === 'data') return <DataBlock block={block} />;
   if (block.type === 'choice') return <ChoiceBlock block={block} />;
   if (block.type === 'question') return <QuestionBlock block={block} />;
+  if (block.type === 'email') return <EmailBlock block={block} />;
+  if (block.type === 'summary') return <SummaryBlock block={block} />;
+  if (block.type === 'artifact') return <ArtifactBlock block={block} />;
+  if (block.type === 'audio') return <AudioBlock block={block} />;
+  if (block.type === 'video') return <VideoBlock block={block} />;
   return null;
+}
+
+// Tappable action chips shared by email/summary/media blocks — each posts the label as a
+// real user message so the agent acts on it (no dead controls). `primaryFirst` makes the
+// first chip the is-primary call to action.
+function ActionChips({ actions, primaryFirst = true }) {
+  const list = Array.isArray(actions) ? actions.filter(Boolean) : [];
+  const send = useThreadSend();
+  if (!list.length) return null;
+  return (
+    <div className="chips">
+      {list.map((a, i) => {
+        const label = typeof a === 'string' ? a : (a.label || '');
+        return <button key={i} className={`chip-btn ${primaryFirst && i === 0 ? 'is-primary' : ''}`} onClick={() => send(label)}>{label}</button>;
+      })}
+    </div>
+  );
+}
+
+// A real email surfaced in chat (kit .cmail): from/subject, the ask quoted, an optional
+// attachment row, and reply-via-agent action chips. We discuss email here; we don't compose.
+function EmailBlock({ block }) {
+  const atts = Array.isArray(block.attachments) ? block.attachments : [];
+  const send = useThreadSend();
+  return (
+    <div className="cmail" style={{ marginTop: 4 }}>
+      <div className="cmail-h">
+        <span className="ma" style={{ background: 'rgba(244,114,182,.18)', color: '#F8A8D0' }}>{block.initials || (block.from || '·').slice(0, 2).toUpperCase()}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="mfrom">{block.from || 'Sender'}{block.org ? ` · ${block.org}` : ''}</div>
+          <div className="msub">{block.subject || ''}</div>
+        </div>
+        <span className="cmail-tag">Email</span>
+      </div>
+      {block.quote ? <div className="cmail-q">{block.quote}</div> : null}
+      {atts.length ? (
+        <div style={{ padding: '0 14px 12px' }}>
+          {atts.map((f, i) => (
+            <div key={i} className="frowm" style={{ marginTop: i ? 8 : 0 }}>
+              <span className="fg"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg></span>
+              <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)' }}>{f.name || 'file'}</div>{f.size ? <div className="mono" style={{ fontSize: 10, color: 'var(--faint)' }}>{f.size}</div> : null}</div>
+              {f.url ? <button className="pillbtn" onClick={() => window.open(f.url, '_blank', 'noopener')}>Open</button> : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {block.flagged ? (
+        <div className="cmail-f">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M4 22V4h13l-2 4 2 4H4" /></svg>
+          <span style={{ flex: 1, fontSize: 11, color: 'var(--faint)' }}>{block.flagged}</span>
+        </div>
+      ) : null}
+      {block.actions ? (
+        <div style={{ padding: '0 14px 13px' }}><ActionChips actions={block.actions} /></div>
+      ) : null}
+    </div>
+  );
+}
+
+// A digest of something long (kit .csum): scannable bullets + checkable action items +
+// suggested next moves. Bullets flagged is-warn render in the warn color.
+function SummaryBlock({ block }) {
+  const bullets = Array.isArray(block.bullets) ? block.bullets : [];
+  const actions = Array.isArray(block.actions) ? block.actions : [];
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div className="csum">
+        <div className="csum-h">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
+          <span className="se">Summary</span>
+          {block.meta ? <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>{block.meta}</span> : null}
+        </div>
+        <div className="csum-body">
+          {bullets.map((b, i) => {
+            const text = typeof b === 'string' ? b : (b.text || '');
+            const warn = typeof b === 'object' && b.warn;
+            return <div key={i} className={`sbullet${warn ? ' is-warn' : ''}`}><span className="sd" /><div>{text}</div></div>;
+          })}
+        </div>
+        {actions.length ? (
+          <div className="cact">
+            <div className="eyebrow" style={{ marginBottom: 6 }}>Action items</div>
+            {actions.map((a, i) => {
+              const text = typeof a === 'string' ? a : (a.text || '');
+              const done = typeof a === 'object' && a.done;
+              return (
+                <div key={i} className={`aitem${done ? ' is-done' : ''}`}>
+                  <span className="ck">{done ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: 1 }}><path d="m5 12 4 4L19 7" /></svg> : null}</span>
+                  <span style={done ? { color: 'var(--muted)', textDecoration: 'line-through' } : undefined}>{text}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
+      {block.chips ? <ActionChips actions={block.chips} /> : null}
+    </div>
+  );
+}
+
+// Something the agent sends to show a result or confirm (kit .cartifact): a screenshot or
+// live-site card with a Review action. Review posts an open-in-review message (the full pin
+// canvas is a separate surface); a real attachment URL opens directly.
+function ArtifactBlock({ block }) {
+  const send = useThreadSend();
+  const isShot = block.kind !== 'live';
+  const onReview = () => { if (block.url) window.open(block.url, '_blank', 'noopener'); else send(`Open ${block.name || 'this'} in Review`); };
+  return (
+    <div className="cartifact" style={{ marginTop: 4 }}>
+      {!isShot ? (
+        <div className="cart-omni"><span className="lights"><i /><i /><i /></span><span className="url">{block.url || block.name || 'preview'}</span></div>
+      ) : null}
+      <div className={`cart-canvas${isShot ? ' is-shot' : ''}`} style={!isShot ? { aspectRatio: '16/9', background: 'linear-gradient(160deg,#101822,#0a0e14)' } : undefined}>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={isShot ? '#c9ccd1' : 'rgba(255,255,255,.4)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
+      </div>
+      <div className="cart-bar">
+        <span className="cart-kind">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.6" /><path d="m21 15-5-5L5 21" /></svg>
+          {isShot ? 'Screenshot' : 'Live site'}
+        </span>
+        <span style={{ flex: 1, fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{block.name || ''}</span>
+        <button className="review-btn" onClick={onReview}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></svg>
+          Review
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// A voice note (kit .caudio): play control + waveform + duration, with the transcript in a
+// muted bubble below. Bars are a fixed visual; height comes from the block or a default set.
+function AudioBlock({ block }) {
+  const heights = Array.isArray(block.wave) && block.wave.length ? block.wave : [30, 60, 85, 50, 100, 70, 40, 80, 55, 95, 45, 65, 35, 75, 50, 90, 40, 60];
+  const lit = Math.round(heights.length * 0.38);
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div className="caudio">
+        <button className="play"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M7 5l12 7-12 7Z" /></svg></button>
+        <div className="wave">{heights.map((h, i) => <i key={i} className={i < lit ? 'on' : ''} style={{ height: `${h}%` }} />)}</div>
+        {block.duration ? <span className="mono" style={{ fontSize: 11, color: 'var(--muted)', flex: 'none' }}>{block.duration}</span> : null}
+      </div>
+      {block.transcript ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}>{block.transcript}</div> : null}
+    </div>
+  );
+}
+
+// A video message (kit .cvideo): a clean poster with a play affordance + duration chip and
+// an optional title, never a raw file dumped in the thread.
+function VideoBlock({ block }) {
+  return (
+    <div className="cvideo" style={{ marginTop: 4 }}>
+      <div className="vplay"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M8 5l11 7-11 7Z" /></svg></div>
+      <div className="vmeta">
+        {block.duration ? <span className="vchip">▶ {block.duration}</span> : <span />}
+        <span style={{ flex: 1 }} />
+        {block.title ? <span className="vchip">{block.title}</span> : null}
+      </div>
+    </div>
+  );
 }
 
 // Spreadsheet block on the real kit .cdata / .tbl (table) + .bars (chart), with the kit
