@@ -37,8 +37,11 @@ export default async function handler(req, res) {
     ? req.query.client.trim().toLowerCase()
     : DEFAULT_CLIENT_ID;
   let clientId;
+  const _vtStart = Date.now();
+  let _vtMs = 0;
   try {
     ({ tenant: clientId } = await verifyTenant(requested, req));
+    _vtMs = Date.now() - _vtStart;
   } catch (err) {
     if (err instanceof TenantAuthError) return res.status(err.status).json({ error: err.message });
     throw err;
@@ -81,6 +84,7 @@ export default async function handler(req, res) {
       _timed('tasksV2_done', supabaseGet('tasks', `status=in.(done,failed)&order=completed_at.desc&limit=50${clientFilter}`).catch(() => [])),
     ]);
     _timings._total = Date.now() - _tAll;
+    _timings._verifyTenant = _vtMs;
     { const slowest = Object.entries(_timings).filter(([k]) => k !== '_total').sort((a, b) => b[1] - a[1])[0];
       console.log(`[supabase-status] client=${clientId} total=${_timings._total}ms slowest=${slowest ? slowest[0] + ':' + slowest[1] + 'ms' : 'n/a'} all=${JSON.stringify(_timings)}`); }
     // corner:dashboard-speed (2026-06-02): task rows carry the full brief in

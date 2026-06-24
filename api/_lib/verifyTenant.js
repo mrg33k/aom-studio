@@ -139,7 +139,12 @@ export async function verifyTenant(requestedTenant, req) {
   const jwt = extractJwt(req);
   if (!jwt) throw new TenantAuthError('jwt required', 401);
 
+  // corner:corner-ui-cv6 (2026-06-24): time the auth sub-calls — the dashboard
+  // load was ~15-19s with server queries only ~600ms, so the cost is here.
+  const _gu0 = Date.now();
   const user = await getUserFromJwt(jwt);
+  const _guMs = Date.now() - _gu0;
+  if (_guMs > 1500) console.log(`[verifyTenant] getUserFromJwt=${_guMs}ms (SLOW) tenant=${tenant}`);
   if (!user) throw new TenantAuthError('invalid jwt', 401);
 
   // Super-admin bypass: Patrik (and any future super-admin UID) can read
