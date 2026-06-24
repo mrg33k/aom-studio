@@ -91,6 +91,10 @@ export function useRoomThread(worldId, room) {
           const fileMatch = /^\s*attached file:\s*(.+?)\s*$/i.exec(m.text || '');
           const fileName = m.attachment_name || (fileMatch ? fileMatch[1] : '');
           const isFile = !!m.attachment_url || !!fileMatch;
+          // Live Goal Thread: a structured reply carries its blocks on metadata.blocks.
+          // We attach them to THIS message so the thread renders inline as that agent
+          // turn (history stays above it), instead of taking over the whole screen.
+          const msgBlocks = Array.isArray(m.metadata?.blocks) && m.metadata.blocks.length ? m.metadata.blocks : null;
           return {
             agentInitials: initials(name),
             agentName: name,
@@ -104,8 +108,9 @@ export function useRoomThread(worldId, room) {
             attachmentUrl: m.attachment_url || '',
             fileMime: m.file_mime_type || '',
             fileSize: m.file_size || 0,
+            blocks: msgBlocks,
           };
-        }).filter((m) => m.text || m.isFile);
+        }).filter((m) => m.text || m.isFile || m.blocks);
         setMessages(msgs);
         setStatus(msgs.length ? 'ready' : 'empty');
       })

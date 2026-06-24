@@ -8,6 +8,7 @@
 // emitting a live Goal Thread, ChatGoalThread renders that instead. Honest with real
 // data: we fold by DAY (which we have), not by past "goals" (never stored).
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 
 function dayKey(ts) {
   const d = ts ? new Date(ts) : null;
@@ -171,19 +172,40 @@ function FilePreview({ file, onClose }) {
     </div>
   );
 }
-// Walk a run of messages; collapse consecutive file messages into one gallery.
-function renderItems(items, onOpenFile) {
+// An agent turn that IS a live Goal Thread (the structured step thread), rendered inline
+// as that turn so the conversation history stays above it. The header (avatar + title +
+// time) matches a normal turn; the body is the real step thread from the agent's blocks.
+function GoalTurn({ m, goal }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+      <Avatar m={m} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{m.agentName}</span>
+          <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{m.time}</span>
+        </div>
+        <GoalThreadBody goal={goal} blocks={m.blocks} />
+      </div>
+    </div>
+  );
+}
+
+// Walk a run of messages; collapse consecutive file messages into one gallery, and render
+// any structured (Goal Thread) message inline as its step thread.
+function renderItems(items, onOpenFile, goal) {
   const out = []; let run = [];
   const flush = (key) => { if (run.length) { out.push(<FileGallery key={`g${key}`} files={run} sender={run[0]} onOpen={onOpenFile} />); run = []; } };
   items.forEach((m, i) => {
-    if (m.isFile) { run.push(m); } else { flush(i); out.push(<Message key={i} m={m} />); }
+    if (m.isFile) { run.push(m); }
+    else if (m.blocks && m.blocks.length) { flush(i); out.push(<GoalTurn key={i} m={m} goal={goal} />); }
+    else { flush(i); out.push(<Message key={i} m={m} />); }
   });
   flush('end');
   return out;
 }
 
 // An older day, folded into a one-line card you tap to open.
-function DayCard({ group, onOpenFile }) {
+function DayCard({ group, onOpenFile, goal }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`goalcard${open ? ' is-open' : ''}`} style={{ marginBottom: 10 }}>
@@ -193,13 +215,13 @@ function DayCard({ group, onOpenFile }) {
         <svg className="gc-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
       </div>
       <div className="gc-body">
-        {renderItems(group.items, onOpenFile)}
+        {renderItems(group.items, onOpenFile, goal)}
       </div>
     </div>
   );
 }
 
-export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend }) {
+export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal }) {
   const [draft, setDraft] = useState('');
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
@@ -208,6 +230,17 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
   const groups = useMemo(() => groupByDay(messages || []), [messages]);
   const older = groups.slice(0, -1);
   const latest = groups[groups.length - 1] || null;
+
+  // The goal thread's heading is the user's ask. Prefer the live goal title; fall back to
+  // the most recent user message so the header reads "Goal: <what you asked>" right away.
+  const threadGoal = useMemo(() => {
+    if (goal && goal.title) return goal;
+    let ask = '';
+    for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
+      if (messages[i]?.isUser && messages[i].text) { ask = messages[i].text; break; }
+    }
+    return ask ? { ...(goal || {}), title: ask } : goal;
+  }, [goal, messages]);
 
   const submit = () => { const t = draft.trim(); if (!t) return; onSend?.(t); setDraft(''); };
   const jumpToLatest = useCallback(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), []);
@@ -264,6 +297,7 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
       <div ref={scrollRef} onScroll={onScroll} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px 0' }}>
         {/* Cap the thread to a readable column so on iPad it stays phone-width and centered,
             instead of stretching messages + cards edge to edge. */}
+        <SendCtx.Provider value={onSend || (() => {})}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           {empty ? (
             <div className="empty" style={{ marginTop: 40 }}>
@@ -275,19 +309,20 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
               {older.map((g, i) => (
                 <React.Fragment key={g.key + i}>
                   <div className="daydiv"><span>{g.label.toUpperCase()}</span></div>
-                  <DayCard group={g} onOpenFile={openFile} />
+                  <DayCard group={g} onOpenFile={openFile} goal={threadGoal} />
                 </React.Fragment>
               ))}
               {latest && (
                 <>
                   <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
-                  {renderItems(latest.items, openFile)}
+                  {renderItems(latest.items, openFile, threadGoal)}
                 </>
               )}
             </>
           )}
           <div ref={bottomRef} style={{ height: 4 }} />
         </div>
+        </SendCtx.Provider>
       </div>
 
       {showJump && (

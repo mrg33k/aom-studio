@@ -9,7 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import ChatGoalThread, { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
@@ -360,23 +360,15 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
     approvePlan: () => {}, handoffAgent: () => {}, addContext: () => {}, addAttachment: () => {},
     openAttachment: () => {}, review: () => {}, setDataView: () => {}, toggleFollow: () => {}, retry: () => {},
   }), [onNav, onOpenNav]);
-  // Live Goal Thread: the agent is emitting structured blocks for this room -> render
-  // the rich step thread from that real output. Else the honest plain-message thread.
-  if (liveThread) {
-    return (
-      <ChatGoalThread
-        room={{ name: room.name, initials: room.initials || '·', statusText: room.statusText || '', status: room.status || 'ready' }}
-        goal={goal} blocks={blocks}
-        onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
-      />
-    );
-  }
-  // Plain conversation: the lifecycle renderer -- real messages folded by day so a
-  // long room stops being a wall of text (design item 1), with jump-to-latest.
+  // One conversation surface. When the agent emits a structured Goal Thread it renders
+  // INLINE as that agent turn (the live step thread, steps ticking) with the real
+  // message history scrollable above it -- never a separate screen that replaces the
+  // conversation. Plain replies render as plain turns. So you always keep your history,
+  // and the goal thread is just the latest turn (design: the visual chat language).
   return (
     <ChatLifecycle
       room={{ name: room.name, initials: room.initials || '·', statusText: room.statusText || '', status: room.status || 'ready' }}
-      messages={messages} status={status}
+      messages={messages} status={status} goal={liveThread ? goal : null}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
     />
   );
