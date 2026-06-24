@@ -1,0 +1,146 @@
+<!-- @dsCard group="Wired Templates" viewport="1480x940" subtitle="Review tool · desktop (queue + deliverable viewer with pin-comments + decision) and mobile (review-list → read + decide). Stripped, scoped [data-cv6], labeled. Document viewer shown as canonical; viewer switches by deliverable.type." name="Wired · Review" -->
+<!--
+  ============================================================================
+  WIRED — Review tool   ·   Source: ui_kits/tools/review.html + review.js
+  Contract: wired/tools/review.json
+  ----------------------------------------------------------------------------
+  Desktop: queue (Ready/Pipeline filter, search) · deliverable viewer with
+           pin-comments · decision side panel (approve / request changes).
+  Mobile:  pick-what-to-review (type chips) · viewer · pin-comments · decision.
+  The VIEWER SWITCHES BY deliverable.type (doc|photo|video|siteshot|sitelive) —
+  the document viewer is wired here as the canonical type; the host swaps the
+  viewer region per type. Lists use data-each; per-item visuals data-mod.
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+<style> body { margin:0; background:#e8e6e2; padding:40px; box-sizing:border-box; min-width:max-content; } .wrap { display:flex; gap:36px; align-items:flex-start; } </style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ============ DESKTOP · queue → viewer → decision ============ -->
+<div data-cv6 data-theme="dark" data-screen="review-desktop" data-screen-label="Review · Desktop" class="cv6-screen" style="width:1440px;height:860px;flex:none;border-radius:16px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="topbar">
+    <div class="tgreet"><img src="../../assets/corner-logo-white.svg" alt="Corner" style="height:22px;width:auto;display:block;"></div>
+    <div class="toolnav">
+      <div class="ctile" data-action="nav" data-target="home"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 9.8V20h14V9.8"/></svg><span class="clab">Home</span></div>
+      <div class="ctile" data-action="nav" data-target="chat"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg><span class="clab">Chat</span></div>
+      <div class="ctile" data-action="nav" data-target="organize"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 8l9 4 9-4-9-4Z"/><path d="m3 12 9 4 9-4"/></svg><span class="clab">Organize</span></div>
+      <div class="ctile on" data-action="nav" data-target="review"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg><span class="clab">Review</span></div>
+      <div class="ctile" data-action="nav" data-target="support"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg><span class="clab">Support</span></div>
+      <div class="ctile" data-action="nav" data-target="tracker"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg><span class="clab">Tracker</span></div>
+      <div class="ctile" data-action="nav" data-target="command"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4H4v16h3M17 4h3v16h-3"/></svg><span class="clab">Command</span></div>
+      <div class="ctile" data-action="nav" data-target="livescribe"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span class="clab">Scribe</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;"><span class="toolname">Review</span><div class="ib" data-action="openCommandK"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="av" data-action="openProfile">P</div></div>
+  </div>
+  <div style="display:flex;flex:1;min-height:0;">
+    <!-- queue -->
+    <div style="width:320px;flex:none;border-right:1px solid var(--divider);display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:18px 20px 12px;flex:none;"><div style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Queue</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;"><span data-bind="queue.readyCount">5</span> ready · mixed formats</div></div>
+      <!-- Ready / Pipeline = ONE filter: Ready = finished & awaiting you · Pipeline = same work still in progress -->
+      <div style="margin:0 20px 12px;display:flex;gap:6px;background:var(--surface-2);border-radius:10px;padding:3px;">
+        <button class="rseg is-on" data-action="setQueueFilter" data-arg="ready" data-mod="is-:queue.isReady">Ready <span data-bind="queue.readyCount">5</span></button>
+        <button class="rseg" data-action="setQueueFilter" data-arg="pipeline" data-mod="is-:queue.isPipeline">Pipeline <span data-bind="queue.pipelineCount">3</span></button>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;height:36px;margin:0 20px 12px;padding:0 12px;border-radius:11px;background:var(--surface-2);border:1px solid var(--hair);color:var(--faint);font-size:13px;" data-action="searchQueue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search the queue…</span></div>
+      <div style="flex:1;overflow:hidden;padding:0 12px;">
+        <div style="padding:0 8px;margin:4px 0 6px;display:flex;align-items:center;justify-content:space-between;"><span class="eyebrow">Ready</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);">newest first</span></div>
+        <!-- ONE row per queue item; is-open marks the open deliverable; is-:item.type on the glyph; count badge is-zero when 0 -->
+        <div class="qitem is-on" data-each="queue.items" data-action="openDeliverable" data-arg="item.id" data-mod="is-:item.open"><div class="qglyph"><svg class="tglyph is-doc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:item.type"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></div><div style="flex:1;min-width:0;"><div class="qtitle" data-bind="item.title">Launch film · 0:42</div><div class="qmeta"><span data-bind="item.who">Gary</span> · <span data-bind="item.typeLabel">Video</span></div></div><span class="qcount" data-bind="item.count">3</span></div>
+      </div>
+    </div>
+    <!-- viewer (switches by deliverable.type · document shown) -->
+    <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;padding:28px;" data-state="ready">
+      <div class="doc" style="width:560px;padding:46px 50px;">
+        <div style="font-family:var(--font-mono);font-size:12px;color:#999;margin-bottom:18px;" data-bind="deliverable.file">handoff.md · 8 KB</div>
+        <h1 style="font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0 0 16px;" data-bind="deliverable.title">Support ask · handoff</h1>
+        <div style="font-size:15px;line-height:1.65;color:#333;" data-bind="deliverable.bodyHtml"><p style="margin:0 0 14px;">Repo <code>space-rising</code> isn't found in the <code>task-runner.sh</code> resolver, so docs-only projects fail to route ahead of the Apr 29 print.</p></div>
+        <!-- ONE pin per comment; host positions it from pin.x/pin.y (live values) -->
+        <div class="pin" data-each="deliverable.pins" style="left:auto;right:14px;top:150px;transform:translateY(-50%);" data-action="openPin" data-arg="pin.id" data-bind="pin.n">1</div>
+      </div>
+      <div style="position:absolute;top:16px;right:16px;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.55);border-radius:16px;padding:6px 12px;font-size:11.5px;font-weight:600;color:#fff;">Click anywhere to comment</div>
+    </div>
+    <!-- decision side panel -->
+    <div style="width:330px;flex:none;border-left:1px solid var(--divider);overflow:hidden;">
+      <div style="padding:22px;">
+        <div class="eyebrow" style="margin-bottom:12px;">This deliverable</div>
+        <div style="background:var(--surface);border:1px solid var(--hair);border-radius:12px;overflow:hidden;margin-bottom:18px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;border-bottom:1px solid var(--divider);"><span style="font-size:13px;color:var(--muted);">Type</span><span style="font-size:13.5px;font-weight:500;color:var(--fg);" data-bind="deliverable.typeLabel">Document</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;border-bottom:1px solid var(--divider);"><span style="font-size:13px;color:var(--muted);">From</span><span style="display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:500;color:var(--fg);"><span class="ava is-green" data-mod="is-:deliverable.whoTint" style="width:20px;height:20px;font-size:9px;" data-bind="deliverable.whoInitials">EL</span><span data-bind="deliverable.who">Elon</span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:0 14px;height:44px;"><span style="font-size:13px;color:var(--muted);">Location</span><span style="font-size:13.5px;font-weight:500;color:var(--fg);" data-bind="deliverable.location">Corner · Dashboard</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:18px;">
+          <button style="height:46px;border-radius:11px;border:none;background:var(--success);color:#06281c;font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="approve" data-arg="deliverable.id"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve</button>
+          <button style="height:46px;border-radius:11px;border:1px solid var(--hair);background:transparent;color:var(--fg);font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="requestChanges" data-arg="deliverable.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h12"/></svg>Request changes</button>
+        </div>
+        <div class="eyebrow" style="margin-bottom:11px;"><span data-bind="deliverable.commentsLabel">Pin-comments</span> · <span data-bind="deliverable.openCount">2</span> open</div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px;">
+          <!-- ONE row per pin-comment -->
+          <div style="display:flex;gap:10px;padding:11px 12px;background:var(--surface);border:1px solid var(--hair);border-radius:11px;cursor:pointer;" data-each="deliverable.comments" data-action="openPin" data-arg="comment.id"><span class="pin" style="position:static;transform:none;width:22px;height:22px;font-size:11px;flex:none;" data-bind="comment.n">1</span><div style="flex:1;min-width:0;"><div style="font-size:12.5px;line-height:1.45;color:var(--fg);" data-bind="comment.text">Pin the exact framing term before this locks.</div><div style="font-size:11px;color:var(--faint);margin-top:4px;" data-bind="comment.anchor">on "Interactive/community"</div></div></div>
+        </div>
+        <button style="width:100%;height:44px;border-radius:11px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="sendChecklist" data-arg="deliverable.id"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Send <span data-bind="deliverable.openCount">2</span> notes as a checklist → <span data-bind="deliverable.who">Elon</span></button>
+        <div style="font-size:11.5px;line-height:1.5;color:var(--faint);text-align:center;margin-top:10px;">Comments become a fix-list the agent works through, then re-submits.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MOBILE · pick-what-to-review → read + decide ============ -->
+<div data-cv6 data-theme="dark" data-screen="review-mobile" data-screen-label="Review · Mobile" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl">Review</div><div class="msub"><span data-bind="deliverable.typeLabel">Document</span> · <span data-bind="deliverable.who">Elon</span></div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <div style="padding:12px 14px 0;">
+    <!-- type chips · ONE per queue item; is-on marks the open deliverable -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;overflow:hidden;">
+      <button class="typechip is-on" data-each="queue.items" data-action="openDeliverable" data-arg="item.id" data-mod="is-:item.open"><svg class="tglyph is-doc" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:item.type"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><span data-bind="item.typeLabel">Document</span></button>
+    </div>
+    <!-- viewer (document canonical) -->
+    <div class="doc" style="border-radius:10px;padding:18px 18px;height:392px;overflow:hidden;" data-state="ready">
+      <div style="font-family:var(--font-mono);font-size:11px;color:#999;margin-bottom:12px;" data-bind="deliverable.file">handoff.md · 8 KB</div>
+      <h1 style="font-size:18px;font-weight:700;margin:0 0 10px;" data-bind="deliverable.title">Support ask · handoff</h1>
+      <div style="font-size:13.5px;line-height:1.6;color:#333;" data-bind="deliverable.bodyHtml"><p style="margin:0;">Repo <code>space-rising</code> isn't in the resolver, so docs-only projects fail to route.</p></div>
+      <div class="pin" data-each="deliverable.pins" style="position:absolute;top:120px;right:14px;" data-action="openPin" data-arg="pin.id" data-bind="pin.n">1</div>
+    </div>
+  </div>
+  <!-- pin-comment count bar -->
+  <div style="position:absolute;left:0;right:0;bottom:76px;padding:11px 14px;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:10px;" data-action="openComments">
+    <span class="pin" style="position:static;transform:none;width:22px;height:22px;font-size:11px;flex:none;" data-bind="deliverable.openCount">3</span>
+    <div style="flex:1;min-width:0;font-size:12.5px;color:var(--muted);line-height:1.3;"><span data-bind="deliverable.openCount">3</span> <span data-bind="deliverable.commentsLabelLower">pin-comments</span> queued for <span data-bind="deliverable.who">Gary</span></div>
+    <span style="font-size:12.5px;font-weight:600;color:var(--accent);">View</span>
+  </div>
+  <!-- decision bar -->
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 16px;border-top:1px solid var(--divider);background:var(--ground);display:flex;gap:10px;">
+    <button style="flex:1;height:48px;border-radius:13px;border:none;background:var(--success);color:#06281c;font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="approve" data-arg="deliverable.id"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>Approve</button>
+    <button style="flex:1;height:48px;border-radius:13px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;" data-action="requestChanges" data-arg="deliverable.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h12"/></svg>Changes</button>
+  </div>
+</div>
+
+<!-- ============ MOBILE · pick-what-to-review list ============ -->
+<div data-cv6 data-theme="dark" data-screen="review-mobile" data-screen-label="Review · Pick list" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);display:flex;flex-direction:column;">
+  <div class="mhdr">
+    <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+    <div class="mhtitle"><div class="mttl">Review</div><div class="msub"><span data-bind="queue.readyCount">40</span> ready · <span data-bind="queue.pipelineCount">40</span> in pipeline</div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+  </div>
+  <!-- Ready / Pipeline = ONE filter -->
+  <div style="display:flex;gap:7px;padding:10px 16px 12px;flex:none;">
+    <button class="rseg is-on" data-action="setQueueFilter" data-arg="ready" data-mod="is-:queue.isReady">Ready <span data-bind="queue.readyCount">40</span></button>
+    <button class="rseg" data-action="setQueueFilter" data-arg="pipeline" data-mod="is-:queue.isPipeline">Pipeline <span data-bind="queue.pipelineCount">40</span></button>
+  </div>
+  <div data-state="ready" style="flex:1;overflow:hidden;">
+    <!-- ONE row per queue item; is-:item.type on .rgly; is-:item.queueState (building → dimmed + spinner) -->
+    <div class="rrow" data-each="queue.items" data-action="openDeliverable" data-arg="item.id" data-mod="is-:item.queueState"><div class="rgly is-doc" data-mod="is-:item.type"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></div><div style="flex:1;min-width:0;"><div class="rttl" data-bind="item.title">Support ask · handoff</div><div class="rmeta"><span data-bind="item.typeLabel">Doc</span> · <span data-bind="item.who">Elon</span> · <span data-bind="item.location">Corner → Dashboard</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;"><span class="astat is-ready" data-mod="is-:item.status"><span class="sd"></span><span data-bind="item.statusLabel">READY</span></span><span class="mono" style="font-size:10px;color:var(--faint);" data-bind="item.time">11:15</span></div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
