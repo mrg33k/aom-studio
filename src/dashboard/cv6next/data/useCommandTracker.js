@@ -60,6 +60,26 @@ export function useWorldId() {
 // honest structured source yet, so they bind to honest placeholders, not invented steps.
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+// The goal-detail loop view (structured checklist + master-loop watchers) has NO honest
+// backend feed yet. Rather than ship an empty rail, we show a clearly SAMPLE-labelled
+// preview of the design so the shape is visible, and the mutating controls (Re-task,
+// add/toggle watcher) render visibly held (disabled) in the template. Not faked as live:
+// every consuming section carries a SAMPLE badge. Replace with the real loop feed when wired.
+const SAMPLE_CHECKLIST = [
+  { label: 'Pull the room canon and scan the queue', tag: 'Verified', state: 'done' },
+  { label: 'Push the active goal forward one step', tag: 'Verified', state: 'done' },
+  { label: 'Drive the conversation toward the goal', tag: 'Running', state: 'active' },
+  { label: 'Verify the finished step on the live surface', tag: 'Queued', state: 'queued' },
+];
+function sampleWatchers() {
+  const list = [
+    { id: 'sample-driver', name: 'Elon', role: 'Driver · sample', initials: 'EL', tint: 'green', on: 'on' },
+    { id: 'sample-review', name: 'Studio', role: 'Reviewer · sample', initials: 'ST', tint: 'violet', on: 'off' },
+  ];
+  list.activeCount = 1; // array carrying .activeCount (engine binds watchers.activeCount + data-each="watchers")
+  return list;
+}
+
 function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {} }) {
   // Activity dock = live agent sessions. Each is one running Claude session.
   const jobs = (sessions || []).map((s) => {
@@ -103,11 +123,20 @@ function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {} }) {
         title: active.length ? 'No agent sessions running right now' : 'Nothing active right now',
         driverLine: '', stepCount: '', queueNote: '', checklist: [] };
 
+  // Goal SUMMARY (title / driver / status) stays real. The structured checklist + watchers
+  // have no real source, so they bind to a SAMPLE preview (clearly badged in the template).
+  const goalWithPreview = {
+    ...goal, isSample: true,
+    stepCount: String(SAMPLE_CHECKLIST.length),
+    queueNote: '1 in master-loop queue',
+    checklist: SAMPLE_CHECKLIST,
+  };
+
   return {
     ledger: { roomCount: rooms.length, liveCount, blockedCount: 0, rooms, others: rooms },
     activity: { count: jobs.length, jobs },
-    goal,
-    watchers: { activeCount: 0, list: [] },
+    goal: goalWithPreview,
+    watchers: sampleWatchers(),
   };
 }
 
