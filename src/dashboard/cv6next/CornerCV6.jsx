@@ -925,7 +925,7 @@ function initialViewFromUrl() {
     const v = new URLSearchParams(window.location.search).get('view');
     if (!v) return 'home';
     if (v === 'chat' || v === 'chatlist') return 'chatlist';
-    if (['home', 'support', 'organize', 'command', 'tracker', 'review', 'settings', 'onboarding'].includes(v)) return v;
+    if (['home', 'support', 'organize', 'command', 'tracker', 'review', 'settings', 'onboarding', 'livescribe'].includes(v)) return v;
   } catch { /* no window */ }
   return 'home';
 }
