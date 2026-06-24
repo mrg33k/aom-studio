@@ -48,20 +48,81 @@ function ProjectRow({ row, open, onClick }) {
   );
 }
 
+// Group plain messages (oldest -> newest) into day buckets, preserving order. Mirrors
+// ChatLifecycle's mobile grouping so desktop reads the same: latest day open inline,
+// older days folded into one-line cards (the "jumbled pile" fix, ported to desktop).
+function dayKeyD(ts) {
+  const d = ts ? new Date(ts) : null;
+  if (!d || Number.isNaN(d.getTime())) return 'na';
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+function dayLabelD(ts) {
+  const d = ts ? new Date(ts) : null;
+  if (!d || Number.isNaN(d.getTime())) return 'Earlier';
+  const now = new Date();
+  const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diff = Math.round((startOf(now) - startOf(d)) / 86400000);
+  if (diff <= 0) return 'Today';
+  if (diff === 1) return 'Yesterday';
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+function groupByDayD(messages) {
+  const groups = []; let cur = null;
+  for (const m of messages) {
+    const k = dayKeyD(m.ts);
+    if (!cur || cur.key !== k) { cur = { key: k, label: dayLabelD(m.ts), items: [] }; groups.push(cur); }
+    cur.items.push(m);
+  }
+  return groups;
+}
+
+// One desktop message row (shared by the open latest day and expanded older days).
+function MsgRow({ m }) {
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+      <span className={`ava is-${m.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{m.agentInitials}</span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 2 }}>{m.agentName}<span style={{ marginLeft: 8, color: 'var(--faint)' }}>{m.time}</span></div>
+        <div style={{ fontSize: 14, color: 'var(--fg)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.text}</div>
+      </div>
+    </div>
+  );
+}
+
+// An older day, folded into a one-line card you tap to open (reuses the .goalcard CSS).
+function DesktopDayCard({ group }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`goalcard${open ? ' is-open' : ''}`}>
+      <div className="gc-head" onClick={() => setOpen((v) => !v)}>
+        <span className="gc-title">{group.label}</span>
+        <span className="gc-meta">{group.items.length} message{group.items.length === 1 ? '' : 's'}</span>
+        <svg className="gc-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+      </div>
+      <div className="gc-body">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 8 }}>
+          {group.items.map((m, i) => <MsgRow key={i} m={m} />)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Plain message list (desktop) for rooms without a live structured thread.
 function PlainThread({ messages }) {
   if (!messages?.length) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>No messages in this room yet. Start the conversation below.</div>;
+  const groups = groupByDayD(messages);
+  const older = groups.slice(0, -1);
+  const latest = groups[groups.length - 1] || null;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 660 }}>
-      {messages.map((m, i) => (
-        <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-          <span className={`ava is-${m.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{m.agentInitials}</span>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 2 }}>{m.agentName}<span style={{ marginLeft: 8, color: 'var(--faint)' }}>{m.time}</span></div>
-            <div style={{ fontSize: 14, color: 'var(--fg)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.text}</div>
-          </div>
-        </div>
-      ))}
+      {older.map((g, i) => <DesktopDayCard key={`${g.key}-${i}`} group={g} />)}
+      {latest && (
+        <>
+          <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
+          {latest.items.map((m, i) => <MsgRow key={i} m={m} />)}
+        </>
+      )}
     </div>
   );
 }
