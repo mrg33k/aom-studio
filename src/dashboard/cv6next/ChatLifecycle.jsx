@@ -100,74 +100,106 @@ function FileGlyph({ kind, size = 20 }) {
   if (kind === 'link') return <svg {...p}><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg>;
   return <svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg>;
 }
-// Built on the real Photo gallery kit (agent-chat/gallery.html): the agent .turn
-// anatomy, a .cgal mosaic (first cell .span2, a "+N" .more overlay on overflow),
-// a .gal-cap count, and the .chip-btn actions. Classes live in cv6.css already.
-function FileGallery({ files, sender, onOpen }) {
-  const allImages = files.every((f) => fileKind(f.fileName, f.fileMime) === 'image');
-  const shown = files.slice(0, 4);
-  const overflow = files.length - shown.length;
+// File Collection (design drop 7, agent-chat/collection.html): a batch of files an agent
+// sends folds to ONE card — a preview grid for images, a compact list for docs — with a
+// count and "Review all". Tapping any opens the look-only viewer below. Real files only.
+function FileGallery({ files, sender, onOpen, onReview }) {
+  const images = files.filter((f) => fileKind(f.fileName, f.fileMime) === 'image');
+  const allDocs = images.length === 0;
   const totalSize = files.reduce((s, f) => s + (f.fileSize || 0), 0);
+  const noun = allDocs ? 'document' : (images.length === files.length ? 'image' : 'file');
+  const title = allDocs ? 'Documents' : (images.length === files.length ? 'Images' : 'Files');
+  const meta = `${files.length} ${noun}${files.length === 1 ? '' : 's'}${totalSize ? ` · ${fmtSize(totalSize)}` : ''}`;
+  const gridShown = files.slice(0, 8);
+  const gridOverflow = files.length - gridShown.length;
+  const listShown = files.slice(0, 3);
+  const listOverflow = files.length - listShown.length;
+  const overflow = allDocs ? listOverflow : gridOverflow;
   return (
     <div className="turn" style={{ marginBottom: 14 }}>
       <div className="tav" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>{sender?.agentInitials || '·'}</div>
       <div className="tbody">
-        <div className="tname"><b>{sender?.agentName || 'Files'}</b><span className="tt">{files.length} {allImages ? 'images' : 'files'}</span></div>
-        <div className="bubble" style={{ paddingBottom: 13 }}>
-          <div className="cgal">
-            {shown.map((f, i) => {
-              const kind = fileKind(f.fileName, f.fileMime);
-              const isImg = kind === 'image' && f.attachmentUrl;
-              const showMore = overflow > 0 && i === shown.length - 1;
-              return (
-                <div key={i} className={`ph${i === 0 ? ' span2' : ''}`} onClick={() => onOpen(f)} role="button" style={{ cursor: 'pointer' }}>
-                  {isImg ? <img src={f.attachmentUrl} alt={f.fileName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <FileGlyph kind={kind} size={i === 0 ? 30 : 22} />}
-                  {!isImg && <span className="mono" style={{ position: 'absolute', left: 6, right: 6, bottom: 5, fontSize: 8.5, color: 'rgba(255,255,255,.62)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>{f.fileName}</span>}
-                  {showMore && <div className="more">+{overflow}</div>}
+        <div className="tname"><b>{sender?.agentName || 'Files'}</b><span className="tt">sent {files.length} file{files.length === 1 ? '' : 's'}</span></div>
+        <div className="filecoll">
+          <div className="fc-head">
+            <span className="fc-ic"><FileGlyph kind={allDocs ? 'doc' : 'image'} size={16} /></span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="fc-t">{title}</div>
+              <div className="fc-s">{meta}</div>
+            </div>
+          </div>
+          {allDocs ? (
+            <div className="fc-list">
+              {listShown.map((f, i) => (
+                <div key={i} className="fc-lrow" onClick={() => onOpen(files, i)} role="button">
+                  <span className="lg"><FileGlyph kind={fileKind(f.fileName, f.fileMime)} size={15} /></span>
+                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.fileName || 'file'}</div></div>
+                  {f.fileSize ? <span className="mono" style={{ fontSize: 10, color: 'var(--faint)' }}>{fmtSize(f.fileSize)}</span> : null}
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          ) : (
+            <div className="fc-grid">
+              {gridShown.map((f, i) => {
+                const kind = fileKind(f.fileName, f.fileMime);
+                const isImg = kind === 'image' && f.attachmentUrl;
+                const showMore = gridOverflow > 0 && i === gridShown.length - 1;
+                return (
+                  <div key={i} className={`fc-tile${kind !== 'image' ? ' is-doc' : ''}`} onClick={() => onOpen(files, i)} role="button">
+                    {isImg ? <img src={f.attachmentUrl} alt={f.fileName} /> : <FileGlyph kind={kind} size={18} />}
+                    {showMore && <div className="more">+{gridOverflow}</div>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="fc-foot">
+            <span style={{ flex: 1, fontSize: 11.5, color: 'var(--muted)' }}>{overflow > 0 ? `+${overflow} more` : 'Tap any to preview'}</span>
+            <button className="fc-rev" onClick={onReview}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></svg>
+              Review all
+            </button>
           </div>
-          <div className="gal-cap">
-            <FileGlyph kind={allImages ? 'image' : 'doc'} size={14} />
-            <span>{files.length} {allImages ? 'images' : 'files'}{totalSize ? ` · ${fmtSize(totalSize)}` : ''}</span>
-          </div>
-        </div>
-        <div className="chips">
-          <button className="chip-btn is-primary" onClick={() => onOpen(shown[0])}>Open gallery</button>
-          <button className="chip-btn" onClick={() => onOpen(shown[0])}>Send to Review</button>
         </div>
       </div>
     </div>
   );
 }
-function FilePreview({ file, onClose }) {
-  const kind = fileKind(file.fileName, file.fileMime);
-  const url = file.attachmentUrl;
+// The look-only viewer: flip through the collection (swipe / arrows), no comment layer.
+// "Comment in Review" hands off to the Review tool where pins + comments live.
+function FileCollectionViewer({ files, startIndex = 0, onClose, onReview }) {
+  const [idx, setIdx] = useState(Math.max(0, Math.min(startIndex, files.length - 1)));
+  const f = files[idx] || files[0];
+  const kind = fileKind(f.fileName, f.fileMime);
+  const isImg = kind === 'image' && f.attachmentUrl;
+  const go = (d) => setIdx((i) => (i + d + files.length) % files.length);
   return (
-    <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 30, background: 'rgba(4,6,9,.7)', backdropFilter: 'blur(3px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--ground)', borderTop: '1px solid var(--hair)', borderRadius: '18px 18px 0 0', padding: '14px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))', maxHeight: '82%', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
-          <FileGlyph kind={kind} size={18} />
+    <div className="fcviewer" onClick={onClose}>
+      <div className="fcviewer-card" onClick={(e) => e.stopPropagation()}>
+        <div className="fcv-top">
+          <div className="mback" style={{ width: 32, height: 32 }} onClick={onClose} role="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 6l12 12M18 6 6 18" /></svg></div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.fileName || 'file'}</div>
-            <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{kind}{file.fileSize ? ` · ${fmtSize(file.fileSize)}` : ''}</div>
-          </div>
-          <div onClick={onClose} role="button" className="ib" style={{ width: 32, height: 32, borderRadius: 9 }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.fileName || 'file'}</div>
+            <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{kind}{f.fileSize ? ` · ${fmtSize(f.fileSize)}` : ''}</div>
           </div>
         </div>
-        <div style={{ flex: 1, minHeight: 120, borderRadius: 12, overflow: 'hidden', background: '#0c0f14', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-          {url && kind === 'image' ? <img src={url} alt={file.fileName} style={{ maxWidth: '100%', maxHeight: '46vh', objectFit: 'contain' }} />
-            : url && kind === 'video' ? <video src={url} controls style={{ maxWidth: '100%', maxHeight: '46vh' }} />
-              : url ? <iframe title={file.fileName} src={url} style={{ width: '100%', height: '46vh', border: 'none', background: '#fff' }} />
-                : <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 12.5, padding: 24 }}><FileGlyph kind={kind} size={34} /><div style={{ marginTop: 10 }}>This file lives in the room. Open it in Review to see it full size.</div></div>}
+        <div className={`fcv-stage${isImg ? '' : ' is-dark'}`}>
+          {isImg ? <img src={f.attachmentUrl} alt={f.fileName} /> : <FileGlyph kind={kind} size={40} />}
+          {files.length > 1 && (
+            <>
+              <div className="fcv-arrow" style={{ left: 11 }} onClick={() => go(-1)} role="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg></div>
+              <div className="fcv-arrow" style={{ right: 11 }} onClick={() => go(1)} role="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg></div>
+              <div className="fcv-count">{idx + 1} / {files.length}</div>
+            </>
+          )}
         </div>
-        <button onClick={() => { if (url) window.open(url, '_blank', 'noopener'); }}
-          style={{ height: 44, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
-          Review
-        </button>
+        <div className="fcv-foot">
+          <span style={{ flex: 1, fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>Look only here. Swipe or tap the arrows.</span>
+          <button className="fc-rev" onClick={onReview}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z" /></svg>
+            Comment in Review
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -212,9 +244,9 @@ function ThinkingTurn({ room }) {
 
 // Walk a run of messages; collapse consecutive file messages into one gallery, and render
 // any structured (Goal Thread) message inline as its step thread.
-function renderItems(items, onOpenFile, goal) {
+function renderItems(items, onOpenFile, goal, onReview) {
   const out = []; let run = [];
-  const flush = (key) => { if (run.length) { out.push(<FileGallery key={`g${key}`} files={run} sender={run[0]} onOpen={onOpenFile} />); run = []; } };
+  const flush = (key) => { if (run.length) { out.push(<FileGallery key={`g${key}`} files={run} sender={run[0]} onOpen={onOpenFile} onReview={onReview} />); run = []; } };
   items.forEach((m, i) => {
     if (m.isFile) { run.push(m); }
     else if (m.blocks && m.blocks.length) { flush(i); out.push(<GoalTurn key={i} m={m} goal={goal} />); }
@@ -225,7 +257,7 @@ function renderItems(items, onOpenFile, goal) {
 }
 
 // An older day, folded into a one-line card you tap to open.
-function DayCard({ group, onOpenFile, goal }) {
+function DayCard({ group, onOpenFile, goal, onReview }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`goalcard${open ? ' is-open' : ''}`} style={{ marginBottom: 10 }}>
@@ -235,13 +267,13 @@ function DayCard({ group, onOpenFile, goal }) {
         <svg className="gc-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
       </div>
       <div className="gc-body">
-        {renderItems(group.items, onOpenFile, goal)}
+        {renderItems(group.items, onOpenFile, goal, onReview)}
       </div>
     </div>
   );
 }
 
-export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal }) {
+export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview }) {
   const [draft, setDraft] = useState('');
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
@@ -324,8 +356,9 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
   }, [messages, roomKey, awaiting, lastUserSig, pinLastUser]);
 
   const empty = status === 'empty' || !messages?.length;
-  const [preview, setPreview] = useState(null);
-  const openFile = useCallback((f) => setPreview(f), []);
+  const [collection, setCollection] = useState(null); // { files, index } for the look-only viewer
+  const openFile = useCallback((files, index) => setCollection({ files, index: index || 0 }), []);
+  const reviewHandoff = useCallback(() => { setCollection(null); onOpenReview?.(); }, [onOpenReview]);
 
   return (
     <div data-cv6 data-theme="dark" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: '#05080b', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -359,13 +392,13 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
               {older.map((g, i) => (
                 <React.Fragment key={g.key + i}>
                   <div className="daydiv"><span>{g.label.toUpperCase()}</span></div>
-                  <DayCard group={g} onOpenFile={openFile} goal={threadGoal} />
+                  <DayCard group={g} onOpenFile={openFile} goal={threadGoal} onReview={reviewHandoff} />
                 </React.Fragment>
               ))}
               {latest && (
                 <>
                   <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
-                  {renderItems(latest.items, openFile, threadGoal)}
+                  {renderItems(latest.items, openFile, threadGoal, reviewHandoff)}
                 </>
               )}
               {/* Reply pending: the agent is on it, shown right under the pinned question. */}
@@ -397,7 +430,7 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
         </button>
       </div>
 
-      {preview && <FilePreview file={preview} onClose={() => setPreview(null)} />}
+      {collection && <FileCollectionViewer files={collection.files} startIndex={collection.index} onClose={() => setCollection(null)} onReview={reviewHandoff} />}
     </div>
   );
 }

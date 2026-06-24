@@ -372,6 +372,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
       room={{ name: room.name, initials: room.initials || '·', statusText: room.statusText || '', status: room.status || 'ready' }}
       messages={messages} status={status} goal={liveThread ? goal : null}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
+      onOpenReview={() => onNav('review')}
     />
   );
 }

@@ -715,3 +715,31 @@
 [data-cv6][data-screen="home-desktop"] .room.agentrow .rn { font-weight:500; }
 [data-cv6][data-screen="home-desktop"] .agentgrp { padding:9px 12px; }
 [data-cv6][data-screen="home-desktop"] .agentgrp .tag { margin-left:auto; font-family:var(--font-sans); font-size:11px; font-weight:700; color:var(--accent); background:var(--accent-weak); padding:1px 8px; border-radius:8px; }
+/* Agent Chat · File Collection (design drop 7, agent-chat/collection.html). A big batch of
+   files folds to ONE card: preview grid (images) or doc list, a count, and Review all. Tap
+   opens a look-only swipe viewer that hands off to the Review tool for comments. */
+[data-cv6] .filecoll { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; max-width:340px; }
+[data-cv6] .fc-head { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--divider); }
+[data-cv6] .fc-head .fc-ic { width:30px; height:30px; border-radius:9px; background:var(--accent-weak); color:var(--accent); display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6] .fc-head .fc-t { font-size:13.5px; font-weight:600; color:var(--fg); }
+[data-cv6] .fc-head .fc-s { font-family:var(--font-mono); font-size:10.5px; color:var(--faint); margin-top:1px; }
+[data-cv6] .fc-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:10px; }
+[data-cv6] .fc-tile { position:relative; aspect-ratio:1; border-radius:7px; overflow:hidden; background:linear-gradient(135deg,#2a3340,#171b22); display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.4); cursor:pointer; }
+[data-cv6] .fc-tile.is-doc { background:var(--surface-2); color:var(--muted); }
+[data-cv6] .fc-tile img { width:100%; height:100%; object-fit:cover; }
+[data-cv6] .fc-tile .more { position:absolute; inset:0; background:rgba(4,6,9,.66); display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:700; }
+[data-cv6] .fc-list { padding:6px; }
+[data-cv6] .fc-lrow { display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:8px; cursor:pointer; }
+[data-cv6] .fc-lrow:not(:last-child) { border-bottom:1px solid var(--divider); }
+[data-cv6] .fc-lrow .lg { width:28px; height:28px; border-radius:7px; background:var(--surface-2); color:var(--muted); display:flex; align-items:center; justify-content:center; flex:none; }
+[data-cv6] .fc-foot { display:flex; align-items:center; gap:10px; padding:11px 14px; border-top:1px solid var(--divider); }
+[data-cv6] .fc-foot .fc-rev { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 14px; border-radius:10px; border:none; background:var(--accent); color:#fff; font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
+[data-cv6] .fcviewer { position:absolute; inset:0; z-index:30; display:flex; flex-direction:column; justify-content:center; background:rgba(4,6,9,.82); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); }
+[data-cv6] .fcviewer-card { margin:auto; width:min(92%,360px); border:1px solid var(--hair); border-radius:16px; background:var(--ground); overflow:hidden; }
+[data-cv6] .fcv-top { display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--divider); }
+[data-cv6] .fcv-stage { position:relative; aspect-ratio:4/3; background:#fbfbfa; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+[data-cv6] .fcv-stage img { width:100%; height:100%; object-fit:contain; }
+[data-cv6] .fcv-stage.is-dark { background:linear-gradient(135deg,#26303f,#13161c); }
+[data-cv6] .fcv-arrow { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:rgba(13,17,23,.7); border:1px solid rgba(255,255,255,.16); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+[data-cv6] .fcv-count { position:absolute; bottom:11px; left:50%; transform:translateX(-50%); font-family:var(--font-mono); font-size:10.5px; color:#fff; background:rgba(4,6,9,.6); padding:3px 9px; border-radius:11px; }
+[data-cv6] .fcv-foot { display:flex; align-items:center; gap:10px; padding:12px 14px; border-top:1px solid var(--divider); }
