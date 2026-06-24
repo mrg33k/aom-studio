@@ -15,34 +15,60 @@ function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
 }
 
-// Build the read-view innerHTML for one deliverable from its real file. Images
-// and video stream raw bytes through the tenant-gated project-file endpoint;
-// markdown renders to HTML; code/text shows preformatted; other binaries (pdf,
-// docx) open in place or honestly hand off to their room. `path` is the relative
-// corner/users/... path the review queue already carries (item.id).
+// authFetch with a hard timeout so a hung request degrades to an error instead of
+// leaving the viewer stuck on "Loading the file…".
+async function authFetchT(url, ms = 12000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try { return await authFetch(url, { signal: ctrl.signal }); }
+  finally { clearTimeout(t); }
+}
+
+// Build the read-view innerHTML for one deliverable from its real file.
+// IMPORTANT: the project-file endpoint is tenant-gated (verifyTenant needs a
+// Bearer token). The dashboard session lives in localStorage, NOT a cookie, so a
+// plain <img src>/<video src>/<iframe src> to the API carries no auth and 401s.
+// So we fetch EVERY file through authFetch (which attaches the token) and hand the
+// element a blob: URL for binaries. Text renders markdown / preformatted inline.
+// `path` is the relative corner/users/... path the review queue already carries (item.id).
 async function buildDeliverableBody(item) {
   const path = item?.id || '';
   if (!path) return '';
   const enc = encodeURIComponent(path);
-  const raw = `/api/dashboard/project-file?path=${enc}&raw=1`;
+  const rawUrl = `/api/dashboard/project-file?path=${enc}&raw=1`;
   const type = item.type;
+  const errDiv = (msg) => `<div style="padding:14px 0;color:#666;">${msg}</div>`;
 
-  if (type === 'image' || type === 'photo') {
-    return `<img src="${raw}" alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
+  // Binary: auth-fetch the bytes, show via a blob URL the element can load without auth.
+  async function blobOf() {
+    const r = await authFetchT(rawUrl);
+    if (!r?.ok) return { err: `This file could not be loaded (status ${r?.status || '?'}).` };
+    const blob = await r.blob();
+    return { url: URL.createObjectURL(blob) };
   }
-  if (type === 'video') {
-    return `<video src="${raw}" controls style="max-width:100%;border-radius:10px;display:block;"></video>`;
-  }
-  if (type === 'doc') {
-    if (/\.pdf$/i.test(path)) {
-      return `<iframe src="${raw}" title="${escapeHtml(item.title)}" style="width:100%;height:60vh;border:0;border-radius:10px;"></iframe>`;
-    }
-    return `<div style="padding:14px 0;color:#666;">This file opens in its room. <a href="${raw}" target="_blank" rel="noopener" style="color:#0066FF;">Open ${escapeHtml(item.title)}</a></div>`;
-  }
-  // text: copy (.md / .txt) or code
+
   try {
-    const r = await authFetch(`/api/dashboard/project-file?path=${enc}`);
-    if (!r?.ok) return `<div style="padding:14px 0;color:#666;">This file's contents could not be loaded right now.</div>`;
+    if (type === 'image' || type === 'photo') {
+      const b = await blobOf();
+      return b.err ? errDiv(b.err)
+        : `<img src="${b.url}" alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
+    }
+    if (type === 'video') {
+      const b = await blobOf();
+      return b.err ? errDiv(b.err)
+        : `<video src="${b.url}" controls style="max-width:100%;border-radius:10px;display:block;"></video>`;
+    }
+    if (type === 'doc') {
+      const b = await blobOf();
+      if (b.err) return errDiv(b.err);
+      if (/\.pdf$/i.test(path)) {
+        return `<iframe src="${b.url}" title="${escapeHtml(item.title)}" style="width:100%;height:60vh;border:0;border-radius:10px;"></iframe>`;
+      }
+      return errDiv(`Preview is not available for this file type. <a href="${b.url}" download="${escapeHtml(item.title)}" style="color:#0066FF;">Download ${escapeHtml(item.title)}</a>`);
+    }
+    // text: copy (.md / .txt) or code
+    const r = await authFetchT(`/api/dashboard/project-file?path=${enc}`);
+    if (!r?.ok) return errDiv(`This file's contents could not be loaded (status ${r?.status || '?'}).`);
     const d = await r.json();
     const content = d?.content || '';
     if (/\.md$/i.test(path)) {
@@ -50,7 +76,7 @@ async function buildDeliverableBody(item) {
     }
     return `<pre style="white-space:pre-wrap;word-break:break-word;font-family:var(--font-mono,monospace);font-size:13px;line-height:1.6;margin:0;">${escapeHtml(content)}</pre>`;
   } catch {
-    return `<div style="padding:14px 0;color:#666;">This file's contents could not be loaded right now.</div>`;
+    return errDiv("This file's contents could not be loaded right now.");
   }
 }
 
