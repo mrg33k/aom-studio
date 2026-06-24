@@ -140,8 +140,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                   </div>
                 </div>
                 <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
-                  {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} />}
-                  <div ref={bottomRef} style={{ height: 4 }} />
+                  {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
+                      the thread + its tables/charts centered instead of stretched. */}
+                  <div style={{ maxWidth: 720, margin: '0 auto' }}>
+                    {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} />}
+                    <div ref={bottomRef} style={{ height: 4 }} />
+                  </div>
                 </div>
                 <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}

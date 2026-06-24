@@ -550,7 +550,11 @@ export default function ChatGoalThread({ room, goal, blocks, onBack, onOpenNav, 
           </div>
         </div>
         <div className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '16px 16px 0' }}>
-          <GoalThreadBody goal={goal} blocks={blocks} />
+          {/* Cap the thread to a readable column so on iPad it stays phone-width and
+              centered, instead of stretching the tables + charts edge to edge. */}
+          <div style={{ maxWidth: 680, margin: '0 auto' }}>
+            <GoalThreadBody goal={goal} blocks={blocks} />
+          </div>
         </div>
         <div className="mcomposer">
           <button onClick={submit} style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', boxShadow: 'var(--ring-accent)' }}>

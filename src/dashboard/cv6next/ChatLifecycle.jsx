@@ -262,28 +262,32 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
       </div>
 
       <div ref={scrollRef} onScroll={onScroll} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px 0' }}>
-        {empty ? (
-          <div className="empty" style={{ marginTop: 40 }}>
-            <div className="e-t">No messages with {room.name} yet</div>
-            <div className="e-s">Start the conversation below.</div>
-          </div>
-        ) : (
-          <>
-            {older.map((g, i) => (
-              <React.Fragment key={g.key + i}>
-                <div className="daydiv"><span>{g.label.toUpperCase()}</span></div>
-                <DayCard group={g} onOpenFile={openFile} />
-              </React.Fragment>
-            ))}
-            {latest && (
-              <>
-                <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
-                {renderItems(latest.items, openFile)}
-              </>
-            )}
-          </>
-        )}
-        <div ref={bottomRef} style={{ height: 4 }} />
+        {/* Cap the thread to a readable column so on iPad it stays phone-width and centered,
+            instead of stretching messages + cards edge to edge. */}
+        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          {empty ? (
+            <div className="empty" style={{ marginTop: 40 }}>
+              <div className="e-t">No messages with {room.name} yet</div>
+              <div className="e-s">Start the conversation below.</div>
+            </div>
+          ) : (
+            <>
+              {older.map((g, i) => (
+                <React.Fragment key={g.key + i}>
+                  <div className="daydiv"><span>{g.label.toUpperCase()}</span></div>
+                  <DayCard group={g} onOpenFile={openFile} />
+                </React.Fragment>
+              ))}
+              {latest && (
+                <>
+                  <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
+                  {renderItems(latest.items, openFile)}
+                </>
+              )}
+            </>
+          )}
+          <div ref={bottomRef} style={{ height: 4 }} />
+        </div>
       </div>
 
       {showJump && (
