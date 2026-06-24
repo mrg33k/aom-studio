@@ -109,7 +109,10 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
     projects,
     catchUp,
     room: { name: lead.name || 'Your rooms', initials: lead.initials || '·', count: '', statusText: '', project: '', mission: '' },
-    goal: { title: lead.name ? `${lead.name} has no active goal thread yet` : 'Pick a room to see its goal', step: '', total: '', pct: 0, summary: [], checklist: [] },
+    // No real goal source exists yet (agents don't emit/store a structured goal thread).
+    // goal.has drives the convo column: 'none' => show the honest "No active goal" rest
+    // state; flip to 'active' only when a real goal is bound. Never fabricate a goal here.
+    goal: { has: 'none', title: 'Pick a room to see its goal', step: '', total: '', pct: 0, summary: [], checklist: [] },
   };
 
   let state = 'ready';
