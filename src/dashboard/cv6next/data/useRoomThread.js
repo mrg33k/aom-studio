@@ -33,6 +33,13 @@ export function useRoomThread(worldId, room) {
   const [blocks, setBlocks] = useState(null);
   const [status, setStatus] = useState('loading');
   const [reloadKey, setReloadKey] = useState(0);
+  // Optimistic outbox: your just-sent message shows INSTANTLY (the POST + 3s poll would
+  // otherwise leave the thread looking dead for a beat). Each entry is dropped once the
+  // real row comes back from the server (matched by text), so there's never a duplicate.
+  const [pending, setPending] = useState([]);
+
+  // Clear the outbox when you switch rooms (those messages belong to the old thread).
+  useEffect(() => { setPending([]); }, [room?.id]);
 
   // Post a real user message into this room (composer + choice/question taps).
   // Agent rooms POST to the agent slug; project rooms to the project slug. After
@@ -40,6 +47,14 @@ export function useRoomThread(worldId, room) {
   const send = useCallback(async (text) => {
     const body = String(text || '').trim();
     if (!worldId || !room?.id || !body) return false;
+    // Show it immediately as your turn (reconciled away when the real row arrives).
+    const now = new Date();
+    setPending((p) => [...p, {
+      _opt: true, optId: `${now.getTime()}-${p.length}`,
+      agentInitials: initials('You'), agentName: 'You', agentTint: 'accent', isUser: true,
+      text: body, time: hhmm(now.toISOString()), ts: now.toISOString(),
+      isFile: false, fileName: '', attachmentUrl: '', fileMime: '', fileSize: 0, blocks: null,
+    }]);
     const payload = room.isMission
       ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: room.missionSlug || room.id } }
       : room.isProject
@@ -71,6 +86,10 @@ export function useRoomThread(worldId, room) {
       .then((d) => {
         if (!alive) return;
         const raw = Array.isArray(d?.messages) ? d.messages : [];
+        // Drop any optimistic message the server now reflects (matched by text), so the
+        // real row replaces it with no duplicate.
+        const userTexts = new Set(raw.filter((m) => m.role === 'user' || m.user_name).map((m) => (m.text || '').trim()));
+        setPending((prev) => prev.filter((op) => !userTexts.has((op.text || '').trim())));
         // The live Goal Thread (agent-talk): structured blocks ride on a message's
         // metadata.blocks. The agent re-emits the current thread state in its latest
         // structured reply, so the freshest message that carries blocks IS the thread.
@@ -122,7 +141,9 @@ export function useRoomThread(worldId, room) {
     return () => { alive = false; clearInterval(t); };
   }, [worldId, room?.id, room?.name, room?.isProject, room?.isMission, room?.missionSlug, reloadKey]);
 
-  return { messages, blocks, status, send };
+  // Merge the optimistic outbox at the tail (newest) so a just-sent message shows at once.
+  const merged = pending.length ? [...messages, ...pending] : messages;
+  return { messages: merged, blocks, status, send };
 }
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──
