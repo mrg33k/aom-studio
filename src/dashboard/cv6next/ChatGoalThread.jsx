@@ -123,6 +123,11 @@ function Result({ block }) {
   if (block.type === 'artifact') return <ArtifactBlock block={block} />;
   if (block.type === 'audio') return <AudioBlock block={block} />;
   if (block.type === 'video') return <VideoBlock block={block} />;
+  if (block.type === 'code') return <CodeBlock block={block} />;
+  if (block.type === 'thinking') return <ThinkingBlock block={block} />;
+  if (block.type === 'replies') return <RepliesBlock block={block} />;
+  if (block.type === 'confirm') return <ConfirmBlock block={block} />;
+  if (block.type === 'gallery') return <GalleryBlock block={block} />;
   return null;
 }
 
@@ -372,6 +377,122 @@ function QuestionBlock({ block }) {
           {opts.map((o) => <button key={o.id} className="chip-btn" onClick={() => send(o.label)}>{o.label}</button>)}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// Code, shown only when it matters (kit .codechip -> .ccode): a collapsed chip by default
+// (file name + lang + diff size), expanding to a titled block with copy + a plain-English
+// explain. Non-technical users never see a wall of code. Raw code renders in the kit pre;
+// copy puts the real source on the clipboard.
+function CodeBlock({ block }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const diff = [block.added != null ? `+${block.added}` : '', block.removed != null ? `−${block.removed}` : ''].filter(Boolean).join(' ');
+  const meta = [block.lang, diff].filter(Boolean).join(' · ');
+  const copy = () => {
+    try { navigator.clipboard?.writeText(block.code || ''); setCopied(true); setTimeout(() => setCopied(false), 1400); } catch { /* clipboard blocked */ }
+  };
+  const glyph = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#79c0ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m8 6-6 6 6 6M16 6l6 6-6 6" /></svg>;
+  if (!open) {
+    return (
+      <div className="codechip" style={{ marginTop: 4 }} onClick={() => setOpen(true)}>
+        <span className="cg">{glyph}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)' }}>{block.file || 'code'}</div>
+          {meta ? <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{meta}</div> : null}
+        </div>
+        <button className="pillbtn" onClick={(e) => { e.stopPropagation(); setOpen(true); }}>Show code</button>
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div className="ccode">
+        <div className="ccode-h">
+          {glyph}
+          <span className="fn">{block.file || 'code'}</span>
+          {block.lang ? <span className="lang">{block.lang}</span> : null}
+          <button className="cbtn" onClick={copy} title="Copy">
+            {copied
+              ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
+              : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>}
+          </button>
+        </div>
+        <pre>{block.code || ''}</pre>
+      </div>
+      {block.explain ? <div className="bubble" style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 8 }}>{block.explain}</div> : null}
+    </div>
+  );
+}
+
+// The honest "agent is working" state (kit .thinking): a soft dot pulse + a real label of
+// what it's doing right now. No silent gaps, no filler.
+function ThinkingBlock({ block }) {
+  return (
+    <div className="thinking" style={{ marginTop: 4 }}>
+      <span className="dot3"><i /><i /><i /></span>
+      <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>{block.label || 'Working…'}</span>
+    </div>
+  );
+}
+
+// Quick replies (kit bubble + .chips): a short prompt and tappable one-tap answers, so a
+// reply is one tap, not a typing chore. Each tap posts the label as a real user message.
+function RepliesBlock({ block }) {
+  const opts = Array.isArray(block.options) ? block.options : [];
+  const send = useThreadSend();
+  return (
+    <div style={{ marginTop: 4 }}>
+      {block.prompt ? <div className="bubble">{block.prompt}</div> : null}
+      <div className="chips">
+        {opts.map((o, i) => {
+          const label = typeof o === 'string' ? o : (o.label || '');
+          const primary = typeof o === 'object' && o.primary;
+          return <button key={i} className={`chip-btn ${primary ? 'is-primary' : ''}`} onClick={() => send(label)}>{label}</button>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+// A confirm card (kit .cblk): anything irreversible gets an explicit confirm, the human is
+// always in the loop. Confirm/Cancel each post a real message so the agent acts on the answer.
+function ConfirmBlock({ block }) {
+  const send = useThreadSend();
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div className="cblk" style={{ borderColor: 'var(--accent-weak)' }}>
+        {block.text ? <div className="cblk-b" style={{ marginBottom: 11 }}>{block.text}</div> : null}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="chip-btn is-primary" style={{ flex: 1, justifyContent: 'center', height: 40 }} onClick={() => send(block.confirmLabel || 'Confirm and send')}>{block.confirmLabel || 'Confirm & send'}</button>
+          <button className="chip-btn" style={{ flex: 'none', height: 40 }} onClick={() => send(block.cancelLabel || 'Cancel')}>{block.cancelLabel || 'Cancel'}</button>
+        </div>
+      </div>
+      {block.note ? <div style={{ fontSize: 11, color: 'var(--faint)', paddingLeft: 2, marginTop: 4 }}>{block.note}</div> : null}
+    </div>
+  );
+}
+
+// A photo gallery / file collection (kit .cgal mosaic): the first images as a tidy mosaic
+// with a "+N" overflow tile, a caption, and a tap to open the full image. Never a raw dump.
+function GalleryBlock({ block }) {
+  const imgs = Array.isArray(block.images) ? block.images : [];
+  const shown = imgs.slice(0, 5);
+  const overflow = imgs.length - shown.length;
+  const open = (im) => { if (im?.url) window.open(im.url, '_blank', 'noopener'); };
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div className="cgal">
+        {shown.map((im, i) => (
+          <div key={i} className={`ph${i === 0 && shown.length >= 3 ? ' span2' : ''}`} onClick={() => open(im)} style={{ cursor: im?.url ? 'pointer' : 'default' }}>
+            {im?.url ? <img src={im.url} alt={im.label || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.45)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.6" /><path d="m21 15-5-5L5 21" /></svg>}
+            {i === shown.length - 1 && overflow > 0 ? <span className="more">+{overflow}</span> : null}
+          </div>
+        ))}
+      </div>
+      {block.caption ? <div className="gal-cap"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.6" /><path d="m21 15-5-5L5 21" /></svg><span>{block.caption}</span></div> : null}
     </div>
   );
 }

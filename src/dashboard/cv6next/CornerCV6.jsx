@@ -639,7 +639,7 @@ function demoBlocksRequested() {
   try { return new URLSearchParams(window.location.search).get('demo') === 'blocks'; }
   catch { return false; }
 }
-const DEMO_GOAL = { title: 'Show every chat element', step: 4, doneCount: 2, total: 8, pct: 25, checklist: [] };
+const DEMO_GOAL = { title: 'Show every chat element', step: 4, doneCount: 2, total: 11, pct: 18, checklist: [] };
 const DEMO_BLOCKS = [
   { type: 'step', stepIndex: 0, title: 'Read the brief and pull the repo', state: 'done', detail: 'Scanned 28 missions and the task runner.' },
   { type: 'step', stepIndex: 1, title: 'Wire the resolver', state: 'done', detail: 'Patched the runner so docs-only projects route again.' },
@@ -659,6 +659,14 @@ const DEMO_BLOCKS = [
   { type: 'step', stepIndex: 7, title: 'Leave a voice + screen recap', state: 'active', detail: 'Audio note and a screen recording.' },
   { type: 'audio', stepIndex: 7, duration: '0:24', transcript: '“Quick update: the resolver patch is in and verified. Starting the regression test now.”' },
   { type: 'video', stepIndex: 7, duration: '1:48', title: 'Onboarding walkthrough' },
+  { type: 'step', stepIndex: 8, title: 'Show the resolver patch', state: 'active', detail: 'One function, tucked away unless you want it.' },
+  { type: 'code', stepIndex: 8, file: 'resolver.ts', lang: 'ts', added: 12, removed: 3, code: "// route docs-only projects too\nfunction resolveRepoPath(name) {\n  if (name === 'space-rising') {\n    return 'projects/space-rising';\n  }\n  return registry.lookup(name);\n}", explain: 'In plain terms: when a project has only docs, the runner could not find it. This adds a direct path so it routes like any other. Fully reversible.' },
+  { type: 'step', stepIndex: 9, title: 'Share the print shots', state: 'active', detail: 'Four framing options to look at.' },
+  { type: 'gallery', stepIndex: 9, images: [{}, {}, {}, {}, {}, {}, {}], caption: '7 framing shots' },
+  { type: 'step', stepIndex: 10, title: 'Confirm before sending', state: 'active', detail: 'Anything irreversible gets an explicit yes.' },
+  { type: 'thinking', stepIndex: 10, label: 'Checking the rollout calendar…' },
+  { type: 'replies', stepIndex: 10, prompt: 'Pricing draft is ready. How do you want to send it?', options: [{ label: 'Send as me', primary: true }, 'Schedule for 8am', 'Let me edit first'] },
+  { type: 'confirm', stepIndex: 10, text: 'This will email dana@acme.com on your behalf and add a follow-up to Tracker.', confirmLabel: 'Confirm & send', cancelLabel: 'Cancel', note: 'Anything irreversible gets an explicit confirm; you are always in the loop.' },
 ];
 
 // The demo renders the SHARED GoalThreadBody (the exact renderer mobile + desktop use) in a
