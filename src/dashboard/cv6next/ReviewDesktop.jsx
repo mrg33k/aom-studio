@@ -4,7 +4,9 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useReview } from './data/useReview.js';
+import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
+import { PinLayer } from './PinLayer.jsx';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -30,6 +32,7 @@ function composeDesktopReview(raw) {
 export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
   const { state, data, actions } = useReview(worldId || 'aom');
   const [pickedId, setPickedId] = useState(null);
+  const { pins, addPin, updatePin, deletePin } = usePins(pickedId);
 
   // Auto-open the first deliverable on entry (mirrors Organize previewing the first
   // file), so you land on something to review instead of a blank viewer.
@@ -59,7 +62,24 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
     // Use the hook's merged deliverable (it carries the fetched bodyHtml for the
     // open item). The old override re-derived from queue.items, whose bodyHtml is
     // the hardcoded blank, so the viewer never got real content.
-    deliverable: data.deliverable,
+    // Wire pins from the usePins hook: they are local component state (sample data for demo).
+    deliverable: {
+      ...data.deliverable,
+      pins: pins.map((p) => ({
+        id: p.id,
+        n: p.n,
+        x: p.x,
+        y: p.y,
+      })),
+      // Convert pins to the comment list shape for the right-panel.
+      comments: pins.map((p) => ({
+        id: p.id,
+        n: p.n,
+        text: p.text,
+        anchor: p.anchor,
+      })),
+      openCount: pins.length,
+    },
   };
 
   const aliases = {
@@ -81,7 +101,14 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
       setPickedId(id);
       actions.openDeliverable(id);
     },
-    openPin: (id) => { /* stub */ },
+    openPin: (id) => {
+      // When clicking a pin (in viewer or comments list), scroll/highlight it.
+      // For now, a simple log; Patrik can request modal/edit UI later.
+      const pin = pins.find((p) => p.id === id);
+      if (pin) {
+        console.log('[Review] opened pin:', pin.n, pin.text);
+      }
+    },
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
     requestChanges: (id) => {
@@ -91,5 +118,41 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
     sendChecklist: (id) => actions.sendChecklist(id),
   };
 
-  return <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />;
+  // Add a ref to handle click interactions for pin creation
+  const viewerRef = React.useRef(null);
+
+  // Bind click handler to the viewer region for pin creation
+  useEffect(() => {
+    const viewer = viewerRef.current?.querySelector('[data-state="ready"]');
+    if (!viewer) return;
+
+    const handleViewerClick = (e) => {
+      // Only create a pin if clicking directly on the viewer background or content area
+      // (not on buttons, controls, or the hint overlay)
+      if (
+        e.target === viewer ||
+        e.target.closest('.doc') ||
+        e.target.closest('[data-html="deliverable.bodyHtml"]')
+      ) {
+        const rect = viewer.getBoundingClientRect();
+        const docRect = e.target.closest('.doc')?.getBoundingClientRect() || rect;
+        const x = e.clientX - docRect.left;
+        const y = e.clientY - docRect.top;
+        const w = docRect.width;
+        const h = docRect.height;
+        if (x > 0 && y > 0 && x < w && y < h) {
+          addPin(x, y, w, h);
+        }
+      }
+    };
+
+    viewer.addEventListener('click', handleViewerClick);
+    return () => viewer.removeEventListener('click', handleViewerClick);
+  }, [addPin]);
+
+  return (
+    <div ref={viewerRef} style={{ width: '100%', height: '100%' }}>
+      <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
 }

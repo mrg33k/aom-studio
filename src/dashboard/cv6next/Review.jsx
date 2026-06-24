@@ -2,8 +2,9 @@
 // Built from wired/tools/review.html + review.json, fed by real useReview.
 // No design changes, only data wiring.
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useReview } from './data/useReview.js';
+import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -32,6 +33,7 @@ export default function Review({ worldId, onNav, onOpenNav }) {
   const { state, data, actions } = useReview(worldId || 'aom');
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
+  const { pins, addPin } = usePins(pickedId);
 
   const picked = useMemo(() => pickedId ? data.queue.items.find((i) => i.id === pickedId) : null, [pickedId, data.queue.items]);
 
@@ -70,15 +72,59 @@ export default function Review({ worldId, onNav, onOpenNav }) {
       setQueueFilter: (f) => actions.setQueueFilter(f),
       openDeliverable: onOpenDeliverable,
     };
-    return <TemplateScreen html={pickListHtml} data={pickData} actions={pickActions} aliases={pickListAliases} state={state} style={{ width: '100%', height: '100%' }} />;
+    return (
+      <TemplateScreen html={pickListHtml} data={pickData} actions={pickActions} aliases={pickListAliases} state={state} style={{ width: '100%', height: '100%' }} />
+    );
   }
 
-  // read + decide screen
+  // read + decide screen with pin support
+  const readRef = useRef(null);
+
+  // Bind click handler to the mobile viewer for pin creation
+  useEffect(() => {
+    const viewer = readRef.current?.querySelector('[data-state="ready"]');
+    if (!viewer) return;
+
+    const handleViewerClick = (e) => {
+      // On mobile, click the .doc region to create a pin
+      const docElem = e.target.closest('.doc');
+      if (docElem) {
+        const rect = docElem.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const w = rect.width;
+        const h = rect.height;
+        if (x > 0 && y > 0 && x < w && y < h) {
+          addPin(x, y, w, h);
+        }
+      }
+    };
+
+    viewer.addEventListener('click', handleViewerClick);
+    return () => viewer.removeEventListener('click', handleViewerClick);
+  }, [addPin]);
+
   const readData = {
     ...data,
     queue: {
       ...data.queue,
       items: data.queue.items.map((i) => ({ ...i, open: i.id === pickedId ? 'on' : 'off' })),
+    },
+    deliverable: {
+      ...data.deliverable,
+      pins: pins.map((p) => ({
+        id: p.id,
+        n: p.n,
+        x: p.x,
+        y: p.y,
+      })),
+      comments: pins.map((p) => ({
+        id: p.id,
+        n: p.n,
+        text: p.text,
+        anchor: p.anchor,
+      })),
+      openCount: pins.length,
     },
   };
   const readActions = {
@@ -93,7 +139,12 @@ export default function Review({ worldId, onNav, onOpenNav }) {
     openNav: onOpenNav,
     search: () => { /* stub */ },
     openDeliverable: onOpenDeliverable,
-    openPin: (id) => { /* stub for now */ },
+    openPin: (id) => {
+      const pin = pins.find((p) => p.id === id);
+      if (pin) {
+        console.log('[Review mobile] opened pin:', pin.n, pin.text);
+      }
+    },
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
     requestChanges: (id) => {
@@ -103,5 +154,9 @@ export default function Review({ worldId, onNav, onOpenNav }) {
     sendChecklist: (id) => actions.sendChecklist(id),
   };
 
-  return <TemplateScreen html={readHtml} data={readData} actions={readActions} aliases={readAliases} state={state} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div ref={readRef} style={{ width: '100%', height: '100%' }}>
+      <TemplateScreen html={readHtml} data={readData} actions={readActions} aliases={readAliases} state={state} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
 }
