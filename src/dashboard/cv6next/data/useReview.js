@@ -2,7 +2,7 @@
 // Loads from /api/dashboard/review-queue, filters by Ready/Pipeline, and wires
 // approve / request-changes as real decision events. No fake data.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { marked } from 'marked';
 import { authFetch } from '../../lib/authFetch';
 import { titleForAgent } from './agentTitles';
@@ -189,18 +189,21 @@ export function useReview(worldId = 'aom') {
   }, [load]);
 
   // Fetch the opened deliverable's real content once, cache it by path.
+  // Dedupe with a ref (NOT by reading `bodies` in deps): writing the loading
+  // sentinel into `bodies` must not re-run this effect, or its cleanup would
+  // cancel the in-flight fetch and the content would never land ("Loading…" forever).
+  const fetchedRef = useRef({});
   useEffect(() => {
     if (!openDelId) return;
-    if (bodies[openDelId] !== undefined) return; // already loading or loaded
+    if (fetchedRef.current[openDelId]) return; // fetch already started for this id
     const item = (queue?.items || []).find((i) => i.id === openDelId);
     if (!item) return;
-    let cancelled = false;
+    fetchedRef.current[openDelId] = true;
     setBodies((b) => ({ ...b, [openDelId]: '' })); // '' = loading sentinel
     buildDeliverableBody(item).then((html) => {
-      if (!cancelled) setBodies((b) => ({ ...b, [openDelId]: html || ' ' }));
+      setBodies((b) => ({ ...b, [openDelId]: html || ' ' }));
     });
-    return () => { cancelled = true; };
-  }, [openDelId, queue, bodies]);
+  }, [openDelId, queue]);
 
   const approve = useCallback(async (deliverableId) => {
     try {
