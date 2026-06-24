@@ -5,7 +5,7 @@
 // summary (no invented steps). Tracker = the real CV6 bug tracker (/api/dashboard/cv6-bugs).
 // No fake data.
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
@@ -145,6 +145,13 @@ export function useCommand(worldIdArg) {
   const [worldId, setWorldId] = useState(worldIdArg || null);
   const [sessions, setSessions] = useState([]);
   const [lastByRoom, setLastByRoom] = useState({});
+  // corner:corner-ui-cv6 (2026-06-24): bail out of setState when a poll returns
+  // byte-identical data (the common case). Without this, every 5s/15s tick creates
+  // a fresh array/object reference and re-renders the whole command surface even
+  // when nothing changed — main-thread churn Patrik felt as slow load. We keep the
+  // last serialized snapshot per poll and skip the setter when it matches.
+  const sessionsSig = useRef('');
+  const lastByRoomSig = useRef('');
 
   // Resolve the viewer + world the same way Home does so we ride the auth-derived world.
   useEffect(() => {
@@ -167,7 +174,13 @@ export function useCommand(worldIdArg) {
     let alive = true;
     const load = () => authFetch('/api/dashboard/active-agents?client=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => { if (alive && d) setSessions(Array.isArray(d.active) ? d.active : []); })
+      .then((d) => {
+        if (!alive || !d) return;
+        const next = Array.isArray(d.active) ? d.active : [];
+        const sig = JSON.stringify(next);
+        if (sig === sessionsSig.current) return; // unchanged — skip the re-render
+        sessionsSig.current = sig; setSessions(next);
+      })
       .catch(() => {});
     load();
     const id = setInterval(load, 5000);
@@ -188,7 +201,9 @@ export function useCommand(worldIdArg) {
           const t = new Date(m.timestamp).getTime();
           if (!map[key] || t > map[key].t) map[key] = { t, text: m.text || '', agent: m.agent || '' };
         }
-        setLastByRoom(map);
+        const sig = JSON.stringify(map);
+        if (sig === lastByRoomSig.current) return; // unchanged — skip the re-render
+        lastByRoomSig.current = sig; setLastByRoom(map);
       })
       .catch(() => {});
     load();
