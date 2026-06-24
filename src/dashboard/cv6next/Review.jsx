@@ -11,7 +11,12 @@ import statesRaw from './templates/states-extra.html?raw';
 function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const nodes = doc.querySelectorAll('[data-cv6][data-screen*="review"]');
-  const screen = [...nodes].find((n) => n.getAttribute('data-screen') === `review-mobile`) || nodes[pick];
+  // The read screen and the pick-list BOTH use data-screen="review-mobile" (they
+  // differ only by data-screen-label), so a .find on that attribute always returned
+  // the first (read) screen for both — which dumped users onto the read/decide view
+  // with no deliverable selected. Select by INDEX instead: nodes = [desktop, read,
+  // pick-list], and callers pass pick=1 (read) / pick=2 (pick-list).
+  const screen = nodes[pick] || [...nodes].find((n) => n.getAttribute('data-screen') === 'review-mobile');
   if (!screen) return '';
   screen.setAttribute('style', 'position:relative;width:100%;height:100%;background:#05080b;overflow:hidden');
   const body = screen.querySelector('[data-state="ready"]');
