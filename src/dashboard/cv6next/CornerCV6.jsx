@@ -20,6 +20,7 @@ import SupportDesktop from './SupportDesktop.jsx';
 import Organize from './Organize.jsx';
 import Settings from './Settings.jsx';
 import Onboarding from './Onboarding.jsx';
+import LiveScribe from './LiveScribe.jsx';
 import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
@@ -61,7 +62,7 @@ function useIsDesktop() {
 // desktop top bar + rails) hardcodes the full 8-tool set, so any tile pointing at a
 // tool we haven't wired to /dashboard yet would be a dead control ("doesn't open").
 // Until those screens are built live, drop those tiles so the nav only shows what works.
-const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'onboarding', 'back']);
+const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'onboarding', 'livescribe', 'back']);
 
 function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -1070,6 +1071,7 @@ export default function CornerCV6() {
   else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onAssignFile={(fileId) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent' })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }
+  else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'livescribe'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent' })} />; viewKey = 'tracker'; }
   else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} />; viewKey = 'review'; }
