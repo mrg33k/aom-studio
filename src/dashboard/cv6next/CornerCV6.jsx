@@ -385,12 +385,34 @@ const SUPPORT_ALIASES = { needsYou: 'email', watching: 'email', 'email.tags': 't
 function SupportInbox({ onNav, onOpenNav }) {
   const { state, data, reload } = useSupportInbox('aom');
   const html = useMemo(() => composeScreen(inboxRaw, { mobile: true }), []);
+  // Header filter chips: All (default, both sections) / Needs you / Watching — real filter
+  // of the inbox sections. (Drafts chip held: no drafts inbox source yet.)
+  const [filter, setFilter] = useState('all');
+  const view = useMemo(() => {
+    const needsYou = filter === 'watching' ? [] : (data.needsYou || []);
+    const watching = filter === 'needs' ? [] : (data.watching || []);
+    return {
+      ...data,
+      needsYou,
+      watching,
+      secVis: {
+        needs: needsYou.length ? 'shown' : 'hidden',
+        watching: watching.length ? 'shown' : 'hidden',
+      },
+      chips: {
+        all: filter === 'all' ? 'on' : 'off',
+        needs: filter === 'needs' ? 'on' : 'off',
+        watching: filter === 'watching' ? 'on' : 'off',
+      },
+    };
+  }, [data, filter]);
   const actions = useMemo(() => ({
     openThread: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
-    nav: (t) => onNav?.(t), browseWatching: () => {}, emptyAction: () => {},
+    nav: (t) => onNav?.(t), browseWatching: () => setFilter('watching'), emptyAction: () => {},
+    setFilter: (f) => setFilter(f || 'all'),
     retry: () => reload(), viewOffline: () => {},
   }), [onNav, onOpenNav, reload]);
-  return <TemplateScreen html={html} data={data} actions={actions} state={state}
+  return <TemplateScreen html={html} data={view} actions={actions} state={state}
     aliases={SUPPORT_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
 }
 
