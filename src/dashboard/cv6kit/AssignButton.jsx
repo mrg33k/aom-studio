@@ -540,7 +540,7 @@ function ConfirmDialog({
   );
 }
 
-export default function AssignButton({
+export function AssignButton({
   artifactType = 'email', // 'email' | 'file' | 'doc' | 'bug' | 'transcript'
   artifactId = '',
   artifactTitle = '(untitled)',
