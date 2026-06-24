@@ -6,7 +6,7 @@
 // taps post a real message. Secondary drawer actions (pause/re-task/approve/handoff) have no
 // honest store yet, so they stay inert (not faked), matching Command/Tracker desktop.
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useChatList } from './data/useHomeData.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
@@ -86,6 +86,25 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
   const [draft, setDraft] = useState('');
   const submit = () => { const t = draft.trim(); if (!t) return; send?.(t); setDraft(''); };
 
+  // Pin to the latest message: after the thread loads (messages arrive async) and whenever a
+  // new one lands, so opening a room lands at the tail and your just-sent message isn't hidden
+  // below the fold. Reading history (scrolled up) is left alone.
+  const scrollRef = useRef(null);
+  const bottomRef = useRef(null);
+  const prevLenRef = useRef(0);
+  const selKey = selected?.id || '';
+  useEffect(() => { prevLenRef.current = 0; }, [selKey]);
+  useEffect(() => {
+    const el = scrollRef.current;
+    const len = messages?.length || 0;
+    const prev = prevLenRef.current;
+    prevLenRef.current = len;
+    if (!el || !len) return;
+    const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (prev === 0) bottomRef.current?.scrollIntoView();
+    else if (fromBottom < 260) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, selKey]);
+
   const pickAgent = (a) => setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel });
   const pickProject = (p) => setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status });
 
@@ -120,8 +139,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation')}</div>
                   </div>
                 </div>
-                <div style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
+                <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
                   {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} />}
+                  <div ref={bottomRef} style={{ height: 4 }} />
                 </div>
                 <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}

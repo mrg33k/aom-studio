@@ -3,7 +3,7 @@
 // nothing; a role does. Two things live here:
 //   1. AGENT_TITLES — the FULL slug -> title map, so a name never leaks ANYWHERE (roster,
 //      Catch Up feed, conversation headers).
-//   2. DASHBOARD_ORDER — the CURATED subset (with order) shown in Home's "Agents" accordion.
+//   2. DASHBOARD_AGENTS — the CURATED set (with order) shown in Home's "Agents" accordion.
 //
 // `aomOnly`-style agents (Systems) only exist as agents in the AOM internal world, so curating
 // to agents actually present in this world's list keeps them out of external worlds naturally.
@@ -23,8 +23,18 @@ export const AGENT_TITLES = {
   studio: 'Studio',
 };
 
-// The curated set shown in the Home Agents accordion, in display order.
-export const DASHBOARD_ORDER = { bobby: 1, cleo: 2, steffen: 3, gary: 4, elon: 5, steve: 6 };
+// The curated set shown in the Home Agents accordion, in display order. The roster is the
+// FULL set every time (you reach them at different moments, so they show even when idle);
+// `aomOnly` agents (Systems) appear only when they actually exist in this world's live list,
+// which keeps them out of external/client worlds.
+export const DASHBOARD_AGENTS = [
+  { slug: 'bobby', order: 1 },
+  { slug: 'cleo', order: 2 },
+  { slug: 'steffen', order: 3 },
+  { slug: 'gary', order: 4 },
+  { slug: 'elon', order: 5, aomOnly: true },
+  { slug: 'steve', order: 6 },
+];
 
 function agentKey(a) {
   return String((typeof a === 'string' ? a : (a?.slug || a?.id || a?.name)) || '').trim().toLowerCase();
@@ -39,17 +49,25 @@ export function titleForAgent(a) {
   return AGENT_TITLES[k] || cap(k) || 'Agent';
 }
 
-// Curate a raw agent list down to the dashboard's accordion set, in order. Names become titles;
-// agents not in the curated set are dropped. Each returned agent carries its real `slug` (so the
-// chat still opens the right thread) plus `title`.
+// Build the dashboard's curated agent roster, in order. The FULL set always shows (titles, with
+// live status merged from the real agent list when present, else idle), so you see every agent
+// you reach for even when they're quiet. `aomOnly` agents only show when they actually exist in
+// this world's live list. Each row carries its real `slug` so the chat opens the right thread.
 export function curateTitledAgents(agents = []) {
+  const bySlug = {};
+  for (const a of agents || []) bySlug[agentKey(a)] = a;
   const out = [];
-  for (const a of agents || []) {
-    const k = agentKey(a);
-    const order = DASHBOARD_ORDER[k];
-    if (!order) continue;
-    out.push({ ...a, slug: a.slug || a.id || k, title: titleForAgent(a), _order: order });
+  for (const d of DASHBOARD_AGENTS) {
+    const live = bySlug[d.slug];
+    if (d.aomOnly && !live) continue; // Systems only where it exists (the AOM world)
+    out.push({
+      ...(live || {}),
+      slug: d.slug,
+      title: AGENT_TITLES[d.slug] || cap(d.slug),
+      status: live?.status || 'idle',
+      unread: live?.unread || 0,
+      _order: d.order,
+    });
   }
-  out.sort((x, y) => x._order - y._order);
-  return out;
+  return out.sort((x, y) => x._order - y._order);
 }

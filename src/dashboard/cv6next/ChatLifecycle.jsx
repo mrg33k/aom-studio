@@ -220,8 +220,25 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
     setShowJump(fromBottom > 240);
   }, []);
 
-  // Land at the latest message on open (the tail is home).
-  useEffect(() => { bottomRef.current?.scrollIntoView(); }, [room?.name]);
+  // Land at the latest message — the tail is home. This has to fire AFTER messages load
+  // (they arrive async, so scrolling on room-change alone lands on an empty thread), and
+  // again whenever a new message appears (so your just-sent message is never hidden just
+  // below the fold). When you've scrolled up to read history we leave you there.
+  const prevLenRef = useRef(0);
+  const roomKey = room?.id || room?.name;
+  useEffect(() => { prevLenRef.current = 0; }, [roomKey]);
+  useEffect(() => {
+    const el = scrollRef.current;
+    const len = messages?.length || 0;
+    const prev = prevLenRef.current;
+    prevLenRef.current = len;
+    if (!el || !len) return;
+    const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    // First load for this room (prev 0) snaps instantly; new messages while near the tail
+    // glide down. Scrolled-up reading (far from bottom) is left undisturbed.
+    if (prev === 0) bottomRef.current?.scrollIntoView();
+    else if (fromBottom < 260) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, roomKey]);
 
   const empty = status === 'empty' || !messages?.length;
   const [preview, setPreview] = useState(null);
