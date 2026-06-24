@@ -10,6 +10,7 @@
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
+import { useDictation } from './data/useDictation.js';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -295,6 +296,7 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
 
 export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview }) {
   const [draft, setDraft] = useState('');
+  const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
   const [showJump, setShowJump] = useState(false);
@@ -451,8 +453,19 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
       )}
 
       <div className="mcomposer">
+        {dictate.supported && (
+          <button onClick={dictate.toggle} aria-label={dictate.listening ? 'Stop dictation' : 'Speak your message'}
+            title={dictate.listening ? 'Listening… tap to stop' : 'Speak your message'}
+            style={{ width: 42, height: 42, borderRadius: 12, border: 'none', flex: 'none', cursor: 'pointer',
+              background: dictate.listening ? '#e5484d' : 'var(--surface-2)', color: dictate.listening ? '#fff' : 'var(--faint)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: dictate.listening ? '0 0 0 4px rgba(229,72,77,.18)' : 'none',
+              transition: 'background .15s, box-shadow .15s, color .15s' }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
+          </button>
+        )}
         <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-          placeholder={`Message ${room.name}…`}
+          placeholder={dictate.listening ? 'Listening…' : `Message ${room.name}…`}
           style={{ flex: 1, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', fontSize: 14, color: 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none' }} />
         <button onClick={submit} style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" /></svg>

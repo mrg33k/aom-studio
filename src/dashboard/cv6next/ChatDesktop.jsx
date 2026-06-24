@@ -11,6 +11,7 @@ import { useChatList } from './data/useHomeData.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
+import { useDictation } from './data/useDictation.js';
 
 const NAV = [
   { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
@@ -153,6 +154,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
   const liveThread = Array.isArray(blocks) && blocks.length > 0;
 
   const [draft, setDraft] = useState('');
+  const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   const submit = () => { const t = draft.trim(); if (!t) return; send?.(t); setDraft(''); };
 
   // Pin to the latest message: after the thread loads (messages arrive async) and whenever a
@@ -217,8 +219,19 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                   </div>
                 </div>
                 <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {dictate.supported && (
+                    <button onClick={dictate.toggle} aria-label={dictate.listening ? 'Stop dictation' : 'Speak your message'}
+                      title={dictate.listening ? 'Listening… click to stop' : 'Speak your message'}
+                      style={{ width: 44, height: 44, borderRadius: 12, border: 'none', flex: 'none', cursor: 'pointer',
+                        background: dictate.listening ? '#e5484d' : 'var(--surface-2)', color: dictate.listening ? '#fff' : 'var(--faint)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: dictate.listening ? '0 0 0 4px rgba(229,72,77,.18)' : 'none',
+                        transition: 'background .15s, box-shadow .15s, color .15s' }}>
+                      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></svg>
+                    </button>
+                  )}
                   <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
-                    placeholder={`Nudge ${selected.name}, or jump in…`}
+                    placeholder={dictate.listening ? 'Listening…' : `Nudge ${selected.name}, or jump in…`}
                     style={{ flex: 1, height: 44, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 16px', fontSize: 15, color: 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none' }} />
                   <button onClick={submit} style={{ width: 44, height: 44, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" /></svg>
