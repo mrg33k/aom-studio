@@ -18,19 +18,13 @@ import TwoWaysSection from './components/home/TwoWaysSection';
 import SiteNav from './components/SiteNav';
 
 // --- FIREBASE & STORAGE CONFIG ---
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+// Firebase removed 2026-06-24 (corner:corner-ui-cv6 load fix): it was never initialized in
+// production (__firebase_config is undefined, so the init block was dead) and the lead form
+// submits via Formspree. Importing it pulled a 385KB firebase chunk into EVERY page's preload,
+// including the dashboard which never used it — pure load-time cost for zero runtime use.
 
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'aom-studio';
-let app, auth, db;
-
-if (firebaseConfig) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-}
+// auth/db kept as null so the historical guards (`if(!auth)`, `if(db&&user)`) skip cleanly.
+const auth = null, db = null;
 
 // --- UTILITIES ---
 const shuffleArray = (array) => {
@@ -617,13 +611,8 @@ export default function App() {
     else { const timer = setTimeout(() => { setIsLoaderExiting(true); const finalTimer = setTimeout(() => setIsInitialized(true), 300); return () => clearTimeout(finalTimer); }, 100); return () => clearTimeout(timer); }
   }, [loadStatus]);
 
-  useEffect(() => {
-    if (!auth) return;
-    const initAuth = async () => { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); else await signInAnonymously(auth); };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return () => unsubscribe();
-  }, []);
+  // Firebase auth effect removed 2026-06-24 — auth was always null (never initialized), so this
+  // body never ran and `user` stayed null. Lead capture does not depend on it (Formspree path).
 
 
   const videoTotal = useMemo(() => Object.values(PORTFOLIO_DATA).reduce((acc, cat) => acc + cat.campaigns.length + cat.social.length, 0), []);
@@ -661,9 +650,7 @@ export default function App() {
         body: JSON.stringify({ ...finalPayload, _subject: `New Lead: ${finalPayload.intent} - ${finalPayload.name}` })
       });
       if (!response.ok) throw new Error("Formspree rejected submission");
-      if (db && user) {
-        await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'leads'), { ...finalPayload, createdAt: serverTimestamp() });
-      }
+      // Firebase mirror-write removed 2026-06-24 (db was always null). Formspree is the lead sink.
       setIsSuccess(true);
     } catch (e) {
       console.error("Lead submission error", e);
