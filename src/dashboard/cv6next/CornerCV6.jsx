@@ -702,7 +702,7 @@ export default function CornerCV6() {
   }, []);
   const onNav = useCallback((target) => {
     if (target === 'back') { back(); return; }
-    if (['home', 'support', 'command', 'tracker'].includes(target)) goTo(target, null);
+    if (['home', 'support', 'command', 'tracker', 'organize', 'review'].includes(target)) goTo(target, null);
     // Chat from the menu opens the conversations list; a row there opens the Goal Thread.
     else if (target === 'chat') goTo('chatlist', null);
   }, [back, goTo]);
