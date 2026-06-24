@@ -321,21 +321,61 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
 
 // ── Chat list (mobile): the conversations list the Chat menu opens to ──
 const CHATLIST_ALIASES = { agents: 'agent', projects: 'project' };
-function ChatList({ onNav, onOpenRoom, onOpenNav }) {
+function ChatList({ onNav, onOpenRoom, onOpenNav, onCommandK }) {
   const { state, data, worldId } = useChatList();
   const html = useMemo(() => composeScreen(chatListRaw, { mobile: true, pick: 0 }), []);
+  // Real client-side filter for the header chips (All / Agents / Projects / Needs you).
+  const [filter, setFilter] = useState('all');
+  const allAgents = data.agents || [];
+  const allProjects = data.projects || [];
+  const hasNeeds = (x) => Number(x?.needsCount) > 0;
+  const view = useMemo(() => {
+    let agents = allAgents, projects = allProjects;
+    if (filter === 'agents') projects = [];
+    else if (filter === 'projects') agents = [];
+    else if (filter === 'needs') { agents = allAgents.filter(hasNeeds); projects = allProjects.filter(hasNeeds); }
+    // arrays carry a .count the template binds for the section eyebrow (shown count).
+    const ag = agents.slice(); ag.count = agents.length;
+    const pr = projects.slice(); pr.count = projects.length;
+    const needsTotal = allAgents.filter(hasNeeds).length + allProjects.filter(hasNeeds).length;
+    return {
+      ...data,
+      agents: ag,
+      projects: pr,
+      secVis: { agents: ag.length ? 'shown' : 'hidden', projects: pr.length ? 'shown' : 'hidden' },
+      chips: {
+        all: filter === 'all' ? 'on' : 'off',
+        agents: filter === 'agents' ? 'on' : 'off',
+        projects: filter === 'projects' ? 'on' : 'off',
+        needs: filter === 'needs' ? 'on' : 'off',
+      },
+      counts: {
+        ...(data.counts || {}),
+        all: allAgents.length + allProjects.length,
+        agentsTotal: allAgents.length,
+        projectsTotal: allProjects.length,
+        needsYou: needsTotal,
+      },
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, filter]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t),
     search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    setFilter: (f) => setFilter(f || 'all'),
+    // "New goal" from the list level: open the command palette (the room picker)
+    // so you choose where to start — an honest jump to a real surface, not a faked
+    // new-goal backend. Falls back to opening the nav if no palette is wired.
+    newGoal: () => (onCommandK ? onCommandK() : onOpenNav?.()),
     openRoom: (id) => {
-      const agent = (data.agents || []).find((a) => String(a.id) === String(id));
+      const agent = allAgents.find((a) => String(a.id) === String(id));
       if (agent) { onOpenRoom?.(agent, worldId); return; }
-      const proj = (data.projects || []).find((p) => String(p.id) === String(id));
+      const proj = allProjects.find((p) => String(p.id) === String(id));
       if (proj) onOpenRoom?.({ id: proj.id, name: proj.name, isProject: true }, worldId);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenNav, onOpenRoom, data.agents, data.projects, worldId]);
-  return <TemplateScreen html={html} data={data} actions={actions} state={state}
+  }), [onNav, onOpenNav, onOpenRoom, onCommandK, allAgents, allProjects, worldId]);
+  return <TemplateScreen html={html} data={view} actions={actions} state={state}
     aliases={CHATLIST_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
 
@@ -786,7 +826,7 @@ export default function CornerCV6() {
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'tracker'; }
   else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'review'; }
-  else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'chatlist'; }
+  else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'home'; }
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
