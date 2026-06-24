@@ -395,7 +395,10 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
         </div>
       </div>
 
-      <div ref={scrollRef} onScroll={onScroll} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px 0' }}>
+      {/* Bottom padding clears the absolutely-positioned composer (.mcomposer is
+          position:absolute; bottom:0) plus the phone home indicator, so the last
+          message can scroll fully into view instead of being cut off behind it. */}
+      <div ref={scrollRef} onScroll={onScroll} className="scrbody" style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '14px 16px calc(84px + env(safe-area-inset-bottom, 0px))' }}>
         {/* Cap the thread to a readable column so on iPad it stays phone-width and centered,
             instead of stretching messages + cards edge to edge. */}
         <SendCtx.Provider value={onSend || (() => {})}>
