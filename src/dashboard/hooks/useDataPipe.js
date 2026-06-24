@@ -165,6 +165,14 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
   const currentUserSlugRef = useRef(currentUserSlug)
   currentUserSlugRef.current = currentUserSlug
 
+  // corner:corner-ui-cv6 (2026-06-24): the project-room list (84 rooms Patrik waits
+  // on) is rebuilt and re-set on every 60s poll AND every 2.5s realtime debounce. When
+  // nothing changed, that re-renders the whole list for no reason — the "waiting for
+  // projects" churn. Keep the last serialized list and skip the setter when identical.
+  // A real change (new room, new message → recency reorder) still serializes differently
+  // and re-renders normally.
+  const projectRoomsSigRef = useRef('')
+
   const fetchAll = useCallback(async () => {
     if (IS_LOCAL) {
       // LOCAL: read from filesystem APIs (punch-list only -- status comes from Supabase)
@@ -401,7 +409,10 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           for (const p of merged) p.last_message_at = projRecency[p.slug] || 0
           merged.sort((a, b) => (b.last_message_at - a.last_message_at) || (a.name || '').localeCompare(b.name || ''))
         }
-        if (merged.length > 0) setSupabaseProjectRooms(merged)
+        if (merged.length > 0) {
+          const sig = JSON.stringify(merged)
+          if (sig !== projectRoomsSigRef.current) { projectRoomsSigRef.current = sig; setSupabaseProjectRooms(merged) }
+        }
 
         // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
         {
