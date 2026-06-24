@@ -115,7 +115,7 @@ export function MobileNav({ open, current, onPick, onClose, badges = {}, theme, 
   if (!open) return null;
   return (
     <div className="navscrim" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }}>
-      <div className="navdrawer" onClick={(e) => e.stopPropagation()}
+      <div className="navdrawer" data-app-theme={theme} onClick={(e) => e.stopPropagation()}
         style={{ paddingTop: 'max(16px, env(safe-area-inset-top, 0px))', paddingBottom: 'max(16px, env(safe-area-inset-bottom, 0px))' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 14px 12px', borderBottom: '1px solid var(--divider)', marginBottom: 8 }}>
           <img src={LOGO} alt="Corner" style={{ height: 19 }} />
