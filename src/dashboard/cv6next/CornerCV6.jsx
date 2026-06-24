@@ -749,7 +749,10 @@ const DEMO_BLOCKS = [
   { type: 'step', stepIndex: 10, title: 'Confirm before sending', state: 'active', detail: 'Anything irreversible gets an explicit yes.' },
   { type: 'thinking', stepIndex: 10, label: 'Checking the rollout calendar…' },
   { type: 'replies', stepIndex: 10, prompt: 'Pricing draft is ready. How do you want to send it?', options: [{ label: 'Send as me', primary: true }, 'Schedule for 8am', 'Let me edit first'] },
+  { type: 'choiceEcho', stepIndex: 10, title: 'You chose: Send as me', detail: 'Locked in from the options above.' },
   { type: 'confirm', stepIndex: 10, text: 'This will email dana@acme.com on your behalf and add a follow-up to Tracker.', confirmLabel: 'Confirm & send', cancelLabel: 'Cancel', note: 'Anything irreversible gets an explicit confirm; you are always in the loop.' },
+  { type: 'step', stepIndex: 11, title: 'Send the pricing reply', state: 'working', detail: 'Composing and sending now.', progress: 65 },
+  { type: 'step', stepIndex: 12, title: 'Log the follow-up in Tracker', state: 'queued', detail: 'Starts once the email sends.' },
 ];
 
 // The demo renders the SHARED GoalThreadBody (the exact renderer mobile + desktop use) in a
