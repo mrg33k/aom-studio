@@ -9,7 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import ChatGoalThread from './ChatGoalThread.jsx';
+import ChatGoalThread, { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
@@ -648,14 +648,18 @@ const DEMO_BLOCKS = [
   { type: 'video', stepIndex: 7, duration: '1:48', title: 'Onboarding walkthrough' },
 ];
 
+// The demo renders the SHARED GoalThreadBody (the exact renderer mobile + desktop use) in a
+// page-scrolling column — no inner chat shell, so the whole thread is one tall page and a
+// full-page screenshot captures every element end to end.
 function DemoChatBlocks() {
-  const noop = () => {};
   return (
-    <ChatGoalThread
-      room={{ name: 'Elon', initials: 'EL', statusText: 'working now', status: 'live' }}
-      goal={DEMO_GOAL} blocks={DEMO_BLOCKS}
-      onBack={noop} onOpenNav={noop} onSend={noop}
-    />
+    <SendCtx.Provider value={() => {}}>
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 16px 40px' }}>
+          <GoalThreadBody goal={DEMO_GOAL} blocks={DEMO_BLOCKS} />
+        </div>
+      </div>
+    </SendCtx.Provider>
   );
 }
 
