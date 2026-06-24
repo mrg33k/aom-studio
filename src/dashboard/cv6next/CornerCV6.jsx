@@ -654,10 +654,8 @@ const DEMO_BLOCKS = [
 function DemoChatBlocks() {
   return (
     <SendCtx.Provider value={() => {}}>
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-        <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 16px 40px' }}>
-          <GoalThreadBody goal={DEMO_GOAL} blocks={DEMO_BLOCKS} />
-        </div>
+      <div style={{ maxWidth: 560, margin: '0 auto', padding: '20px 16px 40px' }}>
+        <GoalThreadBody goal={DEMO_GOAL} blocks={DEMO_BLOCKS} />
       </div>
     </SendCtx.Provider>
   );
@@ -701,8 +699,10 @@ export default function CornerCV6() {
   // (After all hooks above, so hook order stays stable; the flag is constant per load.)
   const demoBlocks = useMemo(() => demoBlocksRequested(), []);
   if (demoBlocks) {
+    // Auto-height (no 100dvh cap, no overflow:hidden) so the whole thread is one tall page
+    // the browser scrolls — a full-page capture then reaches every element end to end.
     return (
-      <div data-cv6 data-theme="dark" style={{ minHeight: '100dvh', height: '100dvh', background: 'var(--ground, #05080b)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div data-cv6 data-theme="dark" style={{ minHeight: '100dvh', background: 'var(--ground, #05080b)' }}>
         <DemoChatBlocks />
       </div>
     );
