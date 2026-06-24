@@ -99,33 +99,43 @@ function FileGlyph({ kind, size = 20 }) {
   if (kind === 'link') return <svg {...p}><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></svg>;
   return <svg {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /></svg>;
 }
-function FileCard({ file, onOpen }) {
-  const kind = fileKind(file.fileName, file.fileMime);
-  const isImg = kind === 'image' && file.attachmentUrl;
-  return (
-    <div onClick={() => onOpen(file)} role="button"
-      style={{ border: '1px solid var(--hair)', borderRadius: 12, overflow: 'hidden', background: 'var(--surface)', cursor: 'pointer' }}>
-      <div style={{ aspectRatio: '16 / 10', background: isImg ? '#0c0f14' : 'linear-gradient(135deg,#22262e,#15171c)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        {isImg ? <img src={file.attachmentUrl} alt={file.fileName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <FileGlyph kind={kind} size={26} />}
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 9px' }}>
-        <FileGlyph kind={kind} size={14} />
-        <span style={{ flex: 1, minWidth: 0, fontSize: 11.5, fontWeight: 600, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.fileName || 'file'}</span>
-      </div>
-    </div>
-  );
-}
+// Built on the real Photo gallery kit (agent-chat/gallery.html): the agent .turn
+// anatomy, a .cgal mosaic (first cell .span2, a "+N" .more overlay on overflow),
+// a .gal-cap count, and the .chip-btn actions. Classes live in cv6.css already.
 function FileGallery({ files, sender, onOpen }) {
+  const allImages = files.every((f) => fileKind(f.fileName, f.fileMime) === 'image');
+  const shown = files.slice(0, 4);
+  const overflow = files.length - shown.length;
+  const totalSize = files.reduce((s, f) => s + (f.fileSize || 0), 0);
   return (
-    <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-      <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flex: 'none' }}>{sender?.agentInitials || '·'}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{sender?.agentName || 'Files'}</span>
-          <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{files.length} file{files.length === 1 ? '' : 's'}</span>
+    <div className="turn" style={{ marginBottom: 14 }}>
+      <div className="tav" style={{ background: 'var(--surface-2)', color: 'var(--muted)' }}>{sender?.agentInitials || '·'}</div>
+      <div className="tbody">
+        <div className="tname"><b>{sender?.agentName || 'Files'}</b><span className="tt">{files.length} {allImages ? 'images' : 'files'}</span></div>
+        <div className="bubble" style={{ paddingBottom: 13 }}>
+          <div className="cgal">
+            {shown.map((f, i) => {
+              const kind = fileKind(f.fileName, f.fileMime);
+              const isImg = kind === 'image' && f.attachmentUrl;
+              const showMore = overflow > 0 && i === shown.length - 1;
+              return (
+                <div key={i} className={`ph${i === 0 ? ' span2' : ''}`} onClick={() => onOpen(f)} role="button" style={{ cursor: 'pointer' }}>
+                  {isImg ? <img src={f.attachmentUrl} alt={f.fileName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <FileGlyph kind={kind} size={i === 0 ? 30 : 22} />}
+                  {!isImg && <span className="mono" style={{ position: 'absolute', left: 6, right: 6, bottom: 5, fontSize: 8.5, color: 'rgba(255,255,255,.62)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'center' }}>{f.fileName}</span>}
+                  {showMore && <div className="more">+{overflow}</div>}
+                </div>
+              );
+            })}
+          </div>
+          <div className="gal-cap">
+            <FileGlyph kind={allImages ? 'image' : 'doc'} size={14} />
+            <span>{files.length} {allImages ? 'images' : 'files'}{totalSize ? ` · ${fmtSize(totalSize)}` : ''}</span>
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 9 }}>
-          {files.map((f, i) => <FileCard key={i} file={f} onOpen={onOpen} />)}
+        <div className="chips">
+          <button className="chip-btn is-primary" onClick={() => onOpen(shown[0])}>Open gallery</button>
+          <button className="chip-btn" onClick={() => onOpen(shown[0])}>Send to Review</button>
         </div>
       </div>
     </div>
