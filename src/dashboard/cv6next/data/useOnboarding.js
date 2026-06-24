@@ -74,6 +74,7 @@ export function useOnboarding(worldId = 'aom') {
     // Current step info
     const stepLabel = STEP_LABELS[currentStepId] || {};
     const step = {
+      id: currentStepId,
       eyebrow: stepLabel.eyebrow || '',
       title: stepLabel.title || '',
       sub: stepLabel.sub || '',

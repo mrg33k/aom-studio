@@ -126,6 +126,21 @@ function applyBindings(el, scopes, ctx) {
     if (!visible) return; // do not bind (or expand each inside) a hidden branch
   }
 
+  // data-switch — show only the descendant [data-case] branch whose value matches the
+  // resolved path (e.g. step.id in a multi-step flow), removing the rest so exactly one
+  // case renders at a time. The first |-separated token is the path; any remaining tokens
+  // are a human-readable enumeration of the cases and are ignored here. Runs before the
+  // recursion below so non-matching branches are never bound (or their data-each expanded).
+  const sw = el.getAttribute('data-switch');
+  if (sw != null) {
+    const path = sw.split('|')[0].trim();
+    const v = resolvePath(scopes, path);
+    const want = v == null ? '' : String(v);
+    for (const c of Array.from(el.querySelectorAll('[data-case]'))) {
+      if (c.getAttribute('data-case') !== want) c.remove();
+    }
+  }
+
   // data-bind — fill the value.
   const bindPath = el.getAttribute('data-bind');
   if (bindPath) applyValue(el, resolvePath(scopes, bindPath));
