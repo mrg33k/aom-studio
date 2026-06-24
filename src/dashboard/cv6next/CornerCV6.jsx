@@ -429,7 +429,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
   // If demo mode, use demo feed; otherwise use real thread
   const messages = isDemo ? demoFeed : useRoomThread(worldId, room).messages;
   const { status, send } = isDemo ? { status: 'ready', send: () => {} } : useRoomThread(worldId, room);
-  const goal = useGoalThread(worldId, room);
+  const goal = isDemo ? null : useGoalThread(worldId, room);
   const hasGoal = !!goal;
   const liveThread = Array.isArray(messages) && messages.some((m) => m.blocks?.length > 0);
   const html = useMemo(() => composeChatMobile(hasGoal), [hasGoal]);
