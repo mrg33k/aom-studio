@@ -26,8 +26,9 @@ export default async function handler(req, res) {
   };
 
   try {
-    // Fetch all projects; the dashboard will filter by client_id if needed
-    const url = `${SUPABASE_URL}/rest/v1/projects?select=id,name,slug,client_id,created_at,updated_at&order=updated_at.desc`;
+    // Fetch all projects; the dashboard will filter by client_id if needed.
+    // The projects table has no updated_at column, only created_at.
+    const url = `${SUPABASE_URL}/rest/v1/projects?select=id,name,slug,client_id,created_at&order=created_at.desc`;
     const r = await fetch(url, { headers });
 
     if (!r.ok) {

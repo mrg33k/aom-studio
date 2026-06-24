@@ -82,33 +82,36 @@ export function useOrganize(worldId = 'aom') {
   const [status, setStatus] = useState('loading'); // loading | loaded | error
 
   const load = useCallback(async () => {
-    let ok = false;
+    // Files are the source of truth (proven endpoint). Each row carries
+    // client_id = the project slug it belongs to, so we can build the
+    // project tree from the files alone. Projects are a secondary lookup
+    // purely to upgrade slugs to nicer display names.
+    let gotFiles = false;
     try {
-      // Fetch projects
-      const projRes = await authFetch('/api/dashboard/projects', { credentials: 'include' });
-      const projData = await projRes.json();
-      if (projData.ok && Array.isArray(projData.projects)) {
-        setProjects(projData.projects);
-        ok = true;
-      }
-    } catch (err) {
-      console.error('Failed to load projects:', err);
-    }
-
-    try {
-      // Fetch text files (global or filtered by project)
-      const filesRes = await authFetch('/api/dashboard/text-files', { credentials: 'include' });
+      const filesRes = await authFetch(
+        `/api/dashboard/files?type=text&client=${encodeURIComponent(worldId)}`,
+        { credentials: 'include' }
+      );
       const filesData = await filesRes.json();
-      if (filesData.ok && Array.isArray(filesData.files)) {
+      if (Array.isArray(filesData.files)) {
         setFiles(filesData.files);
-        ok = ok || true;
+        gotFiles = true;
       }
     } catch (err) {
       console.error('Failed to load files:', err);
     }
 
-    setStatus(ok && projects && files ? 'loaded' : (projects || files ? 'loaded' : 'error'));
-  }, []);
+    // Secondary, best-effort: nicer project names. Never gates the state.
+    try {
+      const projRes = await authFetch('/api/dashboard/projects', { credentials: 'include' });
+      const projData = await projRes.json();
+      if (projData.ok && Array.isArray(projData.projects)) setProjects(projData.projects);
+    } catch (err) {
+      console.error('Failed to load projects:', err);
+    }
+
+    setStatus(gotFiles ? 'loaded' : 'error');
+  }, [worldId]);
 
   useEffect(() => {
     load();
@@ -117,13 +120,29 @@ export function useOrganize(worldId = 'aom') {
   }, [load]);
 
   // ── shape to the template contract ──
+  // Files carry client_id = their project slug. Group by it to build the tree;
+  // the projects list (by slug) only upgrades the display name.
 
-  const projectList = (projects || []).map((p) => ({
-    id: p.id,
-    name: p.name || p.slug,
-    fileCount: files?.filter((f) => f.project_id === p.id).length || 0,
+  const nameBySlug = {};
+  (projects || []).forEach((p) => { if (p.slug) nameBySlug[p.slug] = p.name || p.slug; });
+
+  const prettify = (slug) =>
+    String(slug || 'Untitled').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+  // Group files by their owning project slug, preserving first-seen order.
+  const groups = new Map();
+  (files || []).forEach((f) => {
+    const slug = f.client_id || 'unfiled';
+    if (!groups.has(slug)) groups.set(slug, []);
+    groups.get(slug).push(f);
+  });
+
+  const projectList = [...groups.entries()].map(([slug, fs]) => ({
+    id: slug,
+    name: nameBySlug[slug] || prettify(slug),
+    fileCount: fs.length,
     folderCount: 0, // HELD-C: file store is flat
-    tint: tintFor(p.slug),
+    tint: tintFor(slug),
   }));
 
   // Desktop tree: flattened with depth
@@ -132,7 +151,7 @@ export function useOrganize(worldId = 'aom') {
     name: p.name,
     depth: 'd0',
     tint: p.tint,
-    chev: files?.some((f) => f.project_id === p.id) ? 'down' : 'none',
+    chev: p.fileCount ? 'down' : 'none',
     open: idx === 0, // first project open by default
   }));
 
@@ -140,20 +159,19 @@ export function useOrganize(worldId = 'aom') {
   const openProject = treeNodes[0] || { id: null, name: 'Projects' };
 
   // Files in the current project
-  const fileList = (files || [])
-    .filter((f) => f.project_id === openProject.id)
-    .map((f) => {
-      const { title, body } = parseMarkdown(f.content || '');
-      return {
-        id: f.id,
-        name: f.name || 'Untitled',
-        edited: relTime(f.updated_at || f.created_at),
-        size: formatSize(f.content?.length || 0),
-        kind: fileKind(f.name),
-        preview: { fileName: f.name, title, bodyHtml: body },
-        status: 'ready', // default status
-      };
-    });
+  const fileList = (groups.get(openProject.id) || []).map((f) => {
+    const fname = f.filename || f.name || 'Untitled';
+    const { title, body } = parseMarkdown(f.content || '');
+    return {
+      id: f.id,
+      name: fname,
+      edited: relTime(f.updated_at || f.created_at),
+      size: formatSize(f.content?.length || 0),
+      kind: fileKind(fname),
+      preview: { fileName: fname, title, bodyHtml: body },
+      status: 'ready', // default status
+    };
+  });
 
   // Desktop preview (first file by default)
   const previewFile = fileList[0] || null;
@@ -205,7 +223,7 @@ export function useOrganize(worldId = 'aom') {
   };
 
   let state = 'ready';
-  if (status === 'loading' && !projects && !files) state = 'loading';
+  if (status === 'loading' && !files) state = 'loading';
   else if (status === 'error') state = 'error';
   else if (!projectList.length) state = 'empty';
 
