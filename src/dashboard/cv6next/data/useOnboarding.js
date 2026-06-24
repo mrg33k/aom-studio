@@ -8,12 +8,14 @@ import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
 import { setClientIdFromUser } from '../../lib/clientConfig';
 
-const STEP_SEQUENCE = ['connect', 'agents', 'theme', 'goal'];
+const STEP_SEQUENCE = ['welcome', 'connect', 'agents', 'theme', 'goal', 'done'];
 const STEP_LABELS = {
-  connect: { eyebrow: 'Step 1 of 4 · Connections', title: 'Connect what your agents work with', sub: 'Email, code, calendar, files. Connect now or skip any and add it later. Each connection is scoped per room.', nextLabel: 'Continue' },
-  agents: { eyebrow: 'Step 2 of 4 · Agents & permissions', title: 'Decide what each agent may do', sub: 'Set guardrails. You can always change this later.', nextLabel: 'Continue' },
-  theme: { eyebrow: 'Step 3 of 4 · Appearance', title: 'Pick a look', sub: 'Dark, light, or glass. Applies everywhere.', nextLabel: 'Continue' },
-  goal: { eyebrow: 'Step 4 of 4 · First goal', title: 'Set a first goal', sub: 'What would you like your agents to work on?', nextLabel: 'Finish → Home' },
+  welcome: { eyebrow: 'Welcome', title: 'Meet your agent workspace', sub: 'Corner runs a team of AI agents across your projects. They work, then bring you the decisions. Let's set up your environment — it takes a minute.', nextLabel: 'Continue' },
+  connect: { eyebrow: 'Step 2 of 5 · Environment', title: 'Connect your environment', sub: 'Your environment is everything the agents can read and act on. Connect the services you use — you can change these anytime.', nextLabel: 'Continue' },
+  agents: { eyebrow: 'Step 3 of 5 · Trust', title: 'What can agents do on their own?', sub: 'Set the guardrails. Anything left off still gets done — the agent just asks you first.', nextLabel: 'Continue' },
+  theme: { eyebrow: 'Step 4 of 5 · Appearance', title: 'Choose your look', sub: 'Dark, Light and Glass are all first-class. Tap one to preview it live.', nextLabel: 'Continue' },
+  goal: { eyebrow: 'Step 5 of 5 · First goal', title: 'Assign your first goal', sub: 'Pick a project, describe the outcome, and assign it to an agent. You'll see it run in Command.', nextLabel: 'Finish setup' },
+  done: { eyebrow: 'All set', title: 'You're ready to go', sub: '', nextLabel: 'Take me to Corner' },
 };
 
 export function useOnboarding(worldId = 'aom') {
@@ -75,7 +77,7 @@ export function useOnboarding(worldId = 'aom') {
       eyebrow: stepLabel.eyebrow || '',
       title: stepLabel.title || '',
       sub: stepLabel.sub || '',
-      counter: `Step ${stepIndex + 1} of 4`,
+      counter: `Step ${stepIndex + 1} of 6`,
       nextLabel: stepLabel.nextLabel || 'Continue',
     };
 
@@ -96,6 +98,65 @@ export function useOnboarding(worldId = 'aom') {
         connected: false,
         actionLabel: 'Connect',
       },
+      {
+        id: 'github',
+        name: 'GitHub',
+        desc: 'Repos & pull requests',
+        tint: 'violet',
+        connected: false,
+        actionLabel: 'Connect',
+      },
+      {
+        id: 'calendar',
+        name: 'Calendar',
+        desc: 'Schedule & meetings',
+        tint: 'accent',
+        connected: false,
+        actionLabel: 'Connect',
+      },
+      {
+        id: 'slack',
+        name: 'Slack',
+        desc: 'Team messages',
+        tint: 'success',
+        connected: false,
+        actionLabel: 'Connect',
+      },
+      {
+        id: 'drive',
+        name: 'Drive',
+        desc: 'Files & documents',
+        tint: 'warn',
+        connected: false,
+        actionLabel: 'Connect',
+      },
+    ];
+
+    // Agents & permissions (HELD-C: no backend wiring, all shown as off)
+    // Honest: toggles exist but don't wire to backend
+    const agents = [
+      {
+        id: 'elon',
+        name: 'Elon',
+        role: 'Engineering · drives missions',
+        permissions: {
+          draft: false,
+          send: false,
+          commit: false,
+          file: false,
+        },
+      },
+      {
+        id: 'rex',
+        name: 'Rex',
+        role: 'Writing · drafts & digests',
+        permissions: {
+          draft: false,
+          send: false,
+          commit: false,
+          file: false,
+        },
+      },
     ];
 
     // Themes (REAL: read from localStorage + setTheme wires back)
@@ -111,6 +172,7 @@ export function useOnboarding(worldId = 'aom') {
       step,
       progress,
       connections,
+      agents,
       themes,
     };
   }, [currentUser, stepIndex, theme, currentStepId]);

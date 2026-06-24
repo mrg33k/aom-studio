@@ -13,6 +13,7 @@ import statesRaw from './templates/states-extra.html?raw';
 const ONBOARDING_ALIASES = {
   steps: 'step',
   connections: 'conn',
+  agents: 'agent',
   themes: 'theme',
 };
 
@@ -43,12 +44,12 @@ export default function OnboardingDesktop({ onNav, onOpenNav }) {
       }
     },
     skipStep: () => {
-      if (stepIndex < 3) {
+      if (stepIndex < 5) {
         setStepIndex(stepIndex + 1);
       }
     },
     next: () => {
-      if (stepIndex < 3) {
+      if (stepIndex < 5) {
         setStepIndex(stepIndex + 1);
       } else {
         // Final step: advance to Home
