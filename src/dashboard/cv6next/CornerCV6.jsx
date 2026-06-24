@@ -30,6 +30,7 @@ import { useDemoBlocksFeed } from './data/useDemoBlocks.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
 import inboxRaw from './templates/support-inbox.html?raw';
+import supportThreadRaw from './templates/support-thread.html?raw';
 import chatRaw from './templates/chat.html?raw';
 import kitRaw from './templates/kit.html?raw';
 import commandRaw from './templates/command.html?raw';
@@ -560,9 +561,13 @@ function ChatList({ onNav, onOpenRoom, onOpenNav, onCommandK }) {
 // ── Support inbox (the proven pilot), reachable from the nav ──
 const SUPPORT_ALIASES = { needsYou: 'email', watching: 'email', 'email.tags': 'tag' };
 
+const SUPPORT_THREAD_ALIASES = {};
 function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
   const { state, data, reload } = useSupportInbox('aom');
   const html = useMemo(() => composeScreen(inboxRaw, { mobile: true }), []);
+  const threadHtml = useMemo(() => composeScreen(supportThreadRaw, { mobile: true }), []);
+  // Tapping an email opens its thread view (P9). openEmailId holds the opened ask; null = inbox list.
+  const [openEmailId, setOpenEmailId] = useState(null);
   // Header filter chips: All (default, both sections) / Needs you / Watching — real filter
   // of the inbox sections. (Drafts chip held: no drafts inbox source yet.)
   const [filter, setFilter] = useState('all');
@@ -585,12 +590,43 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
     };
   }, [data, filter]);
   const actions = useMemo(() => ({
-    openThread: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    openThread: (id) => setOpenEmailId(id), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     nav: (t) => onNav?.(t), browseWatching: () => setFilter('watching'), emptyAction: () => {},
     setFilter: (f) => setFilter(f || 'all'),
     retry: () => reload(), viewOffline: () => {},
     assignAgent: (emailId) => onAssignEmail?.(emailId),
   }), [onNav, onOpenNav, reload, onAssignEmail]);
+
+  // Opened-thread view: find the tapped ask and render its real email. Back returns to the list.
+  const openedEmail = useMemo(() => {
+    if (!openEmailId) return null;
+    const all = [...(data.needsYou || []), ...(data.watching || [])];
+    return all.find((e) => String(e.id) === String(openEmailId)) || null;
+  }, [openEmailId, data.needsYou, data.watching]);
+  const threadData = useMemo(() => {
+    const e = openedEmail || {};
+    const n = e.threadCount || 1;
+    return {
+      thread: {
+        subject: e.subject || 'Conversation',
+        sender: e.sender || (e.snippet || '').split(' · ')[0] || 'Sender',
+        senderSub: e.senderSub || 'to you',
+        countLabel: `${e.sender || 'Sender'} · ${n} message${n === 1 ? '' : 's'}`,
+        time: e.time || '',
+        body: e.body || (e.snippet || '').split(' · ').slice(1).join(' · ') || 'No message body.',
+        initials: e.initials || '·', avatarTint: e.avatarTint || 'violet',
+      },
+    };
+  }, [openedEmail]);
+  const threadActions = useMemo(() => ({
+    closeThread: () => setOpenEmailId(null), nav: (t) => { setOpenEmailId(null); onNav?.(t); },
+    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+  }), [onNav, onOpenNav]);
+
+  if (openEmailId && openedEmail) {
+    return <TemplateScreen html={threadHtml} data={threadData} actions={threadActions} state="ready"
+      aliases={SUPPORT_THREAD_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
+  }
   return <TemplateScreen html={html} data={view} actions={actions} state={state}
     aliases={SUPPORT_ALIASES} style={{ width: 'min(420px, 100%)', height: '100%', margin: '0 auto' }} />;
 }

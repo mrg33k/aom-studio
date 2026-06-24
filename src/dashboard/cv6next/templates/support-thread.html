@@ -1,0 +1,61 @@
+<!-- @dsCard group="Wired Templates" viewport="430x780" subtitle="Support mobile · view the email thread (real original email; agent summary + reply held until backend). Scoped [data-cv6]." name="Wired · Support thread (mobile)" -->
+<!--
+  ============================================================================
+  Support mobile — view the email thread (P9)
+  Source design: ui_kits/tools/support.html  (MOBILE B · view the email thread)
+  ----------------------------------------------------------------------------
+  Honesty: the ORIGINAL email (sender + body + time) is REAL, bound from the
+  inbox item the user tapped. The "Summary by Elon" and "Reply via Elon" have
+  NO backend yet, so they render visibly HELD (disabled + tooltip), never a
+  dead control and never fabricated summary bullets on real mail.
+  ============================================================================
+-->
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../cv6.css">
+</head>
+<body style="margin:0;background:#e8e6e2;display:flex;justify-content:center;padding:40px;">
+
+<div data-cv6 data-theme="dark" class="cv6-screen" data-screen="support-thread" data-screen-label="Support · thread" style="width:390px;height:700px;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);">
+  <div class="scr">
+
+    <!-- header: back to inbox · subject + sender·count · overflow -->
+    <div class="mhdr">
+      <div class="mback" data-action="closeThread"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+      <div class="mhtitle">
+        <div class="mttl" data-bind="thread.subject">Q2 partnership scope</div>
+        <div class="msub" data-bind="thread.countLabel">Acme · 1 message</div>
+      </div>
+      <div class="ib" style="opacity:.5;cursor:not-allowed;" title="More actions connect with your mailbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></div>
+    </div>
+
+    <div class="scrbody" style="padding:14px 16px;display:flex;flex-direction:column;gap:13px;">
+
+      <!-- earlier in thread — held until mailbox thread history is connected -->
+      <button style="display:flex;align-items:center;gap:9px;height:38px;padding:0 13px;border-radius:11px;border:1px solid var(--hair);background:var(--surface);opacity:.5;cursor:not-allowed;" title="Earlier messages connect with your mailbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></svg><span style="flex:1;text-align:left;font-size:12.5px;font-weight:500;color:var(--muted);">Earlier messages</span><span style="font-size:11px;font-weight:600;color:var(--faint);">Held</span></button>
+
+      <!-- Summary by Elon — held (no summary backend yet); no fabricated bullets on real mail -->
+      <div style="border:1px solid var(--accent-weak);background:linear-gradient(180deg,var(--accent-weak),transparent);border-radius:15px;padding:14px 15px;">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z"/></svg><span style="font-size:10.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);">Summary by Elon</span><span style="margin-left:auto;font-size:9.5px;font-weight:700;letter-spacing:.05em;color:var(--faint);background:var(--surface-2);border:1px solid var(--hair);padding:2px 6px;border-radius:5px;">SOON</span></div>
+        <div style="font-size:12.5px;line-height:1.5;color:var(--muted);">Your agent will summarize this thread into a few bullets once mailbox summaries are connected. The full email is below.</div>
+      </div>
+
+      <!-- original email — REAL: sender + body + time -->
+      <div style="border:1px solid var(--hair);background:var(--surface);border-radius:15px;overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--divider);"><span class="ava is-violet" data-mod="is-:thread.avatarTint" style="width:36px;height:36px;font-size:12px;" data-bind="thread.initials">DW</span><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--fg);" data-bind="thread.sender">Dana Whitfield</div><div style="font-size:11px;color:var(--muted);" data-bind="thread.senderSub">to you · Acme</div></div><span class="mono" style="font-size:10px;color:var(--faint);" data-bind="thread.time">9:18 AM</span></div>
+        <div style="padding:14px 15px;font-size:13.5px;line-height:1.7;color:var(--fg);white-space:pre-wrap;" data-bind="thread.body">Hi Patrik, the team has been really happy with the pilot.</div>
+      </div>
+
+    </div>
+
+    <!-- reply — held: replies route through your Mail room, which holds for your go-ahead -->
+    <div style="flex:none;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom,0px));">
+      <button style="flex:1;height:46px;border-radius:13px;border:none;background:var(--accent-weak);color:var(--accent);font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;opacity:.5;cursor:not-allowed;" title="Replies go out through your Mail room, which holds for your go-ahead"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg>Reply via Elon</button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

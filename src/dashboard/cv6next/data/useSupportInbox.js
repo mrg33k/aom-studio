@@ -70,9 +70,12 @@ export function useSupportInbox(worldId = 'aom') {
       id: w.id, initials: initials(w.name || w.email), avatarTint: tintFor(w.email || w.name),
       subject: firstLine(w.message) || 'New request', time: relTime(w.updated_at || w.created_at),
       snippet: `${w.name || w.email || 'Someone'} · ${firstLine(w.latest_response || w.message)}`,
+      // thread-view fields (P9): real sender + full original message; no fabricated thread history
+      sender: w.name || w.email || 'Someone', senderSub: `to you · ${w.email ? 'Support' : 'Support'}`,
+      body: String(w.message || '').trim(), threadCount: 1,
       tags: [{ label: 'REAL', kind: 'live' }],
     };
-    if (w.status === 'resolved') watching.push({ id: w.id, subject: item.subject, time: item.time, snippet: item.snippet });
+    if (w.status === 'resolved') watching.push({ id: w.id, subject: item.subject, time: item.time, snippet: item.snippet, sender: item.sender, senderSub: item.senderSub, body: item.body, threadCount: 1 });
     else needsYou.push(item);
   }
   for (const box of mailboxes || []) {
@@ -84,10 +87,14 @@ export function useSupportInbox(worldId = 'aom') {
       const subject = it.subject || '(no subject)';
       const snippet = `${it.from || it.email || ''} · ${firstLine(it.lastInbound?.snippet || it.snippet)}`;
       const time = relTime(it.lastReply?.date || it.lastInbound?.date || it.date);
+      const sender = it.from || it.email || 'Sender';
+      const senderSub = `to you · ${it.email || 'mail'}`;
+      const body = String(it.lastInbound?.body || it.lastInbound?.snippet || it.snippet || '').trim();
+      const threadCount = it.messageCount || (Array.isArray(it.messages) ? it.messages.length : 1) || 1;
       if (kind === 'need') {
-        needsYou.push({ id, initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, tags: [{ label: 'REAL', kind: 'live' }] });
+        needsYou.push({ id, initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, body, threadCount, tags: [{ label: 'REAL', kind: 'live' }] });
       } else {
-        watching.push({ id, subject, time, snippet });
+        watching.push({ id, subject, time, snippet, sender, senderSub, body, threadCount });
       }
     }
   }
