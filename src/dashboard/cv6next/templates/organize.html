@@ -92,10 +92,13 @@
   <div style="position:absolute;left:0;right:0;bottom:0;height:82px;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:12px;padding:0 16px;">
     <span style="font-size:13px;font-weight:600;color:var(--fg);white-space:nowrap;"><span data-bind="selection.count">1</span> selected</span>
     <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:18px;">
-      <button class="obar" data-action="moveSelection"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M13 17h8M18 14l3 3-3 3"/></svg>Move</button>
-      <button class="obar" data-action="renameSelection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Rename</button>
-      <button class="obar" data-action="shareSelection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="m8 7 4-4 4 4"/><path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/></svg>Share</button>
-      <button class="obar" data-action="deleteSelection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M18 6l-1 14H7L6 6"/></svg>Delete</button>
+      <!-- held-c: file move/rename/share/delete need a file-storage backend that does not exist yet.
+           Disabled + tooltip + data-action removed so nothing binds (no silent dead button). Selection
+           (toggleSelect) stays real; these actions light up when file storage is wired. -->
+      <button class="obar" disabled style="opacity:.5;cursor:not-allowed;" title="Moving files connects with file storage, coming soon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v2"/><path d="M13 17h8M18 14l3 3-3 3"/></svg>Move</button>
+      <button class="obar" disabled style="opacity:.5;cursor:not-allowed;" title="Renaming files connects with file storage, coming soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Rename</button>
+      <button class="obar" disabled style="opacity:.5;cursor:not-allowed;" title="Sharing files connects with file storage, coming soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="m8 7 4-4 4 4"/><path d="M5 13v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6"/></svg>Share</button>
+      <button class="obar" disabled style="opacity:.5;cursor:not-allowed;" title="Deleting files connects with file storage, coming soon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M18 6l-1 14H7L6 6"/></svg>Delete</button>
     </div>
   </div>
 </div>
