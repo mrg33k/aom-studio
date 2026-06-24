@@ -74,5 +74,5 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav }) {
     sendChecklist: (id) => actions.sendChecklist(id),
   };
 
-  return <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} />;
+  return <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />;
 }

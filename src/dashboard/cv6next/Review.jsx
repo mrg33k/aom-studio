@@ -65,7 +65,7 @@ export default function Review({ worldId, onNav, onOpenNav }) {
       setQueueFilter: (f) => actions.setQueueFilter(f),
       openDeliverable: onOpenDeliverable,
     };
-    return <TemplateScreen html={pickListHtml} data={pickData} actions={pickActions} aliases={pickListAliases} state={state} />;
+    return <TemplateScreen html={pickListHtml} data={pickData} actions={pickActions} aliases={pickListAliases} state={state} style={{ width: '100%', height: '100%' }} />;
   }
 
   // read + decide screen
@@ -98,5 +98,5 @@ export default function Review({ worldId, onNav, onOpenNav }) {
     sendChecklist: (id) => actions.sendChecklist(id),
   };
 
-  return <TemplateScreen html={readHtml} data={readData} actions={readActions} aliases={readAliases} state={state} />;
+  return <TemplateScreen html={readHtml} data={readData} actions={readActions} aliases={readAliases} state={state} style={{ width: '100%', height: '100%' }} />;
 }

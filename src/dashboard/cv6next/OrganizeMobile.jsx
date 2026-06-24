@@ -117,5 +117,5 @@ export default function OrganizeMobile({ onNav, onOpenNav }) {
     openJob: (jobId) => console.log('job:', jobId),
   };
 
-  return <TemplateScreen html={MOBILE_HTML} data={bindData} actions={handleActions} state={state} aliases={ORG_ALIASES} />;
+  return <TemplateScreen html={MOBILE_HTML} data={bindData} actions={handleActions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
