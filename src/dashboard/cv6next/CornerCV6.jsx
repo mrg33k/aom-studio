@@ -384,7 +384,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // draftReply (approve-and-send) sends real client email + needs an agent-drafted body;
     // held until that path + an explicit OK exist (see mission BUILD). Not faked.
     draftReply: () => {}, addToTracker: () => {}, assignAgent: () => {}, snooze: () => {},
-    review: () => {}, openAttachment: () => {},
+    // Attachment cards: tapping the file (or Review) opens the Review tool, where the
+    // delivered file is reviewed/approved. Real navigation, not a no-op.
+    review: () => onNav?.('review'), openAttachment: () => onNav?.('review'),
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
     // Open the project's own conversation (the general chat above the mission list).
     openProjectChat: (id) => {
