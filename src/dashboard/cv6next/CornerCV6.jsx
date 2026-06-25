@@ -174,6 +174,7 @@ function composeChatMobile(withGoal) {
 // ── Home (desktop + mobile share one data shape + one set of actions) ──
 const HOME_ALIASES = {
   agents: 'room', projects: 'room',
+  'room.missions': 'mission',
   'catchUp.rest': 'card',
   'catchUp.current.actionItems': 'actionItem',
   'catchUp.current.attachments': 'attachment',
@@ -235,6 +236,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const { state, data, worldId } = useHome();
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
+  // Desktop Home: which project folders are fanned open to their missions, and which have
+  // had "show N more" tapped. Matches the Chat rail tree.
+  const [expandedHomeProjects, setExpandedHomeProjects] = useState(() => new Set());
+  const [missionShowAll, setMissionShowAll] = useState(() => new Set());
   // Mobile "project opened" state (Home state B): tap a project -> its missions.
   const [openedProjectId, setOpenedProjectId] = useState(null);
   const openedProject = openedProjectId ? (data.projects || []).find((p) => p.id === openedProjectId) : null;
@@ -593,6 +598,24 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         setOpenedProjectId(id);
       }
     },
+    // Desktop Home: tap a project folder to fan its missions open inline (mobile keeps its
+    // own project-detail screen via openRoom above).
+    toggleProjectMissions: (id) => {
+      if (!isDesktop) { setOpenedProjectId(id); return; }
+      setExpandedHomeProjects((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    },
+    showAllMissions: (id) => setMissionShowAll((prev) => (prev.has(id) ? prev : new Set(prev).add(id))),
+    // Tap a mission row -> open that mission's own chat (desktop Chat).
+    openMissionRow: (id) => {
+      const missionSlug = String(id || '');
+      if (!missionSlug) return;
+      const projectSlug = missionSlug.split(':')[0];
+      const proj = (data.projects || []).find((p) => p.slug === projectSlug || p.id === projectSlug);
+      const list = missionsByProject[projectSlug] || [];
+      const m = list.find((x) => (String(x.slug || '').includes(':') ? x.slug : `${projectSlug}:${x.slug}`) === missionSlug);
+      const name = m?.name || missionSlug.split(':').pop();
+      onOpenRoom?.({ id: missionSlug.split(':').pop(), name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug, status: 'ready', statusText: proj?.name || projectSlug }, worldId);
+    },
     toggleAgents: () => setAgentsOpen((o) => !o),
     openCatchUp: () => { setCatchUpIndex(0); setCatchUpOpen(true); },
     nextCatchUp: () => setCatchUpIndex((i) => Math.min(i + 1, Math.max(0, (data.catchUp?.all?.length || 1) - 1))),
@@ -770,10 +793,29 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     ...a,
     knavSel: knavSelectedIdx === i ? 'sel' : 'off',
   }));
-  const projectsWithNav = projShown.map((p, i) => ({
-    ...p,
-    knavSel: knavSelectedIdx === agentsLen + i ? 'sel' : 'off',
-  }));
+  // Fan-open missions per project (desktop): when a folder is open, attach its real missions
+  // (capped at HOME_MISSION_CAP, "show N more" reveals the rest). Collapsed -> empty list.
+  const HOME_MISSION_CAP = 8;
+  const missionDotStatus = (s) => (['running', 'building', 'active'].includes(String(s || '').toLowerCase()) ? 'live' : 'ready');
+  const projectsWithNav = projShown.map((p, i) => {
+    const open = expandedHomeProjects.has(p.id);
+    const raw = open ? (missionsByProject[p.slug] || []) : [];
+    const showAll = missionShowAll.has(p.id);
+    const shown = showAll ? raw : raw.slice(0, HOME_MISSION_CAP);
+    const more = open && !showAll ? Math.max(0, raw.length - HOME_MISSION_CAP) : 0;
+    return {
+      ...p,
+      knavSel: knavSelectedIdx === agentsLen + i ? 'sel' : 'off',
+      caret: open ? 'open' : 'closed',
+      missions: shown.map((m) => ({
+        id: String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`,
+        name: m.name || m.slug,
+        status: missionDotStatus(m.status),
+      })),
+      moreCount: more,
+      moreState: more > 0 ? 'has' : 'none',
+    };
+  });
 
   // When a room is opened via keyboard nav, override the room/goal data for col3 display
   const displayedRoom = knavOpenedRoom || data.room || { name: '', initials: '', statusText: '', status: 'ready' };

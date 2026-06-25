@@ -115,8 +115,20 @@
           <div class="room agentrow" data-each="agents" data-action="openRoom" data-arg="room.id" data-mod="knav:room.knavSel"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" style="font-weight:500;" data-bind="room.name">Web</span><span style="font-size:11px;color:var(--accent);font-weight:600;" data-bind="room.statusText">on step 3</span><span class="kbd" style="margin-left:8px;">→</span></div>
         </div>
         <div class="subhdr">Projects · <span data-bind="projects.count">84</span></div>
-        <!-- ONE template row per project -->
-        <div class="room" data-each="projects" data-action="openRoom" data-arg="room.id" data-mod="knav:room.knavSel"><svg class="folder is-violet" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span class="rn" style="font-weight:500;" data-bind="room.name">Space Rising</span><span style="font-size:11.5px;color:var(--muted);" data-bind="room.count">28</span></div>
+        <!-- ONE block per project: the folder row (tap to fan open its missions) + the mission
+             list (only rendered when expanded; tap a mission to open its chat). -->
+        <div data-each="projects">
+          <div class="room projrow" data-action="toggleProjectMissions" data-arg="room.id" data-mod="knav:room.knavSel">
+            <svg class="projcaret" data-mod="is-:room.caret" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;color:var(--muted);"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="folder is-violet" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>
+            <span class="rn" style="font-weight:500;" data-bind="room.name">Space Rising</span>
+            <span style="font-size:11.5px;color:var(--muted);" data-bind="room.count">28</span>
+          </div>
+          <div class="misslist" data-mod="is-:room.caret">
+            <div class="room missrow" data-each="room.missions" data-action="openMissionRow" data-arg="mission.id"><span class="sdot is-ready" data-mod="is-:mission.status" style="flex:none;"></span><span class="rn" data-bind="mission.name">Mission</span></div>
+            <div class="missmore" data-mod="is-:room.moreState" data-action="showAllMissions" data-arg="room.id">Show <span data-bind="room.moreCount">0</span> more</div>
+          </div>
+        </div>
         <button class="smore-btn" data-mod="is-:projects.moreState" style="width:100%;height:38px;margin-top:6px;border-radius:10px;border:1px dashed var(--hair);background:transparent;color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="showMoreProjects">Show <span data-bind="projects.moreCount">78</span> more projects</button>
       </div>
     </div>

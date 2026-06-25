@@ -889,3 +889,15 @@
 [data-cv6] .custack .b1 { transform:translate(6px,16px); z-index:1; }
 [data-cv6] .custack .b2 { transform:translate(12px,32px); z-index:0; }
 [data-cv6] .custack.is-none .custack-back { display:none; }
+/* Home desktop: projects fan open to their missions (matches the Chat rail tree). */
+[data-cv6][data-screen="home-desktop"] .projrow { cursor:pointer; }
+[data-cv6][data-screen="home-desktop"] .projcaret { transition:transform .18s cubic-bezier(.4,0,.2,1); }
+[data-cv6][data-screen="home-desktop"] .projcaret.is-open { transform:rotate(90deg); }
+[data-cv6][data-screen="home-desktop"] .misslist { margin:0 0 4px 28px; border-left:1px solid var(--divider); padding-left:6px; }
+[data-cv6][data-screen="home-desktop"] .misslist.is-closed { display:none; }
+[data-cv6][data-screen="home-desktop"] .missmore.is-none { display:none; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow { padding-top:7px; padding-bottom:7px; cursor:pointer; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow .rn { font-size:13px; color:var(--muted); }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on { background:var(--accent-weak); }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on .rn { color:var(--fg); font-weight:600; }
+[data-cv6][data-screen="home-desktop"] .missmore { padding:7px 12px; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer; }
