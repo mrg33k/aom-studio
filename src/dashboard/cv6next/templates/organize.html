@@ -54,7 +54,7 @@
       </div>
     </div>
     <!-- preview -->
-    <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;justify-content:center;padding:32px 0;overflow:hidden;position:relative;" data-state="ready">
+    <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;align-items:flex-start;justify-content:center;padding:32px 0;overflow-y:auto;position:relative;" data-state="ready">
       <button class="assign" data-action="assignAgent" data-arg="viewFile.id" style="position:absolute;top:16px;right:16px;z-index:5;display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Assign to agent</button>
       <div style="width:520px;background:#fbfbfa;border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,.4);padding:44px 48px;color:#1a1a1a;">
         <div style="font-family:var(--font-mono);font-size:12px;color:#999;margin-bottom:18px;" data-bind="preview.fileName">dashboard-port-plan.md</div>
@@ -136,7 +136,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--divider);"><span class="ava is-green" data-mod="is-:viewFile.editorTint" style="width:22px;height:22px;font-size:9px;flex:none;" data-bind="viewFile.editorInitials">EL</span><span style="font-size:12px;color:var(--muted);flex:1;">Edited by <span data-bind="viewFile.editor">Elon</span> · <span data-bind="viewFile.edited">34m ago</span></span><span class="astat is-ready" data-mod="is-:viewFile.status"><span class="sd"></span><span data-bind="viewFile.statusLabel">READY</span></span></div>
   <div style="position:absolute;left:0;right:0;top:158px;bottom:78px;overflow:hidden;padding:16px;" data-state="ready">
-    <div style="background:#fbfbfa;border-radius:8px;height:100%;box-shadow:0 12px 36px rgba(0,0,0,.4);padding:24px 22px;color:#1a1a1a;overflow:hidden;">
+    <div style="background:#fbfbfa;border-radius:8px;min-height:100%;box-sizing:border-box;box-shadow:0 12px 36px rgba(0,0,0,.4);padding:24px 22px;color:#1a1a1a;">
       <div style="font-family:var(--font-mono);font-size:11px;color:#999;margin-bottom:14px;" data-bind="viewFile.name">dashboard-port-plan.md</div>
       <h1 style="font-size:20px;font-weight:700;letter-spacing:-.02em;margin:0 0 12px;" data-bind="viewFile.title">Dashboard port plan</h1>
       <div style="font-size:13.5px;line-height:1.6;color:#333;" data-html="viewFile.bodyHtml"><p style="margin:0;">Port CV6 to mobile parity: dynamic viewport units, safe-area insets, the side menu, and the swipe-deck Catch Up.</p></div>
