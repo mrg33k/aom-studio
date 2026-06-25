@@ -142,11 +142,40 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
   projects.count = projects.length;
   projects.moreCount = 0;
 
+  // Recently active (Patrik 2026-06-25): rooms mixed — missions + project chats + agent
+  // threads — newest activity first, above Projects. The arrow nav starts here. Mission-level
+  // recency comes from the inbox feed (it carries missionSlug + timestamp); project-level
+  // recency comes from projectRooms.last_message_at (read or unread). Merge by room key, keep
+  // the freshest per room, sort desc, top 6. Real data only — no fabricated rows.
+  const recentMap = {};
+  const bump = (key, entry) => { if (!recentMap[key] || entry.ts > recentMap[key].ts) recentMap[key] = entry; };
+  for (const it of inboxItems || []) {
+    const ts = it.timestamp ? new Date(it.timestamp).getTime() : 0;
+    if (it.missionSlug) {
+      const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
+      bump('m:' + it.missionSlug, { key: 'm:' + it.missionSlug, id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: missionLabel(it.missionSlug) || it.missionSlug, sub: pn || 'Mission', ts });
+    } else if (it.project) {
+      bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts });
+    } else if (it.agent) {
+      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: titleForAgent(it.agent), sub: 'Direct chat', ts });
+    }
+  }
+  for (const p of projectRooms || []) {
+    if (!p.last_message_at || !p.slug) continue;
+    bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at });
+  }
+  const recent = Object.values(recentMap)
+    .sort((a, b) => b.ts - a.ts)
+    .slice(0, 6)
+    .map((r) => ({ ...r, initials: initials(r.name), tint: tintFor(r.name), age: relTime(r.ts), status: (Date.now() - r.ts) < 3600000 ? 'live' : 'ready' }));
+  recent.count = recent.length;
+
   // honest convo column: real header off the first agent room, empty goal body.
   const lead = agentRooms[0] || { name: '', initials: '' };
   const data = {
     rooms: { total: agentRooms.length + projects.length },
     agents: agentRooms,
+    recent,
     projects,
     catchUp,
     room: { name: lead.name || 'Your rooms', initials: lead.initials || '·', count: '', statusText: '', project: '', mission: '' },

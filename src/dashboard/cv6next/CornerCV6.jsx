@@ -173,7 +173,7 @@ function composeChatMobile(withGoal) {
 
 // ── Home (desktop + mobile share one data shape + one set of actions) ──
 const HOME_ALIASES = {
-  agents: 'room', projects: 'room',
+  agents: 'room', projects: 'room', recent: 'rec',
   'room.missions': 'mission',
   'catchUp.rest': 'card',
   'catchUp.current.actionItems': 'actionItem',
@@ -450,6 +450,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // null = no room open. 'col3' = room displayed in Conversation col. 'full' = full Chat opened.
   const [knavRoomOpenState, setKnavRoomOpenState] = useState(null);
   const [knavOpenedRoom, setKnavOpenedRoom] = useState(null); // shape: { id, name, initials, isProject, ... }
+  // The key (a:<id> / rec:<key> / p:<slug> / m:<missionSlug>) of the node currently shown in
+  // col3, so a second → on the SAME node opens its full chat (Patrik 2026-06-25 arrow spec).
+  const [knavOpenedKey, setKnavOpenedKey] = useState(null);
+  // navNodes is the single ordered list the arrow keys walk (recent + agents + projects +
+  // each expanded project's missions), kept in a ref so the keydown handler reads the live
+  // list without re-subscribing. Built in render from the same data the rows render from.
+  const navNodesRef = useRef([]);
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
@@ -478,83 +485,52 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       );
       if (isTextInput) return;
 
-      const agentsList = agentsOpen ? (data.agents || []) : [];
-      const projectsList = projShowAll
-        ? (data.projects || [])
-        : (data.projects || []).slice(0, PROJ_LIMIT);
-      const totalLen = agentsList.length + projectsList.length;
+      const nodes = navNodesRef.current || [];
+      if (!nodes.length) return;
+      const openCol3 = (node) => { setKnavOpenedRoom(node.roomObj); setKnavRoomOpenState('col3'); setKnavOpenedKey(node.key); };
+      const openFull = (node) => { onOpenRoom?.(node.roomObj, worldId); setKnavRoomOpenState('full'); };
 
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setKnavSelectedIdx((prev) => {
-          let next = prev - 1;
-          if (next < 0) next = totalLen - 1; // wrap to end
-          return next;
-        });
-        setKnavRoomOpenState(null); // reset open state on nav
+        setKnavSelectedIdx((prev) => (prev <= 0 ? 0 : prev - 1)); // move only; folder + col3 persist
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setKnavSelectedIdx((prev) => {
-          let next = prev + 1;
-          if (next >= totalLen) next = 0; // wrap to start
-          return next;
-        });
-        setKnavRoomOpenState(null); // reset open state on nav
+        // Start at the top (recent) from nothing, then step down — into a project's missions
+        // when its folder is open (they sit right under it in navNodes).
+        setKnavSelectedIdx((prev) => (prev < 0 ? 0 : Math.min(prev + 1, nodes.length - 1)));
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        // First → opens quick chat in col 3. Second → opens full Chat.
-        if (knavSelectedIdx >= 0 && knavSelectedIdx < totalLen) {
-          if (knavRoomOpenState === 'col3') {
-            // Second →: open full Chat
-            let roomObj;
-            if (knavSelectedIdx < agentsList.length) {
-              const agent = agentsList[knavSelectedIdx];
-              roomObj = agent;
-            } else {
-              const projIdx = knavSelectedIdx - agentsList.length;
-              const proj = projectsList[projIdx];
-              roomObj = {
-                id: proj.slug || proj.id,
-                name: proj.name,
-                initials: (proj.name || '?').slice(0, 2).toUpperCase(),
-                isProject: true,
-                status: proj.status || 'ready',
-                statusText: 'project chat'
-              };
-            }
-            onOpenRoom?.(roomObj, worldId);
-            setKnavRoomOpenState('full');
+        if (knavSelectedIdx < 0 || knavSelectedIdx >= nodes.length) { setKnavSelectedIdx(0); return; }
+        const node = nodes[knavSelectedIdx];
+        if (node.kind === 'project') {
+          const expanded = expandedHomeProjects.has(node.id);
+          if (!expanded) {
+            // First → on a project: fan the folder open AND open its chat in col3.
+            setExpandedHomeProjects((prev) => { const n = new Set(prev); n.add(node.id); return n; });
+            openCol3(node);
+          } else if (knavOpenedKey === node.key && knavRoomOpenState === 'col3') {
+            openFull(node); // → again on the same project (nothing typed): full chat tool
           } else {
-            // First →: open quick chat in col 3
-            let roomObj;
-            if (knavSelectedIdx < agentsList.length) {
-              const agent = agentsList[knavSelectedIdx];
-              roomObj = agent;
-            } else {
-              const projIdx = knavSelectedIdx - agentsList.length;
-              const proj = projectsList[projIdx];
-              roomObj = {
-                id: proj.slug || proj.id,
-                name: proj.name,
-                initials: (proj.name || '?').slice(0, 2).toUpperCase(),
-                isProject: true,
-                status: proj.status || 'ready',
-                statusText: 'project chat'
-              };
-            }
-            setKnavOpenedRoom(roomObj);
-            setKnavRoomOpenState('col3');
+            openCol3(node);
           }
+        } else if (knavOpenedKey === node.key && knavRoomOpenState === 'col3') {
+          openFull(node); // → again on a recent/mission/agent already in col3: full chat tool
+        } else {
+          openCol3(node); // first → on a recent/mission/agent: quick chat in col3
         }
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        // First ← closes full Chat back to col3. Second ← clears col3 and deselects.
+        const node = (knavSelectedIdx >= 0 && knavSelectedIdx < nodes.length) ? nodes[knavSelectedIdx] : null;
         if (knavRoomOpenState === 'full') {
-          setKnavRoomOpenState('col3');
+          setKnavRoomOpenState('col3'); // ← out of the full chat tool, back to the col3 list
+        } else if (node && node.kind === 'project' && expandedHomeProjects.has(node.id)) {
+          // ← on an open folder closes it; selection stays so ↓ goes to the next project.
+          setExpandedHomeProjects((prev) => { const n = new Set(prev); n.delete(node.id); return n; });
+          setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null);
         } else if (knavRoomOpenState === 'col3') {
-          setKnavRoomOpenState(null);
-          setKnavOpenedRoom(null);
-          setKnavSelectedIdx(-1);
+          setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null);
+        } else {
+          setKnavSelectedIdx(-1); // nothing open -> deselect (back to the top)
         }
       }
     };
@@ -562,7 +538,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDesktop, agentsOpen, projShowAll, data.agents, data.projects, knavSelectedIdx, knavRoomOpenState, onOpenRoom, worldId]);
+  }, [isDesktop, knavSelectedIdx, knavRoomOpenState, knavOpenedKey, expandedHomeProjects, onOpenRoom, worldId]);
 
   const openNewMission = () => {
     if (!openedProject) return;
@@ -584,28 +560,62 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       }
       onNav?.(target);
     },
-    // Tap an agent -> open its real conversation (Chat). Tap a project on mobile ->
-    // its mission list (state B). On desktop, desktop Chat now exists, so a project
-    // tap opens its conversation on the right (consistent with an agent tap).
+    // Tap an agent/project on Home. Desktop: open it in the col3 "quick reply room" (stay on
+    // Home), NOT a jump to the full chat tool (Patrik 2026-06-25: a click should open the quick
+    // reply room). Mobile keeps its own project-detail screen. A second open / the keyboard's
+    // second → takes you into the full chat tool.
     openRoom: (id) => {
       const agent = (data.agents || []).find((a) => a.id === id);
-      if (agent) { onOpenRoom?.(agent, worldId); return; }
+      if (agent) {
+        if (isDesktop) { setKnavOpenedRoom(agent); setKnavRoomOpenState('col3'); setKnavOpenedKey(`a:${agent.id}`); }
+        else onOpenRoom?.(agent, worldId);
+        return;
+      }
       const proj = (data.projects || []).find((p) => p.id === id);
       if (!proj) return;
       if (isDesktop) {
-        onOpenRoom?.({ id: proj.slug || proj.id, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: proj.status || 'ready', statusText: 'project chat' }, worldId);
+        const roomObj = { id: proj.slug || proj.id, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: proj.status || 'ready', statusText: 'project chat' };
+        setKnavOpenedRoom(roomObj); setKnavRoomOpenState('col3'); setKnavOpenedKey(`p:${proj.id}`);
+        setExpandedHomeProjects((prev) => { const n = new Set(prev); n.add(proj.id); return n; });
       } else {
         setOpenedProjectId(id);
       }
     },
-    // Desktop Home: tap a project folder to fan its missions open inline (mobile keeps its
-    // own project-detail screen via openRoom above).
+    // Tap a recently-active row -> open it in the col3 quick reply room (desktop) or its real
+    // conversation (mobile). Keyed lookup so a project slug and an agent id never collide.
+    openRecent: (key) => {
+      const r = (data.recent || []).find((x) => x.key === key || x.id === key);
+      if (!r) return;
+      let roomObj;
+      if (r.kind === 'mission') {
+        const slug = String(r.missionSlug || '');
+        roomObj = { id: slug.split(':').pop(), name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: slug, projectSlug: slug.split(':')[0], status: 'ready', statusText: r.sub || slug.split(':')[0] };
+      } else if (r.kind === 'project') {
+        roomObj = { id: r.project, name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: 'ready', statusText: 'project chat' };
+      } else {
+        roomObj = (data.agents || []).find((a) => a.id === r.agent) || { id: r.agent || r.id, name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), status: 'ready' };
+      }
+      if (isDesktop) { setKnavOpenedRoom(roomObj); setKnavRoomOpenState('col3'); setKnavOpenedKey(`rec:${r.key}`); }
+      else onOpenRoom?.(roomObj, worldId);
+    },
+    // Desktop Home: tap a project folder to fan its missions open inline AND open its chat in
+    // col3. Mobile keeps its own project-detail screen.
     toggleProjectMissions: (id) => {
       if (!isDesktop) { setOpenedProjectId(id); return; }
-      setExpandedHomeProjects((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+      const proj = (data.projects || []).find((p) => p.id === id);
+      setExpandedHomeProjects((prev) => {
+        const n = new Set(prev);
+        if (n.has(id)) { n.delete(id); setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null); }
+        else {
+          n.add(id);
+          if (proj) { setKnavOpenedRoom({ id: proj.slug || proj.id, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: proj.status || 'ready', statusText: 'project chat' }); setKnavRoomOpenState('col3'); setKnavOpenedKey(`p:${id}`); }
+        }
+        return n;
+      });
     },
     showAllMissions: (id) => setMissionShowAll((prev) => (prev.has(id) ? prev : new Set(prev).add(id))),
-    // Tap a mission row -> open that mission's own chat (desktop Chat).
+    // Tap a mission row -> open that mission in the col3 quick reply room (desktop) or its real
+    // chat (mobile).
     openMissionRow: (id) => {
       const missionSlug = String(id || '');
       if (!missionSlug) return;
@@ -615,7 +625,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       const m = list.find((x) => (String(x.slug || '').includes(':') ? x.slug : `${projectSlug}:${x.slug}`) === missionSlug);
       const rawName = String(m?.name || missionSlug.split(':').pop() || '');
       const name = rawName.includes(':') ? rawName.slice(rawName.lastIndexOf(':') + 1).trim() : rawName;
-      onOpenRoom?.({ id: missionSlug.split(':').pop(), name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug, status: 'ready', statusText: proj?.name || projectSlug }, worldId);
+      const roomObj = { id: missionSlug.split(':').pop(), name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug, status: 'ready', statusText: proj?.name || projectSlug };
+      if (isDesktop) { setKnavOpenedRoom(roomObj); setKnavRoomOpenState('col3'); setKnavOpenedKey(`m:${missionSlug}`); }
+      else onOpenRoom?.(roomObj, worldId);
     },
     toggleAgents: () => setAgentsOpen((o) => !o),
     openCatchUp: () => { setCatchUpIndex(0); setCatchUpOpen(true); },
@@ -698,7 +710,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker]);
+  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),
@@ -786,40 +798,62 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   projShown.moreCount = projShowAll ? 0 : Math.max(0, allProjects.length - PROJ_LIMIT);
   projShown.moreState = projShown.moreCount > 0 ? 'has' : 'none';
 
-  // Keyboard nav: tag each agent/project row with its selected state.
-  // Index 0..agentsLen-1 are agents, agentsLen..end are projects.
+  // Build the navigable model the arrow keys walk, in the SAME visual order the rows render:
+  // agents (when open) -> recent -> each project (and its missions when the folder is open).
+  // navNodes is the single source of truth; the rows tag knavSel from the selected node's key,
+  // and the keydown handler reads navNodes via navNodesRef. (Patrik 2026-06-25 arrow spec.)
+  const recentList = data.recent || [];
   const agentsList = agentsOpen ? (data.agents || []) : [];
-  const agentsLen = agentsList.length;
-  const agentsWithNav = agentsList.map((a, i) => ({
-    ...a,
-    knavSel: knavSelectedIdx === i ? 'sel' : 'off',
-  }));
-  // Fan-open missions per project (desktop): when a folder is open, attach its real missions
-  // (capped at HOME_MISSION_CAP, "show N more" reveals the rest). Collapsed -> empty list.
   const HOME_MISSION_CAP = 8;
   const missionDotStatus = (s) => (['running', 'building', 'active'].includes(String(s || '').toLowerCase()) ? 'live' : 'ready');
-  // The project is already the folder above, so drop a "Parent:" prefix from the mission name
-  // (e.g. "Andocia Deal:Deal Shape" -> "Deal Shape"). Clean names pass through untouched.
+  // The project is already the folder above, so drop a "Parent:" prefix from the mission name.
   const missionLabelClean = (n) => { const s = String(n || ''); return (s.includes(':') ? s.slice(s.lastIndexOf(':') + 1).trim() : s) || s; };
-  const projectsWithNav = projShown.map((p, i) => {
+  const projRoomObj = (p) => ({ id: p.slug || p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status || 'ready', statusText: 'project chat' });
+  const missionRoomObj = (missionSlug, name, projName) => { const slug = String(missionSlug || ''); const short = missionLabelClean(name || slug.split(':').pop()); return { id: slug.split(':').pop(), name: short, initials: (short || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: slug, projectSlug: slug.split(':')[0], status: 'ready', statusText: projName || slug.split(':')[0] }; };
+  const recentRoomObj = (r) => {
+    if (r.kind === 'mission') return missionRoomObj(r.missionSlug, r.name, r.sub);
+    if (r.kind === 'project') return projRoomObj({ slug: r.project, name: r.name });
+    return (data.agents || []).find((a) => a.id === r.agent) || { id: r.agent || r.id, name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), status: 'ready' };
+  };
+
+  // per-project fan-open missions (only when the folder is open)
+  const projShownNodes = projShown.map((p) => {
     const open = expandedHomeProjects.has(p.id);
     const raw = open ? (missionsByProject[p.slug] || []) : [];
     const showAll = missionShowAll.has(p.id);
     const shown = showAll ? raw : raw.slice(0, HOME_MISSION_CAP);
     const more = open && !showAll ? Math.max(0, raw.length - HOME_MISSION_CAP) : 0;
-    return {
-      ...p,
-      knavSel: knavSelectedIdx === agentsLen + i ? 'sel' : 'off',
-      caret: open ? 'open' : 'closed',
-      missions: shown.map((m) => ({
-        id: String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`,
-        name: missionLabelClean(m.name || m.slug),
-        status: missionDotStatus(m.status),
-      })),
-      moreCount: more,
-      moreState: more > 0 ? 'has' : 'none',
-    };
+    const missions = shown.map((m) => {
+      const id = String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`;
+      return { id, name: missionLabelClean(m.name || m.slug), status: missionDotStatus(m.status), roomObj: missionRoomObj(id, m.name, p.name) };
+    });
+    return { p, open, missions, more };
   });
+
+  // assemble navNodes (visual order) and stash for the keydown handler
+  const navNodes = [];
+  for (const a of agentsList) navNodes.push({ key: `a:${a.id}`, kind: 'agent', roomObj: a });
+  for (const r of recentList) navNodes.push({ key: `rec:${r.key}`, kind: 'recent', roomObj: recentRoomObj(r) });
+  for (const pn of projShownNodes) {
+    navNodes.push({ key: `p:${pn.p.id}`, kind: 'project', id: pn.p.id, roomObj: projRoomObj(pn.p) });
+    if (pn.open) for (const m of pn.missions) navNodes.push({ key: `m:${m.id}`, kind: 'mission', roomObj: m.roomObj });
+  }
+  navNodesRef.current = navNodes;
+  const selectedKey = (knavSelectedIdx >= 0 && knavSelectedIdx < navNodes.length) ? navNodes[knavSelectedIdx].key : null;
+
+  // tag rows from the selected node's key
+  const recentWithNav = recentList.map((r) => ({ ...r, knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off' }));
+  recentWithNav.count = recentList.count != null ? recentList.count : recentWithNav.length;
+  recentWithNav.has = recentWithNav.length ? 'has' : 'none';
+  const agentsWithNav = agentsList.map((a) => ({ ...a, knavSel: selectedKey === `a:${a.id}` ? 'sel' : 'off' }));
+  const projectsWithNav = projShownNodes.map((pn) => ({
+    ...pn.p,
+    knavSel: selectedKey === `p:${pn.p.id}` ? 'sel' : 'off',
+    caret: pn.open ? 'open' : 'closed',
+    missions: pn.missions.map((m) => ({ id: m.id, name: m.name, status: m.status, knavSel: selectedKey === `m:${m.id}` ? 'sel' : 'off' })),
+    moreCount: pn.more,
+    moreState: pn.more > 0 ? 'has' : 'none',
+  }));
 
   // When a room is opened via keyboard nav, override the room/goal data for col3 display
   const displayedRoom = knavOpenedRoom || data.room || { name: '', initials: '', statusText: '', status: 'ready' };
@@ -833,6 +867,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     agents: agentsWithNav,
     agentsTotal,
     agentsOpen: agentsOpen ? 'open' : 'closed',
+    recent: recentWithNav,
     projects: projectsWithNav,
     room: displayedRoom,
     goal: displayedGoal,

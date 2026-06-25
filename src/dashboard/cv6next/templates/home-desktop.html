@@ -114,6 +114,13 @@
           <!-- ONE row per curated agent (titles), shown only while the accordion is open -->
           <div class="room agentrow" data-each="agents" data-action="openRoom" data-arg="room.id" data-mod="knav:room.knavSel"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" style="font-weight:500;" data-bind="room.name">Web</span><span style="font-size:11px;color:var(--accent);font-weight:600;" data-bind="room.statusText">on step 3</span><span class="kbd" style="margin-left:8px;">→</span></div>
         </div>
+        <div class="recentsec" data-mod="is-:recent.has">
+          <div class="subhdr" style="margin-top:2px;">Recently active</div>
+          <div style="margin-bottom:16px;">
+            <!-- ONE row per recently-active room (mission / project chat / agent thread), newest first -->
+            <div class="room recentrow" data-each="recent" data-action="openRecent" data-arg="rec.key" data-mod="knav:rec.knavSel"><span class="sdot is-ready" data-mod="is-:rec.status" style="flex:none;"></span><span class="rn" style="font-weight:500;" data-bind="rec.name">Deal Bank</span><span style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="rec.sub">Space Rising</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:var(--faint);flex:none;" data-bind="rec.age">2h</span><span class="kbd" style="margin-left:8px;flex:none;">→</span></div>
+          </div>
+        </div>
         <div class="subhdr">Projects · <span data-bind="projects.count">84</span></div>
         <!-- ONE block per project: the folder row (tap to fan open its missions) + the mission
              list (only rendered when expanded; tap a mission to open its chat). -->
@@ -125,7 +132,7 @@
             <span style="font-size:11.5px;color:var(--muted);" data-bind="room.count">28</span>
           </div>
           <div class="misslist" data-mod="is-:room.caret">
-            <div class="room missrow" data-each="room.missions" data-action="openMissionRow" data-arg="mission.id"><span class="sdot is-ready" data-mod="is-:mission.status" style="flex:none;"></span><span class="rn" data-bind="mission.name">Mission</span></div>
+            <div class="room missrow" data-each="room.missions" data-action="openMissionRow" data-arg="mission.id" data-mod="knav:mission.knavSel"><span class="sdot is-ready" data-mod="is-:mission.status" style="flex:none;"></span><span class="rn" data-bind="mission.name">Mission</span></div>
             <div class="missmore" data-mod="is-:room.moreState" data-action="showAllMissions" data-arg="room.id">Show <span data-bind="room.moreCount">0</span> more</div>
           </div>
         </div>

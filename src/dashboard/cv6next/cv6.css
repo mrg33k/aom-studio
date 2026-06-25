@@ -865,6 +865,8 @@
 [data-cv6] .cstat-spin.is-adding { display:inline-flex; animation:spin 1.05s linear infinite; color:var(--accent); }
 [data-cv6] .cstat-check { display:none; }
 [data-cv6] .cstat-check.is-added { display:inline-flex; color:var(--success); }
+/* Recently active (Patrik 2026-06-25): hide the whole section when there is no recent activity. */
+[data-cv6] .recentsec.is-none { display:none; }
 
 /* Catch-up card: an attachment-delivery message (contentState='file') swaps the text
    summary for the file chip + Review below, so hide the summary paragraph on file cards
