@@ -45,6 +45,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/r5",
+      "destination": "/index.html"
+    },
+    {
       "source": "/cv2",
       "destination": "/cv2.html"
     },
