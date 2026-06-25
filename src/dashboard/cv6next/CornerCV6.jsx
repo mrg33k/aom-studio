@@ -935,6 +935,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         target={knavOpenedRoom ? composerHost : null}
         room={knavOpenedRoom}
         worldId={worldId}
+        agents={data.agents}
         quickSend={quickSend}
         onClose={() => { setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null); }}
       />

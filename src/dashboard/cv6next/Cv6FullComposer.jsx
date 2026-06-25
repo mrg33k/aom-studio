@@ -14,9 +14,10 @@
 // transcripts, and generated images post straight into the room (scoped by
 // project / mission / agent) and surface via the thread's poll.
 
-import { Component, useCallback, useMemo, useRef, useState } from 'react';
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useCornerAuth, useCornerData } from '../CornerContext.jsx';
+import { CornerNavProvider } from '../CornerContext.jsx';
+import { supabase } from '../lib/supabase.js';
 import { authFetch } from '../lib/authFetch.js';
 import {
   ChatCoreProvider,
@@ -59,10 +60,18 @@ function mapRoom(room, agents) {
   };
 }
 
-function Cv6FullComposerInner({ target, room, worldId: worldIdProp, quickSend, onClose }) {
-  const { currentUser, worldId: worldIdAuth } = useCornerAuth();
-  const { agents } = useCornerData();
-  const worldId = worldIdProp || worldIdAuth;
+function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [] }) {
+  // CornerCV6 is NOT mounted under the CV4 Corner context providers (it uses
+  // useHome/useDataPipe standalone), so we can't read useCornerAuth/Data here —
+  // worldId + agents come in as props and the user comes straight from supabase.
+  const [currentUser, setCurrentUser] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    if (supabase?.auth?.getUser) {
+      supabase.auth.getUser().then(({ data }) => { if (alive) setCurrentUser(data?.user || null); }).catch(() => {});
+    }
+    return () => { alive = false; };
+  }, []);
 
   const { selectedAgent, selectedProject } = useMemo(() => mapRoom(room, agents), [room, agents]);
   const currentChatKey = selectedAgent?.slug || (selectedProject ? `project:${selectedProject.slug}` : 'home');
@@ -176,10 +185,14 @@ function Cv6FullComposerInner({ target, room, worldId: worldIdProp, quickSend, o
   const [embedModalMission, setEmbedModalMission] = useState(null);
   const settingsValue = useMemo(() => ({ ...settings, embedModalMission, setEmbedModalMission }), [settings, embedModalMission]);
   const ctxMenuValue = useMemo(() => ({ replyTo, setReplyTo }), [replyTo]);
+  // ThreadInputBar reads useCornerNav (activeTool / selectedMail), which is absent
+  // under CornerCV6 — supply a minimal nav so the Mail-chip branch stays inert.
+  const navValue = useMemo(() => ({ activeTool: 'chat', selectedMail: null, setSelectedMail: () => {} }), []);
 
   if (!target || !room) return null;
 
   return createPortal(
+    <CornerNavProvider value={navValue}>
     <ChatCoreProvider value={coreValue}>
       <ChatMessagesProvider value={messagesValue}>
         <ChatVoiceProvider value={voiceValue}>
@@ -217,20 +230,52 @@ function Cv6FullComposerInner({ target, room, worldId: worldIdProp, quickSend, o
           </ChatRecordingProvider>
         </ChatVoiceProvider>
       </ChatMessagesProvider>
-    </ChatCoreProvider>,
+    </ChatCoreProvider>
+    </CornerNavProvider>,
+    target,
+  );
+}
+
+// Minimal always-works composer: the boundary's fallback so the quick-reply box
+// NEVER vanishes, even if the full CV4 bridge throws. Plain text input + send,
+// posting through the same useRoomThread send the col3 thread uses.
+function MiniComposer({ target, room, quickSend }) {
+  const [val, setVal] = useState('');
+  if (!target || !room) return null;
+  const send = () => { const t = val.trim(); if (t && typeof quickSend === 'function') { quickSend(t); setVal(''); } };
+  return createPortal(
+    <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)' }}>
+      <input
+        value={val}
+        onChange={(e) => setVal(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+        placeholder="Message this room…"
+        style={{ flex: 1, minWidth: 0, height: 40, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 13px', color: 'var(--fg)', fontFamily: 'var(--font-sans)', fontSize: 14, outline: 'none' }}
+      />
+      <button onClick={send} title="Send" style={{ width: 40, height: 40, borderRadius: 11, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" /></svg>
+      </button>
+    </div>,
     target,
   );
 }
 
 // The provider bridge renders CV4's real composer against hand-built context
 // values; a missing field would otherwise throw and take down the whole Home
-// tree when a room opens. The boundary degrades that to "no composer" instead.
+// tree when a room opens. The boundary degrades that to the MiniComposer so the
+// box is always present and usable, never absent.
 class Cv6FullComposer extends Component {
   constructor(props) { super(props); this.state = { failed: false }; }
   static getDerivedStateFromError() { return { failed: true }; }
-  componentDidCatch(err) { try { console.error('[Cv6FullComposer] render failed:', err); } catch (_) { /* noop */ } }
+  componentDidCatch(err) { try { console.error('[Cv6FullComposer] render failed, falling back to MiniComposer:', err); } catch (_) { /* noop */ } }
   componentDidUpdate(prev) { if (this.state.failed && prev.room?.id !== this.props.room?.id) this.setState({ failed: false }); }
-  render() { return this.state.failed ? null : <Cv6FullComposerInner {...this.props} />; }
+  render() {
+    if (this.state.failed) {
+      const { target, room, quickSend } = this.props;
+      return <MiniComposer target={target} room={room} quickSend={quickSend} />;
+    }
+    return <Cv6FullComposerInner {...this.props} />;
+  }
 }
 
 export default Cv6FullComposer;
