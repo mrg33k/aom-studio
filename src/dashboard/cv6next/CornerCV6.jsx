@@ -9,6 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
+import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
@@ -38,6 +39,28 @@ import commandRaw from './templates/command.html?raw';
 import trackerRaw from './templates/tracker.html?raw';
 import chatListRaw from './templates/chat-list.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
+
+// Turn a project's stored summary markdown into a clean 1-2 sentence room blurb for the
+// catch-up card. Strips markdown (headers, bullets, links, emphasis), collapses whitespace,
+// then takes the first one or two sentences (capped) so the card reads as a real summary.
+function roomSummarySentences(md, max = 2) {
+  // Use only the FIRST paragraph (the status line). summary_md is a status line followed by a
+  // [done]/[failed] task bullet list; pulling the bullets would leak "done ..." into the card.
+  const firstPara = String(md || '').split(/\n\s*\n/)[0] || '';
+  let s = firstPara
+    .replace(/```[\s\S]*?```/g, ' ')        // code fences
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')   // images
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')  // links -> text
+    .replace(/\s*[—–]\s*/g, ', ')             // em/en dash -> comma (on-brand, no dashes)
+    .replace(/[#>*_`~]+/g, ' ')               // md punctuation (keep hyphens inside words)
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!s) return '';
+  const parts = s.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [s];
+  let out = parts.slice(0, max).join(' ').trim();
+  if (out.length > 240) out = out.slice(0, 237).trimEnd() + '…';
+  return out;
+}
 
 // ── viewport: desktop layout at >=900px, the phone layout below ──
 function useIsDesktop() {
@@ -208,6 +231,37 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       items: all.map((c, i) => ({ ...c, deckState: i === idx ? 'current' : (i < idx ? 'prev' : 'next') })),
     };
   }, [data.catchUp, catchUpDismissed, catchUpIndex]);
+
+  // Real room summary for the current catch-up card (Patrik: an actual 1-2 sentence summary
+  // of what's happening in that room, not the message's first line). Pulls the daemon-written
+  // project summary (open items, recent wins, last intent) for the current card's project and
+  // caches it per slug. Agent-thread cards (no project) keep the message preview. File cards
+  // keep the file chip. (project-summary is the same source the CV4 home/Tasks panel uses.)
+  const [roomSummaries, setRoomSummaries] = useState({});
+  const curProject = liveCatchUp.current?.project || '';
+  useEffect(() => {
+    if (!curProject || roomSummaries[curProject] !== undefined) return undefined;
+    let alive = true;
+    authFetch('/api/dashboard/project-summary?slug=' + encodeURIComponent(curProject))
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((j) => {
+        if (!alive) return;
+        const p = j?.event?.payload || {};
+        const text = roomSummarySentences(p.summary_md || p.last_human_intent || '');
+        setRoomSummaries((m) => ({ ...m, [curProject]: text }));
+      })
+      .catch(() => { if (alive) setRoomSummaries((m) => ({ ...m, [curProject]: '' })); });
+    return () => { alive = false; };
+  }, [curProject, roomSummaries]);
+
+  // Inject the real summary onto the current text card (never override a file card).
+  const liveCatchUpView = useMemo(() => {
+    const real = roomSummaries[curProject];
+    const cur = liveCatchUp.current;
+    if (!real || !cur || cur.contentState === 'file') return liveCatchUp;
+    return { ...liveCatchUp, current: { ...cur, summary: real } };
+  }, [liveCatchUp, roomSummaries, curProject]);
+
   // Agents accordion (top of Home): one "Agents" row that expands its roster in place,
   // default collapsed so the front door stays calm. (Decided 2026-06-23.)
   const [agentsOpen, setAgentsOpen] = useState(false);
@@ -443,7 +497,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   if (catchUpOpen) {
     // Real inbox cards minus anything cleared on this device; empty shows an honest
     // "all caught up" card, never fabricated activity (liveCatchUp shapes it).
-    const catchUpData = { catchUp: liveCatchUp };
+    const catchUpData = { catchUp: liveCatchUpView };
     return <TemplateScreen html={catchUpHtml} data={catchUpData} actions={actions} state="ready"
       aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
   }
@@ -495,7 +549,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
 
   const homeData = {
     ...data,
-    catchUp: liveCatchUp,
+    catchUp: liveCatchUpView,
     agents: agentsWithNav,
     agentsTotal,
     agentsOpen: agentsOpen ? 'open' : 'closed',
