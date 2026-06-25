@@ -77,10 +77,9 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
               <div style={{ flex: 1, overflowY: 'auto', padding: 22 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                   <div className={`ava is-${selected.avatarTint || 'violet'}`} style={{ width: 34, height: 34, fontSize: 12, flex: 'none' }}>{selected.initials || '·'}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{(selected.snippet || '').split(' · ')[0] || 'Sender'}</div><div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.time}</div></div>
-                  {(selected.tags || []).map((t, i) => <span key={i} style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', padding: '4px 9px', borderRadius: 6 }}>{t.label}</span>)}
+                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{selected.sender || 'Sender'}</div><div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.senderSub || selected.time}</div></div>
                 </div>
-                <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--fg)', margin: 0 }}>{(selected.snippet || '').split(' · ').slice(1).join(' · ') || selected.snippet}</p>
+                <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--fg)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{selected.body || selected.snippet || 'No message body.'}</p>
                 <div style={{ marginTop: 22, display: 'flex', alignItems: 'flex-start', gap: 9, background: 'var(--warn-weak)', borderRadius: 10, padding: '11px 13px' }}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: 1 }}><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" /></svg>
                   <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--fg)' }}>Replies go out through your Mail room, which holds for your go-ahead before anything sends. Open this ask in Mail to answer it.</div>

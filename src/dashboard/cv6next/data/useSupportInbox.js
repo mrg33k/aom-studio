@@ -73,7 +73,7 @@ export function useSupportInbox(worldId = 'aom') {
       // thread-view fields (P9): real sender + full original message; no fabricated thread history
       sender: w.name || w.email || 'Someone', senderSub: `to you · ${w.email ? 'Support' : 'Support'}`,
       body: String(w.message || '').trim(), threadCount: 1,
-      tags: [{ label: 'REAL', kind: 'live' }],
+      tags: [],
     };
     if (w.status === 'resolved') watching.push({ id: w.id, subject: item.subject, time: item.time, snippet: item.snippet, sender: item.sender, senderSub: item.senderSub, body: item.body, threadCount: 1 });
     else needsYou.push(item);
@@ -92,7 +92,7 @@ export function useSupportInbox(worldId = 'aom') {
       const body = String(it.lastInbound?.body || it.lastInbound?.snippet || it.snippet || '').trim();
       const threadCount = it.messageCount || (Array.isArray(it.messages) ? it.messages.length : 1) || 1;
       if (kind === 'need') {
-        needsYou.push({ id, initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, body, threadCount, tags: [{ label: 'REAL', kind: 'live' }] });
+        needsYou.push({ id, initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, body, threadCount, tags: [] });
       } else {
         watching.push({ id, subject, time, snippet, sender, senderSub, body, threadCount });
       }
