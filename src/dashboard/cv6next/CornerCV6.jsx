@@ -313,7 +313,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const [replyOpen, setReplyOpen] = useState(false);
   const curCardRef = useRef(null);
   curCardRef.current = liveCatchUpView.current;
-  useEffect(() => { setReplyOpen(false); }, [curProject, catchUpIndex]); // reset on card change
+  useEffect(() => { setReplyOpen(false); setTrackerStatus(null); }, [curProject, catchUpIndex]); // reset on card change
   const sendCatchupReply = useCallback(async (text) => {
     const body = String(text || '').trim();
     const card = curCardRef.current;
@@ -347,14 +347,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // existing vs create-new. trackerSheet holds the open-drawer state; trackerToast is the
   // transient "Added to <tracker>" confirmation (a real signal without faking a live screen).
   const [trackerSheet, setTrackerSheet] = useState(null);
-  const [trackerToast, setTrackerToast] = useState('');
-  const toastTimerRef = useRef(null);
-  const showTrackerToast = useCallback((msg) => {
-    setTrackerToast(msg);
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
-    toastTimerRef.current = setTimeout(() => setTrackerToast(''), 2400);
-  }, []);
-  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); }, []);
+  // The CARD itself reports the add (Patrik 2026-06-25): 'adding' shows a spinner the instant
+  // the button is tapped (immediate feedback, no waiting on the network), then 'added' flips to
+  // a check + "Added to <tracker>" before the handled card clears off the deck.
+  const [trackerStatus, setTrackerStatus] = useState(null); // null | 'adding' | 'added'
+  const [trackerAddedName, setTrackerAddedName] = useState('');
+  const trackerTimerRef = useRef(null);
+  useEffect(() => () => { if (trackerTimerRef.current) clearTimeout(trackerTimerRef.current); }, []);
 
   // Derive the mission identity + the item text from a catch-up card. A project card carries
   // project/missionSlug (from = project name, subject = mission name); an agent-thread card has
@@ -370,23 +369,30 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     return { name, scope, item };
   }, []);
 
-  // Finish an add: clear the handled card from the deck (replied/tracked = handled), close the
-  // drawer, and toast. Mirrors the dismiss path the reply Send uses.
+  // Finish an add: flip the card to its "Added to <tracker>" state, close any drawer, then
+  // after a beat clear the handled card from the deck (tracked = handled, same dismiss the
+  // reply Send uses). The card carries the confirmation, so there's no separate toast.
   const finishTrackerAdd = useCallback((card, trackerName) => {
     setTrackerSheet(null);
-    showTrackerToast(`Added to ${trackerName}`);
-    const id = card && card.id;
-    if (id) setCatchUpDismissed((prev) => {
-      const next = prev.includes(id) ? prev : [...prev, id];
-      try { localStorage.setItem('cv6.catchup.dismissed', JSON.stringify(next)); } catch { /* ignore */ }
-      return next;
-    });
-  }, [showTrackerToast]);
+    setTrackerAddedName(trackerName);
+    setTrackerStatus('added');
+    if (trackerTimerRef.current) clearTimeout(trackerTimerRef.current);
+    trackerTimerRef.current = setTimeout(() => {
+      setTrackerStatus(null);
+      const id = card && card.id;
+      if (id) setCatchUpDismissed((prev) => {
+        const next = prev.includes(id) ? prev : [...prev, id];
+        try { localStorage.setItem('cv6.catchup.dismissed', JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+      });
+    }, 1100);
+  }, []);
 
   const addToTracker = useCallback(async () => {
     const card = curCardRef.current;
     const target = trackerTargetForCard(card);
     if (!worldId || !target) return;
+    setTrackerStatus('adding'); // immediate feedback the instant the button is tapped
     // Pull existing mission trackers for THIS mission (name+scope composite key).
     let mine = [];
     try {
@@ -399,26 +405,29 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       // No tracker for this mission yet -> create it with the mission attached + add the item.
       const cj = await postTrackerApi({ action: 'create', world: worldId, name: target.name, scope: target.scope, template: 'mission' });
       const t = cj?.tracker;
-      if (t) { await postTrackerApi({ action: 'add-row', world: worldId, id: t.id, row: trackerRowForItem(t, target.item) }); finishTrackerAdd(card, target.name); }
+      if (t) { postTrackerApi({ action: 'add-row', world: worldId, id: t.id, row: trackerRowForItem(t, target.item) }); finishTrackerAdd(card, target.name); }
+      else setTrackerStatus(null); // create failed -> drop back to the action buttons
       return;
     }
-    // One+ exist -> open the bottom drawer (add-to-existing vs create-new).
+    // One+ exist -> the drawer is the feedback now; open it to pick existing vs create-new.
+    setTrackerStatus(null);
     setTrackerSheet({ card, target, missionLine: `${target.scope || 'Agent'} · ${target.name}`, trackers: mine });
   }, [worldId, trackerTargetForCard, finishTrackerAdd]);
 
   const trackerSheetActions = useMemo(() => ({
     closeTrackerSheet: () => setTrackerSheet(null),
-    pickTracker: async (id) => {
+    pickTracker: (id) => {
       const s = trackerSheet; if (!s) return;
       const t = (s.trackers || []).find((x) => x.id === id); if (!t) return;
-      await postTrackerApi({ action: 'add-row', world: worldId, id: t.id, row: trackerRowForItem(t, s.target.item) });
-      finishTrackerAdd(s.card, t.name);
+      postTrackerApi({ action: 'add-row', world: worldId, id: t.id, row: trackerRowForItem(t, s.target.item) });
+      finishTrackerAdd(s.card, t.name); // optimistic: confirm on the card, write in the background
     },
     newTrackerForItem: async () => {
       const s = trackerSheet; if (!s) return;
+      setTrackerStatus('adding');
       const cj = await postTrackerApi({ action: 'create', world: worldId, name: s.target.name, scope: s.target.scope, template: 'mission' });
-      const t = cj?.tracker; if (!t) return;
-      await postTrackerApi({ action: 'add-row', world: worldId, id: t.id, row: trackerRowForItem(t, s.target.item) });
+      const t = cj?.tracker; if (!t) { setTrackerStatus(null); return; }
+      postTrackerApi({ action: 'add-row', world: worldId, id: t.id, row: trackerRowForItem(t, s.target.item) });
       finishTrackerAdd(s.card, t.name);
     },
   }), [trackerSheet, worldId, finishTrackerAdd]);
@@ -571,12 +580,18 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       onNav?.(target);
     },
     // Tap an agent -> open its real conversation (Chat). Tap a project on mobile ->
-    // its mission list (state B). Project conversation on desktop waits for desktop Chat.
+    // its mission list (state B). On desktop, desktop Chat now exists, so a project
+    // tap opens its conversation on the right (consistent with an agent tap).
     openRoom: (id) => {
       const agent = (data.agents || []).find((a) => a.id === id);
       if (agent) { onOpenRoom?.(agent, worldId); return; }
       const proj = (data.projects || []).find((p) => p.id === id);
-      if (proj && !isDesktop) setOpenedProjectId(id);
+      if (!proj) return;
+      if (isDesktop) {
+        onOpenRoom?.({ id: proj.slug || proj.id, name: proj.name, initials: (proj.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: proj.status || 'ready', statusText: 'project chat' }, worldId);
+      } else {
+        setOpenedProjectId(id);
+      }
     },
     toggleAgents: () => setAgentsOpen((o) => !o),
     openCatchUp: () => { setCatchUpIndex(0); setCatchUpOpen(true); },
@@ -616,6 +631,25 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       if (v && v.trim()) sendCatchupReply(v);
     },
     addToTracker: () => addToTracker(), assignAgent: () => {}, snooze: () => {},
+    // "Go to room" (Patrik 2026-06-25, replacing the dead "Send to agent"): open the card's
+    // own conversation — the mission thread, else the project chat, else the agent thread.
+    goToRoom: () => {
+      const card = curCardRef.current;
+      if (!card) return;
+      if (card.missionSlug) {
+        const slug = String(card.missionSlug);
+        const missionSlug = slug.includes(':') ? slug : `${card.project}:${slug}`;
+        const name = card.subject || slug.split(':').pop();
+        onOpenRoom?.({ id: slug.split(':').pop(), name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug: card.project, status: 'ready', statusText: card.from }, worldId);
+        return;
+      }
+      if (card.project) {
+        onOpenRoom?.({ id: card.project, name: card.from, initials: (card.from || '?').slice(0, 2).toUpperCase(), isProject: true, status: 'ready', statusText: 'project chat' }, worldId);
+        return;
+      }
+      const agent = (data.agents || []).find((a) => a.id === card.agent) || { id: card.agent || card.id, name: card.from, initials: (card.from || '?').slice(0, 2).toUpperCase(), status: 'ready' };
+      onOpenRoom?.(agent, worldId);
+    },
     // Attachment cards: tapping the file (or Review) opens the Review tool, where the
     // delivered file is reviewed/approved. Real navigation, not a no-op.
     review: () => onNav?.('review'), openAttachment: () => onNav?.('review'),
@@ -667,33 +701,27 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // 'actions' = the suggested-action buttons, 'reply' = the inline reply composer.
   const catchUpRender = {
     ...liveCatchUpView,
-    footerState: !liveCatchUpView.count ? 'none' : (replyOpen ? 'reply' : 'actions'),
+    footerState: !liveCatchUpView.count ? 'none'
+      : trackerStatus === 'adding' ? 'adding'
+        : trackerStatus === 'added' ? 'added'
+          : (replyOpen ? 'reply' : 'actions'),
+    statusText: trackerStatus === 'added' ? `Added to ${trackerAddedName}` : 'Adding to tracker…',
   };
 
-  // Add-to-Tracker overlay: the pick-a-tracker bottom drawer + the transient "Added" toast.
-  // Rendered over whatever surface shows the catch-up card (Home + the full-deck), so the
-  // action works everywhere the button appears. The drawer only opens when one+ trackers
-  // already exist for the mission (addToTracker creates silently otherwise).
+  // Add-to-Tracker overlay: the pick-a-tracker bottom drawer. Rendered over whatever surface
+  // shows the catch-up card (Home + the full-deck), so the action works everywhere the button
+  // appears. The drawer only opens when one+ trackers already exist for the mission; otherwise
+  // addToTracker creates silently and the card's own 'adding'/'added' state is the feedback.
   const trackerSheetData = trackerSheet
     ? { sheet: { title: 'Add to Tracker', missionLine: trackerSheet.missionLine },
         trackers: (trackerSheet.trackers || []).map((t) => ({ id: t.id, name: t.name, scope: t.scope || '', count: Array.isArray(t.rows) ? t.rows.length : 0 })) }
     : { sheet: { title: '', missionLine: '' }, trackers: [] };
-  const trackerOverlay = (
-    <>
-      {trackerSheet && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 30 }}>
-          <TemplateScreen html={ADD_TRACKER_SHEET_HTML} data={trackerSheetData} actions={trackerSheetActions} state="ready"
-            aliases={ADD_TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
-        </div>
-      )}
-      {trackerToast && (
-        <div style={{ position: 'absolute', left: '50%', bottom: 'max(24px, env(safe-area-inset-bottom, 0px))', transform: 'translateX(-50%)', zIndex: 40, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(13,17,23,.92)', color: '#fff', border: '1px solid rgba(255,255,255,.14)', padding: '10px 16px', borderRadius: 12, fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', boxShadow: '0 16px 40px -12px rgba(0,0,0,.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34D399" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-          {trackerToast}
-        </div>
-      )}
-    </>
-  );
+  const trackerOverlay = trackerSheet ? (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 30 }}>
+      <TemplateScreen html={ADD_TRACKER_SHEET_HTML} data={trackerSheetData} actions={trackerSheetActions} state="ready"
+        aliases={ADD_TRACKER_ALIASES} style={{ width: '100%', height: '100%' }} />
+    </div>
+  ) : null;
 
   if (catchUpOpen) {
     // Real inbox cards minus anything cleared on this device; empty shows an honest

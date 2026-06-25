@@ -849,12 +849,22 @@
 /* Catch-up card footer is a 3-way switch (catchUp.footerState): 'none' = caught up (nothing),
    'actions' = the suggested-action buttons, 'reply' = the inline reply composer. The buttons
    show only on 'actions'; the composer only on 'reply'. */
-[data-cv6] .csugg.is-none, [data-cv6] .csugg.is-reply { display:none; }
+[data-cv6] .csugg.is-none, [data-cv6] .csugg.is-reply, [data-cv6] .csugg.is-adding, [data-cv6] .csugg.is-added { display:none; }
 /* display lives here (NOT inline) so the is-none/is-actions hide can win — an inline
    display:flex would override the stylesheet and the composer would never hide. */
 [data-cv6] .creply { display:flex; flex-direction:column; gap:9px; }
-[data-cv6] .creply.is-none, [data-cv6] .creply.is-actions { display:none; }
+[data-cv6] .creply.is-none, [data-cv6] .creply.is-actions, [data-cv6] .creply.is-adding, [data-cv6] .creply.is-added { display:none; }
 [data-cv6] .creply-input::placeholder { color:var(--faint); }
+/* Add-to-Tracker status (Patrik 2026-06-25): the card itself reports the action — 'adding'
+   shows a spinner the instant the button is tapped (immediate feedback, no waiting on the
+   network), then 'added' flips to a check + "Added to <tracker>" before the card clears. Two
+   more footerState values join the 3-way switch; display lives in CSS so the is-* hide wins. */
+[data-cv6] .cstat { display:none; align-items:center; justify-content:center; gap:9px; }
+[data-cv6] .cstat.is-adding, [data-cv6] .cstat.is-added { display:flex; }
+[data-cv6] .cstat-spin { display:none; }
+[data-cv6] .cstat-spin.is-adding { display:inline-flex; animation:spin 1.05s linear infinite; color:var(--accent); }
+[data-cv6] .cstat-check { display:none; }
+[data-cv6] .cstat-check.is-added { display:inline-flex; color:var(--success); }
 
 /* Catch-up card: an attachment-delivery message (contentState='file') swaps the text
    summary for the file chip + Review below, so hide the summary paragraph on file cards
