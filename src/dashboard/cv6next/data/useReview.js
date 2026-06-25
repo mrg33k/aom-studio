@@ -165,7 +165,11 @@ export function useReview(worldId = 'aom') {
             time: relTime(it.last_modified),
             location: it.mission ? `${it.project} / ${it.mission}` : it.project,
             queueState: 'ready',
-            file: `${it.name} · 0 KB`, // TODO: fetch actual size
+            // The viewer caption used to read "name · 0 KB" — a fabricated size (the queue
+            // endpoint never carries file bytes in production; it walks a tunnel that returns
+            // no size). Show REAL metadata we already have instead of a fake number: the type
+            // and how long ago it landed (e.g. "Image · 9h"). The filename is the title below.
+            file: `${typeLabel(typeKey)} · ${relTime(it.last_modified)}`,
             bodyHtml: '',
             open: it.id === openDelId ? 'on' : 'off',
             pins: [],
