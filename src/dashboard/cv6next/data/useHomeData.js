@@ -223,7 +223,7 @@ export function shapeChatList({ agents = [], projectRooms = [], inboxItems = [] 
     };
   });
   const projectRows = (projectRooms || []).map((p) => ({
-    id: p.id || p.slug, name: p.name || p.slug || 'Project', snippet: '',
+    id: p.id || p.slug, slug: p.slug, name: p.name || p.slug || 'Project', snippet: '',
     tint: tintFor(p.name || p.id), status: 'ready',
   }));
   agentRows.count = agentRows.length;

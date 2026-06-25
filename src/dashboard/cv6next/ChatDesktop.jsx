@@ -7,7 +7,7 @@
 // honest store yet, so they stay inert (not faked), matching Command/Tracker desktop.
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useChatList } from './data/useHomeData.js';
+import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
@@ -41,11 +41,46 @@ function RoomRow({ row, open, onClick }) {
   );
 }
 
-function ProjectRow({ row, open, onClick }) {
+// Map a raw mission status to the CV6 status-dot class (live / ready / done).
+function missionDot(s) {
+  const v = String(s || '').toLowerCase();
+  if (['running', 'building', 'active'].includes(v)) return 'live';
+  if (['done', 'complete', 'completed'].includes(v)) return 'done';
+  return 'ready';
+}
+
+// A project in the rail is a folder that fans open to its missions. The row itself opens the
+// project's general chat; the chevron toggles the mission list; a mission row opens that
+// mission's own thread on the right. Mirrors the mobile project screen, here as a tree.
+function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, expanded, onToggle, onPickProject, onPickMission }) {
+  const hasMissions = missions && missions.length > 0;
   return (
-    <div className="room" onClick={onClick} style={{ cursor: 'pointer', background: open ? 'var(--accent-weak)' : undefined }}>
-      <svg className={`folder is-${row.tint || 'violet'}`} width="17" height="17" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
-      <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</span>
+    <div>
+      <div className="room" onClick={onPickProject} style={{ cursor: 'pointer', background: selectedProject ? 'var(--accent-weak)' : undefined }}>
+        <button onClick={(e) => { e.stopPropagation(); onToggle(); }} aria-label={expanded ? 'Hide missions' : 'Show missions'}
+          style={{ border: 'none', background: 'none', padding: 0, margin: 0, display: 'flex', alignItems: 'center', flex: 'none', cursor: 'pointer', color: 'var(--muted)' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform .15s' }}><path d="m9 18 6-6-6-6" /></svg>
+        </button>
+        <svg className={`folder is-${row.tint || 'violet'}`} width="17" height="17" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
+        <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: selectedProject ? 600 : 500 }}>{row.name}</span>
+        {hasMissions ? <span style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{missions.length}</span> : null}
+      </div>
+      {expanded ? (
+        <div style={{ margin: '2px 0 6px 16px', borderLeft: '1px solid var(--divider)', paddingLeft: 6 }}>
+          {hasMissions ? missions.map((m) => {
+            // missions-tree already returns slugs in "<project>:<mission>" form; only prefix a bare one.
+            const missionSlug = String(m.slug || '').includes(':') ? m.slug : `${row.slug}:${m.slug}`;
+            const on = selectedMissionSlug === missionSlug;
+            return (
+              <div key={m.slug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7 }}>
+                <span className={`sdot is-${missionDot(m.status)}`} style={{ flex: 'none' }} />
+                <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{m.name || m.slug}</span>
+              </div>
+            );
+          }) : <div style={{ fontSize: 12, color: 'var(--faint)', padding: '6px 8px' }}>No missions yet.</div>}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -177,7 +212,22 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
   }, [messages, selKey]);
 
   const pickAgent = (a) => setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel });
-  const pickProject = (p) => setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status });
+  const pickProject = (p) => setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' });
+  const pickMission = (p, m) => setPicked({ id: m.slug, name: m.name || m.slug, initials: (m.name || m.slug || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`, projectSlug: p.slug, status: missionDot(m.status), statusText: p.name });
+
+  // Real missions per project (same endpoint the mobile project screen uses). Each project
+  // row fans open to these; clicking one opens that mission's own thread.
+  const missionsByProject = useProjectMissions(worldId);
+  const [expanded, setExpanded] = useState(() => new Set());
+  const toggleProject = (slug) => setExpanded((prev) => { const n = new Set(prev); if (n.has(slug)) n.delete(slug); else n.add(slug); return n; });
+  // Coming in with a project (from Home) or a mission selected: fan that project open so its
+  // missions are visible. Only ever adds, so it never fights a manual collapse.
+  useEffect(() => {
+    if (!selected) return;
+    const slug = selected.isMission ? selected.projectSlug
+      : (selected.isProject ? ((projects.find((p) => p.id === selected.id) || {}).slug || selected.id) : null);
+    if (slug) setExpanded((prev) => (prev.has(slug) ? prev : new Set(prev).add(slug)));
+  }, [selected?.id, selected?.isProject, selected?.isMission, projects]);
 
   return (
     <SendCtx.Provider value={send || (() => {})}>
@@ -192,7 +242,16 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                 : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No agents yet.</div>}
             </div>
             <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Projects</div>
-            {projects.length ? projects.map((p) => <ProjectRow key={p.id} row={p} open={selected?.id === p.id && selected?.isProject} onClick={() => pickProject(p)} />)
+            {projects.length ? projects.map((p) => (
+              <ProjectGroup key={p.id} row={p}
+                selectedProject={selected?.id === p.id && selected?.isProject}
+                selectedMissionSlug={selected?.isMission ? selected.missionSlug : null}
+                missions={missionsByProject[p.slug] || []}
+                expanded={expanded.has(p.slug)}
+                onToggle={() => toggleProject(p.slug)}
+                onPickProject={() => { pickProject(p); setExpanded((prev) => (prev.has(p.slug) ? prev : new Set(prev).add(p.slug))); }}
+                onPickMission={(m) => pickMission(p, m)} />
+            ))
               : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No projects yet.</div>}
           </div>
 
@@ -248,7 +307,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
             {selected ? (
               <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}
-                <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>{selected.isProject ? 'Project room' : 'Agent on this goal'}</div>
+                <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>{selected.isMission ? 'Mission' : selected.isProject ? 'Project room' : 'Agent on this goal'}</div>
                 <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span className="ava is-green" style={{ width: 34, height: 34, fontSize: 12 }}>{selected.initials || '·'}</span>
