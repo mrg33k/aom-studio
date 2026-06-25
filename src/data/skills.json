@@ -1,18 +1,7 @@
 {
-  "generatedAt": "2026-05-26T01:47:54.504Z",
+  "generatedAt": "2026-06-25T21:52:30.145Z",
   "source": ".claude/skills/INDEX.md",
   "skills": [
-    {
-      "name": "/embed",
-      "alias": "/embed-this-room",
-      "description": "Make this room embeddable on any website \u2014 modal-driven",
-      "category": "ops",
-      "categoryLabel": "Workspace / Ops",
-      "kind": "modal",
-      "scopes": [
-        "project"
-      ]
-    },
     {
       "name": "/video-footage-review",
       "alias": "/footage-review",
@@ -191,7 +180,7 @@
     {
       "name": "/video-template",
       "alias": null,
-      "description": "Named video templates A/B/C/D/E/F/G/H/I/J/K (continues A1, B1\u2026 after Z). Brand-neutral forms; agent adapts each to current brand at call time.",
+      "description": "Named video templates A/B/C/D/E/F/G/H/I/J/K (continues A1, B1… after Z). Brand-neutral forms; agent adapts each to current brand at call time.",
       "category": "video",
       "categoryLabel": "Video / Content Production"
     },
@@ -220,6 +209,20 @@
       "name": "/footage-tagging",
       "alias": null,
       "description": "Browser-based tool for tagging footage clips (rating, room, fixes, edit purpose) before any cut",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/finals-review",
+      "alias": null,
+      "description": "End-of-pipeline approval queue for finished social clips: approve, lock caption, auto-schedule",
+      "category": "video",
+      "categoryLabel": "Video / Content Production"
+    },
+    {
+      "name": "/video-stinger",
+      "alias": "/stinger",
+      "description": "Animated brand transitions (stingers, bumpers, endcards, logo reveals) via Remotion to Resolve",
       "category": "video",
       "categoryLabel": "Video / Content Production"
     },
@@ -317,7 +320,7 @@
     {
       "name": "/remotion-to-resolve",
       "alias": null,
-      "description": "Push Remotion timeline manifest to live Resolve project (Remotion \u2192 Resolve bridge)",
+      "description": "Push Remotion timeline manifest to live Resolve project (Remotion → Resolve bridge)",
       "category": "resolve",
       "categoryLabel": "DaVinci Resolve / Timeline"
     },
@@ -420,6 +423,27 @@
       "categoryLabel": "Brand / Design"
     },
     {
+      "name": "/ahead-of-market-design",
+      "alias": null,
+      "description": "Generate well-branded AoM interfaces and assets (production or reference)",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/design-taste-frontend",
+      "alias": "/taste-frontend",
+      "description": "Anti-slop frontend for landing pages, portfolios, redesigns; non-templated interfaces",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
+      "name": "/imagegen-frontend-web",
+      "alias": "/taste-imagegen-web",
+      "description": "Premium, conversion-aware website design references (image direction)",
+      "category": "brand",
+      "categoryLabel": "Brand / Design"
+    },
+    {
       "name": "/web-dev-agent",
       "alias": null,
       "description": "General web development task",
@@ -462,6 +486,13 @@
       "categoryLabel": "Web / Code"
     },
     {
+      "name": "/screens",
+      "alias": "/screens",
+      "description": "See every screen of a project as a live board, then point-and-tell design feedback that changes it live",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
       "name": "/web-cage-match",
       "alias": "/cage-match",
       "description": "Build two competing approaches, keep the winner",
@@ -497,6 +528,27 @@
       "categoryLabel": "Web / Code"
     },
     {
+      "name": "/pdfmaker",
+      "alias": null,
+      "description": "Build a typeable, beautifully designed HTML form/document that saves as a PDF — trackers, certificates, workbooks, invoices, intake forms, contracts",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/branch-survey",
+      "alias": null,
+      "description": "Survey all open feature branches (local + origin) grouped by age and merge-status",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
+      "name": "/ui-section-audit",
+      "alias": null,
+      "description": "Walk a client's site/app, name every UI section, propose a nested workstream",
+      "category": "web",
+      "categoryLabel": "Web / Code"
+    },
+    {
       "name": "/corner-build",
       "alias": "/build-corner",
       "description": "Corner-specific build task",
@@ -526,8 +578,50 @@
     },
     {
       "name": "/corner-stress-test",
-      "alias": "\u2014",
+      "alias": "—",
       "description": "Stress-test the dashboard chat bridge for memory survival across hiccup classes (model swap, kill, restart, JSONL nuke, mid-turn)",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/chat-health-check",
+      "alias": null,
+      "description": "Scan every chat room + tool for health, auto-fix safe issues, report back",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/chat-reset",
+      "alias": null,
+      "description": "Wipe a chat room's bridge session so the next message starts fresh from Supabase history",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/corner-schedule",
+      "alias": null,
+      "description": "Schedule a recurring or one-time message/job into a Corner room",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/embeddable-agents",
+      "alias": null,
+      "description": "Wrap any Corner agent in a context overlay and embed it on any website",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/memory-check",
+      "alias": null,
+      "description": "Probe a chat room, score its reply against the last 5 Supabase messages",
+      "category": "corner",
+      "categoryLabel": "Corner Platform"
+    },
+    {
+      "name": "/truth-check",
+      "alias": null,
+      "description": "Verify any claim against every record stream (Supabase, tasks, git, Gmail, live nodes)",
       "category": "corner",
       "categoryLabel": "Corner Platform"
     },
@@ -647,6 +741,13 @@
       "name": "/biz-new-project",
       "alias": "/new-project",
       "description": "Start a new project",
+      "category": "biz",
+      "categoryLabel": "Business / Strategy"
+    },
+    {
+      "name": "/biz-pitch-page",
+      "alias": null,
+      "description": "Build a one-page pitch for any client engagement (video, website, brand, photo)",
       "category": "biz",
       "categoryLabel": "Business / Strategy"
     },
@@ -868,6 +969,48 @@
       "categoryLabel": "System / Infrastructure"
     },
     {
+      "name": "/bg",
+      "alias": null,
+      "description": "Fork current work into a backgrounded sub-agent visible in the Claude Code agents panel",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/browser-use",
+      "alias": null,
+      "description": "Drive a browser by goal (no script) on Patrik's subscription, no API key",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/copy",
+      "alias": null,
+      "description": "Copy content to the macOS clipboard (default: most recent handoff/summary)",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/fold-mission",
+      "alias": null,
+      "description": "Merge one mission into another, then delete the source. Disk is source of truth",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/remap-to-mission-nest",
+      "alias": null,
+      "description": "Execute a UI-section-audit remap: git-mv missions into new homes, scaffold",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
+      "name": "/reorganize-project",
+      "alias": null,
+      "description": "Turn a project with a live site/app into a nested mission tree",
+      "category": "sys",
+      "categoryLabel": "System / Infrastructure"
+    },
+    {
       "name": "/session-start",
       "alias": null,
       "description": "Beginning of a new work session",
@@ -987,9 +1130,23 @@
       "categoryLabel": "Collaboration / Communication"
     },
     {
+      "name": "/whatwouldTdo",
+      "alias": null,
+      "description": "Ask the canonical Anthropic-engineering answer for any Claude / Agent SDK / API question",
+      "category": "collab",
+      "categoryLabel": "Collaboration / Communication"
+    },
+    {
       "name": "/illustrator-mcp",
       "alias": null,
       "description": "Connect Adobe Illustrator (Beta web app) to Claude Code via Adobe's official MCP server. Walks Patrik through the setup; resumable across sessions.",
+      "category": "integrations",
+      "categoryLabel": "Tool & App Connectors"
+    },
+    {
+      "name": "/claudinchrome",
+      "alias": null,
+      "description": "Open Patrik's real Chrome and connect the Claude in Chrome MCP extension",
       "category": "integrations",
       "categoryLabel": "Tool & App Connectors"
     },
@@ -1066,7 +1223,7 @@
     {
       "name": "/video-cycle",
       "alias": "/video-cycle \"<brief>\" [footage=<path>]",
-      "description": "Run one cycle of the video-editing mission (`docs/missions/video-editing/`). Raw cut \u2192 improvement operator \u2192 distill playbook. Use on every real video deliverable so the playbook compounds.",
+      "description": "Run one cycle of the video-editing mission (`docs/missions/video-editing/`). Raw cut → improvement operator → distill playbook. Use on every real video deliverable so the playbook compounds.",
       "category": "video",
       "categoryLabel": "Editing mission"
     }
