@@ -52,8 +52,16 @@ function missionDot(s) {
 // A project in the rail is a folder that fans open to its missions. The row itself opens the
 // project's general chat; the chevron toggles the mission list; a mission row opens that
 // mission's own thread on the right. Mirrors the mobile project screen, here as a tree.
+const MISSION_CAP = 8; // a fanned-open project shows this many missions, then "show N more" — keeps the rail scannable when a project has dozens.
 function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, expanded, onToggle, onPickProject, onPickMission }) {
   const hasMissions = missions && missions.length > 0;
+  const [showAll, setShowAll] = useState(false);
+  const slugOf = (m) => (String(m.slug || '').includes(':') ? m.slug : `${row.slug}:${m.slug}`);
+  const selectedIdx = missions.findIndex((m) => slugOf(m) === selectedMissionSlug);
+  // Always show the full list if asked, or if the selected mission sits past the cap (so it stays visible).
+  const showEvery = showAll || selectedIdx >= MISSION_CAP;
+  const shownMissions = showEvery ? missions : missions.slice(0, MISSION_CAP);
+  const hiddenCount = missions.length - shownMissions.length;
   return (
     <div>
       <div className="room" onClick={onPickProject} style={{ cursor: 'pointer', background: selectedProject ? 'var(--accent-weak)' : undefined }}>
@@ -68,9 +76,8 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
       </div>
       {expanded ? (
         <div style={{ margin: '2px 0 6px 16px', borderLeft: '1px solid var(--divider)', paddingLeft: 6 }}>
-          {hasMissions ? missions.map((m) => {
-            // missions-tree already returns slugs in "<project>:<mission>" form; only prefix a bare one.
-            const missionSlug = String(m.slug || '').includes(':') ? m.slug : `${row.slug}:${m.slug}`;
+          {hasMissions ? shownMissions.map((m) => {
+            const missionSlug = slugOf(m);
             const on = selectedMissionSlug === missionSlug;
             return (
               <div key={m.slug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7 }}>
@@ -79,6 +86,9 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
               </div>
             );
           }) : <div style={{ fontSize: 12, color: 'var(--faint)', padding: '6px 8px' }}>No missions yet.</div>}
+          {hiddenCount > 0 ? (
+            <div className="room" onClick={() => setShowAll(true)} style={{ cursor: 'pointer', paddingTop: 7, paddingBottom: 7, color: 'var(--accent)', fontSize: 12.5, fontWeight: 600 }}>Show {hiddenCount} more</div>
+          ) : null}
         </div>
       ) : null}
     </div>
