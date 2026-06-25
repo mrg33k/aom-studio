@@ -473,6 +473,20 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     });
     return () => cancelAnimationFrame(id);
   }, [knavOpenedKey, quickLen]);
+  // Enter-to-send in the col3 quick reply input (the template engine only wires clicks, so the
+  // keydown is handled here). Shift+Enter is left alone for a future multiline composer.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Enter' || e.shiftKey) return;
+      const t = e.target;
+      if (!t || !t.classList || !t.classList.contains('convo-input')) return;
+      e.preventDefault();
+      const v = t.value;
+      if (v && v.trim() && quickSend) { quickSend(v.trim()); t.value = ''; }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [quickSend]);
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
