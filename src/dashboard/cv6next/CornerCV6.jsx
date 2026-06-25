@@ -1147,7 +1147,8 @@ export default function CornerCV6() {
         <AssignButton
           artifactType={assignConfig.type}
           artifactId={assignConfig.id}
-          title={assignConfig.title}
+          artifactTitle={assignConfig.title}
+          autoOpen
           onClose={() => setAssignConfig(null)}
           onSuccess={() => setAssignConfig(null)}
           onError={() => setAssignConfig(null)}

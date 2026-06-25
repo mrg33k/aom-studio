@@ -85,13 +85,16 @@ function AgentPickerPopover({
             boxShadow: '0 24px 48px -12px rgba(0,0,0,0.4)',
           }}
         >
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>
-              Assign to agent
+          <div style={{ marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>
+                Assign to agent
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--muted)' }}>
+                {artifactTitle}
+              </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>
-              {artifactTitle}
-            </div>
+            <button onClick={onClose} aria-label="Close" style={{ flex: 'none', width: 30, height: 30, borderRadius: 8, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, lineHeight: 1 }}>×</button>
           </div>
 
           {isLoading ? (
@@ -228,13 +231,16 @@ function AgentPickerPopover({
           boxShadow: '0 -12px 30px rgba(0,0,0,0.4)',
         }}
       >
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>
-            Assign to agent
+        <div style={{ marginBottom: 16, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)', marginBottom: 4 }}>
+              Assign to agent
+            </div>
+            <div style={{ fontSize: 13, color: 'var(--muted)' }}>
+              {artifactTitle}
+            </div>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--muted)' }}>
-            {artifactTitle}
-          </div>
+          <button onClick={onClose} aria-label="Close" style={{ flex: 'none', width: 32, height: 32, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface)', color: 'var(--muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
 
         {isLoading ? (
@@ -543,45 +549,50 @@ function ConfirmDialog({
 export function AssignButton({
   artifactType = 'email', // 'email' | 'file' | 'doc' | 'bug' | 'transcript'
   artifactId = '',
-  artifactTitle = '(untitled)',
+  artifactTitle = '',
+  title = '', // alias accepted from the overlay caller
   projectSlug = '',
   isQuiet = false,
   icon = !isQuiet,
   agents = [], // If provided, use these instead of fetching
+  autoOpen = false, // when mounted as an overlay, open the picker straight away
+  onClose = () => {},
   onSuccess = () => {},
   onError = () => {},
   disabled = false,
 }) {
-  const [showPicker, setShowPicker] = useState(false);
+  const label = artifactTitle || title || '(untitled)';
+  const [showPicker, setShowPicker] = useState(autoOpen);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isDispatching, setIsDispatching] = useState(false);
   const [agentList, setAgentList] = useState(agents);
 
-  // Fetch agents on mount if not provided
+  // Fetch agents whenever the picker is open and none were passed in. A hard
+  // timeout means the list can never get stuck on "Loading agents…" if the
+  // endpoint hangs — it degrades to the honest "No agents available" state.
   useEffect(() => {
-    if (agents.length > 0 || showPicker === false) return;
+    if (agents.length > 0 || showPicker === false) return undefined;
 
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     setIsLoading(true);
-    fetch('/api/dashboard/active-agents?client=aom')
+    fetch('/api/dashboard/active-agents?client=aom', { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
       .then((data) => {
-        // Map active agents from the real endpoint
-        const active = (data.active || []).map((a) => ({
-          slug: a.agent,
-          status: 'live',
-        }));
-
-        // Only show agents that are actually active; do NOT fabricate fallback agents
+        const active = (data.active || []).map((a) => ({ slug: a.agent, status: 'live' }));
         setAgentList(active);
       })
       .catch((err) => {
-        // On error, show empty list (not fabricated fallbacks)
         console.error('[AssignButton] failed to fetch active agents:', err);
         setAgentList([]);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => { clearTimeout(timer); setIsLoading(false); });
+    return () => { clearTimeout(timer); ctrl.abort(); };
   }, [showPicker, agents]);
+
+  // Closing the picker without a pick dismisses the whole overlay.
+  const closePicker = () => { setShowPicker(false); onClose(); };
 
   const handleSelectAgent = (agent) => {
     setSelectedAgent(agent);
@@ -626,42 +637,46 @@ export function AssignButton({
     }
   };
 
+  // Cancelling the confirm step returns to the agent list, not a dead end.
   const handleCancel = () => {
     setSelectedAgent(null);
+    setShowPicker(true);
   };
 
   return (
     <>
-      <button
-        className={`assign ${isQuiet ? 'is-quiet' : ''}`}
-        onClick={() => setShowPicker(true)}
-        disabled={disabled}
-        style={{
-          opacity: disabled ? 0.5 : 1,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {icon && !isQuiet && (
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="#fff"
-            style={{ flex: 'none' }}
-          >
-            <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
-          </svg>
-        )}
-        Assign to agent
-      </button>
+      {!autoOpen && (
+        <button
+          className={`assign ${isQuiet ? 'is-quiet' : ''}`}
+          onClick={() => setShowPicker(true)}
+          disabled={disabled}
+          style={{
+            opacity: disabled ? 0.5 : 1,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {icon && !isQuiet && (
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="#fff"
+              style={{ flex: 'none' }}
+            >
+              <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z" />
+            </svg>
+          )}
+          Assign to agent
+        </button>
+      )}
 
       {showPicker && (
         <AgentPickerPopover
           agents={agentList}
-          artifactTitle={artifactTitle}
+          artifactTitle={label}
           isLoading={isLoading}
           onSelectAgent={handleSelectAgent}
-          onClose={() => setShowPicker(false)}
+          onClose={closePicker}
           isQuiet={isQuiet}
         />
       )}
@@ -669,7 +684,7 @@ export function AssignButton({
       {selectedAgent && (
         <ConfirmDialog
           agent={selectedAgent}
-          artifactTitle={artifactTitle}
+          artifactTitle={label}
           onConfirm={handleConfirm}
           onCancel={handleCancel}
           isDispatching={isDispatching}
