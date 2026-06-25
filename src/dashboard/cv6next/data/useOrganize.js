@@ -195,10 +195,12 @@ export function useOrganize(worldId = 'aom') {
     files: fileList,
     projects: projectList,
     breadcrumb: [{ id: 'root', name: 'Corner' }, openProject].filter((x) => x.id),
+    // active = 'on'|'off' so the template's data-mod="is-:filter.active" yields the
+    // design's .ochip.is-on highlight (a boolean would render the unknown class is-true).
     filters: [
-      { id: 'all', label: `All ${allFiles.length}`, active: filter === 'all' },
-      { id: 'docs', label: `Docs ${docCount}`, active: filter === 'docs' },
-      { id: 'images', label: `Images ${imageCount}`, active: filter === 'images' },
+      { id: 'all', label: `All ${allFiles.length}`, active: filter === 'all' ? 'on' : 'off' },
+      { id: 'docs', label: `Docs ${docCount}`, active: filter === 'docs' ? 'on' : 'off' },
+      { id: 'images', label: `Images ${imageCount}`, active: filter === 'images' ? 'on' : 'off' },
     ],
     preview: previewFile?.preview || { fileName: '', title: '', bodyHtml: '<p>No file selected</p>' },
     viewFile: previewFile
