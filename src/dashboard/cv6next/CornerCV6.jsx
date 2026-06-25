@@ -158,44 +158,6 @@ const HOME_ALIASES = {
 // Projects pagination: show this many by default, rest behind "Show N more".
 const PROJ_LIMIT = 8;
 
-// Demo catchUp cards for testing P4 (Catch Up deck) when no real inbox data exists.
-// Each card has: id, kind, kindLabel, from, subject, summary, time, actionItems, attachments.
-const DEMO_CATCHUP_CARDS = [
-  {
-    id: 'demo-1',
-    kind: 'agent',
-    kindLabel: 'AGENT',
-    from: 'Elon',
-    subject: 'Corner • Main',
-    summary: 'Reviewed the latest PR and found three formatting issues in the dashboard styles.',
-    time: '2m',
-    actionItems: [],
-    attachments: [],
-  },
-  {
-    id: 'demo-2',
-    kind: 'agent',
-    kindLabel: 'AGENT',
-    from: 'Mom',
-    subject: 'Support • Inbox',
-    summary: 'Triaged 12 support emails. Four need your approval before going out.',
-    time: '8m',
-    actionItems: [],
-    attachments: [],
-  },
-  {
-    id: 'demo-3',
-    kind: 'agent',
-    kindLabel: 'AGENT',
-    from: 'Gary',
-    subject: 'Content • Outreach',
-    summary: 'Drafted the weekly briefing. Ready for your final review and send.',
-    time: '15m',
-    actionItems: [],
-    attachments: [],
-  },
-];
-
 function Home({ onNav, onOpenRoom, onOpenNav }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
@@ -424,16 +386,17 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   }), [worldId, openedProject, missionSeed]);
 
   if (catchUpOpen) {
-    // Use real cards from inbox, fall back to demo cards if empty (for testing P4).
+    // Real inbox cards only. No demo fallback — an empty inbox shows an honest
+    // "all caught up" card, never fabricated agent activity.
     const allCards = (data.catchUp?.all && data.catchUp.all.length > 0)
       ? data.catchUp.all
-      : DEMO_CATCHUP_CARDS;
+      : [];
     const cuIdx = Math.min(catchUpIndex, Math.max(0, allCards.length - 1));
     const catchUpData = {
       catchUp: {
         count: allCards.length,
         position: allCards.length ? cuIdx + 1 : 0,
-        current: allCards[cuIdx] || { id: '', kind: 'agent', kindLabel: 'AGENT', from: '', subject: '', summary: '', actionItems: [], attachments: [] },
+        current: allCards[cuIdx] || { id: '', kind: 'agent', kindLabel: '', from: 'Caught up', subject: '', summary: 'Nothing needs you right now. New items from your agents and inbox will land here.', actionItems: [], attachments: [] },
         items: allCards.map((c, i) => ({ ...c, deckState: i === cuIdx ? 'current' : (i < cuIdx ? 'prev' : 'next') })),
       },
     };
