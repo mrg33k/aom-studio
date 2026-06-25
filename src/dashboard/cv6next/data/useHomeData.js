@@ -46,6 +46,20 @@ function tintFor(seed) {
 }
 function cap(s) { const v = String(s || ''); return v ? v[0].toUpperCase() + v.slice(1) : ''; }
 function firstLine(s) { return String(s || '').split('\n')[0].slice(0, 160); }
+// Mission display name from a slug like "space-rising:deal-bank" or "deal-bank":
+// drop a leading "<project>:" prefix, humanize the dashes, title-case.
+function missionLabel(missionSlug) {
+  const s = String(missionSlug || ''); if (!s) return '';
+  const seg = s.includes(':') ? s.split(':').pop() : s;
+  return seg.replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+// Detect an attachment-delivery message (point is a file, not a text blurb). Conservative:
+// only the explicit "Attached file:/Attachment:" signal, so a passing filename mention does
+// not flip a normal message into a file card. Returns { id, name } or null.
+function detectAttachment(text) {
+  const m = String(text || '').match(/(?:attached file|attachment)\s*[:\-]?\s*([^\s|,]+\.[a-z0-9]{2,5})/i);
+  return m ? { id: m[1], name: m[1], size: '' } : null;
+}
 function relTime(ts) {
   if (!ts) return '';
   const ms = Date.now() - new Date(ts).getTime();
@@ -77,22 +91,40 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
   // inboxItems shape (from useDataPipe): { agent, project, missionSlug, roomKey, text, timestamp, id }.
   // Each is an unread agent message in a room — the "needs you" feed. The agent who
   // pinged is the sender; the room (project/mission/agent thread) is the subject.
+  const projectNameBySlug = {};
+  for (const p of projectRooms || []) { if (p.slug) projectNameBySlug[p.slug] = p.name || p.slug; }
   const cards = (inboxItems || []).map((it) => {
     // No structured action-item feed exists yet (H3): the card carries an empty list and
     // actionState='none', which hides the "Action items" header instead of showing a naked
     // section over dead space. Flips to 'has' automatically once a real feed populates this.
     const actionItems = [];
+    // Title (Patrik, 2026-06-25): project name leads, mission name underneath. Agent name
+    // leads ONLY on a direct agent-thread card (no project room behind it).
+    const isAgentThread = !it.project;
+    const projName = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
+    const missionName = missionLabel(it.missionSlug);
+    const from = isAgentThread ? (it.agent ? titleForAgent(it.agent) : 'Your agent') : projName;
+    const subject = isAgentThread
+      ? (it.agent ? `${titleForAgent(it.agent)} thread` : '')
+      : (missionName || 'General');
+    // Attachment-delivery messages swap the text summary for a file chip + Review.
+    const att = detectAttachment(it.text);
+    const attachments = att ? [att] : [];
     return {
       id: it.id,
+      // The sender is always an agent (the glyph reads "message from an agent"); the title
+      // text below is what carries project vs agent-thread. Keep kind for the styled glyph.
       kind: 'agent', kindLabel: 'AGENT',
-      from: it.agent ? titleForAgent(it.agent) : 'Your agent',
-      subject: it.project ? cap(it.project) : (it.missionSlug || `${titleForAgent(it.agent)} thread`),
+      from, subject,
       summary: firstLine(it.text),
       time: relTime(it.timestamp),
       // carry the source room so an action (e.g. Add to Tracker) can attach to the mission.
       project: it.project || '', missionSlug: it.missionSlug || '', agent: it.agent || '',
-      actionItems, attachments: [],
+      actionItems, attachments,
       actionState: actionItems.length ? 'has' : 'none',
+      // contentState drives the middle of the card: 'file' => attachment chip + Review,
+      // 'text' => centered room summary. (Patrik catch-up card spec, 2026-06-25.)
+      contentState: attachments.length ? 'file' : 'text',
     };
   });
 

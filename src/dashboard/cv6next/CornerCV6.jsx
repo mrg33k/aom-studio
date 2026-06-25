@@ -199,6 +199,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     return {
       ...(data.catchUp || {}),
       all, count: all.length,
+      // When caught up (no real item), the action buttons have nothing to act on -> hide them.
+      actionsState: all.length ? 'has' : 'none',
       position: all.length ? idx + 1 : 0,
       current: all[idx] || { id: '', kind: 'agent', kindLabel: '', from: 'Caught up', subject: '', summary: 'Nothing needs you right now. New items from your agents and inbox will land here.', actionItems: [], attachments: [], actionState: 'none' },
       items: all.map((c, i) => ({ ...c, deckState: i === idx ? 'current' : (i < idx ? 'prev' : 'next') })),

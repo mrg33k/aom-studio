@@ -845,3 +845,7 @@
    space (same hide-empty-surfaces principle as the pin bar above). Shows automatically
    once a real action-item feed populates catchUp.current.actionItems. */
 [data-cv6] .caitems.is-none { display:none; }
+
+/* Catch-up card: hide the suggested-actions footer when there is no real item to act on
+   (the "all caught up" empty state). Same hide-empty-surfaces principle. */
+[data-cv6] .csugg.is-none { display:none; }
