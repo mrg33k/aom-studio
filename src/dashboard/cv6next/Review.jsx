@@ -134,6 +134,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable 
       })),
       openCount: pins.length,
       notesWord: pins.length === 1 ? 'note' : 'notes',
+      // Drives .mpinbar.is-none: hide the whole pin-comment bar when there are no pins,
+      // so the decision buttons stay the hero (no ghost "0 pin-comments" bar).
+      pinState: pins.length ? 'has' : 'none',
     },
   };
   const readActions = {

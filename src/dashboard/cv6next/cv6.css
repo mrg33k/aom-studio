@@ -832,3 +832,10 @@
 [data-cv6] .convo-ready .convo-goalbody { display:flex; }
 [data-cv6] .convo-ready.is-none .convo-rest2 { flex:1; display:flex; align-items:center; justify-content:center; }
 [data-cv6] .convo-ready.is-none .convo-goalbody { display:none; }
+
+/* Review mobile pin-comments bar: hide the whole bar when there are zero pins so the
+   decision buttons (Assign/Approve/Changes) stay the hero, instead of a ghost "0
+   pin-comments" bar (Steffen design-gate call, 2026-06-25 — matches Linear/GitHub/Figma
+   hiding empty feedback surfaces). Flex lives here, not inline, so .is-none can hide it. */
+[data-cv6] .mpinbar { display:flex; align-items:center; gap:10px; }
+[data-cv6] .mpinbar.is-none { display:none; }

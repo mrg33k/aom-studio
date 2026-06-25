@@ -111,8 +111,8 @@
       <div class="pin" data-each="deliverable.pins" style="position:absolute;top:120px;right:14px;" data-action="openPin" data-arg="pin.id" data-bind="pin.n">1</div>
     </div>
   </div>
-  <!-- pin-comment count bar -->
-  <div style="position:absolute;left:0;right:0;bottom:76px;padding:11px 14px;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:10px;" data-action="openComments">
+  <!-- pin-comment count bar (hidden entirely at zero pins via .mpinbar.is-none) -->
+  <div class="mpinbar" style="position:absolute;left:0;right:0;bottom:76px;padding:11px 14px;border-top:1px solid var(--divider);background:var(--ground);" data-action="openComments" data-mod="is-:deliverable.pinState">
     <span class="pin" style="position:static;transform:none;width:22px;height:22px;font-size:11px;flex:none;" data-bind="deliverable.openCount">3</span>
     <div style="flex:1;min-width:0;font-size:12.5px;color:var(--muted);line-height:1.3;"><span data-bind="deliverable.openCount">3</span> <span data-bind="deliverable.commentsLabelLower">pin-comments</span> queued for <span data-bind="deliverable.who">Gary</span></div>
     <span style="font-size:12.5px;font-weight:600;color:var(--accent);">View</span>
