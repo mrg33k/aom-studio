@@ -863,9 +863,11 @@
   cursor:pointer; flex:none; transition:background .12s ease, border-color .12s ease; }
 [data-cv6] .cuarrow:hover { background:var(--surface-3, var(--surface-2)); border-color:var(--accent); color:var(--accent); }
 [data-cv6] .custack { position:relative; }
-[data-cv6] .custack-back { position:absolute; left:50%; transform:translateX(-50%); height:44px;
-  border-radius:16px; background:var(--surface-2); border:1px solid var(--hair);
-  box-shadow:0 10px 22px -12px rgba(0,0,0,.55); }
-[data-cv6] .custack .b1 { width:94%; bottom:-10px; z-index:1; }
-[data-cv6] .custack .b2 { width:87%; bottom:-19px; z-index:0; opacity:.75; }
+[data-cv6] .custack > .card { position:relative; z-index:3; }
+/* Full-height backing cards offset DOWN and narrower, so their stepped bottom edges peek
+   below the front card and read unmistakably as a deck you cycle through. */
+[data-cv6] .custack-back { position:absolute; left:50%; top:0; bottom:0; border-radius:16px;
+  background:var(--surface-2); border:1px solid var(--hair); box-shadow:0 14px 30px -16px rgba(0,0,0,.6); }
+[data-cv6] .custack .b1 { width:95%; transform:translateX(-50%) translateY(9px); z-index:2; opacity:.92; }
+[data-cv6] .custack .b2 { width:90%; transform:translateX(-50%) translateY(18px); z-index:1; opacity:.72; }
 [data-cv6] .custack.is-none .custack-back { display:none; }
