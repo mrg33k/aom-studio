@@ -46,6 +46,40 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable 
   const pickListHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 2 }), []);
   const readHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 1 }), []);
 
+  // read-view ref + pin-creation binding. These hooks MUST run on EVERY render (both the
+  // 'pick' and 'read' screens), so they live ABOVE the `if (screen === 'pick')` early return.
+  // They used to sit below it, so switching pick→read added two hooks mid-life and tripped
+  // React's Rules of Hooks (error #310) — the component threw and the screen showed the
+  // "hit a snag" boundary the instant you opened a file. (R2)
+  const readRef = useRef(null);
+
+  // Bind a click handler to the mobile viewer for pin creation. On the pick screen the read
+  // DOM isn't mounted, so the query finds nothing and the effect no-ops; it re-runs and binds
+  // once we enter the read screen (screen/pickedId in deps).
+  useEffect(() => {
+    if (screen !== 'read') return undefined;
+    const viewer = readRef.current?.querySelector('[data-state="ready"]');
+    if (!viewer) return undefined;
+
+    const handleViewerClick = (e) => {
+      // On mobile, click the .doc region to create a pin
+      const docElem = e.target.closest('.doc');
+      if (docElem) {
+        const rect = docElem.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const w = rect.width;
+        const h = rect.height;
+        if (x > 0 && y > 0 && x < w && y < h) {
+          addPin(x, y, w, h);
+        }
+      }
+    };
+
+    viewer.addEventListener('click', handleViewerClick);
+    return () => viewer.removeEventListener('click', handleViewerClick);
+  }, [addPin, screen, pickedId]);
+
   const pickListAliases = { 'queue.items': 'item', 'item': 'item' };
   const readAliases = {
     'queue.items': 'item',
@@ -78,32 +112,6 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable 
   }
 
   // read + decide screen with pin support
-  const readRef = useRef(null);
-
-  // Bind click handler to the mobile viewer for pin creation
-  useEffect(() => {
-    const viewer = readRef.current?.querySelector('[data-state="ready"]');
-    if (!viewer) return;
-
-    const handleViewerClick = (e) => {
-      // On mobile, click the .doc region to create a pin
-      const docElem = e.target.closest('.doc');
-      if (docElem) {
-        const rect = docElem.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const w = rect.width;
-        const h = rect.height;
-        if (x > 0 && y > 0 && x < w && y < h) {
-          addPin(x, y, w, h);
-        }
-      }
-    };
-
-    viewer.addEventListener('click', handleViewerClick);
-    return () => viewer.removeEventListener('click', handleViewerClick);
-  }, [addPin]);
-
   const readData = {
     ...data,
     queue: {
