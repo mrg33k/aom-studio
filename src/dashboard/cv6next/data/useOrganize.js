@@ -80,6 +80,8 @@ export function useOrganize(worldId = 'aom') {
   const [projects, setProjects] = useState(null);
   const [files, setFiles] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
+  const [selectedId, setSelectedId] = useState(null); // which project's files show (null = first)
+  const [filter, setFilter] = useState('all'); // all | docs | images
 
   const load = useCallback(async () => {
     // Files are the source of truth (proven endpoint). Each row carries
@@ -145,21 +147,27 @@ export function useOrganize(worldId = 'aom') {
     tint: tintFor(slug),
   }));
 
-  // Desktop tree: flattened with depth
-  const treeNodes = projectList.map((p, idx) => ({
+  // The selected project (the one whose files show). Falls back to the first
+  // when nothing is picked yet, or when the picked one is gone after a reload.
+  const activeProjectId = (selectedId && groups.has(selectedId)) ? selectedId : (projectList[0]?.id || null);
+
+  // Desktop tree: flattened with depth. `open` marks the SELECTED project so the
+  // tree highlights the one whose files are showing (was hardcoded to the first).
+  const treeNodes = projectList.map((p) => ({
     id: p.id,
     name: p.name,
     depth: 'd0',
     tint: p.tint,
     chev: p.fileCount ? 'down' : 'none',
-    open: idx === 0, // first project open by default
+    open: p.id === activeProjectId,
   }));
 
-  // Current open project (first by default)
-  const openProject = treeNodes[0] || { id: null, name: 'Projects' };
+  // Current open project = the selected one.
+  const openProject = treeNodes.find((n) => n.id === activeProjectId) || treeNodes[0] || { id: null, name: 'Projects' };
 
-  // Files in the current project
-  const fileList = (groups.get(openProject.id) || []).map((f) => {
+  // Files in the current project, narrowed by the active filter (all / docs / images).
+  const fileMatchesFilter = (kind) => filter === 'all' ? true : (filter === 'images' ? kind === 'image' : kind !== 'image');
+  const allFiles = (groups.get(openProject.id) || []).map((f) => {
     const fname = f.filename || f.name || 'Untitled';
     const { title, body } = parseMarkdown(f.content || '');
     return {
@@ -173,6 +181,11 @@ export function useOrganize(worldId = 'aom') {
     };
   });
 
+  // Narrow by the active filter; keep the unfiltered set for the All count.
+  const imageCount = allFiles.filter((f) => f.kind === 'image').length;
+  const docCount = allFiles.length - imageCount;
+  const fileList = allFiles.filter((f) => fileMatchesFilter(f.kind));
+
   // Desktop preview (first file by default)
   const previewFile = fileList[0] || null;
 
@@ -183,9 +196,9 @@ export function useOrganize(worldId = 'aom') {
     projects: projectList,
     breadcrumb: [{ id: 'root', name: 'Corner' }, openProject].filter((x) => x.id),
     filters: [
-      { id: 'all', label: `All ${fileList.length}`, active: true },
-      { id: 'docs', label: 'Docs', active: false },
-      { id: 'images', label: 'Images', active: false },
+      { id: 'all', label: `All ${allFiles.length}`, active: filter === 'all' },
+      { id: 'docs', label: `Docs ${docCount}`, active: filter === 'docs' },
+      { id: 'images', label: `Images ${imageCount}`, active: filter === 'images' },
     ],
     preview: previewFile?.preview || { fileName: '', title: '', bodyHtml: '<p>No file selected</p>' },
     viewFile: previewFile
@@ -227,5 +240,8 @@ export function useOrganize(worldId = 'aom') {
   else if (status === 'error') state = 'error';
   else if (!projectList.length) state = 'empty';
 
-  return { state, data, reload: load };
+  // Switching projects clears any active filter so the new project opens on "All".
+  const selectProject = useCallback((id) => { setSelectedId(id); setFilter('all'); }, []);
+
+  return { state, data, reload: load, selectProject, setFilter, activeProjectId };
 }

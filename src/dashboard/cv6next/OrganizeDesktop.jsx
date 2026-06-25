@@ -30,16 +30,22 @@ function composeOrganize(raw, screenName) {
 const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
 export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data } = useOrganize('aom');
+  const { state, data, selectProject, setFilter } = useOrganize('aom');
   const [pickedId, setPickedId] = useState(null);
+  // Switch which project's files show; drop the open file so the preview follows
+  // the newly-selected project instead of a file no longer in the list.
+  const switchProject = (id) => { selectProject(id); setPickedId(null); };
 
   // The full real data shape from useOrganize, with the picked file's preview swapped in.
   const bindData = useMemo(() => {
-    if (!pickedId) return data;
+    // Mark only the actually-opened file so rows don't all look pre-selected at rest.
+    const files = (data.files || []).map((x) => ({ ...x, picked: x.id === pickedId ? 'open' : 'closed' }));
+    if (!pickedId) return { ...data, files };
     const f = (data.files || []).find((x) => x.id === pickedId);
-    if (!f) return data;
+    if (!f) return { ...data, files };
     return {
       ...data,
+      files,
       preview: f.preview,
       viewFile: { ...(data.viewFile || {}), id: f.id, name: f.name, title: f.preview?.title, bodyHtml: f.preview?.bodyHtml, edited: f.edited },
     };
@@ -52,13 +58,13 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     openProfile: () => {},
     search: () => {},
     openFile: (id) => setPickedId(id),
-    openTreeNode: () => {},
-    openProject: () => setPickedId(null),
-    openFolder: () => {},
-    openCrumb: () => {},
+    openTreeNode: (id) => switchProject(id),
+    openProject: (id) => switchProject(id),
+    openFolder: (id) => switchProject(id),
+    openCrumb: (id) => (id === 'root' ? switchProject(null) : switchProject(id)),
     openFileMenu: () => {},
     openJob: () => {},
-    setFilter: () => {},
+    setFilter: (id) => setFilter(id || 'all'),
     toggleSelect: () => {},
     toggleSelectMode: () => {},
     openInReview: () => onNav?.('review'),

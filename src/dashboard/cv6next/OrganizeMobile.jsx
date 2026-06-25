@@ -29,9 +29,11 @@ function composeOrganize(raw, screenName) {
 const MOBILE_HTML = composeOrganize(template, 'organize-mobile');
 
 export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data } = useOrganize('aom');
+  const { state, data, selectProject, setFilter } = useOrganize('aom');
   const [pickedFile, setPickedFile] = useState(null);
   const [selectedFileIds, setSelectedFileIds] = useState([]);
+  // Switch project; drop the open file + any selection so the list follows it.
+  const switchProject = (id) => { selectProject(id); setPickedFile(null); setSelectedFileIds([]); };
   const selectedFile = useMemo(() => pickedFile || data?.files?.[0] || null, [pickedFile, data?.files]);
 
   // Bind template data
@@ -40,7 +42,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
     folder: data?.folder || { name: 'Projects', fileCount: 0, folderCount: 0 },
     files: (data?.files || []).map((f) => ({
       ...f,
-      selected: selectedFileIds.includes(f.id),
+      selected: selectedFileIds.includes(f.id) ? 'on' : 'off',
     })),
     folders: [], // HELD-C: subfolder navigation not implemented
     projects: data?.projects || [],
@@ -100,12 +102,12 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
     nav: (target) => handleNav(target),
     openCommandK: () => console.log('command-k'),
     openProfile: () => console.log('profile'),
-    openTreeNode: (nodeId) => console.log('tree node:', nodeId),
+    openTreeNode: (nodeId) => switchProject(nodeId),
     openFile: (fileId) => handleOpenFile(fileId),
-    openCrumb: (crumbId) => console.log('crumb:', crumbId),
-    setFilter: (filterId) => console.log('filter:', filterId),
+    openCrumb: (crumbId) => (crumbId === 'root' ? switchProject(null) : switchProject(crumbId)),
+    setFilter: (filterId) => setFilter(filterId || 'all'),
     toggleSelectMode: () => console.log('toggle select mode'),
-    openFolder: (folderId) => console.log('open folder:', folderId),
+    openFolder: (folderId) => switchProject(folderId),
     toggleSelect: (fileId) => handleToggleSelect(fileId),
     openFileMenu: (fileId) => console.log('file menu:', fileId),
     moveSelection: () => console.log('move selection'),
