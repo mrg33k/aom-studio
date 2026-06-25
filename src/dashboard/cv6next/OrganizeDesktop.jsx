@@ -38,8 +38,10 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
 
   // The full real data shape from useOrganize, with the picked file's preview swapped in.
   const bindData = useMemo(() => {
-    // Mark only the actually-opened file so rows don't all look pre-selected at rest.
-    const files = (data.files || []).map((x) => ({ ...x, picked: x.id === pickedId ? 'open' : 'closed' }));
+    // The preview defaults to the first file on load; highlight that same row so the
+    // open file and the highlighted row never disagree (was: nothing highlighted until a click).
+    const effectiveId = pickedId || (data.files?.[0]?.id ?? null);
+    const files = (data.files || []).map((x) => ({ ...x, picked: x.id === effectiveId ? 'open' : 'closed' }));
     if (!pickedId) return { ...data, files };
     const f = (data.files || []).find((x) => x.id === pickedId);
     if (!f) return { ...data, files };
