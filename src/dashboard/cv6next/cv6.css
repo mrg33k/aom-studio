@@ -850,6 +850,9 @@
    'actions' = the suggested-action buttons, 'reply' = the inline reply composer. The buttons
    show only on 'actions'; the composer only on 'reply'. */
 [data-cv6] .csugg.is-none, [data-cv6] .csugg.is-reply { display:none; }
+/* display lives here (NOT inline) so the is-none/is-actions hide can win — an inline
+   display:flex would override the stylesheet and the composer would never hide. */
+[data-cv6] .creply { display:flex; flex-direction:column; gap:9px; }
 [data-cv6] .creply.is-none, [data-cv6] .creply.is-actions { display:none; }
 [data-cv6] .creply-input::placeholder { color:var(--faint); }
 
