@@ -672,7 +672,14 @@ const TRACKER_ALIASES = {
   assignableAgents: 'agent',
 };
 function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
-  const { state, data, switchTracker, createTracker, createBug, canCreate } = useTrackerBugs(worldId);
+  const { state, data, switchTracker, createTracker, createBug, updateBug, canCreate } = useTrackerBugs(worldId);
+  // Optimistically reflect a status change in the open detail (selectedBug is a snapshot).
+  const applyStatusToSelected = (id, status) => setSelectedBug((b) => (b && b.id === id) ? {
+    ...b, statusLabel: status,
+    isOpen: status === 'Open' ? 'on' : 'off',
+    isProgress: status === 'In progress' ? 'on' : 'off',
+    isDone: status === 'Done' ? 'on' : 'off',
+  } : b);
   const isDesktop = useIsDesktop();
   // sheet: null | 'switch' | 'new' (create-tracker) | 'detail' (bug preview) | 'newbug' (new-issue)
   const [sheet, setSheet] = useState(null);
@@ -735,7 +742,9 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
   const detailActions = useMemo(() => ({
     nav: () => setSheet(null),
     assignAgent: (bugId) => onAssignBug?.(bugId), openAttachment: () => {},
-  }), [onAssignBug]);
+    changeStatus: (status) => { if (selectedBug?.id) { updateBug({ id: selectedBug.id, status }); applyStatusToSelected(selectedBug.id, status); } },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [onAssignBug, selectedBug, updateBug]);
 
   const newBugActions = useMemo(() => ({
     nav: () => setSheet(null),
@@ -807,8 +816,10 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
       openBug: (id) => { const b = (data.bugs || []).find((x) => String(x.id) === String(id)); if (b) setSelectedBug(b); },
       newBug: () => openNewBug(),
       assignAgent: (bugId) => onAssignBug?.(bugId),
-      // status change + per-bug checklist have no honest store yet -> inert (not faked).
-      changeStatus: () => {}, addChecklistItem: () => {}, toggleChecklistItem: () => {},
+      // status change is real (cv6-bugs update, persisted). per-bug checklist has no
+      // honest store yet -> inert (not faked).
+      changeStatus: (status) => { if (dbug?.id) { updateBug({ id: dbug.id, status }); applyStatusToSelected(dbug.id, status); } },
+      addChecklistItem: () => {}, toggleChecklistItem: () => {},
       openAttachment: () => {}, review: () => {},
     };
     return (

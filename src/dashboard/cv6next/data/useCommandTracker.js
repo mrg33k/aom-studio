@@ -294,6 +294,10 @@ export function useTrackerBugs(worldId) {
           assigneeTint: tintFor(owner || b.id), updated: b.updated || '',
           mission: b.page || '', opened: '', description: b.expected || '',
           doneCount: '', stepCount: '', checklist: [],
+          // status segmented-control flags (engine binds is-:bug.isOpen etc.)
+          isOpen: st === 'open' ? 'on' : 'off',
+          isProgress: st === 'progress' ? 'on' : 'off',
+          isDone: st === 'done' ? 'on' : 'off',
         };
       }));
       setStatus(raw.length ? 'ready' : 'empty');
@@ -389,6 +393,30 @@ export function useTrackerBugs(worldId) {
     } catch { return null; }
   };
 
+  // Change a CV6 bug's status for real (Open / In progress / Done) and persist it.
+  // Optimistic: flip the local row immediately so the control responds, then POST
+  // the real update and resync. CV6 board only (Space Rising is read-only).
+  const STATUS_LABELS = { Open: 'Open', 'In progress': 'In progress', Done: 'Done' };
+  const updateBug = async ({ id, status }) => {
+    if (!id || !showingCv6) return null;
+    const label = STATUS_LABELS[status]; if (!label) return null;
+    const st = bugStatus(label);
+    setBugs((prev) => prev.map((b) => (b.id === id
+      ? { ...b, status: st, statusLabel: label,
+          isOpen: st === 'open' ? 'on' : 'off',
+          isProgress: st === 'progress' ? 'on' : 'off',
+          isDone: st === 'done' ? 'on' : 'off' }
+      : b)));
+    try {
+      await authFetch('/api/dashboard/cv6-bugs', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', world: worldId, id, status: label }),
+      });
+      setReloadKey((n) => n + 1);
+      return true;
+    } catch { setReloadKey((n) => n + 1); return null; }
+  };
+
   const open = bugs.filter((b) => b.status !== 'done');
   const spaceOpen = spaceTickets.filter((b) => b.status !== 'done');
   const cv6Board = { id: CV6_BOARD_ID, name: 'CV6 Bugs', scope: 'Corner CV6', count: open.length };
@@ -436,5 +464,5 @@ export function useTrackerBugs(worldId) {
     empty: { title: 'No bugs in this tracker', body: 'Nothing logged yet. New issues land here.', actionLabel: '' },
     error: { title: "Couldn't load the tracker", body: 'Your connection dropped. Nothing was lost.', code: 'tracker · retry' },
   };
-  return { state: listState, data, switchTracker, createTracker, createBug, canCreate: !showingSpace };
+  return { state: listState, data, switchTracker, createTracker, createBug, updateBug, canCreate: !showingSpace };
 }
