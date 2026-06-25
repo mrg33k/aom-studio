@@ -747,7 +747,16 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
   const detailActions = useMemo(() => ({
     nav: () => setSheet(null),
     assignAgent: (bugId) => onAssignBug?.(bugId), openAttachment: () => {},
-    changeStatus: (status) => { if (selectedBug?.id) { updateBug({ id: selectedBug.id, status }); applyStatusToSelected(selectedBug.id, status); } },
+    changeStatus: (status, e) => {
+      const el = e?.currentTarget;
+      // The engine resolves data-arg as a DATA PATH, so the literal "Open"/"Done"
+      // never arrives as `status`. Read it straight off the tapped pill instead.
+      const s = el?.getAttribute('data-arg') || status;
+      if (!selectedBug?.id || !s) return;
+      el?.parentNode?.querySelectorAll('.tkseg').forEach((seg) => seg.classList.toggle('is-on', seg === el));
+      updateBug({ id: selectedBug.id, status: s });
+      applyStatusToSelected(selectedBug.id, s);
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [onAssignBug, selectedBug, updateBug]);
 
@@ -823,7 +832,14 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
       assignAgent: (bugId) => onAssignBug?.(bugId),
       // status change is real (cv6-bugs update, persisted). per-bug checklist has no
       // honest store yet -> inert (not faked).
-      changeStatus: (status) => { if (dbug?.id) { updateBug({ id: dbug.id, status }); applyStatusToSelected(dbug.id, status); } },
+      changeStatus: (status, e) => {
+        const el = e?.currentTarget;
+        const s = el?.getAttribute('data-arg') || status; // engine resolves data-arg as a path; read the literal off the pill
+        if (!dbug?.id || !s) return;
+        el?.parentNode?.querySelectorAll('.tkseg').forEach((seg) => seg.classList.toggle('is-on', seg === el));
+        updateBug({ id: dbug.id, status: s });
+        applyStatusToSelected(dbug.id, s);
+      },
       addChecklistItem: () => {}, toggleChecklistItem: () => {},
       openAttachment: () => {}, review: () => {},
     };
