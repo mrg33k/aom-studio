@@ -536,7 +536,8 @@ function ChatList({ onNav, onOpenRoom, onOpenProject, onOpenNav, onCommandK }) {
   }, [data, filter]);
   const actions = useMemo(() => ({
     nav: (t) => onNav(t === 'back' ? 'home' : t),
-    search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    // Search opens the room+agent palette, not the nav menu.
+    search: () => (onCommandK ? onCommandK() : onOpenNav?.()), openNav: () => onOpenNav?.(),
     setFilter: (f) => setFilter(f || 'all'),
     // "New goal" from the list level: open the command palette (the room picker)
     // so you choose where to start — an honest jump to a real surface, not a faked
