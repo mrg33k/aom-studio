@@ -906,12 +906,8 @@
 [data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on .rn { color:var(--fg); font-weight:600; }
 [data-cv6][data-screen="home-desktop"] .missmore { padding:7px 12px; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer; }
 
-/* CV6 quick-reply composer (Cv6Composer portals into .composer). CV4-style pill +
-   slash autocomplete + send, themed to the CV6 surface/accent tokens. */
-[data-cv6][data-screen="home-desktop"] .composer .cv6composer { flex:1; min-width:0; display:flex; align-items:center; gap:9px; position:relative; }
-[data-cv6][data-screen="home-desktop"] .cv6composer-input { flex:1; min-width:0; height:40px; border-radius:11px; border:1px solid var(--hair); background:var(--surface-2); padding:0 13px; color:var(--fg); font-family:var(--font-sans); font-size:14px; outline:none; transition:border-color .2s, box-shadow .2s; }
-[data-cv6][data-screen="home-desktop"] .cv6composer-input::placeholder { color:var(--faint); }
-[data-cv6][data-screen="home-desktop"] .cv6composer-input:focus { border-color:var(--accent); box-shadow:var(--ring-accent); }
-[data-cv6][data-screen="home-desktop"] .cv6composer-send { width:40px; height:40px; border-radius:11px; flex:none; display:flex; align-items:center; justify-content:center; background:var(--surface-2); border:1px solid var(--hair); color:var(--muted); cursor:pointer; transition:background .15s, color .15s, box-shadow .15s; }
-[data-cv6][data-screen="home-desktop"] .cv6composer-send.is-active { background:var(--accent); border-color:transparent; color:#fff; box-shadow:var(--ring-accent); }
-[data-cv6][data-screen="home-desktop"] .cv6composer-send:disabled { cursor:default; }
+/* CV6 quick-reply composer: Cv6FullComposer portals CV4's real ThreadInputBar
+   (pill + command menu + attach + mic/send + slash + voice) into this host. The
+   ThreadInputBar brings its own padding + top border, so the host is neutralized
+   to avoid a double frame. CV6 token re-skin is a later pass. */
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] { display:block; padding:0; border-top:none; }

@@ -9,7 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import Cv6Composer from './Cv6Composer.jsx';
+import Cv6FullComposer from './Cv6FullComposer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
@@ -931,11 +931,12 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
         aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
-      <Cv6Composer
+      <Cv6FullComposer
         target={knavOpenedRoom ? composerHost : null}
-        onSend={quickSend}
-        placeholder={displayedRoom.name ? `Message ${displayedRoom.name}…` : 'Message this room…'}
-        surface={(baseRoom.isProject || baseRoom.isMission) ? 'project' : '1on1'}
+        room={knavOpenedRoom}
+        worldId={worldId}
+        quickSend={quickSend}
+        onClose={() => { setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null); }}
       />
       {trackerOverlay}
     </div>
