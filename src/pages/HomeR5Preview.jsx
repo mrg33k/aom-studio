@@ -157,7 +157,8 @@ const CSS = `
 .r5 .v2tile{position:relative;overflow:hidden;aspect-ratio:9/14;border:1px solid #2A2A28;flex:none;}
 
 /* V3 cinema full-bleed + filmstrip */
-.r5 .v3scrim{background:linear-gradient(90deg,rgba(11,11,11,.95) 8%,rgba(11,11,11,.55) 45%,rgba(11,11,11,.2) 75%),linear-gradient(0deg,rgba(11,11,11,.9),transparent 32%);}
+.r5 .hero3{padding-bottom:180px;}
+.r5 .v3scrim{background:linear-gradient(90deg,rgba(11,11,11,.95) 8%,rgba(11,11,11,.55) 45%,rgba(11,11,11,.2) 75%),linear-gradient(0deg,rgba(11,11,11,.92),transparent 34%);}
 .r5 .v3strip{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:14px 0;overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
 .r5 .v3row{display:flex;gap:10px;width:max-content;animation:r5left 44s linear infinite;padding:0 14px;}
 @keyframes r5left{from{transform:translateX(0)}to{transform:translateX(-50%)}}
@@ -208,6 +209,48 @@ const CSS = `
 .r5 .tile .name{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;line-height:.92;font-size:30px;}
 .r5 .tile .foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--ink-700);}
 .r5 .tile .metric{font-weight:600;font-size:13.5px;}
+
+/* generic video card (used by portfolio variants 2-4) */
+.r5 .vcard{position:relative;overflow:hidden;background:var(--ink);color:var(--paper);border:1px solid var(--ink);cursor:pointer;}
+.r5 .vcard .vid{position:absolute;inset:0;z-index:0;}
+.r5 .vcard .shade{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(11,11,11,.45),rgba(11,11,11,.25) 40%,rgba(11,11,11,.9));}
+.r5 .vcard .pl{position:absolute;top:14px;right:14px;z-index:2;width:34px;height:34px;border:1.5px solid var(--paper);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;background:rgba(11,11,11,.3);}
+.r5 .vcard .cap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:16px 16px 14px;}
+.r5 .vcard .cap .nm{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;line-height:.95;font-size:24px;}
+.r5 .vcard .cap .row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+.r5 .vcard .cap .mt{font-weight:600;font-size:12.5px;}
+.r5 .vcard .cap .tg{font-size:10px;letter-spacing:.14em;text-transform:uppercase;border:1px solid currentColor;padding:3px 8px;}
+.r5 .vcard .idx{position:absolute;top:14px;left:16px;z-index:2;font-family:var(--display);font-weight:800;font-size:13px;color:var(--gold);}
+
+/* P2 featured + rail */
+.r5 .pf2{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;}
+.r5 .pf2 .big{min-height:540px;}
+.r5 .pf2 .big .cap .nm{font-size:44px;}
+.r5 .pf2 .rail{display:flex;flex-direction:column;gap:12px;}
+.r5 .pf2 .rrow{display:grid;grid-template-columns:132px 1fr auto;gap:16px;align-items:center;border:1px solid var(--line);padding:10px;cursor:pointer;background:var(--paper);}
+.r5 .pf2 .rrow:hover{border-color:var(--gold);}
+.r5 .pf2 .rthumb{position:relative;width:132px;aspect-ratio:16/9;overflow:hidden;background:var(--ink);}
+.r5 .pf2 .rrow .rt{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.01em;font-size:19px;line-height:1;}
+.r5 .pf2 .rrow .rm{color:var(--ink-500);font-size:12.5px;margin-top:5px;}
+.r5 .pf2 .rrow .rar{color:var(--gold-deep);font-size:16px;}
+
+/* P3 masonry wall */
+.r5 .pf3{column-count:4;column-gap:16px;}
+.r5 .pf3 .vcard{break-inside:avoid;margin-bottom:16px;width:100%;}
+@media(max-width:1100px){.r5 .pf3{column-count:3;}}
+
+/* P4 category carousels */
+.r5 .pf4 .crow{margin-bottom:30px;}
+.r5 .pf4 .ch{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px;}
+.r5 .pf4 .ch h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:30px;}
+.r5 .pf4 .ch .cc{color:var(--ink-500);font-size:12px;letter-spacing:.12em;text-transform:uppercase;}
+.r5 .pf4 .track{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;}
+.r5 .pf4 .ccard{flex:none;width:320px;aspect-ratio:16/9;}
+
+/* portfolio picker */
+.r5 .portpick{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
+.r5 .portpick button{font-family:var(--text);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-500);background:transparent;border:1px solid var(--line);padding:8px 14px;cursor:pointer;}
+.r5 .portpick button.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
 
 .r5 .ways{padding:90px 0;border-bottom:1px solid var(--line);background:var(--paper);}
 .r5 .ways .wh{text-align:center;max-width:46ch;margin:0 auto 48px;}
@@ -300,9 +343,15 @@ export default function HomeR5Preview() {
   const [hero, setHero] = useState(() => {
     if (typeof window === 'undefined') return 1;
     const n = parseInt(new URLSearchParams(window.location.search).get('hero'), 10);
+    return n >= 1 && n <= 4 ? n : 3;
+  });
+  const [port, setPort] = useState(() => {
+    if (typeof window === 'undefined') return 1;
+    const n = parseInt(new URLSearchParams(window.location.search).get('port'), 10);
     return n >= 1 && n <= 4 ? n : 1;
   });
   const shown = tab === 'All' ? PORTFOLIO : PORTFOLIO.filter((p) => p.cat === tab);
+  const CATS = ['Brands', 'Founders', 'Construction'];
 
   const HeroText = () => (
     <div className="htext">
@@ -405,43 +454,107 @@ export default function HomeR5Preview() {
         ))}
       </div></div>
 
-      {/* PORTFOLIO */}
+      {/* PORTFOLIO — 4 layout options */}
       <section className="work" id="work"><div className="wrap">
         <div className="head">
           <div>
             <h2 className="disp">The portfolio<span className="dot" /></h2>
             <div className="sub">Real projects. Real clients. All of it shipped.</div>
           </div>
-          <div className="tabs">
-            {TABS.map((t) => (
-              <button key={t} className={t === tab ? 'on' : ''} onClick={() => setTab(t)}>{t}</button>
-            ))}
-          </div>
-        </div>
-
-        <div className="feature" onClick={() => setVideo(FEATURED)}>
-          <LazyGumlet id={FEATURED.id} eager className="vid" />
-          <div className="shade" />
-          <div className="ftop"><span className="ftag">Featured · {FEATURED.tag}</span><span className="play">▶</span></div>
-          <div className="fbot">
-            <div className="fttl">{FEATURED.t}</div>
-            <div className="fsub">{FEATURED.s}</div>
-          </div>
-        </div>
-
-        <div className="grid12">
-          {shown.map((p, i) => (
-            <div key={p.t} className="tile" style={{ gridColumn: `span ${SPANS[i % 3]}` }} onClick={() => setVideo(p)}>
-              <LazyGumlet id={p.id} className="vid" />
-              <div className="shade" />
-              <div className="top"><span className="idx">{String(i + 1).padStart(2, '0')}</span><span className="pl">▶</span></div>
-              <div className="bot">
-                <div className="name">{p.t}</div>
-                <div className="foot"><span className="metric">{p.metric}</span><span className="lbl">{p.tag}</span></div>
-              </div>
+          {port !== 4 && (
+            <div className="tabs">
+              {TABS.map((t) => (
+                <button key={t} className={t === tab ? 'on' : ''} onClick={() => setTab(t)}>{t}</button>
+              ))}
             </div>
+          )}
+        </div>
+
+        <div className="portpick">
+          {['Editorial grid', 'Featured + rail', 'Masonry wall', 'Category rows'].map((l, i) => (
+            <button key={l} className={port === i + 1 ? 'on' : ''} onClick={() => setPort(i + 1)}>{i + 1} {l}</button>
           ))}
         </div>
+
+        {/* P1 editorial grid */}
+        {port === 1 && (<>
+          <div className="feature" onClick={() => setVideo(FEATURED)}>
+            <LazyGumlet id={FEATURED.id} eager className="vid" />
+            <div className="shade" />
+            <div className="ftop"><span className="ftag">Featured · {FEATURED.tag}</span><span className="play">▶</span></div>
+            <div className="fbot"><div className="fttl">{FEATURED.t}</div><div className="fsub">{FEATURED.s}</div></div>
+          </div>
+          <div className="grid12">
+            {shown.map((p, i) => (
+              <div key={p.t} className="tile" style={{ gridColumn: `span ${SPANS[i % 3]}` }} onClick={() => setVideo(p)}>
+                <LazyGumlet id={p.id} className="vid" />
+                <div className="shade" />
+                <div className="top"><span className="idx">{String(i + 1).padStart(2, '0')}</span><span className="pl">▶</span></div>
+                <div className="bot"><div className="name">{p.t}</div>
+                  <div className="foot"><span className="metric">{p.metric}</span><span className="lbl">{p.tag}</span></div></div>
+              </div>
+            ))}
+          </div>
+        </>)}
+
+        {/* P2 featured + rail */}
+        {port === 2 && (
+          <div className="pf2">
+            <div className="vcard big" onClick={() => setVideo(FEATURED)}>
+              <LazyGumlet id={FEATURED.id} eager className="vid" />
+              <div className="shade" /><span className="pl">▶</span>
+              <div className="cap"><div className="nm">{FEATURED.t}</div>
+                <div className="row"><span className="mt">{FEATURED.s}</span><span className="tg">{FEATURED.tag}</span></div></div>
+            </div>
+            <div className="rail">
+              {shown.slice(0, 5).map((p) => (
+                <div className="rrow" key={p.t} onClick={() => setVideo(p)}>
+                  <div className="rthumb"><LazyGumlet id={p.id} className="vid" /></div>
+                  <div><div className="rt">{p.t}</div><div className="rm">{p.metric} · {p.tag}</div></div>
+                  <span className="rar">↗</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* P3 masonry wall */}
+        {port === 3 && (
+          <div className="pf3">
+            {[FEATURED, ...shown].map((p, i) => (
+              <div className="vcard" key={p.t + i} style={{ aspectRatio: ['9/16', '16/9', '4/5', '1/1', '16/9', '3/4'][i % 6] }} onClick={() => setVideo(p)}>
+                <LazyGumlet id={p.id} eager={i < 6} className="vid" />
+                <div className="shade" /><span className="pl">▶</span>
+                <div className="cap"><div className="nm">{p.t}</div>
+                  <div className="row"><span className="mt">{p.metric || p.s}</span><span className="tg">{p.tag}</span></div></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* P4 category carousels */}
+        {port === 4 && (
+          <div className="pf4">
+            {CATS.map((cat) => {
+              const items = PORTFOLIO.filter((p) => p.cat === cat);
+              return (
+                <div className="crow" key={cat}>
+                  <div className="ch"><h3>{cat}</h3><span className="cc">{items.length} projects</span></div>
+                  <div className="track">
+                    {items.map((p) => (
+                      <div className="vcard ccard" key={p.t} onClick={() => setVideo(p)}>
+                        <LazyGumlet id={p.id} className="vid" />
+                        <div className="shade" /><span className="pl">▶</span>
+                        <div className="cap"><div className="nm">{p.t}</div>
+                          <div className="row"><span className="mt">{p.metric}</span><span className="tg">{p.tag}</span></div></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div></section>
 
       {/* TWO WAYS */}
