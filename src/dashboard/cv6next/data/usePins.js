@@ -3,27 +3,19 @@
 // Pins are LOCAL component state (not persisted to backend yet).
 // TODO(cv6: persist pins to /api/dashboard/review-pin-decision): backend integration.
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export function usePins(deliverableId) {
   const [pins, setPins] = useState([]);
 
-  // Sample pins for demo (so Patrik can see pins working without annotating).
-  // These are cleared when switching deliverables.
-  useMemo(() => {
-    if (deliverableId) {
-      // Demo: one sample pin per deliverable (so each shows at least one).
-      const samplePin = {
-        id: `sample-${deliverableId}-1`,
-        n: 1,
-        x: 45,
-        y: 30,
-        text: 'Review this carefully',
-        anchor: 'on "Support ask"',
-        createdAt: new Date().toISOString(),
-      };
-      setPins([samplePin]);
-    }
+  // Start every deliverable with NO pins. We used to inject a fake sample pin
+  // ("Review this carefully") so the viewer looked annotated, but that showed a
+  // fabricated review comment as if a human had left it — fake-as-real. Real pins
+  // are created by tapping the viewer (addPin) and are local-only until a pin store
+  // exists. Reset to empty when switching deliverables so one file's pins never
+  // bleed into the next.
+  useEffect(() => {
+    setPins([]);
   }, [deliverableId]);
 
   // Create a new pin at the clicked position.
