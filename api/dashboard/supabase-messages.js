@@ -52,7 +52,11 @@ export default async function handler(req, res) {
   // ---- GET: load chat history for an agent --------------------------------
   if (req.method === 'GET') {
     const { agent, limit = 100, all } = req.query
-    if (!agent && !all) return res.status(400).json({ error: 'agent required' })
+    // A thread is identified by an agent, a project, a mission, or the all-agents aggregate.
+    // Project/mission rooms (see projectFilter/missionFilter below) are valid without an agent.
+    if (!agent && !all && !req.query.project && !req.query.mission_slug) {
+      return res.status(400).json({ error: 'agent, project, or mission_slug required' })
+    }
 
     // client_id filter ready for multi-tenant (add column to Supabase first)
     const requestedClient = (req.query.client && req.query.client.trim())
@@ -81,7 +85,8 @@ export default async function handler(req, res) {
     const searchQuery = req.query.search ? req.query.search.trim() : ''
 
     // ?all=true: fetch ALL messages across all agents (for AOM Team Room aggregate view)
-    const agentFilter = (all === 'true' || all === '1') ? '' : `&agent=eq.${encodeURIComponent(agent)}`
+    // No agent on a project/mission query → don't emit "agent=eq.undefined" (which returns nothing).
+    const agentFilter = (all === 'true' || all === '1' || !agent) ? '' : `&agent=eq.${encodeURIComponent(agent)}`
     const searchFilter = searchQuery ? `&text=ilike.*${encodeURIComponent(searchQuery)}*` : ''
     // corner:notifications-catchup R3 — room-scoped filters for the catch-up
     // context fetcher. Same shape any chat surface uses:

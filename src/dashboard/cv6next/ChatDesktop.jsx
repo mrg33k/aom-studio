@@ -230,14 +230,14 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
   const missionsByProject = useProjectMissions(worldId);
   const [expanded, setExpanded] = useState(() => new Set());
   const toggleProject = (slug) => setExpanded((prev) => { const n = new Set(prev); if (n.has(slug)) n.delete(slug); else n.add(slug); return n; });
-  // Coming in with a project (from Home) or a mission selected: fan that project open so its
-  // missions are visible. Only ever adds, so it never fights a manual collapse.
+  // Fan open ONLY the project we arrive on (from Home) — keyed on initialRoom, not on every
+  // selection. After arrival, expansion is fully user-driven, so a manual collapse always sticks
+  // (clicking a project row again closes it; the effect won't re-open it).
   useEffect(() => {
-    if (!selected) return;
-    const slug = selected.isMission ? selected.projectSlug
-      : (selected.isProject ? ((projects.find((p) => p.id === selected.id) || {}).slug || selected.id) : null);
+    const slug = initialRoom?.isMission ? initialRoom.projectSlug
+      : (initialRoom?.isProject ? ((projects.find((p) => p.id === initialRoom.id) || {}).slug || initialRoom.id) : null);
     if (slug) setExpanded((prev) => (prev.has(slug) ? prev : new Set(prev).add(slug)));
-  }, [selected?.id, selected?.isProject, selected?.isMission, projects]);
+  }, [initialRoom?.id, initialRoom?.isProject, initialRoom?.isMission, projects]);
 
   return (
     <SendCtx.Provider value={send || (() => {})}>
@@ -259,7 +259,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                 missions={missionsByProject[p.slug] || []}
                 expanded={expanded.has(p.slug)}
                 onToggle={() => toggleProject(p.slug)}
-                onPickProject={() => { pickProject(p); setExpanded((prev) => (prev.has(p.slug) ? prev : new Set(prev).add(p.slug))); }}
+                onPickProject={() => { pickProject(p); toggleProject(p.slug); }}
                 onPickMission={(m) => pickMission(p, m)} />
             ))
               : <div style={{ color: 'var(--faint)', fontSize: 12, padding: '0 6px' }}>No projects yet.</div>}
