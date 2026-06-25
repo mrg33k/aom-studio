@@ -20,6 +20,42 @@ const HERO_DECK = [
   { id: '698a5a8b873071aec5c99c6f', client: 'Nook 10 Year', tag: 'Creative' },
 ];
 
+// Big reel pools so the hero reads as VOLUME (we make a lot), not three clips.
+const DECK_REELS = [
+  { id: '698a596eaec3d4e420c22a9a', client: 'Lagos White Party' },
+  { id: '698a5946873071aec5c96163', client: 'Lagos Recap' },
+  { id: '698a5a8b873071aec5c99c6f', client: 'Nook 10 Year' },
+  { id: '698a5391fc23d3d76fa7306c', client: "PA'LA x HARUMI" },
+  { id: '698a53bcfc23d3d76fa736e4', client: 'Cook & Craft' },
+  { id: '698a5c0afc23d3d76fa83ba6', client: 'Killer Whale Club' },
+  { id: '698a580bfc23d3d76fa7bd7c', client: "Tiffany's" },
+  { id: '698a581daec3d4e420c20b94', client: 'Primrose Ambition' },
+  { id: '698a5a7d873071aec5c99b08', client: 'NGOTS Restoration' },
+];
+const FILMS = [
+  { id: '698a6296fc23d3d76fa8d992', client: 'Journey to Gary Vee' },
+  { id: '698a5b86fc23d3d76fa82ece', client: 'Noble Real Estate' },
+  { id: '698a6106aec3d4e420c2fd85', client: 'Rainbow Rider' },
+  { id: '698a5d24aec3d4e420c2a0a0', client: 'Pretty Penny' },
+  { id: '698a5ef5fc23d3d76fa87ef4', client: 'Virtu Hospitality' },
+  { id: '698a64e5873071aec5ca99ac', client: 'AZ Arts Foundation' },
+  { id: '698a6177873071aec5ca4374', client: 'Keep it Cut' },
+  { id: '698a5fcdfc23d3d76fa893b8', client: 'United Food Bank' },
+];
+// V1 mosaic: 6-col x 3-row wall with a few spanning tiles for a masonry feel.
+const MOSAIC = [
+  { id: '698a596eaec3d4e420c22a9a', cs: 2, rs: 2 },
+  { id: '698a6296fc23d3d76fa8d992', cs: 2, rs: 1 },
+  { id: '698a5c0afc23d3d76fa83ba6', cs: 1, rs: 1 },
+  { id: '698a53bcfc23d3d76fa736e4', cs: 1, rs: 2 },
+  { id: '698a5ef5fc23d3d76fa87ef4', cs: 1, rs: 1 },
+  { id: '698a5391fc23d3d76fa7306c', cs: 1, rs: 1 },
+  { id: '698a580bfc23d3d76fa7bd7c', cs: 2, rs: 1 },
+  { id: '698a5946873071aec5c96163', cs: 1, rs: 1 },
+  { id: '698a5fcdfc23d3d76fa893b8', cs: 1, rs: 1 },
+  { id: '698a581daec3d4e420c20b94', cs: 1, rs: 1 },
+];
+
 const TICKER = [
   'Skylar', "PA'LA", 'Ambition Mechanical', 'ISA Energy', 'Brandon Wiley',
   'Space Rising', 'Included Health', 'Intelliplay', 'Valor to Victory', 'Kohrs',
@@ -93,28 +129,52 @@ const CSS = `
 .r5 .nav .links{display:flex;gap:30px;}
 .r5 .nav .links a{color:var(--ink);text-decoration:none;}
 
-.r5 .hero{background:var(--ink);color:var(--paper);position:relative;overflow:hidden;}
-.r5 .hero .ghost{position:absolute;width:560px;height:560px;left:-230px;bottom:-260px;color:var(--gold);opacity:.08;}
-.r5 .hero .inner{position:relative;z-index:2;padding:74px 0 76px;display:grid;grid-template-columns:1.04fr .96fr;gap:54px;align-items:center;}
-.r5 .hero .pill{display:inline-flex;align-items:center;gap:9px;border:1px solid #3A3A36;padding:7px 14px;color:var(--stone);font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:34px;}
+.r5 .hero{background:var(--ink);color:var(--paper);position:relative;overflow:hidden;min-height:700px;display:flex;align-items:center;}
+.r5 .hero .wrap{position:relative;z-index:3;width:100%;}
+.r5 .htext{max-width:600px;}
+.r5 .hero .pill{display:inline-flex;align-items:center;gap:9px;border:1px solid #3A3A36;padding:7px 14px;color:var(--stone);font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:30px;background:rgba(11,11,11,.4);backdrop-filter:blur(4px);}
 .r5 .hero .pill .ledot{width:7px;height:7px;background:var(--gold);display:inline-block;animation:r5pulse 2s infinite;}
 @keyframes r5pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.r5 .hero h1{font-size:86px;line-height:.92;}
-.r5 .hero .sub p{max-width:42ch;font-size:20px;line-height:1.5;font-weight:500;color:#E7E4DC;margin-top:30px;}
-.r5 .hero .cta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:30px;}
+.r5 .hero h1{font-size:80px;line-height:.92;}
+.r5 .hero .sub p{max-width:40ch;font-size:19px;line-height:1.5;font-weight:500;color:#E7E4DC;margin-top:26px;}
+.r5 .hero .cta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:28px;}
+.r5 .heromedia{position:absolute;inset:0;z-index:1;}
+.r5 .scrim{position:absolute;inset:0;z-index:2;pointer-events:none;}
 
-.r5 .deck{position:relative;height:500px;}
-.r5 .reel{position:absolute;width:296px;height:404px;border:1px solid #565249;overflow:hidden;background:linear-gradient(155deg,#2C2A25 0%,#131210 76%);box-shadow:0 26px 64px rgba(0,0,0,.6);}
-.r5 .reel .scrim{position:absolute;inset:0;z-index:1;background:radial-gradient(120% 80% at 70% 20%, rgba(196,164,106,.16), transparent 55%);pointer-events:none;}
-.r5 .reel .play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;width:58px;height:58px;border:1.5px solid var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:17px;background:rgba(11,11,11,.35);}
-.r5 .reel .badge{position:absolute;top:14px;left:14px;z-index:2;font-weight:600;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--paper);border:1px solid #4A4843;padding:3px 8px;background:rgba(11,11,11,.4);}
-.r5 .reel .time{position:absolute;top:14px;right:14px;z-index:2;font-family:var(--display);font-weight:800;font-size:12px;color:var(--stone);}
-.r5 .reel .meta{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:18px 16px 16px;background:linear-gradient(transparent,rgba(0,0,0,.9));}
-.r5 .reel .meta .t{color:var(--gold);font-size:10px;letter-spacing:.24em;text-transform:uppercase;margin-bottom:6px;}
-.r5 .reel .meta .c{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.01em;font-size:23px;line-height:.95;}
-.r5 .reel.back{left:4px;top:30px;transform:rotate(-6deg);opacity:.55;z-index:1;}
-.r5 .reel.mid{right:4px;top:14px;transform:rotate(5deg);opacity:.78;z-index:2;}
-.r5 .reel.front{left:50%;top:46px;transform:translateX(-50%);z-index:3;}
+/* V1 mosaic wall */
+.r5 .v1grid{position:absolute;inset:0;z-index:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(3,1fr);gap:6px;}
+.r5 .v1cell{position:relative;overflow:hidden;background:#161412;}
+.r5 .v1scrim{background:linear-gradient(100deg,var(--ink) 4%,rgba(11,11,11,.96) 30%,rgba(11,11,11,.6) 56%,rgba(11,11,11,.18) 100%);}
+
+/* V2 twin drifting columns */
+.r5 .inner2{display:grid;grid-template-columns:1.02fr .98fr;gap:48px;align-items:center;}
+.r5 .v2{position:relative;height:600px;display:grid;grid-template-columns:1fr 1fr;gap:12px;-webkit-mask:linear-gradient(transparent,#000 11%,#000 89%,transparent);mask:linear-gradient(transparent,#000 11%,#000 89%,transparent);}
+.r5 .v2col{display:flex;flex-direction:column;gap:12px;}
+.r5 .v2col.up{animation:r5up 34s linear infinite;}
+.r5 .v2col.down{animation:r5down 38s linear infinite;}
+@keyframes r5up{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+@keyframes r5down{from{transform:translateY(-50%)}to{transform:translateY(0)}}
+.r5 .v2tile{position:relative;overflow:hidden;aspect-ratio:9/14;border:1px solid #2A2A28;flex:none;}
+
+/* V3 cinema full-bleed + filmstrip */
+.r5 .v3scrim{background:linear-gradient(90deg,rgba(11,11,11,.95) 8%,rgba(11,11,11,.55) 45%,rgba(11,11,11,.2) 75%),linear-gradient(0deg,rgba(11,11,11,.9),transparent 32%);}
+.r5 .v3strip{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:14px 0;overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
+.r5 .v3row{display:flex;gap:10px;width:max-content;animation:r5left 44s linear infinite;padding:0 14px;}
+@keyframes r5left{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.r5 .v3thumb{position:relative;width:172px;aspect-ratio:16/9;overflow:hidden;border:1px solid #2A2A28;flex:none;}
+.r5 .v3thumb .tl{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:8px 10px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper);background:linear-gradient(transparent,rgba(0,0,0,.85));font-weight:600;}
+
+/* V4 contact-sheet index */
+.r5 .inner4{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
+.r5 .v4grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:8px;height:600px;}
+.r5 .v4cell{position:relative;overflow:hidden;border:1px solid #2A2A28;background:#161412;}
+.r5 .v4cell .v4idx{position:absolute;top:8px;left:9px;z-index:2;font-family:var(--display);font-weight:800;font-size:12px;color:var(--gold);}
+.r5 .v4cell .v4lbl{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:18px 9px 8px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--paper);font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.85));}
+
+/* hero variant picker */
+.r5 .heropick{position:fixed;bottom:18px;right:18px;z-index:200;display:flex;gap:6px;background:rgba(11,11,11,.86);border:1px solid #3A3A36;padding:6px;backdrop-filter:blur(6px);}
+.r5 .heropick button{font-family:var(--text);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--stone);background:transparent;border:1px solid transparent;padding:8px 12px;cursor:pointer;}
+.r5 .heropick button.on{background:var(--gold);color:var(--ink);font-weight:600;}
 
 .r5 .ticker{background:var(--ink);color:var(--stone);border-top:1px solid var(--ink-700);overflow:hidden;}
 .r5 .ticker .row{display:flex;align-items:center;height:58px;width:max-content;animation:r5marq 32s linear infinite;}
@@ -237,7 +297,24 @@ const CSS = `
 export default function HomeR5Preview() {
   const [tab, setTab] = useState('All');
   const [video, setVideo] = useState(null);
+  const [hero, setHero] = useState(() => {
+    if (typeof window === 'undefined') return 1;
+    const n = parseInt(new URLSearchParams(window.location.search).get('hero'), 10);
+    return n >= 1 && n <= 4 ? n : 1;
+  });
   const shown = tab === 'All' ? PORTFOLIO : PORTFOLIO.filter((p) => p.cat === tab);
+
+  const HeroText = () => (
+    <div className="htext">
+      <span className="pill"><span className="ledot" /> Now streaming · Live reels</span>
+      <h1 className="disp">Brand films for the ones who <span className="gold">refuse to follow</span><span className="dot" /></h1>
+      <div className="sub"><p>Brand films, websites, and ads for real businesses. Hire us online by sending a few files, or hire us in person. We reply within 24 hours.</p></div>
+      <div className="cta">
+        <a className="btn gold" href="#contact">Start a project ↗</a>
+        <a className="btn ghost-light" href="#work">▶&nbsp; Watch the reel</a>
+      </div>
+    </div>
+  );
 
   return (
     <div className="r5">
@@ -252,31 +329,74 @@ export default function HomeR5Preview() {
         <a className="btn gold" href="#contact">Start a project ↗</a>
       </div></nav>
 
-      {/* HERO */}
-      <header className="hero">
-        <BrandMark kind="globe" className="ghost mark" />
-        <div className="wrap inner">
-          <div>
-            <span className="pill"><span className="ledot" /> Now streaming · Live reels</span>
-            <h1 className="disp">Brand films for the ones who <span className="gold">refuse to follow</span><span className="dot" /></h1>
-            <div className="sub"><p>Brand films, websites, and ads for real businesses. Hire us online by sending a few files, or hire us in person. We reply within 24 hours.</p></div>
-            <div className="cta">
-              <a className="btn gold" href="#contact">Start a project ↗</a>
-              <a className="btn ghost-light" href="#work">▶&nbsp; Watch the reel</a>
+      {/* HERO — 4 layout options, switch bottom-right */}
+      {hero === 1 && (
+        <header className="hero hero1">
+          <div className="v1grid">
+            {MOSAIC.map((m, i) => (
+              <div className="v1cell" key={i} style={{ gridColumn: `span ${m.cs}`, gridRow: `span ${m.rs}` }}>
+                <LazyGumlet id={m.id} eager portrait />
+              </div>
+            ))}
+          </div>
+          <div className="scrim v1scrim" />
+          <div className="wrap"><HeroText /></div>
+        </header>
+      )}
+      {hero === 2 && (
+        <header className="hero hero2">
+          <div className="wrap inner2">
+            <HeroText />
+            <div className="v2">
+              <div className="v2col up">
+                {[...DECK_REELS.slice(0, 5), ...DECK_REELS.slice(0, 5)].map((r, i) => (
+                  <div className="v2tile" key={i}><LazyGumlet id={r.id} eager portrait /></div>
+                ))}
+              </div>
+              <div className="v2col down">
+                {[...DECK_REELS.slice(4, 9), ...DECK_REELS.slice(4, 9)].map((r, i) => (
+                  <div className="v2tile" key={i}><LazyGumlet id={r.id} eager portrait /></div>
+                ))}
+              </div>
             </div>
           </div>
-          <div className="deck">
-            <div className="reel back"><LazyGumlet id={HERO_DECK[2].id} portrait /><div className="scrim" /></div>
-            <div className="reel mid"><LazyGumlet id={HERO_DECK[1].id} portrait /><div className="scrim" /></div>
-            <div className="reel front" onClick={() => setVideo(HERO_DECK[0])}>
-              <LazyGumlet id={HERO_DECK[0].id} eager portrait />
-              <div className="scrim" /><span className="badge">Reel</span><span className="time">{HERO_DECK[0].time}</span>
-              <div className="play">▶</div>
-              <div className="meta"><div className="t">{HERO_DECK[0].tag}</div><div className="c">{HERO_DECK[0].client}</div></div>
+        </header>
+      )}
+      {hero === 3 && (
+        <header className="hero hero3">
+          <div className="heromedia"><LazyGumlet id={FILMS[0].id} eager /></div>
+          <div className="scrim v3scrim" />
+          <div className="wrap"><HeroText /></div>
+          <div className="v3strip"><div className="v3row">
+            {[...FILMS, ...FILMS].map((f, i) => (
+              <div className="v3thumb" key={i} onClick={() => setVideo({ id: f.id, client: f.client })}>
+                <LazyGumlet id={f.id} eager /><span className="tl">{f.client}</span>
+              </div>
+            ))}
+          </div></div>
+        </header>
+      )}
+      {hero === 4 && (
+        <header className="hero hero4">
+          <div className="wrap inner4">
+            <HeroText />
+            <div className="v4grid">
+              {DECK_REELS.slice(0, 9).map((r, i) => (
+                <div className="v4cell" key={i} onClick={() => setVideo({ id: r.id, client: r.client })}>
+                  <LazyGumlet id={r.id} eager portrait />
+                  <span className="v4idx">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="v4lbl">{r.client}</span>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
+      <div className="heropick">
+        {['Mosaic', 'Columns', 'Cinema', 'Index'].map((l, i) => (
+          <button key={l} className={hero === i + 1 ? 'on' : ''} onClick={() => setHero(i + 1)}>{i + 1} {l}</button>
+        ))}
+      </div>
 
       {/* TICKER */}
       <div className="ticker"><div className="row">
