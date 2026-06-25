@@ -50,6 +50,8 @@ function composePicker(raw) {
   // Flat file store has no folders — drop the meaningless "· N folders" from each row.
   const pmeta = screen.querySelector('.pmeta');
   if (pmeta) pmeta.innerHTML = '<span data-bind="project.fileCount">0</span> files';
+  // Creating a project from here is not wired yet — disable rather than leave a dead button.
+  disableHeld(screen, '[data-action="newProject"]', 'Creating a project from here is coming soon');
   finalizeScreen(screen, screen.querySelector('[data-state="ready"]'));
   return screen.outerHTML;
 }
@@ -101,8 +103,22 @@ function composeView(raw) {
   if (content) content.setAttribute('style', 'flex:1;min-height:0;overflow-y:auto;padding:16px;');
   const footer = screen.querySelector('div[style*="height:78px"]');
   if (footer) footer.setAttribute('style', 'flex:none;border-top:1px solid var(--divider);background:var(--ground);display:flex;align-items:center;gap:10px;padding:0 16px;height:78px;');
+  // Comment + move on a file need a file-storage backend that does not exist yet.
+  // Show them disabled (held-c) rather than as silent dead buttons. Open in Review + Assign stay live.
+  disableHeld(screen, '[data-action="commentFile"]', 'Comments are coming soon');
+  disableHeld(screen, '[data-action="moveFile"]', 'Moving files is coming soon');
   finalizeScreen(screen, content);
   return screen.outerHTML;
+}
+
+// Make a backend-blocked control honestly disabled instead of a silent no-op.
+function disableHeld(root, selector, title) {
+  const el = root.querySelector(selector);
+  if (!el) return;
+  el.removeAttribute('data-action');
+  el.setAttribute('disabled', '');
+  el.setAttribute('title', title);
+  el.setAttribute('style', `${el.getAttribute('style') || ''};opacity:.45;cursor:not-allowed;`);
 }
 
 const PICKER_HTML = composePicker(template);
