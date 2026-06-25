@@ -71,6 +71,10 @@ function composeBrowse(raw) {
   [...screen.querySelectorAll('[data-action="toggleSelectMode"]')].forEach((n) => n.remove());
   // No real subfolders (flat store) — drop the folder prototype row.
   screen.querySelector('.selrow[data-each="folders"]')?.remove();
+  // Breadcrumb is redundant with the header (which already shows the project + file
+  // count) and its data-each is on the row container, so it stacks one full-width row
+  // per crumb ("Corner › Corner ›") instead of sitting inline. Drop it.
+  screen.querySelector('[data-each="breadcrumb"]')?.remove();
 
   // File rows: no checkbox at rest, and a tap opens the file instead of selecting it.
   const fileRow = screen.querySelector('.selrow[data-each="files"]');

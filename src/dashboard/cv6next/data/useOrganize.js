@@ -40,40 +40,57 @@ function fileKind(name) {
   return 'doc';
 }
 
+// Escape first (the source is a real file — never inject its raw bytes as HTML),
+// then re-apply a small inline-markdown set on the escaped text.
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function inlineMd(s) {
+  return escapeHtml(s)
+    .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+?)\*(?!\*)/g, '$1<em>$2</em>')
+    .replace(/`([^`]+?)`/g, '<code style="font-family:var(--font-mono);font-size:.92em;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:5px;">$1</code>')
+    .replace(/\[([^\]]+?)\]\(([^)]+?)\)/g, '<a href="$2">$1</a>');
+}
+
+// Render the WHOLE file as readable HTML (headings, paragraphs, bullet lists, inline
+// emphasis/links) so the reader actually lets you read the file — not a 300-char teaser.
 function parseMarkdown(content) {
   if (!content) return { title: '', body: '' };
-  const lines = (content || '').split('\n');
-  let title = '';
-  let bodyStart = 0;
+  const lines = String(content).split('\n');
 
-  // Extract title from # heading
-  for (let i = 0; i < Math.min(5, lines.length); i++) {
-    if (lines[i].startsWith('# ')) {
-      title = lines[i].replace(/^#+\s+/, '').trim();
-      bodyStart = i + 1;
-      break;
+  // Title = first top-level "# " heading; pull it out of the body.
+  let title = '';
+  for (let i = 0; i < lines.length; i++) {
+    if (/^#\s+/.test(lines[i])) { title = lines[i].replace(/^#+\s+/, '').trim(); lines.splice(i, 1); break; }
+  }
+
+  const html = [];
+  let para = [];
+  let listItems = [];
+  const flushPara = () => { if (para.length) { html.push(`<p style="margin:0 0 14px;">${inlineMd(para.join(' '))}</p>`); para = []; } };
+  const flushList = () => { if (listItems.length) { html.push(`<ul style="margin:0 0 14px;padding-left:20px;">${listItems.map((li) => `<li style="margin:0 0 6px;">${inlineMd(li)}</li>`).join('')}</ul>`); listItems = []; } };
+
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    if (/^#{1,6}\s+/.test(line)) {
+      flushPara(); flushList();
+      const lvl = line.match(/^#+/)[0].length;
+      const size = lvl <= 2 ? 18 : 15;
+      html.push(`<h${lvl <= 3 ? lvl : 3} style="font-size:${size}px;font-weight:700;letter-spacing:-.01em;margin:18px 0 8px;">${inlineMd(line.replace(/^#+\s+/, ''))}</h${lvl <= 3 ? lvl : 3}>`);
+    } else if (/^\s*[-*+]\s+/.test(line)) {
+      flushPara();
+      listItems.push(line.replace(/^\s*[-*+]\s+/, ''));
+    } else if (line.trim() === '') {
+      flushPara(); flushList();
+    } else {
+      flushList();
+      para.push(line.trim());
     }
   }
+  flushPara(); flushList();
 
-  // Collect body (first ~3 paragraphs)
-  const bodyLines = [];
-  for (let i = bodyStart; i < lines.length && bodyLines.length < 5; i++) {
-    const line = lines[i].trim();
-    if (line && !line.startsWith('#')) bodyLines.push(line);
-  }
-  const body = bodyLines.join('\n').slice(0, 300);
-
-  // Simple HTML: paragraphs + link wrapping
-  const html = body
-    .split('\n\n')
-    .map((p) => {
-      if (!p.trim()) return '';
-      const linked = p.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
-      return `<p style="margin:0 0 14px;">${linked}</p>`;
-    })
-    .join('');
-
-  return { title: title || 'Untitled', body: html };
+  return { title: title || 'Untitled', body: html.join('') };
 }
 
 export function useOrganize(worldId = 'aom') {
