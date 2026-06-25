@@ -163,7 +163,7 @@ const HOME_ALIASES = {
 // Projects pagination: show this many by default, rest behind "Show N more".
 const PROJ_LIMIT = 8;
 
-function Home({ onNav, onOpenRoom, onOpenNav }) {
+function Home({ onNav, onOpenRoom, onOpenNav, pendingProjectId, onProjectConsumed }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
   const [missionReload, setMissionReload] = useState(0);
@@ -171,6 +171,14 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   // Mobile "project opened" state (Home state B): tap a project -> its missions.
   const [openedProjectId, setOpenedProjectId] = useState(null);
   const openedProject = openedProjectId ? (data.projects || []).find((p) => p.id === openedProjectId) : null;
+  // A project tapped on another surface (Chat list) routes here to open its home.
+  // Mobile only — the project-detail screen is phone-framed; desktop waits on its own design.
+  useEffect(() => {
+    if (pendingProjectId && !isDesktop) {
+      setOpenedProjectId(pendingProjectId);
+      onProjectConsumed?.();
+    }
+  }, [pendingProjectId, isDesktop, onProjectConsumed]);
   // New-mission form (Home state C). Seeded on open so it stays stable + uncontrolled.
   const [missionSeed, setMissionSeed] = useState(null);
   const missionFormRef = useRef(null);
@@ -487,7 +495,7 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
 
 // ── Chat list (mobile): the conversations list the Chat menu opens to ──
 const CHATLIST_ALIASES = { agents: 'agent', projects: 'project' };
-function ChatList({ onNav, onOpenRoom, onOpenNav, onCommandK }) {
+function ChatList({ onNav, onOpenRoom, onOpenProject, onOpenNav, onCommandK }) {
   const { state, data, worldId } = useChatList();
   const html = useMemo(() => composeScreen(chatListRaw, { mobile: true, pick: 0 }), []);
   // Real client-side filter for the header chips (All / Agents / Projects / Needs you).
@@ -536,11 +544,12 @@ function ChatList({ onNav, onOpenRoom, onOpenNav, onCommandK }) {
     openRoom: (id) => {
       const agent = allAgents.find((a) => String(a.id) === String(id));
       if (agent) { onOpenRoom?.(agent, worldId); return; }
+      // A project row opens the project's home (missions + general chat), not a bare chat.
       const proj = allProjects.find((p) => String(p.id) === String(id));
-      if (proj) onOpenRoom?.({ id: proj.id, name: proj.name, isProject: true }, worldId);
+      if (proj) onOpenProject?.(proj);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenNav, onOpenRoom, onCommandK, allAgents, allProjects, worldId]);
+  }), [onNav, onOpenNav, onOpenRoom, onOpenProject, onCommandK, allAgents, allProjects, worldId]);
   return <TemplateScreen html={html} data={view} actions={actions} state={state}
     aliases={CHATLIST_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
@@ -1005,6 +1014,10 @@ export default function CornerCV6() {
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
   const [assignConfig, setAssignConfig] = useState(null); // { type, id, title } for AssignButton overlay
+  // Tapping a project anywhere (Chat list, etc.) opens that project's home on Home —
+  // its missions list + the "step into general project chat" button — instead of jumping
+  // straight into a chat. Home consumes this and opens its (proven) project-detail screen.
+  const [pendingProjectId, setPendingProjectId] = useState(null);
 
   // ⌘K / Ctrl-K toggles the command palette from anywhere (desktop/keyboard). The
   // nav's search icon opens it too (onOpenCommandK below). Escape closes inside Search.
@@ -1053,6 +1066,13 @@ export default function CornerCV6() {
   }, [back, goTo]);
   // Opening a room keeps the current view underneath so Back returns to where you tapped from.
   const onOpenRoom = useCallback((room, wid) => goTo(view, { room, worldId: wid || worldId }), [goTo, view, worldId]);
+  // Open a project's home (missions + general chat) on the Home surface.
+  const onOpenProject = useCallback((proj) => {
+    const id = proj?.id || proj;
+    if (!id) return;
+    setPendingProjectId(id);
+    goTo('home', null);
+  }, [goTo]);
   const onOpenNav = useCallback(() => setNavOpen(true), []);
   const closeNav = useCallback(() => setNavOpen(false), []);
   const goHome = useCallback(() => { setHistory([]); setOpenedRoom(null); setView('home'); }, []);
@@ -1088,8 +1108,8 @@ export default function CornerCV6() {
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent' })} />; viewKey = 'tracker'; }
   else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} />; viewKey = 'review'; }
-  else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} />; viewKey = 'home'; }
+  else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
   return (
