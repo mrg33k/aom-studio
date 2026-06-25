@@ -869,7 +869,7 @@
    than the front card with a visible hairline + tight shadow so the steps read against the
    dark ground. Down-dominant because the catch column clips horizontal overflow. */
 [data-cv6] .custack-back { position:absolute; inset:0; border-radius:16px;
-  background:#0a0d12; border:1px solid rgba(255,255,255,.12); box-shadow:0 8px 16px -4px rgba(0,0,0,.7); }
-[data-cv6] .custack .b1 { transform:translate(7px,20px); z-index:1; }
-[data-cv6] .custack .b2 { transform:translate(14px,40px); z-index:0; }
+  background:var(--surface); border:1px solid var(--hair); box-shadow:0 5px 13px -3px rgba(0,0,0,.5); }
+[data-cv6] .custack .b1 { transform:translate(6px,16px); z-index:1; }
+[data-cv6] .custack .b2 { transform:translate(12px,32px); z-index:0; }
 [data-cv6] .custack.is-none .custack-back { display:none; }
