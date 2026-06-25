@@ -173,7 +173,7 @@ function composeChatMobile(withGoal) {
 
 // ── Home (desktop + mobile share one data shape + one set of actions) ──
 const HOME_ALIASES = {
-  agents: 'room', projects: 'room', recent: 'rec',
+  agents: 'room', projects: 'room', recent: 'rec', 'convo.messages': 'msg',
   'room.missions': 'mission',
   'catchUp.rest': 'card',
   'catchUp.current.actionItems': 'actionItem',
@@ -457,6 +457,11 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // each expanded project's missions), kept in a ref so the keydown handler reads the live
   // list without re-subscribing. Built in render from the same data the rows render from.
   const navNodesRef = useRef([]);
+  // Real conversation for the col3 quick reply room (desktop): load the opened room's actual
+  // thread so selecting a room shows real messages, not a mockup (Patrik 2026-06-25). Same
+  // useRoomThread the full Chat tool uses, so the quick panel and the full chat agree.
+  const quickThread = useRoomThread(worldId, knavOpenedRoom);
+  const quickSend = quickThread && quickThread.send;
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
@@ -689,7 +694,15 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // Attachment cards: tapping the file (or Review) opens the Review tool, where the
     // delivered file is reviewed/approved. Real navigation, not a no-op.
     review: () => onNav?.('review'), openAttachment: () => onNav?.('review'),
-    voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
+    voiceInput: () => {}, composeMessage: () => {},
+    // Send a quick reply from the col3 room panel: read the uncontrolled input and post into the
+    // opened room via the same thread the full Chat uses (Patrik: the quick reply room should work).
+    sendMessage: (_arg, e) => {
+      const root = e?.currentTarget?.closest('.composer') || document.querySelector('[data-screen="convo"] .composer');
+      const inp = root && root.querySelector('.convo-input');
+      const v = inp && inp.value;
+      if (v && v.trim() && quickSend) { quickSend(v.trim()); if (inp) inp.value = ''; }
+    },
     // Open the project's own conversation (the general chat above the mission list).
     openProjectChat: (id) => {
       const proj = (data.projects || []).find((p) => p.id === id) || openedProject;
@@ -710,7 +723,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker]);
+  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.recent, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply, addToTracker, quickSend]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),
@@ -855,11 +868,23 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     moreState: pn.more > 0 ? 'has' : 'none',
   }));
 
-  // When a room is opened via keyboard nav, override the room/goal data for col3 display
-  const displayedRoom = knavOpenedRoom || data.room || { name: '', initials: '', statusText: '', status: 'ready' };
+  // When a room is opened (click or keyboard), col3 shows that room's real conversation.
+  const baseRoom = knavOpenedRoom || data.room || { name: '', initials: '', statusText: '', status: 'ready' };
+  // Subtitle (Patrik 2026-06-25): mission -> its project name (the title is the mission name, so
+  // together they read "Mission / Project"); project -> "Project chat"; agent -> "Direct chat".
+  // No raw slugs.
+  const roomSubtitle = baseRoom.isMission ? (baseRoom.statusText || baseRoom.projectSlug || 'Mission')
+    : baseRoom.isProject ? 'Project chat'
+      : (baseRoom.statusText || 'Direct chat');
+  const displayedRoom = { ...baseRoom, subtitle: roomSubtitle };
   const displayedGoal = knavOpenedRoom
-    ? { has: 'active', title: 'Select an agent to see their goal', step: '', total: '', pct: 0, summary: [], checklist: [] }
+    ? { has: 'active', title: '', step: '', total: '', pct: 0, summary: [], checklist: [] }
     : (data.goal || { has: 'none', title: 'Pick a room to see its goal', step: '', total: '', pct: 0, summary: [], checklist: [] });
+  // The opened room's real messages for the col3 quick chat (newest at the bottom).
+  const convoMessages = (quickThread && quickThread.messages ? quickThread.messages : []).slice(-40).map((m) => ({
+    initials: m.agentInitials || '·', tint: m.agentTint || 'violet', name: m.agentName || '', time: m.time || '', text: m.text || '',
+  }));
+  const convo = { messages: convoMessages, has: convoMessages.length ? 'has' : 'none', loading: knavOpenedRoom && !convoMessages.length ? 'on' : 'off' };
 
   const homeData = {
     ...data,
@@ -871,6 +896,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     projects: projectsWithNav,
     room: displayedRoom,
     goal: displayedGoal,
+    convo,
   };
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>

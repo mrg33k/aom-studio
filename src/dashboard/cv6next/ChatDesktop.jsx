@@ -191,11 +191,28 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
 
   // Selected room: the one opened from elsewhere, else the first agent. {id,name,initials,isProject,status}.
   const [picked, setPicked] = useState(initialRoom || null);
+  // ← chain (Patrik 2026-06-25): from an open thread, ArrowLeft drops back to the chat directory
+  // (rail visible, no thread); ArrowLeft again goes Home. 'cleared' forces the directory state.
+  const [cleared, setCleared] = useState(false);
+  useEffect(() => { setCleared(false); }, [initialRoom?.id]); // a freshly opened room shows its thread
   const selected = useMemo(() => {
+    if (cleared) return null;
     if (picked) return picked;
     const a = agents[0];
     return a ? { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel } : null;
-  }, [picked, agents]);
+  }, [cleared, picked, agents]);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'ArrowLeft') return;
+      const f = document.activeElement;
+      if (f && (f.tagName === 'INPUT' || f.tagName === 'TEXTAREA' || f.isContentEditable)) return;
+      e.preventDefault();
+      if (selected) { setCleared(true); setPicked(null); } // back to the chat directory
+      else { onNav?.('home'); }                            // already in the directory -> Home
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected, onNav]);
 
   const { messages, blocks, send } = useRoomThread(worldId, selected);
   const goal = useGoalThread(worldId, selected);

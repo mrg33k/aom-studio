@@ -867,6 +867,8 @@
 [data-cv6] .cstat-check.is-added { display:inline-flex; color:var(--success); }
 /* Recently active (Patrik 2026-06-25): hide the whole section when there is no recent activity. */
 [data-cv6] .recentsec.is-none { display:none; }
+/* col3 quick reply room: the "no messages yet" hint shows only when the thread is empty. */
+[data-cv6] .convo-empty.is-has { display:none; }
 
 /* Catch-up card: an attachment-delivery message (contentState='file') swaps the text
    summary for the file chip + Review below, so hide the summary paragraph on file cards
