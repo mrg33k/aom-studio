@@ -864,10 +864,12 @@
 [data-cv6] .cuarrow:hover { background:var(--surface-3, var(--surface-2)); border-color:var(--accent); color:var(--accent); }
 [data-cv6] .custack { position:relative; }
 [data-cv6] .custack > .card { position:relative; z-index:3; }
-/* Full card-size backings offset DOWN and RIGHT, so their bottom and right edges clearly
-   step out from under the front card and read unmistakably as a fanned deck you cycle. */
+/* Full card-size backings offset DOWN (and a touch right) so their bottom edges step out
+   below the front card as two clear stepped lines, reading unmistakably as a deck. Darker
+   than the front card with a visible hairline + tight shadow so the steps read against the
+   dark ground. Down-dominant because the catch column clips horizontal overflow. */
 [data-cv6] .custack-back { position:absolute; inset:0; border-radius:16px;
-  background:var(--surface-2); border:1px solid var(--hair); box-shadow:0 12px 26px -10px rgba(0,0,0,.5); }
-[data-cv6] .custack .b1 { transform:translate(6px,13px); z-index:1; opacity:.9; }
-[data-cv6] .custack .b2 { transform:translate(12px,26px); z-index:0; opacity:.72; }
+  background:#0a0d12; border:1px solid rgba(255,255,255,.12); box-shadow:0 8px 16px -4px rgba(0,0,0,.7); }
+[data-cv6] .custack .b1 { transform:translate(7px,20px); z-index:1; }
+[data-cv6] .custack .b2 { transform:translate(14px,40px); z-index:0; }
 [data-cv6] .custack.is-none .custack-back { display:none; }
