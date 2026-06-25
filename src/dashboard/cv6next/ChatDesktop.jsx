@@ -52,6 +52,136 @@ function missionDot(s) {
   return 'ready';
 }
 
+// ── Files & Links shelf (right-column "Files" view) ──────────────────────────
+// Classify a shared file into a pill bucket from its mime + extension.
+function fileKind(name, mime) {
+  const m = String(mime || '').toLowerCase();
+  const ext = String(name || '').toLowerCase().split('.').pop();
+  if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'heic', 'avif'].includes(ext)) return 'photo';
+  if (m.startsWith('video/') || ['mp4', 'mov', 'webm', 'm4v', 'avi', 'mkv'].includes(ext)) return 'video';
+  if (m === 'application/pdf' || ext === 'pdf') return 'pdf';
+  return 'file';
+}
+// A file's openable URL. An absolute http(s) link opens as-is; a corner path goes through the
+// authed file endpoint (raw bytes) so it never 404s on a bare path.
+function fileHref(url) {
+  const u = String(url || '');
+  if (/^https?:\/\//i.test(u)) return u;
+  return `/api/dashboard/project-file?path=${encodeURIComponent(u.replace(/^\/+/, ''))}&raw=1`;
+}
+// Pull every real link out of a message: markdown [text](url) first, then bare urls. Trailing
+// punctuation is stripped so the URL is valid and the click never lands on a 404 from a stray
+// ")" or ".". Agents send a lot of links; these are the priority to get right.
+function extractLinks(text) {
+  const s = String(text || '');
+  const out = [];
+  const seen = new Set();
+  const push = (raw) => {
+    let u = String(raw || '').replace(/[.,;:!?)\]}'"]+$/, '');
+    if (!/^https?:\/\//i.test(u)) return;
+    if (seen.has(u)) return;
+    seen.add(u); out.push(u);
+  };
+  let m;
+  const md = /\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/g;
+  while ((m = md.exec(s))) push(m[1]);
+  const bare = /(https?:\/\/[^\s<>()\[\]]+)/g;
+  while ((m = bare.exec(s))) push(m[1]);
+  return out;
+}
+// A short human label for a link (host + first path segment), so the row is scannable.
+function linkLabel(url) {
+  try {
+    const u = new URL(url);
+    const seg = u.pathname.split('/').filter(Boolean)[0];
+    return u.hostname.replace(/^www\./, '') + (seg ? `/${seg}` : '');
+  } catch { return String(url).replace(/^https?:\/\//, '').slice(0, 40); }
+}
+// Build the de-duped, newest-first shelf of files + links from the loaded thread.
+function shelfItems(messages) {
+  const items = [];
+  for (const msg of messages || []) {
+    if (msg.attachmentUrl && msg.fileName) {
+      items.push({ type: 'file', kind: fileKind(msg.fileName, msg.fileMime), name: msg.fileName, url: msg.attachmentUrl, mime: msg.fileMime, ts: msg.ts || null });
+    }
+    for (const url of extractLinks(msg.text)) {
+      items.push({ type: 'link', kind: 'link', name: linkLabel(url), url, ts: msg.ts || null });
+    }
+  }
+  items.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
+  return items;
+}
+const FILE_PILLS = [
+  { k: 'all', label: 'All' }, { k: 'recent', label: 'Recent' }, { k: 'photo', label: 'Photos' },
+  { k: 'video', label: 'Video' }, { k: 'pdf', label: 'PDFs' }, { k: 'link', label: 'Links' },
+];
+function pillFilter(items, pill) {
+  if (pill === 'all') return items;
+  if (pill === 'recent') return items.slice(0, 12);
+  if (pill === 'link') return items.filter((i) => i.type === 'link');
+  return items.filter((i) => i.kind === pill);
+}
+function fileGlyph(kind) {
+  const c = kind === 'photo' ? 'var(--accent)' : kind === 'video' ? '#ec4899' : kind === 'pdf' ? '#f59e0b' : 'var(--muted)';
+  const d = kind === 'photo' ? 'M3 5h18v14H3z M3 15l5-5 4 4 3-3 6 6'
+    : kind === 'video' ? 'M23 7l-7 5 7 5V7Z M1 5h15v14H1z'
+    : 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6';
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
+}
+function FilesShelf({ items, onReview }) {
+  const [pill, setPill] = useState('all');
+  const counts = useMemo(() => ({
+    all: items.length, recent: Math.min(items.length, 12),
+    photo: items.filter((i) => i.kind === 'photo').length,
+    video: items.filter((i) => i.kind === 'video').length,
+    pdf: items.filter((i) => i.kind === 'pdf').length,
+    link: items.filter((i) => i.type === 'link').length,
+  }), [items]);
+  const shown = pillFilter(items, pill);
+  return (
+    <>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+        {FILE_PILLS.map((p) => {
+          const on = pill === p.k; const n = counts[p.k];
+          return (
+            <button key={p.k} onClick={() => setPill(p.k)} style={{ height: 28, padding: '0 11px', borderRadius: 14, border: `1px solid ${on ? 'transparent' : 'var(--hair)'}`, background: on ? 'var(--accent)' : 'var(--surface-2)', color: on ? '#fff' : 'var(--muted)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+              {p.label}{n ? ` ${n}` : ''}
+            </button>
+          );
+        })}
+      </div>
+      {shown.length ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {shown.map((it, i) => (it.type === 'link' ? (
+            <a key={i} href={it.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', textDecoration: 'none' }}>
+              <span style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.url}</div>
+              </div>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M7 17 17 7M7 7h10v10" /></svg>
+            </a>
+          ) : (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)' }}>
+              <span style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--faint)', textTransform: 'uppercase' }}>{it.kind}</div>
+              </div>
+              <a href={fileHref(it.url)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
+              <button onClick={() => onReview?.(it)} style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
+            </div>
+          )))}
+        </div>
+      ) : (
+        <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>{pill === 'link' ? 'No links shared here yet.' : 'No files here yet.'}</div>
+      )}
+    </>
+  );
+}
+
 // A project in the rail is a folder that fans open to its missions. The row itself opens the
 // project's general chat; the chevron toggles the mission list; a mission row opens that
 // mission's own thread on the right. Mirrors the mobile project screen, here as a tree.
@@ -184,7 +314,7 @@ function PlainThread({ messages, onSend }) {
   );
 }
 
-export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) {
+export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile }) {
   const { data: list } = useChatList();
   const agents = list?.agents || [];
   const projects = list?.projects || [];
@@ -218,6 +348,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
   const goal = useGoalThread(worldId, selected);
   const liveThread = Array.isArray(blocks) && blocks.length > 0;
 
+  // Right column: Goals view (the agent's goal/steps) or Files view (this conversation's files + links).
+  const [drawerView, setDrawerView] = useState('goals');
+  const shelf = useMemo(() => shelfItems(messages), [messages]);
   const [draft, setDraft] = useState('');
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   const submit = () => { const t = draft.trim(); if (!t) return; send?.(t); setDraft(''); };
@@ -336,6 +469,16 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
           <div style={{ width: 316, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 20, overflowY: 'auto' }}>
             {selected ? (
               <>
+                {/* Goals | Files toggle — choose what this column shows. */}
+                <div style={{ display: 'flex', gap: 4, padding: 3, background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 11, marginBottom: 16 }}>
+                  {[['goals', 'Goals'], ['files', 'Files']].map(([k, label]) => (
+                    <button key={k} onClick={() => setDrawerView(k)} style={{ flex: 1, height: 30, borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', background: drawerView === k ? 'var(--accent)' : 'transparent', color: drawerView === k ? '#fff' : 'var(--muted)' }}>{label}</button>
+                  ))}
+                </div>
+                {drawerView === 'files' ? (
+                  <FilesShelf items={shelf} onReview={(it) => onReviewFile?.(it)} />
+                ) : (
+                <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}
                 <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>{selected.isMission ? 'Mission' : selected.isProject ? 'Project room' : 'Agent on this goal'}</div>
                 <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20 }}>
@@ -402,42 +545,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
                 ) : (
                   <div style={{ color: 'var(--faint)', fontSize: 12.5, marginBottom: 20 }}>No goal set for this room yet.</div>
                 )}
-
-                {/* 4. Attachments */}
-                {(() => {
-                  const attachments = [];
-                  if (messages?.length) {
-                    for (const m of messages) {
-                      if (m.attachmentUrl && m.fileName) {
-                        attachments.push({ url: m.attachmentUrl, name: m.fileName, mime: m.fileMime });
-                      }
-                    }
-                  }
-                  return (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>4</span>
-                        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Attachments</span>
-                      </div>
-                      {attachments.length ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {attachments.map((att, i) => (
-                            <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--accent)', textDecoration: 'none', cursor: 'pointer' }}>
-                              <span style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
-                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
-                              </span>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{att.name}</div>
-                              </div>
-                            </a>
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>No attachments in this conversation yet.</div>
-                      )}
-                    </>
-                  );
-                })()}
+                </>
+                )}
               </>
             ) : null}
           </div>
