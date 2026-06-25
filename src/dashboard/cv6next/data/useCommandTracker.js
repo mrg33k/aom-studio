@@ -373,19 +373,20 @@ export function useTrackerBugs(worldId) {
   // Create an issue for real. CV6 board -> cv6-bugs add; custom board -> trackers add-row.
   // Space Rising is read-only (the "+" never opens there). Then refetch.
   const SEVERITY = { high: 'high', med: 'medium', low: 'low' };
-  const createBug = async ({ title, description, priority, assigneeId }) => {
+  const createBug = async ({ title, description, priority, status, assigneeId }) => {
     if (!title || showingSpace) return null;
     const owner = assigneeId ? (agentNameById[assigneeId] || '') : '';
+    const st = STATUS_LABELS[status] || 'Open';
     try {
       if (showingCv6) {
         await authFetch('/api/dashboard/cv6-bugs', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'add', world: worldId, page: 'mobile', title, expected: description || '', severity: SEVERITY[priority] || 'medium', owner }),
+          body: JSON.stringify({ action: 'add', world: worldId, page: 'mobile', title, expected: description || '', severity: SEVERITY[priority] || 'medium', status: st, owner }),
         });
       } else {
         await authFetch('/api/dashboard/trackers', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'add-row', world: worldId, id: activeId, row: { Title: title, Description: description || '', Priority: priority || 'med', __assignee: owner } }),
+          body: JSON.stringify({ action: 'add-row', world: worldId, id: activeId, row: { Title: title, Description: description || '', Priority: priority || 'med', Status: st, __assignee: owner } }),
         });
       }
       setReloadKey((n) => n + 1);

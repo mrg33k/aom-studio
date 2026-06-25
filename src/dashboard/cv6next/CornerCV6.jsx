@@ -721,6 +721,7 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
   const bugFormRef = useRef(null);
   const draftKindRef = useRef('project'); // the new-tracker form is uncontrolled
   const bugPriorityRef = useRef('high');  // the new-issue form is uncontrolled
+  const bugStatusRef = useRef('Open');
   const bugAssigneeRef = useRef('');
 
   const desktopHtml = useMemo(() => composeScreen(trackerRaw, { mobile: false, pick: 0, sharedNav: true }), []);
@@ -748,9 +749,9 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
   // uncontrolled form stays stable while open and a data tick never wipes what's typed.
   const openNewBug = () => {
     if (!canCreate) return; // read-only board (Space Rising)
-    bugPriorityRef.current = 'high'; bugAssigneeRef.current = '';
+    bugPriorityRef.current = 'high'; bugAssigneeRef.current = ''; bugStatusRef.current = 'Open';
     setBugFormSeed({
-      draftBug: { title: '', description: '', priority: 'high', isHigh: 'on', isMed: 'off', isLow: 'off' },
+      draftBug: { title: '', description: '', priority: 'high', isHigh: 'on', isMed: 'off', isLow: 'off', isOpen: 'on', isProgress: 'off', isDone: 'off' },
       assignableAgents: (data.assignableAgents || []).map((a) => ({ ...a, picked: 'off' })),
       activeTracker: data.activeTracker,
     });
@@ -793,8 +794,14 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
     // in the title/description survives — no React re-render of the form.
     setBugPriority: (p, e) => {
       bugPriorityRef.current = p === 'low' ? 'low' : p === 'med' ? 'med' : 'high';
-      const root = bugFormRef.current;
-      root?.querySelectorAll('.tkseg').forEach((seg) => seg.classList.toggle('is-on', seg === e?.currentTarget));
+      // Scope to THIS control's row so the status segments (same class) aren't cleared.
+      const row = e?.currentTarget?.parentNode;
+      row?.querySelectorAll('.tkseg').forEach((seg) => seg.classList.toggle('is-on', seg === e?.currentTarget));
+    },
+    setBugStatus: (s, e) => {
+      bugStatusRef.current = (s === 'In progress' || s === 'Done') ? s : 'Open';
+      const row = e?.currentTarget?.parentNode;
+      row?.querySelectorAll('.tkseg').forEach((seg) => seg.classList.toggle('is-on', seg === e?.currentTarget));
     },
     setBugAssignee: (id, e) => {
       const row = e?.currentTarget;
@@ -812,7 +819,7 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
       const title = root?.querySelector('[data-bind="draftBug.title"]')?.value?.trim() || '';
       const description = root?.querySelector('[data-bind="draftBug.description"]')?.value?.trim() || '';
       if (!title) return; // an issue needs a title
-      createBug({ title, description, priority: bugPriorityRef.current, assigneeId: bugAssigneeRef.current });
+      createBug({ title, description, priority: bugPriorityRef.current, status: bugStatusRef.current, assigneeId: bugAssigneeRef.current });
       setSheet(null);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps

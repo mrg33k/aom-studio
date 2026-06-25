@@ -105,7 +105,7 @@ export default async function handler(req, res) {
       expected: clean(req.body.expected, 240),
       severity: ALLOWED_STATUS.includes(req.body.severity) ? req.body.severity : (clean(req.body.severity, 12) || 'Medium'),
       priority: (pr >= 1 && pr <= 5) ? pr : 3,
-      status: 'Open',
+      status: ALLOWED_STATUS.includes(req.body.status) ? req.body.status : 'Open',
       owner: clean(req.body.owner, 24) || 'Patrik',
       attachments: Array.isArray(req.body.attachments)
         ? req.body.attachments.slice(0, 12).map((a) => ({ name: clean(a && a.name, 200), path: clean(a && a.path, 400) })).filter((a) => a.name)
