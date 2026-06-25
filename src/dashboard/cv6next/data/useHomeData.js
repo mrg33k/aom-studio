@@ -77,20 +77,29 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
   // inboxItems shape (from useDataPipe): { agent, project, missionSlug, roomKey, text, timestamp, id }.
   // Each is an unread agent message in a room — the "needs you" feed. The agent who
   // pinged is the sender; the room (project/mission/agent thread) is the subject.
-  const cards = (inboxItems || []).map((it) => ({
-    id: it.id,
-    kind: 'agent', kindLabel: 'AGENT',
-    from: it.agent ? titleForAgent(it.agent) : 'Your agent',
-    subject: it.project ? cap(it.project) : (it.missionSlug || `${titleForAgent(it.agent)} thread`),
-    summary: firstLine(it.text),
-    time: relTime(it.timestamp),
-    actionItems: [], attachments: [],
-  }));
+  const cards = (inboxItems || []).map((it) => {
+    // No structured action-item feed exists yet (H3): the card carries an empty list and
+    // actionState='none', which hides the "Action items" header instead of showing a naked
+    // section over dead space. Flips to 'has' automatically once a real feed populates this.
+    const actionItems = [];
+    return {
+      id: it.id,
+      kind: 'agent', kindLabel: 'AGENT',
+      from: it.agent ? titleForAgent(it.agent) : 'Your agent',
+      subject: it.project ? cap(it.project) : (it.missionSlug || `${titleForAgent(it.agent)} thread`),
+      summary: firstLine(it.text),
+      time: relTime(it.timestamp),
+      // carry the source room so an action (e.g. Add to Tracker) can attach to the mission.
+      project: it.project || '', missionSlug: it.missionSlug || '', agent: it.agent || '',
+      actionItems, attachments: [],
+      actionState: actionItems.length ? 'has' : 'none',
+    };
+  });
 
   const catchUp = {
     count: cards.length,
     position: cards.length ? 1 : 0,
-    current: cards[0] || { id: '', kind: 'agent', kindLabel: 'AGENT', from: '', subject: '', summary: '', actionItems: [], attachments: [] },
+    current: cards[0] || { id: '', kind: 'agent', kindLabel: 'AGENT', from: '', subject: '', summary: '', actionItems: [], attachments: [], actionState: 'none' },
     rest: cards.slice(1),
     all: cards, // full deck, for the Catch Up full-deck screen
   };

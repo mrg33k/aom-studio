@@ -62,10 +62,12 @@
               <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--accent)" style="flex:none;margin-top:1px;"><path d="M12 3l1.6 4.9L18.5 9l-4.9 1.6L12 15l-1.6-4.4L5.5 9l4.9-1.1Z"/></svg>
               <div style="font-size:13px;line-height:1.5;color:var(--fg);"><span style="font-weight:600;">Your summary:</span> <span data-bind="catchUp.current.summary">Dana wants to expand the pilot to three teams and needs revised pricing before Friday. Warm tone; one open risk on the rollout timeline.</span></div>
             </div>
-            <div class="eyebrow" style="margin-bottom:9px;">Action items</div>
-            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
-              <!-- ONE template row per action item -->
-              <div class="echk" data-each="catchUp.current.actionItems"><span class="box"></span><span data-bind="actionItem.text">Send revised 3-team pricing by Friday</span></div>
+            <div class="caitems" data-mod="is-:catchUp.current.actionState">
+              <div class="eyebrow" style="margin-bottom:9px;">Action items</div>
+              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
+                <!-- ONE template row per action item -->
+                <div class="echk" data-each="catchUp.current.actionItems"><span class="box"></span><span data-bind="actionItem.text">Send revised 3-team pricing by Friday</span></div>
+              </div>
             </div>
             <div class="attach" style="margin-bottom:15px;" data-each="catchUp.current.attachments" data-action="openAttachment" data-arg="attachment.id">
               <div class="athumb" style="background:linear-gradient(135deg,#26303f,#161b24);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></div>

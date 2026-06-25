@@ -839,3 +839,9 @@
    hiding empty feedback surfaces). Flex lives here, not inline, so .is-none can hide it. */
 [data-cv6] .mpinbar { display:flex; align-items:center; gap:10px; }
 [data-cv6] .mpinbar.is-none { display:none; }
+
+/* Catch-up card: hide the "Action items" header + list when the item has no action
+   items (actionState='none'), so the card never shows a naked section header over dead
+   space (same hide-empty-surfaces principle as the pin bar above). Shows automatically
+   once a real action-item feed populates catchUp.current.actionItems. */
+[data-cv6] .caitems.is-none { display:none; }
