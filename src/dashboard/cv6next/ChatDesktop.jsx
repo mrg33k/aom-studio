@@ -41,6 +41,9 @@ function RoomRow({ row, open, onClick }) {
   );
 }
 
+// The project folder is shown above, so drop a redundant "Parent:" prefix from the mission
+// name (e.g. "Andocia Deal:Deal Shape" -> "Deal Shape"). Clean names pass through.
+function missionLabelClean(n) { const s = String(n || ''); return (s.includes(':') ? s.slice(s.lastIndexOf(':') + 1).trim() : s) || s; }
 // Map a raw mission status to the CV6 status-dot class (live / ready / done).
 function missionDot(s) {
   const v = String(s || '').toLowerCase();
@@ -82,7 +85,7 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
             return (
               <div key={m.slug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7 }}>
                 <span className={`sdot is-${missionDot(m.status)}`} style={{ flex: 'none' }} />
-                <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{m.name || m.slug}</span>
+                <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{missionLabelClean(m.name || m.slug)}</span>
               </div>
             );
           }) : <div style={{ fontSize: 12, color: 'var(--faint)', padding: '6px 8px' }}>No missions yet.</div>}
@@ -223,7 +226,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
 
   const pickAgent = (a) => setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel });
   const pickProject = (p) => setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' });
-  const pickMission = (p, m) => setPicked({ id: m.slug, name: m.name || m.slug, initials: (m.name || m.slug || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`, projectSlug: p.slug, status: missionDot(m.status), statusText: p.name });
+  const pickMission = (p, m) => { const nm = missionLabelClean(m.name || m.slug); setPicked({ id: m.slug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`, projectSlug: p.slug, status: missionDot(m.status), statusText: p.name }); };
 
   // Real missions per project (same endpoint the mobile project screen uses). Each project
   // row fans open to these; clicking one opens that mission's own thread.

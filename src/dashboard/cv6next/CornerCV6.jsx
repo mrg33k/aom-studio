@@ -613,7 +613,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       const proj = (data.projects || []).find((p) => p.slug === projectSlug || p.id === projectSlug);
       const list = missionsByProject[projectSlug] || [];
       const m = list.find((x) => (String(x.slug || '').includes(':') ? x.slug : `${projectSlug}:${x.slug}`) === missionSlug);
-      const name = m?.name || missionSlug.split(':').pop();
+      const rawName = String(m?.name || missionSlug.split(':').pop() || '');
+      const name = rawName.includes(':') ? rawName.slice(rawName.lastIndexOf(':') + 1).trim() : rawName;
       onOpenRoom?.({ id: missionSlug.split(':').pop(), name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug, projectSlug, status: 'ready', statusText: proj?.name || projectSlug }, worldId);
     },
     toggleAgents: () => setAgentsOpen((o) => !o),
@@ -797,6 +798,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // (capped at HOME_MISSION_CAP, "show N more" reveals the rest). Collapsed -> empty list.
   const HOME_MISSION_CAP = 8;
   const missionDotStatus = (s) => (['running', 'building', 'active'].includes(String(s || '').toLowerCase()) ? 'live' : 'ready');
+  // The project is already the folder above, so drop a "Parent:" prefix from the mission name
+  // (e.g. "Andocia Deal:Deal Shape" -> "Deal Shape"). Clean names pass through untouched.
+  const missionLabelClean = (n) => { const s = String(n || ''); return (s.includes(':') ? s.slice(s.lastIndexOf(':') + 1).trim() : s) || s; };
   const projectsWithNav = projShown.map((p, i) => {
     const open = expandedHomeProjects.has(p.id);
     const raw = open ? (missionsByProject[p.slug] || []) : [];
@@ -809,7 +813,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       caret: open ? 'open' : 'closed',
       missions: shown.map((m) => ({
         id: String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`,
-        name: m.name || m.slug,
+        name: missionLabelClean(m.name || m.slug),
         status: missionDotStatus(m.status),
       })),
       moreCount: more,
