@@ -178,6 +178,24 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   // Catch Up full deck (Home state D): cycle the real needs-you cards.
   const [catchUpOpen, setCatchUpOpen] = useState(false);
   const [catchUpIndex, setCatchUpIndex] = useState(0);
+  // Cleared Catch Up items, remembered per-device (no backend mark-handled exists yet,
+  // so this survives reload on this device but does not sync across devices).
+  const [catchUpDismissed, setCatchUpDismissed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('cv6.catchup.dismissed') || '[]'); } catch { return []; }
+  });
+  // The live Catch Up deck: real inbox cards minus the ones cleared on this device.
+  // Shaped once so the Home card and the full-screen deck always agree.
+  const liveCatchUp = useMemo(() => {
+    const all = (data.catchUp?.all || []).filter((c) => !catchUpDismissed.includes(c.id));
+    const idx = Math.min(catchUpIndex, Math.max(0, all.length - 1));
+    return {
+      ...(data.catchUp || {}),
+      all, count: all.length,
+      position: all.length ? idx + 1 : 0,
+      current: all[idx] || { id: '', kind: 'agent', kindLabel: '', from: 'Caught up', subject: '', summary: 'Nothing needs you right now. New items from your agents and inbox will land here.', actionItems: [], attachments: [] },
+      items: all.map((c, i) => ({ ...c, deckState: i === idx ? 'current' : (i < idx ? 'prev' : 'next') })),
+    };
+  }, [data.catchUp, catchUpDismissed, catchUpIndex]);
   // Agents accordion (top of Home): one "Agents" row that expands its roster in place,
   // default collapsed so the front door stays calm. (Decided 2026-06-23.)
   const [agentsOpen, setAgentsOpen] = useState(false);
@@ -339,6 +357,16 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
     prevCatchUp: () => setCatchUpIndex((i) => Math.max(0, i - 1)),
     snoozeCatchUp: () => setCatchUpIndex((i) => Math.min(i + 1, Math.max(0, (data.catchUp?.all?.length || 1) - 1))),
     snoozeAll: () => setCatchUpOpen(false),
+    // Clear a Catch Up item for good (per-device). The id comes through a real data
+    // path (catchUp.current.id), so it arrives correctly. The card drops out of the deck.
+    dismissCatchUp: (id) => {
+      if (!id) return;
+      setCatchUpDismissed((prev) => {
+        const next = prev.includes(id) ? prev : [...prev, id];
+        try { localStorage.setItem('cv6.catchup.dismissed', JSON.stringify(next)); } catch { /* ignore */ }
+        return next;
+      });
+    },
     openCommandK: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
     newRoom: () => {}, showMoreProjects: () => setProjShowAll(true),
@@ -391,20 +419,9 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
   }), [worldId, openedProject, missionSeed]);
 
   if (catchUpOpen) {
-    // Real inbox cards only. No demo fallback — an empty inbox shows an honest
-    // "all caught up" card, never fabricated agent activity.
-    const allCards = (data.catchUp?.all && data.catchUp.all.length > 0)
-      ? data.catchUp.all
-      : [];
-    const cuIdx = Math.min(catchUpIndex, Math.max(0, allCards.length - 1));
-    const catchUpData = {
-      catchUp: {
-        count: allCards.length,
-        position: allCards.length ? cuIdx + 1 : 0,
-        current: allCards[cuIdx] || { id: '', kind: 'agent', kindLabel: '', from: 'Caught up', subject: '', summary: 'Nothing needs you right now. New items from your agents and inbox will land here.', actionItems: [], attachments: [] },
-        items: allCards.map((c, i) => ({ ...c, deckState: i === cuIdx ? 'current' : (i < cuIdx ? 'prev' : 'next') })),
-      },
-    };
+    // Real inbox cards minus anything cleared on this device; empty shows an honest
+    // "all caught up" card, never fabricated activity (liveCatchUp shapes it).
+    const catchUpData = { catchUp: liveCatchUp };
     return <TemplateScreen html={catchUpHtml} data={catchUpData} actions={actions} state="ready"
       aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
   }
@@ -456,6 +473,7 @@ function Home({ onNav, onOpenRoom, onOpenNav }) {
 
   const homeData = {
     ...data,
+    catchUp: liveCatchUp,
     agents: agentsWithNav,
     agentsTotal,
     agentsOpen: agentsOpen ? 'open' : 'closed',
