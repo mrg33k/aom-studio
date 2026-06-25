@@ -262,6 +262,41 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     return { ...liveCatchUp, current: { ...cur, summary: real } };
   }, [liveCatchUp, roomSummaries, curProject]);
 
+  // Inline "Draft reply" on a catch-up card (Patrik): the reply composer replaces the action
+  // buttons in place, with a Send button that posts the reply into that room (the same
+  // supabase-messages path the Chat composer uses). curCardRef holds the latest current card
+  // so the Send handler reads the right room without churning the actions memo.
+  const [replyOpen, setReplyOpen] = useState(false);
+  const curCardRef = useRef(null);
+  curCardRef.current = liveCatchUpView.current;
+  useEffect(() => { setReplyOpen(false); }, [curProject, catchUpIndex]); // reset on card change
+  const sendCatchupReply = useCallback(async (text) => {
+    const body = String(text || '').trim();
+    const card = curCardRef.current;
+    if (!worldId || !body || !card) return false;
+    const payload = card.missionSlug
+      ? { client_id: worldId, agent: 'corner', project: card.project, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: card.missionSlug } }
+      : card.project
+        ? { client_id: worldId, agent: 'corner', project: card.project, text: body, role: 'user', source: 'corner-dashboard' }
+        : { client_id: worldId, agent: card.agent || card.id, text: body, role: 'user', source: 'corner-dashboard' };
+    try {
+      const r = await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      const ok = !!(r && r.ok);
+      if (ok) {
+        setReplyOpen(false);
+        const id = card.id; // replied -> handled, clear it from the deck on this device
+        if (id) setCatchUpDismissed((prev) => {
+          const next = prev.includes(id) ? prev : [...prev, id];
+          try { localStorage.setItem('cv6.catchup.dismissed', JSON.stringify(next)); } catch { /* ignore */ }
+          return next;
+        });
+      }
+      return ok;
+    } catch { return false; }
+  }, [worldId]);
+
   // Agents accordion (top of Home): one "Agents" row that expands its roster in place,
   // default collapsed so the front door stays calm. (Decided 2026-06-23.)
   const [agentsOpen, setAgentsOpen] = useState(false);
@@ -444,9 +479,17 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       const n = (data.catchUp?.all || []).filter((c) => !catchUpDismissed.includes(c.id)).length;
       return Math.min(i + 1, Math.max(0, n - 1));
     }),
-    // draftReply (approve-and-send) sends real client email + needs an agent-drafted body;
-    // held until that path + an explicit OK exist (see mission BUILD). Not faked.
-    draftReply: () => {}, addToTracker: () => {}, assignAgent: () => {}, snooze: () => {},
+    // Draft reply opens an inline composer in the card (the action buttons make way); Send
+    // posts the reply into that room. cancelReply closes it. sendReply reads the uncontrolled
+    // textarea from the DOM at click time so typing survives re-renders.
+    draftReply: () => setReplyOpen(true),
+    cancelReply: () => setReplyOpen(false),
+    sendReply: (_arg, e) => {
+      const ta = e?.currentTarget?.closest('.creply')?.querySelector('.creply-input');
+      const v = ta && ta.value;
+      if (v && v.trim()) sendCatchupReply(v);
+    },
+    addToTracker: () => {}, assignAgent: () => {}, snooze: () => {},
     // Attachment cards: tapping the file (or Review) opens the Review tool, where the
     // delivered file is reviewed/approved. Real navigation, not a no-op.
     review: () => onNav?.('review'), openAttachment: () => onNav?.('review'),
@@ -471,7 +514,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed]);
+  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed, sendCatchupReply]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),
@@ -494,10 +537,17 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [worldId, openedProject, missionSeed]);
 
+  // Card footer state drives the bottom of the catch-up card: 'none' = caught up (hide it),
+  // 'actions' = the suggested-action buttons, 'reply' = the inline reply composer.
+  const catchUpRender = {
+    ...liveCatchUpView,
+    footerState: !liveCatchUpView.count ? 'none' : (replyOpen ? 'reply' : 'actions'),
+  };
+
   if (catchUpOpen) {
     // Real inbox cards minus anything cleared on this device; empty shows an honest
     // "all caught up" card, never fabricated activity (liveCatchUp shapes it).
-    const catchUpData = { catchUp: liveCatchUpView };
+    const catchUpData = { catchUp: catchUpRender };
     return <TemplateScreen html={catchUpHtml} data={catchUpData} actions={actions} state="ready"
       aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />;
   }
@@ -549,7 +599,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
 
   const homeData = {
     ...data,
-    catchUp: liveCatchUpView,
+    catchUp: catchUpRender,
     agents: agentsWithNav,
     agentsTotal,
     agentsOpen: agentsOpen ? 'open' : 'closed',

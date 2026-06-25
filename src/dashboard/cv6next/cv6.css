@@ -846,9 +846,12 @@
    once a real action-item feed populates catchUp.current.actionItems. */
 [data-cv6] .caitems.is-none { display:none; }
 
-/* Catch-up card: hide the suggested-actions footer when there is no real item to act on
-   (the "all caught up" empty state). Same hide-empty-surfaces principle. */
-[data-cv6] .csugg.is-none { display:none; }
+/* Catch-up card footer is a 3-way switch (catchUp.footerState): 'none' = caught up (nothing),
+   'actions' = the suggested-action buttons, 'reply' = the inline reply composer. The buttons
+   show only on 'actions'; the composer only on 'reply'. */
+[data-cv6] .csugg.is-none, [data-cv6] .csugg.is-reply { display:none; }
+[data-cv6] .creply.is-none, [data-cv6] .creply.is-actions { display:none; }
+[data-cv6] .creply-input::placeholder { color:var(--faint); }
 
 /* Catch-up card: an attachment-delivery message (contentState='file') swaps the text
    summary for the file chip + Review below, so hide the summary paragraph on file cards

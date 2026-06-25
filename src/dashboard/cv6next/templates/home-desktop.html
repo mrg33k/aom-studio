@@ -76,13 +76,20 @@
               <button class="eact" style="height:30px;padding:0 12px;background:var(--accent-weak);color:var(--accent);" data-action="review" data-arg="attachment.id">Review</button>
             </div>
           </div>
-          <div class="csugg" data-mod="is-:catchUp.actionsState" style="border-top:1px solid var(--divider);padding:12px 14px;">
+          <div class="csugg" data-mod="is-:catchUp.footerState" style="border-top:1px solid var(--divider);padding:12px 14px;">
             <div class="eyebrow" style="margin-bottom:10px;">Suggested actions</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
               <button class="eact" style="background:var(--accent);color:#fff;" data-action="draftReply" data-arg="catchUp.current.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Draft reply</button>
               <button class="eact" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--fg);" data-action="addToTracker" data-arg="catchUp.current.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Add to Tracker</button>
               <button class="eact" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--fg);" data-action="assignAgent" data-arg="catchUp.current.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Send to <span data-bind="catchUp.current.from">agent</span></button>
               <button class="eact" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--fg);" data-action="snooze" data-arg="catchUp.current.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Snooze</button>
+            </div>
+          </div>
+          <div class="creply" data-mod="is-:catchUp.footerState" style="border-top:1px solid var(--divider);padding:12px 14px;display:flex;flex-direction:column;gap:9px;">
+            <textarea class="creply-input" rows="2" placeholder="Write a reply…" style="width:100%;box-sizing:border-box;resize:none;border:1px solid var(--hair);border-radius:10px;background:var(--surface-2);color:var(--fg);font-family:var(--font-sans);font-size:13px;line-height:1.45;padding:10px 12px;outline:none;"></textarea>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <button class="eact" data-action="cancelReply" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--fg);padding:0 16px;">Cancel</button>
+              <button class="eact" data-action="sendReply" style="background:var(--accent);color:#fff;padding:0 22px;">Send</button>
             </div>
           </div>
         </div>
