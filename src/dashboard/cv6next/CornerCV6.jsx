@@ -468,11 +468,14 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // the template engine paints the new rows. The thread element only exists on desktop home.
   const quickLen = (quickThread && quickThread.messages && quickThread.messages.length) || 0;
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      const el = document.querySelector('[data-screen="convo"] .convo-thread');
-      if (el) el.scrollTop = el.scrollHeight;
-    });
-    return () => cancelAnimationFrame(id);
+    // Rows load async (the thread fetches after the room opens) and the template
+    // re-binds, so a single rAF can fire before the rows paint. Pin to bottom on a
+    // rAF and again on short timeouts so the newest message is always in view.
+    const pin = () => { const el = document.querySelector('[data-screen="convo"] .convo-thread'); if (el) el.scrollTop = el.scrollHeight; };
+    const raf = requestAnimationFrame(pin);
+    const t1 = setTimeout(pin, 120);
+    const t2 = setTimeout(pin, 360);
+    return () => { cancelAnimationFrame(raf); clearTimeout(t1); clearTimeout(t2); };
   }, [knavOpenedKey, quickLen]);
   // col3 quick-reply composer host (Patrik 2026-06-25): the composer is now the React
   // Cv6Composer (CV4-style pill + slash commands + send), portaled into the template's

@@ -909,5 +909,32 @@
 /* CV6 quick-reply composer: Cv6FullComposer portals CV4's real ThreadInputBar
    (pill + command menu + attach + mic/send + slash + voice) into this host. The
    ThreadInputBar brings its own padding + top border, so the host is neutralized
-   to avoid a double frame. CV6 token re-skin is a later pass. */
-[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] { display:block; padding:0; border-top:none; }
+   to avoid a double frame. The pill's inline styles resolve through CV4's --c-*
+   tokens, so we re-skin to the CV6 vibe simply by remapping those tokens in scope
+   (no per-element overrides). */
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] {
+  display:block; padding:0; border-top:none;
+  --c-bg: transparent;
+  --c-bg2: var(--surface);
+  --c-s1: var(--surface-2);
+  --c-s2: var(--surface);
+  --c-s3: var(--chip);
+  --c-border: var(--divider);
+  --c-border2: var(--hair);
+  --c-text: var(--fg);
+  --c-text2: var(--muted);
+  --c-muted: var(--muted);
+  --c-dim: var(--faint);
+  --c-accent: var(--accent);
+  --c-accent2: var(--accent);
+  --c-accent-bg: var(--accent-weak);
+  --c-chip-bg: var(--chip);
+}
+/* Attachment to the LEFT of the pill (CV4 keeps it on the right). */
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] [data-role="composer-actions"] { order:-1; }
+/* The send / mic icon color is a literal (#000) in CV4; make it read on the CV6 accent. */
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] button[title="Send"],
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] button[title="Start voice"],
+[data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] button[title="End voice"] { color:#fff !important; }
+/* Breathing room: the newest message was crammed against the composer. */
+[data-cv6][data-screen="home-desktop"] .convo-thread { padding-bottom:26px !important; }
