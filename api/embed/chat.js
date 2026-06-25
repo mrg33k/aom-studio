@@ -1193,13 +1193,23 @@ async function callGemini(systemPrompt, history, userMessage, model = 'gemini-2.
       body: JSON.stringify({
         systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
         contents,
+        // gemini-2.5-flash is a THINKING model. The model may still reason
+        // internally (good for answer quality), but we must NEVER surface its
+        // thought summary to Ethan. includeThoughts:false stops the API from
+        // returning thought parts at all; the `!p.thought` filter below is the
+        // hard guard if one slips through. Without this the Wizard's internal
+        // monologue ("THOUGHT The user is ready to move on...") was getting
+        // glued onto the visible reply by the join('') below — Ethan saw it and
+        // called it out ("your thoughts are sepeping thru"). 2026-06-25.
+        generationConfig: { thinkingConfig: { includeThoughts: false } },
       }),
     }
   )
   const data = await resp.json()
   if (!resp.ok) throw new Error(`Gemini ${resp.status}: ${data?.error?.message}`)
   const parts = data?.candidates?.[0]?.content?.parts || []
-  return parts.filter((p) => p.text).map((p) => p.text).join('').trim()
+  // Only the model's ANSWER parts reach Ethan — never a thought part (p.thought).
+  return parts.filter((p) => p.text && !p.thought).map((p) => p.text).join('').trim()
 }
 
 export default async function handler(req, res) {
