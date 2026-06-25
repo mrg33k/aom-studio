@@ -76,8 +76,13 @@ function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}
   // One shared nav (design item 7): the desktop top bar is now mounted once in the
   // shell, so strip this screen's baked-in .topbar to avoid a double bar.
   if (sharedNav && !mobile) screen.querySelector('.topbar')?.remove();
+  // A mobile screen is a fixed header (.mhdr, flex:none) over a scroll body (.scrbody,
+  // flex:1 overflow:auto). For that to scroll, the screen must be a flex column — the
+  // design's fixed-px mockup never needed it, so it was missing and the body clipped
+  // instead of scrolling. Add it whenever the screen has a scroll body.
+  const hasScrollBody = !!screen.querySelector('.scrbody');
   screen.setAttribute('style', mobile
-    ? 'position:relative;width:100%;height:100%;background:#05080b;overflow:hidden'
+    ? `position:relative;width:100%;height:100%;background:#05080b;overflow:hidden${hasScrollBody ? ';display:flex;flex-direction:column' : ''}`
     : 'width:100%;height:100%');
   // append shared states next to this screen's ready region
   const ready = screen.querySelector('[data-state="ready"]');
