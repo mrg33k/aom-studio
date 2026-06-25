@@ -163,7 +163,7 @@ const HOME_ALIASES = {
 // Projects pagination: show this many by default, rest behind "Show N more".
 const PROJ_LIMIT = 8;
 
-function Home({ onNav, onOpenRoom, onOpenNav, pendingProjectId, onProjectConsumed }) {
+function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
   const [missionReload, setMissionReload] = useState(0);
@@ -375,7 +375,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, pendingProjectId, onProjectConsume
         return next;
       });
     },
-    openCommandK: () => {}, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+    // Search opens the command palette (room/agent search), not the nav menu.
+    openCommandK: () => (onCommandK ? onCommandK() : onOpenNav?.()), search: () => (onCommandK ? onCommandK() : onOpenNav?.()), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
     newRoom: () => {}, showMoreProjects: () => setProjShowAll(true),
     // draftReply (approve-and-send) sends real client email + needs an agent-drafted body;
@@ -403,7 +404,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, pendingProjectId, onProjectConsume
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenNav, data.projects, data.agents, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject]);
+  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),
@@ -680,18 +681,27 @@ const COMMAND_ALIASES = {
   'activity.jobs': 'job', 'goal.checklist': 'step',
   'ledger.others': 'room', 'ledger.rooms': 'room', watchers: 'watcher',
 };
-function Command({ worldId, onNav, onOpenNav }) {
+function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
   const { state, data } = useCommand(worldId);
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
-  const actions = useMemo(() => ({
-    nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
-    openCommandK: () => onOpenNav?.(), openProfile: () => onOpenNav?.(),
-    // ledger rooms open their conversation is desktop-Chat work; goal/job/watcher mutations have
-    // no honest store yet -> inert (not faked). The dock + ledger render real data.
-    openGoal: () => {}, openJob: () => {}, toggleWatcher: () => {}, addWatcher: () => {},
-    manageActivity: () => {}, retaskGoal: () => {},
-  }), [onNav, onOpenNav]);
+  const actions = useMemo(() => {
+    // Tapping a ledger row opens that room's conversation (room.id = the project slug).
+    const openRoomById = (id) => {
+      const rooms = data?.ledger?.rooms || [];
+      const r = rooms.find((x) => String(x.id) === String(id));
+      if (!r && !id) return;
+      onOpenRoom?.({ id: r?.id || id, name: r?.name || 'Room', isProject: true, status: r?.status || 'ready' }, worldId);
+    };
+    return {
+      nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
+      openCommandK: () => onOpenNav?.(), openProfile: () => onOpenNav?.(),
+      // Ledger rows open their room's chat. Watcher/goal mutations have no honest
+      // store yet -> inert (not faked). The dock + ledger render real data.
+      openGoal: (id) => openRoomById(id), openJob: () => {}, toggleWatcher: () => {}, addWatcher: () => {},
+      manageActivity: () => {}, retaskGoal: () => {},
+    };
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
@@ -1112,11 +1122,11 @@ export default function CornerCV6() {
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }
   else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'livescribe'; }
-  else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'command'; }
+  else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent' })} />; viewKey = 'tracker'; }
   else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} />; viewKey = 'review'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
-  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
+  else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
   const current = (openedRoom || view === 'chatlist') ? 'chat' : view;
   return (
