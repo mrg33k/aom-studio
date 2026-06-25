@@ -434,7 +434,10 @@ export function useTrackerBugs(worldId) {
   let activeTracker, listBugs, listState;
   if (showingCv6) {
     activeTracker = { id: CV6_BOARD_ID, name: 'CV6 Bugs', scope: 'Corner CV6', openCount: open.length };
-    listBugs = bugs; listState = status;
+    // Open work first, done last — so an active board never opens on a wall of closed bugs.
+    const RANK = { open: 0, progress: 1, done: 2 };
+    listBugs = [...bugs].sort((a, b) => (RANK[a.status] ?? 9) - (RANK[b.status] ?? 9));
+    listState = status;
   } else if (showingSpace) {
     activeTracker = { id: SPACE_BOARD_ID, name: 'Space Rising', scope: 'Space Rising', openCount: spaceOpen.length };
     listBugs = spaceTickets; listState = spaceStatus;
