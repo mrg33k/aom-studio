@@ -156,17 +156,37 @@ export function useOrganize(worldId = 'aom') {
     groups.get(slug).push(f);
   });
 
-  const projectList = [...groups.entries()].map(([slug, fs]) => ({
-    id: slug,
-    name: nameBySlug[slug] || prettify(slug),
-    fileCount: fs.length,
-    folderCount: 0, // HELD-C: file store is flat
-    tint: tintFor(slug),
-  }));
+  // Build the list from EVERY real project in this world (not just the ones that
+  // happen to have files), so all projects show up; merge file counts in. Then
+  // append any orphan file-groups whose project isn't in the table, so nothing is lost.
+  // Match the files path, which scopes scaffolds to projects WHERE client_id = worldId.
+  // Drop obvious test/smoke scaffolding so the picker shows real projects only (the old
+  // file-derived list hid these implicitly because they have no scaffold files).
+  const CRUFT = /(^|-)(smoke|proj-tool|loop-test|test-project|lr2test)/i;
+  const worldProjects = (projects || []).filter(
+    (p) => p.slug && p.client_id === worldId && !CRUFT.test(p.slug)
+  );
+  const seenSlugs = new Set();
+  const projectList = worldProjects.map((p) => {
+    seenSlugs.add(p.slug);
+    return {
+      id: p.slug,
+      name: p.name || prettify(p.slug),
+      fileCount: (groups.get(p.slug) || []).length,
+      folderCount: 0, // HELD-C: file store is flat
+      tint: tintFor(p.slug),
+    };
+  });
+  for (const [slug, fs] of groups.entries()) {
+    if (slug === 'unfiled' || seenSlugs.has(slug)) continue;
+    projectList.push({ id: slug, name: nameBySlug[slug] || prettify(slug), fileCount: fs.length, folderCount: 0, tint: tintFor(slug) });
+  }
 
-  // The selected project (the one whose files show). Falls back to the first
-  // when nothing is picked yet, or when the picked one is gone after a reload.
-  const activeProjectId = (selectedId && groups.has(selectedId)) ? selectedId : (projectList[0]?.id || null);
+  // The selected project (the one whose files show). Falls back to the first when
+  // nothing is picked yet, or when the picked one is gone after a reload. A project
+  // can be selected even with zero files (it just opens an empty list).
+  const inList = (id) => projectList.some((p) => p.id === id);
+  const activeProjectId = (selectedId && inList(selectedId)) ? selectedId : (projectList[0]?.id || null);
 
   // Desktop tree: flattened with depth. `open` marks the SELECTED project so the
   // tree highlights the one whose files are showing (was hardcoded to the first).
