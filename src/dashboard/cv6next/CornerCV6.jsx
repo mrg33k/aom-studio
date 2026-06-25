@@ -9,6 +9,7 @@
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
+import Cv6Composer from './Cv6Composer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
@@ -473,20 +474,23 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     });
     return () => cancelAnimationFrame(id);
   }, [knavOpenedKey, quickLen]);
-  // Enter-to-send in the col3 quick reply input (the template engine only wires clicks, so the
-  // keydown is handled here). Shift+Enter is left alone for a future multiline composer.
+  // col3 quick-reply composer host (Patrik 2026-06-25): the composer is now the React
+  // Cv6Composer (CV4-style pill + slash commands + send), portaled into the template's
+  // [data-cv6-composer] node. The template re-binds on every realtime tick / new message,
+  // recreating that node, so we track it with a MutationObserver and re-point the portal;
+  // the Cv6Composer instance persists (kept mounted in JSX) so typed text survives a re-bind.
+  const [composerHost, setComposerHost] = useState(null);
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key !== 'Enter' || e.shiftKey) return;
-      const t = e.target;
-      if (!t || !t.classList || !t.classList.contains('convo-input')) return;
-      e.preventDefault();
-      const v = t.value;
-      if (v && v.trim() && quickSend) { quickSend(v.trim()); t.value = ''; }
+    if (!isDesktop) { setComposerHost(null); return undefined; }
+    const pick = () => {
+      const el = document.querySelector('[data-screen="home-desktop"] [data-cv6-composer]');
+      setComposerHost((prev) => (prev === el ? prev : (el || null)));
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [quickSend]);
+    pick();
+    const obs = new MutationObserver(pick);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, [isDesktop]);
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
@@ -927,6 +931,12 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
         aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
+      <Cv6Composer
+        target={knavOpenedRoom ? composerHost : null}
+        onSend={quickSend}
+        placeholder={displayedRoom.name ? `Message ${displayedRoom.name}…` : 'Message this room…'}
+        surface={(baseRoom.isProject || baseRoom.isMission) ? 'project' : '1on1'}
+      />
       {trackerOverlay}
     </div>
   );
