@@ -462,6 +462,17 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // useRoomThread the full Chat tool uses, so the quick panel and the full chat agree.
   const quickThread = useRoomThread(worldId, knavOpenedRoom);
   const quickSend = quickThread && quickThread.send;
+  // Pin the col3 quick chat to the newest message: when a room opens or a message lands, scroll
+  // the thread to the bottom (Patrik 2026-06-25: it was loading at the top). rAF so it runs after
+  // the template engine paints the new rows. The thread element only exists on desktop home.
+  const quickLen = (quickThread && quickThread.messages && quickThread.messages.length) || 0;
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector('[data-screen="convo"] .convo-thread');
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [knavOpenedKey, quickLen]);
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
