@@ -165,6 +165,8 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
     bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at });
   }
   const recent = Object.values(recentMap)
+    // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).
+    .filter((r) => { const n = String(r.name || '').trim().toLowerCase(); return n && n !== 'undefined' && n !== 'null'; })
     .sort((a, b) => b.ts - a.ts)
     .slice(0, 6)
     .map((r) => ({ ...r, initials: initials(r.name), tint: tintFor(r.name), age: relTime(r.ts), status: (Date.now() - r.ts) < 3600000 ? 'live' : 'ready' }));
