@@ -863,8 +863,9 @@
   cursor:pointer; flex:none; transition:background .12s ease, border-color .12s ease; }
 [data-cv6] .cuarrow:hover { background:var(--surface-3, var(--surface-2)); border-color:var(--accent); color:var(--accent); }
 [data-cv6] .custack { position:relative; }
-[data-cv6] .custack-back { position:absolute; left:50%; transform:translateX(-50%); height:34px;
-  border-radius:14px; background:var(--surface-2); border:1px solid var(--hair); }
-[data-cv6] .custack .b1 { width:93%; bottom:-7px; z-index:1; }
-[data-cv6] .custack .b2 { width:86%; bottom:-13px; z-index:0; opacity:.6; }
+[data-cv6] .custack-back { position:absolute; left:50%; transform:translateX(-50%); height:44px;
+  border-radius:16px; background:var(--surface-2); border:1px solid var(--hair);
+  box-shadow:0 10px 22px -12px rgba(0,0,0,.55); }
+[data-cv6] .custack .b1 { width:94%; bottom:-10px; z-index:1; }
+[data-cv6] .custack .b2 { width:87%; bottom:-19px; z-index:0; opacity:.75; }
 [data-cv6] .custack.is-none .custack-back { display:none; }
