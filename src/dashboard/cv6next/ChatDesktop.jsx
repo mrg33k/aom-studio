@@ -247,8 +247,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav }) 
           <div style={{ width: 316, flex: 'none', borderLeft: '1px solid var(--divider)', padding: 20, overflowY: 'auto' }}>
             {selected ? (
               <>
-                {/* 1. Agent on it */}
-                <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>Agent on this goal</div>
+                {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}
+                <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>{selected.isProject ? 'Project room' : 'Agent on this goal'}</div>
                 <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span className="ava is-green" style={{ width: 34, height: 34, fontSize: 12 }}>{selected.initials || '·'}</span>
