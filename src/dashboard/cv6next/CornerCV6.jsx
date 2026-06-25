@@ -201,6 +201,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       all, count: all.length,
       // When caught up (no real item), the action buttons have nothing to act on -> hide them.
       actionsState: all.length ? 'has' : 'none',
+      // The desktop deck shows a peeking stack behind the front card only when 2+ remain.
+      stackState: all.length > 1 ? 'has' : 'none',
       position: all.length ? idx + 1 : 0,
       current: all[idx] || { id: '', kind: 'agent', kindLabel: '', from: 'Caught up', subject: '', summary: 'Nothing needs you right now. New items from your agents and inbox will land here.', actionItems: [], attachments: [], actionState: 'none' },
       items: all.map((c, i) => ({ ...c, deckState: i === idx ? 'current' : (i < idx ? 'prev' : 'next') })),
@@ -381,6 +383,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     openCommandK: () => (onCommandK ? onCommandK() : onOpenNav?.()), search: () => (onCommandK ? onCommandK() : onOpenNav?.()), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
     newRoom: () => {}, showMoreProjects: () => setProjShowAll(true),
+    // Catch Up deck navigation (desktop arrows + mobile next). Clamp against the LIVE deck
+    // length (inbox minus device-dismissed) so the arrows never run past the last card.
+    catchUpPrev: () => setCatchUpIndex((i) => Math.max(0, i - 1)),
+    catchUpNext: () => setCatchUpIndex((i) => {
+      const n = (data.catchUp?.all || []).filter((c) => !catchUpDismissed.includes(c.id)).length;
+      return Math.min(i + 1, Math.max(0, n - 1));
+    }),
     // draftReply (approve-and-send) sends real client email + needs an agent-drafted body;
     // held until that path + an explicit OK exist (see mission BUILD). Not faked.
     draftReply: () => {}, addToTracker: () => {}, assignAgent: () => {}, snooze: () => {},
@@ -408,7 +417,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     newMission: () => openNewMission(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject]);
+  }), [onNav, onOpenRoom, onOpenNav, onCommandK, data.projects, data.agents, data.catchUp, worldId, isDesktop, openedProject, catchUpOpen, openedProjectId, missionsByProject, catchUpDismissed]);
 
   const missionActions = useMemo(() => ({
     nav: () => setMissionSeed(null),

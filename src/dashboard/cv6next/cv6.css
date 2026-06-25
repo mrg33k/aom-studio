@@ -854,3 +854,17 @@
    summary for the file chip + Review below, so hide the summary paragraph on file cards
    (otherwise the filename shows twice). Text cards (is-text) keep the summary. */
 [data-cv6] .csum.is-file { display:none; }
+
+/* Desktop Catch Up as a swipeable card deck (Patrik, 2026-06-25): header arrows step through
+   the deck; faint backings peek behind the front card so it reads as a stack. Backings hide
+   when only one card remains (.custack.is-none). */
+[data-cv6] .cuarrow { width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+  border-radius:8px; border:1px solid var(--hair); background:var(--surface-2); color:var(--fg);
+  cursor:pointer; flex:none; transition:background .12s ease, border-color .12s ease; }
+[data-cv6] .cuarrow:hover { background:var(--surface-3, var(--surface-2)); border-color:var(--accent); color:var(--accent); }
+[data-cv6] .custack { position:relative; }
+[data-cv6] .custack-back { position:absolute; left:50%; transform:translateX(-50%); height:34px;
+  border-radius:14px; background:var(--surface-2); border:1px solid var(--hair); }
+[data-cv6] .custack .b1 { width:93%; bottom:-7px; z-index:1; }
+[data-cv6] .custack .b2 { width:86%; bottom:-13px; z-index:0; opacity:.6; }
+[data-cv6] .custack.is-none .custack-back { display:none; }
