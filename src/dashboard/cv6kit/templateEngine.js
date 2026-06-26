@@ -172,6 +172,9 @@ function applyBindings(el, scopes, ctx) {
       const val = resolvePath(scopes, one.slice(ix + 1).trim());
       if (val == null) continue;
       if (verb === 'width') { if (el.style) el.style.width = `${val}%`; continue; }
+      // keyboard selection rides a data attribute, not an is-* class, so a row can carry
+      // BOTH its depth-indent (is-d1/is-d2) and the selected highlight at the same time.
+      if (verb === 'knav') { el.setAttribute('data-knav', val); continue; }
       // swap to the design's documented is-<value> class; drop any prior is-*.
       const classes = (el.getAttribute('class') || '').split(/\s+/).filter((c) => c && !c.startsWith('is-'));
       classes.push(`is-${val}`);

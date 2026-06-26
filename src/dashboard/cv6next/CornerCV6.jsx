@@ -652,6 +652,17 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDesktop, knavSelectedIdx, knavRoomOpenState, knavOpenedKey, expandedHomeProjects, expandedHomeNodes, onOpenRoom, worldId]);
 
+  // Keep the keyboard-selected row visible: when selection moves (incl. into a freshly
+  // expanded sub-folder), scroll it into the rooms list so arrow nav never walks off-screen.
+  useEffect(() => {
+    if (!isDesktop || knavSelectedIdx < 0) return undefined;
+    const id = requestAnimationFrame(() => {
+      const el = document.querySelector('[data-screen="home-desktop"] .scrollcap [data-knav="sel"]');
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [knavSelectedIdx, isDesktop, expandedHomeProjects, expandedHomeNodes]);
+
   const openNewMission = () => {
     if (!openedProject) return;
     missionAgentRef.current = '';
