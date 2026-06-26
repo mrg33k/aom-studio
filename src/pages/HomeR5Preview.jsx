@@ -81,7 +81,7 @@ const SPANS = [5, 4, 3]; // varied widths, fills a 12-col row every 3 tiles
 // Portfolio shown as category rows, Construction first. Two media: Video + Web.
 const VIDEO_ROWS = [
   { cat: 'Construction', items: [
-    { t: 'To Have and To Host', id: '698a68b7fc23d3d76fa970ef', tag: 'Build' },
+    { t: 'To Have and To Host', id: '698a68b7fc23d3d76fa970ef', tag: 'Build', slug: 'to-have-and-to-host' },
     { t: 'Abrazo Healthcare', id: '698a58aefc23d3d76fa7cdd6', tag: 'HVAC' },
     { t: 'Memorial Towers', id: '698a584faec3d4e420c20fef', tag: 'Industrial' },
     { t: 'Refined Gardens', id: '698a57fb873071aec5c94350', tag: 'Landscaping' },
@@ -609,7 +609,7 @@ export default function HomeR5Preview() {
                       </div>
                     ))
                   : r.items.map((p) => (
-                      <div className="vcard ccard" key={p.t} onClick={() => setVideo({ id: p.id, client: p.t })}>
+                      <div className="vcard ccard" key={p.t} onClick={() => p.slug ? window.location.assign(`/work/${p.slug}`) : setVideo({ id: p.id, client: p.t })}>
                         <LazyGumlet id={p.id} className="vid" />
                         <div className="shade" /><span className="pl">▶</span>
                         <div className="cap"><div className="nm">{p.t}</div>

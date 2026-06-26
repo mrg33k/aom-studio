@@ -116,6 +116,7 @@ const AcceptInvite = lazy(() => import('./pages/AcceptInvite.jsx'))
 const DashboardWelcome = lazy(() => import('./pages/DashboardWelcome.jsx'))
 const HomeR4Preview = lazy(() => import('./pages/HomeR4Preview.jsx'))
 const HomeR5Preview = lazy(() => import('./pages/HomeR5Preview.jsx'))
+const ProjectPage = lazy(() => import('./pages/ProjectPage.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
 const MunicipalityDirectory = lazy(() => import('./pages/MunicipalityDirectory.jsx'))
@@ -412,6 +413,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/home-v2" element={<V2Home />} />
           <Route path="/r4" element={<HomeR4Preview />} />
           <Route path="/r5" element={<HomeR5Preview />} />
+          <Route path="/work/:slug" element={<ProjectPage />} />
           <Route path="/scribe" element={<LiveScribe />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
           <Route path="/brand" element={<BrandRedirect />} />

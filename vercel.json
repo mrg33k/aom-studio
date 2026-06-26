@@ -49,6 +49,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/work/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/cv2",
       "destination": "/cv2.html"
     },
