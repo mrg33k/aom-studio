@@ -300,7 +300,10 @@ function AuthGuard({ children }) {
 // Vercel project only). Patrik always knows which surface he's on.
 // corner:test-dashboard R1 (design v2: pulsing dot, LAB pill, tight copy)
 function TestModeBanner() {
+  const { pathname } = useLocation()
   if (import.meta.env.VITE_DASHBOARD_MODE !== 'test') return null
+  // Hide on the public marketing preview pages so they review clean (it never shows on real prod anyway).
+  if (pathname === '/r5' || pathname.startsWith('/work/')) return null
   return (
     <>
       <style>{`
