@@ -18,13 +18,21 @@ function tintFor(seed) {
   let h = 0; for (const c of String(seed || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return TINTS[h % TINTS.length];
 }
+// Always render in Phoenix time (America/Phoenix, no DST) so the timestamp is the
+// same for everyone regardless of the viewer's machine timezone — Patrik runs on
+// Phoenix time. Show only the clock for today's messages; prefix the date for older
+// ones so a three-week-old message never reads as if it just arrived.
+const PHX = 'America/Phoenix';
 function hhmm(ts) {
   if (!ts) return '';
   const d = new Date(ts);
   if (Number.isNaN(d.getTime())) return '';
-  let h = d.getHours(); const m = d.getMinutes();
-  const ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
-  return `${h}:${String(m).padStart(2, '0')} ${ap}`;
+  const time = d.toLocaleTimeString('en-US', { timeZone: PHX, hour: 'numeric', minute: '2-digit' });
+  const today = new Date().toLocaleDateString('en-US', { timeZone: PHX });
+  const day = d.toLocaleDateString('en-US', { timeZone: PHX });
+  if (day === today) return time;
+  const date = d.toLocaleDateString('en-US', { timeZone: PHX, month: 'short', day: 'numeric' });
+  return `${date}, ${time}`;
 }
 
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.
