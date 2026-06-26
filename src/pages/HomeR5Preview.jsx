@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import LazyGumlet from '../components/home/LazyGumlet';
 import BrandMark from '../components/home/BrandMark';
 
@@ -160,6 +161,9 @@ const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap');
 .r5{--ink:#0B0B0B;--ink-800:#161614;--ink-700:#2A2A28;--ink-500:#6E6E66;--ink-300:#A8A49C;--paper:#F6F6F4;--paper-alt:#EEEDE8;--line:#DCD9D2;--stone:#B6B2AB;--gold:#C4A46A;--gold-deep:#A8884C;--display:'Bricolage Grotesque',system-ui,Helvetica,Arial,sans-serif;--text:'Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;}
 .r5,.r5 *{margin:0;padding:0;box-sizing:border-box}
+/* While this page is mounted, use overflow-x:clip (not hidden) so html/body do not
+   become a scroll container, which would break position:sticky on the scroll scene. */
+html,body{overflow-x:clip !important;}
 .r5{font-family:var(--text);background:var(--paper);color:var(--ink);font-size:16px;-webkit-font-smoothing:antialiased;}
 .r5 .wrap{max-width:1280px;margin:0 auto;padding:0 48px;}
 .r5 .disp{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;line-height:.9;}
@@ -331,6 +335,34 @@ const CSS = `
 .r5 .fw-mark .markwm{position:absolute;left:14px;bottom:12px;font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.04em;color:var(--ink);}
 .r5 .fw-clipB{grid-column:span 2;grid-row:span 1;cursor:pointer;}
 
+/* ---- Signature scroll scene (pinned, scroll-driven) ---- */
+.r5 .scene{position:relative;height:240vh;background:var(--paper);color:var(--ink);
+  background-image:linear-gradient(rgba(11,11,11,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(11,11,11,.05) 1px,transparent 1px);background-size:38px 38px;}
+.r5 .scenepin{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.r5 .scenehead{position:relative;z-index:5;text-align:center;max-width:1000px;padding:0 48px;}
+.r5 .scenehead .kick{display:inline-flex;justify-content:center;color:var(--ink-500);}
+.r5 .scenehead h2{font-size:clamp(40px,6.6vw,108px);line-height:.92;margin:18px 0 0;}
+.r5 .scenestat{margin:34px auto 0;font-family:var(--text);font-size:18px;line-height:1.5;color:var(--ink-500);max-width:46ch;}
+.r5 .scenestat b{display:block;font-size:66px;color:var(--gold-deep);line-height:1;margin-bottom:8px;letter-spacing:-.02em;}
+.r5 .scene .shape{position:absolute;z-index:1;will-change:transform;}
+.r5 .scene .shape.sq{width:118px;height:118px;background:var(--gold);top:17%;left:11%;}
+.r5 .scene .shape.ci{width:210px;height:210px;border-radius:50%;background:var(--ink);bottom:7%;right:13%;}
+.r5 .scene .shape.tri{width:0;height:0;border-left:84px solid transparent;border-right:84px solid transparent;border-bottom:146px solid var(--ink-700);opacity:.16;top:11%;right:23%;}
+.r5 .scene .sceneclip{position:absolute;z-index:2;width:290px;aspect-ratio:16/10;overflow:hidden;border:1px solid var(--line);background:var(--ink);will-change:transform;top:50%;margin-top:-92px;}
+.r5 .scene .sceneclip.cl-l{left:6%;}
+.r5 .scene .sceneclip.cl-r{right:6%;}
+
+/* ---- Scroll reveal (gated behind JS-added .anim) ---- */
+.r5.anim .svctop,.r5.anim .svccell,.r5.anim .work .head,.r5.anim .crow,.r5.anim .wh,.r5.anim .w1,.r5.anim .why .cell,.r5.anim .voices .q,.r5.anim .close .inner{opacity:0;transform:translateY(34px);transition:opacity .7s cubic-bezier(.22,.61,.36,1),transform .7s cubic-bezier(.22,.61,.36,1);}
+.r5.anim .svcgrid .svccell:nth-child(3n+2){transition-delay:.07s;}
+.r5.anim .svcgrid .svccell:nth-child(3n){transition-delay:.14s;}
+.r5.anim .why .cell:nth-child(2){transition-delay:.07s;}
+.r5.anim .why .cell:nth-child(3){transition-delay:.14s;}
+.r5.anim .why .cell:nth-child(4){transition-delay:.21s;}
+.r5.anim .voices .q:nth-child(2){transition-delay:.08s;}
+.r5.anim .voices .q:nth-child(3){transition-delay:.16s;}
+.r5.anim .rvin{opacity:1 !important;transform:none !important;}
+
 /* ---- 2: Editorial one-sheet ---- */
 .r5 .heroed{background:var(--ink);color:var(--paper);}
 .r5 .heroed .edtop{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--ink-700);padding-bottom:16px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-300);}
@@ -366,6 +398,11 @@ const CSS = `
   .r5 .fw-clipA,.r5 .fw-win{grid-column:span 2;grid-row:span 2;}
   .r5 .fw-win{transform:none;}
   .r5 .fw-mark,.r5 .fw-clipB{grid-column:span 1;grid-row:span 1;}
+  .r5 .scene{height:170vh;}
+  .r5 .scene .sceneclip{display:none;}
+  .r5 .scene .shape.sq{width:78px;height:78px;}
+  .r5 .scene .shape.ci{width:130px;height:130px;}
+  .r5 .scenehead h2{font-size:38px;}
 }
 
 /* hero variant picker */
@@ -774,6 +811,40 @@ function FlimHero({ portrait, setVideo }) {
   );
 }
 
+// Signature scroll scene (the flim "scrub" centerpiece, AOM brand): a pinned panel
+// where film clips drift in from the sides, geometric shapes move across a graph-paper
+// ground, and the statement headline + stat scale as you scroll through it.
+function ManifestScene() {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+  const clip = useMemo(() => shuffle(REEL_POOL).slice(0, 2), []);
+  const headY = useTransform(scrollYProgress, [0, 1], [70, -70]);
+  const headScale = useTransform(scrollYProgress, [0, 0.5, 1], [0.94, 1, 1.06]);
+  const sqX = useTransform(scrollYProgress, [0, 1], [-130, 170]);
+  const sqRot = useTransform(scrollYProgress, [0, 1], [0, 95]);
+  const ciY = useTransform(scrollYProgress, [0, 1], [160, -130]);
+  const triY = useTransform(scrollYProgress, [0, 1], [200, -50]);
+  const clipL = useTransform(scrollYProgress, [0, 1], [120, -90]);
+  const clipR = useTransform(scrollYProgress, [0, 1], [-120, 90]);
+  const opIn = useTransform(scrollYProgress, [0, 0.22], [0, 1]);
+  return (
+    <section className="scene" ref={ref}>
+      <div className="scenepin">
+        <motion.div className="shape sq" style={{ x: sqX, rotate: sqRot }} />
+        <motion.div className="shape ci" style={{ y: ciY }} />
+        <motion.div className="shape tri" style={{ y: triY }} />
+        <motion.div className="sceneclip cl-l" style={{ y: clipL, opacity: opIn }}><LazyGumlet id={clip[0]?.id} eager poster="#0B0B0B" /></motion.div>
+        <motion.div className="sceneclip cl-r" style={{ y: clipR, opacity: opIn }}><LazyGumlet id={clip[1]?.id} eager poster="#0B0B0B" /></motion.div>
+        <motion.div className="scenehead" style={{ y: headY, scale: headScale }}>
+          <span className="kick"><span className="ledot" /> What we make</span>
+          <h2 className="disp">Film that moves people.<br /><span className="gold">Web that wins them.</span></h2>
+          <div className="scenestat"><b className="disp">100+</b> films and websites shipped for businesses across Arizona and beyond.</div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 export default function HomeR5Preview() {
   const [tab, setTab] = useState('All');
   const [video, setVideo] = useState(null);
@@ -793,6 +864,37 @@ export default function HomeR5Preview() {
   const WAY_PERSON = { eyebrow: 'In person', title: 'Hire us in person.', steps: PERSON_STEPS, cta: 'Book a visit' };
   const wActive = wtab === 'Online' ? WAY_ONLINE : WAY_PERSON;
 
+  const rootRef = useRef(null);
+
+  // Smooth momentum scroll (the flim "feel"). Lazy-loaded, scoped to this page,
+  // and skipped entirely when the visitor asks for reduced motion.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let lenis, raf, alive = true;
+    import('lenis').then(({ default: Lenis }) => {
+      if (!alive) return;
+      lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
+      const loop = (t) => { lenis.raf(t); raf = requestAnimationFrame(loop); };
+      raf = requestAnimationFrame(loop);
+    });
+    return () => { alive = false; if (raf) cancelAnimationFrame(raf); if (lenis) lenis.destroy(); };
+  }, []);
+
+  // Scroll-reveal: sections rise + fade in as they enter. Gated behind a JS-added
+  // class so no-JS / reduced-motion visitors see everything immediately.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    root.classList.add('anim');
+    const els = root.querySelectorAll('.svctop,.svccell,.work .head,.crow,.wh,.w1,.why .cell,.voices .q,.close .inner');
+    const io = new IntersectionObserver((ents) => {
+      ents.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('rvin'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
   const HeroLockup = ({ center = false, light = false }) => (
     <div className={'hlock' + (center ? ' center' : '') + (light ? ' light' : '')}>
       <span className="kick"><span className="ledot" /> Video · Web · Ads</span>
@@ -805,7 +907,7 @@ export default function HomeR5Preview() {
   );
 
   return (
-    <div className="r5">
+    <div className="r5" ref={rootRef}>
       <style>{CSS}</style>
 
       {/* NAV */}
@@ -835,6 +937,9 @@ export default function HomeR5Preview() {
           <React.Fragment key={i}><span className="it">{t}</span><span className="sep">/</span></React.Fragment>
         ))}
       </div></div>
+
+      {/* SIGNATURE SCROLL SCENE — pinned, scroll-driven */}
+      <ManifestScene />
 
       {/* SERVICES — dark, who we are + what we do */}
       <section className="svc"><div className="wrap">
