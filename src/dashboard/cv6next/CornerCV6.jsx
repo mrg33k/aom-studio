@@ -12,6 +12,7 @@ import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
+import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
@@ -285,7 +286,7 @@ function Cv6QuickThread({ target, messages, onReview }) {
                 {head.agentName ? <div className="gname">{head.agentName}</div> : null}
                 {g.items.map((m, i) => (
                   <span key={i} style={{ display: 'contents' }}>
-                    {m.text ? <div className="pb">{m.text}</div> : null}
+                    {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
                     {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
                   </span>
                 ))}
