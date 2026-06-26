@@ -283,9 +283,10 @@ const CSS = `
 .r5 .b1 .breel{grid-column:11/13;grid-row:2/3;}
 /* v2 Banner: headline band on top, media row below */
 .r5 .bento.b2{grid-template-columns:repeat(12,1fr);grid-template-rows:auto 320px;}
-.r5 .b2 .bintro{grid-column:1/13;grid-row:1/2;flex-direction:row;align-items:center;justify-content:space-between;gap:40px;padding-bottom:8px;}
-.r5 .b2 .bintro h1{margin:0;font-size:50px;max-width:18ch;}
-.r5 .b2 .bintro .cta{margin:0;flex:none;}
+.r5 .b2 .bintro{grid-column:1/13;grid-row:1/2;display:grid;grid-template-columns:1fr auto;column-gap:40px;row-gap:10px;align-items:center;padding-bottom:8px;}
+.r5 .b2 .bintro .kick{grid-column:1;grid-row:1;}
+.r5 .b2 .bintro h1{grid-column:1;grid-row:2;margin:0;font-size:50px;max-width:22ch;}
+.r5 .b2 .bintro .cta{grid-column:2;grid-row:2;margin:0;}
 .r5 .b2 .bfilm{grid-column:1/7;grid-row:2/3;}
 .r5 .b2 .bweb{grid-column:7/10;grid-row:2/3;}
 .r5 .b2 .breel{grid-column:10/13;grid-row:2/3;}
