@@ -232,6 +232,24 @@ const CSS = `
 .r5 .rlayer.on{opacity:1;}
 .r5 .v3scrim{background:linear-gradient(90deg,rgba(11,11,11,.95) 8%,rgba(11,11,11,.55) 45%,rgba(11,11,11,.2) 75%),linear-gradient(0deg,rgba(11,11,11,.92),transparent 34%);}
 
+/* ---- 5: Showcase — interactive Film+ (cursor lens, parallax, kinetic) ---- */
+.r5 .heroshow{background:var(--ink);color:var(--paper);cursor:crosshair;}
+.r5 .heroshow .shbase{position:absolute;inset:-24px;z-index:1;transform:translate(calc(var(--px,0)*-16px),calc(var(--py,0)*-16px)) scale(1.05);transition:transform .35s cubic-bezier(.2,.7,.2,1);}
+/* lens: a second clip revealed only inside a circle that follows the cursor */
+.r5 .heroshow .shlens{position:absolute;inset:-24px;z-index:2;opacity:0;transition:opacity .4s ease;-webkit-clip-path:circle(0px at var(--mx,50%) var(--my,50%));clip-path:circle(0px at var(--mx,50%) var(--my,50%));}
+.r5 .heroshow.lenson .shlens{opacity:1;-webkit-clip-path:circle(160px at var(--mx) var(--my));clip-path:circle(160px at var(--mx) var(--my));}
+.r5 .heroshow .shring{position:absolute;z-index:3;left:var(--mx,50%);top:var(--my,50%);width:330px;height:330px;margin:-165px 0 0 -165px;border:1px solid var(--gold);border-radius:50%;opacity:0;transition:opacity .4s ease;pointer-events:none;mix-blend-mode:screen;}
+.r5 .heroshow.lenson .shring{opacity:.45;}
+.r5 .heroshow .shscrim{z-index:4;background:linear-gradient(90deg,rgba(11,11,11,.92) 6%,rgba(11,11,11,.5) 42%,rgba(11,11,11,.12) 80%),linear-gradient(0deg,rgba(11,11,11,.9),transparent 38%);}
+.r5 .heroshow .shvig{position:absolute;inset:0;z-index:4;pointer-events:none;box-shadow:inset 0 0 220px 60px rgba(0,0,0,.65);}
+.r5 .heroshow .shwrap{position:relative;z-index:5;}
+/* kinetic build-in on load */
+.r5 .heroshow .hlock .kick{animation:shIn .7s .15s both;}
+.r5 .heroshow .hlock h1{animation:shIn 1s .28s both;}
+.r5 .heroshow .hlock .cta{animation:shIn .8s .5s both;}
+@keyframes shIn{from{opacity:0;transform:translateY(26px);filter:blur(8px);}to{opacity:1;transform:none;filter:blur(0);}}
+@media(hover:none){.r5 .heroshow{cursor:default;}.r5 .heroshow .shlens,.r5 .heroshow .shring{display:none;}}
+
 /* hero variant picker */
 .r5 .heropick{position:fixed;bottom:18px;right:18px;z-index:200;display:flex;gap:6px;background:rgba(11,11,11,.86);border:1px solid #3A3A36;padding:6px;backdrop-filter:blur(6px);}
 .r5 .heropick button{font-family:var(--text);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--stone);background:transparent;border:1px solid transparent;padding:8px 12px;cursor:pointer;}
@@ -520,13 +538,56 @@ function RotatingFilm({ intervalMs = 7000, fadeMs = 1600 }) {
   );
 }
 
+// Showcase hero: the Film hero leveled up into an interactive piece that proves we
+// build web. A cursor "lens" reveals a different clip; the film parallax-drifts with
+// the mouse; the headline builds in kinetically. Base reel still rotates + stays fresh.
+function ShowcaseHero({ children }) {
+  const ref = useRef(null);
+  const lensId = useMemo(() => {
+    const s = shuffle(REEL_POOL);
+    return s[0]?.id;
+  }, []);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let raf = 0;
+    const onMove = (e) => {
+      const r = el.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        el.style.setProperty('--mx', x + 'px');
+        el.style.setProperty('--my', y + 'px');
+        el.style.setProperty('--px', ((x / r.width) - 0.5).toFixed(3));
+        el.style.setProperty('--py', ((y / r.height) - 0.5).toFixed(3));
+      });
+      el.classList.add('lenson');
+    };
+    const onLeave = () => el.classList.remove('lenson');
+    el.addEventListener('mousemove', onMove);
+    el.addEventListener('mouseleave', onLeave);
+    return () => { el.removeEventListener('mousemove', onMove); el.removeEventListener('mouseleave', onLeave); if (raf) cancelAnimationFrame(raf); };
+  }, []);
+  return (
+    <header className="hero heroshow" ref={ref}>
+      <div className="shbase"><RotatingFilm /></div>
+      <div className="shlens">{lensId && <LazyGumlet id={lensId} eager poster="#0B0B0B" />}</div>
+      <div className="shring" />
+      <div className="scrim shscrim" />
+      <div className="shvig" />
+      <div className="wrap shwrap">{children}</div>
+    </header>
+  );
+}
+
 export default function HomeR5Preview() {
   const [tab, setTab] = useState('All');
   const [video, setVideo] = useState(null);
   const [hero, setHero] = useState(() => {
     if (typeof window === 'undefined') return 1;
     const n = parseInt(new URLSearchParams(window.location.search).get('hero'), 10);
-    return n >= 1 && n <= 4 ? n : 4;
+    return n >= 1 && n <= 5 ? n : 5;
   });
   const portrait = useMemo(() => shuffle(DECK_REELS), []);
   const [medium, setMedium] = useState(() => {
@@ -610,8 +671,12 @@ export default function HomeR5Preview() {
           <div className="wrap"><HeroLockup /></div>
         </header>
       )}
+      {/* 5 — Showcase: interactive Film+ (cursor lens reveal, parallax, kinetic text) */}
+      {hero === 5 && (
+        <ShowcaseHero><HeroLockup /></ShowcaseHero>
+      )}
       <div className="heropick">
-        {['Line light', 'Line dark', 'Columns', 'Film'].map((l, i) => (
+        {['Line light', 'Line dark', 'Columns', 'Film', 'Showcase'].map((l, i) => (
           <button key={l} className={hero === i + 1 ? 'on' : ''} onClick={() => setHero(i + 1)}>{i + 1} {l}</button>
         ))}
       </div>
