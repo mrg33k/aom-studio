@@ -248,6 +248,10 @@
 /* skeleton (shared loading state) */
 @keyframes cv6shimmer { 0%{opacity:.5;} 50%{opacity:1;} 100%{opacity:.5;} }
 [data-cv6] .sk { border-radius:8px; background:var(--surface-2); animation:cv6shimmer 1.4s ease-in-out infinite; }
+
+/* "agent is working" typing dots (live feedback after you send) */
+@keyframes cv6dotpulse { 0%,60%,100%{opacity:.25;transform:translateY(0);} 30%{opacity:1;transform:translateY(-2px);} }
+[data-cv6] .cv6dot { width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block; animation:cv6dotpulse 1.2s ease-in-out infinite; }
 [data-cv6] .sk-row { display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--divider); }
 
 /* shared activity-dock badge + icon tint (is-:job.kind) — used by Command */

@@ -349,6 +349,52 @@ function DesktopDayCard({ group, onSend }) {
 }
 
 // Plain message list (desktop) for rooms without a live structured thread.
+// Live "agent is working" turn shown the instant you send, until the reply lands.
+// Renders the real step heartbeats (looking up / writing…) when the bridge emits them,
+// and a generic working pulse before the first step arrives — so it never feels dead.
+function WorkingTurn({ room, steps }) {
+  // De-dupe to the latest status per step index, drop the internal "settled" marker.
+  const byIdx = new Map();
+  for (const s of (steps || [])) {
+    if (s.step_index === 9999 || s.text === 'settled') continue;
+    byIdx.set(s.step_index, s);
+  }
+  const list = Array.from(byIdx.values()).sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
+  return (
+    <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'flex-start' }}>
+      <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{room?.initials || '·'}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {list.length ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {list.map((s, i) => {
+              const done = s.status === 'done';
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  {done ? (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="m5 13 4 4L19 7"/></svg>
+                  ) : (
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', animation: 'spin 1.1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>
+                  )}
+                  <span style={{ fontSize: 13, color: done ? 'var(--muted)' : 'var(--fg)' }}>{s.text}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+            <span style={{ display: 'inline-flex', gap: 3 }}>
+              <span className="cv6dot" style={{ animationDelay: '0ms' }} />
+              <span className="cv6dot" style={{ animationDelay: '160ms' }} />
+              <span className="cv6dot" style={{ animationDelay: '320ms' }} />
+            </span>
+            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{room?.name || 'Agent'} is working…</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PlainThread({ messages, onSend }) {
   if (!messages?.length) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>No messages in this room yet. Start the conversation below.</div>;
   const groups = groupByDayD(messages);
@@ -397,7 +443,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     return () => window.removeEventListener('keydown', onKey);
   }, [selected, onNav]);
 
-  const { messages, blocks, send } = useRoomThread(worldId, selected);
+  const { messages, blocks, send, awaiting, liveSteps } = useRoomThread(worldId, selected);
   const goal = useGoalThread(worldId, selected);
   const liveThread = Array.isArray(blocks) && blocks.length > 0;
 
@@ -627,6 +673,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       2026-06-25 so the conversation fills the column instead of feeling cramped. */}
                   <div style={{ maxWidth: 920, margin: '0 auto' }}>
                     {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} onSend={send} />}
+                    {awaiting ? <WorkingTurn room={selected} steps={liveSteps} /> : null}
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>

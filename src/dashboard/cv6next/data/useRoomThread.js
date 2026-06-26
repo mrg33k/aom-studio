@@ -37,6 +37,13 @@ export function useRoomThread(worldId, room) {
   // otherwise leave the thread looking dead for a beat). Each entry is dropped once the
   // real row comes back from the server (matched by text), so there's never a duplicate.
   const [pending, setPending] = useState([]);
+  // Live "agent is working" feedback. After you send, we show activity immediately
+  // (a generic working indicator) and, when the bridge emits real step heartbeats
+  // keyed to your message, the ticking step thread. Settles when the reply lands.
+  const [awaiting, setAwaiting] = useState(false);
+  const [lastSentId, setLastSentId] = useState('');
+  const lastSentTsRef = useRef(0);
+  const [liveSteps, setLiveSteps] = useState([]);
   // Content signature of the last thread we rendered. The poll runs every 3s and rebuilds
   // an identical array when nothing changed; pushing that new ref into state forces every
   // consumer (and the Home portal) to re-render and the scroll to jump. We only commit a
@@ -46,6 +53,8 @@ export function useRoomThread(worldId, room) {
   // Clear the outbox when you switch rooms (those messages belong to the old thread).
   useEffect(() => { setPending([]); }, [room?.id]);
   useEffect(() => { sigRef.current = ''; }, [room?.id]);
+  // Switching rooms drops any in-flight "working" state too.
+  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); lastSentTsRef.current = 0; }, [room?.id]);
 
   // Post a real user message into this room (composer + choice/question taps).
   // Agent rooms POST to the agent slug; project rooms to the project slug. After
@@ -66,14 +75,47 @@ export function useRoomThread(worldId, room) {
       : room.isProject
         ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard' }
         : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard' };
+    // Show "working" the instant you send, so the thread never looks dead.
+    setAwaiting(true);
+    setLiveSteps([]);
+    lastSentTsRef.current = now.getTime();
     try {
       const r = await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
+      // The created row id is the parent the bridge keys its step heartbeats to.
+      try { const j = await r.clone().json(); const id = j?.message?.id; if (id) setLastSentId(String(id)); } catch { /* non-JSON */ }
       setReloadKey((k) => k + 1);
       return !!(r && r.ok);
-    } catch { return false; }
+    } catch { setAwaiting(false); return false; }
   }, [worldId, room?.id, room?.isProject, room?.isMission, room?.missionSlug, room?.projectSlug]);
+
+  // Poll the live step heartbeats for the message you just sent (events table via
+  // /message-steps; client-side anon reads are RLS-blocked, hence the server proxy).
+  useEffect(() => {
+    if (!awaiting || !worldId || !room?.id) { return undefined; }
+    let alive = true;
+    const agentParam = (room.isMission || room.isProject) ? 'corner' : room.id;
+    const projParam = room.isMission ? room.projectSlug : (room.isProject ? room.id : '');
+    const q = new URLSearchParams({ client_id: worldId, agent: agentParam, limit: '50' });
+    if (projParam) q.set('project', projParam);
+    const poll = () => authFetch(`/api/dashboard/message-steps?${q.toString()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        const all = Array.isArray(d.steps) ? d.steps : [];
+        // Only the steps for THIS sent message; if we don't yet have its id, show nothing
+        // (the generic working indicator still renders from `awaiting`).
+        const mine = lastSentId ? all.filter((s) => String(s.parent_message_id) === lastSentId) : [];
+        setLiveSteps(mine);
+      })
+      .catch(() => {});
+    poll();
+    const t = setInterval(poll, 1500);
+    // Safety: never spin forever if no reply/heartbeat ever arrives.
+    const stop = setTimeout(() => { if (alive) setAwaiting(false); }, 120000);
+    return () => { alive = false; clearInterval(t); clearTimeout(stop); };
+  }, [awaiting, lastSentId, worldId, room?.id, room?.isMission, room?.isProject, room?.projectSlug]);
 
   useEffect(() => {
     if (!worldId || !room?.id) { setMessages([]); setStatus('loading'); return undefined; }
@@ -188,6 +230,12 @@ export function useRoomThread(worldId, room) {
           sigRef.current = sig;
           setMessages(msgs);
         }
+        // Settle the "working" state once the agent's reply has landed: any non-user
+        // message newer than the moment we sent. (Safety timeout also clears it.)
+        if (lastSentTsRef.current) {
+          const replied = msgs.some((m) => !m.isUser && m.ts && new Date(m.ts).getTime() > lastSentTsRef.current);
+          if (replied) setAwaiting(false);
+        }
         setStatus(msgs.length ? 'ready' : 'empty');
       })
       .catch(() => { if (alive) setStatus('error'); });
@@ -200,7 +248,7 @@ export function useRoomThread(worldId, room) {
 
   // Merge the optimistic outbox at the tail (newest) so a just-sent message shows at once.
   const merged = pending.length ? [...messages, ...pending] : messages;
-  return { messages: merged, blocks, status, send };
+  return { messages: merged, blocks, status, send, awaiting, liveSteps };
 }
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──
