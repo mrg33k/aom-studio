@@ -4,7 +4,7 @@
 // screen node from the design fragment, inject the shared loading/error/empty states,
 // and bind real data + actions behind it (no redraw).
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/organize.html?raw';
@@ -30,28 +30,18 @@ function composeOrganize(raw, screenName) {
 const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
 export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, setFilter } = useOrganize('aom');
-  const [pickedId, setPickedId] = useState(null);
-  // Switch which project's files show; drop the open file so the preview follows
-  // the newly-selected project instead of a file no longer in the list.
-  const switchProject = (id) => { selectProject(id); setPickedId(null); };
+  const { state, data, selectProject, setFilter, openFile } = useOrganize('aom');
+  // Switching project resets the open file inside the hook (auto-opens the new
+  // project's first file), so the preview always follows the selected project.
+  const switchProject = (id) => { selectProject(id); };
 
-  // The full real data shape from useOrganize, with the picked file's preview swapped in.
+  // Mark the open row from the hook's openedId so the highlighted row and the
+  // preview never disagree. Content/preview/viewFile already come from the hook.
   const bindData = useMemo(() => {
-    // The preview defaults to the first file on load; highlight that same row so the
-    // open file and the highlighted row never disagree (was: nothing highlighted until a click).
-    const effectiveId = pickedId || (data.files?.[0]?.id ?? null);
+    const effectiveId = data.openedId;
     const files = (data.files || []).map((x) => ({ ...x, picked: x.id === effectiveId ? 'open' : 'closed' }));
-    if (!pickedId) return { ...data, files };
-    const f = (data.files || []).find((x) => x.id === pickedId);
-    if (!f) return { ...data, files };
-    return {
-      ...data,
-      files,
-      preview: f.preview,
-      viewFile: { ...(data.viewFile || {}), id: f.id, name: f.name, title: f.preview?.title, bodyHtml: f.preview?.bodyHtml, edited: f.edited },
-    };
-  }, [data, pickedId]);
+    return { ...data, files };
+  }, [data]);
 
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
@@ -59,7 +49,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     openCommandK: () => {},
     openProfile: () => {},
     search: () => {},
-    openFile: (id) => setPickedId(id),
+    openFile: (id) => openFile(id),
     openTreeNode: (id) => switchProject(id),
     openProject: (id) => switchProject(id),
     openFolder: (id) => switchProject(id),

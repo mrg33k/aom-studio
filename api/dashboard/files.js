@@ -423,6 +423,60 @@ export default async function handler(req, res) {
       return res.status(200).json({ files: out })
     }
 
+    // ---- type=mirror: the project_files disk mirror (Organize, Phase 1) ----
+    // Source of truth for "every file in a project", written by
+    // scripts/file-mirror-watcher.py. List returns METADATA ONLY (no content)
+    // so a 7k-file world doesn't ship megabytes each poll; content is fetched
+    // per file on open via ?type=mirror&id=<uuid>&content=1.
+    if (type === 'mirror') {
+      const clientId = client || 'aom'
+
+      // Single-file content fetch (lazy, on open).
+      if (req.query.id) {
+        const cols = 'id,project,rel_path,name,ext,kind,size,content,storage_ref,updated_at,last_editor'
+        const url = `${SUPABASE_URL}/rest/v1/project_files`
+          + `?id=eq.${encodeURIComponent(req.query.id)}`
+          + `&client_id=eq.${encodeURIComponent(clientId)}`
+          + `&is_deleted=eq.false&select=${cols}&limit=1`
+        try {
+          const r = await fetch(url, { headers: dbHeaders() })
+          if (!r.ok) return res.status(200).json({ file: null })
+          const rows = await r.json()
+          return res.status(200).json({ file: Array.isArray(rows) && rows[0] ? rows[0] : null })
+        } catch {
+          return res.status(200).json({ file: null })
+        }
+      }
+
+      // Metadata list. Paginate internally so PostgREST's default 1000-row cap
+      // never silently truncates a large world (no silent truncation rule).
+      const project = req.query.project
+      const cols = 'id,project,rel_path,name,ext,kind,size,updated_at,last_editor'
+      const PAGE = 1000
+      const HARD_CAP = 20000
+      const files = []
+      let offset = 0
+      let truncated = false
+      try {
+        while (offset < HARD_CAP) {
+          let url = `${SUPABASE_URL}/rest/v1/project_files`
+            + `?client_id=eq.${encodeURIComponent(clientId)}`
+            + `&is_deleted=eq.false&select=${cols}`
+            + `&order=updated_at.desc&limit=${PAGE}&offset=${offset}`
+          if (project) url += `&project=eq.${encodeURIComponent(project)}`
+          const r = await fetch(url, { headers: dbHeaders() })
+          if (!r.ok) break
+          const rows = await r.json()
+          if (!Array.isArray(rows) || rows.length === 0) break
+          files.push(...rows)
+          if (rows.length < PAGE) break
+          offset += PAGE
+          if (offset >= HARD_CAP) truncated = true
+        }
+      } catch { /* return whatever we have */ }
+      return res.status(200).json({ files, truncated })
+    }
+
     if (type === 'text') {
       const clientId = client || 'aom'
       // Legacy text_files read (best-effort; the table was never migrated in

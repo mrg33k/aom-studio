@@ -10,7 +10,7 @@
 // data-state="ready" and drop the shared loading/empty/error blocks into the same
 // flex slot so they REPLACE the body instead of overlaying it (O1).
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/organize.html?raw';
@@ -126,7 +126,7 @@ const BROWSE_HTML = composeBrowse(template);
 const VIEW_HTML = composeView(template);
 
 export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, setFilter, reload } = useOrganize('aom');
+  const { state, data, selectProject, setFilter, reload, openFile } = useOrganize('aom');
   const [projectId, setProjectId] = useState(null); // null = show the picker (no forced project)
   const [pickedFileId, setPickedFileId] = useState(null);
 
@@ -134,30 +134,15 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
   const backToPicker = () => { setProjectId(null); setPickedFileId(null); };
   const backToBrowse = () => setPickedFileId(null);
 
-  const selectedFile = useMemo(
-    () => (data?.files || []).find((f) => f.id === pickedFileId) || null,
-    [data?.files, pickedFileId]
-  );
+  // Open a file: trigger the hook's lazy content fetch + remember which one for routing.
+  const tapFile = (id) => { openFile(id); setPickedFileId(id); };
 
+  // viewFile comes from the hook (content fetched lazily, keyed by openedId === pickedFileId).
   const bindData = {
     ...data,
     files: (data?.files || []),
-    folders: [], // HELD-C: subfolder navigation not implemented (flat store)
-    viewFile: selectedFile
-      ? {
-          id: selectedFile.id,
-          name: selectedFile.name,
-          path: `${data?.folder?.name || 'Project'} · ${selectedFile.name}`,
-          title: selectedFile.preview?.title,
-          bodyHtml: selectedFile.preview?.bodyHtml,
-          editor: 'System',
-          editorInitials: 'SY',
-          editorTint: 'neutral',
-          edited: selectedFile.edited,
-          status: selectedFile.status,
-          statusLabel: (selectedFile.status || 'ready').toUpperCase(),
-        }
-      : (data?.viewFile || null),
+    folders: [], // Phase 2: subfolder navigation
+    viewFile: pickedFileId ? (data?.viewFile || null) : null,
   };
 
   // Context-aware back: file view → list, list → picker, picker → home.
@@ -176,7 +161,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
     openProject: (id) => enterProject(id),
     openTreeNode: (id) => enterProject(id),
     openCrumb: (id) => (id === 'root' ? backToPicker() : enterProject(id)),
-    openFile: (id) => setPickedFileId(id),
+    openFile: (id) => tapFile(id),
     setFilter: (id) => setFilter(id || 'all'),
     openInReview: () => onNav?.('review'),
     assignAgent: (fileId) => onAssignFile?.(fileId || pickedFileId),
