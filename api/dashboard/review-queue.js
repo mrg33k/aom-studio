@@ -102,11 +102,61 @@ async function listProjectSlugs(world) {
   }
 }
 
+// Pre-built queue cache. The full walk (55 projects, ~10s each via the tunnel) is
+// far too slow to sit on the request path, so a local cron (scripts/build-review-
+// queue.py) walks disk directly and writes this file; we serve it instantly via the
+// same tunnel read review-comments uses. Returns the items array, or null if absent.
+async function readQueueCache(world) {
+  const rel = `corner/users/${world}/missions/master-loop/deliverables/review-queue.json`;
+  let raw = null;
+  try {
+    const r = await fetchWithTimeout(`${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(rel)}`, 5000, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
+    if (r && r.ok) raw = await r.text();
+  } catch (_) { /* fall through to disk */ }
+  if (raw == null) {
+    try {
+      const p = path.join(AOM_EA_ROOT, rel);
+      if (fs.existsSync(p)) raw = fs.readFileSync(p, 'utf8');
+    } catch (_) { /* ignore */ }
+  }
+  if (!raw) return null;
+  try {
+    const d = JSON.parse(raw);
+    return Array.isArray(d.items) ? d.items : null;
+  } catch (_) { return null; }
+}
+
+// fetch with a hard timeout so one slow tunnel call can never hang the function.
+async function fetchWithTimeout(url, ms, opts = {}) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(url, { ...opts, signal: ctrl.signal }); }
+  finally { clearTimeout(t); }
+}
+
+// Run async tasks with a bounded concurrency and an overall wall-clock deadline.
+// Past the deadline, remaining tasks resolve to [] rather than being started, so the
+// endpoint always returns promptly with whatever it managed to gather.
+async function runBounded(inputs, fn, { concurrency = 8, deadlineMs = 20000 } = {}) {
+  const started = Date.now();
+  const results = new Array(inputs.length);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < inputs.length) {
+      const i = cursor++;
+      if (Date.now() - started > deadlineMs) { results[i] = []; continue; }
+      try { results[i] = await fn(inputs[i]); } catch (_) { results[i] = []; }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, inputs.length || 1) }, worker));
+  return results;
+}
+
 // Walk one project through the tunnel; return its review-eligible files (recent).
 async function walkProjectViaTunnel(slug, now) {
   try {
     const url = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
+    const r = await fetchWithTimeout(url, 7000, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
     if (!r.ok) return [];
     const body = await r.json();
     const out = [];
@@ -202,10 +252,20 @@ export default async function handler(req, res) {
   const now = Date.now();
   let items = [];
 
-  // Canonical path: aggregate through the RAG tunnel (works on Vercel).
+  // FAST PATH: serve the pre-built cache (a local cron walks disk and writes it).
+  // This is what keeps the Review tool from hanging — the live tunnel walk of every
+  // project (~10s each, 55 of them) can never finish on the request path.
+  const cached = await readQueueCache(world);
+  if (cached && cached.length) {
+    return res.status(200).json({ items: cached.slice(0, MAX_ITEMS), source: 'cache' });
+  }
+
+  // FALLBACK (no cache yet, or a non-aom world): aggregate through the RAG tunnel,
+  // but BOUNDED — capped concurrency + per-walk timeout + overall deadline — so it
+  // returns promptly (possibly partial) instead of hanging.
   const slugs = await listProjectSlugs(world);
   if (slugs.length) {
-    const perProject = await Promise.all(slugs.map((s) => walkProjectViaTunnel(s, now)));
+    const perProject = await runBounded(slugs, (s) => walkProjectViaTunnel(s, now), { concurrency: 8, deadlineMs: 20000 });
     items = perProject.flat();
   }
 
@@ -213,5 +273,5 @@ export default async function handler(req, res) {
   if (!items.length) items = collectViaDisk(world, now);
 
   items.sort((a, b) => new Date(b.last_modified).getTime() - new Date(a.last_modified).getTime());
-  return res.status(200).json({ items: items.slice(0, MAX_ITEMS) });
+  return res.status(200).json({ items: items.slice(0, MAX_ITEMS), source: 'walk' });
 }
