@@ -91,15 +91,24 @@ export default async function handler(req, res) {
     // corner:notifications-catchup R3 — room-scoped filters for the catch-up
     // context fetcher. Same shape any chat surface uses:
     //   ?project=<slug>               — project rooms
+    //   ?project_only=1               — with ?project, exclude mission-tagged rows
+    //                                   (the project CHAT is the project-level thread;
+    //                                   mission-room messages also carry project=<slug>
+    //                                   but belong to their mission room, not here)
     //   ?mission_slug=<slug>          — mission rooms (metadata->>mission_slug)
     //   ?before=<iso>                 — only messages strictly earlier than this timestamp
     // Optional + backward-compatible — existing callers pass none of these
     // and get the original behavior.
     const projectFilter = req.query.project ? `&project=eq.${encodeURIComponent(req.query.project)}` : ''
+    // Exclude mission-tagged rows from the project chat. metadata->>mission_slug is null
+    // for project-level messages (and for rows with no metadata), so is.null keeps exactly
+    // the project conversation and drops anything that belongs to a mission room.
+    const projectOnlyFilter = (req.query.project && (req.query.project_only === '1' || req.query.project_only === 'true'))
+      ? `&metadata->>mission_slug=is.null` : ''
     const missionFilter = req.query.mission_slug ? `&metadata->>mission_slug=eq.${encodeURIComponent(req.query.mission_slug)}` : ''
     const beforeFilter = req.query.before ? `&timestamp=lt.${encodeURIComponent(req.query.before)}` : ''
     const searchLimit = searchQuery ? 500 : limit  // search returns more results
-    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${missionFilter}${beforeFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
+    const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${projectOnlyFilter}${missionFilter}${beforeFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
     const sbRes = await fetch(url, { headers: supabaseHeaders() })
     if (!sbRes.ok) {
       const err = await sbRes.text()

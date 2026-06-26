@@ -145,7 +145,12 @@ export function useRoomThread(worldId, room) {
     // Agents store the BARE mission slug (e.g. "corner-ui-cv6"), but the room handle is the
     // colon-joined "project:mission" form. Query on the last segment so the thread isn't empty.
     if (room.isMission) params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
-    else if (room.isProject) params.set('project', room.id);
+    // The PROJECT chat is the project-level conversation only. Mission-room messages
+    // also carry project=<slug> (so they roll up under the project), but they belong to
+    // their mission room, not the project chat — otherwise a message sent in Chat or
+    // Files Panel also shows in the Corner project room. `project_only` tells the API to
+    // exclude any mission-tagged rows from the project thread.
+    else if (room.isProject) { params.set('project', room.id); params.set('project_only', '1'); }
     else params.set('agent', room.id);
     params.set('limit', '40');
     const load = () => authFetch(`/api/dashboard/supabase-messages?${params.toString()}`)
