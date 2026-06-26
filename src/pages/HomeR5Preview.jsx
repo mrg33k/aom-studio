@@ -336,6 +336,79 @@ const CSS = `
 .r5 .panel.feat .step .sb{color:var(--ink-300);}
 .r5 .panel .pcta{margin-top:24px;}
 
+/* ways picker */
+.r5 .wayspick{display:flex;gap:8px;justify-content:center;margin-bottom:30px;flex-wrap:wrap;}
+.r5 .wayspick button{font-family:var(--text);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-500);background:transparent;border:1px solid var(--line);padding:8px 14px;cursor:pointer;}
+.r5 .wayspick button.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+/* W1 interactive tabs + horizontal timeline */
+.r5 .w1{max-width:980px;margin:0 auto;}
+.r5 .w1tabs{display:flex;justify-content:center;margin-bottom:34px;}
+.r5 .w1tabs .seg{display:inline-flex;border:1px solid var(--ink);}
+.r5 .w1tabs button{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:15px;padding:12px 28px;background:transparent;color:var(--ink);border:none;cursor:pointer;}
+.r5 .w1tabs button + button{border-left:1px solid var(--ink);}
+.r5 .w1tabs button.on{background:var(--gold);color:var(--ink);}
+.r5 .w1 .w1head{text-align:center;margin-bottom:30px;}
+.r5 .w1 .w1head h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:46px;}
+.r5 .w1steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);}
+.r5 .w1steps .st{padding:24px 20px;border-left:1px solid var(--line);}
+.r5 .w1steps .st:first-child{border-left:none;}
+.r5 .w1steps .st .n{font-family:var(--display);font-weight:800;font-size:34px;color:var(--gold-deep);line-height:1;}
+.r5 .w1steps .st .l{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:16px;margin:12px 0 8px;letter-spacing:-.01em;}
+.r5 .w1steps .st .b{font-size:13px;color:var(--ink-500);line-height:1.5;}
+.r5 .w1 .w1cta{text-align:center;margin-top:30px;}
+
+/* W2 split panels with media */
+.r5 .w2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+.r5 .w2panel{border:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column;background:var(--paper);}
+.r5 .w2panel.feat{border-color:var(--ink);}
+.r5 .w2media{position:relative;aspect-ratio:16/9;overflow:hidden;background:var(--ink);border-bottom:1px solid var(--line);}
+.r5 .w2media .vid{position:absolute;inset:0;}
+.r5 .w2media .drop{position:absolute;inset:18px;border:2px dashed #C9C4B9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink-500);background:var(--paper-alt);}
+.r5 .w2media .drop .ic{font-size:30px;color:var(--gold-deep);}
+.r5 .w2media .drop .chips{display:flex;gap:7px;}
+.r5 .w2media .drop .chips span{font-size:10px;border:1px solid var(--line);padding:3px 8px;background:var(--paper);color:var(--ink-500);}
+.r5 .w2body{padding:28px;display:flex;flex-direction:column;gap:6px;flex:1;}
+.r5 .w2body .pe{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);}
+.r5 .w2body h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:38px;line-height:.95;margin-bottom:6px;}
+.r5 .w2body .ls{display:flex;flex-direction:column;gap:9px;margin:6px 0 18px;}
+.r5 .w2body .ls .li{display:flex;gap:11px;align-items:baseline;font-size:15px;}
+.r5 .w2body .ls .li b{color:var(--gold-deep);font-family:var(--display);font-weight:800;}
+.r5 .w2body .pcta{margin-top:auto;}
+
+/* W3 connected horizontal timeline, two rows */
+.r5 .w3row{padding:26px 0;border-top:1px solid var(--line);}
+.r5 .w3row:last-of-type{border-bottom:1px solid var(--line);}
+.r5 .w3top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.r5 .w3top .lab{display:flex;align-items:baseline;gap:14px;}
+.r5 .w3top .lab .pe{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-500);}
+.r5 .w3top .lab h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:32px;}
+.r5 .w3track{display:grid;grid-template-columns:repeat(4,1fr);gap:0;}
+.r5 .w3node{position:relative;padding-right:24px;}
+.r5 .w3node .nrow{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.r5 .w3node .nn{width:30px;height:30px;border:1px solid var(--gold);color:var(--gold-deep);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:13px;flex:none;}
+.r5 .w3node .nline{flex:1;height:1px;background:var(--line);}
+.r5 .w3node:last-child .nline{display:none;}
+.r5 .w3node .nl{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:15px;letter-spacing:-.01em;}
+.r5 .w3node .nb{font-size:12.5px;color:var(--ink-500);line-height:1.45;margin-top:5px;}
+
+/* W4 big editorial numbers */
+.r5 .w4{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--ink);}
+.r5 .w4col{padding:36px 36px 30px;border-left:1px solid var(--line);}
+.r5 .w4col:first-child{border-left:none;background:var(--ink);color:var(--paper);}
+.r5 .w4col .pe{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);}
+.r5 .w4col:first-child .pe{color:var(--gold);}
+.r5 .w4col h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:40px;margin:6px 0 22px;}
+.r5 .w4col .st{display:grid;grid-template-columns:74px 1fr;gap:18px;padding:16px 0;border-top:1px solid var(--line);align-items:baseline;}
+.r5 .w4col:first-child .st{border-color:var(--ink-700);}
+.r5 .w4col .st .n{font-family:var(--display);font-weight:800;font-size:52px;line-height:.8;color:var(--gold-deep);}
+.r5 .w4col:first-child .st .n{color:var(--gold);}
+.r5 .w4col .st .l{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:18px;}
+.r5 .w4col .st .b{font-size:13.5px;color:var(--ink-500);line-height:1.5;margin-top:5px;}
+.r5 .w4col:first-child .st .b{color:var(--ink-300);}
+.r5 .w4col .pcta{margin-top:22px;}
+@media(max-width:880px){.r5 .w2,.r5 .w4{grid-template-columns:1fr;}.r5 .w1steps,.r5 .w3track{grid-template-columns:1fr 1fr;}}
+
 .r5 .why{background:var(--ink);color:var(--paper);padding:88px 0;}
 .r5 .why .eyebrow{color:var(--gold);font-size:11px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:18px;display:block;}
 .r5 .why h2{font-size:72px;margin-bottom:44px;}
@@ -412,6 +485,15 @@ export default function HomeR5Preview() {
     return new URLSearchParams(window.location.search).get('med') === 'web' ? 'Web' : 'Video';
   });
   const rows = medium === 'Web' ? WEB_ROWS : VIDEO_ROWS;
+  const [ways, setWays] = useState(() => {
+    if (typeof window === 'undefined') return 1;
+    const n = parseInt(new URLSearchParams(window.location.search).get('ways'), 10);
+    return n >= 1 && n <= 4 ? n : 1;
+  });
+  const [wtab, setWtab] = useState('Online');
+  const WAY_ONLINE = { eyebrow: 'Online', title: 'Hire us online.', steps: ONLINE_STEPS, cta: 'Send your files' };
+  const WAY_PERSON = { eyebrow: 'In person', title: 'Hire us in person.', steps: PERSON_STEPS, cta: 'Book a visit' };
+  const wActive = wtab === 'Online' ? WAY_ONLINE : WAY_PERSON;
 
   const HeroText = () => (
     <div className="htext">
@@ -563,24 +645,104 @@ export default function HomeR5Preview() {
           <h2 className="disp">Two ways. <span className="gold">Pick one</span><span className="dot" /></h2>
           <p>You do not need a meeting to start. Most clients hire us online and never visit. Some prefer to shake hands. Both work.</p>
         </div>
-        <div className="twogrid">
-          <div className="panel feat">
-            <div className="ptop"><span className="pe">Online</span><span className="pmost">Most clients</span></div>
-            <h3>Hire us online.</h3>
-            {ONLINE_STEPS.map((s) => (
-              <div className="step" key={s[0]}><span className="sn">{s[0]}</span><div><div className="sl">{s[1]}</div><div className="sb">{s[2]}</div></div></div>
-            ))}
-            <div className="pcta"><a className="btn gold" href="#contact">Send your files ↗</a></div>
-          </div>
-          <div className="panel">
-            <div className="ptop"><span className="pe">In person</span></div>
-            <h3>Hire us in person.</h3>
-            {PERSON_STEPS.map((s) => (
-              <div className="step" key={s[0]}><span className="sn">{s[0]}</span><div><div className="sl">{s[1]}</div><div className="sb">{s[2]}</div></div></div>
-            ))}
-            <div className="pcta"><a className="btn ghost-ink" href="#contact">Book a visit ↗</a></div>
-          </div>
+        <div className="wayspick">
+          {[[1, 'Tabs'], [2, 'Split'], [3, 'Timeline'], [4, 'Editorial']].map(([n, l]) => (
+            <button key={n} className={ways === n ? 'on' : ''} onClick={() => setWays(n)}>{l}</button>
+          ))}
         </div>
+
+        {/* W1 — interactive tab + horizontal timeline */}
+        {ways === 1 && (
+          <div className="w1">
+            <div className="w1tabs"><div className="seg">
+              <button className={wtab === 'Online' ? 'on' : ''} onClick={() => setWtab('Online')}>Online</button>
+              <button className={wtab === 'In person' ? 'on' : ''} onClick={() => setWtab('In person')}>In person</button>
+            </div></div>
+            <div className="w1head"><h3 className="disp">{wActive.title}</h3></div>
+            <div className="w1steps">
+              {wActive.steps.map((s) => (
+                <div className="st" key={s[0]}><div className="n">{s[0]}</div><div className="l">{s[1]}</div><div className="b">{s[2]}</div></div>
+              ))}
+            </div>
+            <div className="w1cta"><a className="btn gold" href="#contact">{wActive.cta} ↗</a></div>
+          </div>
+        )}
+
+        {/* W2 — split panels with media */}
+        {ways === 2 && (
+          <div className="w2">
+            <div className="w2panel feat">
+              <div className="w2media">
+                <div className="drop">
+                  <span className="ic">↥</span>
+                  <span>Drop your files. We take it from here.</span>
+                  <span className="chips"><span>Footage</span><span>Photos</span><span>Logo</span><span>Old site</span></span>
+                </div>
+              </div>
+              <div className="w2body">
+                <span className="pe">Online · Most clients</span>
+                <h3 className="disp">Hire us online.</h3>
+                <div className="ls">
+                  {ONLINE_STEPS.map((s) => (
+                    <div className="li" key={s[0]}><b>{s[0]}</b><span>{s[1]}</span></div>
+                  ))}
+                </div>
+                <div className="pcta"><a className="btn gold" href="#contact">Send your files ↗</a></div>
+              </div>
+            </div>
+            <div className="w2panel">
+              <div className="w2media"><div className="vid"><LazyGumlet id={FILMS[0].id} eager /></div></div>
+              <div className="w2body">
+                <span className="pe">In person</span>
+                <h3 className="disp">Hire us in person.</h3>
+                <div className="ls">
+                  {PERSON_STEPS.map((s) => (
+                    <div className="li" key={s[0]}><b>{s[0]}</b><span>{s[1]}</span></div>
+                  ))}
+                </div>
+                <div className="pcta"><a className="btn ghost-ink" href="#contact">Book a visit ↗</a></div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* W3 — two connected horizontal timelines */}
+        {ways === 3 && (
+          <div className="w3">
+            {[WAY_ONLINE, WAY_PERSON].map((w) => (
+              <div className="w3row" key={w.eyebrow}>
+                <div className="w3top">
+                  <div className="lab"><span className="pe">{w.eyebrow}</span><h3 className="disp">{w.title}</h3></div>
+                  <a className={'btn ' + (w.eyebrow === 'Online' ? 'gold' : 'ghost-ink')} href="#contact">{w.cta} ↗</a>
+                </div>
+                <div className="w3track">
+                  {w.steps.map((s) => (
+                    <div className="w3node" key={s[0]}>
+                      <div className="nrow"><span className="nn">{s[0]}</span><span className="nline" /></div>
+                      <div className="nl">{s[1]}</div><div className="nb">{s[2]}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* W4 — big editorial numbers */}
+        {ways === 4 && (
+          <div className="w4">
+            {[WAY_ONLINE, WAY_PERSON].map((w) => (
+              <div className="w4col" key={w.eyebrow}>
+                <span className="pe">{w.eyebrow}{w.eyebrow === 'Online' ? ' · Most clients' : ''}</span>
+                <h3>{w.title}</h3>
+                {w.steps.map((s) => (
+                  <div className="st" key={s[0]}><div className="n">{s[0]}</div><div><div className="l">{s[1]}</div><div className="b">{s[2]}</div></div></div>
+                ))}
+                <div className="pcta"><a className={'btn ' + (w.eyebrow === 'Online' ? 'gold' : 'ghost-ink')} href="#contact">{w.cta} ↗</a></div>
+              </div>
+            ))}
+          </div>
+        )}
       </div></section>
 
       {/* WHY IT WORKS */}
