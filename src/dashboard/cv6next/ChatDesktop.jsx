@@ -429,6 +429,65 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // The "..." menu on the agent card (Goals view).
   const [agentMenuOpen, setAgentMenuOpen] = useState(false);
   useEffect(() => { setAgentMenuOpen(false); }, [roomKey]);
+
+  // ── Working agent controls ───────────────────────────────────────────────
+  // These are real, not decorative: each posts through the same message path
+  // (send) that already reaches the running room agent, or uploads a real file.
+  // A short confirmation line shows what was sent, so the control never feels dead.
+  const fileInputRef = useRef(null);
+  const [controlNote, setControlNote] = useState('');
+  const [controlBusy, setControlBusy] = useState(false);
+  useEffect(() => { setControlNote(''); }, [roomKey]);
+  const flashNote = (msg) => { setControlNote(msg); };
+  const sendControl = async (text, note) => {
+    setControlBusy(true);
+    const ok = await send(text);
+    setControlBusy(false);
+    flashNote(ok ? note : 'Could not reach the agent. Try again.');
+  };
+  const approvePlan = () => sendControl('Approved. Go ahead with the current plan.', 'Sent your approval.');
+  const handoffAgent = () => sendControl('Please hand this off to another agent. Tell me who you are handing it to and why.', 'Asked for a hand off.');
+  const pauseAgent = () => sendControl('Please pause here and wait for my next message before continuing.', 'Asked the agent to pause.');
+  const retaskAgent = () => {
+    // Re-tasking is freeform, so focus the composer for the new instruction.
+    const box = composerHost?.querySelector('textarea, input[type="text"], [contenteditable="true"]');
+    if (box) { box.focus(); flashNote('Type the new task below.'); }
+    else flashNote('Type the new task in the box below.');
+  };
+  const onPickFile = () => fileInputRef.current?.click();
+  const onFileChosen = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setControlBusy(true);
+    try {
+      const data_base64 = await new Promise((resolve, reject) => {
+        const fr = new FileReader();
+        fr.onload = () => resolve(String(fr.result).split(',')[1] || '');
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+      const scope = selected?.isMission
+        ? { project: selected.projectSlug, mission: String(selected.missionSlug || selected.id || '').split(':').pop() }
+        : selected?.isProject ? { project: selected.id } : { agent: selected?.id };
+      const r = await authFetch('/api/dashboard/file-upload', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world: worldId, filename: file.name, data_base64, mime_type: file.type || 'application/octet-stream', scope }),
+      });
+      const d = r && r.ok ? await r.json() : null;
+      if (d?.url) {
+        // Announce it the canonical way useRoomThread parses into a file card.
+        await send(`Attached file: ${file.name}\n${d.url}`);
+        flashNote(`Added ${file.name}.`);
+      } else {
+        flashNote('Upload failed. Try again.');
+      }
+    } catch {
+      flashNote('Upload failed. Try again.');
+    } finally {
+      setControlBusy(false);
+    }
+  };
   // The room's REAL file library (project-files: canon, deliverables, research, per-mission),
   // so the Files panel is never empty for a project/mission room — not just what got posted in
   // the chat. Agent rooms have no project library, so they keep the conversation's files+links.
@@ -633,11 +692,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       <span className="mono" style={{ fontSize: 11, color: 'var(--muted)' }}>step {goal.step}/{goal.total}</span>
                     </div>
                   ) : null}
-                  {/* Pause / Re-task buttons (held-c: agent-control backend doesn't exist yet) */}
+                  {/* Pause asks the agent to stop and wait; Re-task focuses the composer for a new instruction. */}
                   <div style={{ display: 'flex', gap: 7, marginTop: 13 }}>
-                    <button disabled style={{ flex: 1, height: 34, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--faint)', fontSize: 12, fontWeight: 600, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent control backend is ready">Pause</button>
-                    <button disabled style={{ flex: 1, height: 34, borderRadius: 9, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent control backend is ready">Re-task</button>
+                    <button onClick={pauseAgent} disabled={controlBusy} style={{ flex: 1, height: 34, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', color: 'var(--fg)', fontSize: 12, fontWeight: 600, cursor: controlBusy ? 'wait' : 'pointer' }} title="Asks the agent to stop and wait for you">Pause</button>
+                    <button onClick={retaskAgent} style={{ flex: 1, height: 34, borderRadius: 9, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }} title="Give the agent a new instruction">Re-task</button>
                   </div>
+                  {controlNote ? <div style={{ marginTop: 10, fontSize: 11.5, color: 'var(--muted)' }}>{controlNote}</div> : null}
                 </div>
 
                 {/* 2. Quick actions (held-c: agent task approval backend doesn't exist) */}
@@ -646,23 +706,24 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Quick actions</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-                  <button disabled style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--faint)', fontSize: 12.5, fontWeight: 500, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent supports task approval">
+                  <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={onFileChosen} />
+                  <button onClick={approvePlan} disabled={controlBusy} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Tell the agent its current plan is approved">
                     <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--success-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
                     </span>
                     Approve plan
                   </button>
-                  <button disabled style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--faint)', fontSize: 12.5, fontWeight: 500, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent supports task handoff">
+                  <button onClick={handoffAgent} disabled={controlBusy} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Ask the agent to hand this off to another agent">
                     <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg>
                     </span>
                     Hand off
                   </button>
-                  <button disabled style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--faint)', fontSize: 12.5, fontWeight: 500, cursor: 'not-allowed', opacity: 0.5 }} title="Available when agent file attach backend is ready">
+                  <button onClick={onPickFile} disabled={controlBusy} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Upload a file into this room">
                     <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                     </span>
-                    Add a file
+                    {controlBusy ? 'Working…' : 'Add a file'}
                   </button>
                 </div>
 
