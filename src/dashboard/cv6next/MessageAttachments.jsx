@@ -49,7 +49,7 @@ function SingleImage({ file }) {
         src={fileHref(file.url)}
         alt={file.name}
         onClick={() => setLightboxOpen(true)}
-        style={{ maxWidth: '100%', maxHeight: 240, borderRadius: 8, cursor: 'pointer' }}
+        style={{ maxWidth: '100%', maxHeight: 240, width: 'auto', height: 'auto', objectFit: 'contain', alignSelf: 'flex-start', borderRadius: 8, cursor: 'pointer' }}
       />
       {lightboxOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }} onClick={() => setLightboxOpen(false)}>
