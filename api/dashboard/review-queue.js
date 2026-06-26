@@ -95,7 +95,7 @@ async function listProjectSlugs(world) {
     if (!r.ok) return [];
     const rows = await r.json();
     if (!Array.isArray(rows)) return [];
-    const slugs = rows.map((x) => x.slug).filter((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9-]*$/.test(s));
+    const slugs = rows.map((x) => x.slug).filter((s) => typeof s === 'string' && /^[a-z0-9][a-z0-9.-]*$/.test(s));
     return [...new Set(slugs)];
   } catch {
     return [];

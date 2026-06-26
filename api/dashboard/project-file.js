@@ -152,8 +152,11 @@ export default async function handler(req, res) {
   const slug        = segments[4];
   const isMission   = segments[3] === 'missions';
 
-  // Validate world + slug format.
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(world) || !/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+  // Validate world + slug format. Project slugs may contain dots (a real project
+  // folder is literally named "aheadofmarket.com"), so the slug allows internal
+  // dots; path traversal is already blocked by the ".." check above, so a dot here
+  // is safe. The world stays hyphen-only.
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(world) || !/^[a-z0-9][a-z0-9.-]*$/.test(slug)) {
     return res.status(404).json({ error: 'Not found' });
   }
 
