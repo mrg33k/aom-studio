@@ -3,7 +3,7 @@
 // /api/dashboard/supabase-messages endpoint (the same one the dashboard uses). No fake
 // data: messages are the room's real thread, oldest -> newest.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
 import { titleForAgent } from './agentTitles.js';
 
@@ -37,9 +37,15 @@ export function useRoomThread(worldId, room) {
   // otherwise leave the thread looking dead for a beat). Each entry is dropped once the
   // real row comes back from the server (matched by text), so there's never a duplicate.
   const [pending, setPending] = useState([]);
+  // Content signature of the last thread we rendered. The poll runs every 3s and rebuilds
+  // an identical array when nothing changed; pushing that new ref into state forces every
+  // consumer (and the Home portal) to re-render and the scroll to jump. We only commit a
+  // new messages array when the signature actually changed, so a quiet room stays still.
+  const sigRef = useRef('');
 
   // Clear the outbox when you switch rooms (those messages belong to the old thread).
   useEffect(() => { setPending([]); }, [room?.id]);
+  useEffect(() => { sigRef.current = ''; }, [room?.id]);
 
   // Post a real user message into this room (composer + choice/question taps).
   // Agent rooms POST to the agent slug; project rooms to the project slug. After
@@ -56,7 +62,7 @@ export function useRoomThread(worldId, room) {
       isFile: false, fileName: '', attachmentUrl: '', fileMime: '', fileSize: 0, blocks: null,
     }]);
     const payload = room.isMission
-      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: room.missionSlug || room.id } }
+      ? { client_id: worldId, agent: 'corner', project: room.projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: String(room.missionSlug || room.id || '').split(':').pop() } }
       : room.isProject
         ? { client_id: worldId, agent: 'corner', project: room.id, text: body, role: 'user', source: 'corner-dashboard' }
         : { client_id: worldId, agent: room.id, text: body, role: 'user', source: 'corner-dashboard' };
@@ -77,7 +83,9 @@ export function useRoomThread(worldId, room) {
     params.set('client', worldId);
     // Mission rooms key on the mission slug; project rooms on the project slug;
     // everything else is an agent thread.
-    if (room.isMission) params.set('mission_slug', room.missionSlug || room.id);
+    // Agents store the BARE mission slug (e.g. "corner-ui-cv6"), but the room handle is the
+    // colon-joined "project:mission" form. Query on the last segment so the thread isn't empty.
+    if (room.isMission) params.set('mission_slug', String(room.missionSlug || room.id || '').split(':').pop());
     else if (room.isProject) params.set('project', room.id);
     else params.set('agent', room.id);
     params.set('limit', '40');
@@ -117,8 +125,12 @@ export function useRoomThread(worldId, room) {
           const single = /^\s*attached file:\s*(.+?)\s*$/i.exec(lines[0] || '');
           const multi = /^\s*attached\s+\d+\s+files?:\s*(.+?)\s*$/i.exec(lines[0] || '');
           const textUrls = lines.slice(1).map((s) => s.trim()).filter(Boolean);
-          const isFile = !!m.attachment_url || !!single || !!multi;
-          const fileName = m.attachment_name || (single ? single[1] : '');
+          // An agent auto-shared file carries its real URL on metadata.attachment (singular
+          // object {url, mime, name, size}) — the announcement text is just "Attached file: NAME"
+          // with NO URL line. This is the most common Corner-room file shape, so check it first.
+          const metaAttach = (m.metadata && m.metadata.attachment && (m.metadata.attachment.url || m.metadata.attachment.name)) ? m.metadata.attachment : null;
+          const isFile = !!m.attachment_url || !!metaAttach || !!single || !!multi;
+          const fileName = m.attachment_name || (metaAttach && metaAttach.name) || (single ? single[1] : '');
           // Live Goal Thread: a structured reply carries its blocks on metadata.blocks.
           // We attach them to THIS message so the thread renders inline as that agent
           // turn (history stays above it), instead of taking over the whole screen.
@@ -129,6 +141,14 @@ export function useRoomThread(worldId, room) {
           let displayText = rawText;
           if (Array.isArray(m.metadata?.attachments) && m.metadata.attachments.length) {
             attachments = m.metadata.attachments;
+          } else if (metaAttach) {
+            attachments = [{
+              url: metaAttach.url || '',
+              name: metaAttach.name || fileName || 'File',
+              mime: metaAttach.mime || '',
+              size: metaAttach.size || 0,
+            }];
+            displayText = ''; // pure attachment auto-share → show the card, not the "Attached file:" note
           } else if (m.attachment_url) {
             attachments = [{
               url: m.attachment_url,
@@ -161,7 +181,13 @@ export function useRoomThread(worldId, room) {
             blocks: msgBlocks,
           };
         }).filter((m) => m.text || m.isFile || m.blocks || m.attachments?.length);
-        setMessages(msgs);
+        // Only re-commit when the thread actually changed (see sigRef). A no-op poll keeps the
+        // existing array ref, so the list doesn't re-render and the scroll holds its place.
+        const sig = msgs.map((m) => `${m.ts}|${m.text}|${m.attachments?.length || 0}|${m.blocks ? m.blocks.length : 0}`).join('~');
+        if (sig !== sigRef.current) {
+          sigRef.current = sig;
+          setMessages(msgs);
+        }
         setStatus(msgs.length ? 'ready' : 'empty');
       })
       .catch(() => { if (alive) setStatus('error'); });

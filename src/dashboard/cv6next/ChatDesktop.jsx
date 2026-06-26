@@ -355,7 +355,7 @@ function PlainThread({ messages, onSend }) {
   const older = groups.slice(0, -1);
   const latest = groups[groups.length - 1] || null;
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 660 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {older.map((g, i) => <DesktopDayCard key={`${g.key}-${i}`} group={g} onSend={onSend} />)}
       {latest && (
         <>
@@ -484,9 +484,13 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     const prev = prevLenRef.current;
     prevLenRef.current = len;
     if (!el || !len) return;
+    // The thread polls every 3s and hands back a fresh array each time. Only move the scroll
+    // when a NEW message actually arrived (len grew) or on first load — never on an identical
+    // re-render, which is what made the view jump every few seconds.
+    if (len === prev) return;
     const fromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     if (prev === 0) bottomRef.current?.scrollIntoView();
-    else if (fromBottom < 260) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    else if (fromBottom < 400) bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selKey]);
 
   const pickAgent = (a) => setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel });
@@ -513,7 +517,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         {/* topbar now mounted once in the shell (SharedNav DesktopNav) */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
           {/* rooms rail */}
-          <div style={{ width: 264, flex: 'none', borderRight: '1px solid var(--divider)', padding: '18px 12px', overflowY: 'auto' }}>
+          <div style={{ width: 220, flex: 'none', borderRight: '1px solid var(--divider)', padding: '18px 12px', overflowY: 'auto' }}>
             <div className="eyebrow" style={{ margin: '0 6px 8px' }}>Agents</div>
             <div style={{ marginBottom: 16 }}>
               {agents.length ? agents.map((a) => <RoomRow key={a.id} row={a} open={selected?.id === a.id && !selected?.isProject} onClick={() => pickAgent(a)} />)
@@ -560,8 +564,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 </div>
                 <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
                   {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
-                      the thread + its tables/charts centered instead of stretched. */}
-                  <div style={{ maxWidth: 720, margin: '0 auto' }}>
+                      the thread + its tables/charts centered instead of stretched. Widened
+                      2026-06-25 so the conversation fills the column instead of feeling cramped. */}
+                  <div style={{ maxWidth: 920, margin: '0 auto' }}>
                     {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} onSend={send} />}
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
