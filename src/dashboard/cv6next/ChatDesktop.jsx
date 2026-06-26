@@ -99,19 +99,41 @@ function linkLabel(url) {
     return u.hostname.replace(/^www\./, '') + (seg ? `/${seg}` : '');
   } catch { return String(url).replace(/^https?:\/\//, '').slice(0, 40); }
 }
-// Build the de-duped, newest-first shelf of files + links from the loaded thread.
+// Short "how long ago" + human file size, for the per-row meta line (who · when · size).
+function relAgo(ts) {
+  if (!ts) return '';
+  const ms = Date.now() - new Date(ts).getTime();
+  if (Number.isNaN(ms)) return '';
+  const m = Math.round(ms / 60000);
+  if (m < 1) return 'now'; if (m < 60) return `${m}m`;
+  const h = Math.round(m / 60); if (h < 24) return `${h}h`;
+  return `${Math.round(h / 24)}d`;
+}
+function humanSize(bytes) {
+  const b = Number(bytes) || 0; if (!b) return '';
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${Math.round(b / 1024)} KB`;
+  return `${(b / 1048576).toFixed(1)} MB`;
+}
+// Build the de-duped, newest-first shelf of files + links from the loaded thread. Each item
+// carries who shared it, how long ago, and (for files) its size — the design's row meta.
 function shelfItems(messages) {
   const items = [];
   for (const msg of messages || []) {
+    const who = msg.isUser ? 'You' : (msg.agentName || '');
     if (msg.attachmentUrl && msg.fileName) {
-      items.push({ type: 'file', kind: fileKind(msg.fileName, msg.fileMime), name: msg.fileName, url: msg.attachmentUrl, mime: msg.fileMime, ts: msg.ts || null });
+      items.push({ type: 'file', kind: fileKind(msg.fileName, msg.fileMime), name: msg.fileName, url: msg.attachmentUrl, mime: msg.fileMime, ts: msg.ts || null, who, size: msg.fileSize || 0 });
     }
     for (const url of extractLinks(msg.text)) {
-      items.push({ type: 'link', kind: 'link', name: linkLabel(url), url, ts: msg.ts || null });
+      items.push({ type: 'link', kind: 'link', name: linkLabel(url), url, ts: msg.ts || null, who });
     }
   }
   items.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
   return items;
+}
+// "Elon · 1h · 8 KB" style meta line — only the parts we actually have.
+function itemMeta(it) {
+  return [it.who, relAgo(it.ts), it.type === 'file' ? humanSize(it.size) : 'link'].filter(Boolean).join(' · ');
 }
 const FILE_PILLS = [
   { k: 'all', label: 'All' }, { k: 'recent', label: 'Recent' }, { k: 'photo', label: 'Photos' },
@@ -159,7 +181,10 @@ function FilesShelf({ items, onReview }) {
               <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
               </span>
-              <div style={{ flex: 1, minWidth: 0, fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
+                <div className="mono" style={{ fontSize: 10, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{itemMeta(it)}</div>
+              </div>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M7 17 17 7M7 7h10v10" /></svg>
             </a>
           ) : (
@@ -167,7 +192,7 @@ function FilesShelf({ items, onReview }) {
               <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(it.kind)}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.name}</div>
-                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.04em', color: 'var(--faint)', textTransform: 'uppercase' }}>{it.kind}</div>
+                <div className="mono" style={{ fontSize: 10, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{itemMeta(it)}</div>
               </div>
               <a href={fileHref(it.url)} target="_blank" rel="noopener noreferrer" title="Open the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
               <button onClick={() => onReview?.(it)} title="Open in the Review tab" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
