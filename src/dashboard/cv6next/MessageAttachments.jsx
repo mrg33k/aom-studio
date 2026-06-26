@@ -24,7 +24,7 @@ function fileHref(url) {
 
 // Format file size (bytes) as human-readable (e.g. "2.4 MB").
 function formatSize(bytes) {
-  if (!bytes) return '0 B';
+  if (!bytes) return ''; // unknown/zero → show nothing (text-parsed attachments have no size)
   const b = Number(bytes) || 0;
   if (b < 1024) return `${b} B`;
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
@@ -152,7 +152,7 @@ function SingleFile({ file, onReview }) {
       <span style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--chip)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>{fileGlyph(kind)}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{file.name}</div>
-        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.04em', color: 'var(--faint)', textTransform: 'uppercase' }}>{formatSize(file.size)}</div>
+        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.04em', color: 'var(--faint)', textTransform: 'uppercase' }}>{formatSize(file.size) || kind}</div>
       </div>
       <a href={fileHref(file.url)} target="_blank" rel="noopener noreferrer" title="Open the file" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--muted)', textDecoration: 'none', padding: '5px 9px', borderRadius: 8, border: '1px solid var(--hair)', flex: 'none' }}>Open</a>
       <button onClick={() => onReview?.(file)} title="Open in the Review tab" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
@@ -183,7 +183,7 @@ function FileCollection({ files, onReviewAll }) {
           </span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="fc-t">{hasImages ? 'Shared images' : 'Shared files'}</div>
-            <div className="fc-s">{files.length} {hasImages ? 'image' : 'file'}{files.length === 1 ? '' : 's'} · {formatSize(files.reduce((s, f) => s + (f.size || 0), 0))}</div>
+            <div className="fc-s">{files.length} {hasImages ? 'image' : 'file'}{files.length === 1 ? '' : 's'}{(() => { const t = formatSize(files.reduce((s, f) => s + (f.size || 0), 0)); return t ? ` · ${t}` : ''; })()}</div>
           </div>
         </div>
         {gridMode ? (
