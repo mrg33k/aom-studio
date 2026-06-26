@@ -714,7 +714,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   useEffect(() => {
     if (!isDesktop || !knavOpenedRoom || knavRoomOpenState !== 'col3') return undefined;
     const t = setTimeout(() => {
-      const el = document.querySelector('[data-screen="home-desktop"] [data-cv6-composer] textarea, [data-screen="home-desktop"] [data-cv6-composer] input');
+      // The composer has a hidden file input first; target the visible text field.
+      const host = document.querySelector('[data-screen="home-desktop"] [data-cv6-composer]');
+      const el = host && (host.querySelector('textarea') || host.querySelector('input[type="text"]') || host.querySelector('input:not([type="file"]):not([type="hidden"])'));
       if (el && el.focus) { try { el.focus(); } catch (_) { /* noop */ } }
     }, 90);
     return () => clearTimeout(t);
