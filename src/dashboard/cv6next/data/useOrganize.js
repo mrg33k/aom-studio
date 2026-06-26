@@ -33,6 +33,15 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+// Rebuild the canonical corner/users path a mirror row lives at (client_id=world,
+// project=slug, rel_path=dir under the project, name=file). This is the path the
+// tenant-gated project-file endpoint serves bytes from (?raw=1) and the path the
+// Review tool loads a deliverable through — so Organize can hand a file straight to it.
+function cornerPathOf(world, project, relPath, name) {
+  const rel = relPath ? `${relPath}/` : '';
+  return `corner/users/${world}/projects/${project}/${rel}${name}`;
+}
+
 function fileKind(name) {
   const ext = (name || '').toLowerCase().split('.').pop();
   if (['md', 'txt', 'json', 'js', 'jsx', 'py'].includes(ext)) return 'doc';
@@ -210,8 +219,45 @@ export function useOrganize(worldId = 'aom') {
       const d = await res.json();
       const f = d.file;
       if (!f) return;
+      const kind = f.kind || fileKind(f.name);
+
+      // Images: the mirror stores them by pointer (no bytes in the row), so render the
+      // real picture by auth-fetching the file bytes from the tenant-gated project-file
+      // endpoint and showing them via a blob URL — a plain <img src> to the API would
+      // carry no token and 401. Same mechanism the Review viewer uses. Falls back to the
+      // honest placeholder if the bytes can't be loaded.
+      if (kind === 'image') {
+        let bodyHtml;
+        try {
+          const cornerPath = cornerPathOf(worldId, f.project, f.rel_path, f.name);
+          const raw = await authFetch(
+            `/api/dashboard/project-file?path=${encodeURIComponent(cornerPath)}&raw=1`,
+            { credentials: 'include' },
+          );
+          if (raw && raw.ok) {
+            const url = URL.createObjectURL(await raw.blob());
+            const alt = escapeHtml(f.name || 'Image').replace(/"/g, '&quot;');
+            bodyHtml = `<img src="${url}" alt="${alt}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
+          } else {
+            bodyHtml = nonTextPreview(f.name, kind);
+          }
+        } catch {
+          bodyHtml = nonTextPreview(f.name, kind);
+        }
+        setContentCache((cache) => ({
+          ...cache,
+          [id]: {
+            title: f.name || 'Untitled',
+            bodyHtml,
+            editor: f.last_editor || 'System',
+            editorInitials: initialsOf(f.last_editor),
+          },
+        }));
+        return;
+      }
+
       const { title, body } = parseMarkdown(f.content || '');
-      const bodyHtml = (f.content && body) ? body : nonTextPreview(f.name, f.kind || fileKind(f.name));
+      const bodyHtml = (f.content && body) ? body : nonTextPreview(f.name, kind);
       setContentCache((cache) => ({
         ...cache,
         [id]: {
@@ -303,6 +349,10 @@ export function useOrganize(worldId = 'aom') {
         size: formatSize(f.size || 0),
         kind,
         status: 'ready',
+        // The project slug + canonical corner path, so "Open in Review" can hand this
+        // exact file to the Review tool (it loads bytes through the same path).
+        project: f.project,
+        cornerPath: cornerPathOf(worldId, f.project, f.rel_path, fname),
       };
     });
 
@@ -339,6 +389,9 @@ export function useOrganize(worldId = 'aom') {
           id: openInList.id,
           name: openInList.name,
           path: `${openProject.name} · ${openInList.name}`,
+          // Real corner path + project slug (for "Open in Review", not shown to the user).
+          cornerPath: openInList.cornerPath,
+          project: openInList.project,
           title: previewObj.title,
           bodyHtml: previewObj.bodyHtml,
           editor: cached?.editor || 'System',

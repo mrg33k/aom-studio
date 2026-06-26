@@ -62,7 +62,14 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     setFilter: (id) => setFilter(id || 'all'),
     toggleSelect: () => {},
     toggleSelectMode: () => {},
-    openInReview: () => onNav?.('review'),
+    // Open the CURRENT file in the Review tool and land on it (don't strand the user on
+    // the queue). Hand the open file in as an injected review target — the same path
+    // chat "Review all" uses — so Review opens exactly this file (image/doc/pdf alike).
+    openInReview: () => {
+      const vf = data.viewFile;
+      if (vf && vf.cornerPath) onNav?.('review', { files: [{ url: vf.cornerPath, name: vf.name }], project: vf.project || '' });
+      else onNav?.('review');
+    },
     assignAgent: (fileId) => onAssignFile?.(fileId),
     // Held-c (the file store is flat — no folder tree): inert, never faked.
     addFile: () => {}, newFolder: () => {}, newProject: () => {}, commentFile: () => {},
