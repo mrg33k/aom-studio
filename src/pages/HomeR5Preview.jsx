@@ -307,6 +307,30 @@ const CSS = `
 .r5 .b4 .bweb{grid-column:5/8;grid-row:2/3;}
 .r5 .b4 .bstat{grid-column:8/10;grid-row:2/3;}
 
+/* ---- FLIM hero: type-led, graph-paper ground, film-stills wall ---- */
+.r5 .flimhero{background:var(--paper);color:var(--ink);display:block;align-items:initial;min-height:0;
+  background-image:linear-gradient(rgba(11,11,11,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(11,11,11,.05) 1px,transparent 1px);
+  background-size:38px 38px;background-position:center top;}
+.r5 .flimwrap{padding-top:54px;padding-bottom:72px;}
+.r5 .flimtop{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:18px;}
+.r5 .flimtop .kick{color:var(--ink-500);}
+.r5 .flimmeta{font-family:var(--text);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-500);}
+.r5 .flimbig{font-size:clamp(58px,12.5vw,196px);line-height:.82;letter-spacing:-.035em;margin:38px 0 0;}
+.r5 .flimbig .dot{width:.42em;height:.42em;margin-left:.06em;}
+.r5 .flimcta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:40px 0 56px;}
+.r5 .flimnote{font-family:var(--text);font-size:14px;color:var(--ink-500);}
+.r5 .flimwall{display:grid;grid-template-columns:repeat(6,1fr);grid-auto-rows:165px;gap:12px;}
+.r5 .fwcell{position:relative;overflow:hidden;border:1px solid var(--line);background:var(--ink);}
+.r5 .fw-clipA{grid-column:span 2;grid-row:span 2;}
+.r5 .fw-win{grid-column:span 2;grid-row:span 2;display:block;transform:rotate(-1.1deg);background:var(--ink);}
+.r5 .fw-win .winbar{position:absolute;top:0;left:0;right:0;z-index:2;height:26px;background:#1A1A18;display:flex;align-items:center;gap:5px;padding:0 11px;}
+.r5 .fw-win .winbar i{width:8px;height:8px;border-radius:50%;background:#3A3A36;}
+.r5 .fw-win img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
+.r5 .fw-mark{grid-column:span 2;grid-row:span 1;background:var(--gold);display:flex;align-items:center;justify-content:center;}
+.r5 .fw-mark .gcircle{width:88px;height:88px;border-radius:50%;background:var(--ink);}
+.r5 .fw-mark .markwm{position:absolute;left:14px;bottom:12px;font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.04em;color:var(--ink);}
+.r5 .fw-clipB{grid-column:span 2;grid-row:span 1;cursor:pointer;}
+
 /* ---- 2: Editorial one-sheet ---- */
 .r5 .heroed{background:var(--ink);color:var(--paper);}
 .r5 .heroed .edtop{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--ink-700);padding-bottom:16px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-300);}
@@ -338,6 +362,10 @@ const CSS = `
   .r5 .edrow{grid-template-columns:1fr;gap:24px;}
   .r5 .splgrid{grid-template-columns:1fr;}
   .r5 .splhead h1{font-size:42px;}
+  .r5 .flimwall{grid-template-columns:repeat(2,1fr);grid-auto-rows:150px;}
+  .r5 .fw-clipA,.r5 .fw-win{grid-column:span 2;grid-row:span 2;}
+  .r5 .fw-win{transform:none;}
+  .r5 .fw-mark,.r5 .fw-clipB{grid-column:span 1;grid-row:span 1;}
 }
 
 /* hero variant picker */
@@ -709,13 +737,50 @@ function BentoHero({ variant, portrait, setVideo }) {
   );
 }
 
+// FLIM hero: type-led, flim.ai energy in the AOM brand. Giant Bricolage headline
+// bleeding across the top over a faint graph-paper grid, then a film-stills "wall"
+// (live rotating reel + a real site we built in a floating window + a gold
+// circle-in-square accent block = flim's geometric motif). Proves film + web at
+// once and reads strong even with the video paused.
+function FlimHero({ portrait, setVideo }) {
+  const clipB = useMemo(() => shuffle(REEL_POOL)[0], []);
+  return (
+    <header className="hero flimhero">
+      <div className="wrap flimwrap">
+        <div className="flimtop">
+          <span className="kick"><span className="ledot" /> Phoenix film &amp; web studio</span>
+          <span className="flimmeta">Video · Web · Ads · Photo</span>
+        </div>
+        <h1 className="flimbig disp">We make<br />companies<br /><span className="gold">impossible</span><br />to ignore<span className="dot" /></h1>
+        <div className="flimcta">
+          <a className="btn gold" href="#contact">Start a project ↗</a>
+          <a className="btn ghost-ink" href="#work">See our work</a>
+          <span className="flimnote">100+ films and websites shipped.</span>
+        </div>
+        <div className="flimwall">
+          <div className="fwcell fw-clipA"><RotatingFilm /><span className="btag">Film</span></div>
+          <a className="fwcell fw-win" href="/brands/ambition" target="_blank" rel="noopener">
+            <span className="winbar"><i /><i /><i /></span>
+            <img src="/hero-sites/ambition.jpg" alt="A website built by Ahead of Market" />
+            <span className="btag">A site we built ↗</span>
+          </a>
+          <div className="fwcell fw-mark"><span className="gcircle" /><span className="markwm">AOM</span></div>
+          <div className="fwcell fw-clipB" onClick={() => clipB && setVideo({ id: clipB.id, client: clipB.client })}>
+            <LazyGumlet id={clipB?.id} eager poster="#0B0B0B" /><span className="btag">Reel</span>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export default function HomeR5Preview() {
   const [tab, setTab] = useState('All');
   const [video, setVideo] = useState(null);
   const [hero, setHero] = useState(() => {
-    if (typeof window === 'undefined') return 1;
+    if (typeof window === 'undefined') return 5;
     const n = parseInt(new URLSearchParams(window.location.search).get('hero'), 10);
-    return n >= 1 && n <= 4 ? n : 1;
+    return n >= 1 && n <= 5 ? n : 5;
   });
   const portrait = useMemo(() => shuffle(DECK_REELS), []);
   const [medium, setMedium] = useState(() => {
@@ -752,13 +817,14 @@ export default function HomeR5Preview() {
         <a className="btn gold" href="#contact">Start a project ↗</a>
       </div></nav>
 
-      {/* HERO — Bento v2: 4 layout variants. Switch bottom-right. */}
+      {/* HERO — Flim (default) + Bento v2 variants. Switch bottom-right. */}
       {hero === 1 && <BentoHero variant={1} portrait={portrait} setVideo={setVideo} />}
       {hero === 2 && <BentoHero variant={2} portrait={portrait} setVideo={setVideo} />}
       {hero === 3 && <BentoHero variant={3} portrait={portrait} setVideo={setVideo} />}
       {hero === 4 && <BentoHero variant={4} portrait={portrait} setVideo={setVideo} />}
+      {hero === 5 && <FlimHero portrait={portrait} setVideo={setVideo} />}
       <div className="heropick">
-        {['Stacked', 'Banner', 'Feature', 'Dark'].map((l, i) => (
+        {['Stacked', 'Banner', 'Feature', 'Dark', 'Flim'].map((l, i) => (
           <button key={l} className={hero === i + 1 ? 'on' : ''} onClick={() => setHero(i + 1)}>{i + 1} {l}</button>
         ))}
       </div>
