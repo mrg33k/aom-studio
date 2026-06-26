@@ -403,6 +403,32 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   // Right column: Goals view (the agent's goal/steps) or Files view (this conversation's files + links).
   const [drawerView, setDrawerView] = useState('goals');
+
+  // "Following along" is real, user-owned state: which rooms surface on Home + notify you.
+  // Persisted locally per room so the toggle sticks across visits without a new backend.
+  const roomKey = selected?.id || selected?.missionSlug || selected?.name || '';
+  const [following, setFollowing] = useState(true);
+  useEffect(() => {
+    if (!roomKey) return;
+    try {
+      const muted = JSON.parse(localStorage.getItem('cv6.mutedRooms') || '{}');
+      setFollowing(!muted[roomKey]);
+    } catch { setFollowing(true); }
+  }, [roomKey]);
+  const toggleFollow = () => {
+    setFollowing((prev) => {
+      const next = !prev;
+      try {
+        const muted = JSON.parse(localStorage.getItem('cv6.mutedRooms') || '{}');
+        if (next) delete muted[roomKey]; else muted[roomKey] = 1;
+        localStorage.setItem('cv6.mutedRooms', JSON.stringify(muted));
+      } catch { /* localStorage unavailable: keep in-memory only */ }
+      return next;
+    });
+  };
+  // The "..." menu on the agent card (Goals view).
+  const [agentMenuOpen, setAgentMenuOpen] = useState(false);
+  useEffect(() => { setAgentMenuOpen(false); }, [roomKey]);
   // The room's REAL file library (project-files: canon, deliverables, research, per-mission),
   // so the Files panel is never empty for a project/mission room — not just what got posted in
   // the chat. Agent rooms have no project library, so they keep the conversation's files+links.
@@ -520,6 +546,17 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--fg)' }}>{selected.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--muted)' }}>{goal?.title ? <>Goal: {goal.title}</> : (selected.statusText || 'conversation')}</div>
                   </div>
+                  <button
+                    onClick={toggleFollow}
+                    title={following ? 'You will see this room on Home and get its updates. Click to mute.' : 'Muted. Click to follow along again.'}
+                    style={{ display: 'flex', alignItems: 'center', gap: 7, flex: 'none', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', padding: '6px 12px', borderRadius: 18, border: following ? 'none' : '1px solid var(--hair)', color: following ? 'var(--success)' : 'var(--muted)', background: following ? 'var(--success-weak)' : 'var(--surface-2)' }}>
+                    {following ? (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    ) : (
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                    )}
+                    {following ? 'Following along' : 'Follow'}
+                  </button>
                 </div>
                 <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
                   {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
@@ -555,14 +592,36 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}
                 <div className="eyebrow" style={{ color: 'var(--muted)', marginBottom: 10 }}>{selected.isMission ? 'Mission' : selected.isProject ? 'Project room' : 'Agent on this goal'}</div>
-                <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20 }}>
+                <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 20, position: 'relative' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span className="ava is-green" style={{ width: 34, height: 34, fontSize: 12 }}>{selected.initials || '·'}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{selected.name}</div>
                       <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{selected.statusText || 'ready'}</div>
                     </div>
+                    <button
+                      onClick={() => setAgentMenuOpen((o) => !o)}
+                      title="More"
+                      style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid var(--hair)', background: agentMenuOpen ? 'var(--accent-weak)' : 'var(--surface-2)', color: agentMenuOpen ? 'var(--accent)' : 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>
+                    </button>
                   </div>
+                  {agentMenuOpen ? (
+                    <>
+                      <div onClick={() => setAgentMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 20 }} />
+                      <div style={{ position: 'absolute', top: 46, right: 14, zIndex: 21, minWidth: 184, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 12, boxShadow: '0 16px 40px -12px rgba(0,0,0,.45)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {[
+                          { label: 'View files', onClick: () => { setDrawerView('files'); setAgentMenuOpen(false); } },
+                          { label: 'Open in Review', onClick: () => { onReviewFile?.(); setAgentMenuOpen(false); } },
+                          { label: following ? 'Mute updates' : 'Follow along', onClick: () => { toggleFollow(); setAgentMenuOpen(false); } },
+                        ].map((mi) => (
+                          <button key={mi.label} onClick={mi.onClick} style={{ display: 'flex', alignItems: 'center', height: 36, padding: '0 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--fg)', fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)', textAlign: 'left', cursor: 'pointer' }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>{mi.label}</button>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
                   {goal?.total ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 13 }}>
                       <div style={{ flex: 1, height: 7, borderRadius: 4, background: 'var(--surface-2)', overflow: 'hidden' }}><div style={{ width: `${goal.pct || 0}%`, height: '100%', borderRadius: 4, background: 'linear-gradient(90deg,var(--accent),#6366F1)' }} /></div>
