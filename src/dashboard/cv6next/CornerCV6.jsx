@@ -929,7 +929,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       const id = String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`;
       const hasChildren = Array.isArray(m.children) && m.children.length > 0;
       const isOpen = hasChildren && expandedNodes.has(id);
-      rows.push({ id, name: missionLabelClean(m.name || m.slug), status: missionDotStatus(m.status), depth: depth === 'd0' ? null : depth, caret: hasChildren ? (isOpen ? 'open' : 'closed') : 'none', isFolder: hasChildren, roomObj: missionRoomObj(id, m.name, p.name) });
+      rows.push({ id, name: missionLabelClean(m.name || m.slug), status: hasChildren ? (p.tint || 'violet') : missionDotStatus(m.status), depth: depth === 'd0' ? null : depth, caret: hasChildren ? (isOpen ? 'open' : 'closed') : 'none', isFolder: hasChildren, roomObj: missionRoomObj(id, m.name, p.name) });
       if (isOpen && hasChildren) rows.push(...flattenMissionTree(m.children, 'd2', expandedNodes, p));
     }
     return rows;

@@ -463,8 +463,8 @@
 /* ---- Organize tool (tree · file list · preview · mobile browse/move/view) ---- */
 [data-cv6][data-screen^="organize"] .trow { display:flex; align-items:center; gap:9px; padding:8px; border-radius:8px; font-size:14px; color:var(--fg); cursor:pointer; }
 [data-cv6][data-screen^="organize"] .trow.is-open { background:var(--accent-weak); color:var(--accent); }
-[data-cv6][data-screen^="organize"] .trow.is-d1 { padding-left:30px; }
-[data-cv6][data-screen^="organize"] .trow.is-d2 { padding-left:52px; }
+[data-cv6][data-screen^="organize"] .trow.is-d1 { padding-left:30px; box-shadow:inset 1px 0 0 rgba(255,255,255,.09); }
+[data-cv6][data-screen^="organize"] .trow.is-d2 { padding-left:52px; box-shadow:inset 1px 0 0 rgba(255,255,255,.09); }
 [data-cv6][data-screen^="organize"] .file { display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:9px; cursor:pointer; }
 [data-cv6][data-screen^="organize"] .file.is-open { background:var(--accent-weak); }
 [data-cv6][data-screen^="organize"] .fn { font-size:13.5px; font-weight:600; color:var(--fg); }
@@ -908,6 +908,24 @@
 [data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d1 { padding-left:4px; }
 [data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d2 { padding-left:16px; }
 [data-cv6][data-screen="home-desktop"] .misslist .missrow .projcaret.is-none { display:none; }
+/* Fix 1 (R-ROOMTREE-2): Caret hit zone -- 28x28px target, caret-only hover highlight */
+[data-cv6] .caretbtn { display:flex; align-items:center; justify-content:center; flex:none; width:28px; height:28px; border-radius:4px; cursor:pointer; }
+[data-cv6] .caretbtn:hover { background:rgba(255,255,255,.10); }
+[data-cv6] .caretbtn:has(.projcaret.is-none) { display:none; }
+[data-cv6] .caretbtn:has(.chev.is-none) { visibility:hidden; }
+[data-cv6][data-screen^="organize"] .trow.is-d1 .caretbtn { visibility:hidden; }
+/* Fix 2 (R-ROOMTREE-2): Depth rail on home d2 missrows */
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d2 { position:relative; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d2::before { content:''; position:absolute; left:4px; top:0; bottom:0; width:1px; background:rgba(255,255,255,.10); pointer-events:none; }
+/* Fix 3 (R-ROOMTREE-2): Folder dot tint colors (project tint passed as dot status for folder nodes) */
+[data-cv6] .sdot.is-violet { background:var(--violet-400); }
+[data-cv6] .sdot.is-pink   { background:var(--pink-400); }
+[data-cv6] .sdot.is-teal   { background:var(--teal-400); }
+[data-cv6] .sdot.is-lime   { background:var(--lime-400); }
+[data-cv6] .sdot.is-amber  { background:var(--amber-400); }
+[data-cv6] .sdot.is-accent { background:var(--accent); }
+[data-cv6] .sdot.is-blue   { background:var(--blue-400); }
+[data-cv6] .sdot.is-green  { background:var(--green-400); }
 
 /* CV6 quick-reply composer: Cv6FullComposer portals CV4's real ThreadInputBar
    (pill + command menu + attach + mic/send + slash + voice) into this host. The
