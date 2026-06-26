@@ -14,7 +14,6 @@ import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
 import { useDictation } from './data/useDictation.js';
 import MessageAttachments from './MessageAttachments.jsx';
-import Cv6FullComposer from './Cv6FullComposer.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 
 const NAV = [
@@ -539,7 +538,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const pauseAgent = () => sendControl('Please pause here and wait for my next message before continuing.', 'Asked the agent to pause.');
   const retaskAgent = () => {
     // Re-tasking is freeform, so focus the composer for the new instruction.
-    const box = composerHost?.querySelector('textarea, input[type="text"], [contenteditable="true"]');
+    const box = chatInputRef.current || document.querySelector('[data-cv6-chat-input]');
     if (box) { box.focus(); flashNote('Type the new task below.'); }
     else flashNote('Type the new task in the box below.');
   };
@@ -614,20 +613,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const [draft, setDraft] = useState('');
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   const submit = () => { const t = draft.trim(); if (!t) return; send?.(t); setDraft(''); };
-  // The shared rich composer (CV4 input bar + slash commands + voice + image gen) portals into
-  // this host node, so desktop chat uses the exact same input as the homepage quick reply.
-  const [composerHost, setComposerHost] = useState(null);
-  // Memoize the composer element so the 3s thread poll and the live working-state
-  // re-renders NEVER re-render (or remount) the portaled CV4 input — that remount
-  // was blanking typed text and stealing focus. quickSend={send} routes typed text
-  // through useRoomThread.send (the chat composer had NO send wired before, so Enter
-  // cleared the box and posted nothing). Deps are all stable within a room.
-  const composerEl = useMemo(() => (
-    composerHost && selected
-      ? <Cv6FullComposer target={composerHost} room={selected} worldId={worldId} agents={agents} quickSend={send} />
-      : null
-  ), [composerHost, selected, worldId, agents, send]);
-
+  const chatInputRef = useRef(null);
   // Pin to the latest message: after the thread loads (messages arrive async) and whenever a
   // new one lands, so opening a room lands at the tail and your just-sent message isn't hidden
   // below the fold. Reading history (scrolled up) is left alone.
@@ -730,8 +716,28 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>
-                <div ref={setComposerHost} data-cv6-composer style={{ borderTop: '1px solid var(--divider)', padding: '12px 24px' }} />
-                {composerEl}
+                {/* Reliable plain composer (Patrik 2026-06-26): the portaled CV4 rich
+                    composer churned its hooks on every 3s thread poll and stole focus
+                    after a few keystrokes. A plain controlled input never loses focus.
+                    Mic (dictation) kept; slash-commands/voice/imagegen return once the
+                    rich composer's poll-churn is fixed. */}
+                <div style={{ borderTop: '1px solid var(--divider)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <input
+                    ref={chatInputRef}
+                    data-cv6-chat-input
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
+                    placeholder={`Message ${selected.name || 'this room'}…`}
+                    style={{ flex: 1, minWidth: 0, height: 44, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 15px', color: 'var(--fg)', fontFamily: 'var(--font-sans)', fontSize: 15, outline: 'none' }}
+                  />
+                  <button onClick={dictate.toggle} title={dictate.listening ? 'Stop dictation' : 'Dictate'} style={{ width: 44, height: 44, borderRadius: 12, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: dictate.listening ? 'var(--accent)' : 'var(--surface-2)', border: '1px solid var(--hair)', color: dictate.listening ? '#fff' : 'var(--muted)', cursor: 'pointer' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+                  </button>
+                  <button onClick={submit} title="Send" style={{ width: 44, height: 44, borderRadius: 12, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z"/></svg>
+                  </button>
+                </div>
               </>
             ) : (
               <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>Pick a room on the left to open its thread.</div>
