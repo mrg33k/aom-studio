@@ -905,6 +905,9 @@
 [data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on { background:var(--accent-weak); }
 [data-cv6][data-screen="home-desktop"] .misslist .missrow.is-on .rn { color:var(--fg); font-weight:600; }
 [data-cv6][data-screen="home-desktop"] .missmore { padding:7px 12px; color:var(--accent); font-size:12.5px; font-weight:600; cursor:pointer; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d1 { padding-left:4px; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow.is-d2 { padding-left:16px; }
+[data-cv6][data-screen="home-desktop"] .misslist .missrow .projcaret.is-none { display:none; }
 
 /* CV6 quick-reply composer: Cv6FullComposer portals CV4's real ThreadInputBar
    (pill + command menu + attach + mic/send + slash + voice) into this host. The

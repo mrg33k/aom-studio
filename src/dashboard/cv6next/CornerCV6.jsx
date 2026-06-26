@@ -271,6 +271,8 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // had "show N more" tapped. Matches the Chat rail tree.
   const [expandedHomeProjects, setExpandedHomeProjects] = useState(() => new Set());
   const [missionShowAll, setMissionShowAll] = useState(() => new Set());
+  // Which sub-mission nodes (nested children) are open inside a project folder.
+  const [expandedHomeNodes, setExpandedHomeNodes] = useState(() => new Set());
   // Mobile "project opened" state (Home state B): tap a project -> its missions.
   const [openedProjectId, setOpenedProjectId] = useState(null);
   const openedProject = openedProjectId ? (data.projects || []).find((p) => p.id === openedProjectId) : null;
@@ -708,6 +710,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       });
     },
     showAllMissions: (id) => setMissionShowAll((prev) => (prev.has(id) ? prev : new Set(prev).add(id))),
+    toggleMissionNode: (id) => setExpandedHomeNodes((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; }),
     // Tap a mission row -> open that mission in the col3 quick reply room (desktop) or its real
     // chat (mobile).
     openMissionRow: (id) => {
@@ -918,17 +921,28 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     return (data.agents || []).find((a) => a.id === r.agent) || { id: r.agent || r.id, name: r.name, initials: (r.name || '?').slice(0, 2).toUpperCase(), status: 'ready' };
   };
 
-  // per-project fan-open missions (only when the folder is open)
+  // Flatten a recursive mission tree into depth-tagged rows. depth is 'd1' for
+  // roots, 'd2' for children. Cap applies to roots only; expanded children always show.
+  const flattenMissionTree = (nodes, depth, expandedNodes, p) => {
+    const rows = [];
+    for (const m of nodes) {
+      const id = String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`;
+      const hasChildren = Array.isArray(m.children) && m.children.length > 0;
+      const isOpen = hasChildren && expandedNodes.has(id);
+      rows.push({ id, name: missionLabelClean(m.name || m.slug), status: missionDotStatus(m.status), depth: depth === 'd0' ? null : depth, caret: hasChildren ? (isOpen ? 'open' : 'closed') : 'none', isFolder: hasChildren, roomObj: missionRoomObj(id, m.name, p.name) });
+      if (isOpen && hasChildren) rows.push(...flattenMissionTree(m.children, 'd2', expandedNodes, p));
+    }
+    return rows;
+  };
+
+  // per-project fan-open missions (only when the folder is open). Cap on ROOT nodes.
   const projShownNodes = projShown.map((p) => {
     const open = expandedHomeProjects.has(p.id);
-    const raw = open ? (missionsByProject[p.slug] || []) : [];
+    const tree = open ? (missionsByProject[p.slug] || []) : [];
     const showAll = missionShowAll.has(p.id);
-    const shown = showAll ? raw : raw.slice(0, HOME_MISSION_CAP);
-    const more = open && !showAll ? Math.max(0, raw.length - HOME_MISSION_CAP) : 0;
-    const missions = shown.map((m) => {
-      const id = String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`;
-      return { id, name: missionLabelClean(m.name || m.slug), status: missionDotStatus(m.status), roomObj: missionRoomObj(id, m.name, p.name) };
-    });
+    const cappedTree = showAll ? tree : tree.slice(0, HOME_MISSION_CAP);
+    const more = open && !showAll ? Math.max(0, tree.length - HOME_MISSION_CAP) : 0;
+    const missions = flattenMissionTree(cappedTree, 'd1', expandedHomeNodes, p);
     return { p, open, missions, more };
   });
 
@@ -952,7 +966,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     ...pn.p,
     knavSel: selectedKey === `p:${pn.p.id}` ? 'sel' : 'off',
     caret: pn.open ? 'open' : 'closed',
-    missions: pn.missions.map((m) => ({ id: m.id, name: m.name, status: m.status, knavSel: selectedKey === `m:${m.id}` ? 'sel' : 'off' })),
+    missions: pn.missions.map((m) => ({ id: m.id, name: m.name, status: m.status, depth: m.depth, caret: m.caret, knavSel: selectedKey === `m:${m.id}` ? 'sel' : 'off' })),
     moreCount: pn.more,
     moreState: pn.more > 0 ? 'has' : 'none',
   }));

@@ -349,7 +349,7 @@ export function useProjectMissions(worldId, reloadKey = 0) {
       .then((j) => {
         if (!alive || !j || !Array.isArray(j.projects)) return;
         const next = {};
-        for (const proj of j.projects) { if (proj?.slug) next[proj.slug] = proj.missions || []; }
+        for (const proj of j.projects) { if (proj?.slug) next[proj.slug] = proj.tree || proj.missions || []; }
         setByProject(next);
       })
       .catch(() => {});

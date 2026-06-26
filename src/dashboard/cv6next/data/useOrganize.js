@@ -145,6 +145,7 @@ export function useOrganize(worldId = 'aom') {
   const [filter, setFilter] = useState('all');     // all | docs | images
   const [openedId, setOpenedId] = useState(null);  // which file is open (preview/reader)
   const [contentCache, setContentCache] = useState({}); // id -> { title, bodyHtml, editor, editorInitials }
+  const [missionTree, setMissionTree] = useState({}); // projectSlug -> tree nodes array (nested)
   const inFlight = useRef(new Set()); // file ids whose content fetch is in progress (dedup)
 
   const load = useCallback(async () => {
@@ -172,6 +173,19 @@ export function useOrganize(worldId = 'aom') {
       if (projData.ok && Array.isArray(projData.projects)) setProjects(projData.projects);
     } catch (err) {
       console.error('Failed to load projects:', err);
+    }
+
+    // Tertiary, best-effort: mission tree for nested room structure in the tree panel.
+    try {
+      const mtRes = await authFetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId), { credentials: 'include' });
+      const mtData = mtRes.ok ? await mtRes.json() : null;
+      if (mtData && Array.isArray(mtData.projects)) {
+        const next = {};
+        for (const proj of mtData.projects) { if (proj?.slug) next[proj.slug] = proj.tree || []; }
+        setMissionTree(next);
+      }
+    } catch (err) {
+      console.error('Failed to load missions tree:', err);
     }
 
     setStatus(gotFiles ? 'loaded' : 'error');
@@ -256,10 +270,20 @@ export function useOrganize(worldId = 'aom') {
   const inList = (id) => projectList.some((p) => p.id === id);
   const activeProjectId = (selectedId && inList(selectedId)) ? selectedId : (projectList[0]?.id || null);
 
-  const treeNodes = projectList.map((p) => ({
-    id: p.id, name: p.name, depth: 'd0', tint: p.tint,
-    chev: p.fileCount ? 'down' : 'none', open: p.id === activeProjectId,
-  }));
+  // Build treeNodes: d0 project rows, then d1 mission rows for the active project.
+  const treeNodes = [];
+  for (const p of projectList) {
+    const isActive = p.id === activeProjectId;
+    const missions = isActive ? (missionTree[p.id] || []) : [];
+    treeNodes.push({ id: p.id, name: p.name, depth: 'd0', tint: p.tint, chev: missions.length ? 'down' : (p.fileCount ? 'down' : 'none'), open: isActive });
+    if (isActive) {
+      for (const m of missions) {
+        const mSlug = String(m.slug || '').includes(':') ? m.slug : `${p.id}:${m.slug}`;
+        const mName = String(m.name || m.slug || '').includes(':') ? String(m.name || m.slug || '').slice(String(m.name || m.slug || '').lastIndexOf(':') + 1).trim() : (m.name || m.slug);
+        treeNodes.push({ id: mSlug, name: mName, depth: 'd1', tint: p.tint, chev: 'none', open: false });
+      }
+    }
+  }
 
   const openProject = treeNodes.find((n) => n.id === activeProjectId) || treeNodes[0] || { id: null, name: 'Projects' };
 

@@ -132,7 +132,7 @@
             <span style="font-size:11.5px;color:var(--muted);" data-bind="room.count">28</span>
           </div>
           <div class="misslist" data-mod="is-:room.caret">
-            <div class="room missrow" data-each="room.missions" data-action="openMissionRow" data-arg="mission.id" data-mod="knav:mission.knavSel"><span class="sdot is-ready" data-mod="is-:mission.status" style="flex:none;"></span><span class="rn" data-bind="mission.name">Mission</span></div>
+            <div class="room missrow" data-each="room.missions" data-action="openMissionRow" data-arg="mission.id" data-mod="is-:mission.depth"><svg class="projcaret" data-mod="is-:mission.caret" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none;color:var(--muted);" data-action="toggleMissionNode" data-arg="mission.id"><path d="m9 18 6-6-6-6"/></svg><span class="sdot is-ready" data-mod="is-:mission.status" style="flex:none;"></span><span class="rn" data-bind="mission.name">Mission</span></div>
             <div class="missmore" data-mod="is-:room.moreState" data-action="showAllMissions" data-arg="room.id">Show <span data-bind="room.moreCount">0</span> more</div>
           </div>
         </div>

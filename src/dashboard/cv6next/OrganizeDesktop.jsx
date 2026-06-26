@@ -50,7 +50,10 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     openProfile: () => {},
     search: () => {},
     openFile: (id) => openFile(id),
-    openTreeNode: (id) => switchProject(id),
+    // Mission nodes arrive as "project:mission-slug" — extract the project part so we
+    // select the parent project's files rather than trying to switch to a non-existent
+    // project row.  Plain project ids have no colon, so the logic is harmless for them.
+    openTreeNode: (id) => switchProject(String(id || '').includes(':') ? String(id).split(':')[0] : id),
     openProject: (id) => switchProject(id),
     openFolder: (id) => switchProject(id),
     openCrumb: (id) => (id === 'root' ? switchProject(null) : switchProject(id)),
