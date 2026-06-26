@@ -18,6 +18,34 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { authFetch } from '../lib/authFetch'
 import { getClientId } from '../lib/clientConfig'
+
+// Catch Up = ONLY the things where Patrik is the bottleneck to respond (his words,
+// 2026-06-26). The raw "unread agent message" feed is far too broad: it's full of
+// internal THOUGHT reasoning logs, embedded site-chat conversations (not his inbox at
+// all), file drops, status updates ("Ready.", "All shipped"), and task-done notices.
+// None of those need a decision from him. This predicate keeps an item only when the
+// agent is genuinely waiting on Patrik: an explicit needs-input signal, a choices/
+// approval block, or a message that actually asks him something.
+const ASK_RE = /\b(should i|shall i|which (?:one|option|do|of)|do you want|want me to|would you like|can you (?:confirm|approve|decide|clarify)|need(?:s)? your|your call|your take|let me know|waiting on you|ok(?:ay)? to|sign ?off|approve|go ahead|do you prefer|prefer (?:option|that|this)|thoughts\?|which way)\b/i
+function inboxNeedsResponse(msg) {
+  const md = (msg && msg.metadata) || {}
+  // Embedded widget conversations (e.g. a site's visitor chat) are not Patrik's inbox.
+  if (md.embed_source || md.embed_id || md.embed_room || md.embed_visitor_id) return false
+  const text = String((msg && msg.text) || '')
+  // Internal agent reasoning the bridge logs — never a user-facing ask.
+  if (/^\s*THOUGHT\b/i.test(text)) return false
+  // Pure file drops are FYI (they live in the room + Files panel), not a bottleneck.
+  if (md.attachment && /^\s*attached file/i.test(text)) return false
+  // Explicit machine signals that an agent is blocked on Patrik always count.
+  if (md.status === 'needs_input' || md.needs_input === true) return true
+  if (Array.isArray(md.blocks) && md.blocks.some((b) => b && (b.type === 'choices' || b.type === 'question' || b.type === 'approval'))) return true
+  // A finished-task notification (status set, not needs_input) is informational, not a bottleneck.
+  if (md.task_id && md.status && md.status !== 'needs_input') return false
+  // Otherwise: does the message actually ask him to decide/answer something?
+  const trimmed = text.trim()
+  if (/\?\s*$/.test(trimmed)) return true
+  return ASK_RE.test(trimmed)
+}
 import { AGENTS as GRID_AGENTS } from '../gridSpec'
 import { useSystemToast } from '../SystemToast'
 
@@ -474,7 +502,9 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
             if (!k || seenRooms.has(k)) continue
             const lastSeen = roomLastSeen[k]
             if (!lastSeen || msg.timestamp > lastSeen) {
-              seenRooms.add(k)
+              seenRooms.add(k) // this room's newest unread is now decided (handled either way)
+              // Only surface rooms where the agent is actually waiting on Patrik.
+              if (!inboxNeedsResponse(msg)) continue
               const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
               unread.push({
                 agent: msg.agent,
