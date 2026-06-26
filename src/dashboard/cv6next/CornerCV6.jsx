@@ -349,9 +349,12 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // supabase-messages path the Chat composer uses). curCardRef holds the latest current card
   // so the Send handler reads the right room without churning the actions memo.
   const [replyOpen, setReplyOpen] = useState(false);
+  // After a Home quick-reply sends, the card shows "working" feedback (parity with the
+  // chat tool) instead of vanishing silently. { label } while the agent is on it.
+  const [replyWorking, setReplyWorking] = useState(null);
   const curCardRef = useRef(null);
   curCardRef.current = liveCatchUpView.current;
-  useEffect(() => { setReplyOpen(false); setTrackerStatus(null); }, [curProject, catchUpIndex]); // reset on card change
+  useEffect(() => { setReplyOpen(false); setTrackerStatus(null); setReplyWorking(null); }, [curProject, catchUpIndex]); // reset on card change
   const sendCatchupReply = useCallback(async (text) => {
     const body = String(text || '').trim();
     const card = curCardRef.current;
@@ -361,22 +364,30 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       : card.project
         ? { client_id: worldId, agent: 'corner', project: card.project, text: body, role: 'user', source: 'corner-dashboard' }
         : { client_id: worldId, agent: card.agent || card.id, text: body, role: 'user', source: 'corner-dashboard' };
+    // Show "working" the instant you send (parity with the chat tool's WorkingTurn).
+    const pname = card.project ? String(card.project).replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
+    const who = card.agentName || pname || 'Your agent';
+    setReplyOpen(false);
+    setReplyWorking({ label: `${who} is on it…` });
     try {
       const r = await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const ok = !!(r && r.ok);
-      if (ok) {
-        setReplyOpen(false);
-        const id = card.id; // replied -> handled, clear it from the deck on this device
+      if (!ok) { setReplyWorking(null); return false; }
+      // Hold the working state briefly so you SEE it landed, then advance the deck
+      // (the reply itself shows in the chat tool; the card is handled on this device).
+      const id = card.id;
+      setTimeout(() => {
+        setReplyWorking(null);
         if (id) setCatchUpDismissed((prev) => {
           const next = prev.includes(id) ? prev : [...prev, id];
           try { localStorage.setItem('cv6.catchup.dismissed', JSON.stringify(next)); } catch { /* ignore */ }
           return next;
         });
-      }
+      }, 2600);
       return ok;
-    } catch { return false; }
+    } catch { setReplyWorking(null); return false; }
   }, [worldId]);
 
   // Add to Tracker (Patrik catch-up spec): the card is tied to a mission. addToTracker resolves
@@ -871,11 +882,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // 'actions' = the suggested-action buttons, 'reply' = the inline reply composer.
   const catchUpRender = {
     ...liveCatchUpView,
-    footerState: !liveCatchUpView.count ? 'none'
-      : trackerStatus === 'adding' ? 'adding'
-        : trackerStatus === 'added' ? 'added'
-          : (replyOpen ? 'reply' : 'actions'),
-    statusText: trackerStatus === 'added' ? `Added to ${trackerAddedName}` : 'Adding to tracker…',
+    footerState: replyWorking ? 'working'
+      : !liveCatchUpView.count ? 'none'
+        : trackerStatus === 'adding' ? 'adding'
+          : trackerStatus === 'added' ? 'added'
+            : (replyOpen ? 'reply' : 'actions'),
+    statusText: replyWorking ? replyWorking.label
+      : trackerStatus === 'added' ? `Added to ${trackerAddedName}` : 'Adding to tracker…',
   };
 
   // Add-to-Tracker overlay: the pick-a-tracker bottom drawer. Rendered over whatever surface
