@@ -163,12 +163,9 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
     openCrumb: (id) => (id === 'root' ? backToPicker() : enterProject(id)),
     openFile: (id) => tapFile(id),
     setFilter: (id) => setFilter(id || 'all'),
-    // Open the CURRENT file in Review and land on it — hand it in as an injected target
-    // (same path chat "Review all" uses) so Review opens this exact file, not the queue.
     openInReview: () => {
-      const vf = data?.viewFile;
-      if (vf && vf.cornerPath) onNav?.('review', { files: [{ url: vf.cornerPath, name: vf.name }], project: vf.project || '' });
-      else onNav?.('review');
+      const rf = data.viewFile?.reviewFile;
+      onNav?.('review', rf ? { files: [rf], project: data.viewFile.projectSlug || '' } : null);
     },
     assignAgent: (fileId) => onAssignFile?.(fileId || pickedFileId),
     // Held-c (no file-storage backend yet): inert, never faked.
