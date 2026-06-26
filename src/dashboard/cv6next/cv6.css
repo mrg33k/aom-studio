@@ -911,7 +911,7 @@
 /* Fix 1 (R-ROOMTREE-2): Caret hit zone -- 28x28px target, caret-only hover highlight */
 [data-cv6] .caretbtn { display:flex; align-items:center; justify-content:center; flex:none; width:28px; height:28px; border-radius:4px; cursor:pointer; }
 [data-cv6] .caretbtn:hover { background:rgba(255,255,255,.10); }
-[data-cv6] .caretbtn:has(.projcaret.is-none) { display:none; }
+[data-cv6] .caretbtn:has(.projcaret.is-none) { visibility:hidden; }
 [data-cv6] .caretbtn:has(.chev.is-none) { visibility:hidden; }
 [data-cv6][data-screen^="organize"] .trow.is-d1 .caretbtn { visibility:hidden; }
 /* Fix 2 (R-ROOMTREE-2): Depth rail on home d2 missrows */
