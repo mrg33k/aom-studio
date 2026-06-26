@@ -8,7 +8,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
-import { authFetch } from '../../lib/authFetch';
+import { authFetch } from '../lib/authFetch';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
