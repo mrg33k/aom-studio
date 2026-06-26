@@ -8,6 +8,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
+import { authFetch } from '../../lib/authFetch';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
@@ -137,9 +138,15 @@ function shelfItems(messages) {
   items.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
   return items;
 }
-// "Elon · 1h · 8 KB" style meta line — only the parts we actually have.
+// "Elon · 1h · 8 KB" style meta line — only the parts we actually have. Library files have no
+// size/author, so they fall back to their kind (canon / deliverable / research) + when.
 function itemMeta(it) {
-  return [it.who, relAgo(it.ts), it.type === 'file' ? humanSize(it.size) : 'link'].filter(Boolean).join(' · ');
+  const tail = it.type === 'link' ? 'link' : (humanSize(it.size) || it.libKind || '');
+  return [it.who, relAgo(it.ts), tail].filter(Boolean).join(' · ');
+}
+// Map a project-files kind/name to a pill bucket + a clean kind label.
+function libKindLabel(k) {
+  return ({ canon: 'doc', tape: 'notes', 'research-drop': 'research', deliverable: 'deliverable' })[k] || (k || 'file');
 }
 const FILE_PILLS = [
   { k: 'all', label: 'All' }, { k: 'recent', label: 'Recent' }, { k: 'photo', label: 'Photos' },
@@ -167,7 +174,10 @@ function FilesShelf({ items, onReview }) {
     pdf: items.filter((i) => i.kind === 'pdf').length,
     link: items.filter((i) => i.type === 'link').length,
   }), [items]);
-  const shown = pillFilter(items, pill);
+  const filtered = pillFilter(items, pill);
+  const CAP = 60; // a busy project has hundreds of files; render the newest CAP, note the rest.
+  const shown = filtered.slice(0, CAP);
+  const overflow = filtered.length - shown.length;
   return (
     <>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
@@ -204,6 +214,7 @@ function FilesShelf({ items, onReview }) {
               <button onClick={() => onReview?.(it)} title="Open in the Review tab" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', flex: 'none' }}>Review</button>
             </div>
           )))}
+          {overflow > 0 ? <div className="mono" style={{ fontSize: 10.5, color: 'var(--faint)', padding: '10px 4px' }}>+{overflow} more · filter or search to narrow</div> : null}
         </div>
       ) : (
         <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>{pill === 'link' ? 'No links shared here yet.' : 'No files here yet.'}</div>
@@ -392,7 +403,40 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   // Right column: Goals view (the agent's goal/steps) or Files view (this conversation's files + links).
   const [drawerView, setDrawerView] = useState('goals');
-  const shelf = useMemo(() => shelfItems(messages), [messages]);
+  // The room's REAL file library (project-files: canon, deliverables, research, per-mission),
+  // so the Files panel is never empty for a project/mission room — not just what got posted in
+  // the chat. Agent rooms have no project library, so they keep the conversation's files+links.
+  const libProjectSlug = selected?.isMission ? selected.projectSlug : (selected?.isProject ? selected.id : null);
+  const [roomFiles, setRoomFiles] = useState([]);
+  useEffect(() => {
+    if (!libProjectSlug) { setRoomFiles([]); return undefined; }
+    let alive = true;
+    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(libProjectSlug)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        const flat = [];
+        for (const f of (d.files || [])) flat.push(f);
+        for (const m of (d.missions || [])) for (const f of (m.files || [])) flat.push(f);
+        setRoomFiles(flat);
+      })
+      .catch(() => { if (alive) setRoomFiles([]); });
+    return () => { alive = false; };
+  }, [libProjectSlug]);
+  // Shelf = the room's library files (project/mission rooms) + links from the conversation;
+  // agent rooms fall back to whatever files/links the conversation itself carries.
+  const shelf = useMemo(() => {
+    const convo = shelfItems(messages);
+    if (!libProjectSlug) return convo;
+    const lib = roomFiles.map((f) => ({
+      type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
+      ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
+    }));
+    const links = convo.filter((i) => i.type === 'link');
+    const merged = [...lib, ...links];
+    merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
+    return merged;
+  }, [messages, roomFiles, libProjectSlug]);
   const [draft, setDraft] = useState('');
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   const submit = () => { const t = draft.trim(); if (!t) return; send?.(t); setDraft(''); };
