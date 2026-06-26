@@ -292,10 +292,26 @@ export default async function handler(req, res) {
   // Add events-store missions (CLI-scaffolded via new-mission.py) if not
   // already present from the registry or agent_status. Tenant isolation is
   // enforced HERE because the events query above is not client-scoped.
+  //
+  // Ghost guard (2026-06-26): a mission_created event lives forever, but a
+  // mission can be RENAMED or MOVED on disk (e.g. the corner restructure folded
+  // "infra" into "general", "cv4-redesign" into "older-versions"). Its old event
+  // then has no registry match and re-surfaces as a FLAT root, polluting the tree.
+  // The registry build timestamp (generated_at) is the cutoff: if the build saw
+  // the disk AFTER this event fired and still did not include the mission, the
+  // mission was deliberately removed/renamed — drop the ghost. An event NEWER than
+  // the last build is a genuinely-new mission not yet baked in — keep it (the
+  // original reason this merge exists). Null/unparseable timestamps fall through
+  // to the old keep-it behaviour so a missing date never hides a real mission.
+  const registryBuiltAt = Date.parse(missionsRegistry?.generated_at || '') || 0
   for (const em of eventMissions) {
     if (allowedProjectSlugs !== null && !allowedProjectSlugs.has(em.projectSlug)) continue
     const proj = getProject(em.projectSlug)
     const fullSlug = `${em.projectSlug}:${em.missionSlug}`
+    const eventAt = Date.parse(em.last_updated || '') || 0
+    if (registryBuiltAt && eventAt && eventAt < registryBuiltAt && !projectHasMission(proj, em.missionSlug, fullSlug)) {
+      continue // ghost: pre-dates the registry build that omitted it
+    }
     if (!projectHasMission(proj, em.missionSlug, fullSlug)) {
       proj.missions.set(em.missionSlug, {
         slug: em.missionSlug,
