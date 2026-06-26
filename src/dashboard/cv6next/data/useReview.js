@@ -35,12 +35,20 @@ async function buildDeliverableBody(item) {
   const path = item?.id || '';
   if (!path) return '';
   const enc = encodeURIComponent(path);
-  const rawUrl = `/api/dashboard/project-file?path=${enc}&raw=1`;
+  // A file handed in from chat can carry a full RAG-store URL (an uploaded file), not a
+  // corner path. Load those directly; corner paths still go through the tenant-gated
+  // project-file endpoint. Both are fetched with authFetch (token harmless on the store).
+  const isAbs = /^https?:\/\//i.test(path);
+  const rawUrl = isAbs ? path : `/api/dashboard/project-file?path=${enc}&raw=1`;
+  const txtUrl = isAbs ? path : `/api/dashboard/project-file?path=${enc}`;
   const type = item.type;
   const errDiv = (msg) => `<div style="padding:14px 0;color:#666;">${msg}</div>`;
 
-  // Binary: auth-fetch the bytes, show via a blob URL the element can load without auth.
+  // Binary: a full store URL loads cross-origin directly as the element src (no fetch,
+  // no CORS). A corner path is auth-fetched and shown via a blob URL (the element can't
+  // carry the token itself).
   async function blobOf() {
+    if (isAbs) return { url: path };
     const r = await authFetchT(rawUrl);
     if (!r?.ok) return { err: `This file could not be loaded (status ${r?.status || '?'}).` };
     const blob = await r.blob();
@@ -66,11 +74,12 @@ async function buildDeliverableBody(item) {
       }
       return errDiv(`Preview is not available for this file type. <a href="${b.url}" download="${escapeHtml(item.title)}" style="color:#0066FF;">Download ${escapeHtml(item.title)}</a>`);
     }
-    // text: copy (.md / .txt) or code
-    const r = await authFetchT(`/api/dashboard/project-file?path=${enc}`);
+    // text: copy (.md / .txt) or code. A store URL is read with a plain cross-origin GET
+    // (no auth header → no preflight); a corner path goes through project-file with auth.
+    const r = isAbs ? await fetch(txtUrl) : await authFetchT(txtUrl);
     if (!r?.ok) return errDiv(`This file's contents could not be loaded (status ${r?.status || '?'}).`);
-    const d = await r.json();
-    const content = d?.content || '';
+    // The store returns the raw file; project-file wraps it as { content }.
+    const content = isAbs ? await r.text() : ((await r.json())?.content || '');
     if (/\.md$/i.test(path)) {
       try { return marked.parse(content); } catch { /* fall through to pre */ }
     }
