@@ -254,10 +254,10 @@ const CSS = `
 .r5 .kick{display:inline-flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-500);}
 .r5 .kick .ledot{width:7px;height:7px;background:var(--gold);display:inline-block;animation:r5pulse 2s infinite;}
 .r5 .btag{position:absolute;left:14px;bottom:12px;z-index:4;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--paper);background:rgba(11,11,11,.55);padding:5px 9px;backdrop-filter:blur(3px);}
-.r5 .bframe{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--ink);}
-.r5 .bframe .bbar{height:24px;background:#1A1A18;display:flex;align-items:center;gap:5px;padding:0 11px;flex:none;}
+.r5 .bframe{position:absolute;inset:0;background:var(--ink);}
+.r5 .bframe img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
+.r5 .bframe .bbar{position:absolute;top:0;left:0;right:0;z-index:2;height:24px;background:#1A1A18;display:flex;align-items:center;gap:5px;padding:0 11px;}
 .r5 .bframe .bbar i{width:7px;height:7px;border-radius:50%;background:#3A3A36;}
-.r5 .bframe img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
 
 /* ---- 1: Bento — breadth grid ---- */
 .r5 .herobento{background:var(--paper);color:var(--ink);}
