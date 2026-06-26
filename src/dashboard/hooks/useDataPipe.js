@@ -46,6 +46,22 @@ function inboxNeedsResponse(msg) {
   if (/\?\s*$/.test(trimmed)) return true
   return ASK_RE.test(trimmed)
 }
+
+// A catch-up summary should read as WHAT the agent needs from Patrik, not a generic
+// status line. Strip markdown, then prefer the actual question (the last sentence
+// ending in '?'); fall back to the opening sentence. Capped so the card stays scannable.
+function summarizeAsk(text) {
+  const s = String(text || '')
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[#>*_`~]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const questions = s.match(/[^.?!]*\?/g)
+  if (questions && questions.length) return questions[questions.length - 1].trim().slice(0, 180)
+  return s.slice(0, 180)
+}
 import { AGENTS as GRID_AGENTS } from '../gridSpec'
 import { useSystemToast } from '../SystemToast'
 
@@ -505,7 +521,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
               seenRooms.add(k) // this room's newest unread is now decided (handled either way)
               // Only surface rooms where the agent is actually waiting on Patrik.
               if (!inboxNeedsResponse(msg)) continue
-              const preview = (msg.text || '').slice(0, 80) + ((msg.text || '').length > 80 ? '...' : '')
+              const preview = summarizeAsk(msg.text)
               unread.push({
                 agent: msg.agent,
                 project: msg.project || null,

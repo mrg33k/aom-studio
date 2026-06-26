@@ -301,6 +301,87 @@ function Cv6QuickThread({ target, messages, onReview }) {
   );
 }
 
+// Turn a catch-up card into the room handle useRoomThread + onOpenRoom expect.
+function cardToRoom(card) {
+  if (!card) return null;
+  if (card.missionSlug) return { id: String(card.missionSlug).split(':').pop(), name: card.subject || card.from || 'Room', missionSlug: card.missionSlug, projectSlug: card.project || '', isMission: true };
+  if (card.project) return { id: card.project, name: card.from || card.project, projectSlug: card.project, isProject: true };
+  if (card.agent) return { id: card.agent, name: card.from || card.agent };
+  return null;
+}
+
+// The conversation, rendered as grouped bubbles (shared look with the quick-reply thread
+// and the Chat tool). Non-portal so it can live inside the Catch Up modal.
+function InlineBubbleThread({ messages }) {
+  const groups = groupChatMessages(Array.isArray(messages) ? messages : []);
+  if (!groups.length) return <div style={{ color: 'var(--muted)', fontSize: 13, textAlign: 'center', padding: '28px 0' }}>No conversation yet.</div>;
+  return (
+    <div className="pconv">
+      {groups.map((g, gi) => {
+        const head = g.items[0];
+        const lastTime = g.items[g.items.length - 1].time;
+        if (g.isUser) {
+          return (
+            <div className="me" key={gi}>
+              {g.items.map((m, i) => (m.text ? <div className="pb-me" key={i}>{m.text}</div> : null))}
+              {lastTime ? <div className="ts">{lastTime}</div> : null}
+            </div>
+          );
+        }
+        return (
+          <div className="grp" key={gi}>
+            <span className={`av is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials || '·'}</span>
+            <div className="stack">
+              {head.agentName ? <div className="gname">{head.agentName}</div> : null}
+              {g.items.map((m, i) => (m.text ? <div className="pb" key={i}><ChatMessageRenderer content={m.text} /></div> : null))}
+              {lastTime ? <div className="ts">{lastTime}</div> : null}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Catch Up modal (Patrik 2026-06-26): clicking Catch Up opens the actual conversation
+// for the item that needs him, with a reply box, so he can read the context and respond
+// in place. Replying posts into the room; once he replies the agent is no longer waiting
+// on him, so the card clears itself on the next poll. Prev/next walk the needs-you deck.
+function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGoToRoom }) {
+  const room = useMemo(() => cardToRoom(card), [card?.id]);
+  const { messages, send } = useRoomThread(worldId, room);
+  const [draft, setDraft] = useState('');
+  const scrollRef = useRef(null);
+  useEffect(() => { const el = scrollRef.current; if (el) el.scrollTop = el.scrollHeight; }, [messages?.length]);
+  const submit = () => { const t = draft.trim(); if (!t || !room) return; send(t); setDraft(''); };
+  const caughtUp = !room || !card?.id;
+  return (
+    <div onClick={onClose} style={{ position: 'absolute', inset: 0, zIndex: 40, background: 'rgba(4,6,9,.55)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: 'min(720px,94%)', height: 'min(86%,720px)', background: 'var(--ground)', border: '1px solid var(--hair)', borderRadius: 16, boxShadow: 'var(--shadow-window)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '15px 18px', borderBottom: '1px solid var(--divider)' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{caughtUp ? 'All caught up' : (card.from || 'Needs you')}</div>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{caughtUp ? 'Nothing needs you right now.' : `${card.subject || ''}${total > 1 ? `  ·  ${idx + 1} of ${total}` : ''}`}</div>
+          </div>
+          {!caughtUp && onGoToRoom ? <button onClick={onGoToRoom} className="filesbtn" style={{ cursor: 'pointer' }}>Go to room</button> : null}
+          <div className="ib" onClick={onClose} style={{ cursor: 'pointer', width: 34, height: 34 }} title="Close"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg></div>
+        </div>
+        <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '6px 18px 14px' }}>
+          {caughtUp ? <div style={{ color: 'var(--muted)', fontSize: 13.5, textAlign: 'center', padding: '40px 0' }}>You're all caught up. New things that need you will show here.</div> : <InlineBubbleThread messages={messages} />}
+        </div>
+        {!caughtUp ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)' }}>
+            {total > 1 ? <div className="ib" onClick={onPrev} style={{ cursor: 'pointer', width: 38, height: 38 }} title="Previous"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M15 18l-6-6 6-6" /></svg></div> : null}
+            <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }} placeholder={`Reply to ${card.from || 'this room'}…`} style={{ flex: 1, minWidth: 0, height: 42, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 14px', color: 'var(--fg)', fontSize: 14, outline: 'none' }} />
+            <button onClick={submit} title="Send" style={{ width: 42, height: 42, borderRadius: 12, border: 'none', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: 'pointer' }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg></button>
+            {total > 1 ? <div className="ib" onClick={onNext} style={{ cursor: 'pointer', width: 38, height: 38 }} title="Next"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M9 18l6-6-6-6" /></svg></div> : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
@@ -375,13 +456,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     return () => { alive = false; };
   }, [curProject, roomSummaries]);
 
-  // Inject the real summary onto the current text card (never override a file card).
-  const liveCatchUpView = useMemo(() => {
-    const real = roomSummaries[curProject];
-    const cur = liveCatchUp.current;
-    if (!real || !cur || cur.contentState === 'file') return liveCatchUp;
-    return { ...liveCatchUp, current: { ...cur, summary: real } };
-  }, [liveCatchUp, roomSummaries, curProject]);
+  // The card summary is the agent's actual ask (summarizeAsk in useDataPipe), which is
+  // what tells Patrik why he's the bottleneck. We deliberately do NOT override it with the
+  // generic project status here (that read as "stupid" — it hid the real question).
+  const liveCatchUpView = liveCatchUp;
 
   // Inline "Draft reply" on a catch-up card (Patrik): the reply composer replaces the action
   // buttons in place, with a Send button that posts the reply into that room (the same
@@ -977,13 +1055,18 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   ) : null;
 
   if (catchUpOpen) {
-    // Real inbox cards minus anything cleared on this device; empty shows an honest
-    // "all caught up" card, never fabricated activity (liveCatchUp shapes it).
-    const catchUpData = { catchUp: catchUpRender };
+    // Clicking Catch Up opens the actual conversation for the item that needs Patrik
+    // (his ask 2026-06-26), not a card deck. Prev/next walk the needs-you items; the
+    // dimmed Home ground sits behind so it reads as a focused modal.
+    const cur = liveCatchUpView.current;
+    const total = liveCatchUpView.all?.length || 0;
+    const goToRoom = () => { const r = cardToRoom(cur); if (r) onOpenRoom?.(r, worldId); setCatchUpOpen(false); };
     return (
       <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        <TemplateScreen html={catchUpHtml} data={catchUpData} actions={actions} state="ready"
-          aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'var(--ground)' }} />
+        <CatchUpModal card={cur} worldId={worldId} idx={catchUpIndex} total={total}
+          onPrev={actions.prevCatchUp} onNext={actions.nextCatchUp} onClose={() => setCatchUpOpen(false)}
+          onGoToRoom={goToRoom} />
         {trackerOverlay}
       </div>
     );
