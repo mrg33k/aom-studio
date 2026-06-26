@@ -350,46 +350,32 @@ function DesktopDayCard({ group, onSend }) {
 
 // Plain message list (desktop) for rooms without a live structured thread.
 // Live "agent is working" turn shown the instant you send, until the reply lands.
-// Renders the real step heartbeats (looking up / writing…) when the bridge emits them,
-// and a generic working pulse before the first step arrives — so it never feels dead.
+// ONE compact progress strip that CYCLES through the agent's real steps (the current
+// action's text updates as work moves), not a pile of step rows and not a flood of
+// chat messages. Before the first real step arrives it shows a generic working line,
+// so it never looks dead.
 function WorkingTurn({ room, steps }) {
-  // De-dupe to the latest status per step index, drop the internal "settled" marker.
-  const byIdx = new Map();
-  for (const s of (steps || [])) {
-    if (s.step_index === 9999 || s.text === 'settled') continue;
-    byIdx.set(s.step_index, s);
-  }
-  const list = Array.from(byIdx.values()).sort((a, b) => (a.step_index || 0) - (b.step_index || 0));
+  const real = (steps || []).filter((s) => s.step_index !== 9999 && s.text !== 'settled');
+  const tms = (s) => (s.timestamp ? new Date(s.timestamp).getTime() : 0) || 0;
+  // The current action = the most recent step event (the one cycling on screen now).
+  const current = real.length ? real.slice().sort((a, b) => tms(b) - tms(a))[0] : null;
+  // How many distinct actions have completed (drives the progress fill's feel).
+  const doneIdx = new Set(real.filter((s) => s.status === 'done').map((s) => s.step_index));
+  const seenIdx = new Set(real.map((s) => s.step_index));
+  const total = Math.max(seenIdx.size, 1);
+  const pct = current ? Math.round((doneIdx.size / total) * 100) : 0;
+  const label = current ? current.text : `${room?.name || 'Agent'} is working…`;
   return (
     <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'flex-start' }}>
       <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{room?.initials || '·'}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        {list.length ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {list.map((s, i) => {
-              const done = s.status === 'done';
-              return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                  {done ? (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="m5 13 4 4L19 7"/></svg>
-                  ) : (
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', animation: 'spin 1.1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>
-                  )}
-                  <span style={{ fontSize: 13, color: done ? 'var(--muted)' : 'var(--fg)' }}>{s.text}</span>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <span style={{ display: 'inline-flex', gap: 3 }}>
-              <span className="cv6dot" style={{ animationDelay: '0ms' }} />
-              <span className="cv6dot" style={{ animationDelay: '160ms' }} />
-              <span className="cv6dot" style={{ animationDelay: '320ms' }} />
-            </span>
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>{room?.name || 'Agent'} is working…</span>
-          </div>
-        )}
+      <div style={{ flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 12, padding: '11px 13px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 9 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', animation: 'spin 1.1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>
+          {/* key on the text so each new action animates in as it cycles */}
+          <span key={label} style={{ fontSize: 13, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', animation: 'cv6stepin .25s ease-out' }}>{label}</span>
+          {seenIdx.size > 0 ? <span className="mono" style={{ marginLeft: 'auto', flex: 'none', fontSize: 10.5, color: 'var(--faint)' }}>{doneIdx.size}/{total}</span> : null}
+        </div>
+        <div className="cv6progtrack"><div className="cv6progfill" style={current ? { width: `${Math.max(pct, 8)}%` } : undefined} /></div>
       </div>
     </div>
   );

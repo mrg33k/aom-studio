@@ -252,6 +252,15 @@
 /* "agent is working" typing dots (live feedback after you send) */
 @keyframes cv6dotpulse { 0%,60%,100%{opacity:.25;transform:translateY(0);} 30%{opacity:1;transform:translateY(-2px);} }
 [data-cv6] .cv6dot { width:6px; height:6px; border-radius:50%; background:var(--accent); display:inline-block; animation:cv6dotpulse 1.2s ease-in-out infinite; }
+
+/* Live work progress strip — ONE bar that cycles through the agent's real steps.
+   No inline width => indeterminate sweep (working, no step yet); inline width =>
+   determinate fill that advances as steps complete. */
+[data-cv6] .cv6progtrack { height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden; position:relative; }
+[data-cv6] .cv6progfill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--accent),#6366F1); transition:width .4s ease; }
+[data-cv6] .cv6progfill:not([style]) { width:42%; animation:cv6progslide 1.3s ease-in-out infinite; }
+@keyframes cv6progslide { 0%{margin-left:-42%;} 100%{margin-left:100%;} }
+@keyframes cv6stepin { from{opacity:0;transform:translateY(3px);} to{opacity:1;transform:translateY(0);} }
 [data-cv6] .sk-row { display:flex; align-items:center; gap:12px; padding:13px 16px; border-bottom:1px solid var(--divider); }
 
 /* shared activity-dock badge + icon tint (is-:job.kind) — used by Command */
