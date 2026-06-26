@@ -713,13 +713,18 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // guard above keeps the arrows live while the box is empty, so you can keep moving.
   useEffect(() => {
     if (!isDesktop || !knavOpenedRoom || knavRoomOpenState !== 'col3') return undefined;
-    const t = setTimeout(() => {
-      // The composer has a hidden file input first; target the visible text field.
+    // The composer portal (and its text field) mounts a beat after the room opens, so
+    // poll briefly until it appears, then focus it. Skip the hidden file input.
+    let tries = 0;
+    const tick = () => {
+      tries += 1;
       const host = document.querySelector('[data-screen="home-desktop"] [data-cv6-composer]');
       const el = host && (host.querySelector('textarea') || host.querySelector('input[type="text"]') || host.querySelector('input:not([type="file"]):not([type="hidden"])'));
-      if (el && el.focus) { try { el.focus(); } catch (_) { /* noop */ } }
-    }, 90);
-    return () => clearTimeout(t);
+      if (el && el.focus) { try { el.focus(); } catch (_) { /* noop */ } return; }
+      if (tries < 20) { timer = setTimeout(tick, 70); }
+    };
+    let timer = setTimeout(tick, 70);
+    return () => clearTimeout(timer);
   }, [isDesktop, knavOpenedRoom, knavRoomOpenState]);
 
   // Keep the keyboard-selected row visible: when selection moves (incl. into a freshly
