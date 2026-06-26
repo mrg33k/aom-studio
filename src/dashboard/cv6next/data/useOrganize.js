@@ -4,7 +4,7 @@
 // not just scaffold .md. The list is metadata-only; a file's content is fetched
 // lazily on open (cached) so a 7k-file world never ships its whole text at once.
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
 
 const TINTS = ['violet', 'accent', 'pink', 'success'];
@@ -55,12 +55,27 @@ function initialsOf(name) {
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+// File content is UNTRUSTED (any file in any project now renders here). A markdown
+// link must never become a javascript:/data: handler or inject an attribute. Validate
+// the protocol against an allowlist and escape quotes; reject anything else to plain text.
+function safeHref(escapedHref) {
+  // escapedHref already had & < > escaped by escapeHtml; undo &amp; for the protocol check.
+  const raw = String(escapedHref).replace(/&amp;/g, '&');
+  try {
+    const u = new URL(raw, 'https://aheadofmarket.com');
+    if (!['http:', 'https:', 'mailto:'].includes(u.protocol)) return null;
+  } catch { return null; }
+  return String(escapedHref).replace(/"/g, '&quot;');
+}
 function inlineMd(s) {
   return escapeHtml(s)
     .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*]+?)\*(?!\*)/g, '$1<em>$2</em>')
     .replace(/`([^`]+?)`/g, '<code style="font-family:var(--font-mono);font-size:.92em;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:5px;">$1</code>')
-    .replace(/\[([^\]]+?)\]\(([^)]+?)\)/g, '<a href="$2">$1</a>');
+    .replace(/\[([^\]]+?)\]\(([^)]+?)\)/g, (m, text, href) => {
+      const safe = safeHref(href);
+      return safe ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${text}</a>` : text;
+    });
 }
 
 // Render the WHOLE file as readable HTML so the reader actually lets you read it.
@@ -115,6 +130,7 @@ export function useOrganize(worldId = 'aom') {
   const [filter, setFilter] = useState('all');     // all | docs | images
   const [openedId, setOpenedId] = useState(null);  // which file is open (preview/reader)
   const [contentCache, setContentCache] = useState({}); // id -> { title, bodyHtml, editor, editorInitials }
+  const inFlight = useRef(new Set()); // file ids whose content fetch is in progress (dedup)
 
   const load = useCallback(async () => {
     // The disk mirror is the source of truth: every file in every project,
@@ -152,18 +168,11 @@ export function useOrganize(worldId = 'aom') {
     return () => clearInterval(t);
   }, [load]);
 
-  // Lazy content fetch for one file (cached). Called on open.
+  // Lazy content fetch for one file (cached). Called on open. Deduped via a ref
+  // set so a double-tap (or auto-open + tap) never fires two requests.
   const fetchContent = useCallback(async (id) => {
-    if (!id) return;
-    setContentCache((cache) => {
-      if (cache[id]) return cache; // already cached
-      // fire the network fetch outside the setter; mark nothing here
-      return cache;
-    });
-    // Avoid a duplicate fetch: read latest cache via functional check
-    let already = false;
-    setContentCache((cache) => { already = !!cache[id]; return cache; });
-    if (already) return;
+    if (!id || contentCache[id] || inFlight.current.has(id)) return;
+    inFlight.current.add(id);
     try {
       const res = await authFetch(
         `/api/dashboard/files?type=mirror&client=${encodeURIComponent(worldId)}&id=${encodeURIComponent(id)}&content=1`,
@@ -185,8 +194,10 @@ export function useOrganize(worldId = 'aom') {
       }));
     } catch (err) {
       console.error('Failed to load file content:', err);
+    } finally {
+      inFlight.current.delete(id);
     }
-  }, [worldId]);
+  }, [worldId, contentCache]);
 
   const openFile = useCallback((id) => { setOpenedId(id); fetchContent(id); }, [fetchContent]);
 
@@ -327,7 +338,7 @@ export function useOrganize(worldId = 'aom') {
       openFile(first);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProjectId, fileList.length]);
+  }, [activeProjectId, fileList.length, openedId]);
 
   let state = 'ready';
   if (status === 'loading' && !files) state = 'loading';
