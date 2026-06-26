@@ -264,6 +264,12 @@ export default async function handler(req, res) {
     if (proj.missions.has(shortSlug) || proj.missions.has(fullSlug)) return true
     for (const x of proj.missions.values()) {
       if (x.raw_slug && x.raw_slug === shortSlug) return true
+      // corner:corner-ui-cv6 restructure (2026-06-25) — a mission moved into a
+      // nested home gets a compound raw_slug (corner-ui-cv6-chat-composer) while
+      // its original mission_created event / agent_status row still keys by the
+      // leaf folder name ("composer"). Without this the event re-adds the mission
+      // as a FLAT root, duplicating the nested registry copy. Dedupe by folder.
+      if (x.folder_name && x.folder_name === shortSlug) return true
     }
     return false
   }
