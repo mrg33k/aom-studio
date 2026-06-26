@@ -7,9 +7,11 @@
 // agents, the real needs-you Catch Up. Support inbox reachable from the nav.
 
 import { useMemo, useState, useEffect, useCallback, useRef, Component } from 'react';
+import { createPortal } from 'react-dom';
 import './cv6.css';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
+import MessageAttachments from './MessageAttachments.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
@@ -230,6 +232,34 @@ async function postTrackerApi(body) {
     });
     return r && r.ok ? await r.json() : null;
   } catch { return null; }
+}
+
+// Cv6QuickThread — the Home col3 quick-reply message list, rendered as React (portaled
+// into the template's empty .convo-thread host) so attachments draw as real cards
+// (image thumbs, galleries, file cards, collections) with Review affordances — same
+// MessageAttachments the main Chat tool uses — instead of plain "Attached file:" text.
+function Cv6QuickThread({ target, messages, onReview }) {
+  if (!target) return null;
+  const list = Array.isArray(messages) ? messages : [];
+  return createPortal(
+    list.length === 0 ? (
+      <div className="convo-empty" style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 13, maxWidth: 240, lineHeight: 1.5 }}>
+        No messages in this room yet. Send the first one below.
+      </div>
+    ) : (
+      list.map((m, i) => (
+        <div className="convo-msg" key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <span className={`av is-${m.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{m.agentInitials || '·'}</span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 2 }}>{m.agentName}<span style={{ color: 'var(--faint)', marginLeft: 6 }}>{m.time}</span></div>
+            {m.text ? <div style={{ fontSize: 14, color: 'var(--fg)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.text}</div> : null}
+            {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
+          </div>
+        </div>
+      ))
+    ),
+    target,
+  );
 }
 
 function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
@@ -500,6 +530,21 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     const pick = () => {
       const el = document.querySelector('[data-screen="home-desktop"] [data-cv6-composer]');
       setComposerHost((prev) => (prev === el ? prev : (el || null)));
+    };
+    pick();
+    const obs = new MutationObserver(pick);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, [isDesktop]);
+  // col3 quick-reply thread host: the message list is React (Cv6QuickThread) portaled into
+  // the template's emptied .convo-thread, so attachments render as cards (same pattern as the
+  // composer host). Tracked across template re-binds with a MutationObserver.
+  const [threadHost, setThreadHost] = useState(null);
+  useEffect(() => {
+    if (!isDesktop) { setThreadHost(null); return undefined; }
+    const pick = () => {
+      const el = document.querySelector('[data-screen="convo"] .convo-thread');
+      setThreadHost((prev) => (prev === el ? prev : (el || null)));
     };
     pick();
     const obs = new MutationObserver(pick);
@@ -946,6 +991,11 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
         aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
+      <Cv6QuickThread
+        target={knavOpenedRoom ? threadHost : null}
+        messages={(quickThread && quickThread.messages ? quickThread.messages : []).slice(-40)}
+        onReview={() => onNav?.('review')}
+      />
       <Cv6FullComposer
         target={knavOpenedRoom ? composerHost : null}
         room={knavOpenedRoom}

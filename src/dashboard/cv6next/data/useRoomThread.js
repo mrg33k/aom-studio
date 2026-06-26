@@ -107,34 +107,49 @@ export function useRoomThread(worldId, room) {
           // A file an agent made shows in the thread (rule: files live in the room).
           // It arrives either as a real attachment (attachment_url) or as an
           // "Attached file: <name>" note. Either way we render it as a file card.
-          const fileMatch = /^\s*attached file:\s*(.+?)\s*$/i.exec(m.text || '');
-          const fileName = m.attachment_name || (fileMatch ? fileMatch[1] : '');
-          const isFile = !!m.attachment_url || !!fileMatch;
+          // Most Corner-room file posts are the TEXT shape, not structured columns:
+          //   single → "Attached file: NAME\nURL"
+          //   multi  → "Attached N files: NAME1, NAME2\nURL1\nURL2"
+          // (canonical per bridge.py / supabase-listener.py). Parse names + URLs from
+          // the text so they render as cards instead of plain "Attached file:" text.
+          const rawText = m.text || '';
+          const lines = rawText.split('\n');
+          const single = /^\s*attached file:\s*(.+?)\s*$/i.exec(lines[0] || '');
+          const multi = /^\s*attached\s+\d+\s+files?:\s*(.+?)\s*$/i.exec(lines[0] || '');
+          const textUrls = lines.slice(1).map((s) => s.trim()).filter(Boolean);
+          const isFile = !!m.attachment_url || !!single || !!multi;
+          const fileName = m.attachment_name || (single ? single[1] : '');
           // Live Goal Thread: a structured reply carries its blocks on metadata.blocks.
           // We attach them to THIS message so the thread renders inline as that agent
           // turn (history stays above it), instead of taking over the whole screen.
           const msgBlocks = Array.isArray(m.metadata?.blocks) && m.metadata.blocks.length ? m.metadata.blocks : null;
-          // Attachment handling: support both single attachment (attachment_url) and
-          // multiple attachments (metadata.attachments array). Group attachments for
-          // rendering in MessageAttachments (galleries, file collections, etc.).
+          // Build the grouped attachments array MessageAttachments renders from. Priority:
+          // structured metadata.attachments[] → single attachment_url column → parsed text.
           let attachments = [];
+          let displayText = rawText;
           if (Array.isArray(m.metadata?.attachments) && m.metadata.attachments.length) {
             attachments = m.metadata.attachments;
           } else if (m.attachment_url) {
-            // Fallback: single attachment fields → single-element array
             attachments = [{
               url: m.attachment_url,
               name: m.attachment_name || 'File',
               mime: m.file_mime_type || 'application/octet-stream',
               size: m.file_size || 0,
             }];
+          } else if (multi) {
+            const names = multi[1].split(',').map((s) => s.trim()).filter(Boolean);
+            attachments = names.map((n, i) => ({ name: n, url: textUrls[i] || textUrls[0] || '', mime: '', size: 0 }));
+            displayText = ''; // pure attachment announcement → show cards, not the note
+          } else if (single) {
+            attachments = [{ name: single[1], url: textUrls[0] || '', mime: '', size: 0 }];
+            displayText = '';
           }
           return {
             agentInitials: initials(name),
             agentName: name,
             agentTint: isUser ? 'accent' : tintFor(m.agent || room.name),
             isUser,
-            text: m.text || '',
+            text: displayText,
             time: hhmm(m.timestamp),
             ts: m.timestamp || null,
             isFile,
