@@ -713,18 +713,23 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // guard above keeps the arrows live while the box is empty, so you can keep moving.
   useEffect(() => {
     if (!isDesktop || !knavOpenedRoom || knavRoomOpenState !== 'col3') return undefined;
-    // The composer portal (and its text field) mounts a beat after the room opens, so
-    // poll briefly until it appears, then focus it. Skip the hidden file input.
-    let tries = 0;
+    // The composer portal mounts a beat after the room opens, and a template re-bind can
+    // briefly steal focus back to <body>. So re-apply focus for a short window WHENEVER
+    // nothing is focused, and stop the moment the composer holds it or the user has
+    // clicked into something else — never fight the user for the cursor.
+    let cancelled = false; let tries = 0;
     const tick = () => {
+      if (cancelled) return;
       tries += 1;
       const host = document.querySelector('[data-screen="home-desktop"] [data-cv6-composer]');
       const el = host && (host.querySelector('textarea') || host.querySelector('input[type="text"]') || host.querySelector('input:not([type="file"]):not([type="hidden"])'));
-      if (el && el.focus) { try { el.focus(); } catch (_) { /* noop */ } return; }
-      if (tries < 20) { timer = setTimeout(tick, 70); }
+      const active = document.activeElement;
+      const userElsewhere = active && active !== document.body && !(active.closest && active.closest('[data-cv6-composer]')) && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+      if (el && active === document.body) { try { el.focus(); } catch (_) { /* noop */ } }
+      if (tries < 24 && !userElsewhere) timer = setTimeout(tick, 90);
     };
-    let timer = setTimeout(tick, 70);
-    return () => clearTimeout(timer);
+    let timer = setTimeout(tick, 60);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [isDesktop, knavOpenedRoom, knavRoomOpenState]);
 
   // Keep the keyboard-selected row visible: when selection moves (incl. into a freshly
