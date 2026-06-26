@@ -44,6 +44,9 @@ export function useRoomThread(worldId, room) {
   const [lastSentId, setLastSentId] = useState('');
   const lastSentTsRef = useRef(0);
   const [liveSteps, setLiveSteps] = useState([]);
+  // On room open we baseline to the newest existing message so a thread that simply
+  // ends on your earlier message doesn't show "working" — only a genuinely NEW send does.
+  const baselineRef = useRef(false);
   // Content signature of the last thread we rendered. The poll runs every 3s and rebuilds
   // an identical array when nothing changed; pushing that new ref into state forces every
   // consumer (and the Home portal) to re-render and the scroll to jump. We only commit a
@@ -54,7 +57,7 @@ export function useRoomThread(worldId, room) {
   useEffect(() => { setPending([]); }, [room?.id]);
   useEffect(() => { sigRef.current = ''; }, [room?.id]);
   // Switching rooms drops any in-flight "working" state too.
-  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); lastSentTsRef.current = 0; }, [room?.id]);
+  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); lastSentTsRef.current = 0; baselineRef.current = false; }, [room?.id]);
 
   // Post a real user message into this room (composer + choice/question taps).
   // Agent rooms POST to the agent slug; project rooms to the project slug. After
@@ -207,6 +210,7 @@ export function useRoomThread(worldId, room) {
             displayText = '';
           }
           return {
+            id: m.id || '',
             agentInitials: initials(name),
             agentName: name,
             agentTint: isUser ? 'accent' : tintFor(m.agent || room.name),
@@ -230,11 +234,25 @@ export function useRoomThread(worldId, room) {
           sigRef.current = sig;
           setMessages(msgs);
         }
-        // Settle the "working" state once the agent's reply has landed: any non-user
-        // message newer than the moment we sent. (Safety timeout also clears it.)
-        if (lastSentTsRef.current) {
-          const replied = msgs.some((m) => !m.isUser && m.ts && new Date(m.ts).getTime() > lastSentTsRef.current);
-          if (replied) setAwaiting(false);
+        // Drive the live "working" feedback from the thread itself, so it fires no matter
+        // how the message was sent (rich composer, choice tap, etc.) — not only via send().
+        const tms = (m) => (m.ts ? new Date(m.ts).getTime() : 0) || 0;
+        const newestUser = msgs.filter((m) => m.isUser && m.id).sort((a, b) => tms(b) - tms(a))[0];
+        const newestReply = msgs.filter((m) => !m.isUser).sort((a, b) => tms(b) - tms(a))[0];
+        if (!baselineRef.current) {
+          // First load for this room: remember where the thread is, show nothing.
+          baselineRef.current = true;
+          const newestAny = msgs.map(tms).reduce((a, b) => Math.max(a, b), 0);
+          lastSentTsRef.current = newestAny;
+        } else if (newestUser && tms(newestUser) > lastSentTsRef.current) {
+          // A newer user message than anything we've tracked → the agent is now on it.
+          lastSentTsRef.current = tms(newestUser);
+          setLastSentId(String(newestUser.id));
+          setAwaiting(true);
+          setLiveSteps([]);
+        } else if (newestReply && tms(newestReply) >= lastSentTsRef.current && lastSentTsRef.current) {
+          // A reply at/after our last user message → settle.
+          setAwaiting(false);
         }
         setStatus(msgs.length ? 'ready' : 'empty');
       })
