@@ -63,7 +63,13 @@ export function useRoomThread(worldId, room) {
 
   // Clear the outbox when you switch rooms (those messages belong to the old thread).
   useEffect(() => { setPending([]); }, [room?.id]);
-  useEffect(() => { sigRef.current = ''; }, [room?.id]);
+  // Switching rooms must drop the previous thread immediately. The signature guard
+  // below skips re-committing an unchanged thread, but a NEW empty room produces an
+  // empty signature that matches the reset sentinel — so without clearing here, the
+  // old room's messages would linger and an empty room would show the last room's
+  // content. Clear the rendered thread on switch and use a null sentinel so the very
+  // first load (even an empty one) always commits.
+  useEffect(() => { sigRef.current = null; setMessages([]); setBlocks(null); }, [room?.id]);
   // Switching rooms drops any in-flight "working" state too.
   useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); lastSentTsRef.current = 0; baselineRef.current = false; }, [room?.id]);
 
