@@ -972,3 +972,24 @@
 [data-cv6][data-screen="home-desktop"] .composer[data-cv6-composer] button[title="End voice"] { color:#fff !important; }
 /* Breathing room: the newest message was crammed against the composer. */
 [data-cv6][data-screen="home-desktop"] .convo-thread { padding-bottom:26px !important; }
+
+/* ── Chat bubbles (ported verbatim from the CV6 design system: ui_kits/chat/
+   plain-conversation.html). Agent text sits in a surface bubble on the left,
+   your text in an accent bubble on the right; consecutive messages group under
+   one avatar + name with a single timestamp. Used by the Home quick-reply thread
+   (Cv6QuickThread) and the Chat tool (PlainThread / MsgRow). Was: full-width blobs. */
+[data-cv6] .pconv { display:flex; flex-direction:column; gap:3px; }
+[data-cv6] .grp { display:flex; gap:10px; align-items:flex-start; margin-top:13px; }
+[data-cv6] .grp .gav { width:30px; height:30px; border-radius:9px; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; color:#fff; }
+[data-cv6] .grp .stack { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1; }
+[data-cv6] .pb { background:var(--surface); border:1px solid var(--hair); border-radius:14px; padding:9px 13px; font-size:13.5px; line-height:1.5; color:var(--fg); max-width:84%; align-self:flex-start; white-space:pre-wrap; word-break:break-word; }
+[data-cv6] .grp .stack .pb:first-of-type { border-top-left-radius:5px; }
+[data-cv6] .me { display:flex; flex-direction:column; gap:4px; align-items:flex-end; margin-top:13px; }
+[data-cv6] .pb-me { background:var(--accent); color:#fff; border-radius:14px; padding:9px 13px; font-size:13.5px; line-height:1.5; max-width:84%; white-space:pre-wrap; word-break:break-word; }
+[data-cv6] .me .pb-me:first-of-type { border-top-right-radius:5px; }
+[data-cv6] .ts { font-size:10.5px; color:var(--faint); font-family:var(--font-mono); margin-top:2px; }
+[data-cv6] .gname { font-size:12.5px; font-weight:600; color:var(--fg); margin-bottom:2px; }
+
+/* The Corner wordmark ships as a white SVG so it reads on the dark + glass themes.
+   On the light theme it would disappear against the pale header, so flip it to ink. */
+[data-app-theme="light"] img[src*="corner-logo-white"] { filter: invert(1); }

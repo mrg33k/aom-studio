@@ -297,34 +297,77 @@ function groupByDayD(messages) {
   return groups;
 }
 
-// One desktop message row (shared by the open latest day and expanded older days).
-function MsgRow({ m, onSend }) {
-  const handleReview = (attachment) => {
-    // Wire to Review tool: emit an action that the parent can route to Review
-    if (onSend) {
-      onSend({ type: 'review', attachment });
-    }
-  };
+// Group consecutive messages from the same sender (one avatar + name + timestamp,
+// N bubbles) per the CV6 design system's plain-conversation kit.
+function groupChat(messages) {
+  const groups = [];
+  for (const m of messages || []) {
+    const key = m.isUser ? '__you' : (m.agentName || 'agent');
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(m);
+    else groups.push({ key, isUser: !!m.isUser, items: [m] });
+  }
+  return groups;
+}
 
+// The rich content of one message (blocks + attachments), shown below its bubble.
+function MsgExtras({ m, onSend }) {
+  const handleReview = (attachment) => { if (onSend) onSend({ type: 'review', attachment }); };
   return (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-      <span className={`ava is-${m.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{m.agentInitials}</span>
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 2 }}>{m.agentName}<span style={{ marginLeft: 8, color: 'var(--faint)' }}>{m.time}</span></div>
-        <div style={{ fontSize: 14, color: 'var(--fg)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.text}</div>
-        {m.blocks?.length ? (
-          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {m.blocks.map((b, i) => (
-              <Result key={i} block={b} onAction={onSend} />
-            ))}
-          </div>
-        ) : null}
-        {m.attachments?.length ? (
-          <div style={{ marginTop: m.blocks?.length ? 12 : 8 }}>
-            <MessageAttachments attachments={m.attachments} onReview={handleReview} />
-          </div>
-        ) : null}
+    <>
+      {m.blocks?.length ? (
+        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+          {m.blocks.map((b, i) => <Result key={i} block={b} onAction={onSend} />)}
+        </div>
+      ) : null}
+      {m.attachments?.length ? (
+        <div style={{ marginTop: 8, width: '100%' }}>
+          <MessageAttachments attachments={m.attachments} onReview={handleReview} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+// One grouped run of messages, rendered as bubbles (agent left / you right).
+function BubbleGroup({ group, onSend }) {
+  const head = group.items[0];
+  const lastTime = group.items[group.items.length - 1].time;
+  if (group.isUser) {
+    return (
+      <div className="me">
+        {group.items.map((m, i) => (
+          <span key={i} style={{ display: 'contents' }}>
+            {m.text ? <div className="pb-me">{m.text}</div> : null}
+            <MsgExtras m={m} onSend={onSend} />
+          </span>
+        ))}
+        {lastTime ? <div className="ts">{lastTime}</div> : null}
       </div>
+    );
+  }
+  return (
+    <div className="grp">
+      <span className={`ava is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials}</span>
+      <div className="stack">
+        {head.agentName ? <div className="gname">{head.agentName}</div> : null}
+        {group.items.map((m, i) => (
+          <span key={i} style={{ display: 'contents' }}>
+            {m.text ? <div className="pb">{m.text}</div> : null}
+            <MsgExtras m={m} onSend={onSend} />
+          </span>
+        ))}
+        {lastTime ? <div className="ts">{lastTime}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+// A run of messages rendered as grouped bubbles.
+function BubbleThread({ messages, onSend }) {
+  return (
+    <div className="pconv">
+      {groupChat(messages).map((g, i) => <BubbleGroup key={i} group={g} onSend={onSend} />)}
     </div>
   );
 }
@@ -340,8 +383,8 @@ function DesktopDayCard({ group, onSend }) {
         <svg className="gc-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
       </div>
       <div className="gc-body">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 8 }}>
-          {group.items.map((m, i) => <MsgRow key={i} m={m} onSend={onSend} />)}
+        <div style={{ paddingTop: 8 }}>
+          <BubbleThread messages={group.items} onSend={onSend} />
         </div>
       </div>
     </div>
@@ -358,12 +401,10 @@ function WorkingTurn({ room, steps }) {
   const real = (steps || []).filter((s) => s.step_index !== 9999 && s.text !== 'settled');
   const tms = (s) => (s.timestamp ? new Date(s.timestamp).getTime() : 0) || 0;
   // The current action = the most recent step event (the one cycling on screen now).
+  // Each emitted step is a COMPLETED tool action (a stream of unknown length), so the
+  // bar stays an indeterminate sweep while working and the label cycles to the latest.
   const current = real.length ? real.slice().sort((a, b) => tms(b) - tms(a))[0] : null;
-  // How many distinct actions have completed (drives the progress fill's feel).
-  const doneIdx = new Set(real.filter((s) => s.status === 'done').map((s) => s.step_index));
-  const seenIdx = new Set(real.map((s) => s.step_index));
-  const total = Math.max(seenIdx.size, 1);
-  const pct = current ? Math.round((doneIdx.size / total) * 100) : 0;
+  const count = new Set(real.map((s) => s.step_index)).size;
   const label = current ? current.text : `${room?.name || 'Agent'} is working…`;
   return (
     <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'flex-start' }}>
@@ -373,9 +414,9 @@ function WorkingTurn({ room, steps }) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', animation: 'spin 1.1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>
           {/* key on the text so each new action animates in as it cycles */}
           <span key={label} style={{ fontSize: 13, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', animation: 'cv6stepin .25s ease-out' }}>{label}</span>
-          {seenIdx.size > 0 ? <span className="mono" style={{ marginLeft: 'auto', flex: 'none', fontSize: 10.5, color: 'var(--faint)' }}>{doneIdx.size}/{total}</span> : null}
+          {count > 0 ? <span className="mono" style={{ marginLeft: 'auto', flex: 'none', fontSize: 10.5, color: 'var(--faint)' }}>{count} {count === 1 ? 'step' : 'steps'}</span> : null}
         </div>
-        <div className="cv6progtrack"><div className="cv6progfill" style={current ? { width: `${Math.max(pct, 8)}%` } : undefined} /></div>
+        <div className="cv6progtrack"><div className="cv6progfill" /></div>
       </div>
     </div>
   );
@@ -392,7 +433,7 @@ function PlainThread({ messages, onSend }) {
       {latest && (
         <>
           <div className="daydiv"><span>{latest.label.toUpperCase()}</span></div>
-          {latest.items.map((m, i) => <MsgRow key={i} m={m} onSend={onSend} />)}
+          <BubbleThread messages={latest.items} onSend={onSend} />
         </>
       )}
     </div>

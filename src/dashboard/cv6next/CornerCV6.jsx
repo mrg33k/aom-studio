@@ -238,25 +238,63 @@ async function postTrackerApi(body) {
 // into the template's empty .convo-thread host) so attachments draw as real cards
 // (image thumbs, galleries, file cards, collections) with Review affordances — same
 // MessageAttachments the main Chat tool uses — instead of plain "Attached file:" text.
+// Group consecutive messages from the same sender into one visual group (one avatar
+// + name + timestamp, N bubbles), matching the design system's plain-conversation.
+function groupChatMessages(list) {
+  const groups = [];
+  for (const m of list) {
+    const key = m.isUser ? '__you' : (m.agentName || 'agent');
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(m);
+    else groups.push({ key, isUser: !!m.isUser, items: [m] });
+  }
+  return groups;
+}
+
 function Cv6QuickThread({ target, messages, onReview }) {
   if (!target) return null;
   const list = Array.isArray(messages) ? messages : [];
+  const groups = groupChatMessages(list);
   return createPortal(
     list.length === 0 ? (
       <div className="convo-empty" style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 13, maxWidth: 240, lineHeight: 1.5 }}>
         No messages in this room yet. Send the first one below.
       </div>
     ) : (
-      list.map((m, i) => (
-        <div className="convo-msg" key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-          <span className={`av is-${m.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{m.agentInitials || '·'}</span>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 2 }}>{m.agentName}<span style={{ color: 'var(--faint)', marginLeft: 6 }}>{m.time}</span></div>
-            {m.text ? <div style={{ fontSize: 14, color: 'var(--fg)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.text}</div> : null}
-            {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
-          </div>
-        </div>
-      ))
+      <div className="pconv">
+        {groups.map((g, gi) => {
+          const head = g.items[0];
+          const lastTime = g.items[g.items.length - 1].time;
+          if (g.isUser) {
+            return (
+              <div className="me" key={gi}>
+                {g.items.map((m, i) => (
+                  <span key={i} style={{ display: 'contents' }}>
+                    {m.text ? <div className="pb-me">{m.text}</div> : null}
+                    {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
+                  </span>
+                ))}
+                {lastTime ? <div className="ts">{lastTime}</div> : null}
+              </div>
+            );
+          }
+          return (
+            <div className="grp" key={gi}>
+              <span className={`av is-${head.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials || '·'}</span>
+              <div className="stack">
+                {head.agentName ? <div className="gname">{head.agentName}</div> : null}
+                {g.items.map((m, i) => (
+                  <span key={i} style={{ display: 'contents' }}>
+                    {m.text ? <div className="pb">{m.text}</div> : null}
+                    {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
+                  </span>
+                ))}
+                {lastTime ? <div className="ts">{lastTime}</div> : null}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     ),
     target,
   );
@@ -581,16 +619,23 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   useEffect(() => {
     if (!isDesktop) return; // keyboard nav desktop-only
     const handleKeyDown = (e) => {
-      // Guard: ignore if focused on input, textarea, contenteditable, or search palette
+      // Guard: ignore if focused on a text input, EXCEPT the quick-reply composer.
+      // We focus the composer on room open so you can type immediately; the arrows
+      // must still navigate from there. So: while the composer is EMPTY, let the arrow
+      // keys drive navigation; the moment you've typed something, the arrows go back to
+      // moving the cursor inside the box (we bail). Other inputs (search, ⌘K) always bail.
       const focused = document.activeElement;
-      const isTextInput = focused && (
+      const inComposer = !!(focused && focused.closest && focused.closest('[data-cv6-composer]'));
+      const composerHasText = inComposer && !!((focused.value || focused.textContent || '').trim());
+      const isOtherTextInput = focused && !inComposer && (
         focused.tagName === 'INPUT' ||
         focused.tagName === 'TEXTAREA' ||
         focused.contentEditable === 'true' ||
         focused.getAttribute('role') === 'searchbox' ||
         focused.closest('[role="combobox"]') // ⌘K palette
       );
-      if (isTextInput) return;
+      if (isOtherTextInput) return;
+      if (inComposer && composerHasText) return; // typed something → arrows move the cursor
 
       const nodes = navNodesRef.current || [];
       if (!nodes.length) return;
@@ -662,6 +707,18 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDesktop, knavSelectedIdx, knavRoomOpenState, knavOpenedKey, expandedHomeProjects, expandedHomeNodes, onOpenRoom, worldId]);
+
+  // When a room opens in the quick-reply column (keyboard → or a click), drop the
+  // cursor straight into its composer so you can type without clicking. The keydown
+  // guard above keeps the arrows live while the box is empty, so you can keep moving.
+  useEffect(() => {
+    if (!isDesktop || !knavOpenedRoom || knavRoomOpenState !== 'col3') return undefined;
+    const t = setTimeout(() => {
+      const el = document.querySelector('[data-screen="home-desktop"] [data-cv6-composer] textarea, [data-screen="home-desktop"] [data-cv6-composer] input');
+      if (el && el.focus) { try { el.focus(); } catch (_) { /* noop */ } }
+    }, 90);
+    return () => clearTimeout(t);
+  }, [isDesktop, knavOpenedRoom, knavRoomOpenState]);
 
   // Keep the keyboard-selected row visible: when selection moves (incl. into a freshly
   // expanded sub-folder), scroll it into the rooms list so arrow nav never walks off-screen.
