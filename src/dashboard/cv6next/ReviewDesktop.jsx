@@ -3,7 +3,7 @@
 // No design changes, only data wiring.
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useReview } from './data/useReview.js';
+import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { PinLayer } from './PinLayer.jsx';
@@ -30,28 +30,35 @@ function composeDesktopReview(raw) {
 }
 
 export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliverable, target }) {
-  const { state, data, actions } = useReview(worldId || 'aom');
+  // Files from a chat "Review all" ARE the queue — show exactly those, live.
+  const injected = useMemo(
+    () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project) : null),
+    [target],
+  );
+  const { state, data, actions } = useReview(worldId || 'aom', injected);
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin } = usePins(pickedId, worldId || 'aom');
 
   // Catch-up → Review carries a filename (+ its project); resolve it to a real queue
   // item (the queue carries real paths) so we open the exact deliverable the user came
-  // to review instead of whatever happens to be first.
+  // to review instead of whatever happens to be first. With injected files, just open
+  // the first one.
   const targetId = useMemo(() => {
+    if (injected && injected.length) return injected[0].id;
     if (!target?.name) return null;
     const base = (p) => String(p || '').split('/').pop();
     const items = data.queue.items;
     const m = items.find((i) => base(i.id) === target.name && (!target.project || i.whoRaw === target.project))
       || items.find((i) => base(i.id) === target.name);
     return m ? m.id : null;
-  }, [target, data.queue.items]);
+  }, [target, injected, data.queue.items]);
 
   // Auto-open on entry (mirrors Organize previewing the first file) so you land on
   // something to review instead of a blank viewer — preferring the catch-up target.
   const firstId = data.queue.items[0]?.id || null;
   const targetAppliedRef = useRef(false);
   useEffect(() => {
-    if (target?.name && !targetAppliedRef.current) {
+    if ((injected?.length || target?.name) && !targetAppliedRef.current) {
       if (!data.queue.items.length) return; // wait for the queue to land
       targetAppliedRef.current = true;
       const openId = targetId || firstId;

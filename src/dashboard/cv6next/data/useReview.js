@@ -132,7 +132,44 @@ function typeGlyph(type) {
   return glyphs[type] || glyphs.doc;
 }
 
-export function useReview(worldId = 'aom') {
+// Detect the viewer type key from a filename / mime, for files handed straight in
+// from a chat message (not the queue endpoint, which already typed them).
+function typeKeyOf(name, mime) {
+  const ext = String(name || '').toLowerCase().split('.').pop();
+  const m = String(mime || '').toLowerCase();
+  if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'].includes(ext)) return 'image';
+  if (m.startsWith('video/') || ['mp4', 'mov', 'webm', 'mkv'].includes(ext)) return 'video';
+  if (['pdf', 'docx', 'doc', 'pptx', 'ppt', 'xlsx'].includes(ext)) return 'doc';
+  if (['md', 'txt'].includes(ext)) return 'copy';
+  if (['js', 'jsx', 'ts', 'tsx', 'py', 'go', 'rs', 'java'].includes(ext)) return 'code';
+  return 'doc';
+}
+
+// Map chat attachments ({ url, name, mime }) to review queue items so the Review tool
+// can show EXACTLY the files a user tapped "Review"/"Review all" on, live from the
+// message — no dependency on the pre-built queue. `url` is the corner path the viewer
+// loads through project-file (same as queue item.id).
+export function reviewItemsFromFiles(files, project = '') {
+  return (files || [])
+    .map((f) => {
+      const path = String(f.url || f.path || f.attachmentUrl || '').replace(/^\/+/, '');
+      if (!path) return null;
+      const name = f.name || f.fileName || path.split('/').pop() || 'File';
+      const key = typeKeyOf(name, f.mime || f.fileMime);
+      return {
+        id: path, title: name,
+        who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),
+        type: key, typeLabel: typeLabel(key), typeGlyph: typeGlyph(key),
+        count: 0, status: 'ready', statusLabel: 'READY', time: '',
+        location: project || '', queueState: 'ready', file: typeLabel(key),
+        bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
+      };
+    })
+    .filter(Boolean);
+}
+
+export function useReview(worldId = 'aom', injected = null) {
+  const hasInjected = Array.isArray(injected) && injected.length > 0;
   const [queue, setQueue] = useState(null);
   const [openDelId, setOpenDelId] = useState(null);
   const [filter, setFilter] = useState('ready'); // ready | pipeline
@@ -187,10 +224,18 @@ export function useReview(worldId = 'aom') {
   }, [worldId, queue, openDelId]);
 
   useEffect(() => {
+    // Injected files (from a chat "Review all") ARE the queue — show exactly those,
+    // live from the message, and skip the endpoint entirely.
+    if (hasInjected) {
+      setQueue({ items: injected, readyCount: injected.length, pipelineCount: 0 });
+      setStatus('loaded');
+      return undefined;
+    }
     load();
     const t = setInterval(load, 30000);
     return () => clearInterval(t);
-  }, [load]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [load, hasInjected, injected]);
 
   // Fetch the opened deliverable's real content once, cache it by path.
   // Dedupe with a ref (NOT by reading `bodies` in deps): writing the loading

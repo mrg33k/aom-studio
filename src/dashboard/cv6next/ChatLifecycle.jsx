@@ -176,7 +176,7 @@ function FileGallery({ files, sender, onOpen, onReview }) {
           )}
           <div className="fc-foot">
             <span style={{ flex: 1, fontSize: 11.5, color: 'var(--muted)' }}>{overflow > 0 ? `+${overflow} more` : 'Tap any to preview'}</span>
-            <button className="fc-rev" onClick={onReview}>
+            <button className="fc-rev" onClick={() => onReview(files)}>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></svg>
               Review all
             </button>
@@ -380,7 +380,9 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
   const empty = status === 'empty' || !messages?.length;
   const [collection, setCollection] = useState(null); // { files, index } for the look-only viewer
   const openFile = useCallback((files, index) => setCollection({ files, index: index || 0 }), []);
-  const reviewHandoff = useCallback(() => { setCollection(null); onOpenReview?.(); }, [onOpenReview]);
+  // Hand the actual files to the Review tool so it shows THESE files (live), not the
+  // global queue. The file objects carry attachmentUrl/fileName/fileMime.
+  const reviewHandoff = useCallback((files) => { setCollection(null); onOpenReview?.(Array.isArray(files) ? files : null); }, [onOpenReview]);
 
   return (
     <div data-cv6 data-theme="dark" className="cv6-screen" style={{ position: 'relative', width: '100%', height: '100%', background: '#05080b', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>

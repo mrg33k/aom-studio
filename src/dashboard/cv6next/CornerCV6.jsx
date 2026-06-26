@@ -1146,7 +1146,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       <Cv6QuickThread
         target={knavOpenedRoom ? threadHost : null}
         messages={(quickThread && quickThread.messages ? quickThread.messages : []).slice(-40)}
-        onReview={() => onNav?.('review')}
+        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('review', files?.length ? { files } : null); }}
       />
       <Cv6FullComposer
         target={knavOpenedRoom ? composerHost : null}
@@ -1339,7 +1339,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
       room={{ name: isDemo ? 'DEMO: Block Showcase' : room.name, initials: room.initials || '·', statusText: isDemo ? 'demo' : room.statusText || '', status: room.status || 'ready' }}
       messages={messages} status={status} goal={liveThread ? goal : null}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
-      onOpenReview={() => onNav('review')}
+      onOpenReview={(files) => onNav('review', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : '') } : null)}
     />
   );
 }
@@ -1793,7 +1793,7 @@ export default function CornerCV6() {
     body = <ChatDesktop worldId={worldId}
       initialRoom={openedRoom ? { id: openedRoom.room?.id, name: openedRoom.room?.name, initials: openedRoom.room?.initials, isProject: openedRoom.room?.isProject, status: openedRoom.room?.status, statusText: openedRoom.room?.statusText } : null}
       onNav={onNav} onOpenNav={onOpenNav}
-      onReviewFile={() => onNav('review')} />;
+      onReviewFile={(f, proj) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav('review', files?.length ? { files, project: proj || '' } : null); }} />;
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }

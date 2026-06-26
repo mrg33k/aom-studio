@@ -3,7 +3,7 @@
 // No design changes, only data wiring.
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { useReview } from './data/useReview.js';
+import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import reviewRaw from './templates/review.html?raw';
@@ -30,7 +30,13 @@ function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
 }
 
 export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable, target }) {
-  const { state, data, actions } = useReview(worldId || 'aom');
+  // Files handed in from a chat "Review"/"Review all" ARE the queue — show exactly
+  // those, live from the message. Otherwise the global review queue loads.
+  const injected = useMemo(
+    () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project) : null),
+    [target],
+  );
+  const { state, data, actions } = useReview(worldId || 'aom', injected);
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin } = usePins(pickedId, worldId || 'aom');
@@ -50,6 +56,14 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   // stranding the viewer on "Loading the file…". Applied once per target.
   const targetAppliedRef = useRef(null);
   useEffect(() => {
+    // Chat "Review all": open the first of the handed-in files straight away.
+    if (injected && injected.length) {
+      const key = `files:${injected.map((i) => i.id).join(',')}`;
+      if (targetAppliedRef.current === key) return;
+      targetAppliedRef.current = key;
+      onOpenDeliverable(injected[0].id);
+      return;
+    }
     if (!target?.name) return;
     const key = `${target.name}|${target.project || ''}`;
     if (targetAppliedRef.current === key) return;
@@ -60,7 +74,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
       || items.find((i) => base(i.id) === target.name);
     targetAppliedRef.current = key;
     if (match) onOpenDeliverable(match.id);
-  }, [target, data.queue.items, onOpenDeliverable]);
+  }, [target, injected, data.queue.items, onOpenDeliverable]);
 
   const pickListHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 2 }), []);
   const readHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 1 }), []);

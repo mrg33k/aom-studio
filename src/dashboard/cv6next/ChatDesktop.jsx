@@ -6,7 +6,7 @@
 // taps post a real message. Secondary drawer actions (pause/re-task/approve/handoff) have no
 // honest store yet, so they stay inert (not faked), matching Command/Tracker desktop.
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
@@ -474,6 +474,20 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const goal = useGoalThread(worldId, selected);
   const liveThread = Array.isArray(blocks) && blocks.length > 0;
 
+  // A "Review"/"Review all" tap on a message attachment must OPEN the Review tool on
+  // those exact files (live), not post a chat message. handleReview hands us a single
+  // file or an array; everything else (Result block actions, text) flows to send.
+  const reviewProject = selected?.projectSlug || (selected?.isProject ? selected.id : '');
+  const handleThreadAction = useCallback((a) => {
+    if (a && typeof a === 'object' && a.type === 'review') {
+      const att = a.attachment;
+      const files = Array.isArray(att) ? att : (att ? [att] : null);
+      if (files && files.length) onReviewFile?.(files, reviewProject);
+      return undefined;
+    }
+    return send?.(a);
+  }, [send, onReviewFile, reviewProject]);
+
   // Right column: Goals view (the agent's goal/steps) or Files view (this conversation's files + links).
   const [drawerView, setDrawerView] = useState('goals');
 
@@ -699,7 +713,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       the thread + its tables/charts centered instead of stretched. Widened
                       2026-06-25 so the conversation fills the column instead of feeling cramped. */}
                   <div style={{ maxWidth: 920, margin: '0 auto' }}>
-                    {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} onSend={send} />}
+                    {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} onSend={handleThreadAction} />}
                     {awaiting ? <WorkingTurn room={selected} steps={liveSteps} /> : null}
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
@@ -725,7 +739,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   ))}
                 </div>
                 {drawerView === 'files' ? (
-                  <FilesShelf items={shelf} onReview={(it) => onReviewFile?.(it)} />
+                  <FilesShelf items={shelf} onReview={(it) => onReviewFile?.(it, reviewProject)} />
                 ) : (
                 <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}
