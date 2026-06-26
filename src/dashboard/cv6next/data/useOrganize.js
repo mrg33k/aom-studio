@@ -116,10 +116,25 @@ function parseMarkdown(content) {
   return { title: title || 'Untitled', body: html.join('') };
 }
 
-// Honest placeholder for files whose bytes we don't mirror (images, PDFs, sheets).
+// Loading shimmer while a file's content lazy-loads (kinetic, on-brand — not bare text).
+const LOADING_HTML =
+  '<div style="display:flex;align-items:center;gap:9px;color:var(--muted,#888);">'
+  + '<svg class="aspin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
+  + '<span style="font-size:13px;">Loading file…</span></div>';
+
+// Honest, VISUALLY MARKED placeholder for files whose bytes we don't mirror
+// (images, PDFs, sheets) — a tinted banner + kind glyph so it reads as intentional,
+// never as an error or empty file.
 function nonTextPreview(name, kind) {
-  const label = kind === 'image' ? 'image' : kind === 'pdf' ? 'PDF' : kind === 'sheet' ? 'spreadsheet' : 'file';
-  return `<p style="margin:0;color:#888;">This is a ${label}. An inline preview isn't available yet — open it in Review to work with it.</p>`;
+  const label = kind === 'image' ? 'Image file' : kind === 'pdf' ? 'PDF file' : kind === 'sheet' ? 'Spreadsheet' : 'File';
+  const lower = label.toLowerCase();
+  return (
+    '<div style="display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:12px 14px;border-radius:8px;'
+    + 'background:var(--accent-weak);border-left:3px solid var(--accent);">'
+    + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>'
+    + `<span style="font-size:13px;font-weight:600;color:var(--fg);">${label}</span></div>`
+    + `<p style="margin:0;color:#888;">This ${lower} can't preview inline yet. Open it in Review to work with it.</p>`
+  );
 }
 
 export function useOrganize(worldId = 'aom') {
@@ -278,7 +293,7 @@ export function useOrganize(worldId = 'aom') {
     ? {
         fileName: openInList.name,
         title: cached?.title || openInList.name,
-        bodyHtml: cached?.bodyHtml || '<p style="color:#888;">Loading…</p>',
+        bodyHtml: cached?.bodyHtml || LOADING_HTML,
       }
     : { fileName: '', title: '', bodyHtml: '<p>No file selected</p>' };
 
