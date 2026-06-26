@@ -121,8 +121,14 @@ function shelfItems(messages) {
   const items = [];
   for (const msg of messages || []) {
     const who = msg.isUser ? 'You' : (msg.agentName || '');
-    if (msg.attachmentUrl && msg.fileName) {
-      items.push({ type: 'file', kind: fileKind(msg.fileName, msg.fileMime), name: msg.fileName, url: msg.attachmentUrl, mime: msg.fileMime, ts: msg.ts || null, who, size: msg.fileSize || 0 });
+    // Read the same `attachments` array the in-thread file cards use (one message can carry
+    // several files); fall back to the legacy single attachment if that's all there is.
+    const atts = (Array.isArray(msg.attachments) && msg.attachments.length)
+      ? msg.attachments
+      : (msg.attachmentUrl && msg.fileName ? [{ url: msg.attachmentUrl, name: msg.fileName, mime: msg.fileMime, size: msg.fileSize }] : []);
+    for (const att of atts) {
+      if (!att?.url || !att?.name) continue;
+      items.push({ type: 'file', kind: fileKind(att.name, att.mime), name: att.name, url: att.url, mime: att.mime, ts: msg.ts || null, who, size: att.size || 0 });
     }
     for (const url of extractLinks(msg.text)) {
       items.push({ type: 'link', kind: 'link', name: linkLabel(url), url, ts: msg.ts || null, who });
