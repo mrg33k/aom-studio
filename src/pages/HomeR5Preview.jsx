@@ -694,7 +694,7 @@ export default function HomeR5Preview() {
               </div>
               <div className="bcell bfilm"><RotatingFilm /><span className="btag">Film</span></div>
               <a className="bcell bweb" href="/brands/ambition" target="_blank" rel="noopener">
-                <div className="bframe"><span className="bbar"><i /><i /><i /></span><img src="/hero-sites/ambition.jpg" alt="Ambition Mechanical website built by Ahead of Market" loading="lazy" /></div>
+                <div className="bframe"><span className="bbar"><i /><i /><i /></span><img src="/hero-sites/ambition.jpg" alt="Ambition Mechanical website built by Ahead of Market" /></div>
                 <span className="btag">Websites ↗</span>
               </a>
               <div className="bcell bstat"><div className="bnum disp">100+</div><div className="blab">films &amp; sites shipped</div></div>
@@ -737,7 +737,7 @@ export default function HomeR5Preview() {
           <div className="wrap splgrid">
             <div className="splcell"><RotatingFilm /><span className="btag">The video</span></div>
             <a className="splcell splweb" href="/brands/ambition" target="_blank" rel="noopener">
-              <div className="bframe"><span className="bbar"><i /><i /><i /></span><img src="/hero-sites/ambition.jpg" alt="A website built by Ahead of Market" loading="lazy" /></div>
+              <div className="bframe"><span className="bbar"><i /><i /><i /></span><img src="/hero-sites/ambition.jpg" alt="A website built by Ahead of Market" /></div>
               <span className="btag">The website ↗</span>
             </a>
           </div>
