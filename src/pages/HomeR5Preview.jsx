@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import LazyGumlet from '../components/home/LazyGumlet';
 import BrandMark from '../components/home/BrandMark';
 
@@ -183,46 +183,54 @@ const CSS = `
 
 .r5 .hero{background:var(--ink);color:var(--paper);position:relative;overflow:hidden;min-height:780px;display:flex;align-items:center;}
 .r5 .hero .wrap{position:relative;z-index:3;width:100%;}
-.r5 .htext{max-width:600px;}
-.r5 .hero .pill{display:inline-flex;align-items:center;gap:9px;border:1px solid #3A3A36;padding:7px 14px;color:var(--stone);font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:30px;background:rgba(11,11,11,.4);backdrop-filter:blur(4px);}
-.r5 .hero .pill .ledot{width:7px;height:7px;background:var(--gold);display:inline-block;animation:r5pulse 2s infinite;}
+/* ---- Hero text lockup (trimmed: kicker + headline + CTA) ---- */
+.r5 .hlock{max-width:680px;}
+.r5 .hlock.center{max-width:920px;margin:0 auto;text-align:center;}
+.r5 .hlock .kick{display:inline-flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--stone);margin-bottom:26px;}
+.r5 .hlock.light .kick{color:var(--ink-500);}
+.r5 .hlock .kick .ledot{width:7px;height:7px;background:var(--gold);display:inline-block;animation:r5pulse 2s infinite;}
 @keyframes r5pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.r5 .hero h1{font-size:80px;line-height:.92;}
-.r5 .hero .sub p{max-width:40ch;font-size:19px;line-height:1.5;font-weight:500;color:#E7E4DC;margin-top:26px;}
-.r5 .hero .cta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:28px;}
+.r5 .hlock h1{font-size:76px;line-height:.92;}
+.r5 .hlock.center h1{font-size:90px;}
+.r5 .hlock .cta{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:34px;}
+.r5 .hlock.center .cta{justify-content:center;}
+
 .r5 .heromedia{position:absolute;inset:0;z-index:1;}
 .r5 .scrim{position:absolute;inset:0;z-index:2;pointer-events:none;}
-
-/* V1 mosaic wall */
-.r5 .v1grid{position:absolute;inset:0;z-index:1;display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(3,1fr);gap:6px;}
-.r5 .v1cell{position:relative;overflow:hidden;background:#161412;}
-.r5 .v1scrim{background:linear-gradient(100deg,var(--ink) 4%,rgba(11,11,11,.96) 30%,rgba(11,11,11,.6) 56%,rgba(11,11,11,.18) 100%);}
-
-/* V2 twin drifting columns */
-.r5 .inner2{display:grid;grid-template-columns:1.02fr .98fr;gap:48px;align-items:center;}
-.r5 .v2{position:relative;height:600px;display:grid;grid-template-columns:1fr 1fr;gap:12px;-webkit-mask:linear-gradient(transparent,#000 11%,#000 89%,transparent);mask:linear-gradient(transparent,#000 11%,#000 89%,transparent);}
-.r5 .v2col{display:flex;flex-direction:column;gap:12px;}
-.r5 .v2col.up{animation:r5up 34s linear infinite;}
-.r5 .v2col.down{animation:r5down 38s linear infinite;}
+@keyframes r5left{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @keyframes r5up{from{transform:translateY(0)}to{transform:translateY(-50%)}}
 @keyframes r5down{from{transform:translateY(-50%)}to{transform:translateY(0)}}
-.r5 .v2tile{position:relative;overflow:hidden;aspect-ratio:9/14;border:1px solid #2A2A28;flex:none;}
 
-/* V3 cinema full-bleed + filmstrip */
-.r5 .hero3{padding-bottom:180px;}
+/* ---- 1 & 2: Line — running reel of bigger clips fading across a center line ---- */
+.r5 .heroline{flex-direction:column;justify-content:center;gap:60px;}
+.r5 .heroline.light{background:var(--paper);color:var(--ink);}
+.r5 .heroline.dark{background:var(--ink);color:var(--paper);}
+.r5 .heroline .hltop{position:relative;z-index:3;width:100%;}
+.r5 .lineband{position:relative;width:100%;}
+.r5 .lineband::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;}
+.r5 .heroline.light .lineband::before{background:var(--line);}
+.r5 .heroline.dark .lineband::before{background:var(--ink-700);}
+.r5 .linereel{position:relative;overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);mask:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);}
+.r5 .lrtrack{display:flex;gap:22px;width:max-content;align-items:center;animation:r5left 60s linear infinite;padding:34px 22px;}
+.r5 .lrtile{position:relative;width:380px;aspect-ratio:16/9;flex:none;overflow:hidden;cursor:pointer;}
+.r5 .heroline.light .lrtile{border:1px solid var(--line);}
+.r5 .heroline.dark .lrtile{border:1px solid var(--ink-700);}
+
+/* ---- 3: Columns refined — twin drifting columns, bigger tiles, more air ---- */
+.r5 .herocols{background:var(--ink);color:var(--paper);}
+.r5 .inner2{display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center;}
+.r5 .cols2{position:relative;height:620px;display:grid;grid-template-columns:1fr 1fr;gap:18px;-webkit-mask:linear-gradient(transparent,#000 10%,#000 90%,transparent);mask:linear-gradient(transparent,#000 10%,#000 90%,transparent);}
+.r5 .c2{display:flex;flex-direction:column;gap:18px;}
+.r5 .c2.up{animation:r5up 40s linear infinite;}
+.r5 .c2.down{animation:r5down 46s linear infinite;}
+.r5 .c2tile{position:relative;overflow:hidden;aspect-ratio:9/15;border:1px solid var(--ink-700);flex:none;cursor:pointer;}
+
+/* ---- 4: Film — one big film rotating through random clips ---- */
+.r5 .herofilm{background:var(--ink);color:var(--paper);}
+.r5 .rfilm{position:absolute;inset:0;z-index:1;}
+.r5 .rlayer{position:absolute;inset:0;opacity:0;transition:opacity 1.3s ease;}
+.r5 .rlayer.on{opacity:1;}
 .r5 .v3scrim{background:linear-gradient(90deg,rgba(11,11,11,.95) 8%,rgba(11,11,11,.55) 45%,rgba(11,11,11,.2) 75%),linear-gradient(0deg,rgba(11,11,11,.92),transparent 34%);}
-.r5 .v3strip{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:14px 0;overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);}
-.r5 .v3row{display:flex;gap:10px;width:max-content;animation:r5left 44s linear infinite;padding:0 14px;}
-@keyframes r5left{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.r5 .v3thumb{position:relative;width:172px;aspect-ratio:16/9;overflow:hidden;border:1px solid #2A2A28;flex:none;}
-.r5 .v3thumb .tl{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:8px 10px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper);background:linear-gradient(transparent,rgba(0,0,0,.85));font-weight:600;}
-
-/* V4 contact-sheet index */
-.r5 .inner4{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;}
-.r5 .v4grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:8px;height:600px;}
-.r5 .v4cell{position:relative;overflow:hidden;border:1px solid #2A2A28;background:#161412;}
-.r5 .v4cell .v4idx{position:absolute;top:8px;left:9px;z-index:2;font-family:var(--display);font-weight:800;font-size:12px;color:var(--gold);}
-.r5 .v4cell .v4lbl{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:18px 9px 8px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--paper);font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.85));}
 
 /* hero variant picker */
 .r5 .heropick{position:fixed;bottom:18px;right:18px;z-index:200;display:flex;gap:6px;background:rgba(11,11,11,.86);border:1px solid #3A3A36;padding:6px;backdrop-filter:blur(6px);}
@@ -429,9 +437,11 @@ const CSS = `
 .r5 .modal .mhead .mc{background:none;border:1px solid #4A4843;color:var(--paper);width:40px;height:40px;font-size:18px;cursor:pointer;}
 
 @media(max-width:980px){
-  .r5 .hero .inner{grid-template-columns:1fr;}
-  .r5 .deck{height:440px;margin-top:20px;}
-  .r5 .hero h1{font-size:60px;}
+  .r5 .inner2{grid-template-columns:1fr;}
+  .r5 .cols2{display:none;}
+  .r5 .hlock h1{font-size:52px;}
+  .r5 .hlock.center h1{font-size:54px;}
+  .r5 .lrtile{width:280px;}
   .r5 .twogrid{grid-template-columns:1fr;}
   .r5 .why .grid{grid-template-columns:1fr 1fr;gap:30px 0;}
   .r5 .voices .grid{grid-template-columns:1fr;}
@@ -442,14 +452,76 @@ const CSS = `
 }
 `;
 
+// Big landscape clip pool so the hero reel reads as VOLUME and stays fresh.
+const REEL_POOL = (() => {
+  const seen = new Set();
+  const out = [];
+  const push = (id, client) => { if (id && !seen.has(id)) { seen.add(id); out.push({ id, client }); } };
+  FILMS.forEach((f) => push(f.id, f.client));
+  VIDEO_ROWS.forEach((r) => r.items.forEach((it) => push(it.id, it.t)));
+  return out;
+})();
+
+// Fisher-Yates. Browser runtime (Math.random is fine here) -> fresh order each load.
+function shuffle(arr) {
+  const x = [...arr];
+  for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [x[i], x[j]] = [x[j], x[i]]; }
+  return x;
+}
+
+// A horizontal "running reel": shuffled clips ride a center line, fading in/out at the edges.
+function LineReel({ count = 7, onPlay }) {
+  const reel = useMemo(() => shuffle(REEL_POOL).slice(0, Math.min(count, REEL_POOL.length)), [count]);
+  const tiles = [...reel, ...reel];
+  return (
+    <div className="linereel"><div className="lrtrack">
+      {tiles.map((c, i) => (
+        <div className="lrtile" key={i} onClick={() => onPlay && onPlay(c)}>
+          <LazyGumlet id={c.id} eager />
+        </div>
+      ))}
+    </div></div>
+  );
+}
+
+// A single big film that rotates through random clips with a crossfade -> always fresh.
+function RotatingFilm({ intervalMs = 6500 }) {
+  const queue = useMemo(() => shuffle(REEL_POOL), []);
+  const [showA, setShowA] = useState(true);
+  const [a, setA] = useState(queue[0]?.id);
+  const [b, setB] = useState(queue[1]?.id);
+  const [idx, setIdx] = useState(1);
+  useEffect(() => {
+    if (queue.length < 2) return;
+    const t = setInterval(() => {
+      setIdx((i) => {
+        const next = (i + 1) % queue.length;
+        setShowA((s) => {
+          if (s) setB(queue[next].id); else setA(queue[next].id);
+          return !s;
+        });
+        return next;
+      });
+    }, intervalMs);
+    return () => clearInterval(t);
+  }, [queue, intervalMs]);
+  return (
+    <div className="rfilm">
+      <div className={'rlayer' + (showA ? ' on' : '')}>{a && <LazyGumlet id={a} eager />}</div>
+      <div className={'rlayer' + (!showA ? ' on' : '')}>{b && <LazyGumlet id={b} eager />}</div>
+    </div>
+  );
+}
+
 export default function HomeR5Preview() {
   const [tab, setTab] = useState('All');
   const [video, setVideo] = useState(null);
   const [hero, setHero] = useState(() => {
     if (typeof window === 'undefined') return 1;
     const n = parseInt(new URLSearchParams(window.location.search).get('hero'), 10);
-    return n >= 1 && n <= 4 ? n : 3;
+    return n >= 1 && n <= 4 ? n : 1;
   });
+  const portrait = useMemo(() => shuffle(DECK_REELS), []);
   const [medium, setMedium] = useState(() => {
     if (typeof window === 'undefined') return 'Video';
     return new URLSearchParams(window.location.search).get('med') === 'web' ? 'Web' : 'Video';
@@ -460,14 +532,13 @@ export default function HomeR5Preview() {
   const WAY_PERSON = { eyebrow: 'In person', title: 'Hire us in person.', steps: PERSON_STEPS, cta: 'Book a visit' };
   const wActive = wtab === 'Online' ? WAY_ONLINE : WAY_PERSON;
 
-  const HeroText = () => (
-    <div className="htext">
-      <span className="pill"><span className="ledot" /> Video · Web · Ads</span>
-      <h1 className="disp">We make video and <span className="gold">websites</span> for businesses<span className="dot" /></h1>
-      <div className="sub"><p>The kind that gets you seen and gets you customers. Send us a few files to start, or come in and meet us. We reply within 24 hours.</p></div>
+  const HeroLockup = ({ center = false, light = false }) => (
+    <div className={'hlock' + (center ? ' center' : '') + (light ? ' light' : '')}>
+      <span className="kick"><span className="ledot" /> Video · Web · Ads</span>
+      <h1 className="disp">We make companies <span className="gold">impossible to ignore</span><span className="dot" /></h1>
       <div className="cta">
         <a className="btn gold" href="#contact">Start a project ↗</a>
-        <a className="btn ghost-light" href="#work">See our work</a>
+        <a className={'btn ' + (light ? 'ghost-ink' : 'ghost-light')} href="#work">See our work</a>
       </div>
     </div>
   );
@@ -485,71 +556,55 @@ export default function HomeR5Preview() {
         <a className="btn gold" href="#contact">Start a project ↗</a>
       </div></nav>
 
-      {/* HERO — 4 layout options, switch bottom-right */}
+      {/* HERO — 4 new directions: running reel + trimmed text. Switch bottom-right. */}
+      {/* 1 — Line, light: blank ivory, big clips fade across a center line, crisp text above */}
       {hero === 1 && (
-        <header className="hero hero1">
-          <div className="v1grid">
-            {MOSAIC.map((m, i) => (
-              <div className="v1cell" key={i} style={{ gridColumn: `span ${m.cs}`, gridRow: `span ${m.rs}` }}>
-                <LazyGumlet id={m.id} eager portrait />
-              </div>
-            ))}
+        <header className="hero heroline light">
+          <div className="wrap hltop"><HeroLockup center light /></div>
+          <div className="lineband">
+            <LineReel count={7} onPlay={(c) => setVideo({ id: c.id, client: c.client })} />
           </div>
-          <div className="scrim v1scrim" />
-          <div className="wrap"><HeroText /></div>
         </header>
       )}
+      {/* 2 — Line, dark: same running reel on obsidian, cinematic */}
       {hero === 2 && (
-        <header className="hero hero2">
-          <div className="wrap inner2">
-            <HeroText />
-            <div className="v2">
-              <div className="v2col up">
-                {[...DECK_REELS.slice(0, 5), ...DECK_REELS.slice(0, 5)].map((r, i) => (
-                  <div className="v2tile" key={i}><LazyGumlet id={r.id} eager portrait /></div>
-                ))}
-              </div>
-              <div className="v2col down">
-                {[...DECK_REELS.slice(4, 9), ...DECK_REELS.slice(4, 9)].map((r, i) => (
-                  <div className="v2tile" key={i}><LazyGumlet id={r.id} eager portrait /></div>
-                ))}
-              </div>
-            </div>
+        <header className="hero heroline dark">
+          <div className="wrap hltop"><HeroLockup center /></div>
+          <div className="lineband">
+            <LineReel count={7} onPlay={(c) => setVideo({ id: c.id, client: c.client })} />
           </div>
         </header>
       )}
+      {/* 3 — Columns refined: twin marquee, bigger tiles, more air, text left */}
       {hero === 3 && (
-        <header className="hero hero3">
-          <div className="heromedia"><LazyGumlet id={FILMS[0].id} eager /></div>
-          <div className="scrim v3scrim" />
-          <div className="wrap"><HeroText /></div>
-          <div className="v3strip"><div className="v3row">
-            {[...FILMS, ...FILMS].map((f, i) => (
-              <div className="v3thumb" key={i} onClick={() => setVideo({ id: f.id, client: f.client })}>
-                <LazyGumlet id={f.id} eager /><span className="tl">{f.client}</span>
+        <header className="hero herocols">
+          <div className="wrap inner2">
+            <HeroLockup />
+            <div className="cols2">
+              <div className="c2 up">
+                {[...portrait.slice(0, 4), ...portrait.slice(0, 4)].map((r, i) => (
+                  <div className="c2tile" key={i} onClick={() => setVideo({ id: r.id, client: r.client })}><LazyGumlet id={r.id} eager portrait /></div>
+                ))}
               </div>
-            ))}
-          </div></div>
-        </header>
-      )}
-      {hero === 4 && (
-        <header className="hero hero4">
-          <div className="wrap inner4">
-            <HeroText />
-            <div className="v4grid">
-              {DECK_REELS.slice(0, 9).map((r, i) => (
-                <div className="v4cell" key={i} onClick={() => setVideo({ id: r.id, client: r.client })}>
-                  <LazyGumlet id={r.id} eager portrait />
-                  <span className="v4idx">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="v4lbl">{r.client}</span>
-                </div>
-              ))}
+              <div className="c2 down">
+                {[...portrait.slice(4, 8), ...portrait.slice(4, 8)].map((r, i) => (
+                  <div className="c2tile" key={i} onClick={() => setVideo({ id: r.id, client: r.client })}><LazyGumlet id={r.id} eager portrait /></div>
+                ))}
+              </div>
             </div>
           </div>
+        </header>
+      )}
+      {/* 4 — Film: one big film rotating through random clips, minimal text */}
+      {hero === 4 && (
+        <header className="hero herofilm">
+          <RotatingFilm />
+          <div className="scrim v3scrim" />
+          <div className="wrap"><HeroLockup /></div>
         </header>
       )}
       <div className="heropick">
-        {['Mosaic', 'Columns', 'Cinema', 'Index'].map((l, i) => (
+        {['Line light', 'Line dark', 'Columns', 'Film'].map((l, i) => (
           <button key={l} className={hero === i + 1 ? 'on' : ''} onClick={() => setHero(i + 1)}>{i + 1} {l}</button>
         ))}
       </div>
