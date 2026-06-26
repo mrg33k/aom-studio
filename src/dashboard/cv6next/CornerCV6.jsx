@@ -468,25 +468,27 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // the template engine paints the new rows. The thread element only exists on desktop home.
   const quickLen = (quickThread && quickThread.messages && quickThread.messages.length) || 0;
   useEffect(() => {
-    // Pin the col3 thread to its newest message. Rows load async AFTER the room
-    // opens (the thread fetches, the template re-binds, long messages reflow), so
-    // fixed timeouts fired before the final height settled and it landed mid-list.
-    // Instead, watch the DOM and re-pin on every change for a short window after
-    // open, then relax so reading history later isn't yanked back down.
+    // Keep the col3 thread pinned to its newest message for AS LONG AS the room is
+    // open, not just at load. The home template re-binds on every realtime tick
+    // (TemplateScreen resets innerHTML), rebuilding the thread DOM and resetting
+    // scrollTop — a one-shot pin let the view "jump back to the middle" seconds
+    // later. This stays attached and re-pins on every DOM change, but only while
+    // the user is at the bottom (a `stick` intent flag), so scrolling up to read
+    // history is never yanked back down.
     if (!knavOpenedRoom) return undefined;
-    const pin = () => { const el = document.querySelector('[data-screen="convo"] .convo-thread'); if (el) el.scrollTop = el.scrollHeight; };
-    pin();
+    const stick = { current: true };
+    const getEl = () => document.querySelector('[data-screen="convo"] .convo-thread');
+    const pin = () => { if (!stick.current) return; const el = getEl(); if (el) el.scrollTop = el.scrollHeight; };
+    // Capture phase so the listener still fires on the recreated node; records the
+    // user's stick intent from where they left the scroll.
+    const onScroll = (e) => { const el = getEl(); if (!el || e.target !== el) return; stick.current = (el.scrollHeight - el.scrollTop - el.clientHeight) < 90; };
+    document.addEventListener('scroll', onScroll, true);
     const obs = new MutationObserver(() => requestAnimationFrame(pin));
     obs.observe(document.body, { childList: true, subtree: true });
-    const stop = setTimeout(() => obs.disconnect(), 1800);
-    return () => { obs.disconnect(); clearTimeout(stop); };
+    requestAnimationFrame(pin);
+    return () => { document.removeEventListener('scroll', onScroll, true); obs.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [knavOpenedKey, knavOpenedRoom]);
-  // A new message after the initial settle: pin once more (don't reopen the observer).
-  useEffect(() => {
-    const id = requestAnimationFrame(() => { const el = document.querySelector('[data-screen="convo"] .convo-thread'); if (el) el.scrollTop = el.scrollHeight; });
-    return () => cancelAnimationFrame(id);
-  }, [quickLen]);
   // col3 quick-reply composer host (Patrik 2026-06-25): the composer is now the React
   // Cv6Composer (CV4-style pill + slash commands + send), portaled into the template's
   // [data-cv6-composer] node. The template re-binds on every realtime tick / new message,
