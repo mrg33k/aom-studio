@@ -12,6 +12,7 @@ import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
 import { useDictation } from './data/useDictation.js';
+import MessageAttachments from './MessageAttachments.jsx';
 
 const NAV = [
   { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
@@ -255,6 +256,13 @@ function groupByDayD(messages) {
 
 // One desktop message row (shared by the open latest day and expanded older days).
 function MsgRow({ m, onSend }) {
+  const handleReview = (attachment) => {
+    // Wire to Review tool: emit an action that the parent can route to Review
+    if (onSend) {
+      onSend({ type: 'review', attachment });
+    }
+  };
+
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
       <span className={`ava is-${m.agentTint || 'violet'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{m.agentInitials}</span>
@@ -266,6 +274,11 @@ function MsgRow({ m, onSend }) {
             {m.blocks.map((b, i) => (
               <Result key={i} block={b} onAction={onSend} />
             ))}
+          </div>
+        ) : null}
+        {m.attachments?.length ? (
+          <div style={{ marginTop: m.blocks?.length ? 12 : 8 }}>
+            <MessageAttachments attachments={m.attachments} onReview={handleReview} />
           </div>
         ) : null}
       </div>

@@ -114,6 +114,21 @@ export function useRoomThread(worldId, room) {
           // We attach them to THIS message so the thread renders inline as that agent
           // turn (history stays above it), instead of taking over the whole screen.
           const msgBlocks = Array.isArray(m.metadata?.blocks) && m.metadata.blocks.length ? m.metadata.blocks : null;
+          // Attachment handling: support both single attachment (attachment_url) and
+          // multiple attachments (metadata.attachments array). Group attachments for
+          // rendering in MessageAttachments (galleries, file collections, etc.).
+          let attachments = [];
+          if (Array.isArray(m.metadata?.attachments) && m.metadata.attachments.length) {
+            attachments = m.metadata.attachments;
+          } else if (m.attachment_url) {
+            // Fallback: single attachment fields → single-element array
+            attachments = [{
+              url: m.attachment_url,
+              name: m.attachment_name || 'File',
+              mime: m.file_mime_type || 'application/octet-stream',
+              size: m.file_size || 0,
+            }];
+          }
           return {
             agentInitials: initials(name),
             agentName: name,
@@ -127,9 +142,10 @@ export function useRoomThread(worldId, room) {
             attachmentUrl: m.attachment_url || '',
             fileMime: m.file_mime_type || '',
             fileSize: m.file_size || 0,
+            attachments, // Array of {url, name, mime, size} for grouped rendering
             blocks: msgBlocks,
           };
-        }).filter((m) => m.text || m.isFile || m.blocks);
+        }).filter((m) => m.text || m.isFile || m.blocks || m.attachments?.length);
         setMessages(msgs);
         setStatus(msgs.length ? 'ready' : 'empty');
       })
