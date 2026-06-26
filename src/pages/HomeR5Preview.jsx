@@ -250,6 +250,60 @@ const CSS = `
 @keyframes shIn{from{opacity:0;transform:translateY(26px);filter:blur(8px);}to{opacity:1;transform:none;filter:blur(0);}}
 @media(hover:none){.r5 .heroshow{cursor:default;}.r5 .heroshow .shlens,.r5 .heroshow .shring{display:none;}}
 
+/* shared kicker + browser frame for fresh heroes */
+.r5 .kick{display:inline-flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-500);}
+.r5 .kick .ledot{width:7px;height:7px;background:var(--gold);display:inline-block;animation:r5pulse 2s infinite;}
+.r5 .btag{position:absolute;left:14px;bottom:12px;z-index:4;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--paper);background:rgba(11,11,11,.55);padding:5px 9px;backdrop-filter:blur(3px);}
+.r5 .bframe{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--ink);}
+.r5 .bframe .bbar{height:24px;background:#1A1A18;display:flex;align-items:center;gap:5px;padding:0 11px;flex:none;}
+.r5 .bframe .bbar i{width:7px;height:7px;border-radius:50%;background:#3A3A36;}
+.r5 .bframe img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;}
+
+/* ---- 1: Bento — breadth grid ---- */
+.r5 .herobento{background:var(--paper);color:var(--ink);}
+.r5 .herobento .bento{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:204px;gap:14px;width:100%;}
+.r5 .bcell{position:relative;overflow:hidden;border:1px solid var(--line);background:var(--ink);}
+.r5 .bintro{grid-column:1/6;grid-row:1/3;border:none;background:transparent;display:flex;flex-direction:column;justify-content:center;padding:8px 36px 8px 0;}
+.r5 .bintro h1{font-size:58px;line-height:.94;margin:22px 0 0;}
+.r5 .bintro .cta{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap;}
+.r5 .bfilm{grid-column:6/13;grid-row:1/2;}
+.r5 .bweb{grid-column:6/9;grid-row:2/3;display:block;}
+.r5 .bstat{grid-column:9/11;grid-row:2/3;background:var(--paper-alt);display:flex;flex-direction:column;justify-content:center;padding:24px;}
+.r5 .bstat .bnum{font-size:52px;line-height:.86;color:var(--gold-deep);}
+.r5 .bstat .blab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-500);margin-top:12px;}
+.r5 .breel{grid-column:11/13;grid-row:2/3;cursor:pointer;}
+
+/* ---- 2: Editorial one-sheet ---- */
+.r5 .heroed{background:var(--ink);color:var(--paper);}
+.r5 .heroed .edtop{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--ink-700);padding-bottom:16px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-300);}
+.r5 .edhead{font-size:118px;line-height:.84;margin:36px 0;}
+.r5 .edrow{display:grid;grid-template-columns:.85fr 1.5fr;gap:44px;align-items:end;}
+.r5 .edlede{font-size:19px;line-height:1.55;color:var(--ink-300);max-width:34ch;}
+.r5 .edstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.r5 .edframe{position:relative;aspect-ratio:4/3;overflow:hidden;border:1px solid var(--ink-700);cursor:pointer;}
+.r5 .edcap{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:10px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper);font-weight:600;background:linear-gradient(transparent,rgba(0,0,0,.85));}
+.r5 .edcredits{display:flex;gap:32px;flex-wrap:wrap;margin-top:42px;padding-top:22px;border-top:1px solid var(--ink-700);font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:15px;color:var(--ink-300);}
+
+/* ---- 3: Split — reel beside a real site ---- */
+.r5 .herosplit{background:var(--paper);color:var(--ink);flex-direction:column;justify-content:center;gap:36px;}
+.r5 .splhead{text-align:center;}
+.r5 .splhead .kick{margin-bottom:18px;}
+.r5 .splhead h1{font-size:60px;line-height:.94;max-width:20ch;margin:14px auto 0;}
+.r5 .splhead .cta{display:flex;gap:12px;justify-content:center;margin-top:26px;flex-wrap:wrap;}
+.r5 .splgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.r5 .splcell{position:relative;overflow:hidden;aspect-ratio:16/10;border:1px solid var(--line);background:var(--ink);display:block;}
+
+@media(max-width:980px){
+  .r5 .herobento .bento{grid-auto-rows:auto;}
+  .r5 .bintro,.r5 .bfilm,.r5 .bweb,.r5 .bstat,.r5 .breel{grid-column:1/13;}
+  .r5 .bfilm,.r5 .bweb,.r5 .breel{min-height:220px;}
+  .r5 .bintro h1{font-size:44px;}
+  .r5 .edhead{font-size:64px;}
+  .r5 .edrow{grid-template-columns:1fr;gap:24px;}
+  .r5 .splgrid{grid-template-columns:1fr;}
+  .r5 .splhead h1{font-size:42px;}
+}
+
 /* hero variant picker */
 .r5 .heropick{position:fixed;bottom:18px;right:18px;z-index:200;display:flex;gap:6px;background:rgba(11,11,11,.86);border:1px solid #3A3A36;padding:6px;backdrop-filter:blur(6px);}
 .r5 .heropick button{font-family:var(--text);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--stone);background:transparent;border:1px solid transparent;padding:8px 12px;cursor:pointer;}
@@ -587,7 +641,7 @@ export default function HomeR5Preview() {
   const [hero, setHero] = useState(() => {
     if (typeof window === 'undefined') return 1;
     const n = parseInt(new URLSearchParams(window.location.search).get('hero'), 10);
-    return n >= 1 && n <= 5 ? n : 5;
+    return n >= 1 && n <= 4 ? n : 1;
   });
   const portrait = useMemo(() => shuffle(DECK_REELS), []);
   const [medium, setMedium] = useState(() => {
@@ -624,46 +678,72 @@ export default function HomeR5Preview() {
         <a className="btn gold" href="#contact">Start a project ↗</a>
       </div></nav>
 
-      {/* HERO — 4 new directions: running reel + trimmed text. Switch bottom-right. */}
-      {/* 1 — Line, light: blank ivory, big clips fade across a center line, crisp text above */}
+      {/* HERO — fresh paradigms (not video-wallpaper). Switch bottom-right. */}
+      {/* 1 — Bento: the breadth at a glance (film + a real website + a stat + a reel) */}
       {hero === 1 && (
-        <header className="hero heroline light">
-          <div className="wrap hltop"><HeroLockup center light /></div>
-          <div className="lineband">
-            <LineReel count={7} onPlay={(c) => setVideo({ id: c.id, client: c.client })} />
-          </div>
-        </header>
-      )}
-      {/* 2 — Line, dark: same running reel on obsidian, cinematic */}
-      {hero === 2 && (
-        <header className="hero heroline dark">
-          <div className="wrap hltop"><HeroLockup center /></div>
-          <div className="lineband">
-            <LineReel count={7} onPlay={(c) => setVideo({ id: c.id, client: c.client })} />
-          </div>
-        </header>
-      )}
-      {/* 3 — Columns refined: twin marquee, bigger tiles, more air, text left */}
-      {hero === 3 && (
-        <header className="hero herocols">
-          <div className="wrap inner2">
-            <HeroLockup />
-            <div className="cols2">
-              <div className="c2 up">
-                {[...portrait.slice(0, 4), ...portrait.slice(0, 4)].map((r, i) => (
-                  <div className="c2tile" key={i} onClick={() => setVideo({ id: r.id, client: r.client })}><LazyGumlet id={r.id} eager portrait /></div>
-                ))}
+        <header className="hero herobento">
+          <div className="wrap">
+            <div className="bento">
+              <div className="bcell bintro">
+                <span className="kick"><span className="ledot" /> Video · Web · Ads</span>
+                <h1 className="disp">We make companies <span className="gold">impossible to ignore</span><span className="dot" /></h1>
+                <div className="cta">
+                  <a className="btn gold" href="#contact">Start a project ↗</a>
+                  <a className="btn ghost-ink" href="#work">See our work</a>
+                </div>
               </div>
-              <div className="c2 down">
-                {[...portrait.slice(4, 8), ...portrait.slice(4, 8)].map((r, i) => (
-                  <div className="c2tile" key={i} onClick={() => setVideo({ id: r.id, client: r.client })}><LazyGumlet id={r.id} eager portrait /></div>
-                ))}
-              </div>
+              <div className="bcell bfilm"><RotatingFilm /><span className="btag">Film</span></div>
+              <a className="bcell bweb" href="/brands/ambition" target="_blank" rel="noopener">
+                <div className="bframe"><span className="bbar"><i /><i /><i /></span><img src="/hero-sites/ambition.jpg" alt="Ambition Mechanical website built by Ahead of Market" loading="lazy" /></div>
+                <span className="btag">Websites ↗</span>
+              </a>
+              <div className="bcell bstat"><div className="bnum disp">100+</div><div className="blab">films &amp; sites shipped</div></div>
+              <div className="bcell breel" onClick={() => portrait[0] && setVideo({ id: portrait[0].id, client: portrait[0].client })}><LazyGumlet id={portrait[0]?.id} eager portrait /><span className="btag">Reel</span></div>
             </div>
           </div>
         </header>
       )}
-      {/* 4 — Film: one big film rotating through random clips, minimal text */}
+      {/* 2 — Editorial one-sheet: type-forward film poster */}
+      {hero === 2 && (
+        <header className="hero heroed">
+          <div className="wrap">
+            <div className="edtop"><span>Ahead of Market</span><span>Phoenix, AZ</span><span>A video + web studio</span><span>№ 001</span></div>
+            <h1 className="disp edhead">Impossible<br />to <span className="gold">ignore</span><span className="dot" /></h1>
+            <div className="edrow">
+              <p className="edlede">We make the films, websites, and ads that get real businesses seen. Send a few files to start, or come meet us.</p>
+              <div className="edstrip">
+                {FILMS.slice(0, 3).map((f) => (
+                  <div className="edframe" key={f.id} onClick={() => setVideo({ id: f.id, client: f.client })}>
+                    <LazyGumlet id={f.id} eager /><span className="edcap">{f.client}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="edcredits"><span>Brand films</span><span>Websites</span><span>Ads</span><span>Photography</span><span>Events</span></div>
+          </div>
+        </header>
+      )}
+      {/* 3 — Split: living reel beside a real website we built */}
+      {hero === 3 && (
+        <header className="hero herosplit">
+          <div className="wrap splhead">
+            <span className="kick"><span className="ledot" /> Video · Web · Ads</span>
+            <h1 className="disp">We make companies <span className="gold">impossible to ignore</span><span className="dot" /></h1>
+            <div className="cta">
+              <a className="btn gold" href="#contact">Start a project ↗</a>
+              <a className="btn ghost-ink" href="#work">See our work</a>
+            </div>
+          </div>
+          <div className="wrap splgrid">
+            <div className="splcell"><RotatingFilm /><span className="btag">The video</span></div>
+            <a className="splcell splweb" href="/brands/ambition" target="_blank" rel="noopener">
+              <div className="bframe"><span className="bbar"><i /><i /><i /></span><img src="/hero-sites/ambition.jpg" alt="A website built by Ahead of Market" loading="lazy" /></div>
+              <span className="btag">The website ↗</span>
+            </a>
+          </div>
+        </header>
+      )}
+      {/* 4 — Film (kept): one big film rotating through random clips, minimal text */}
       {hero === 4 && (
         <header className="hero herofilm">
           <RotatingFilm />
@@ -671,12 +751,8 @@ export default function HomeR5Preview() {
           <div className="wrap"><HeroLockup /></div>
         </header>
       )}
-      {/* 5 — Showcase: interactive Film+ (cursor lens reveal, parallax, kinetic text) */}
-      {hero === 5 && (
-        <ShowcaseHero><HeroLockup /></ShowcaseHero>
-      )}
       <div className="heropick">
-        {['Line light', 'Line dark', 'Columns', 'Film', 'Showcase'].map((l, i) => (
+        {['Bento', 'Editorial', 'Split', 'Film'].map((l, i) => (
           <button key={l} className={hero === i + 1 ? 'on' : ''} onClick={() => setHero(i + 1)}>{i + 1} {l}</button>
         ))}
       </div>
