@@ -15,6 +15,7 @@ import { Result } from './BlockRenderer.jsx';
 import { useDictation } from './data/useDictation.js';
 import MessageAttachments from './MessageAttachments.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
+import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 
 const NAV = [
   { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
@@ -353,7 +354,7 @@ function BubbleGroup({ group, onSend }) {
         {head.agentName ? <div className="gname">{head.agentName}</div> : null}
         {group.items.map((m, i) => (
           <span key={i} style={{ display: 'contents' }}>
-            {m.text ? <div className="pb">{m.text}</div> : null}
+            {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
             <MsgExtras m={m} onSend={onSend} />
           </span>
         ))}
@@ -442,8 +443,9 @@ function PlainThread({ messages, onSend }) {
 
 export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, onReviewFile }) {
   const { data: list } = useChatList();
-  const agents = list?.agents || [];
-  const projects = list?.projects || [];
+  // Stable refs so the memoized composer below doesn't re-mount on every list poll.
+  const agents = useMemo(() => list?.agents || [], [list]);
+  const projects = useMemo(() => list?.projects || [], [list]);
 
   // Selected room: the one opened from elsewhere, else the first agent. {id,name,initials,isProject,status}.
   const [picked, setPicked] = useState(initialRoom || null);
@@ -615,6 +617,16 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // The shared rich composer (CV4 input bar + slash commands + voice + image gen) portals into
   // this host node, so desktop chat uses the exact same input as the homepage quick reply.
   const [composerHost, setComposerHost] = useState(null);
+  // Memoize the composer element so the 3s thread poll and the live working-state
+  // re-renders NEVER re-render (or remount) the portaled CV4 input — that remount
+  // was blanking typed text and stealing focus. quickSend={send} routes typed text
+  // through useRoomThread.send (the chat composer had NO send wired before, so Enter
+  // cleared the box and posted nothing). Deps are all stable within a room.
+  const composerEl = useMemo(() => (
+    composerHost && selected
+      ? <Cv6FullComposer target={composerHost} room={selected} worldId={worldId} agents={agents} quickSend={send} />
+      : null
+  ), [composerHost, selected, worldId, agents, send]);
 
   // Pin to the latest message: after the thread loads (messages arrive async) and whenever a
   // new one lands, so opening a room lands at the tail and your just-sent message isn't hidden
@@ -719,9 +731,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   </div>
                 </div>
                 <div ref={setComposerHost} data-cv6-composer style={{ borderTop: '1px solid var(--divider)', padding: '12px 24px' }} />
-                {composerHost && selected ? (
-                  <Cv6FullComposer target={composerHost} room={selected} worldId={worldId} agents={agents} />
-                ) : null}
+                {composerEl}
               </>
             ) : (
               <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>Pick a room on the left to open its thread.</div>
