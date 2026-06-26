@@ -172,6 +172,11 @@ function applyBindings(el, scopes, ctx) {
       const val = resolvePath(scopes, one.slice(ix + 1).trim());
       if (val == null) continue;
       if (verb === 'width') { if (el.style) el.style.width = `${val}%`; continue; }
+      // left:/top: place an element at a live percentage position (e.g. a review
+      // pin marker at pin.x/pin.y). Like width, a free coordinate can't be a finite
+      // set of classes, so it is an inline-% exception. The host owns the value.
+      if (verb === 'left') { if (el.style) el.style.left = `${val}%`; continue; }
+      if (verb === 'top') { if (el.style) el.style.top = `${val}%`; continue; }
       // keyboard selection rides a data attribute, not an is-* class, so a row can carry
       // BOTH its depth-indent (is-d1/is-d2) and the selected highlight at the same time.
       if (verb === 'knav') { el.setAttribute('data-knav', val); continue; }

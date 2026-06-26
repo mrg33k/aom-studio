@@ -1,66 +1,94 @@
-// cv6next — Pin-comments state management for Review tool.
-// Manages pin creation, deletion, and display on deliverables.
-// Pins are LOCAL component state (not persisted to backend yet).
-// TODO(cv6: persist pins to /api/dashboard/review-pin-decision): backend integration.
+// cv6next — Pin-comments state for the Review tool, persisted to the backend.
+// Pins are POINT review-comments on a deliverable: a spot (x,y as 0..1 fractions)
+// on a doc / photo / site screenshot / video frame, plus optional t (seconds) when
+// the spot is on a video frame. Source of truth is /api/dashboard/review-comments
+// (same disk+tunnel store the agents read), so pins survive refresh and reach the
+// agent's fix-list. The viewer renders markers at x%,y% via the template engine.
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { authFetch } from '../../lib/authFetch';
 
-export function usePins(deliverableId) {
-  const [pins, setPins] = useState([]);
-
-  // Start every deliverable with NO pins. We used to inject a fake sample pin
-  // ("Review this carefully") so the viewer looked annotated, but that showed a
-  // fabricated review comment as if a human had left it — fake-as-real. Real pins
-  // are created by tapping the viewer (addPin) and are local-only until a pin store
-  // exists. Reset to empty when switching deliverables so one file's pins never
-  // bleed into the next.
-  useEffect(() => {
-    setPins([]);
-  }, [deliverableId]);
-
-  // Create a new pin at the clicked position.
-  // Returns the pin for immediate UI updates (numbering, positioning).
-  const addPin = useCallback((x, y, viewerWidth, viewerHeight, text = '') => {
-    const xPercent = (x / viewerWidth) * 100;
-    const yPercent = (y / viewerHeight) * 100;
-    const n = pins.length + 1; // Next pin number
-    const pin = {
-      id: `pin-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      n,
-      x: Math.round(xPercent),
-      y: Math.round(yPercent),
-      text: text || `Comment ${n}`,
-      anchor: '', // For video: timestamp; for doc: anchor phrase (extracted on save).
-      createdAt: new Date().toISOString(),
-      // TODO(cv6: persist pins): POST to /api/dashboard/review-pin-decision
-      // with { deliverableId, x, y, text, type: 'pin' }
-    };
-    setPins((prev) => [...prev, pin]);
-    return pin;
-  }, [pins.length]);
-
-  // Update an existing pin (e.g., edit text or anchor).
-  const updatePin = useCallback((pinId, updates) => {
-    setPins((prev) =>
-      prev.map((p) => (p.id === pinId ? { ...p, ...updates } : p))
-    );
-    // TODO(cv6: persist pins): PUT /api/dashboard/review-pin/<pinId> with updates
-  }, []);
-
-  // Delete a pin.
-  const deletePin = useCallback((pinId) => {
-    setPins((prev) => prev.filter((p) => p.id !== pinId));
-    // Renumber remaining pins (so gaps don't appear).
-    setPins((prev) =>
-      prev.map((p, i) => ({ ...p, n: i + 1 }))
-    );
-    // TODO(cv6: persist pins): DELETE /api/dashboard/review-pin/<pinId>
-  }, []);
-
+// Map a stored comment row -> the pin shape the template binds (n, x/y in %, text).
+function toPin(c, i) {
   return {
-    pins,
-    addPin,
-    updatePin,
-    deletePin,
+    id: c.id,
+    n: i + 1,
+    x: Math.round((Number(c.x) || 0) * 1000) / 10, // 0..1 -> 0..100 (%)
+    y: Math.round((Number(c.y) || 0) * 1000) / 10,
+    t: c.t != null ? Number(c.t) : null,
+    text: c.text || '',
+    // For the comment row's sub-label: a video frame pin shows its timestamp,
+    // a doc/image pin shows nothing (the marker carries the location visually).
+    anchor: c.t != null ? `at ${fmtTime(c.t)}` : '',
   };
+}
+
+function fmtTime(sec) {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, '0')}`;
+}
+
+export function usePins(deliverableId, worldId = 'aom') {
+  const [pins, setPins] = useState([]);
+  const reqRef = useRef(0); // guards against out-of-order loads when switching files
+
+  const load = useCallback(async () => {
+    if (!deliverableId) { setPins([]); return; }
+    const seq = ++reqRef.current;
+    try {
+      const r = await authFetch(`/api/dashboard/review-comments?world=${encodeURIComponent(worldId)}&deliverable=${encodeURIComponent(deliverableId)}`);
+      if (!r?.ok) { if (seq === reqRef.current) setPins([]); return; }
+      const d = await r.json();
+      const list = Array.isArray(d?.list) ? d.list : [];
+      // Only POINT comments render as on-artifact pins; pure timeline rows (none today)
+      // would belong to a separate timeline bar.
+      const points = list.filter((c) => c && c.type === 'point' && c.x != null && c.y != null);
+      if (seq === reqRef.current) setPins(points.map(toPin));
+    } catch {
+      if (seq === reqRef.current) setPins([]);
+    }
+  }, [deliverableId, worldId]);
+
+  // Reload whenever the open deliverable changes (and clear immediately so one
+  // file's pins never flash onto the next).
+  useEffect(() => { setPins([]); load(); }, [load]);
+
+  // Create a point pin. x,y are 0..1 fractions of the viewer; t (optional) is the
+  // video frame time in seconds. text is the human comment. Optimistically appends,
+  // then reloads from the store to pick up the server id + ordering.
+  const addPin = useCallback(async (xFrac, yFrac, text, t) => {
+    if (!deliverableId || !text || !String(text).trim()) return null;
+    const body = {
+      action: 'add', world: worldId, deliverable: deliverableId, type: 'point',
+      x: Math.min(1, Math.max(0, Number(xFrac) || 0)),
+      y: Math.min(1, Math.max(0, Number(yFrac) || 0)),
+      text: String(text).trim(),
+    };
+    if (t != null && Number.isFinite(Number(t))) body.t = Number(t);
+    try {
+      const r = await authFetch('/api/dashboard/review-comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (r?.ok) { await load(); return true; }
+    } catch { /* fall through */ }
+    return false;
+  }, [deliverableId, worldId, load]);
+
+  const deletePin = useCallback(async (pinId) => {
+    if (!deliverableId || !pinId) return;
+    try {
+      const r = await authFetch('/api/dashboard/review-comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', world: worldId, deliverable: deliverableId, id: pinId }),
+      });
+      if (r?.ok) await load();
+    } catch { /* ignore */ }
+  }, [deliverableId, worldId, load]);
+
+  return { pins, addPin, deletePin, reloadPins: load };
 }

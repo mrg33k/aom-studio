@@ -810,9 +810,11 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       const agent = (data.agents || []).find((a) => a.id === card.agent) || { id: card.agent || card.id, name: card.from, initials: (card.from || '?').slice(0, 2).toUpperCase(), status: 'ready' };
       onOpenRoom?.(agent, worldId);
     },
-    // Attachment cards: tapping the file (or Review) opens the Review tool, where the
-    // delivered file is reviewed/approved. Real navigation, not a no-op.
-    review: () => onNav?.('review'), openAttachment: () => onNav?.('review'),
+    // Attachment cards: tapping the file (or Review) opens the Review tool ON that file.
+    // The card carries only the filename + its room, so we hand Review { name, project,
+    // missionSlug } and let it resolve the real deliverable in the queue.
+    review: (fileId) => { const c = curCardRef.current; onNav?.('review', fileId ? { name: String(fileId), project: c?.project || '', missionSlug: c?.missionSlug || '' } : null); },
+    openAttachment: (fileId) => { const c = curCardRef.current; onNav?.('review', fileId ? { name: String(fileId), project: c?.project || '', missionSlug: c?.missionSlug || '' } : null); },
     voiceInput: () => {}, composeMessage: () => {},
     // Send a quick reply from the col3 room panel: read the uncontrolled input and post into the
     // opened room via the same thread the full Chat uses (Patrik: the quick reply room should work).
@@ -937,6 +939,20 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const recentList = data.recent || [];
   const agentsList = agentsOpen ? (data.agents || []) : [];
   const HOME_MISSION_CAP = 8;
+  // Corner's top-level rooms mirror the top nav exactly: the 8 tools in nav order
+  // first, then the 3 grouping folders (General / Business Ops / Older Versions).
+  // So the sidebar tree reads like the nav bar, and no tool hides behind "Show more".
+  const CORNER_NAV_ORDER = ['home', 'chat', 'organize', 'review', 'support', 'tracker', 'command', 'live-scribe'];
+  const cornerRootRank = (node) => {
+    const raw = String(node.slug || node.name || '').split(':').pop().toLowerCase();
+    const i = CORNER_NAV_ORDER.indexOf(raw);
+    return i >= 0 ? i : CORNER_NAV_ORDER.length; // groups sort after all tools
+  };
+  const cornerRootSort = (nodes) => [...(nodes || [])].sort((a, b) => {
+    const ra = cornerRootRank(a); const rb = cornerRootRank(b);
+    if (ra !== rb) return ra - rb;
+    return missionLabelClean(a.name || a.slug).localeCompare(missionLabelClean(b.name || b.slug));
+  });
   const missionDotStatus = (s) => (['running', 'building', 'active'].includes(String(s || '').toLowerCase()) ? 'live' : 'ready');
   // The project is already the folder above, so drop a "Parent:" prefix from the mission name.
   const missionLabelClean = (n) => { const s = String(n || ''); return (s.includes(':') ? s.slice(s.lastIndexOf(':') + 1).trim() : s) || s; };
@@ -958,9 +974,11 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     if (af !== bf) return af - bf;
     return missionLabelClean(a.name || a.slug).localeCompare(missionLabelClean(b.name || b.slug));
   });
-  const flattenMissionTree = (nodes, depth, expandedNodes, p) => {
+  // `sorter` orders THIS level (caller passes cornerRootSort for Corner's nav-order
+  // roots); children always fall back to the generic folders-first sort.
+  const flattenMissionTree = (nodes, depth, expandedNodes, p, sorter) => {
     const rows = [];
-    for (const m of sortMissions(nodes)) {
+    for (const m of (sorter || sortMissions)(nodes)) {
       const id = String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`;
       const hasChildren = Array.isArray(m.children) && m.children.length > 0;
       const isOpen = hasChildren && expandedNodes.has(id);
@@ -973,11 +991,14 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // per-project fan-open missions (only when the folder is open). Cap on ROOT nodes.
   const projShownNodes = projShown.map((p) => {
     const open = expandedHomeProjects.has(p.id);
-    const tree = open ? sortMissions(missionsByProject[p.slug] || []) : [];
+    const isCorner = p.slug === 'corner';
+    const tree = open ? (isCorner ? cornerRootSort(missionsByProject[p.slug] || []) : sortMissions(missionsByProject[p.slug] || [])) : [];
+    // Corner's roots ARE the nav (8 tools + 3 groups) — show them all, never hide a tool.
+    const cap = isCorner ? Math.max(HOME_MISSION_CAP, tree.length) : HOME_MISSION_CAP;
     const showAll = missionShowAll.has(p.id);
-    const cappedTree = showAll ? tree : tree.slice(0, HOME_MISSION_CAP);
-    const more = open && !showAll ? Math.max(0, tree.length - HOME_MISSION_CAP) : 0;
-    const missions = flattenMissionTree(cappedTree, 'd1', expandedHomeNodes, p);
+    const cappedTree = showAll ? tree : tree.slice(0, cap);
+    const more = open && !showAll ? Math.max(0, tree.length - cap) : 0;
+    const missions = flattenMissionTree(cappedTree, 'd1', expandedHomeNodes, p, isCorner ? cornerRootSort : undefined);
     return { p, open, missions, more };
   });
 
@@ -1596,6 +1617,11 @@ export default function CornerCV6() {
   const [navOpen, setNavOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false); // ⌘K command palette (Search.jsx)
   const [assignConfig, setAssignConfig] = useState(null); // { type, id, title } for AssignButton overlay
+  // When you tap "Review" on a Home catch-up file card, this carries the deliverable to
+  // open ({ name, project, missionSlug }) into the Review tool. Reset on every nav to
+  // review, so opening Review from the tool bar (no target) lands on the queue, not a
+  // stale file.
+  const [reviewTarget, setReviewTarget] = useState(null);
   // Tapping a project anywhere (Chat list, etc.) opens that project's home on Home —
   // its missions list + the "step into general project chat" button — instead of jumping
   // straight into a chat. Home consumes this and opens its (proven) project-detail screen.
@@ -1638,9 +1664,15 @@ export default function CornerCV6() {
       return h.slice(0, -1);
     });
   }, []);
-  const onNav = useCallback((target) => {
+  const onNav = useCallback((target, arg) => {
     if (target === 'back') { back(); return; }
-    if (['home', 'support', 'command', 'tracker', 'organize', 'review', 'settings'].includes(target)) goTo(target, null);
+    if (['home', 'support', 'command', 'tracker', 'organize', 'review', 'settings'].includes(target)) {
+      // Carry a catch-up "Review this file" target into the Review tool; a plain
+      // toolbar nav('review') passes no arg and clears any prior target.
+      if (target === 'review') setReviewTarget(arg && typeof arg === 'object' ? arg : null);
+      goTo(target, null);
+      return;
+    }
     // Chat from the menu opens the conversations list; a row there opens the Goal Thread.
     // "See all" rooms (Home All Rooms header) routes to the same full rooms list (was a
     // dead 'rooms' target that fell through to nothing).
@@ -1690,7 +1722,7 @@ export default function CornerCV6() {
   else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'livescribe'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
   else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent' })} />; viewKey = 'tracker'; }
-  else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} /> : <Review worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} />; viewKey = 'review'; }
+  else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} target={reviewTarget} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} /> : <Review worldId={worldId} target={reviewTarget} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} />; viewKey = 'review'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 

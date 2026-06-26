@@ -29,11 +29,11 @@ function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
   return screen.outerHTML;
 }
 
-export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable }) {
+export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable, target }) {
   const { state, data, actions } = useReview(worldId || 'aom');
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
-  const { pins, addPin } = usePins(pickedId);
+  const { pins, addPin } = usePins(pickedId, worldId || 'aom');
 
   const picked = useMemo(() => pickedId ? data.queue.items.find((i) => i.id === pickedId) : null, [pickedId, data.queue.items]);
 
@@ -42,6 +42,25 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable 
     setScreen('read');
     actions.openDeliverable(id);
   }, [actions]);
+
+  // Catch-up → Review: open the specific deliverable the user tapped. The card carries
+  // only the filename (+ its project), so match it against the real review queue (whose
+  // items carry real paths). If it's in the queue, jump straight into the read view; if
+  // not (e.g. an older file outside the queue window), stay on the pick list instead of
+  // stranding the viewer on "Loading the file…". Applied once per target.
+  const targetAppliedRef = useRef(null);
+  useEffect(() => {
+    if (!target?.name) return;
+    const key = `${target.name}|${target.project || ''}`;
+    if (targetAppliedRef.current === key) return;
+    const items = data.queue.items;
+    if (!items.length) return; // queue still loading — retry when it lands
+    const base = (p) => String(p || '').split('/').pop();
+    const match = items.find((i) => base(i.id) === target.name && (!target.project || i.whoRaw === target.project))
+      || items.find((i) => base(i.id) === target.name);
+    targetAppliedRef.current = key;
+    if (match) onOpenDeliverable(match.id);
+  }, [target, data.queue.items, onOpenDeliverable]);
 
   const pickListHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 2 }), []);
   const readHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 1 }), []);
@@ -62,18 +81,20 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable 
     if (!viewer) return undefined;
 
     const handleViewerClick = (e) => {
-      // On mobile, click the .doc region to create a pin
+      // Tap anywhere on the deliverable (.doc holds the doc / photo / site-shot /
+      // video frame) to drop a pin-comment. Clicking an existing pin opens it instead.
       const docElem = e.target.closest('.doc');
-      if (docElem) {
-        const rect = docElem.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const w = rect.width;
-        const h = rect.height;
-        if (x > 0 && y > 0 && x < w && y < h) {
-          addPin(x, y, w, h);
-        }
-      }
+      if (!docElem) return;
+      if (e.target.closest('.pin')) return;
+      const rect = docElem.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      if (x < 0 || y < 0 || x > 1 || y > 1) return;
+      // On a video frame, anchor the comment to the current playback time too.
+      const video = docElem.querySelector('video');
+      const t = (video && Number.isFinite(video.currentTime)) ? video.currentTime : null;
+      const text = window.prompt('Add a comment for this spot:');
+      if (text && text.trim()) addPin(x, y, text.trim(), t);
     };
 
     viewer.addEventListener('click', handleViewerClick);

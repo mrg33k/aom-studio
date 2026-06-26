@@ -2,7 +2,7 @@
 // Built from wired/tools/review.html + review.json, fed by real useReview.
 // No design changes, only data wiring.
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useReview } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
@@ -29,21 +29,41 @@ function composeDesktopReview(raw) {
   return screen.outerHTML;
 }
 
-export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliverable }) {
+export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliverable, target }) {
   const { state, data, actions } = useReview(worldId || 'aom');
   const [pickedId, setPickedId] = useState(null);
-  const { pins, addPin, updatePin, deletePin } = usePins(pickedId);
+  const { pins, addPin } = usePins(pickedId, worldId || 'aom');
 
-  // Auto-open the first deliverable on entry (mirrors Organize previewing the first
-  // file), so you land on something to review instead of a blank viewer.
+  // Catch-up → Review carries a filename (+ its project); resolve it to a real queue
+  // item (the queue carries real paths) so we open the exact deliverable the user came
+  // to review instead of whatever happens to be first.
+  const targetId = useMemo(() => {
+    if (!target?.name) return null;
+    const base = (p) => String(p || '').split('/').pop();
+    const items = data.queue.items;
+    const m = items.find((i) => base(i.id) === target.name && (!target.project || i.whoRaw === target.project))
+      || items.find((i) => base(i.id) === target.name);
+    return m ? m.id : null;
+  }, [target, data.queue.items]);
+
+  // Auto-open on entry (mirrors Organize previewing the first file) so you land on
+  // something to review instead of a blank viewer — preferring the catch-up target.
   const firstId = data.queue.items[0]?.id || null;
+  const targetAppliedRef = useRef(false);
   useEffect(() => {
+    if (target?.name && !targetAppliedRef.current) {
+      if (!data.queue.items.length) return; // wait for the queue to land
+      targetAppliedRef.current = true;
+      const openId = targetId || firstId;
+      if (openId) { setPickedId(openId); actions.openDeliverable(openId); }
+      return;
+    }
     if (!pickedId && firstId) {
       setPickedId(firstId);
       actions.openDeliverable(firstId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickedId, firstId]);
+  }, [pickedId, firstId, target, targetId, data.queue.items.length]);
 
   const desktopHtml = useMemo(() => composeDesktopReview(reviewRaw), []);
 
@@ -121,7 +141,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   };
 
   // Add a ref to handle click interactions for pin creation
-  const viewerRef = React.useRef(null);
+  const viewerRef = useRef(null);
 
   // Bind click handler to the viewer region for pin creation
   useEffect(() => {
@@ -129,23 +149,20 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     if (!viewer) return;
 
     const handleViewerClick = (e) => {
-      // Only create a pin if clicking directly on the viewer background or content area
-      // (not on buttons, controls, or the hint overlay)
-      if (
-        e.target === viewer ||
-        e.target.closest('.doc') ||
-        e.target.closest('[data-html="deliverable.bodyHtml"]')
-      ) {
-        const rect = viewer.getBoundingClientRect();
-        const docRect = e.target.closest('.doc')?.getBoundingClientRect() || rect;
-        const x = e.clientX - docRect.left;
-        const y = e.clientY - docRect.top;
-        const w = docRect.width;
-        const h = docRect.height;
-        if (x > 0 && y > 0 && x < w && y < h) {
-          addPin(x, y, w, h);
-        }
-      }
+      // Tap anywhere on the deliverable (.doc holds the doc / photo / site-shot /
+      // video frame) to drop a pin-comment. Clicking an existing pin opens it instead.
+      const docElem = e.target.closest('.doc');
+      if (!docElem) return;
+      if (e.target.closest('.pin')) return;
+      const rect = docElem.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = (e.clientY - rect.top) / rect.height;
+      if (x < 0 || y < 0 || x > 1 || y > 1) return;
+      // On a video frame, anchor the comment to the current playback time too.
+      const video = docElem.querySelector('video');
+      const t = (video && Number.isFinite(video.currentTime)) ? video.currentTime : null;
+      const text = window.prompt('Add a comment for this spot:');
+      if (text && text.trim()) addPin(x, y, text.trim(), t);
     };
 
     viewer.addEventListener('click', handleViewerClick);
