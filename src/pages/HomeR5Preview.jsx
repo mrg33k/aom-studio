@@ -257,7 +257,7 @@ const CSS = `
 .r5 .bframe{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--ink);}
 .r5 .bframe .bbar{height:24px;background:#1A1A18;display:flex;align-items:center;gap:5px;padding:0 11px;flex:none;}
 .r5 .bframe .bbar i{width:7px;height:7px;border-radius:50%;background:#3A3A36;}
-.r5 .bframe img{width:100%;height:100%;object-fit:cover;object-position:top;display:block;}
+.r5 .bframe img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
 
 /* ---- 1: Bento — breadth grid ---- */
 .r5 .herobento{background:var(--paper);color:var(--ink);}
