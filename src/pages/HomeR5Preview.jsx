@@ -78,6 +78,49 @@ const PORTFOLIO = [
 const TABS = ['All', 'Brands', 'Founders', 'Construction'];
 const SPANS = [5, 4, 3]; // varied widths, fills a 12-col row every 3 tiles
 
+// Portfolio shown as category rows, Construction first. Two media: Video + Web.
+const VIDEO_ROWS = [
+  { cat: 'Construction', items: [
+    { t: 'To Have and To Host', id: '698a68b7fc23d3d76fa970ef', tag: 'Build' },
+    { t: 'Abrazo Healthcare', id: '698a58aefc23d3d76fa7cdd6', tag: 'HVAC' },
+    { t: 'Memorial Towers', id: '698a584faec3d4e420c20fef', tag: 'Industrial' },
+    { t: 'Refined Gardens', id: '698a57fb873071aec5c94350', tag: 'Landscaping' },
+    { t: 'Tree Guardian', id: '698a5e91873071aec5c9fc36', tag: 'Documentary' },
+    { t: 'AZ Cleantech', id: '698a57da873071aec5c93fa0', tag: 'Green B2B' },
+  ] },
+  { cat: 'Brands', items: [
+    { t: 'Journey to Gary Vee', id: '698a6296fc23d3d76fa8d992', tag: 'Narrative' },
+    { t: 'Virtu Hospitality', id: '698a5ef5fc23d3d76fa87ef4', tag: 'Luxury' },
+    { t: 'Noble Real Estate', id: '698a5b86fc23d3d76fa82ece', tag: 'Real estate' },
+    { t: 'Pretty Penny', id: '698a5d24aec3d4e420c2a0a0', tag: 'Food' },
+    { t: 'Aiper Homeshow', id: '698a58ae873071aec5c953ea', tag: 'Consumer' },
+    { t: 'United Food Bank', id: '698a5fcdfc23d3d76fa893b8', tag: 'Non-profit' },
+  ] },
+  { cat: 'Founders', items: [
+    { t: 'Abstrakt', id: '698a5faffc23d3d76fa8909f', tag: 'SaaS' },
+    { t: 'Reelay', id: '698a5aa5aec3d4e420c263c4', tag: 'Software' },
+    { t: 'Intelliplay', id: '698a5386aec3d4e420c17a69', tag: 'Product' },
+    { t: 'Gitex Dubai', id: '698a6227fc23d3d76fa8cd57', tag: 'Global tech' },
+    { t: 'NEB Docs / HUUB', id: '698a63acfc23d3d76fa8f585', tag: 'GovTech' },
+    { t: 'IAAPA 2026', id: '698a5391aec3d4e420c17bd3', tag: 'Event' },
+  ] },
+];
+const WEB_ROWS = [
+  { cat: 'Construction', items: [
+    { t: 'Ambition Mechanical', url: '/brands/ambition', tag: 'Mechanical', domain: 'aheadofmarket.com/brands/ambition' },
+    { t: 'Ambition Performance', url: '/brands/ambition/performance', tag: 'Campaign', domain: 'aheadofmarket.com/brands/ambition/performance' },
+  ] },
+  { cat: 'Brands', items: [
+    { t: 'Valor to Victory', url: '/brands/valor', tag: 'Brand', domain: 'aheadofmarket.com/brands/valor' },
+    { t: 'Artlink', url: '/brands/artlink', tag: 'Arts', domain: 'aheadofmarket.com/brands/artlink' },
+    { t: 'Space Rising', url: '/brands/space-rising', tag: 'Platform', domain: 'aheadofmarket.com/brands/space-rising' },
+  ] },
+  { cat: 'Founders', items: [
+    { t: 'S3C', url: '/brands/s3c', tag: 'Platform', domain: 'aheadofmarket.com/brands/s3c' },
+    { t: 'Included Health', url: '/brands/included-health', tag: 'Health', domain: 'aheadofmarket.com/brands/included-health' },
+  ] },
+];
+
 const TRUST = [
   { k: 'Predictable delivery', v: 'Tight timelines', d: 'You know what is happening and when. No surprises, no delays, no scope creep.' },
   { k: 'Fast turnarounds', v: '24 to 72 hr', d: 'When you need social cuts or selects fast, we deliver. Not weeks. Days.' },
@@ -252,6 +295,25 @@ const CSS = `
 .r5 .portpick button{font-family:var(--text);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-500);background:transparent;border:1px solid var(--line);padding:8px 14px;cursor:pointer;}
 .r5 .portpick button.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
 
+/* Web / Video medium toggle */
+.r5 .medium{display:inline-flex;border:1px solid var(--ink);}
+.r5 .medium button{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:.02em;font-size:14px;padding:11px 24px;background:transparent;color:var(--ink);border:none;cursor:pointer;}
+.r5 .medium button + button{border-left:1px solid var(--ink);}
+.r5 .medium button.on{background:var(--ink);color:var(--paper);}
+
+/* website card (browser-frame preview, links to the live site) */
+.r5 .ccard.webcard{aspect-ratio:auto;}
+.r5 .webcard{position:relative;display:flex;flex-direction:column;background:var(--paper);border:1px solid var(--line);cursor:pointer;transition:border-color .15s;}
+.r5 .webcard:hover{border-color:var(--gold);}
+.r5 .webcard .bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--paper-alt);}
+.r5 .webcard .bar .d{width:9px;height:9px;border-radius:50%;background:#CFCBC3;}
+.r5 .webcard .bar .u{margin-left:8px;font-size:11px;color:var(--ink-500);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.r5 .webcard .body{padding:24px;flex:1;display:flex;flex-direction:column;justify-content:space-between;min-height:150px;}
+.r5 .webcard .body .nm{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:30px;line-height:.95;}
+.r5 .webcard .body .row{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+.r5 .webcard .body .tg{font-size:10px;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--ink);padding:3px 8px;}
+.r5 .webcard .body .open{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:13px;color:var(--gold-deep);}
+
 .r5 .ways{padding:90px 0;border-bottom:1px solid var(--line);background:var(--paper);}
 .r5 .ways .wh{text-align:center;max-width:46ch;margin:0 auto 48px;}
 .r5 .ways .wh .eyebrow{color:var(--gold-deep);font-size:11px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:16px;display:block;}
@@ -345,13 +407,11 @@ export default function HomeR5Preview() {
     const n = parseInt(new URLSearchParams(window.location.search).get('hero'), 10);
     return n >= 1 && n <= 4 ? n : 3;
   });
-  const [port, setPort] = useState(() => {
-    if (typeof window === 'undefined') return 1;
-    const n = parseInt(new URLSearchParams(window.location.search).get('port'), 10);
-    return n >= 1 && n <= 4 ? n : 1;
+  const [medium, setMedium] = useState(() => {
+    if (typeof window === 'undefined') return 'Video';
+    return new URLSearchParams(window.location.search).get('med') === 'web' ? 'Web' : 'Video';
   });
-  const shown = tab === 'All' ? PORTFOLIO : PORTFOLIO.filter((p) => p.cat === tab);
-  const CATS = ['Brands', 'Founders', 'Construction'];
+  const rows = medium === 'Web' ? WEB_ROWS : VIDEO_ROWS;
 
   const HeroText = () => (
     <div className="htext">
@@ -454,107 +514,46 @@ export default function HomeR5Preview() {
         ))}
       </div></div>
 
-      {/* PORTFOLIO — 4 layout options */}
+      {/* PORTFOLIO — category rows, Web/Video toggle, Construction first */}
       <section className="work" id="work"><div className="wrap">
         <div className="head">
           <div>
             <h2 className="disp">The portfolio<span className="dot" /></h2>
             <div className="sub">Real projects. Real clients. All of it shipped.</div>
           </div>
-          {port !== 4 && (
-            <div className="tabs">
-              {TABS.map((t) => (
-                <button key={t} className={t === tab ? 'on' : ''} onClick={() => setTab(t)}>{t}</button>
-              ))}
-            </div>
-          )}
+          <div className="medium">
+            <button className={medium === 'Video' ? 'on' : ''} onClick={() => setMedium('Video')}>Video</button>
+            <button className={medium === 'Web' ? 'on' : ''} onClick={() => setMedium('Web')}>Web</button>
+          </div>
         </div>
 
-        <div className="portpick">
-          {['Editorial grid', 'Featured + rail', 'Masonry wall', 'Category rows'].map((l, i) => (
-            <button key={l} className={port === i + 1 ? 'on' : ''} onClick={() => setPort(i + 1)}>{i + 1} {l}</button>
-          ))}
-        </div>
-
-        {/* P1 editorial grid */}
-        {port === 1 && (<>
-          <div className="feature" onClick={() => setVideo(FEATURED)}>
-            <LazyGumlet id={FEATURED.id} eager className="vid" />
-            <div className="shade" />
-            <div className="ftop"><span className="ftag">Featured · {FEATURED.tag}</span><span className="play">▶</span></div>
-            <div className="fbot"><div className="fttl">{FEATURED.t}</div><div className="fsub">{FEATURED.s}</div></div>
-          </div>
-          <div className="grid12">
-            {shown.map((p, i) => (
-              <div key={p.t} className="tile" style={{ gridColumn: `span ${SPANS[i % 3]}` }} onClick={() => setVideo(p)}>
-                <LazyGumlet id={p.id} className="vid" />
-                <div className="shade" />
-                <div className="top"><span className="idx">{String(i + 1).padStart(2, '0')}</span><span className="pl">▶</span></div>
-                <div className="bot"><div className="name">{p.t}</div>
-                  <div className="foot"><span className="metric">{p.metric}</span><span className="lbl">{p.tag}</span></div></div>
-              </div>
-            ))}
-          </div>
-        </>)}
-
-        {/* P2 featured + rail */}
-        {port === 2 && (
-          <div className="pf2">
-            <div className="vcard big" onClick={() => setVideo(FEATURED)}>
-              <LazyGumlet id={FEATURED.id} eager className="vid" />
-              <div className="shade" /><span className="pl">▶</span>
-              <div className="cap"><div className="nm">{FEATURED.t}</div>
-                <div className="row"><span className="mt">{FEATURED.s}</span><span className="tg">{FEATURED.tag}</span></div></div>
-            </div>
-            <div className="rail">
-              {shown.slice(0, 5).map((p) => (
-                <div className="rrow" key={p.t} onClick={() => setVideo(p)}>
-                  <div className="rthumb"><LazyGumlet id={p.id} className="vid" /></div>
-                  <div><div className="rt">{p.t}</div><div className="rm">{p.metric} · {p.tag}</div></div>
-                  <span className="rar">↗</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* P3 masonry wall */}
-        {port === 3 && (
-          <div className="pf3">
-            {[FEATURED, ...shown].map((p, i) => (
-              <div className="vcard" key={p.t + i} style={{ aspectRatio: ['9/16', '16/9', '4/5', '1/1', '16/9', '3/4'][i % 6] }} onClick={() => setVideo(p)}>
-                <LazyGumlet id={p.id} eager={i < 6} className="vid" />
-                <div className="shade" /><span className="pl">▶</span>
-                <div className="cap"><div className="nm">{p.t}</div>
-                  <div className="row"><span className="mt">{p.metric || p.s}</span><span className="tg">{p.tag}</span></div></div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* P4 category carousels */}
-        {port === 4 && (
-          <div className="pf4">
-            {CATS.map((cat) => {
-              const items = PORTFOLIO.filter((p) => p.cat === cat);
-              return (
-                <div className="crow" key={cat}>
-                  <div className="ch"><h3>{cat}</h3><span className="cc">{items.length} projects</span></div>
-                  <div className="track">
-                    {items.map((p) => (
-                      <div className="vcard ccard" key={p.t} onClick={() => setVideo(p)}>
+        <div className="pf4">
+          {rows.map((r) => (
+            <div className="crow" key={r.cat}>
+              <div className="ch"><h3>{r.cat}</h3><span className="cc">{r.items.length} {medium === 'Web' ? 'sites' : 'films'}</span></div>
+              <div className="track">
+                {medium === 'Web'
+                  ? r.items.map((p) => (
+                      <div className="ccard webcard" key={p.t} onClick={() => window.open(p.url, '_blank', 'noopener')}>
+                        <div className="bar"><span className="d" /><span className="d" /><span className="d" /><span className="u">{p.domain}</span></div>
+                        <div className="body">
+                          <div className="nm">{p.t}</div>
+                          <div className="row"><span className="tg">{p.tag}</span><span className="open">View live ↗</span></div>
+                        </div>
+                      </div>
+                    ))
+                  : r.items.map((p) => (
+                      <div className="vcard ccard" key={p.t} onClick={() => setVideo({ id: p.id, client: p.t })}>
                         <LazyGumlet id={p.id} className="vid" />
                         <div className="shade" /><span className="pl">▶</span>
                         <div className="cap"><div className="nm">{p.t}</div>
-                          <div className="row"><span className="mt">{p.metric}</span><span className="tg">{p.tag}</span></div></div>
+                          <div className="row"><span className="mt">{p.tag}</span></div></div>
                       </div>
                     ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div></section>
 
       {/* TWO WAYS */}
