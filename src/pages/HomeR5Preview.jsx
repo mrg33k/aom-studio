@@ -122,17 +122,26 @@ const WEB_ROWS = [
 ];
 
 const TRUST = [
-  { k: 'Predictable delivery', v: 'Tight timelines', d: 'You know what is happening and when. No surprises, no delays, no scope creep.' },
-  { k: 'Fast turnarounds', v: '24 to 72 hr', d: 'When you need social cuts or selects fast, we deliver. Not weeks. Days.' },
-  { k: 'Lean crew', v: 'Cinema grade', d: 'Small team, big output. No account managers between you and the people doing the work.' },
-  { k: 'Brand consistency', v: 'Repeatable', d: 'Every piece looks like it came from the same team. Because it did.' },
+  { k: 'Clear timelines', v: 'On time', d: 'You know what is happening and when. We hold the dates we give you.' },
+  { k: 'Fast turnarounds', v: '24 to 72 hr', d: 'Need social cuts or selects quickly? You get them in days, not weeks.' },
+  { k: 'No middlemen', v: 'One team', d: 'The people who make the work are the people you talk to.' },
+  { k: 'Consistent look', v: 'Repeatable', d: 'Every piece looks like it came from the same team, because it did.' },
+];
+
+const SERVICES = [
+  { n: '01', t: 'Brand films', d: 'Films that show what you do and why it matters.' },
+  { n: '02', t: 'Ads and social', d: 'Short videos cut for Meta, YouTube, and TikTok.' },
+  { n: '03', t: 'Websites', d: 'Sites that are fast, clear, and easy to update.' },
+  { n: '04', t: 'Branding', d: 'A logo, colors, and type that hold together.' },
+  { n: '05', t: 'Photography', d: 'Product, team, and location photos for the brand.' },
+  { n: '06', t: 'Events', d: 'On site coverage, cut into a film and clips.' },
 ];
 
 const ONLINE_STEPS = [
   ['1', 'Tell us what you need', 'A sentence is fine. "Make me a 30 second ad." "Fix the homepage." "Build me a brand."'],
   ['2', 'Send us your files', 'Photos, raw footage, an old website, a logo. Whatever you already have, we will use.'],
   ['3', 'We reply in 24 hours', 'A real person, with a price, a timeline, and any questions left open.'],
-  ['4', 'Rough draft in 48 to 72 hours', 'You see the work fast. Then we polish until you love it.'],
+  ['4', 'Rough draft in 48 to 72 hours', 'You see the work fast. Then we refine it with you until it is right.'],
 ];
 const PERSON_STEPS = [
   ['1', 'Book a visit', 'Come to our space or we come to yours. Coffee on us.'],
@@ -225,6 +234,21 @@ const CSS = `
 @keyframes r5marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .r5 .ticker .it{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:15px;letter-spacing:.02em;color:#7C7A73;white-space:nowrap;padding:0 22px;}
 .r5 .ticker .sep{color:var(--ink-700);}
+
+/* SERVICES — dark band */
+.r5 .svc{background:var(--ink);color:var(--paper);padding:92px 0;}
+.r5 .svc .svctop{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:end;padding-bottom:40px;margin-bottom:8px;border-bottom:1px solid var(--ink-700);}
+.r5 .svc .eyebrow{color:var(--gold);font-size:11px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:18px;display:block;}
+.r5 .svc .svctop h2{font-size:64px;}
+.r5 .svc .svclede{color:var(--ink-300);font-size:17px;line-height:1.6;max-width:44ch;}
+.r5 .svc .svcgrid{display:grid;grid-template-columns:repeat(3,1fr);}
+.r5 .svc .svccell{padding:34px 30px 30px;border-left:1px solid var(--ink-700);border-top:1px solid var(--ink-700);}
+.r5 .svc .svccell:nth-child(3n+1){border-left:none;padding-left:0;}
+.r5 .svc .svccell:nth-child(-n+3){border-top:none;}
+.r5 .svc .svccell .sn{font-family:var(--display);font-weight:800;font-size:13px;color:var(--gold-deep);letter-spacing:.05em;}
+.r5 .svc .svccell h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:28px;margin:14px 0 10px;}
+.r5 .svc .svccell p{color:var(--ink-300);font-size:14.5px;line-height:1.55;}
+@media(max-width:880px){.r5 .svc .svctop{grid-template-columns:1fr;}.r5 .svc .svctop h2{font-size:48px;}.r5 .svc .svcgrid{grid-template-columns:1fr 1fr;}.r5 .svc .svccell:nth-child(3n+1){border-left:1px solid var(--ink-700);padding-left:30px;}.r5 .svc .svccell:nth-child(odd){border-left:none;padding-left:0;}.r5 .svc .svccell:nth-child(-n+2){border-top:none;}}
 
 .r5 .work{padding:84px 0;border-bottom:1px solid var(--line);}
 .r5 .work .head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid var(--ink);padding-bottom:22px;margin-bottom:26px;gap:20px;flex-wrap:wrap;}
@@ -336,12 +360,7 @@ const CSS = `
 .r5 .panel.feat .step .sb{color:var(--ink-300);}
 .r5 .panel .pcta{margin-top:24px;}
 
-/* ways picker */
-.r5 .wayspick{display:flex;gap:8px;justify-content:center;margin-bottom:30px;flex-wrap:wrap;}
-.r5 .wayspick button{font-family:var(--text);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-500);background:transparent;border:1px solid var(--line);padding:8px 14px;cursor:pointer;}
-.r5 .wayspick button.on{background:var(--ink);color:var(--paper);border-color:var(--ink);}
-
-/* W1 interactive tabs + horizontal timeline */
+/* Two Ways — interactive tabs + horizontal timeline */
 .r5 .w1{max-width:980px;margin:0 auto;}
 .r5 .w1tabs{display:flex;justify-content:center;margin-bottom:34px;}
 .r5 .w1tabs .seg{display:inline-flex;border:1px solid var(--ink);}
@@ -357,57 +376,7 @@ const CSS = `
 .r5 .w1steps .st .l{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:16px;margin:12px 0 8px;letter-spacing:-.01em;}
 .r5 .w1steps .st .b{font-size:13px;color:var(--ink-500);line-height:1.5;}
 .r5 .w1 .w1cta{text-align:center;margin-top:30px;}
-
-/* W2 split panels with media */
-.r5 .w2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
-.r5 .w2panel{border:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column;background:var(--paper);}
-.r5 .w2panel.feat{border-color:var(--ink);}
-.r5 .w2media{position:relative;aspect-ratio:16/9;overflow:hidden;background:var(--ink);border-bottom:1px solid var(--line);}
-.r5 .w2media .vid{position:absolute;inset:0;}
-.r5 .w2media .drop{position:absolute;inset:18px;border:2px dashed #C9C4B9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink-500);background:var(--paper-alt);}
-.r5 .w2media .drop .ic{font-size:30px;color:var(--gold-deep);}
-.r5 .w2media .drop .chips{display:flex;gap:7px;}
-.r5 .w2media .drop .chips span{font-size:10px;border:1px solid var(--line);padding:3px 8px;background:var(--paper);color:var(--ink-500);}
-.r5 .w2body{padding:28px;display:flex;flex-direction:column;gap:6px;flex:1;}
-.r5 .w2body .pe{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);}
-.r5 .w2body h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:38px;line-height:.95;margin-bottom:6px;}
-.r5 .w2body .ls{display:flex;flex-direction:column;gap:9px;margin:6px 0 18px;}
-.r5 .w2body .ls .li{display:flex;gap:11px;align-items:baseline;font-size:15px;}
-.r5 .w2body .ls .li b{color:var(--gold-deep);font-family:var(--display);font-weight:800;}
-.r5 .w2body .pcta{margin-top:auto;}
-
-/* W3 connected horizontal timeline, two rows */
-.r5 .w3row{padding:26px 0;border-top:1px solid var(--line);}
-.r5 .w3row:last-of-type{border-bottom:1px solid var(--line);}
-.r5 .w3top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
-.r5 .w3top .lab{display:flex;align-items:baseline;gap:14px;}
-.r5 .w3top .lab .pe{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-500);}
-.r5 .w3top .lab h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:32px;}
-.r5 .w3track{display:grid;grid-template-columns:repeat(4,1fr);gap:0;}
-.r5 .w3node{position:relative;padding-right:24px;}
-.r5 .w3node .nrow{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-.r5 .w3node .nn{width:30px;height:30px;border:1px solid var(--gold);color:var(--gold-deep);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:13px;flex:none;}
-.r5 .w3node .nline{flex:1;height:1px;background:var(--line);}
-.r5 .w3node:last-child .nline{display:none;}
-.r5 .w3node .nl{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:15px;letter-spacing:-.01em;}
-.r5 .w3node .nb{font-size:12.5px;color:var(--ink-500);line-height:1.45;margin-top:5px;}
-
-/* W4 big editorial numbers */
-.r5 .w4{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--ink);}
-.r5 .w4col{padding:36px 36px 30px;border-left:1px solid var(--line);}
-.r5 .w4col:first-child{border-left:none;background:var(--ink);color:var(--paper);}
-.r5 .w4col .pe{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-deep);}
-.r5 .w4col:first-child .pe{color:var(--gold);}
-.r5 .w4col h3{font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.02em;font-size:40px;margin:6px 0 22px;}
-.r5 .w4col .st{display:grid;grid-template-columns:74px 1fr;gap:18px;padding:16px 0;border-top:1px solid var(--line);align-items:baseline;}
-.r5 .w4col:first-child .st{border-color:var(--ink-700);}
-.r5 .w4col .st .n{font-family:var(--display);font-weight:800;font-size:52px;line-height:.8;color:var(--gold-deep);}
-.r5 .w4col:first-child .st .n{color:var(--gold);}
-.r5 .w4col .st .l{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:18px;}
-.r5 .w4col .st .b{font-size:13.5px;color:var(--ink-500);line-height:1.5;margin-top:5px;}
-.r5 .w4col:first-child .st .b{color:var(--ink-300);}
-.r5 .w4col .pcta{margin-top:22px;}
-@media(max-width:880px){.r5 .w2,.r5 .w4{grid-template-columns:1fr;}.r5 .w1steps,.r5 .w3track{grid-template-columns:1fr 1fr;}}
+@media(max-width:880px){.r5 .w1steps{grid-template-columns:1fr 1fr;}}
 
 .r5 .why{background:var(--ink);color:var(--paper);padding:88px 0;}
 .r5 .why .eyebrow{color:var(--gold);font-size:11px;letter-spacing:.3em;text-transform:uppercase;margin-bottom:18px;display:block;}
@@ -485,24 +454,19 @@ export default function HomeR5Preview() {
     return new URLSearchParams(window.location.search).get('med') === 'web' ? 'Web' : 'Video';
   });
   const rows = medium === 'Web' ? WEB_ROWS : VIDEO_ROWS;
-  const [ways, setWays] = useState(() => {
-    if (typeof window === 'undefined') return 1;
-    const n = parseInt(new URLSearchParams(window.location.search).get('ways'), 10);
-    return n >= 1 && n <= 4 ? n : 1;
-  });
-  const [wtab, setWtab] = useState('Online');
+  const [wtab, setWtab] = useState('In person');
   const WAY_ONLINE = { eyebrow: 'Online', title: 'Hire us online.', steps: ONLINE_STEPS, cta: 'Send your files' };
   const WAY_PERSON = { eyebrow: 'In person', title: 'Hire us in person.', steps: PERSON_STEPS, cta: 'Book a visit' };
   const wActive = wtab === 'Online' ? WAY_ONLINE : WAY_PERSON;
 
   const HeroText = () => (
     <div className="htext">
-      <span className="pill"><span className="ledot" /> Now streaming · Live reels</span>
-      <h1 className="disp">Brand films for the ones who <span className="gold">refuse to follow</span><span className="dot" /></h1>
-      <div className="sub"><p>Brand films, websites, and ads for real businesses. Hire us online by sending a few files, or hire us in person. We reply within 24 hours.</p></div>
+      <span className="pill"><span className="ledot" /> Video · Web · Ads</span>
+      <h1 className="disp">We make video and <span className="gold">websites</span> for businesses<span className="dot" /></h1>
+      <div className="sub"><p>The kind that gets you seen and gets you customers. Send us a few files to start, or come in and meet us. We reply within 24 hours.</p></div>
       <div className="cta">
         <a className="btn gold" href="#contact">Start a project ↗</a>
-        <a className="btn ghost-light" href="#work">▶&nbsp; Watch the reel</a>
+        <a className="btn ghost-light" href="#work">See our work</a>
       </div>
     </div>
   );
@@ -596,12 +560,32 @@ export default function HomeR5Preview() {
         ))}
       </div></div>
 
+      {/* SERVICES — dark, who we are + what we do */}
+      <section className="svc"><div className="wrap">
+        <div className="svctop">
+          <div>
+            <span className="eyebrow">What we do</span>
+            <h2 className="disp">A small team<br />that does <span className="gold">a lot</span><span className="dot" /></h2>
+          </div>
+          <p className="svclede">No big agency and no account managers. The people who make the work are the people you talk to. That keeps us fast, and it lets us take on more than our size would suggest.</p>
+        </div>
+        <div className="svcgrid">
+          {SERVICES.map((s) => (
+            <div className="svccell" key={s.n}>
+              <span className="sn">{s.n}</span>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </div></section>
+
       {/* PORTFOLIO — category rows, Web/Video toggle, Construction first */}
       <section className="work" id="work"><div className="wrap">
         <div className="head">
           <div>
-            <h2 className="disp">The portfolio<span className="dot" /></h2>
-            <div className="sub">Real projects. Real clients. All of it shipped.</div>
+            <h2 className="disp">Recent work<span className="dot" /></h2>
+            <div className="sub">A few projects we shipped. Switch between video and websites.</div>
           </div>
           <div className="medium">
             <button className={medium === 'Video' ? 'on' : ''} onClick={() => setMedium('Video')}>Video</button>
@@ -643,106 +627,22 @@ export default function HomeR5Preview() {
         <div className="wh">
           <span className="eyebrow">How to hire us</span>
           <h2 className="disp">Two ways. <span className="gold">Pick one</span><span className="dot" /></h2>
-          <p>You do not need a meeting to start. Most clients hire us online and never visit. Some prefer to shake hands. Both work.</p>
-        </div>
-        <div className="wayspick">
-          {[[1, 'Tabs'], [2, 'Split'], [3, 'Timeline'], [4, 'Editorial']].map(([n, l]) => (
-            <button key={n} className={ways === n ? 'on' : ''} onClick={() => setWays(n)}>{l}</button>
-          ))}
+          <p>You do not need a meeting to start. Come shake hands with us, or send a few files and never visit. Both work.</p>
         </div>
 
-        {/* W1 — interactive tab + horizontal timeline */}
-        {ways === 1 && (
-          <div className="w1">
-            <div className="w1tabs"><div className="seg">
-              <button className={wtab === 'Online' ? 'on' : ''} onClick={() => setWtab('Online')}>Online</button>
-              <button className={wtab === 'In person' ? 'on' : ''} onClick={() => setWtab('In person')}>In person</button>
-            </div></div>
-            <div className="w1head"><h3 className="disp">{wActive.title}</h3></div>
-            <div className="w1steps">
-              {wActive.steps.map((s) => (
-                <div className="st" key={s[0]}><div className="n">{s[0]}</div><div className="l">{s[1]}</div><div className="b">{s[2]}</div></div>
-              ))}
-            </div>
-            <div className="w1cta"><a className="btn gold" href="#contact">{wActive.cta} ↗</a></div>
-          </div>
-        )}
-
-        {/* W2 — split panels with media */}
-        {ways === 2 && (
-          <div className="w2">
-            <div className="w2panel feat">
-              <div className="w2media">
-                <div className="drop">
-                  <span className="ic">↥</span>
-                  <span>Drop your files. We take it from here.</span>
-                  <span className="chips"><span>Footage</span><span>Photos</span><span>Logo</span><span>Old site</span></span>
-                </div>
-              </div>
-              <div className="w2body">
-                <span className="pe">Online · Most clients</span>
-                <h3 className="disp">Hire us online.</h3>
-                <div className="ls">
-                  {ONLINE_STEPS.map((s) => (
-                    <div className="li" key={s[0]}><b>{s[0]}</b><span>{s[1]}</span></div>
-                  ))}
-                </div>
-                <div className="pcta"><a className="btn gold" href="#contact">Send your files ↗</a></div>
-              </div>
-            </div>
-            <div className="w2panel">
-              <div className="w2media"><div className="vid"><LazyGumlet id={FILMS[0].id} eager /></div></div>
-              <div className="w2body">
-                <span className="pe">In person</span>
-                <h3 className="disp">Hire us in person.</h3>
-                <div className="ls">
-                  {PERSON_STEPS.map((s) => (
-                    <div className="li" key={s[0]}><b>{s[0]}</b><span>{s[1]}</span></div>
-                  ))}
-                </div>
-                <div className="pcta"><a className="btn ghost-ink" href="#contact">Book a visit ↗</a></div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* W3 — two connected horizontal timelines */}
-        {ways === 3 && (
-          <div className="w3">
-            {[WAY_ONLINE, WAY_PERSON].map((w) => (
-              <div className="w3row" key={w.eyebrow}>
-                <div className="w3top">
-                  <div className="lab"><span className="pe">{w.eyebrow}</span><h3 className="disp">{w.title}</h3></div>
-                  <a className={'btn ' + (w.eyebrow === 'Online' ? 'gold' : 'ghost-ink')} href="#contact">{w.cta} ↗</a>
-                </div>
-                <div className="w3track">
-                  {w.steps.map((s) => (
-                    <div className="w3node" key={s[0]}>
-                      <div className="nrow"><span className="nn">{s[0]}</span><span className="nline" /></div>
-                      <div className="nl">{s[1]}</div><div className="nb">{s[2]}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        <div className="w1">
+          <div className="w1tabs"><div className="seg">
+            <button className={wtab === 'In person' ? 'on' : ''} onClick={() => setWtab('In person')}>In person</button>
+            <button className={wtab === 'Online' ? 'on' : ''} onClick={() => setWtab('Online')}>Online</button>
+          </div></div>
+          <div className="w1head"><h3 className="disp">{wActive.title}</h3></div>
+          <div className="w1steps">
+            {wActive.steps.map((s) => (
+              <div className="st" key={s[0]}><div className="n">{s[0]}</div><div className="l">{s[1]}</div><div className="b">{s[2]}</div></div>
             ))}
           </div>
-        )}
-
-        {/* W4 — big editorial numbers */}
-        {ways === 4 && (
-          <div className="w4">
-            {[WAY_ONLINE, WAY_PERSON].map((w) => (
-              <div className="w4col" key={w.eyebrow}>
-                <span className="pe">{w.eyebrow}{w.eyebrow === 'Online' ? ' · Most clients' : ''}</span>
-                <h3>{w.title}</h3>
-                {w.steps.map((s) => (
-                  <div className="st" key={s[0]}><div className="n">{s[0]}</div><div><div className="l">{s[1]}</div><div className="b">{s[2]}</div></div></div>
-                ))}
-                <div className="pcta"><a className={'btn ' + (w.eyebrow === 'Online' ? 'gold' : 'ghost-ink')} href="#contact">{w.cta} ↗</a></div>
-              </div>
-            ))}
-          </div>
-        )}
+          <div className="w1cta"><a className="btn gold" href="#contact">{wActive.cta} ↗</a></div>
+        </div>
       </div></section>
 
       {/* WHY IT WORKS */}
@@ -758,7 +658,7 @@ export default function HomeR5Preview() {
 
       {/* TESTIMONIALS */}
       <section className="voices"><div className="wrap">
-        <h2 className="disp">Proof, not promises<span className="dot" /></h2>
+        <h2 className="disp">What clients say<span className="dot" /></h2>
         <div className="grid">
           {VOICES.map((v) => (
             <div className="q" key={v.n}>
@@ -774,8 +674,8 @@ export default function HomeR5Preview() {
       <section className="close" id="contact">
         <BrandMark kind="mono" className="mono mark" />
         <div className="wrap inner">
-          <span className="kicker">[ Start your brief ]</span>
-          <h2 className="disp">Get <span className="gold">ahead</span><span className="dot" /></h2>
+          <span className="kicker">[ Get in touch ]</span>
+          <h2 className="disp">Tell us <span className="gold">what you need</span><span className="dot" /></h2>
           <div className="ctarow">
             <a className="btn gold" href="mailto:hello@aom-inhouse.com">Start a project ↗</a>
             <span className="note">Send a few files or book a call. We reply within 24 hours.</span>
@@ -793,7 +693,7 @@ export default function HomeR5Preview() {
           </div>
         </div>
         <div className="base">
-          <div className="sig">One vision. Many worlds ahead<b>.</b></div>
+          <div className="sig">A video and web studio<b>.</b></div>
           <div className="fine">© 2026 Ahead of Market. All rights reserved.</div>
         </div>
       </div></footer>
