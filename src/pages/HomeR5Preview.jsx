@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import LazyGumlet from '../components/home/LazyGumlet';
 import BrandMark from '../components/home/BrandMark';
 
@@ -228,7 +228,7 @@ const CSS = `
 /* ---- 4: Film — one big film rotating through random clips ---- */
 .r5 .herofilm{background:var(--ink);color:var(--paper);}
 .r5 .rfilm{position:absolute;inset:0;z-index:1;}
-.r5 .rlayer{position:absolute;inset:0;opacity:0;transition:opacity 1.3s ease;}
+.r5 .rlayer{position:absolute;inset:0;opacity:0;transition:opacity 1.6s ease-in-out;will-change:opacity;}
 .r5 .rlayer.on{opacity:1;}
 .r5 .v3scrim{background:linear-gradient(90deg,rgba(11,11,11,.95) 8%,rgba(11,11,11,.55) 45%,rgba(11,11,11,.2) 75%),linear-gradient(0deg,rgba(11,11,11,.92),transparent 34%);}
 
@@ -484,31 +484,38 @@ function LineReel({ count = 7, onPlay }) {
   );
 }
 
-// A single big film that rotates through random clips with a crossfade -> always fresh.
-function RotatingFilm({ intervalMs = 6500 }) {
+// A single big film that rotates through random clips with a true crossfade.
+// Key to a clean transition: the NEXT clip is loaded into the hidden layer a full
+// cycle BEFORE it is revealed, so it is already playing (no poster still) when it
+// fades in. We only swap a layer's clip AFTER it has finished fading out.
+function RotatingFilm({ intervalMs = 7000, fadeMs = 1600 }) {
   const queue = useMemo(() => shuffle(REEL_POOL), []);
   const [showA, setShowA] = useState(true);
   const [a, setA] = useState(queue[0]?.id);
-  const [b, setB] = useState(queue[1]?.id);
-  const [idx, setIdx] = useState(1);
+  const [b, setB] = useState(queue[1] ? queue[1].id : queue[0]?.id);
+  const showARef = useRef(true);
+  const posRef = useRef(1); // index of the clip currently sitting in the hidden layer
   useEffect(() => {
     if (queue.length < 2) return;
-    const t = setInterval(() => {
-      setIdx((i) => {
-        const next = (i + 1) % queue.length;
-        setShowA((s) => {
-          if (s) setB(queue[next].id); else setA(queue[next].id);
-          return !s;
-        });
-        return next;
-      });
+    let pending;
+    const id = setInterval(() => {
+      // 1) crossfade to the hidden layer (it has been playing, invisible, for a cycle)
+      showARef.current = !showARef.current;
+      setShowA(showARef.current);
+      // 2) after the fade completes, quietly load the next clip into the now-hidden
+      //    layer so it has a full cycle to start before its turn.
+      pending = setTimeout(() => {
+        posRef.current = (posRef.current + 1) % queue.length;
+        const nextId = queue[posRef.current].id;
+        if (showARef.current) setB(nextId); else setA(nextId);
+      }, fadeMs + 150);
     }, intervalMs);
-    return () => clearInterval(t);
-  }, [queue, intervalMs]);
+    return () => { clearInterval(id); clearTimeout(pending); };
+  }, [queue, intervalMs, fadeMs]);
   return (
     <div className="rfilm">
-      <div className={'rlayer' + (showA ? ' on' : '')}>{a && <LazyGumlet id={a} eager />}</div>
-      <div className={'rlayer' + (!showA ? ' on' : '')}>{b && <LazyGumlet id={b} eager />}</div>
+      <div className={'rlayer' + (showA ? ' on' : '')}>{a && <LazyGumlet id={a} eager poster="#0B0B0B" />}</div>
+      <div className={'rlayer' + (!showA ? ' on' : '')}>{b && <LazyGumlet id={b} eager poster="#0B0B0B" />}</div>
     </div>
   );
 }
@@ -519,7 +526,7 @@ export default function HomeR5Preview() {
   const [hero, setHero] = useState(() => {
     if (typeof window === 'undefined') return 1;
     const n = parseInt(new URLSearchParams(window.location.search).get('hero'), 10);
-    return n >= 1 && n <= 4 ? n : 1;
+    return n >= 1 && n <= 4 ? n : 4;
   });
   const portrait = useMemo(() => shuffle(DECK_REELS), []);
   const [medium, setMedium] = useState(() => {
