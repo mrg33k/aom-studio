@@ -609,6 +609,18 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
           } else {
             openCol3(node);
           }
+        } else if (node.kind === 'mission' && node.isFolder) {
+          // A mission that is itself a folder (has sub-missions) expands on → like a project:
+          // first → fans it open AND opens its chat in col3; → again opens the full chat tool.
+          const expanded = expandedHomeNodes.has(node.id);
+          if (!expanded) {
+            setExpandedHomeNodes((prev) => { const n = new Set(prev); n.add(node.id); return n; });
+            openCol3(node);
+          } else if (knavOpenedKey === node.key && knavRoomOpenState === 'col3') {
+            openFull(node);
+          } else {
+            openCol3(node);
+          }
         } else if (knavOpenedKey === node.key && knavRoomOpenState === 'col3') {
           openFull(node); // → again on a recent/mission/agent already in col3: full chat tool
         } else {
@@ -623,6 +635,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
           // ← on an open folder closes it; selection stays so ↓ goes to the next project.
           setExpandedHomeProjects((prev) => { const n = new Set(prev); n.delete(node.id); return n; });
           setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null);
+        } else if (node && node.kind === 'mission' && node.isFolder && expandedHomeNodes.has(node.id)) {
+          // ← on an open sub-folder mission closes it; selection stays on the folder row.
+          setExpandedHomeNodes((prev) => { const n = new Set(prev); n.delete(node.id); return n; });
+          setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null);
         } else if (knavRoomOpenState === 'col3') {
           setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null);
         } else {
@@ -634,7 +650,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDesktop, knavSelectedIdx, knavRoomOpenState, knavOpenedKey, expandedHomeProjects, onOpenRoom, worldId]);
+  }, [isDesktop, knavSelectedIdx, knavRoomOpenState, knavOpenedKey, expandedHomeProjects, expandedHomeNodes, onOpenRoom, worldId]);
 
   const openNewMission = () => {
     if (!openedProject) return;
@@ -923,9 +939,17 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
 
   // Flatten a recursive mission tree into depth-tagged rows. depth is 'd1' for
   // roots, 'd2' for children. Cap applies to roots only; expanded children always show.
+  // Folders (missions that contain sub-missions) group ABOVE leaf missions at every level,
+  // each group alphabetical — so a plain mission never sits wedged between two sub-folders.
+  const sortMissions = (nodes) => [...(nodes || [])].sort((a, b) => {
+    const af = (Array.isArray(a.children) && a.children.length) ? 0 : 1;
+    const bf = (Array.isArray(b.children) && b.children.length) ? 0 : 1;
+    if (af !== bf) return af - bf;
+    return missionLabelClean(a.name || a.slug).localeCompare(missionLabelClean(b.name || b.slug));
+  });
   const flattenMissionTree = (nodes, depth, expandedNodes, p) => {
     const rows = [];
-    for (const m of nodes) {
+    for (const m of sortMissions(nodes)) {
       const id = String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`;
       const hasChildren = Array.isArray(m.children) && m.children.length > 0;
       const isOpen = hasChildren && expandedNodes.has(id);
@@ -938,7 +962,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // per-project fan-open missions (only when the folder is open). Cap on ROOT nodes.
   const projShownNodes = projShown.map((p) => {
     const open = expandedHomeProjects.has(p.id);
-    const tree = open ? (missionsByProject[p.slug] || []) : [];
+    const tree = open ? sortMissions(missionsByProject[p.slug] || []) : [];
     const showAll = missionShowAll.has(p.id);
     const cappedTree = showAll ? tree : tree.slice(0, HOME_MISSION_CAP);
     const more = open && !showAll ? Math.max(0, tree.length - HOME_MISSION_CAP) : 0;
@@ -952,7 +976,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   for (const r of recentList) navNodes.push({ key: `rec:${r.key}`, kind: 'recent', roomObj: recentRoomObj(r) });
   for (const pn of projShownNodes) {
     navNodes.push({ key: `p:${pn.p.id}`, kind: 'project', id: pn.p.id, roomObj: projRoomObj(pn.p) });
-    if (pn.open) for (const m of pn.missions) navNodes.push({ key: `m:${m.id}`, kind: 'mission', roomObj: m.roomObj });
+    if (pn.open) for (const m of pn.missions) navNodes.push({ key: `m:${m.id}`, kind: 'mission', id: m.id, isFolder: m.isFolder, roomObj: m.roomObj });
   }
   navNodesRef.current = navNodes;
   const selectedKey = (knavSelectedIdx >= 0 && knavSelectedIdx < navNodes.length) ? navNodes[knavSelectedIdx].key : null;
