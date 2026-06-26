@@ -12,6 +12,7 @@
 
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { verifyTenant } from '../_lib/verifyTenant.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -430,6 +431,16 @@ export default async function handler(req, res) {
     // per file on open via ?type=mirror&id=<uuid>&content=1.
     if (type === 'mirror') {
       const clientId = client || 'aom'
+
+      // TENANT ISOLATION (hard requirement): the project_files table holds EVERY
+      // world's files, so a caller must NOT read a world that isn't theirs. Verify
+      // the JWT proves access to `clientId` (own world, world-admin, or super-admin
+      // = Patrik via the world override). A forged ?client= param is rejected here.
+      try {
+        await verifyTenant(clientId, req)
+      } catch (e) {
+        return res.status(e.status || 403).json({ error: e.message || 'forbidden', files: [] })
+      }
 
       // Single-file content fetch (lazy, on open).
       if (req.query.id) {
