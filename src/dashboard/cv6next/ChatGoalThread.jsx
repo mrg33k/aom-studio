@@ -530,26 +530,49 @@ function useThreadSend() { return React.useContext(SendCtx); }
 
 // The thread itself (goal header + steps with their results), shared by the mobile screen
 // and the desktop 3-column layout. Wrap in a SendCtx provider so taps post real messages.
-export function GoalThreadBody({ goal, blocks }) {
+// `collapsible` turns the goal header into a toggle: collapsed (the default for the pinned
+// in-chat thread) shows only the goal line + progress bar, so the persistent "current goal"
+// never re-renders the answer that already lives in the conversation message above it
+// (Patrik 2026-06-27: keep the pinned thread, make it collapsible, no duplicate summary).
+// The full-screen mobile thread and the demo pass collapsible=false so they stay expanded.
+export function GoalThreadBody({ goal, blocks, collapsible = false, defaultCollapsed = true }) {
   const steps = useMemo(() => buildSteps(blocks), [blocks]);
-  const headTitle = goal?.title || 'Working thread';
+  // The header reads as the real goal: the room goal if set, else the first step the agent
+  // actually named (never the old "Working thread" placeholder).
+  const firstStepTitle = steps.find((s) => s.title)?.title || '';
+  const headTitle = goal?.title || firstStepTitle || 'Current goal';
   // Count from the steps the thread actually renders, so the header + progress bar always
   // match what's on screen (rather than a goal.total that may not line up with the blocks).
   const total = steps.length;
   const done = steps.filter((s) => s.state === 'done').length;
   const pct = total ? Math.round((done / total) * 100) : 0;
+  const [open, setOpen] = useState(!defaultCollapsed);
+  const showSteps = !collapsible || open;
+  const headStyle = collapsible
+    ? { background: 'none', border: 'none', padding: 0, width: '100%', textAlign: 'left', cursor: 'pointer', color: 'inherit', font: 'inherit' }
+    : undefined;
   return (
-    <div className="gthread">
-      <div className="gthead">
+    <div className={`gthread${collapsible ? ' is-collapsible' : ''}`}>
+      {React.createElement(
+        collapsible ? 'button' : 'div',
+        {
+          className: 'gthead',
+          ...(collapsible ? { type: 'button', onClick: () => setOpen((v) => !v), 'aria-expanded': open, style: headStyle } : {}),
+        },
         <span className="gtico">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" /></svg>
-        </span>
-        <span className="gttitle"><span className="gk">Goal:</span> {headTitle}</span>
-        <span className="gtcount">{done} of {total}</span>
-      </div>
-      <div className="gtprog" style={{ margin: '0 0 14px' }}><i style={{ width: `${pct}%` }} /></div>
-      {steps.map((s) => <StepRow key={s.index} step={s} />)}
-      <div style={{ height: 8 }} />
+        </span>,
+        <span className="gttitle"><span className="gk">Goal:</span> {headTitle}</span>,
+        <span className="gtcount">{done} of {total}</span>,
+        collapsible ? (
+          <span className={`gtchev${open ? ' is-open' : ''}`} style={{ marginLeft: 8, display: 'inline-flex', transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+          </span>
+        ) : null,
+      )}
+      <div className="gtprog" style={{ margin: showSteps ? '0 0 14px' : '0' }}><i style={{ width: `${pct}%` }} /></div>
+      {showSteps ? steps.map((s) => <StepRow key={s.index} step={s} />) : null}
+      {showSteps ? <div style={{ height: 8 }} /> : null}
     </div>
   );
 }
@@ -595,7 +618,7 @@ export function AgentBlocks({ goal, blocks }) {
   const steps = useMemo(() => buildSteps(blocks), [blocks]);
   const hasSteps = steps.length > 0;
   const allDone = hasSteps && steps.every((s) => s.state === 'done');
-  if (hasSteps && !allDone) return <GoalThreadBody goal={goal} blocks={blocks} />;
+  if (hasSteps && !allDone) return <GoalThreadBody goal={goal} blocks={blocks} collapsible defaultCollapsed />;
   if (hasSteps && allDone) return <WorkDoneCard goal={goal} blocks={blocks} />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
