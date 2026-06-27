@@ -732,9 +732,12 @@ function PlanRow({ step, actions }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(step.text);
   const commit = () => { const t = draft.trim(); if (t && t !== step.text) actions.editStep(step.id, t); setEditing(false); };
+  // DONE recedes (faint cool, no left bar); an OPEN step is the live action zone — a warm cream
+  // surface with a warm left accent bar so it reads as "yours to act on" at a glance, distinct from
+  // the recessed done rows and the amber suggestion card (Steffen gate 2026-06-27, strengthened).
   const zone = step.done
-    ? { background: 'rgba(150,170,200,.04)', border: '1px solid rgba(150,170,200,.05)' }
-    : { background: 'rgba(232,222,200,.05)', border: '1px solid rgba(232,222,200,.06)' };
+    ? { background: 'rgba(150,170,200,.05)', border: '1px solid rgba(150,170,200,.06)', borderLeft: '1px solid rgba(150,170,200,.06)' }
+    : { background: 'rgba(236,222,194,.09)', border: '1px solid rgba(236,222,194,.12)', borderLeft: '3px solid rgba(236,210,160,.55)' };
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '9px 11px', borderRadius: 9, marginTop: 7, ...zone }}>
       <PlanCheck done={step.done} onToggle={() => actions.toggleStep(step.id)} />
@@ -760,7 +763,7 @@ function ProposalRow({ step, actions }) {
   const [draft, setDraft] = useState(step.text);
   const commit = () => { const t = draft.trim(); if (t) actions.editStep(step.id, t); setEditing(false); };
   return (
-    <div style={{ position: 'relative', marginTop: 8, padding: '12px 12px 11px', borderRadius: 10, border: '1px solid var(--accent-weak, rgba(245,158,11,.5))', background: 'var(--accent-faint, rgba(245,158,11,.08))' }}>
+    <div style={{ position: 'relative', marginTop: 9, padding: '12px 12px 11px', borderRadius: 10, border: '1px solid rgba(245,158,11,.6)', borderLeft: '3px solid rgba(245,158,11,.85)', background: 'rgba(245,158,11,.12)', boxShadow: '0 1px 10px rgba(245,158,11,.10)' }}>
       <span style={{ position: 'absolute', top: 10, right: 10, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 999, fontSize: 9.5, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--accent)', background: 'rgba(245,158,11,.14)' }}>
         <svg width="10" height="10" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
         Agent suggests
