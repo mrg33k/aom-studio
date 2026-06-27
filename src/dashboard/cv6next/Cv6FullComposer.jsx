@@ -112,10 +112,13 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
   // ── Send: image-gen branch when a tool is pinned, else plain text via the
   // thread's own send (keeps the col3 optimistic bubble). ──
   const handleSend = useCallback(async () => {
-    const text = input.trim();
+    const base = input.trim();
+    const chipsSuffix = pasteChips.length ? '\n\n' + pasteChips.map(c => c.text).join('\n\n') : '';
+    const text = base + chipsSuffix;
     if (!text) return;
     if (selectedImageTool) {
       setInput('');
+      setPasteChips([]);
       const tool = selectedImageTool;
       setSelectedImageTool(null);
       try {
@@ -132,8 +135,9 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
       return;
     }
     setInput('');
+    setPasteChips([]);
     if (typeof quickSend === 'function') quickSend(text);
-  }, [input, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom]);
+  }, [input, pasteChips, selectedImageTool, selectedAgent, selectedProject, worldId, quickSend, postToRoom]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
