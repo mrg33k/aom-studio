@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, cubicBezier } from 'framer-motion';
 import LazyGumlet from '../components/home/LazyGumlet';
 import BrandMark from '../components/home/BrandMark';
 
@@ -388,9 +388,38 @@ html,body{overflow-x:clip !important;}
 .r5 .hp-proof .hp-stat{font-size:clamp(96px,17vw,280px);line-height:.8;color:var(--gold-deep);}
 .r5 .hp-proof h2{font-size:clamp(34px,4.8vw,82px);line-height:.92;margin:10px 0 36px;}
 .r5 .hp-proof .hps.sq{width:150px;height:150px;background:var(--gold);opacity:.12;top:15%;left:11%;transform:rotate(20deg);}
-/* horizontal progress bar */
+/* horizontal progress bar (legacy, unused) */
 .r5 .hbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(0,0,0,.08);z-index:6;}
 .r5 .hbar span{display:block;height:100%;background:var(--gold);}
+/* panel substance */
+.r5 .hp-lede{font-family:var(--text);font-size:clamp(16px,1.4vw,20px);line-height:1.55;color:var(--ink-500);max-width:48ch;margin:26px 0 0;}
+.r5 .hp-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;}
+.r5 .hp-chips span{font-family:var(--text);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);border:1px solid var(--line);padding:7px 13px;}
+.r5 .hp-label{max-width:34vw;}
+.r5 .hp-sub{font-family:var(--text);font-size:clamp(15px,1.2vw,18px);line-height:1.55;color:var(--ink-500);max-width:34ch;margin:20px 0 0;}
+.r5 .hp-film .hp-sub{color:var(--ink-300);}
+.r5 .hp-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;}
+.r5 .hp-tags span{font-family:var(--text);font-size:11px;letter-spacing:.12em;text-transform:uppercase;padding:6px 11px;border:1px solid var(--line);color:inherit;}
+.r5 .hp-film .hp-tags span{border-color:var(--ink-700);}
+.r5 .hp-link{display:inline-block;margin-top:26px;font-family:var(--text);font-weight:600;font-size:14px;letter-spacing:.04em;text-transform:uppercase;color:inherit;text-decoration:none;border-bottom:2px solid var(--gold);padding-bottom:3px;}
+.r5 .hw-tile .hw-cap{position:absolute;left:10px;bottom:9px;z-index:3;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper);background:rgba(11,11,11,.6);padding:4px 8px;backdrop-filter:blur(3px);max-width:88%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.r5 .hs-win .hs-meta{position:absolute;left:0;right:0;bottom:0;z-index:3;display:flex;flex-direction:column;gap:2px;padding:12px 12px 11px;background:linear-gradient(transparent,rgba(0,0,0,.82));color:var(--paper);}
+.r5 .hs-win .hs-meta b{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:13px;letter-spacing:.01em;}
+.r5 .hs-win .hs-meta i{font-style:normal;font-size:11px;letter-spacing:.06em;color:var(--stone);}
+/* proof panel substance */
+.r5 .hp-proof .kick{justify-content:center;color:var(--stone);}
+.r5 .hp-proof h2{font-size:clamp(40px,6vw,108px);margin:16px 0 0;}
+.r5 .hp-proofgrid{display:grid;grid-template-columns:repeat(3,minmax(0,200px));gap:24px 64px;justify-content:center;align-items:start;margin:44px auto 8px;}
+.r5 .hp-pp{text-align:center;}
+.r5 .hp-ppn{font-size:clamp(30px,3vw,46px);line-height:1.02;color:var(--gold-deep);min-height:1.95em;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;}
+.r5 .hp-ppd{font-family:var(--text);font-size:14px;line-height:1.5;color:var(--ink-300);margin-top:12px;}
+.r5 .hp-cta{display:flex;align-items:center;justify-content:center;gap:20px;flex-wrap:wrap;margin-top:42px;}
+.r5 .hp-cta .hp-note{color:var(--stone);font-size:14px;max-width:30ch;text-align:left;}
+/* stops indicator */
+.r5 .hsteps{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);z-index:6;display:flex;gap:9px;align-items:center;}
+.r5 .hstep{display:block;height:4px;background:var(--gold);border-radius:2px;}
+.r5 .hp-film .hp-label,.r5 .hp-proof{}
+.r5 .hscene .hp-proof .hsteps span{background:var(--gold);}
 
 /* ---- Scroll reveal (gated behind JS-added .anim) ---- */
 .r5.anim .svctop,.r5.anim .svccell,.r5.anim .work .head,.r5.anim .crow,.r5.anim .wh,.r5.anim .w1,.r5.anim .why .cell,.r5.anim .voices .q,.r5.anim .close .inner{opacity:0;transform:translateY(34px);transition:opacity .7s cubic-bezier(.22,.61,.36,1),transform .7s cubic-bezier(.22,.61,.36,1);}
@@ -496,7 +525,13 @@ html,body{overflow-x:clip !important;}
   .r5 .hs-win{width:100%;}
   .r5 .hs-win:nth-child(2),.r5 .hs-win:nth-child(3){transform:none;}
   .r5 .hp-intro .hps,.r5 .hp-proof .hps{display:none;}
-  .r5 .hbar{display:none;}
+  .r5 .hbar,.r5 .hsteps{display:none;}
+  .r5 .hp-label{max-width:none;}
+  .r5 .hp-proofgrid{flex-direction:column;gap:24px;align-items:flex-start;padding:0 24px;}
+  .r5 .hp-pp{max-width:none;}
+  .r5 .hp-cta{justify-content:flex-start;padding:0 24px;text-align:left;}
+  .r5 .hp-proof{text-align:left;}
+  .r5 .hp-proof .kick{justify-content:flex-start;}
 }
 
 /* hero variant picker */
@@ -943,19 +978,31 @@ function ManifestScene() {
 // viewport and vertical scrolling translates a row of full-screen panels sideways,
 // then releases. Built from framer useScroll + sticky pin + an x-transform; no GSAP.
 const HSITES = [
-  ['/hero-sites/ambition.jpg', 'Ambition Mechanical', '/brands/ambition'],
-  ['/hero-sites/valor.jpg', 'Valor', '/brands/valor'],
-  ['/hero-sites/space-rising.jpg', 'Space Rising', '/brands/space-rising'],
+  ['/hero-sites/ambition.jpg', 'Ambition Mechanical', 'Trades brand + site', '/brands/ambition'],
+  ['/hero-sites/valor.jpg', 'Valor to Victory', 'Nonprofit campaign', '/brands/valor'],
+  ['/hero-sites/space-rising.jpg', 'Space Rising', 'Founder launch site', '/brands/space-rising'],
+];
+const HPROOF = [
+  ['3 cohorts', 'recruited for Startup AZ with one film'],
+  ['150%', 'pipeline growth after Naamly’s new site'],
+  ['3 venues', 'launched with Virtu Hospitality'],
 ];
 function HorizontalScene({ setVideo }) {
   const ref = useRef(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
   const N = 4;
-  const x = useTransform(scrollYProgress, [0, 1], ['0%', `-${((N - 1) / N) * 100}%`]);
-  const bar = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+  // Stepped travel: the row HOLDS on each panel (a "stop"), then slides quickly to the
+  // next. Flat segments = dwell, ramps = transition. -25% of the 4-panel track = 1 panel.
+  const x = useTransform(
+    scrollYProgress,
+    [0, 0.16, 0.30, 0.45, 0.58, 0.72, 0.86, 1],
+    ['0%', '0%', '-25%', '-25%', '-50%', '-50%', '-75%', '-75%'],
+    { ease: cubicBezier(0.7, 0, 0.3, 1) }
+  );
+  const step = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [1, 2, 3, 4, 4]);
   const reel = useMemo(() => shuffle(REEL_POOL).slice(0, 6), []);
   return (
-    <section className="hscene" ref={ref} style={{ height: `${N * 100}vh` }}>
+    <section className="hscene" ref={ref} style={{ height: `${(N + 1) * 100}vh` }}>
       <div className="hpin">
         <motion.div className="htrack" style={{ x }}>
           {/* Panel 1 — statement */}
@@ -964,27 +1011,44 @@ function HorizontalScene({ setVideo }) {
             <div className="hp-inner">
               <span className="kick"><span className="ledot" /> What we make</span>
               <h2 className="disp">Film that moves people.<br /><span className="gold">Web that wins them.</span></h2>
-              <span className="hp-hint">Keep scrolling →</span>
+              <p className="hp-lede">A small Phoenix studio making brand films, ads, and websites for businesses that refuse to blend in. The people who make the work are the people you talk to.</p>
+              <div className="hp-chips"><span>8+ years</span><span>100+ projects</span><span>Phoenix, AZ</span></div>
+              <span className="hp-hint">Keep scrolling, we move sideways &rarr;</span>
             </div>
           </div>
           {/* Panel 2 — film */}
           <div className="hpanel hp-film">
-            <div className="hp-label"><span className="kick">01 / Film</span><h3 className="disp">Brand films,<br />ads &amp; social<span className="dot" /></h3></div>
+            <div className="hp-label">
+              <span className="kick">01 / Film</span>
+              <h3 className="disp">Brand films,<br />ads &amp; social<span className="dot" /></h3>
+              <p className="hp-sub">Story first. We script, shoot, and cut films that make people stop and feel something.</p>
+              <div className="hp-tags"><span>Brand films</span><span>Commercials</span><span>Social</span><span>Events</span></div>
+              <a className="hp-link" href="#work">See the work &rarr;</a>
+            </div>
             <div className="hp-wall">
               {reel.map((c, i) => (
-                <div className="hw-tile" key={i} onClick={() => setVideo({ id: c.id, client: c.client })}><LazyGumlet id={c.id} eager poster="#0B0B0B" /></div>
+                <div className="hw-tile" key={i} onClick={() => setVideo({ id: c.id, client: c.client })}>
+                  <LazyGumlet id={c.id} eager poster="#0B0B0B" />
+                  {c.client && <span className="hw-cap">{c.client}</span>}
+                </div>
               ))}
             </div>
           </div>
           {/* Panel 3 — web */}
           <div className="hpanel hp-web">
-            <div className="hp-label"><span className="kick">02 / Web</span><h3 className="disp">Sites that<br />win attention<span className="dot" /></h3></div>
+            <div className="hp-label">
+              <span className="kick">02 / Web</span>
+              <h3 className="disp">Sites that<br />win attention<span className="dot" /></h3>
+              <p className="hp-sub">Fast, clear sites that turn visitors into customers. Designed and built in house.</p>
+              <div className="hp-tags"><span>Design</span><span>Build</span><span>SEO</span><span>Care</span></div>
+              <a className="hp-link" href="#work">See the sites &rarr;</a>
+            </div>
             <div className="hp-sites">
-              {HSITES.map(([src, nm, href]) => (
+              {HSITES.map(([src, nm, role, href]) => (
                 <a className="hs-win" key={nm} href={href} target="_blank" rel="noopener">
                   <span className="winbar"><i /><i /><i /></span>
                   <img src={src} alt={'A website by Ahead of Market: ' + nm} />
-                  <span className="btag">{nm} ↗</span>
+                  <span className="hs-meta"><b>{nm}</b><i>{role} ↗</i></span>
                 </a>
               ))}
             </div>
@@ -993,16 +1057,31 @@ function HorizontalScene({ setVideo }) {
           <div className="hpanel hp-proof">
             <div className="hps sq" />
             <div className="hp-inner">
-              <div className="hp-stat disp">100+</div>
-              <h2 className="disp">Made to be<br /><span className="gold">impossible to ignore</span><span className="dot" /></h2>
-              <a className="btn gold" href="#contact">Start a project ↗</a>
+              <span className="kick">03 / Proof</span>
+              <h2 className="disp">Work that <span className="gold">pays off</span><span className="dot" /></h2>
+              <div className="hp-proofgrid">
+                {HPROOF.map(([n, d]) => (
+                  <div className="hp-pp" key={n}><div className="hp-ppn disp">{n}</div><div className="hp-ppd">{d}</div></div>
+                ))}
+              </div>
+              <div className="hp-cta"><a className="btn gold" href="#contact">Start a project ↗</a><span className="hp-note">Send a few files or book a call. We reply within 24 hours.</span></div>
             </div>
           </div>
         </motion.div>
-        <div className="hbar"><motion.span style={{ width: bar }} /></div>
+        {/* Stops indicator: which panel you are on */}
+        <div className="hsteps">
+          {[1, 2, 3, 4].map((n) => (
+            <Hstep key={n} n={n} step={step} />
+          ))}
+        </div>
       </div>
     </section>
   );
+}
+function Hstep({ n, step }) {
+  const op = useTransform(step, (v) => (Math.round(v) === n ? 1 : 0.32));
+  const w = useTransform(step, (v) => (Math.round(v) === n ? 28 : 10));
+  return <motion.span className="hstep" style={{ opacity: op, width: w }} />;
 }
 
 // Parallax decoration: a geometric shape that drifts as its section passes through
