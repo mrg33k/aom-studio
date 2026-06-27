@@ -1435,9 +1435,12 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
   const demoFeed = useDemoBlocksFeed();
   const isDemo = !!demoFeed;
 
-  // If demo mode, use demo feed; otherwise use real thread
-  const messages = isDemo ? demoFeed : useRoomThread(worldId, room).messages;
-  const { status, send } = isDemo ? { status: 'ready', send: () => {} } : useRoomThread(worldId, room);
+  // If demo mode, use demo feed; otherwise use real thread (ONE hook call, not two).
+  const rt = isDemo ? null : useRoomThread(worldId, room);
+  const messages = isDemo ? demoFeed : rt.messages;
+  const status = isDemo ? 'ready' : rt.status;
+  const send = isDemo ? () => {} : rt.send;
+  const liveSteps = isDemo ? [] : rt.liveSteps; // the agent's real activity, for the building live thread
   const goal = isDemo ? null : useGoalThread(worldId, room);
   const hasGoal = !!goal;
   const liveThread = Array.isArray(messages) && messages.some((m) => m.blocks?.length > 0);
@@ -1467,7 +1470,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
   return (
     <ChatLifecycle
       room={{ name: isDemo ? 'DEMO: Block Showcase' : room.name, initials: room.initials || '·', statusText: isDemo ? 'demo' : room.statusText || '', status: room.status || 'ready' }}
-      messages={messages} status={status} goal={liveThread ? goal : null}
+      messages={messages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
       onOpenReview={(files) => onNav('review', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : '') } : null)}
     />

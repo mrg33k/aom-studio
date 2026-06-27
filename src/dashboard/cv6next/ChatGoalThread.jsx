@@ -42,6 +42,29 @@ export function buildSteps(blocks) {
   return [...byIndex.values()].sort((a, b) => a.index - b.index);
 }
 
+// Live message-steps (the agent's real tool activity, polled while a reply is pending) ->
+// the same `blocks` shape buildSteps/GoalThreadBody render. This is what makes the thread
+// BUILD live instead of appearing all-at-once at the end: each real step shows as a done
+// row, the newest as the active (spinning) row, so steps tick in front of the user. Text is
+// already humanized at the API (message-steps.js). When no step has arrived yet we still show
+// one active "Getting started" row so the thread is born the instant you send and never looks
+// dead. Steps reconcile to the agent's final metadata.blocks once the reply lands.
+export function liveStepsToBlocks(liveSteps) {
+  const real = (liveSteps || []).filter((s) => s && s.step_index !== 9999 && s.text && s.text !== 'settled');
+  // Collapse to one row per step_index, keeping the latest text for that index.
+  const byIdx = new Map();
+  for (const s of real) {
+    const k = Number.isFinite(+s.step_index) ? +s.step_index : 0;
+    const t = s.timestamp ? new Date(s.timestamp).getTime() : 0;
+    const prev = byIdx.get(k);
+    if (!prev || t >= prev._t) byIdx.set(k, { text: s.text, _t: t });
+  }
+  const ordered = [...byIdx.values()].sort((a, b) => a._t - b._t);
+  if (!ordered.length) return [{ type: 'step', stepIndex: 0, title: 'Getting started', state: 'active' }];
+  const last = ordered.length - 1;
+  return ordered.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: i === last ? 'active' : 'done' }));
+}
+
 // data block -> generic cells + per-row chart pct (first numeric column, relative to max).
 function normalizeData(b) {
   const columns = Array.isArray(b.columns) ? b.columns : [];

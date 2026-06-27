@@ -10,7 +10,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
 import { useRoomThread, useGoalThread, useRoomPlan } from './data/useRoomThread.js';
-import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel, buildSteps } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel, buildSteps, liveStepsToBlocks } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
@@ -393,32 +393,18 @@ function DesktopDayCard({ group, onSend }) {
   );
 }
 
-// Plain message list (desktop) for rooms without a live structured thread.
 // Live "agent is working" turn shown the instant you send, until the reply lands.
-// ONE compact progress strip that CYCLES through the agent's real steps (the current
-// action's text updates as work moves), not a pile of step rows and not a flood of
-// chat messages. Before the first real step arrives it shows a generic working line,
-// so it never looks dead.
-function WorkingTurn({ room, steps }) {
-  const real = (steps || []).filter((s) => s.step_index !== 9999 && s.text !== 'settled');
-  const tms = (s) => (s.timestamp ? new Date(s.timestamp).getTime() : 0) || 0;
-  // The current action = the most recent step event (the one cycling on screen now).
-  // Each emitted step is a COMPLETED tool action (a stream of unknown length), so the
-  // bar stays an indeterminate sweep while working and the label cycles to the latest.
-  const current = real.length ? real.slice().sort((a, b) => tms(b) - tms(a))[0] : null;
-  const count = new Set(real.map((s) => s.step_index)).size;
-  const label = current ? current.text : `${room?.name || 'Agent'} is working…`;
+// This is the SAME Goal Thread renderer the finished turn uses — born immediately with the
+// goal = your ask, its steps ticking (done rows + a newest active row) in real time as the
+// agent works — so the thread BUILDS in front of you instead of a throwaway strip that gets
+// replaced by a finished dump at the end (corner:corner-ui-cv6 agent-talk live-feel round).
+function WorkingTurn({ room, steps, goal }) {
+  const blocks = liveStepsToBlocks(steps);
   return (
     <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'flex-start' }}>
       <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{room?.initials || '·'}</span>
-      <div style={{ flex: 1, minWidth: 0, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 12, padding: '11px 13px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 9 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.4" strokeLinecap="round" style={{ flex: 'none', animation: 'spin 1.1s linear infinite' }}><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>
-          {/* key on the text so each new action animates in as it cycles */}
-          <span key={label} style={{ fontSize: 13, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', animation: 'cv6stepin .25s ease-out' }}>{label}</span>
-          {count > 0 ? <span className="mono" style={{ marginLeft: 'auto', flex: 'none', fontSize: 10.5, color: 'var(--faint)' }}>{count} {count === 1 ? 'step' : 'steps'}</span> : null}
-        </div>
-        <div className="cv6progtrack"><div className="cv6progfill" /></div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <GoalThreadBody goal={goal} blocks={blocks} />
       </div>
     </div>
   );
@@ -486,6 +472,16 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     const s = buildSteps(blocks);
     return s.length > 0 && !s.every((x) => x.state === 'done');
   })();
+  // The working thread's header reads as the user's ask: prefer the room goal, else the most
+  // recent thing you sent, so it shows "Goal: <what you asked>" the instant the reply is pending.
+  const askGoal = useMemo(() => {
+    if (goal?.title) return goal;
+    for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
+      const m = messages[i];
+      if (m?.isUser && m.text) return { title: m.text };
+    }
+    return goal;
+  }, [goal, messages]);
 
   // A "Review"/"Review all" tap on a message attachment must OPEN the Review tool on
   // those exact files (live), not post a chat message. handleReview hands us a single
@@ -726,7 +722,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       2026-06-25 so the conversation fills the column instead of feeling cramped. */}
                   <div style={{ maxWidth: 920, margin: '0 auto' }}>
                     {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} onSend={handleThreadAction} />}
-                    {awaiting ? <WorkingTurn room={selected} steps={liveSteps} /> : null}
+                    {awaiting ? <WorkingTurn room={selected} steps={liveSteps} goal={askGoal} /> : null}
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>

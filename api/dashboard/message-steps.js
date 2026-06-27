@@ -9,6 +9,67 @@
 
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js'
 
+// Steps are auto-derived from the agent's raw tool calls, so they leak file paths and shell
+// commands ("Running: ls -la /Users/...", "Reading v3-mobile-top.png") — a terminal log, not a
+// conversation. This rewrites each step into a short, plain-language line a user understands and
+// strips every path/command, so the live thread reads like work, not a console (rule 4 + the
+// 2026-06-23 "short human points, NOT raw tool names and NOT code" reframe). ONE chokepoint: every
+// surface reads steps through this endpoint, so this covers all agents and all history at once.
+function humanizeStep(raw) {
+  let t = String(raw || '').trim()
+  if (!t) return t
+
+  // Raw shell command ("Running: <cmd>") — never show the command or its paths; speak the intent.
+  let m = t.match(/^Running:\s*(.+)$/i)
+  if (m) {
+    const verb = (m[1].trim().split(/\s+/)[0] || '').replace(/.*\//, '').toLowerCase()
+    const byVerb = {
+      ls: 'Looking through the files', find: 'Looking through the files', tree: 'Looking through the files',
+      grep: 'Searching the project', rg: 'Searching the project', ag: 'Searching the project',
+      cat: 'Reading the details', head: 'Reading the details', tail: 'Reading the details',
+      git: 'Checking the latest changes', npm: 'Running a quick build', npx: 'Running a quick build',
+      yarn: 'Running a quick build', pnpm: 'Running a quick build',
+      node: 'Running a quick check', python3: 'Running a quick check', python: 'Running a quick check',
+      curl: 'Checking a live page', wget: 'Checking a live page',
+      mkdir: 'Setting things up', cp: 'Organizing files', mv: 'Organizing files', rm: 'Tidying up',
+      vercel: 'Checking the deployment', open: 'Opening a preview', echo: 'Noting something down',
+    }
+    return byVerb[verb] || 'Working through the project'
+  }
+
+  // File op named by file ("Reading X.png", "Editing Y.jsx") — say the kind, never the filename.
+  m = t.match(/^(Reading|Editing|Writing|Opening)\s+(.+)$/i)
+  if (m) {
+    const verb = m[1].toLowerCase()
+    const name = m[2].toLowerCase()
+    const isImg = /\.(png|jpe?g|gif|webp|svg|heic|bmp)$/.test(name)
+    const isData = /\.(json|ya?ml|toml|env|csv)$/.test(name)
+    const isCode = /\.(jsx?|tsx?|py|sh|css|html?|rb|go|rs|php)$/.test(name)
+    if (verb === 'reading') {
+      if (isImg) return 'Reviewing a screen'
+      if (isData) return 'Checking the data'
+      if (isCode) return 'Reading through the setup'
+      return 'Reading the notes'
+    }
+    if (isImg) return 'Updating a screen'
+    if (isCode) return 'Making the change'
+    if (isData) return 'Updating the settings'
+    return 'Writing it up'
+  }
+
+  if (/^Searching for\b/i.test(t)) return 'Searching the project'
+  if (/^(Spawning|Bringing in)\b/i.test(t)) return 'Bringing in extra help'
+  if (/^Using \//i.test(t)) return 'Using a built-in tool'
+
+  // Anything else (agent-authored Bash descriptions are usually clean plain English): keep the
+  // wording but scrub any leaked path or bare filename as a final safety net.
+  t = t
+    .replace(/(?:\/[\w.\-]+){2,}\/?/g, 'the files')
+    .replace(/\b[\w\-]+\.(?:jsx?|tsx?|py|sh|json|ya?ml|md|css|html?|png|jpe?g|gif|webp|svg)\b/gi, 'the file')
+    .replace(/\s{2,}/g, ' ')
+  return t.trim()
+}
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -68,12 +129,15 @@ export default async function handler(req, res) {
     if (project && (p.project || '') !== project) continue
     const pid = p.parent_message_id
     if (!pid) continue
+    // Keep the settle sentinel verbatim (the frontend filters it by step_index/"settled");
+    // humanize everything the user actually sees.
+    const isSentinel = p.step_index === 9999 || p.text === 'settled'
     steps.push({
       id: row.id,
       agent: row.agent,
       parent_message_id: pid,
       step_index: p.step_index ?? 0,
-      text: p.text || '',
+      text: isSentinel ? (p.text || '') : humanizeStep(p.text || ''),
       status: p.status || 'in_progress',
       timestamp: row.timestamp,
       project: p.project || '',

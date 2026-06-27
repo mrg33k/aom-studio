@@ -8,7 +8,7 @@
 // emitting a live Goal Thread, ChatGoalThread renders that instead. Honest with real
 // data: we fold by DAY (which we have), not by past "goals" (never stored).
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
 import { useDictation } from './data/useDictation.js';
 
@@ -228,7 +228,7 @@ function FileCollectionViewer({ files, startIndex = 0, onClose, onReview }) {
 // An agent turn that IS a live Goal Thread (the structured step thread), rendered inline
 // as that turn so the conversation history stays above it. The header (avatar + title +
 // time) matches a normal turn; the body is the real step thread from the agent's blocks.
-function GoalTurn({ m, goal }) {
+function GoalTurn({ m, goal, blocks }) {
   return (
     <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
       <Avatar m={m} />
@@ -237,7 +237,7 @@ function GoalTurn({ m, goal }) {
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{m.agentName}</span>
           <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{m.time}</span>
         </div>
-        <GoalThreadBody goal={goal} blocks={m.blocks} />
+        <GoalThreadBody goal={goal} blocks={blocks || m.blocks} />
       </div>
     </div>
   );
@@ -294,7 +294,7 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
   );
 }
 
-export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview }) {
+export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview, liveSteps }) {
   const [draft, setDraft] = useState('');
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   const scrollRef = useRef(null);
@@ -324,6 +324,8 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
   // scroll or send again. So while a reply is pending we reserve a viewport of room below.
   const lastMsg = messages?.length ? messages[messages.length - 1] : null;
   const awaiting = !!lastMsg && lastMsg.isUser; // sent, no agent reply yet
+  // Real (non-sentinel) live steps for the in-flight reply — gate the building thread vs the dot.
+  const hasLiveSteps = Array.isArray(liveSteps) && liveSteps.some((s) => s && s.step_index !== 9999 && s.text && s.text !== 'settled');
   const lastUserSig = useMemo(() => {
     for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
       if (messages[i]?.isUser) return `${i}:${messages[i].ts || messages[i].text || ''}`;
@@ -434,8 +436,21 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
                   {renderItems(latest.items, openFile, threadGoal, reviewHandoff, onSend)}
                 </>
               )}
-              {/* Reply pending: the agent is on it, shown right under the pinned question. */}
-              {awaiting && <ThinkingTurn room={room} />}
+              {/* Reply pending: the agent's live Goal Thread builds right under the pinned
+                  question — goal = your ask, steps tick (done rows + a newest active row) in real
+                  time from the agent's actual activity. The brief moment before the first step
+                  arrives shows the dot-pulse so it never looks dead. */}
+              {awaiting && (
+                hasLiveSteps
+                  ? (
+                    <GoalTurn
+                      m={{ agentName: room?.name, agentInitials: room?.initials || '·', agentTint: 'accent', time: '' }}
+                      goal={threadGoal}
+                      blocks={liveStepsToBlocks(liveSteps)}
+                    />
+                  )
+                  : <ThinkingTurn room={room} />
+              )}
             </>
           )}
           {/* Reserve a viewport of room below the pinned question while a reply is pending,
