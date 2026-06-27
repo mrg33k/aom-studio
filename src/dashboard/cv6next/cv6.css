@@ -927,7 +927,7 @@
 [data-cv6][data-screen="home-desktop"] .catch.is-in,
 [data-cv6][data-screen="home-desktop"] .catch.is-has { display:flex; }
 [data-cv6][data-screen="home-desktop"] .catch.is-in { animation:catchcol-in .42s cubic-bezier(.22,1,.36,1) both; }
-@keyframes catchcol-in { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:translateX(0); } }
+@keyframes catchcol-in { from { opacity:0; transform:translateX(-24px); } to { opacity:1; transform:translateX(0); } }
 /* Home desktop: projects fan open to their missions (matches the Chat rail tree). */
 [data-cv6][data-screen="home-desktop"] .projrow { cursor:pointer; }
 [data-cv6][data-screen="home-desktop"] .projcaret { transition:transform .18s cubic-bezier(.4,0,.2,1); }
