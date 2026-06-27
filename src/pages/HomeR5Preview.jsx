@@ -352,6 +352,46 @@ html,body{overflow-x:clip !important;}
 .r5 .scene .sceneclip.cl-l{left:6%;}
 .r5 .scene .sceneclip.cl-r{right:6%;}
 
+/* ---- Pinned horizontal scroll (flim navigation): vertical scroll -> sideways travel ---- */
+.r5 .hscene{position:relative;}
+.r5 .hpin{position:sticky;top:0;height:100vh;overflow:hidden;}
+.r5 .htrack{display:flex;height:100vh;width:max-content;will-change:transform;}
+.r5 .hpanel{position:relative;width:100vw;height:100vh;flex:none;overflow:hidden;display:flex;align-items:center;}
+.r5 .hp-intro,.r5 .hp-web{background-color:var(--paper);background-image:linear-gradient(rgba(11,11,11,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(11,11,11,.05) 1px,transparent 1px);background-size:38px 38px;}
+.r5 .hp-film,.r5 .hp-proof{background-color:var(--ink);color:var(--paper);background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:38px 38px;}
+.r5 .hp-inner{position:relative;z-index:3;padding:0 8vw;max-width:1100px;}
+.r5 .hp-inner .kick{color:var(--ink-500);}
+.r5 .hp-intro h2{font-size:clamp(44px,6vw,112px);line-height:.9;margin:18px 0 0;}
+.r5 .hp-hint{display:inline-block;margin-top:38px;font-family:var(--text);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-500);}
+.r5 .hpanel .hps{position:absolute;z-index:1;}
+.r5 .hp-intro .hps.sq{width:132px;height:132px;background:var(--gold);top:17%;right:13%;transform:rotate(12deg);}
+.r5 .hp-intro .hps.ci{width:250px;height:250px;border-radius:50%;border:1px solid var(--line);bottom:9%;left:5%;}
+/* film panel */
+.r5 .hp-film .hp-label{position:absolute;z-index:3;left:8vw;top:13vh;}
+.r5 .hp-film .hp-label .kick{color:var(--gold);}
+.r5 .hp-film .hp-label h3{font-size:clamp(34px,4.6vw,76px);line-height:.92;margin-top:14px;}
+.r5 .hp-wall{position:absolute;right:6vw;top:50%;transform:translateY(-50%);display:grid;grid-template-columns:repeat(3,minmax(0,224px));grid-auto-rows:144px;gap:12px;}
+.r5 .hw-tile{position:relative;overflow:hidden;border:1px solid var(--ink-700);background:#000;cursor:pointer;}
+/* web panel */
+.r5 .hp-web .hp-label{position:absolute;z-index:3;left:8vw;top:13vh;}
+.r5 .hp-web .hp-label h3{font-size:clamp(34px,4.6vw,76px);line-height:.92;margin-top:14px;}
+.r5 .hp-sites{position:absolute;right:6vw;top:50%;transform:translateY(-50%);display:flex;gap:20px;}
+.r5 .hs-win{position:relative;width:300px;aspect-ratio:4/3;overflow:hidden;border:1px solid var(--line);background:var(--ink);display:block;}
+.r5 .hs-win:nth-child(2){transform:translateY(30px) rotate(-1.5deg);}
+.r5 .hs-win:nth-child(3){transform:translateY(-12px) rotate(1.5deg);}
+.r5 .hs-win .winbar{position:absolute;top:0;left:0;right:0;z-index:2;height:24px;background:#1A1A18;display:flex;align-items:center;gap:5px;padding:0 10px;}
+.r5 .hs-win .winbar i{width:7px;height:7px;border-radius:50%;background:#3A3A36;}
+.r5 .hs-win img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+/* proof panel */
+.r5 .hp-proof{justify-content:center;text-align:center;}
+.r5 .hp-proof .hp-inner{text-align:center;margin:0 auto;max-width:none;}
+.r5 .hp-proof .hp-stat{font-size:clamp(96px,17vw,280px);line-height:.8;color:var(--gold-deep);}
+.r5 .hp-proof h2{font-size:clamp(34px,4.8vw,82px);line-height:.92;margin:10px 0 36px;}
+.r5 .hp-proof .hps.sq{width:150px;height:150px;background:var(--gold);opacity:.12;top:15%;left:11%;transform:rotate(20deg);}
+/* horizontal progress bar */
+.r5 .hbar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(0,0,0,.08);z-index:6;}
+.r5 .hbar span{display:block;height:100%;background:var(--gold);}
+
 /* ---- Scroll reveal (gated behind JS-added .anim) ---- */
 .r5.anim .svctop,.r5.anim .svccell,.r5.anim .work .head,.r5.anim .crow,.r5.anim .wh,.r5.anim .w1,.r5.anim .why .cell,.r5.anim .voices .q,.r5.anim .close .inner{opacity:0;transform:translateY(34px);transition:opacity .7s cubic-bezier(.22,.61,.36,1),transform .7s cubic-bezier(.22,.61,.36,1);}
 .r5.anim .svcgrid .svccell:nth-child(3n+2){transition-delay:.07s;}
@@ -442,6 +482,21 @@ html,body{overflow-x:clip !important;}
   .r5 .gshape.dot,.r5 .gshape.dotgold{width:104px;height:104px;}
   .r5 .gshape.ringlt,.r5 .gshape.ringdk{width:140px;height:140px;}
   .r5 .gshape.tri{border-left-width:48px;border-right-width:48px;border-bottom-width:84px;}
+  /* horizontal scene -> vertical stack on mobile */
+  .r5 .hscene{height:auto !important;}
+  .r5 .hpin{position:static;height:auto;overflow:visible;}
+  .r5 .htrack{transform:none !important;flex-direction:column;width:100%;height:auto;}
+  .r5 .hpanel{width:100%;height:auto;min-height:auto;padding:64px 0;display:block;}
+  .r5 .hp-inner{padding:0 24px;}
+  .r5 .hp-intro h2{font-size:40px;}
+  .r5 .hp-film .hp-label,.r5 .hp-web .hp-label{position:static;left:auto;top:auto;padding:0 24px 18px;}
+  .r5 .hp-wall,.r5 .hp-sites{position:static;transform:none;padding:0 24px;}
+  .r5 .hp-wall{grid-template-columns:repeat(2,1fr);grid-auto-rows:120px;}
+  .r5 .hp-sites{flex-direction:column;}
+  .r5 .hs-win{width:100%;}
+  .r5 .hs-win:nth-child(2),.r5 .hs-win:nth-child(3){transform:none;}
+  .r5 .hp-intro .hps,.r5 .hp-proof .hps{display:none;}
+  .r5 .hbar{display:none;}
 }
 
 /* hero variant picker */
@@ -884,6 +939,72 @@ function ManifestScene() {
   );
 }
 
+// Pinned horizontal scroll (flim's navigation mechanic): the section locks to the
+// viewport and vertical scrolling translates a row of full-screen panels sideways,
+// then releases. Built from framer useScroll + sticky pin + an x-transform; no GSAP.
+const HSITES = [
+  ['/hero-sites/ambition.jpg', 'Ambition Mechanical', '/brands/ambition'],
+  ['/hero-sites/valor.jpg', 'Valor', '/brands/valor'],
+  ['/hero-sites/space-rising.jpg', 'Space Rising', '/brands/space-rising'],
+];
+function HorizontalScene({ setVideo }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+  const N = 4;
+  const x = useTransform(scrollYProgress, [0, 1], ['0%', `-${((N - 1) / N) * 100}%`]);
+  const bar = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
+  const reel = useMemo(() => shuffle(REEL_POOL).slice(0, 6), []);
+  return (
+    <section className="hscene" ref={ref} style={{ height: `${N * 100}vh` }}>
+      <div className="hpin">
+        <motion.div className="htrack" style={{ x }}>
+          {/* Panel 1 — statement */}
+          <div className="hpanel hp-intro">
+            <div className="hps sq" /><div className="hps ci" />
+            <div className="hp-inner">
+              <span className="kick"><span className="ledot" /> What we make</span>
+              <h2 className="disp">Film that moves people.<br /><span className="gold">Web that wins them.</span></h2>
+              <span className="hp-hint">Keep scrolling →</span>
+            </div>
+          </div>
+          {/* Panel 2 — film */}
+          <div className="hpanel hp-film">
+            <div className="hp-label"><span className="kick">01 / Film</span><h3 className="disp">Brand films,<br />ads &amp; social<span className="dot" /></h3></div>
+            <div className="hp-wall">
+              {reel.map((c, i) => (
+                <div className="hw-tile" key={i} onClick={() => setVideo({ id: c.id, client: c.client })}><LazyGumlet id={c.id} eager poster="#0B0B0B" /></div>
+              ))}
+            </div>
+          </div>
+          {/* Panel 3 — web */}
+          <div className="hpanel hp-web">
+            <div className="hp-label"><span className="kick">02 / Web</span><h3 className="disp">Sites that<br />win attention<span className="dot" /></h3></div>
+            <div className="hp-sites">
+              {HSITES.map(([src, nm, href]) => (
+                <a className="hs-win" key={nm} href={href} target="_blank" rel="noopener">
+                  <span className="winbar"><i /><i /><i /></span>
+                  <img src={src} alt={'A website by Ahead of Market: ' + nm} />
+                  <span className="btag">{nm} ↗</span>
+                </a>
+              ))}
+            </div>
+          </div>
+          {/* Panel 4 — proof */}
+          <div className="hpanel hp-proof">
+            <div className="hps sq" />
+            <div className="hp-inner">
+              <div className="hp-stat disp">100+</div>
+              <h2 className="disp">Made to be<br /><span className="gold">impossible to ignore</span><span className="dot" /></h2>
+              <a className="btn gold" href="#contact">Start a project ↗</a>
+            </div>
+          </div>
+        </motion.div>
+        <div className="hbar"><motion.span style={{ width: bar }} /></div>
+      </div>
+    </section>
+  );
+}
+
 // Parallax decoration: a geometric shape that drifts as its section passes through
 // the viewport. Same scroll-driven energy as the hero + manifest scene, dropped into
 // the back-half sections so the whole page reads as one system.
@@ -988,8 +1109,8 @@ export default function HomeR5Preview() {
         ))}
       </div></div>
 
-      {/* SIGNATURE SCROLL SCENE — pinned, scroll-driven */}
-      <ManifestScene />
+      {/* SIGNATURE SCROLL SCENE — pinned horizontal scroll (flim navigation) */}
+      <HorizontalScene setVideo={setVideo} />
 
       {/* SERVICES — dark, who we are + what we do */}
       <section className="svc">
