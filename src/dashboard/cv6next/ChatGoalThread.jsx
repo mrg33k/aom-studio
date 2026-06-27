@@ -717,7 +717,7 @@ function HandoffBtn({ text, variant = 'primary' }) {
         borderRadius: 8, border: primary ? 'none' : '1px solid var(--accent-weak, rgba(245,158,11,.4))',
         background: primary ? 'var(--accent)' : 'transparent',
         color: primary ? '#fff' : 'var(--accent)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
-        fontFamily: 'var(--font-sans)', boxShadow: primary ? '0 2px 8px rgba(245,158,11,.22)' : 'none',
+        fontFamily: 'var(--font-sans)', boxShadow: primary ? '0 2px 8px rgba(0,0,0,.22)' : 'none',
       }}>
       {Gly.handoff} Do now
     </button>
@@ -774,7 +774,7 @@ function ProposalRow({ step, actions }) {
       )}
       <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
         <button type="button" onClick={() => actions.acceptStep(step.id)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(245,158,11,.22)' }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(0,0,0,.22)' }}>
           {Gly.check} Keep
         </button>
         <HandoffBtn text={step.text} variant="ghost" />
