@@ -65,6 +65,25 @@ export function liveStepsToBlocks(liveSteps) {
   return ordered.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: i === last ? 'active' : 'done' }));
 }
 
+// THE one "agent is working" strip, shared by EVERY chat surface (full Chat tool, Home quick
+// chat, mobile) so the live progress reads identically everywhere — the bar is on iff the
+// room's agent is working this turn (driven by useRoomThread's `awaiting`), and the steps
+// inside it tick in real time from the agent's actual tool activity (liveSteps). Born the
+// instant you send (one active "Getting started" row), reconciles to the agent's real steps
+// as they arrive, and is unmounted by the caller the moment the turn settles. Keeping this in
+// ONE place is the "bulletproof + consistent" guarantee (Patrik 2026-06-27).
+export function WorkingTurn({ room, steps, goal }) {
+  const blocks = liveStepsToBlocks(steps);
+  return (
+    <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'flex-start' }}>
+      <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{room?.initials || '·'}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <GoalThreadBody goal={goal} blocks={blocks} />
+      </div>
+    </div>
+  );
+}
+
 // data block -> generic cells + per-row chart pct (first numeric column, relative to max).
 function normalizeData(b) {
   const columns = Array.isArray(b.columns) ? b.columns : [];
@@ -682,30 +701,42 @@ function PlanCheck({ done, onToggle }) {
   );
 }
 
-// The small "hand it to the agent" button — the explicit, deliberate gesture (a stray tap on
-// the checkbox can never kick off work). Posts a real instruction message into the room.
-function HandoffBtn({ text }) {
+// The "hand it to the agent" button — the explicit, deliberate gesture (a stray tap on the
+// checkbox can never kick off work). Posts a real instruction message into the room. On a plan
+// row this is the PRIMARY action (filled accent): handing a step to the agent is the main move on
+// a plan you steer, so it must outweigh the track-only checkbox (Steffen gate 2026-06-27). The
+// proposal card passes variant="ghost" because there "Keep" is the primary and Do now secondary.
+function HandoffBtn({ text, variant = 'primary' }) {
   const send = useThreadSend();
+  const primary = variant === 'primary';
   return (
     <button type="button" title="Hand this to the agent now"
       onClick={() => send(`Go ahead and do this next: ${text}`)}
       style={{
-        flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, height: 26, padding: '0 9px',
-        borderRadius: 7, border: '1px solid var(--accent-weak, rgba(245,158,11,.35))', background: 'transparent',
-        color: 'var(--accent)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+        flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 12px',
+        borderRadius: 8, border: primary ? 'none' : '1px solid var(--accent-weak, rgba(245,158,11,.4))',
+        background: primary ? 'var(--accent)' : 'transparent',
+        color: primary ? '#fff' : 'var(--accent)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer',
+        fontFamily: 'var(--font-sans)', boxShadow: primary ? '0 2px 8px rgba(245,158,11,.22)' : 'none',
       }}>
       {Gly.handoff} Do now
     </button>
   );
 }
 
-// One committed step (YOURS or an accepted agent step). Checkbox + text + hand-off; edit inline.
+// One committed step. Each row sits in a ZONE (Steffen gate 2026-06-27): an OPEN step (YOURS, still
+// to do) gets a warm cream surface so it reads as the live action zone and pulls the eye; a DONE step
+// gets a faint cool surface so struck text stays readable while it recedes as "completed fact". The
+// hand-off (filled accent, primary) outweighs the quiet track-only checkbox.
 function PlanRow({ step, actions }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(step.text);
   const commit = () => { const t = draft.trim(); if (t && t !== step.text) actions.editStep(step.id, t); setEditing(false); };
+  const zone = step.done
+    ? { background: 'rgba(150,170,200,.04)', border: '1px solid rgba(150,170,200,.05)' }
+    : { background: 'rgba(232,222,200,.05)', border: '1px solid rgba(232,222,200,.06)' };
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderTop: '1px solid var(--hair)' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '9px 11px', borderRadius: 9, marginTop: 7, ...zone }}>
       <PlanCheck done={step.done} onToggle={() => actions.toggleStep(step.id)} />
       {editing ? (
         <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
@@ -729,26 +760,24 @@ function ProposalRow({ step, actions }) {
   const [draft, setDraft] = useState(step.text);
   const commit = () => { const t = draft.trim(); if (t) actions.editStep(step.id, t); setEditing(false); };
   return (
-    <div style={{ marginTop: 8, padding: '10px 12px', borderRadius: 10, border: '1px dashed var(--accent-weak, rgba(245,158,11,.45))', background: 'var(--accent-faint, rgba(245,158,11,.06))' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--accent)' }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
-          Agent suggests
-        </span>
-      </div>
+    <div style={{ position: 'relative', marginTop: 8, padding: '12px 12px 11px', borderRadius: 10, border: '1px solid var(--accent-weak, rgba(245,158,11,.5))', background: 'var(--accent-faint, rgba(245,158,11,.08))' }}>
+      <span style={{ position: 'absolute', top: 10, right: 10, display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 999, fontSize: 9.5, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase', color: 'var(--accent)', background: 'rgba(245,158,11,.14)' }}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
+        Agent suggests
+      </span>
       {editing ? (
         <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
           onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
-          style={{ width: '100%', height: 30, borderRadius: 7, border: '1px solid var(--accent-weak, rgba(245,158,11,.4))', background: 'var(--surface-2)', padding: '0 10px', fontSize: 13, color: 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none', marginBottom: 8 }} />
+          style={{ width: '100%', height: 30, borderRadius: 7, border: '1px solid var(--accent-weak, rgba(245,158,11,.4))', background: 'var(--surface-2)', padding: '0 10px', fontSize: 13, color: 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none', margin: '4px 0 8px' }} />
       ) : (
-        <div style={{ fontSize: 13, lineHeight: 1.45, color: 'var(--fg)', marginBottom: 9 }}>{step.text}</div>
+        <div style={{ fontSize: 13, lineHeight: 1.45, color: 'var(--fg)', margin: '2px 92px 10px 0' }}>{step.text}</div>
       )}
       <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
         <button type="button" onClick={() => actions.acceptStep(step.id)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(245,158,11,.22)' }}>
           {Gly.check} Keep
         </button>
-        <HandoffBtn text={step.text} />
+        <HandoffBtn text={step.text} variant="ghost" />
         <button type="button" onClick={() => { setDraft(step.text); setEditing(true); }}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 10px', borderRadius: 7, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
           {Gly.pencil} Edit
@@ -788,7 +817,7 @@ export function PlanPanel({ goal, plan, actions, defaultCollapsed = false }) {
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
         </span>
         <span className="gttitle"><span className="gk">Plan:</span> {title}</span>
-        <span className="gtcount">{nextCount ? `${nextCount} next` : `${doneN} of ${total}`}</span>
+        <span className="gtcount" style={nextCount ? { color: 'var(--accent)', fontWeight: 700 } : undefined}>{nextCount ? `${nextCount} next` : `${doneN} of ${total}`}</span>
         <span className={`gtchev${open ? ' is-open' : ''}`} style={{ marginLeft: 8, display: 'inline-flex', transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
         </span>
