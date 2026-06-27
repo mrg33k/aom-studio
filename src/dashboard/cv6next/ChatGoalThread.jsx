@@ -554,6 +554,56 @@ export function GoalThreadBody({ goal, blocks }) {
   );
 }
 
+// A FINISHED goal thread, folded into a compact card that stays in chat history.
+// Collapsed by default: one record line (done check + what the agent did + step count).
+// Tap the row to expand the full step thread — "show me what happened". The answer itself
+// lives in the message bubble / result blocks above; this card is the WORK, not the answer.
+// Used wherever a persisted agent turn carries a completed step thread (quick panel + Chat),
+// so a finished thread reads as a tidy record instead of a wall of done steps.
+export function WorkDoneCard({ goal, blocks }) {
+  const [open, setOpen] = useState(false);
+  const steps = useMemo(() => buildSteps(blocks), [blocks]);
+  const total = steps.length;
+  if (!total) return null;
+  // Label from the thread itself (always correct), not the live room goal — an older
+  // finished card must not borrow the current goal's title.
+  const label = 'What I did';
+  return (
+    <div className="wdcard" style={{ marginTop: 8 }}>
+      <button type="button" className="wdcard-h" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span className="wdcard-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg></span>
+        <span className="wdcard-t">{label}</span>
+        <span className="wdcard-n">{total} step{total === 1 ? '' : 's'}</span>
+        <span className={`wdcard-chev${open ? ' is-open' : ''}`}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg></span>
+      </button>
+      {open ? (
+        <div className="wdcard-body">
+          <GoalThreadBody goal={goal || { title: 'Completed steps' }} blocks={blocks} />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// Decide how one agent message's blocks render, given whether its thread is still live:
+//   - steps still working  -> the expanded, ticking GoalThreadBody (watch it happen)
+//   - steps all done        -> the collapsed WorkDoneCard (a record you can open)
+//   - no steps (lone answer blocks: summary/data/gallery/...) -> render each inline
+// Keeps a finished thread from staying expanded like it is still live, and prevents the
+// double-render of the freshest message's blocks.
+export function AgentBlocks({ goal, blocks }) {
+  const steps = useMemo(() => buildSteps(blocks), [blocks]);
+  const hasSteps = steps.length > 0;
+  const allDone = hasSteps && steps.every((s) => s.state === 'done');
+  if (hasSteps && !allDone) return <GoalThreadBody goal={goal} blocks={blocks} />;
+  if (hasSteps && allDone) return <WorkDoneCard goal={goal} blocks={blocks} />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {(Array.isArray(blocks) ? blocks : []).map((b, i) => <Result key={i} block={b} />)}
+    </div>
+  );
+}
+
 export { SendCtx };
 
 export default function ChatGoalThread({ room, goal, blocks, onBack, onOpenNav, onSend }) {

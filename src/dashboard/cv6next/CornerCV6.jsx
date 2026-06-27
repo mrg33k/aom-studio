@@ -16,8 +16,7 @@ import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
-import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
-import { Result } from './BlockRenderer.jsx';
+import { GoalThreadBody, SendCtx, AgentBlocks } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
@@ -267,6 +266,7 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend }) {
         No messages in this room yet. Send the first one below.
       </div>
     ) : (
+      <SendCtx.Provider value={onSend || (() => {})}>
       <div className="pconv">
         {groups.map((g, gi) => {
           const head = g.items[0];
@@ -292,11 +292,11 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend }) {
                 {g.items.map((m, i) => (
                   <span key={i} style={{ display: 'contents' }}>
                     {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
-                    {m.blocks?.length ? (
-                      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-                        {m.blocks.map((b, bi) => <Result key={bi} block={b} onAction={onSend} />)}
-                      </div>
-                    ) : null}
+                    {/* Rich blocks: a working thread ticks live (expanded GoalThreadBody), a
+                        finished thread folds into the openable WorkDoneCard, lone answer blocks
+                        render inline — AgentBlocks decides per message, so the live thread shows
+                        on its own working message (no separate bottom copy = no double render). */}
+                    {m.blocks?.length ? <div style={{ marginTop: 8, width: '100%' }}><AgentBlocks goal={goal} blocks={m.blocks} /></div> : null}
                     {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
                   </span>
                 ))}
@@ -305,17 +305,8 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend }) {
             </div>
           );
         })}
-        {/* Live step loader — the same GoalThreadBody the full Chat tool renders. Shows while
-            the agent is working this turn; when it completes, live blocks clear and the final
-            message's persisted m.blocks render inline in its bubble group above (no dupe). */}
-        {live ? (
-          <SendCtx.Provider value={onSend || (() => {})}>
-            <div style={{ marginTop: 10 }}>
-              <GoalThreadBody goal={goal} blocks={blocks} />
-            </div>
-          </SendCtx.Provider>
-        ) : null}
       </div>
+      </SendCtx.Provider>
     ),
     target,
   );

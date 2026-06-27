@@ -10,8 +10,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
-import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
-import { Result } from './BlockRenderer.jsx';
+import { GoalThreadBody, SendCtx, AgentBlocks, buildSteps } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
@@ -315,9 +314,12 @@ function MsgExtras({ m, onSend }) {
   const handleReview = (attachment) => { if (onSend) onSend({ type: 'review', attachment }); };
   return (
     <>
+      {/* A finished thread folds into the openable WorkDoneCard; lone answer blocks render
+          inline. (A still-working thread renders as the live GoalThreadBody at the top level,
+          so it never reaches here.) AgentBlocks decides. */}
       {m.blocks?.length ? (
-        <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-          {m.blocks.map((b, i) => <Result key={i} block={b} onAction={onSend} />)}
+        <div style={{ marginTop: 8, width: '100%' }}>
+          <AgentBlocks blocks={m.blocks} />
         </div>
       ) : null}
       {m.attachments?.length ? (
@@ -473,7 +475,14 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   const { messages, blocks, send, awaiting, liveSteps } = useRoomThread(worldId, selected);
   const goal = useGoalThread(worldId, selected);
-  const liveThread = Array.isArray(blocks) && blocks.length > 0;
+  // The top-level live thread shows ONLY while work is in progress (at least one step not
+  // done). Once every step is done the thread is finished: it falls to PlainThread, where the
+  // message's blocks fold into the openable WorkDoneCard (a record), instead of staying
+  // expanded as if still ticking. Matches the quick-panel behaviour (the two must agree).
+  const liveThread = (() => {
+    const s = buildSteps(blocks);
+    return s.length > 0 && !s.every((x) => x.state === 'done');
+  })();
 
   // A "Review"/"Review all" tap on a message attachment must OPEN the Review tool on
   // those exact files (live), not post a chat message. handleReview hands us a single
