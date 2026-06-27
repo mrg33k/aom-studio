@@ -332,3 +332,75 @@ export function useGoalThread(worldId, room) {
   }, [worldId, room?.id, room?.isProject, room?.status]);
   return goal;
 }
+
+// ── The editable forward plan for one room (goal-thread-plan mission) ──
+// Source of truth = room-goal-steps.json (the per-room checklist), now carrying source +
+// proposed so the three item types read apart: DONE history lives in the message blocks
+// above; here we hold the FUTURE — user-added steps (source:user) and agent suggestions
+// (source:agent, proposed). The user steers it: add / check-done / edit / accept / dismiss,
+// and hands a step to the agent via the room's normal send() (a real message, not a side
+// channel). Polls so an agent that proposes a next step shows up without a refresh.
+export function useRoomPlan(worldId, room) {
+  const [plan, setPlan] = useState([]);
+  const [reloadKey, setReloadKey] = useState(0);
+  const roomKey = roomKeyFor(room);
+
+  useEffect(() => {
+    if (!worldId || !roomKey) { setPlan([]); return undefined; }
+    let alive = true;
+    const load = () => authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}&room=${encodeURIComponent(roomKey)}`)
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        const list = Array.isArray(d.list) ? d.list : [];
+        // Tolerate old rows written before source/proposed existed.
+        setPlan(list.map((s) => ({
+          id: s.id, text: s.text || '', done: !!s.done,
+          source: s.source === 'agent' ? 'agent' : 'user',
+          proposed: !!s.proposed,
+        })));
+      })
+      .catch(() => {});
+    load();
+    const t = setInterval(load, 5000);
+    return () => { alive = false; clearInterval(t); };
+  }, [worldId, roomKey, reloadKey]);
+
+  const post = useCallback(async (body) => {
+    if (!worldId || !roomKey) return false;
+    try {
+      const r = await authFetch('/api/dashboard/room-goal-steps', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world: worldId, room: roomKey, ...body }),
+      });
+      if (r && r.ok) { setReloadKey((k) => k + 1); return true; }
+    } catch { /* ignore */ }
+    return false;
+  }, [worldId, roomKey]);
+
+  // Optimistic where it helps the tap feel instant; the 5s poll reconciles to truth.
+  const addStep = useCallback((text) => {
+    const t = String(text || '').trim(); if (!t) return Promise.resolve(false);
+    setPlan((p) => [...p, { id: `tmp-${p.length}-${t.slice(0, 8)}`, text: t, done: false, source: 'user', proposed: false }]);
+    return post({ action: 'add', text: t });
+  }, [post]);
+  const toggleStep = useCallback((id) => {
+    setPlan((p) => p.map((s) => (s.id === id ? { ...s, done: !s.done } : s)));
+    return post({ action: 'toggle', id });
+  }, [post]);
+  const editStep = useCallback((id, text) => {
+    const t = String(text || '').trim(); if (!t) return Promise.resolve(false);
+    setPlan((p) => p.map((s) => (s.id === id ? { ...s, text: t, source: 'user', proposed: false } : s)));
+    return post({ action: 'edit', id, text: t });
+  }, [post]);
+  const acceptStep = useCallback((id) => {
+    setPlan((p) => p.map((s) => (s.id === id ? { ...s, source: 'user', proposed: false } : s)));
+    return post({ action: 'accept', id });
+  }, [post]);
+  const dismissStep = useCallback((id) => {
+    setPlan((p) => p.filter((s) => s.id !== id));
+    return post({ action: 'delete', id });
+  }, [post]);
+
+  return { plan, actions: { addStep, toggleStep, editStep, acceptStep, dismissStep } };
+}

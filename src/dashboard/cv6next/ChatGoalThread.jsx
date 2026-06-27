@@ -627,6 +627,175 @@ export function AgentBlocks({ goal, blocks }) {
   );
 }
 
+// ── The Plan: the editable forward plan for a room (goal-thread-plan mission) ──
+// Three item types read APART (VISION pillar 1):
+//   • YOURS  (source:user)             — a step you added; checkbox tracks done, → hands it to the agent
+//   • NEXT   (source:agent, proposed)  — an agent SUGGESTION, never committed fact: Keep / edit / dismiss
+//   • DONE   (done:true)               — a finished plan item, checked + struck through
+// Two gestures never collide (pillar 2): the checkbox marks done (tracking), the → button is the
+// explicit hand-off ("agent, go do this one now") and posts a real message via SendCtx.
+// Collapsed = the glance (goal + progress); expanded = this list + an "add a step" input.
+
+// Pencil / check / x / hand-off glyphs, sized to sit inline with a row.
+const Gly = {
+  check: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>,
+  x: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12" /></svg>,
+  pencil: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>,
+  handoff: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h13" /><path d="m12 5 7 7-7 7" /></svg>,
+};
+
+// A round checkbox that marks a plan step done (tracking only — NOT the hand-off).
+function PlanCheck({ done, onToggle }) {
+  return (
+    <button type="button" onClick={onToggle} aria-pressed={done} title={done ? 'Mark not done' : 'Mark done'}
+      style={{
+        flex: 'none', width: 20, height: 20, borderRadius: 6, cursor: 'pointer', marginTop: 1,
+        border: done ? '1px solid var(--accent)' : '1.5px solid var(--hair)',
+        background: done ? 'var(--accent)' : 'transparent', color: '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+      }}>
+      {done ? Gly.check : null}
+    </button>
+  );
+}
+
+// The small "hand it to the agent" button — the explicit, deliberate gesture (a stray tap on
+// the checkbox can never kick off work). Posts a real instruction message into the room.
+function HandoffBtn({ text }) {
+  const send = useThreadSend();
+  return (
+    <button type="button" title="Hand this to the agent now"
+      onClick={() => send(`Go ahead and do this next: ${text}`)}
+      style={{
+        flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 5, height: 26, padding: '0 9px',
+        borderRadius: 7, border: '1px solid var(--accent-weak, rgba(245,158,11,.35))', background: 'transparent',
+        color: 'var(--accent)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+      }}>
+      {Gly.handoff} Do now
+    </button>
+  );
+}
+
+// One committed step (YOURS or an accepted agent step). Checkbox + text + hand-off; edit inline.
+function PlanRow({ step, actions }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(step.text);
+  const commit = () => { const t = draft.trim(); if (t && t !== step.text) actions.editStep(step.id, t); setEditing(false); };
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderTop: '1px solid var(--hair)' }}>
+      <PlanCheck done={step.done} onToggle={() => actions.toggleStep(step.id)} />
+      {editing ? (
+        <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+          style={{ flex: 1, height: 28, borderRadius: 7, border: '1px solid var(--accent-weak, rgba(245,158,11,.4))', background: 'var(--surface-2)', padding: '0 10px', fontSize: 13, color: 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+      ) : (
+        <button type="button" onClick={() => { setDraft(step.text); setEditing(true); }} title="Edit step"
+          style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'text', fontFamily: 'var(--font-sans)', fontSize: 13, lineHeight: 1.45, color: step.done ? 'var(--muted)' : 'var(--fg)', textDecoration: step.done ? 'line-through' : 'none' }}>
+          {step.text}
+        </button>
+      )}
+      {!editing && !step.done ? <HandoffBtn text={step.text} /> : null}
+    </div>
+  );
+}
+
+// An agent SUGGESTION for the next step — never rendered as committed fact (VISION pillar 3).
+// Distinct dashed/amber card with a "Suggested" tag and the accept / edit / dismiss controls.
+function ProposalRow({ step, actions }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(step.text);
+  const commit = () => { const t = draft.trim(); if (t) actions.editStep(step.id, t); setEditing(false); };
+  return (
+    <div style={{ marginTop: 8, padding: '10px 12px', borderRadius: 10, border: '1px dashed var(--accent-weak, rgba(245,158,11,.45))', background: 'var(--accent-faint, rgba(245,158,11,.06))' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--accent)' }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>
+          Agent suggests
+        </span>
+      </div>
+      {editing ? (
+        <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={commit}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') setEditing(false); }}
+          style={{ width: '100%', height: 30, borderRadius: 7, border: '1px solid var(--accent-weak, rgba(245,158,11,.4))', background: 'var(--surface-2)', padding: '0 10px', fontSize: 13, color: 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none', marginBottom: 8 }} />
+      ) : (
+        <div style={{ fontSize: 13, lineHeight: 1.45, color: 'var(--fg)', marginBottom: 9 }}>{step.text}</div>
+      )}
+      <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+        <button type="button" onClick={() => actions.acceptStep(step.id)}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 7, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+          {Gly.check} Keep
+        </button>
+        <HandoffBtn text={step.text} />
+        <button type="button" onClick={() => { setDraft(step.text); setEditing(true); }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 10px', borderRadius: 7, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--muted)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+          {Gly.pencil} Edit
+        </button>
+        <button type="button" onClick={() => actions.dismissStep(step.id)} title="Dismiss this suggestion"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 28, padding: '0 10px', borderRadius: 7, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--faint)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+          {Gly.x} Dismiss
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// The Plan panel, pinned at the foot of the thread. Collapsible: collapsed shows the glance
+// (goal + progress), expanded shows the editable list + the add-a-step input. Renders nothing
+// until there's something to steer (no items + no goal title => stays out of the way).
+export function PlanPanel({ goal, plan, actions, defaultCollapsed = false }) {
+  const [open, setOpen] = useState(!defaultCollapsed);
+  const [draft, setDraft] = useState('');
+  const items = Array.isArray(plan) ? plan : [];
+  const proposals = items.filter((s) => s.source === 'agent' && s.proposed && !s.done);
+  const committed = items.filter((s) => !(s.source === 'agent' && s.proposed));
+  const open_ = committed.filter((s) => !s.done);
+  const done_ = committed.filter((s) => s.done);
+  const total = committed.length;
+  const doneN = done_.length;
+  const pct = total ? Math.round((doneN / total) * 100) : 0;
+  const title = goal?.title || 'Plan';
+  const add = () => { const t = draft.trim(); if (!t) return; actions.addStep(t); setDraft(''); };
+  if (!items.length && !goal?.title) return null;
+  const nextCount = open_.length + proposals.length;
+  return (
+    <div className="gthread is-collapsible" style={{ marginTop: 10 }}>
+      <button type="button" className="gthead" onClick={() => setOpen((v) => !v)} aria-expanded={open}
+        style={{ background: 'none', border: 'none', padding: 0, width: '100%', textAlign: 'left', cursor: 'pointer', color: 'inherit', font: 'inherit' }}>
+        <span className="gtico">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+        </span>
+        <span className="gttitle"><span className="gk">Plan:</span> {title}</span>
+        <span className="gtcount">{nextCount ? `${nextCount} next` : `${doneN} of ${total}`}</span>
+        <span className={`gtchev${open ? ' is-open' : ''}`} style={{ marginLeft: 8, display: 'inline-flex', transition: 'transform .15s', transform: open ? 'rotate(180deg)' : 'none' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+        </span>
+      </button>
+      <div className="gtprog" style={{ margin: open ? '0 0 10px' : '0' }}><i style={{ width: `${pct}%` }} /></div>
+      {open ? (
+        <div>
+          {open_.map((s) => <PlanRow key={s.id} step={s} actions={actions} />)}
+          {proposals.map((s) => <ProposalRow key={s.id} step={s} actions={actions} />)}
+          {done_.length ? (
+            <div style={{ marginTop: 8 }}>
+              {done_.map((s) => <PlanRow key={s.id} step={s} actions={actions} />)}
+            </div>
+          ) : null}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, borderTop: '1px solid var(--hair)', paddingTop: 11 }}>
+            <input value={draft} onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') add(); }}
+              placeholder="Add the next step…"
+              style={{ flex: 1, height: 34, borderRadius: 9, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 12px', fontSize: 13, color: 'var(--fg)', fontFamily: 'var(--font-sans)', outline: 'none' }} />
+            <button type="button" onClick={add} disabled={!draft.trim()}
+              style={{ flex: 'none', height: 34, padding: '0 14px', borderRadius: 9, border: 'none', background: draft.trim() ? 'var(--accent)' : 'var(--surface-2)', color: draft.trim() ? '#fff' : 'var(--faint)', fontSize: 12.5, fontWeight: 600, cursor: draft.trim() ? 'pointer' : 'default', fontFamily: 'var(--font-sans)' }}>
+              Add
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export { SendCtx };
 
 export default function ChatGoalThread({ room, goal, blocks, onBack, onOpenNav, onSend }) {

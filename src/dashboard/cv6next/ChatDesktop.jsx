@@ -9,8 +9,8 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
-import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
-import { GoalThreadBody, SendCtx, AgentBlocks, buildSteps } from './ChatGoalThread.jsx';
+import { useRoomThread, useGoalThread, useRoomPlan } from './data/useRoomThread.js';
+import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel, buildSteps } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
@@ -475,6 +475,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   const { messages, blocks, send, awaiting, liveSteps } = useRoomThread(worldId, selected);
   const goal = useGoalThread(worldId, selected);
+  // The editable forward plan for this room (goal-thread-plan mission) — drives the
+  // interactive "Context / goals" plan in the right control column.
+  const { plan, actions: planActions } = useRoomPlan(worldId, selected);
   // The top-level live thread shows ONLY while work is in progress (at least one step not
   // done). Once every step is done the thread is finished: it falls to PlainThread, where the
   // message's blocks fold into the openable WorkDoneCard (a record), instead of staying
@@ -829,18 +832,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>3</span>
                   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Context / goals</span>
                 </div>
-                {goal?.checklist?.length ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 20 }}>
-                    {goal.checklist.map((it, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                        <span style={{ width: 15, height: 15, borderRadius: '50%', background: it.state === 'done' ? 'var(--success)' : 'transparent', border: it.state !== 'done' ? '2px solid var(--accent)' : 'none', flex: 'none' }} />
-                        <span style={{ flex: 1, fontSize: 12.5, color: it.state === 'done' ? 'var(--muted)' : 'var(--fg)', textDecoration: it.state === 'done' ? 'line-through' : 'none', fontWeight: it.state === 'done' ? 400 : 500 }}>{it.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ color: 'var(--faint)', fontSize: 12.5, marginBottom: 20 }}>No goal set for this room yet.</div>
-                )}
+                <div style={{ marginBottom: 20 }}>
+                  <PlanPanel goal={goal} plan={plan} actions={planActions} />
+                  {!plan?.length && !goal?.title ? (
+                    <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>No plan yet. Add the next step below once a room is moving.</div>
+                  ) : null}
+                </div>
                 </>
                 )}
               </>
