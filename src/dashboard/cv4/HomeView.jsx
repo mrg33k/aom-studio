@@ -4476,7 +4476,7 @@ export default function HomeView({
 
   const handleKeyDown = useCallback((e) => {
     if (!cv6 || selectableItems.length === 0) return
-    if (selectedTool && selectedTool !== 'home') return // R56: when a tool is open, its own nav takes over
+    if (selectedTool && selectedTool !== 'home' && selectedTool !== 'files') return // R56: when a tool is open, its own nav takes over; 'files' shares home room nav
     // input-1: while the user is typing in the quick-reply (or any editable field),
     // arrows/Enter belong to that field — don't hijack focus into list navigation.
     const ae = (typeof document !== 'undefined') ? document.activeElement : null
@@ -4523,7 +4523,8 @@ export default function HomeView({
     }
     if (e.key === 'Tab') {
       // Tab lane = the Tools row. First Tab enters the lane on the current tool
-      // (Home by default); subsequent Tabs cycle.
+      // (Home by default); subsequent Tabs cycle. In files panel, Tab works normally.
+      if (selectedTool === 'files') return
       e.preventDefault()
       if (!toolsFocused) { setToolsFocused(true); return }
       setToolNavIndex(prev => e.shiftKey ? (prev - 1 + TOOL_TABS.length) % TOOL_TABS.length : (prev + 1) % TOOL_TABS.length)
@@ -4547,7 +4548,9 @@ export default function HomeView({
       // Left backs out: from inside a project's missions, return to the All Rooms list
       // (the useEffect on browsingProject puts the cursor back at the top). Otherwise
       // step out of a quick-view room (Patrik 2026-06-19).
+      // In files panel, left always returns to home.
       e.preventDefault()
+      if (selectedTool === 'files') { openTool('home'); return }
       if (browsingProject) { setBrowsingProject(null); setSelectedRoom(null) }
       else if (selectedRoom) setSelectedRoom(null)
     }
@@ -4565,7 +4568,7 @@ export default function HomeView({
   // which broke the chat tool's Left-arrow flow.
   useEffect(() => {
     if (!cv6) return
-    if (selectedTool === 'home') homeRef.current?.focus()
+    if (selectedTool === 'home' || selectedTool === 'files') homeRef.current?.focus()
     // kb-6: leaving home into a tool drops the home quick-view room so it can't
     // linger as a stale ArrowLeft target after the tool is closed.
     else if (selectedRoom) setSelectedRoom(null)

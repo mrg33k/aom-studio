@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-26T14:53:14.025Z",
+  "generated_at": "2026-06-27T00:38:57.408Z",
   "missions": [
     {
       "slug": "corner:business-ops",
@@ -3292,6 +3292,20 @@
       "path": "corner/users/aom/projects/artlink/missions/brand-page"
     },
     {
+      "slug": "aztacoboys:website",
+      "raw_slug": "website",
+      "folder_name": "website",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "aztacoboys",
+      "workstream": null,
+      "name": "Website",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/aztacoboys/missions/website"
+    },
+    {
       "slug": "barbara-o-neill:cancer-is-a-fungus-baking-soda-treatment-this-is-h",
       "raw_slug": "cancer-is-a-fungus-baking-soda-treatment-this-is-h",
       "folder_name": "cancer-is-a-fungus-baking-soda-treatment-this-is-h",
@@ -4179,6 +4193,12 @@
     },
     {
       "slug": "artlink",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
+      "slug": "aztacoboys",
       "total": 1,
       "in_flight": 1,
       "done": 0
