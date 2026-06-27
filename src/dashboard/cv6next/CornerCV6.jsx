@@ -17,6 +17,7 @@ import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
+import { Result } from './BlockRenderer.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
@@ -252,12 +253,16 @@ function groupChatMessages(list) {
   return groups;
 }
 
-function Cv6QuickThread({ target, messages, onReview }) {
+function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend }) {
   if (!target) return null;
   const list = Array.isArray(messages) ? messages : [];
   const groups = groupChatMessages(list);
+  // Live step loader: while the agent is actively working this turn, useRoomThread exposes
+  // the in-flight goal-thread blocks (same source the full Chat tool reads). Show the loader
+  // even before the first message lands so an empty room still ticks (parity with Chat).
+  const live = Array.isArray(blocks) && blocks.length > 0;
   return createPortal(
-    list.length === 0 ? (
+    (list.length === 0 && !live) ? (
       <div className="convo-empty" style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 13, maxWidth: 240, lineHeight: 1.5 }}>
         No messages in this room yet. Send the first one below.
       </div>
@@ -287,6 +292,11 @@ function Cv6QuickThread({ target, messages, onReview }) {
                 {g.items.map((m, i) => (
                   <span key={i} style={{ display: 'contents' }}>
                     {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
+                    {m.blocks?.length ? (
+                      <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
+                        {m.blocks.map((b, bi) => <Result key={bi} block={b} onAction={onSend} />)}
+                      </div>
+                    ) : null}
                     {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
                   </span>
                 ))}
@@ -295,6 +305,16 @@ function Cv6QuickThread({ target, messages, onReview }) {
             </div>
           );
         })}
+        {/* Live step loader — the same GoalThreadBody the full Chat tool renders. Shows while
+            the agent is working this turn; when it completes, live blocks clear and the final
+            message's persisted m.blocks render inline in its bubble group above (no dupe). */}
+        {live ? (
+          <SendCtx.Provider value={onSend || (() => {})}>
+            <div style={{ marginTop: 10 }}>
+              <GoalThreadBody goal={goal} blocks={blocks} />
+            </div>
+          </SendCtx.Provider>
+        ) : null}
       </div>
     ),
     target,
@@ -623,6 +643,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // useRoomThread the full Chat tool uses, so the quick panel and the full chat agree.
   const quickThread = useRoomThread(worldId, knavOpenedRoom);
   const quickSend = quickThread && quickThread.send;
+  // Live goal thread for the col3 quick room — feeds Cv6QuickThread's live step loader so the
+  // quick reply shows the same ticking progress the full Chat tool does (Patrik #1, 2026-06-26).
+  const quickGoal = useGoalThread(worldId, knavOpenedRoom);
   // Pin the col3 quick chat to the newest message: when a room opens or a message lands, scroll
   // the thread to the bottom (Patrik 2026-06-25: it was loading at the top). rAF so it runs after
   // the template engine paints the new rows. The thread element only exists on desktop home.
@@ -1230,6 +1253,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       <Cv6QuickThread
         target={knavOpenedRoom ? threadHost : null}
         messages={(quickThread && quickThread.messages ? quickThread.messages : []).slice(-40)}
+        blocks={quickThread && quickThread.blocks}
+        goal={quickGoal}
+        onSend={quickSend}
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('review', files?.length ? { files } : null); }}
       />
       <Cv6FullComposer
