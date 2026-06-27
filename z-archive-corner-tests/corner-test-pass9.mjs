@@ -7,7 +7,7 @@ import { chromium } from 'playwright'
 import fs from 'fs'
 
 const BASE = 'http://localhost:5173'
-const DIR = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/test-screenshots'
+const DIR = '/Users/aom-inhouse/aom-studio-transfer/aom-studio/test-screenshots'
 const R = []
 
 function log(t, s, d) {
@@ -663,8 +663,8 @@ async function run() {
   let workingTreeClean = false
   try {
     const { execSync } = await import('child_process')
-    commitHash = execSync('cd /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio && git rev-parse --short HEAD').toString().trim()
-    const status = execSync('cd /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio && git status --porcelain src/').toString().trim()
+    commitHash = execSync('cd /Users/aom-inhouse/aom-studio-transfer/aom-studio && git rev-parse --short HEAD').toString().trim()
+    const status = execSync('cd /Users/aom-inhouse/aom-studio-transfer/aom-studio && git status --porcelain src/').toString().trim()
     workingTreeClean = status.length === 0
   } catch (e) {}
 

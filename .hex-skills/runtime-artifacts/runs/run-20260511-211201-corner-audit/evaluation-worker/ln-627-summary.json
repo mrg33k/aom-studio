@@ -3,7 +3,7 @@
   "producer_skill": "ln-627-diagnosability-auditor",
   "operation": "diagnosability_audit",
   "project": "corner",
-  "codebase_root": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+  "codebase_root": "/Users/aom-inhouse/aom-studio-transfer/aom-studio",
   "timestamp": "2026-05-11T21:12:01Z",
   "audit_date": "2026-05-11",
   "evaluator": "Haiku 4.5 (ln-627-diagnosability-auditor)",

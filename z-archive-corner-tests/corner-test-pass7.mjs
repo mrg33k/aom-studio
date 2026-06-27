@@ -7,7 +7,7 @@ import { chromium } from 'playwright'
 import fs from 'fs'
 
 const BASE = 'http://localhost:5173'
-const DIR = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/test-screenshots'
+const DIR = '/Users/aom-inhouse/aom-studio-transfer/aom-studio/test-screenshots'
 const R = []
 
 function log(t, s, d) {
@@ -455,7 +455,7 @@ async function run() {
   let commitHash = 'unknown'
   try {
     const { execSync } = await import('child_process')
-    commitHash = execSync('cd /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio && git rev-parse --short HEAD').toString().trim()
+    commitHash = execSync('cd /Users/aom-inhouse/aom-studio-transfer/aom-studio && git rev-parse --short HEAD').toString().trim()
   } catch (e) {}
 
   fs.writeFileSync(`${DIR}/pass7-results.json`, JSON.stringify({

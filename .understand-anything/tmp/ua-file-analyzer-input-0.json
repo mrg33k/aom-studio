@@ -1,5 +1,5 @@
 {
-  "projectRoot": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+  "projectRoot": "/Users/aom-inhouse/aom-studio-transfer/aom-studio",
   "batchFiles": [
     {"path": "api/_lib/crosspost.js", "language": "javascript", "sizeLines": 48, "fileCategory": "code"},
     {"path": "api/_lib/graphql-executor.js", "language": "javascript", "sizeLines": 126, "fileCategory": "code"},

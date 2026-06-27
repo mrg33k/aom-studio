@@ -23,7 +23,7 @@ import { chromium } from 'playwright'
 import fs from 'fs'
 
 const BASE = process.env.SITE || 'http://localhost:5173'
-const DIR = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/test-screenshots'
+const DIR = '/Users/aom-inhouse/aom-studio-transfer/aom-studio/test-screenshots'
 const R = []
 
 function log(t, s, d) {
@@ -328,7 +328,7 @@ async function run() {
   let commitHash = 'unknown'
   try {
     const { execSync } = await import('child_process')
-    commitHash = execSync('git -C /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio rev-parse --short HEAD').toString().trim()
+    commitHash = execSync('git -C /Users/aom-inhouse/aom-studio-transfer/aom-studio rev-parse --short HEAD').toString().trim()
   } catch {}
 
   const outPath = `${DIR}/pass31-results.json`

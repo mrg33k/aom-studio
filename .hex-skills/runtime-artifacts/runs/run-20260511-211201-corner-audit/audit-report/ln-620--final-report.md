@@ -2,7 +2,7 @@
 
 **Run ID:** run-20260511-211201-corner-audit
 **Date:** 2026-05-11
-**Target:** `/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio` (Corner application, version aom-v17 17.2.1)
+**Target:** `/Users/aom-inhouse/aom-studio-transfer/aom-studio` (Corner application, version aom-v17 17.2.1)
 **Workers:** ln-621 through ln-629 (9 parallel auditors)
 **Research basis:** Vite + React + Supabase + Vercel best-practice sources, May 2026 (see `research-evidence.md`)
 

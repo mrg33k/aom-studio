@@ -6,7 +6,7 @@ import { chromium } from 'playwright'
 import fs from 'fs'
 
 const BASE = 'http://localhost:5173'
-const DIR = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/test-screenshots'
+const DIR = '/Users/aom-inhouse/aom-studio-transfer/aom-studio/test-screenshots'
 const R = []
 
 function log(t, s, d) {

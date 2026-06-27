@@ -17,7 +17,7 @@ import fs from 'fs'
 import path from 'path'
 
 const BASE = 'http://localhost:5173'
-const SCREENSHOT_DIR = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/test-screenshots'
+const SCREENSHOT_DIR = '/Users/aom-inhouse/aom-studio-transfer/aom-studio/test-screenshots'
 const RESULTS = []
 
 function log(test, status, detail) {

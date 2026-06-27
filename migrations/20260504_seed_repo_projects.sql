@@ -12,10 +12,10 @@
 INSERT INTO projects (slug, name, color, icon, type, team_members, recency_weight, is_active, repo_path, repo_description)
 VALUES
   ('aom-studio', 'AOM Studio',  '#3B82F6', 'project', 'repo',  '["elon","bobby","steve","steffen"]',  85, true,
-   '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio',
+   '/Users/aom-inhouse/aom-studio-transfer/aom-studio',
    'Corner platform web app and dashboard (React/Vite)'),
   ('aom-ea',     'AOM-EA',      '#6366F1', 'project', 'repo',  '["elon","rex","steve","steffen"]',    80, true,
-   '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA',
+   '/Users/aom-inhouse/aom-studio-transfer/AOM-EA',
    'Agent EA workspace: scripts, migrations, context, and automation')
 ON CONFLICT (slug) DO UPDATE SET
   name             = EXCLUDED.name,

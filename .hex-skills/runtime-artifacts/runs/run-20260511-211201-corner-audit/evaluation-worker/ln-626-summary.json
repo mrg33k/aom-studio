@@ -244,7 +244,7 @@
   "metadata": {
     "auditor": "ln-626-dead-code-pruning-auditor",
     "version": "3.0.0",
-    "codebase_root": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+    "codebase_root": "/Users/aom-inhouse/aom-studio-transfer/aom-studio",
     "scan_timestamp": "2026-05-11T21:12:01Z",
     "detection_methodology": "Layer 1: fallow graph + grep; Layer 2: zero-importer verification + manual inspection",
     "confidence_level": "95%+",

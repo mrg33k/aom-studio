@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "'/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/aom-studio/.codex/hooks/fallow-gate.sh'"
+            "command": "'/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio/.codex/hooks/fallow-gate.sh'"
           }
         ]
       }

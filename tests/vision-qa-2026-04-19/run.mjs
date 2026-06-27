@@ -8,7 +8,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const SHOT_DIR = path.join(HERE, 'screenshots')
 mkdirSync(SHOT_DIR, { recursive: true })
 
-const envPath = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/.env'
+const envPath = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA/.env'
 const env = Object.fromEntries(
   readFileSync(envPath, 'utf8')
     .split('\n')

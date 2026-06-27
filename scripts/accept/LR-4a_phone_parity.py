@@ -34,7 +34,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 AOM_EA_LISTENER = os.path.expanduser(
-    '~/Documents/Dev/aom-studio-transfer/AOM-EA/scripts/supabase-listener.py'
+    '~/aom-studio-transfer/AOM-EA/scripts/supabase-listener.py'
 )
 
 checks = []

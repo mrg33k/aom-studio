@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 
-const OUTPUT_DIR = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/projects/sys/qa-final';
+const OUTPUT_DIR = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA/projects/sys/qa-final';
 
 const VIEWPORTS = [
   { name: 'desktop-1440', width: 1440, height: 900 },

@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/aom-studio
+cd /Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio
 git commit -m "feat(corner:cv6): nested room tree Home + Organize R-ROOMTREE-1
 
 Wire proj.tree from missions-tree API into Home All Rooms panel and

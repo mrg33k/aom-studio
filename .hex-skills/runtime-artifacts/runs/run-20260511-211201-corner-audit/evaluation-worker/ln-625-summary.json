@@ -3,7 +3,7 @@
   "producer_skill": "ln-625-dependency-reuse-auditor",
   "timestamp": "2026-05-11T22:15:00Z",
   "project": "corner",
-  "repo_path": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+  "repo_path": "/Users/aom-inhouse/aom-studio-transfer/aom-studio",
   "total_js_files": 319,
   "status": "complete",
   "findings": {

@@ -4,20 +4,20 @@
 // Usage: node test-analyze-logs.js
 
 const testLog = `Error: Module not found: can't resolve 'react'
-  at /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/webpack/lib/Compilation.js:2456:12
-  at /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/webpack/lib/NormalModuleFactory.js:795:3
-  at eval (eval at create (/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:10:1)
-  at /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/webpack/lib/NormalModuleFactory.js:275:22
-  at /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/Resolver.js:213:14
-  at /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/Resolver.js:285:5
-  at eval (eval at create (/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:13:1)
-  at /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/DescriptionFilePlugin.js:87:43
-  at /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/Resolver.js:213:14
-  at /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/Resolver.js:285:5
+  at /Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/webpack/lib/Compilation.js:2456:12
+  at /Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/webpack/lib/NormalModuleFactory.js:795:3
+  at eval (eval at create (/Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:10:1)
+  at /Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/webpack/lib/NormalModuleFactory.js:275:22
+  at /Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/Resolver.js:213:14
+  at /Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/Resolver.js:285:5
+  at eval (eval at create (/Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/tapable/lib/HookCodeFactory.js:33:10), <anonymous>:13:1)
+  at /Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/DescriptionFilePlugin.js:87:43
+  at /Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/Resolver.js:213:14
+  at /Users/aom-inhouse/aom-studio-transfer/aom-studio/node_modules/enhanced-resolve/lib/Resolver.js:285:5
 
 Failed to compile.
 
-ModuleNotFoundError: Module not found: Error: can't resolve 'react' in '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/src/dashboard/components'
+ModuleNotFoundError: Module not found: Error: can't resolve 'react' in '/Users/aom-inhouse/aom-studio-transfer/aom-studio/src/dashboard/components'
 Did you mean './react'?
 Requests that should resolve in the current directory need to start with './'.
 Requests that start with a name are treated as module requests and resolve within module directories (node_modules).`;

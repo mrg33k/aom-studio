@@ -2,8 +2,8 @@
 
 **Audit Date:** 2026-05-11  
 **Surface:** Tasks View (Project-cards-and-living-paragraph dashboard)  
-**Vision Source:** `/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/corner/VISION.md` lines 43-56  
-**Code Base:** `/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio/src/dashboard/components/cv3/`
+**Vision Source:** `/Users/aom-inhouse/aom-studio-transfer/AOM-EA/corner/VISION.md` lines 43-56  
+**Code Base:** `/Users/aom-inhouse/aom-studio-transfer/aom-studio/src/dashboard/components/cv3/`
 
 ---
 

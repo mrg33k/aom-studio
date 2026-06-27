@@ -8,7 +8,7 @@ import path from 'path';
 
 // Resolve AOM-EA root: prefer env var, then hardcoded dev path, then sibling-dir fallback.
 const AOM_EA_ENV = process.env.AOM_EA_ROOT;
-const AOM_EA_HARDCODED = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA';
+const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
 const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
 const BASE_PATH = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
 

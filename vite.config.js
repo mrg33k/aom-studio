@@ -11,7 +11,7 @@ import https from 'https'
 import http from 'http'
 
 // AOM-EA local filesystem root for localhost dashboard mode
-const AOM_EA_ROOT = '/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA'
+const AOM_EA_ROOT = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA'
 
 // Relay files: prefer Application Support path (where launchd relay + relay-respond.py write)
 // Falls back to repo path if App Support doesn't exist.

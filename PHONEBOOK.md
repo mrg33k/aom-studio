@@ -2,8 +2,8 @@
 > This is WHERE things live across all AOM repos.
 > Agents: use this to find files. Don't guess paths. Don't grep blindly.
 ## aom-studio (Dashboard, API, React frontend on Vercel)
-**Path (canonical, post-2026-05-14 transition):** `/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/aom-studio`
-**Path (legacy, pre-cut — still valid):** `/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio`
+**Path (canonical, post-2026-05-14 transition):** `/Users/aom-inhouse/aom-studio-transfer/AOM-EA/aom-studio`
+**Path (legacy, pre-cut — still valid):** `/Users/aom-inhouse/aom-studio-transfer/aom-studio`
 
 > **Transition note (2026-05-14):** Per `corner:cross-repo-routing` Option A, aom-studio is moving from a peer location to nested inside AOM-EA. Scripts in AOM-EA auto-detect via `resolve_aom_studio_path()` in `scripts/task-runner.sh`. Workers should treat the nested path as canonical going forward. The actual disk move happens in a maintenance window; see `AOM-EA/corner/missions/cross-repo-routing/MOVE-RUNBOOK.md`.
 
@@ -150,7 +150,7 @@ Grouped by surface. All are Vercel serverless functions.
 - `src/pages/BriefAuditOnboarding.jsx`
 
 ## AOM-EA (Agent system, scripts, pipeline)
-**Path:** /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA
+**Path:** /Users/aom-inhouse/aom-studio-transfer/AOM-EA
 
 ### Pipeline Scripts (v2)
 - `scripts/v2-cost-tracker.py`

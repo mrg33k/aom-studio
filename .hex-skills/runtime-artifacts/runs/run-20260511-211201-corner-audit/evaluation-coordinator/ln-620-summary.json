@@ -38,7 +38,7 @@
       "ln-629": 3.5
     },
     "metadata": {
-      "target": "/Users/aom-inhouse/Documents/Dev/aom-studio-transfer/aom-studio",
+      "target": "/Users/aom-inhouse/aom-studio-transfer/aom-studio",
       "stack": "Vite 5 + React 18 + React Router 7 + Supabase + Firebase + Vercel + Tailwind",
       "files_scanned": 348,
       "api_routes": 30,

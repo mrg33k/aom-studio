@@ -153,11 +153,11 @@ git clone https://github.com/obra/superpowers /tmp/superpowers-src
 
 # 2. Copy the 3 selected skill directories into AOM-EA's skills folder
 cp -r /tmp/superpowers-src/skills/test-driven-development \
-       /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/.claude/skills/
+       /Users/aom-inhouse/aom-studio-transfer/AOM-EA/.claude/skills/
 cp -r /tmp/superpowers-src/skills/systematic-debugging \
-       /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/.claude/skills/
+       /Users/aom-inhouse/aom-studio-transfer/AOM-EA/.claude/skills/
 cp -r /tmp/superpowers-src/skills/requesting-code-review \
-       /Users/aom-inhouse/Documents/Dev/aom-studio-transfer/AOM-EA/.claude/skills/
+       /Users/aom-inhouse/aom-studio-transfer/AOM-EA/.claude/skills/
 
 # 3. Register each in AOM-EA/.claude/skills/INDEX.md
 # Add a new "## Code Quality (Superpowers cherry-pick)" section with:
