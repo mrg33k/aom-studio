@@ -1797,29 +1797,51 @@ function MessageList({ roomType = 'agent' }) {
                       }
                       if (isImage) {
                         return (
-                          <div
-                            key={attIdx}
-                            role="button"
-                            tabIndex={0}
-                            title={att.name || 'Open image'}
-                            onClick={openAttachment}
-                            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAttachment() } }}
-                            style={{
-                              alignSelf: isUser ? 'flex-end' : 'flex-start',
-                              borderRadius: 16, overflow: 'hidden',
-                              maxWidth: '70%', cursor: 'pointer',
-                              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                            }}
-                            onMouseEnter={e => {
-                              e.currentTarget.style.transform = 'scale(1.02)'
-                              e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.35)'
-                            }}
-                            onMouseLeave={e => {
-                              e.currentTarget.style.transform = 'scale(1)'
-                              e.currentTarget.style.boxShadow = 'none'
-                            }}
-                          >
-                            <img src={att.url} alt={att.name || ''} style={{ width: '100%', display: 'block', borderRadius: 16 }} />
+                          <div key={attIdx} style={{ display: 'flex', flexDirection: 'column', gap: 8, alignSelf: isUser ? 'flex-end' : 'flex-start' }}>
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              title={att.name || 'Open image'}
+                              onClick={openAttachment}
+                              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openAttachment() } }}
+                              style={{
+                                borderRadius: 16, overflow: 'hidden',
+                                maxWidth: '70%', cursor: 'pointer',
+                                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.transform = 'scale(1.02)'
+                                e.currentTarget.style.boxShadow = '0 6px 18px rgba(0,0,0,0.35)'
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.transform = 'scale(1)'
+                                e.currentTarget.style.boxShadow = 'none'
+                              }}
+                            >
+                              <img src={att.url} alt={att.name || ''} style={{ width: '100%', display: 'block', borderRadius: 16 }} />
+                            </div>
+                            {!isUser && (
+                              <button
+                                onClick={openAttachment}
+                                title="Review this image"
+                                style={{
+                                  alignSelf: 'flex-start',
+                                  padding: '6px 12px',
+                                  fontSize: 12,
+                                  fontWeight: 500,
+                                  background: C.accent,
+                                  color: C.bg,
+                                  border: 'none',
+                                  borderRadius: 6,
+                                  cursor: 'pointer',
+                                  transition: 'opacity 0.15s ease',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.opacity = '0.85' }}
+                                onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+                              >
+                                Review
+                              </button>
+                            )}
                           </div>
                         )
                       }
