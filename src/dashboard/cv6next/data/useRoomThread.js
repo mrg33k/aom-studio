@@ -116,6 +116,12 @@ export function useRoomThread(worldId, room) {
     const projParam = room.isMission ? room.projectSlug : (room.isProject ? room.id : '');
     const q = new URLSearchParams({ client_id: worldId, agent: agentParam, limit: '50' });
     if (projParam) q.set('project', projParam);
+    // The bar stops on the agent's real end-of-turn signal, not a fixed countdown that could
+    // yank it off a still-running long turn. Authoritative stop = the `settled` marker the
+    // bridge stamps when the turn ends (or the reply landing, handled in the thread poll).
+    // The only timer is a long dead-bridge backstop, reset on every new step.
+    let lastActivity = Date.now();
+    let lastCount = -1;
     const poll = () => authFetch(`/api/dashboard/message-steps?${q.toString()}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -125,13 +131,18 @@ export function useRoomThread(worldId, room) {
         // (the generic working indicator still renders from `awaiting`).
         const mine = lastSentId ? all.filter((s) => String(s.parent_message_id) === lastSentId) : [];
         setLiveSteps(mine);
+        // `settled` (step_index 9999) IS "the agent stopped working" — stop the bar on it,
+        // no guessing, so working-vs-stopped is honest (Patrik 2026-06-27).
+        if (mine.some((s) => s.step_index === 9999 || s.text === 'settled')) { setAwaiting(false); return; }
+        const renderable = mine.filter((s) => s.step_index !== 9999 && s.text !== 'settled').length;
+        if (renderable !== lastCount) { lastCount = renderable; lastActivity = Date.now(); }
+        // Dead-bridge insurance only: fully silent (no new step, no reply) for a long stretch.
+        if (Date.now() - lastActivity > 180000) setAwaiting(false);
       })
       .catch(() => {});
     poll();
     const t = setInterval(poll, 1500);
-    // Safety: never spin forever if no reply/heartbeat ever arrives.
-    const stop = setTimeout(() => { if (alive) setAwaiting(false); }, 120000);
-    return () => { alive = false; clearInterval(t); clearTimeout(stop); };
+    return () => { alive = false; clearInterval(t); };
   }, [awaiting, lastSentId, worldId, room?.id, room?.isMission, room?.isProject, room?.projectSlug]);
 
   useEffect(() => {
@@ -259,10 +270,18 @@ export function useRoomThread(worldId, room) {
         const newestUser = msgs.filter((m) => m.isUser && m.id).sort((a, b) => tms(b) - tms(a))[0];
         const newestReply = msgs.filter((m) => !m.isUser).sort((a, b) => tms(b) - tms(a))[0];
         if (!baselineRef.current) {
-          // First load for this room: remember where the thread is, show nothing.
+          // First load for this room: remember where the thread is.
           baselineRef.current = true;
           const newestAny = msgs.map(tms).reduce((a, b) => Math.max(a, b), 0);
           lastSentTsRef.current = newestAny;
+          // If the room is opened mid-turn — newest message is the user's, no reply after it,
+          // and recent — show the working bar at once, so entering a busy room reads as busy
+          // (consistent "is it working" whether you sent the message or just walked in).
+          if (newestUser && (!newestReply || tms(newestReply) < tms(newestUser)) && (Date.now() - tms(newestUser) < 180000)) {
+            setLastSentId(String(newestUser.id));
+            setAwaiting(true);
+            setLiveSteps([]);
+          }
         } else if (newestUser && tms(newestUser) > lastSentTsRef.current) {
           // A newer user message than anything we've tracked → the agent is now on it.
           lastSentTsRef.current = tms(newestUser);

@@ -243,25 +243,8 @@ function GoalTurn({ m, goal, blocks }) {
   );
 }
 
-// While a reply is pending, the space under the pinned question shows the agent is on it
-// (kit .thinking dot pulse), so a fresh send never looks dead. Replaced the moment the real
-// reply (bubble / Goal Thread) starts arriving.
-function ThinkingTurn({ room }) {
-  return (
-    <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-      <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--surface-2)', color: 'var(--muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flex: 'none' }}>{room?.initials || '·'}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{room?.name}</span>
-        </div>
-        <div className="thinking">
-          <span className="dot3"><i /><i /><i /></span>
-          <span style={{ fontSize: 12.5, color: 'var(--muted)' }}>Working on it…</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+// (The old dot-pulse ThinkingTurn was removed 2026-06-27 — every surface now shows the one
+// shared progress thread, on iff the agent is working, never a separate typing indicator.)
 
 // Walk a run of messages; collapse consecutive file messages into one gallery, and render
 // any structured (Goal Thread) message inline as its step thread.
@@ -294,7 +277,7 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
   );
 }
 
-export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview, liveSteps }) {
+export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
   const [draft, setDraft] = useState('');
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
   const scrollRef = useRef(null);
@@ -323,9 +306,10 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
   // downward beneath it (thinking, then bubble / Goal Thread). It stays pinned until you
   // scroll or send again. So while a reply is pending we reserve a viewport of room below.
   const lastMsg = messages?.length ? messages[messages.length - 1] : null;
-  const awaiting = !!lastMsg && lastMsg.isUser; // sent, no agent reply yet
-  // Real (non-sentinel) live steps for the in-flight reply — gate the building thread vs the dot.
-  const hasLiveSteps = Array.isArray(liveSteps) && liveSteps.some((s) => s && s.step_index !== 9999 && s.text && s.text !== 'settled');
+  // Prefer the hook's hardened working signal (settles on the bridge's end-of-turn marker,
+  // shows when you open a busy room) so mobile reads identically to the other surfaces; fall
+  // back to the local "last message is mine" guess only when no signal was passed (demo).
+  const awaiting = awaitingProp != null ? awaitingProp : (!!lastMsg && lastMsg.isUser);
   const lastUserSig = useMemo(() => {
     for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
       if (messages[i]?.isUser) return `${i}:${messages[i].ts || messages[i].text || ''}`;
@@ -438,18 +422,15 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
               )}
               {/* Reply pending: the agent's live Goal Thread builds right under the pinned
                   question — goal = your ask, steps tick (done rows + a newest active row) in real
-                  time from the agent's actual activity. The brief moment before the first step
-                  arrives shows the dot-pulse so it never looks dead. */}
+                  time from the agent's actual activity. Before the first step lands, liveStepsToBlocks
+                  yields a single active "Getting started" row, so it's always the progress thread —
+                  never a separate typing indicator (Patrik 2026-06-27: progress bar, not dots). */}
               {awaiting && (
-                hasLiveSteps
-                  ? (
-                    <GoalTurn
-                      m={{ agentName: room?.name, agentInitials: room?.initials || '·', agentTint: 'accent', time: '' }}
-                      goal={threadGoal}
-                      blocks={liveStepsToBlocks(liveSteps)}
-                    />
-                  )
-                  : <ThinkingTurn room={room} />
+                <GoalTurn
+                  m={{ agentName: room?.name, agentInitials: room?.initials || '·', agentTint: 'accent', time: '' }}
+                  goal={threadGoal}
+                  blocks={liveStepsToBlocks(liveSteps)}
+                />
               )}
             </>
           )}

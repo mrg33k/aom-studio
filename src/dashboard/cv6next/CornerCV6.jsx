@@ -16,7 +16,7 @@ import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
-import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel, WorkingTurn } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
@@ -252,7 +252,7 @@ function groupChatMessages(list) {
   return groups;
 }
 
-function Cv6QuickThread({ target, messages, blocks, goal, plan, planActions, onReview, onSend }) {
+function Cv6QuickThread({ target, messages, blocks, goal, plan, planActions, onReview, onSend, awaiting, liveSteps, room }) {
   if (!target) return null;
   const list = Array.isArray(messages) ? messages : [];
   const groups = groupChatMessages(list);
@@ -260,8 +260,15 @@ function Cv6QuickThread({ target, messages, blocks, goal, plan, planActions, onR
   // the in-flight goal-thread blocks (same source the full Chat tool reads). Show the loader
   // even before the first message lands so an empty room still ticks (parity with Chat).
   const live = Array.isArray(blocks) && blocks.length > 0;
+  // The working strip's header restates the ask: room goal if set, else the newest user
+  // message (same rule the full Chat tool uses, so the two read identically).
+  const askGoal = (() => {
+    if (goal?.title) return goal;
+    for (let i = list.length - 1; i >= 0; i -= 1) { if (list[i]?.isUser && list[i].text) return { title: list[i].text }; }
+    return goal;
+  })();
   return createPortal(
-    (list.length === 0 && !live) ? (
+    (list.length === 0 && !live && !awaiting) ? (
       <div className="convo-empty" style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 13, maxWidth: 240, lineHeight: 1.5 }}>
         No messages in this room yet. Send the first one below.
       </div>
@@ -305,6 +312,10 @@ function Cv6QuickThread({ target, messages, blocks, goal, plan, planActions, onR
             </div>
           );
         })}
+        {/* The live "agent is working" strip — the SAME one the full Chat tool shows, so the
+            quick chat reads identically. On iff the agent is working this turn (awaiting),
+            its steps ticking from real tool activity. (Patrik 2026-06-27: was missing here.) */}
+        {awaiting ? <WorkingTurn room={room} steps={liveSteps} goal={askGoal} /> : null}
         {/* The editable forward plan, pinned at the foot of the thread (goal-thread-plan
             mission): NEXT (agent suggestions) + YOURS (added steps), check / hand-off / add. */}
         {planActions ? <PlanPanel goal={goal} plan={plan} actions={planActions} /> : null}
@@ -1276,6 +1287,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         plan={quickPlan && quickPlan.plan}
         planActions={quickPlan && quickPlan.actions}
         onSend={quickSend}
+        awaiting={quickThread && quickThread.awaiting}
+        liveSteps={quickThread && quickThread.liveSteps}
+        room={displayedRoom}
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('review', files?.length ? { files } : null); }}
       />
       <Cv6FullComposer
@@ -1471,6 +1485,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
     <ChatLifecycle
       room={{ name: isDemo ? 'DEMO: Block Showcase' : room.name, initials: room.initials || '·', statusText: isDemo ? 'demo' : room.statusText || '', status: room.status || 'ready' }}
       messages={messages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
+      awaiting={isDemo ? false : rt.awaiting}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}
       onOpenReview={(files) => onNav('review', files?.length ? { files, project: room?.projectSlug || (room?.isProject ? room?.id : '') } : null)}
     />

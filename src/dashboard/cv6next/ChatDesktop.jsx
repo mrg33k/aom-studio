@@ -10,7 +10,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
 import { useRoomThread, useGoalThread, useRoomPlan } from './data/useRoomThread.js';
-import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel, buildSteps, liveStepsToBlocks } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel, buildSteps, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
@@ -398,17 +398,8 @@ function DesktopDayCard({ group, onSend }) {
 // goal = your ask, its steps ticking (done rows + a newest active row) in real time as the
 // agent works — so the thread BUILDS in front of you instead of a throwaway strip that gets
 // replaced by a finished dump at the end (corner:corner-ui-cv6 agent-talk live-feel round).
-function WorkingTurn({ room, steps, goal }) {
-  const blocks = liveStepsToBlocks(steps);
-  return (
-    <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'flex-start' }}>
-      <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{room?.initials || '·'}</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <GoalThreadBody goal={goal} blocks={blocks} />
-      </div>
-    </div>
-  );
-}
+// WorkingTurn now lives in ChatGoalThread.jsx (shared by every chat surface — the bulletproof
+// single source of the "agent is working" strip). Imported above.
 
 function PlainThread({ messages, onSend }) {
   if (!messages?.length) return <div style={{ color: 'var(--muted)', fontSize: 13.5 }}>No messages in this room yet. Start the conversation below.</div>;
