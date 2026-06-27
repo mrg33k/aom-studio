@@ -46,7 +46,9 @@
   <div class="cols" data-state="ready">
 
     <!-- ============ CATCH UP · the needs-you inbox ============ -->
-    <div class="col catch">
+    <!-- The whole column is hidden when nothing needs you (catchUp.colState='none') and
+         slides in once when the first new item lands ('in'); 'has' = present, settled. -->
+    <div class="col catch" data-mod="is-:catchUp.colState">
       <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;flex:none;"><span class="eyebrow">Catch up</span><span style="min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent-weak);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;" data-bind="catchUp.count">5</span><div style="margin-left:auto;display:flex;align-items:center;gap:8px;"><span style="font-size:11.5px;color:var(--muted);"><span data-bind="catchUp.position">1</span> of <span data-bind="catchUp.count">5</span></span><button class="cuarrow" data-action="catchUpPrev" aria-label="Previous catch-up"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><button class="cuarrow" data-action="catchUpNext" aria-label="Next catch-up"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
       <div style="flex:1;overflow:hidden;" class="scrollcap">
 

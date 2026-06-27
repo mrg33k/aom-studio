@@ -472,6 +472,27 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // generic project status here (that read as "stupid" — it hid the real question).
   const liveCatchUpView = liveCatchUp;
 
+  // Catch Up column visibility (Patrik 2026-06-27): when nothing needs you, the whole column
+  // is hidden — Rooms + Conversation fill the space. When the FIRST new item lands (empty ->
+  // non-empty), the column slides in once. colState: 'none' = hidden, 'in' = animate-in (one
+  // shot, ~460ms), 'has' = present and settled (no animation on later data ticks). We drive
+  // this in React rather than pure CSS because TemplateScreen rebuilds the column DOM on every
+  // data tick, so a CSS-on-insert animation would replay on unrelated updates.
+  const prevCatchCountRef = useRef(liveCatchUpView.count);
+  const [catchColAnimating, setCatchColAnimating] = useState(false);
+  useEffect(() => {
+    const prev = prevCatchCountRef.current;
+    const now = liveCatchUpView.count;
+    prevCatchCountRef.current = now;
+    if (prev === 0 && now > 0) {
+      setCatchColAnimating(true);
+      const t = setTimeout(() => setCatchColAnimating(false), 460);
+      return () => clearTimeout(t);
+    }
+    return undefined;
+  }, [liveCatchUpView.count]);
+  const catchColState = !liveCatchUpView.count ? 'none' : (catchColAnimating ? 'in' : 'has');
+
   // Inline "Draft reply" on a catch-up card (Patrik): the reply composer replaces the action
   // buttons in place, with a Send button that posts the reply into that room (the same
   // supabase-messages path the Chat composer uses). curCardRef holds the latest current card
@@ -1044,6 +1065,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // 'actions' = the suggested-action buttons, 'reply' = the inline reply composer.
   const catchUpRender = {
     ...liveCatchUpView,
+    colState: catchColState,
     footerState: replyWorking ? 'working'
       : !liveCatchUpView.count ? 'none'
         : trackerStatus === 'adding' ? 'adding'
