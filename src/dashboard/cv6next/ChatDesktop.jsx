@@ -12,7 +12,7 @@ import { authFetch } from '../lib/authFetch';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { GoalThreadBody, SendCtx } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
-import { useDictation } from './data/useDictation.js';
+import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 
@@ -538,7 +538,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const pauseAgent = () => sendControl('Please pause here and wait for my next message before continuing.', 'Asked the agent to pause.');
   const retaskAgent = () => {
     // Re-tasking is freeform, so focus the composer for the new instruction.
-    const box = chatInputRef.current || document.querySelector('[data-cv6-chat-input]');
+    const box = composerHost?.querySelector('input:not([type="file"]):not([type="hidden"]), textarea');
     if (box) { box.focus(); flashNote('Type the new task below.'); }
     else flashNote('Type the new task in the box below.');
   };
@@ -610,10 +610,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
     return merged;
   }, [messages, roomFiles, libProjectSlug]);
-  const [draft, setDraft] = useState('');
-  const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
-  const submit = () => { const t = draft.trim(); if (!t) return; send?.(t); setDraft(''); };
-  const chatInputRef = useRef(null);
+  // Host node the rich CV4 composer (ThreadInputBar: command menu / voice / image
+  // gen) portals into. Cv6FullComposer is mounted ONCE at the end of the tree and
+  // kept alive; it only paints when a room is open + this host exists, so a thread
+  // poll re-render never remounts it. Restored 2026-06-26 once `selected` + `send`
+  // became referentially stable across polls (the churn that stole focus before).
+  const [composerHost, setComposerHost] = useState(null);
   // Pin to the latest message: after the thread loads (messages arrive async) and whenever a
   // new one lands, so opening a room lands at the tail and your just-sent message isn't hidden
   // below the fold. Reading history (scrolled up) is left alone.
@@ -716,28 +718,10 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>
-                {/* Reliable plain composer (Patrik 2026-06-26): the portaled CV4 rich
-                    composer churned its hooks on every 3s thread poll and stole focus
-                    after a few keystrokes. A plain controlled input never loses focus.
-                    Mic (dictation) kept; slash-commands/voice/imagegen return once the
-                    rich composer's poll-churn is fixed. */}
-                <div style={{ borderTop: '1px solid var(--divider)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <input
-                    ref={chatInputRef}
-                    data-cv6-chat-input
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
-                    placeholder={`Message ${selected.name || 'this room'}…`}
-                    style={{ flex: 1, minWidth: 0, height: 44, borderRadius: 12, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 15px', color: 'var(--fg)', fontFamily: 'var(--font-sans)', fontSize: 15, outline: 'none' }}
-                  />
-                  <button onClick={dictate.toggle} title={dictate.listening ? 'Stop dictation' : 'Dictate'} style={{ width: 44, height: 44, borderRadius: 12, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: dictate.listening ? 'var(--accent)' : 'var(--surface-2)', border: '1px solid var(--hair)', color: dictate.listening ? '#fff' : 'var(--muted)', cursor: 'pointer' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-                  </button>
-                  <button onClick={submit} title="Send" style={{ width: 44, height: 44, borderRadius: 12, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z"/></svg>
-                  </button>
-                </div>
+                {/* Rich CV4 composer host — Cv6FullComposer portals its ThreadInputBar
+                    (command menu, voice, image gen, attachments) in here. It sends
+                    through the same useRoomThread.send the thread already polls. */}
+                <div ref={setComposerHost} style={{ borderTop: '1px solid var(--divider)', padding: '12px 24px' }} />
               </>
             ) : (
               <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14 }}>Pick a room on the left to open its thread.</div>
@@ -855,6 +839,17 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
           </div>
         </div>
       </div>
+      {/* Rich CV4 composer — mounted once, kept alive. Portals into composerHost
+          only when a room is open. Stable props (selected/send/agents/worldId) mean
+          a 3s thread poll never remounts it, so typing/focus survive. Falls back to
+          a MiniComposer on internal error. */}
+      <Cv6FullComposer
+        target={selected ? composerHost : null}
+        room={selected}
+        worldId={worldId}
+        agents={agents}
+        quickSend={send}
+      />
     </SendCtx.Provider>
   );
 }
