@@ -363,6 +363,41 @@ html,body{overflow-x:clip !important;}
 .r5.anim .voices .q:nth-child(3){transition-delay:.16s;}
 .r5.anim .rvin{opacity:1 !important;transform:none !important;}
 
+/* ---- Back-half sections: shared graph ground + parallax shapes + bigger type ---- */
+.r5 .svc,.r5 .work,.r5 .ways,.r5 .why,.r5 .voices,.r5 .close{position:relative;overflow:clip;}
+.r5 .svc>.wrap,.r5 .work>.wrap,.r5 .ways>.wrap,.r5 .why>.wrap,.r5 .voices>.wrap{position:relative;z-index:2;}
+/* light graph grounds */
+.r5 .work,.r5 .ways{background-image:linear-gradient(rgba(11,11,11,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(11,11,11,.05) 1px,transparent 1px);background-size:38px 38px;}
+.r5 .voices{background-color:var(--paper-alt);background-image:linear-gradient(rgba(11,11,11,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(11,11,11,.045) 1px,transparent 1px);background-size:38px 38px;}
+/* dark graph grounds */
+.r5 .svc,.r5 .why{background-color:var(--ink);background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:38px 38px;}
+/* parallax shapes */
+.r5 .gshape{position:absolute;z-index:0;pointer-events:none;will-change:transform;}
+.r5 .gshape.sq{width:124px;height:124px;background:var(--gold);}
+.r5 .gshape.dot{width:180px;height:180px;border-radius:50%;background:var(--ink);}
+.r5 .gshape.dotgold{width:150px;height:150px;border-radius:50%;background:var(--gold);}
+.r5 .gshape.ringlt{width:236px;height:236px;border-radius:50%;border:1px solid var(--line);}
+.r5 .gshape.ringdk{width:270px;height:270px;border-radius:50%;border:1px solid var(--ink-700);}
+.r5 .gshape.tri{width:0;height:0;border-left:82px solid transparent;border-right:82px solid transparent;border-bottom:144px solid var(--ink-700);opacity:.16;}
+.r5 .p-svc1{top:9%;right:-90px;}
+.r5 .p-svc2{bottom:8%;left:-54px;}
+.r5 .p-work1{top:3%;right:-100px;}
+.r5 .p-work2{bottom:11%;left:3%;}
+.r5 .p-ways1{top:7%;left:-64px;}
+.r5 .p-ways2{bottom:5%;right:-100px;}
+.r5 .p-why1{top:10%;left:-100px;}
+.r5 .p-why2{bottom:-46px;right:7%;}
+.r5 .p-voi1{top:5%;right:5%;}
+.r5 .p-voi2{bottom:-44px;left:-44px;}
+.r5 .p-close1{top:12%;left:6%;opacity:.9;}
+/* bigger, more confident section type */
+.r5 .svc .svctop h2{font-size:clamp(54px,7vw,104px);}
+.r5 .work .head h2{font-size:clamp(56px,7.6vw,118px);}
+.r5 .ways .wh h2{font-size:clamp(54px,7.4vw,112px);}
+.r5 .why h2{font-size:clamp(52px,6.8vw,104px);}
+.r5 .voices h2{font-size:clamp(42px,5.4vw,86px);}
+.r5 .close h2{font-size:clamp(64px,9.4vw,150px);}
+
 /* ---- 2: Editorial one-sheet ---- */
 .r5 .heroed{background:var(--ink);color:var(--paper);}
 .r5 .heroed .edtop{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--ink-700);padding-bottom:16px;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-300);}
@@ -403,6 +438,10 @@ html,body{overflow-x:clip !important;}
   .r5 .scene .shape.sq{width:78px;height:78px;}
   .r5 .scene .shape.ci{width:130px;height:130px;}
   .r5 .scenehead h2{font-size:38px;}
+  .r5 .gshape.sq{width:78px;height:78px;}
+  .r5 .gshape.dot,.r5 .gshape.dotgold{width:104px;height:104px;}
+  .r5 .gshape.ringlt,.r5 .gshape.ringdk{width:140px;height:140px;}
+  .r5 .gshape.tri{border-left-width:48px;border-right-width:48px;border-bottom-width:84px;}
 }
 
 /* hero variant picker */
@@ -845,6 +884,17 @@ function ManifestScene() {
   );
 }
 
+// Parallax decoration: a geometric shape that drifts as its section passes through
+// the viewport. Same scroll-driven energy as the hero + manifest scene, dropped into
+// the back-half sections so the whole page reads as one system.
+function Drift({ className, y = [70, -70], rotate, range }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const ty = useTransform(scrollYProgress, [0, 1], y);
+  const rot = useTransform(scrollYProgress, [0, 1], rotate || [0, 0]);
+  return <motion.div ref={ref} className={'gshape ' + className} style={rotate ? { y: ty, rotate: rot } : { y: ty }} aria-hidden="true" />;
+}
+
 export default function HomeR5Preview() {
   const [tab, setTab] = useState('All');
   const [video, setVideo] = useState(null);
@@ -942,7 +992,10 @@ export default function HomeR5Preview() {
       <ManifestScene />
 
       {/* SERVICES — dark, who we are + what we do */}
-      <section className="svc"><div className="wrap">
+      <section className="svc">
+        <Drift className="ringlt p-svc1" y={[120, -120]} />
+        <Drift className="sq p-svc2" y={[90, -90]} rotate={[0, 60]} />
+        <div className="wrap">
         <div className="svctop">
           <div>
             <span className="eyebrow">What we do</span>
@@ -962,7 +1015,10 @@ export default function HomeR5Preview() {
       </div></section>
 
       {/* PORTFOLIO — category rows, Web/Video toggle, Construction first */}
-      <section className="work" id="work"><div className="wrap">
+      <section className="work" id="work">
+        <Drift className="dot p-work1" y={[140, -140]} />
+        <Drift className="tri p-work2" y={[70, -90]} rotate={[-8, 8]} />
+        <div className="wrap">
         <div className="head">
           <div>
             <h2 className="disp">Recent work<span className="dot" /></h2>
@@ -1004,7 +1060,10 @@ export default function HomeR5Preview() {
       </div></section>
 
       {/* TWO WAYS */}
-      <section className="ways" id="hire"><div className="wrap">
+      <section className="ways" id="hire">
+        <Drift className="sq p-ways1" y={[110, -110]} rotate={[0, 90]} />
+        <Drift className="ringlt p-ways2" y={[80, -120]} />
+        <div className="wrap">
         <div className="wh">
           <span className="eyebrow">How to hire us</span>
           <h2 className="disp">Two ways. <span className="gold">Pick one</span><span className="dot" /></h2>
@@ -1027,7 +1086,10 @@ export default function HomeR5Preview() {
       </div></section>
 
       {/* WHY IT WORKS */}
-      <section className="why" id="why"><div className="wrap">
+      <section className="why" id="why">
+        <Drift className="ringdk p-why1" y={[130, -130]} />
+        <Drift className="dotgold p-why2" y={[70, -100]} />
+        <div className="wrap">
         <span className="eyebrow">Why us</span>
         <h2 className="disp">Why it <span className="gold">works</span><span className="dot" /></h2>
         <div className="grid">
@@ -1038,7 +1100,10 @@ export default function HomeR5Preview() {
       </div></section>
 
       {/* TESTIMONIALS */}
-      <section className="voices"><div className="wrap">
+      <section className="voices">
+        <Drift className="tri p-voi1" y={[120, -100]} rotate={[6, -10]} />
+        <Drift className="sq p-voi2" y={[90, -90]} rotate={[0, 45]} />
+        <div className="wrap">
         <h2 className="disp">What clients say<span className="dot" /></h2>
         <div className="grid">
           {VOICES.map((v) => (
@@ -1053,6 +1118,7 @@ export default function HomeR5Preview() {
 
       {/* CLOSING */}
       <section className="close" id="contact">
+        <Drift className="sq p-close1" y={[100, -100]} rotate={[0, 70]} />
         <BrandMark kind="mono" className="mono mark" />
         <div className="wrap inner">
           <span className="kicker">[ Get in touch ]</span>
