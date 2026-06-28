@@ -154,9 +154,11 @@
       <div class="cvhdr"><span style="width:30px;height:30px;border-radius:50%;background:rgba(52,211,153,.2);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;" data-bind="room.initials">EL</span><div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.name">Elon</div><div style="font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.subtitle">Space Rising</div></div><div class="filesbtn" data-action="nav" data-target="organize"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>Files</div></div>
       <!-- Message list is rendered by React (Cv6QuickThread) portaled in here, so attachments
            draw as cards (image/gallery/file/collection) with Review, not plain text. Kept empty. -->
-      <div class="convo-thread" style="flex:1;padding:18px 18px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:13px;"></div>
-      <!-- composer: React (Cv6Composer) portals the real pill into this host; kept empty so a template re-bind never wipes typed text -->
-      <div class="composer" data-cv6-composer></div>
+      <div class="convo-thread" data-cv6-keep="home-thread" style="flex:1;padding:18px 18px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:13px;"></div>
+      <!-- composer: React (Cv6Composer) portals the real pill into this host. data-cv6-keep makes
+           TemplateScreen graft this exact node back across every re-bind, so the portal never re-points
+           and the input keeps focus while the user is typing (R-FOCUS-KEEP). -->
+      <div class="composer" data-cv6-composer data-cv6-keep="home-composer"></div>
       </div>
       </div>
     </div>
