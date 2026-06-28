@@ -455,24 +455,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // The editable forward plan for this room (goal-thread-plan mission) — drives the
   // interactive "Context / goals" plan in the right control column.
   const { plan, actions: planActions } = useRoomPlan(worldId, selected);
-  // The top-level live thread shows ONLY while work is in progress (at least one step not
-  // done). Once every step is done the thread is finished: it falls to PlainThread, where the
-  // message's blocks fold into the openable WorkDoneCard (a record), instead of staying
-  // expanded as if still ticking. Matches the quick-panel behaviour (the two must agree).
-  const liveThread = (() => {
-    const s = buildSteps(blocks);
-    return s.length > 0 && !s.every((x) => x.state === 'done');
-  })();
-  // The working thread's header reads as the user's ask: prefer the room goal, else the most
-  // recent thing you sent, so it shows "Goal: <what you asked>" the instant the reply is pending.
-  const askGoal = useMemo(() => {
-    if (goal?.title) return goal;
-    for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
-      const m = messages[i];
-      if (m?.isUser && m.text) return { title: m.text };
-    }
-    return goal;
-  }, [goal, messages]);
+  // The conversation thread (PlainThread) always renders; the moving WorkingTurn indicator
+  // shows below it while `awaiting`, and each finished turn's steps fold into the collapsed
+  // WorkDoneCard. The goal thread no longer renders expanded mid-turn (Patrik 2026-06-28).
 
   // A "Review"/"Review all" tap on a message attachment must OPEN the Review tool on
   // those exact files (live), not post a chat message. handleReview hands us a single
@@ -712,8 +697,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       the thread + its tables/charts centered instead of stretched. Widened
                       2026-06-25 so the conversation fills the column instead of feeling cramped. */}
                   <div style={{ maxWidth: 920, margin: '0 auto' }}>
-                    {liveThread ? <GoalThreadBody goal={goal} blocks={blocks} /> : <PlainThread messages={messages} onSend={handleThreadAction} />}
-                    {awaiting ? <WorkingTurn room={selected} steps={liveSteps} goal={askGoal} /> : null}
+                    {/* Always the conversation thread: messages stream in as they land, and
+                        each finished turn's steps fold into the collapsed WorkDoneCard. While
+                        the agent works, the moving WorkingTurn indicator shows below — the goal
+                        thread never renders expanded mid-turn (Patrik 2026-06-28). */}
+                    <PlainThread messages={messages} onSend={handleThreadAction} />
+                    {awaiting ? <WorkingTurn room={selected} /> : null}
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>

@@ -72,13 +72,20 @@ export function liveStepsToBlocks(liveSteps) {
 // instant you send (one active "Getting started" row), reconciles to the agent's real steps
 // as they arrive, and is unmounted by the caller the moment the turn settles. Keeping this in
 // ONE place is the "bulletproof + consistent" guarantee (Patrik 2026-06-27).
-export function WorkingTurn({ room, steps, goal }) {
-  const blocks = liveStepsToBlocks(steps);
+// THE working indicator: a MOVING progress bar shown ONLY while the agent is working
+// this turn (driven by `awaiting`). Patrik 2026-06-28: while the agent works we show a
+// moving movement indicator and let the streamed messages fire in above it — NOT the goal
+// thread. The goal thread folds into the collapsed WorkDoneCard once the agent stops. This
+// replaces the old WorkingTurn, which drew the whole GoalThreadBody mid-turn (the "goal
+// thread came up too early, half-built" bug). `steps`/`goal` kept for call-site compat.
+export function WorkingTurn({ room }) {
   return (
-    <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'center' }}>
       <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{room?.initials || '·'}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <GoalThreadBody goal={goal} blocks={blocks} />
+        <div className="gworking" role="status" aria-label="Working">
+          <div className="gworking-fill" />
+        </div>
       </div>
     </div>
   );
@@ -650,18 +657,16 @@ export function WorkDoneCard({ goal, blocks }) {
   );
 }
 
-// Decide how one agent message's blocks render, given whether its thread is still live:
-//   - steps still working  -> the expanded, ticking GoalThreadBody (watch it happen)
-//   - steps all done        -> the collapsed WorkDoneCard (a record you can open)
+// Decide how one agent message's blocks render. Patrik 2026-06-28: the goal thread NEVER
+// shows expanded inline — while the agent works the moving WorkingTurn indicator carries
+// "working", and the goal thread only appears once the agent stops, COLLAPSED, as the
+// openable WorkDoneCard (full, because real work happened). So:
+//   - any step blocks (working OR done) -> the collapsed WorkDoneCard (a record you open)
 //   - no steps (lone answer blocks: summary/data/gallery/...) -> render each inline
-// Keeps a finished thread from staying expanded like it is still live, and prevents the
-// double-render of the freshest message's blocks.
 export function AgentBlocks({ goal, blocks }) {
   const steps = useMemo(() => buildSteps(blocks), [blocks]);
   const hasSteps = steps.length > 0;
-  const allDone = hasSteps && steps.every((s) => s.state === 'done');
-  if (hasSteps && !allDone) return <GoalThreadBody goal={goal} blocks={blocks} collapsible defaultCollapsed />;
-  if (hasSteps && allDone) return <WorkDoneCard goal={goal} blocks={blocks} />;
+  if (hasSteps) return <WorkDoneCard goal={goal} blocks={blocks} />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {(Array.isArray(blocks) ? blocks : []).map((b, i) => <Result key={i} block={b} />)}

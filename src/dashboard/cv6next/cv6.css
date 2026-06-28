@@ -1021,3 +1021,11 @@
 /* The Corner wordmark ships as a white SVG so it reads on the dark + glass themes.
    On the light theme it would disappear against the pale header, so flip it to ink. */
 [data-app-theme="light"] img[src*="corner-logo-white"] { filter: invert(1); }
+
+/* Working indicator: the moving progress bar shown while the agent is working this turn
+   (WorkingTurn, driven by `awaiting`). Indeterminate accent segment slides across a thin
+   track — the "progress movement indicator" (Patrik 2026-06-28, R-LIVE-THREAD). */
+[data-cv6] .gworking { position:relative; height:4px; border-radius:2px; background:var(--surface-2); overflow:hidden; }
+[data-cv6] .gworking .gworking-fill { position:absolute; top:0; bottom:0; left:0; width:38%; border-radius:2px; background:var(--accent); animation:gworking-slide 1.15s cubic-bezier(.45,0,.55,1) infinite; }
+@keyframes gworking-slide { 0% { left:-40%; } 100% { left:100%; } }
+@media (prefers-reduced-motion: reduce) { [data-cv6] .gworking .gworking-fill { animation-duration:2.4s; } }
