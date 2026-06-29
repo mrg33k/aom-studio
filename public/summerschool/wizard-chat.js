@@ -416,17 +416,16 @@
       </button>`;
   }
 
-  // --- Write quick-start (Build R93) ----------------------------------------
-  // Writing is Ethan's #1 priority and biggest gap, but he could only write when
-  // the daily Writing subject came up. This chip opens his Writing Desk on demand
-  // for extra practice (with the blank-page starter chips), nudging the Wizard to
-  // invite a first sentence — without touching his day board. Shows while today's
-  // Writing isn't done (matches the math chip), so the board stays calm.
+  // --- Write quick-start (Build R93; R94 always-available) -------------------
+  // Writing is Ethan's #1 priority and the Writing Desk must NEVER be
+  // unreachable. The old gate hid this chip once the board marked Writing
+  // "done" — but the board sometimes reads done while the Wizard is still
+  // asking him to type, so he was told "type in your Desk" with no Desk on
+  // screen and no button to open one ("it says it's there but it's not",
+  // 2026-06-29). Now: whenever the Desk is closed, always offer to open it,
+  // regardless of board state. Tapping it sets the client-only deskOpen flag,
+  // which renders the Desk immediately (see isWritingActive).
   function renderWriteChip() {
-    const parsed = parseDayState(appState.dayState);
-    if (!parsed) return '';
-    const writing = parsed.quests.find((q) => /writ/i.test(q.name));
-    if (!writing || writing.status === 'done') return '';
     if (appState.deskOpen) return ''; // already open — no need to invite again
     return `<button type="button" class="practice-chip practice-chip--write" title="Open your Writing Desk and start a piece" ${appState.isLoading ? 'disabled' : ''} onclick="window.__wizardChat.writeStart()">
         <span class="practice-chip-icon">&#9997;</span>
