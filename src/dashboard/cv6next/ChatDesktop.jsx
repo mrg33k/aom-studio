@@ -314,8 +314,8 @@ function MsgExtras({ m, onSend }) {
   const handleReview = (attachment) => { if (onSend) onSend({ type: 'review', attachment }); };
   return (
     <>
-      {/* A finished thread folds into the openable WorkDoneCard; lone answer blocks render
-          inline. (A still-working thread renders as the live GoalThreadBody at the top level,
+      {/* A finished turn shows its step thread inline (the durable record); lone answer blocks
+          render inline. (A still-working thread renders as the live WorkingTurn at the top level,
           so it never reaches here.) AgentBlocks decides. */}
       {m.blocks?.length ? (
         <div style={{ marginTop: 8, width: '100%' }}>
@@ -458,9 +458,19 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // The editable forward plan for this room (goal-thread-plan mission) — drives the
   // interactive "Context / goals" plan in the right control column.
   const { plan, actions: planActions } = useRoomPlan(worldId, selected);
-  // The conversation thread (PlainThread) always renders; the moving WorkingTurn indicator
-  // shows below it while `awaiting`, and each finished turn's steps fold into the collapsed
-  // WorkDoneCard. The goal thread no longer renders expanded mid-turn (Patrik 2026-06-28).
+  // The conversation thread (PlainThread) always renders; while `awaiting`, the agent's LIVE
+  // step thread builds right below the just-sent message (WorkingTurn), and each finished turn
+  // shows its step thread inline (AgentBlocks). The thread is the conversation (Patrik 2026-06-29).
+  // The live thread's header reads "Goal: <your ask>" — prefer the room goal, else the last
+  // user message (mirrors ChatLifecycle's threadGoal).
+  const askGoal = useMemo(() => {
+    if (goal && goal.title) return goal;
+    let ask = '';
+    for (let i = (messages?.length || 0) - 1; i >= 0; i -= 1) {
+      if (messages[i]?.isUser && messages[i].text) { ask = messages[i].text; break; }
+    }
+    return ask ? { ...(goal || {}), title: ask } : goal;
+  }, [goal, messages]);
 
   // A "Review"/"Review all" tap on a message attachment must OPEN the Review tool on
   // those exact files (live), not post a chat message. handleReview hands us a single
@@ -700,12 +710,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                       the thread + its tables/charts centered instead of stretched. Set to 660px
                       to match the kit design (templates/chat.html) and reflow to full width on mobile. */}
                   <div style={{ maxWidth: 660, margin: '0 auto', width: '100%' }}>
-                    {/* Always the conversation thread: messages stream in as they land, and
-                        each finished turn's steps fold into the collapsed WorkDoneCard. While
-                        the agent works, the moving WorkingTurn indicator shows below — the goal
-                        thread never renders expanded mid-turn (Patrik 2026-06-28). */}
+                    {/* The thread is the conversation (Patrik 2026-06-29): messages stream in as
+                        they land and each finished turn shows its step thread inline; while the
+                        agent works, its LIVE step thread builds right under the just-sent message,
+                        ticking pending → working → done like the step-thread kit animation. */}
                     <PlainThread messages={messages} onSend={handleThreadAction} />
-                    {awaiting ? <WorkingTurn room={selected} /> : null}
+                    {awaiting ? <WorkingTurn room={selected} liveSteps={liveSteps} goal={askGoal} /> : null}
                     <div ref={bottomRef} style={{ height: 4 }} />
                   </div>
                 </div>

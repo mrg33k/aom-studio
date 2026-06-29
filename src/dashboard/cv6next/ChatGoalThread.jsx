@@ -65,27 +65,28 @@ export function liveStepsToBlocks(liveSteps) {
   return ordered.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: i === last ? 'active' : 'done' }));
 }
 
-// THE one "agent is working" strip, shared by EVERY chat surface (full Chat tool, Home quick
-// chat, mobile) so the live progress reads identically everywhere — the bar is on iff the
-// room's agent is working this turn (driven by useRoomThread's `awaiting`), and the steps
-// inside it tick in real time from the agent's actual tool activity (liveSteps). Born the
-// instant you send (one active "Getting started" row), reconciles to the agent's real steps
-// as they arrive, and is unmounted by the caller the moment the turn settles. Keeping this in
-// ONE place is the "bulletproof + consistent" guarantee (Patrik 2026-06-27).
-// THE working indicator: a MOVING progress bar shown ONLY while the agent is working
-// this turn (driven by `awaiting`). Patrik 2026-06-28: while the agent works we show a
-// moving movement indicator and let the streamed messages fire in above it — NOT the goal
-// thread. The goal thread folds into the collapsed WorkDoneCard once the agent stops. This
-// replaces the old WorkingTurn, which drew the whole GoalThreadBody mid-turn (the "goal
-// thread came up too early, half-built" bug). `steps`/`goal` kept for call-site compat.
-export function WorkingTurn({ room }) {
+// THE one "agent is working" turn, shared by EVERY chat surface (full Chat tool, Home quick
+// chat, mobile) so the live progress reads identically everywhere — on iff the room's agent is
+// working this turn (driven by useRoomThread's `awaiting`).
+//
+// Patrik 2026-06-29: the thread IS the conversation. The user's message sits above; the agent's
+// step thread BUILDS in front of you right below it — the agent's real steps tick in (done rows +
+// a newest active, spinning row), the bar fills, and results attach as they land — exactly the
+// step-thread kit animation (agent-chat/step-thread.html). Born the instant you send (one active
+// "Getting started" row), reconciles to the agent's real steps as they arrive, unmounted by the
+// caller the moment the turn settles. This REPLACES the 2026-06-28 bare moving-bar strip: that bar
+// was added because the old WorkingTurn pre-listed every pending step and looked "half-built", but
+// liveStepsToBlocks only ever yields steps that have ACTUALLY happened (+ one active row), so the
+// thread reads as honest live progress, not a half-built checklist. `steps` is an alias for
+// `liveSteps` (call-site compat); `goal` carries the user's ask so the header reads "Goal: <ask>".
+export function WorkingTurn({ room, liveSteps, steps, goal }) {
+  const blocks = liveStepsToBlocks(liveSteps || steps);
   return (
-    <div style={{ display: 'flex', gap: 12, marginTop: 16, alignItems: 'center' }}>
-      <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none' }}>{room?.initials || '·'}</span>
+    <div style={{ display: 'flex', gap: 10, marginTop: 16, alignItems: 'flex-start' }}>
+      <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{room?.initials || '·'}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="gworking" role="status" aria-label="Working">
-          <div className="gworking-fill" />
-        </div>
+        {room?.name ? <div className="gname" style={{ marginBottom: 6 }}>{room.name}</div> : null}
+        <GoalThreadBody goal={goal} blocks={blocks} />
       </div>
     </div>
   );
@@ -657,16 +658,17 @@ export function WorkDoneCard({ goal, blocks }) {
   );
 }
 
-// Decide how one agent message's blocks render. Patrik 2026-06-28: the goal thread NEVER
-// shows expanded inline — while the agent works the moving WorkingTurn indicator carries
-// "working", and the goal thread only appears once the agent stops, COLLAPSED, as the
-// openable WorkDoneCard (full, because real work happened). So:
-//   - any step blocks (working OR done) -> the collapsed WorkDoneCard (a record you open)
+// Decide how one agent message's blocks render. Patrik 2026-06-29: the thread IS the
+// conversation — a finished agent turn shows its step thread INLINE, right under the message,
+// as the durable record of what the agent did (the steps it checked off + the results it
+// attached), never a collapsed "What I did" card you have to open. So:
+//   - any step blocks (working OR done) -> the step thread inline (GoalThreadBody, expanded)
 //   - no steps (lone answer blocks: summary/data/gallery/...) -> render each inline
+// (WorkDoneCard stays exported for any caller that still wants the folded record.)
 export function AgentBlocks({ goal, blocks }) {
   const steps = useMemo(() => buildSteps(blocks), [blocks]);
   const hasSteps = steps.length > 0;
-  if (hasSteps) return <WorkDoneCard goal={goal} blocks={blocks} />;
+  if (hasSteps) return <GoalThreadBody goal={goal} blocks={blocks} />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {(Array.isArray(blocks) ? blocks : []).map((b, i) => <Result key={i} block={b} />)}

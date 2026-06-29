@@ -299,10 +299,9 @@ function Cv6QuickThread({ target, messages, blocks, goal, plan, planActions, onR
                 {g.items.map((m, i) => (
                   <span key={i} style={{ display: 'contents' }}>
                     {m.text ? <div className="pb"><ChatMessageRenderer content={m.text} /></div> : null}
-                    {/* Rich blocks: a working thread ticks live (expanded GoalThreadBody), a
-                        finished thread folds into the openable WorkDoneCard, lone answer blocks
-                        render inline — AgentBlocks decides per message, so the live thread shows
-                        on its own working message (no separate bottom copy = no double render). */}
+                    {/* Rich blocks: a finished turn shows its step thread inline (the durable
+                        record), lone answer blocks render inline — AgentBlocks decides per message.
+                        The live working thread renders once, below (WorkingTurn), so no double render. */}
                     {m.blocks?.length ? <div style={{ marginTop: 8, width: '100%' }}><AgentBlocks goal={goal} blocks={m.blocks} /></div> : null}
                     {m.attachments?.length ? <MessageAttachments attachments={m.attachments} onReview={onReview} /> : null}
                   </span>
