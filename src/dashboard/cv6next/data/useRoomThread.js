@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
+import { supabase } from '../../lib/supabase.js';
 import { titleForAgent } from './agentTitles.js';
 
 const TINTS = ['violet', 'pink', 'teal', 'lime', 'amber', 'accent'];
@@ -296,10 +297,44 @@ export function useRoomThread(worldId, room) {
       })
       .catch(() => { if (alive) setStatus('error'); });
     load();
-    // Live thread: poll so new agent messages + structured blocks (the step thread
-    // animating from real state) appear without a manual refresh.
-    const t = setInterval(load, 3000);
-    return () => { alive = false; clearInterval(t); };
+
+    // ── Supabase realtime subscription for live messages ──────────────────────
+    // New messages appear instantly via realtime instead of waiting for the poll.
+    // Subscription filters match the room-scoping logic (client_id + project/mission/agent).
+    // On INSERT, call load() to refresh and render the new message immediately.
+    let channel = null;
+    if (supabase) {
+      const filters = [`client_id=eq.${worldId}`];
+      if (room.isMission) {
+        const missionSlug = String(room.missionSlug || room.id || '').split(':').pop();
+        filters.push(`mission_slug=eq.${missionSlug}`);
+      } else if (room.isProject) {
+        filters.push(`project=eq.${room.id}`);
+        filters.push(`mission_slug=is.null`); // project_only: exclude mission-tagged rows
+      } else {
+        filters.push(`agent=eq.${room.id}`);
+      }
+      const filter = filters.join('and');
+
+      channel = supabase
+        .channel(`cv6-thread-${worldId}-${room.id}`)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'messages', filter },
+          () => { if (alive) load(); }
+        )
+        .subscribe();
+    }
+
+    // Live thread: poll as a reconcile fallback. Realtime carries the live load, but
+    // realtime can drop, so the poll ensures we stay in sync. Relaxed to 10s since
+    // realtime now handles the instant-live case.
+    const t = setInterval(load, 10000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+      if (channel && supabase) supabase.removeChannel(channel);
+    };
   }, [worldId, room?.id, room?.name, room?.isProject, room?.isMission, room?.missionSlug, reloadKey]);
 
   // Merge the optimistic outbox at the tail (newest) so a just-sent message shows at once.
