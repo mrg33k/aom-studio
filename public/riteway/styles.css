@@ -302,14 +302,7 @@ body {
 
 .stat-block {
     text-align: center;
-    opacity: 0;
-    animation: slideUp 0.6s ease-out forwards;
 }
-
-.stat-block:nth-child(1) { animation-delay: 0.1s; }
-.stat-block:nth-child(2) { animation-delay: 0.2s; }
-.stat-block:nth-child(3) { animation-delay: 0.3s; }
-.stat-block:nth-child(4) { animation-delay: 0.4s; }
 
 .stat-num {
     display: block;
@@ -389,8 +382,7 @@ body {
 }
 
 .trust-body {
-    opacity: 0;
-    animation: slideUp 0.6s ease-out forwards 0.2s;
+    /* entrance handled by .reveal on scroll */
 }
 
 .section-kicker {
@@ -496,15 +488,13 @@ body {
     border: 1px solid var(--border-color);
     padding: 2.5rem 2rem;
     border-radius: 2px;
-    transition: all 0.4s ease;
-    opacity: 0;
-    animation: slideUp 0.6s ease-out forwards;
+    transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    /* entrance handled by .reveal on scroll; hover lift below */
 }
 
-.service-card:nth-child(1) { animation-delay: 0.1s; }
-.service-card:nth-child(2) { animation-delay: 0.2s; }
-.service-card:nth-child(3) { animation-delay: 0.3s; }
-.service-card:nth-child(4) { animation-delay: 0.4s; }
+.service-card.visible:hover {
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
 
 .service-card:hover {
     border-color: var(--riteway-red);
@@ -1227,8 +1217,32 @@ body {
    UTILITY CLASSES
    ============================================================ */
 
+/* Scroll reveal — each part of the story eases in as it enters the viewport.
+   Previously these used `animation: slideUp forwards`, which fired once on page
+   LOAD while everything was still off-screen, so nothing actually scrolled in.
+   Now the hidden state is the default and JS adds .visible when the element
+   reaches the viewport. */
+.reveal {
+    opacity: 0;
+    transform: translateY(34px);
+    transition: opacity 0.8s cubic-bezier(0.16, 0.84, 0.44, 1),
+                transform 0.8s cubic-bezier(0.16, 0.84, 0.44, 1);
+    will-change: opacity, transform;
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Grouped items (stat blocks, service cards) cascade in one after another. */
+.reveal[data-stagger="1"] { transition-delay: 0.10s; }
+.reveal[data-stagger="2"] { transition-delay: 0.20s; }
+.reveal[data-stagger="3"] { transition-delay: 0.30s; }
+
+/* Kept for any remaining .visible-only consumers. */
 .visible {
-    opacity: 1 !important;
+    opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1236,5 +1250,10 @@ body {
         animation-duration: 0s !important;
         animation-delay: 0s !important;
         transition-duration: 0s !important;
+    }
+    /* Never leave content stuck hidden for motion-sensitive viewers. */
+    .reveal {
+        opacity: 1 !important;
+        transform: none !important;
     }
 }

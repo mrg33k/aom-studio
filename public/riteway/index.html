@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Archivo+Expanded:wght@500;600;700;800;900&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/riteway/styles.css?v=20260618">
+    <link rel="stylesheet" href="/riteway/styles.css?v=20260629a">
 </head>
 <body>
 
@@ -61,19 +61,19 @@
 <!-- Stat band -->
 <section class="statband">
     <div class="statband-inner">
-        <div class="stat-block">
+        <div class="stat-block reveal" data-stagger="0">
             <span class="stat-num" data-to="5177">5,177</span>
             <span class="stat-label">5-star reviews</span>
         </div>
-        <div class="stat-block">
+        <div class="stat-block reveal" data-stagger="1">
             <span class="stat-num" data-to="65">65<sup>+</sup></span>
             <span class="stat-label">Years serving Tucson</span>
         </div>
-        <div class="stat-block">
+        <div class="stat-block reveal" data-stagger="2">
             <span class="stat-num" data-to="24">24</span>
             <span class="stat-label">Hour emergency service</span>
         </div>
-        <div class="stat-block">
+        <div class="stat-block reveal" data-stagger="3">
             <span class="stat-num">7 in 10</span>
             <span class="stat-label">Jobs are repeat clients</span>
         </div>
@@ -82,10 +82,10 @@
 
 <!-- Trust Story -->
 <section class="trust" id="trust">
-    <div class="trust-media">
+    <div class="trust-media reveal">
         <img class="trust-image" src="/riteway/assets/service-06-electrical.jpg?v=20260618" alt="Rite Way team doing professional electrical installation work">
     </div>
-    <div class="trust-body">
+    <div class="trust-body reveal" data-stagger="1">
         <span class="section-kicker">Our Heritage</span>
         <p class="trust-lead">We don't just fix systems. <em>We keep Arizona running.</em></p>
         <p class="trust-text">Since 1959, Rite Way has been Tucson's most trusted name in home comfort. From the first heating system to the latest smart HVAC technology, we've shown up for families, raised through generations. Our team is certified, background-checked, and trained to do it right the first time. That's not a promise — it's a guarantee that's held for 65 years.</p>
@@ -101,13 +101,13 @@
 <!-- Services Grid -->
 <section class="services" id="services">
     <div class="container">
-        <div class="services-header">
+        <div class="services-header reveal">
             <span class="section-kicker">What We Deliver</span>
             <h2 class="services-title">Expert Solutions</h2>
         </div>
         <div class="services-grid">
             <!-- HVAC -->
-            <div class="service-card" data-stagger="0">
+            <div class="service-card reveal" data-stagger="0">
                 <div class="service-number">01</div>
                 <img class="service-image" src="/riteway/assets/service-01-heating.jpg?v=20260618" alt="Rite Way HVAC heating system installation">
                 <h3>Heating & Cooling</h3>
@@ -115,7 +115,7 @@
             </div>
 
             <!-- Plumbing -->
-            <div class="service-card" data-stagger="1">
+            <div class="service-card reveal" data-stagger="1">
                 <div class="service-number">02</div>
                 <img class="service-image" src="/riteway/assets/service-03-plumbing.jpg?v=20260618" alt="Rite Way professional plumbing drain service">
                 <h3>Plumbing & Drains</h3>
@@ -123,7 +123,7 @@
             </div>
 
             <!-- Sewer/Septic -->
-            <div class="service-card" data-stagger="2">
+            <div class="service-card reveal" data-stagger="2">
                 <div class="service-number">03</div>
                 <img class="service-image" src="/riteway/assets/service-04-sewer.jpg?v=20260618" alt="Rite Way septic and sewer system repair">
                 <h3>Septic & Sewer</h3>
@@ -131,7 +131,7 @@
             </div>
 
             <!-- Electrical -->
-            <div class="service-card" data-stagger="3">
+            <div class="service-card reveal" data-stagger="3">
                 <div class="service-number">04</div>
                 <img class="service-image" src="/riteway/assets/service-06-electrical.jpg?v=20260618" alt="Rite Way electrical repair and installation">
                 <h3>Electrical Service</h3>
@@ -143,7 +143,7 @@
 
 <!-- Proof Band -->
 <section class="proof">
-    <div class="proof-content">
+    <div class="proof-content reveal">
         <span class="section-kicker">Why Homeowners Choose Us</span>
         <h2>Seven in ten jobs come from <em>customers who call us again.</em></h2>
         <p>That's not marketing. That's 65 years of families trusting us with their homes. When your HVAC fails at midnight or your pipe bursts on a holiday, you call the team you know will show up. That's Rite Way.</p>
@@ -153,7 +153,7 @@
 
 <!-- Conversion: Audit Scorecard (Drawer) -->
 <section class="audit-section">
-    <div class="audit-trigger" id="auditTrigger" onclick="toggleAudit()">
+    <div class="audit-trigger reveal" id="auditTrigger" onclick="toggleAudit()">
         <div class="audit-label">See Your Opportunity</div>
         <div class="audit-pulse"></div>
     </div>
@@ -372,7 +372,14 @@
         });
     }
 
-    window.addEventListener('load', animateCounters);
+    // Counters run once, when the stat band actually scrolls into view (not on
+    // load while off-screen) so the count-up is something the visitor sees.
+    let countersStarted = false;
+    function startCountersOnce() {
+        if (countersStarted) return;
+        countersStarted = true;
+        animateCounters();
+    }
 
     // Audit drawer toggle
     function toggleAudit() {
@@ -431,22 +438,36 @@
         closeScopingTool();
     }
 
-    // Intersection observer for scroll reveal
+    // Intersection observer for scroll reveal. Fires as each part enters from
+    // the bottom (rootMargin pulls the trigger line up ~12% from the bottom edge
+    // so a section eases in just as you reach it, not after it's fully on screen).
     const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
+        threshold: 0.15,
+        rootMargin: '0px 0px -12% 0px'
     };
 
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('visible');
-            }
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('visible');
+            // Kick the stat count-up the moment the stat band reveals.
+            if (entry.target.classList.contains('stat-block')) startCountersOnce();
+            observer.unobserve(entry.target);
         });
     }, observerOptions);
 
-    document.querySelectorAll('.service-card, .stat-block, .trust-body, .audit-item').forEach(el => {
-        observer.observe(el);
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Fallback: if a viewer lands deep (anchor link) or IO never fires, reveal
+    // anything already on screen so nothing is ever stuck hidden.
+    window.addEventListener('load', () => {
+        document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
+            const r = el.getBoundingClientRect();
+            if (r.top < window.innerHeight && r.bottom > 0) {
+                el.classList.add('visible');
+                if (el.classList.contains('stat-block')) startCountersOnce();
+            }
+        });
     });
 </script>
 
