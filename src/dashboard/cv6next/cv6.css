@@ -1004,17 +1004,16 @@
 [data-cv6] .grp { display:flex; gap:10px; align-items:flex-start; margin-top:13px; }
 [data-cv6] .grp .gav { width:30px; height:30px; border-radius:9px; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; color:#fff; }
 [data-cv6] .grp .stack { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1; }
-[data-cv6] .pb { background:var(--surface-2); border:1px solid var(--hair); border-radius:14px; padding:9px 13px; font-size:13.5px; line-height:1.5; color:var(--fg); max-width:72%; align-self:flex-start; white-space:pre-wrap; word-break:break-word; }
-/* On the light theme a pure-white bubble vanishes on the near-white ground; give the
-   agent bubble a touch more weight so it reads as a distinct surface. */
-[data-app-theme="light"] [data-cv6] .pb { background:#ececed; border-color:rgba(0,0,0,.10); }
-/* Markdown rendered inside a bubble (ChatMessageRenderer): match the bubble's type
-   scale and inherit the bubble's text colour instead of the renderer default. */
+[data-cv6] .pb { background:transparent; border:none; border-radius:0; padding:0; font-size:13.5px; line-height:1.5; color:var(--fg); max-width:100%; align-self:flex-start; white-space:pre-wrap; word-break:break-word; }
+/* On the light theme, prose-style messages inherit the text color naturally (no bubble). */
+[data-app-theme="light"] [data-cv6] .pb { background:transparent; border-color:transparent; color:rgba(0,0,0,.87); }
+/* Markdown rendered inside a message (ChatMessageRenderer): match the message's type
+   scale and inherit the message's text colour instead of the renderer default. */
 [data-cv6] .pb .cmr-content, [data-cv6] .pb-me .cmr-content { font-size:13.5px; line-height:1.5; color:inherit; }
-[data-cv6] .grp .stack .pb:first-of-type { border-top-left-radius:5px; }
-[data-cv6] .me { display:flex; flex-direction:column; gap:4px; align-items:flex-end; margin-top:13px; }
-[data-cv6] .pb-me { background:var(--accent); color:#fff; border-radius:14px; padding:9px 13px; font-size:13.5px; line-height:1.5; max-width:72%; white-space:pre-wrap; word-break:break-word; }
-[data-cv6] .me .pb-me:first-of-type { border-top-right-radius:5px; }
+[data-cv6] .grp .stack .pb:first-of-type { border-top-left-radius:0; }
+[data-cv6] .me { display:flex; flex-direction:column; gap:4px; align-items:flex-start; margin-top:13px; }
+[data-cv6] .pb-me { background:var(--surface); color:var(--fg); border:1px solid var(--hair); border-radius:12px; padding:11px 13px; font-size:13.5px; line-height:1.5; max-width:100%; white-space:pre-wrap; word-break:break-word; }
+[data-cv6] .me .pb-me:first-of-type { border-top-right-radius:12px; }
 [data-cv6] .ts { font-size:10.5px; color:var(--faint); font-family:var(--font-mono); margin-top:2px; }
 [data-cv6] .gname { font-size:12.5px; font-weight:600; color:var(--fg); margin-bottom:2px; }
 

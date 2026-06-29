@@ -247,13 +247,14 @@ function MiniComposer({ target, room, quickSend }) {
   const [val, setVal] = useState('');
   if (!target || !room) return null;
   const send = () => { const t = val.trim(); if (t && typeof quickSend === 'function') { quickSend(t); setVal(''); } };
+  const placeholderText = `Nudge ${room.name || 'them'}, or jump in…`;
   return createPortal(
     <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px', borderTop: '1px solid var(--divider)' }}>
       <input
         value={val}
         onChange={(e) => setVal(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
-        placeholder="Message this room…"
+        placeholder={placeholderText}
         style={{ flex: 1, minWidth: 0, height: 40, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '0 13px', color: 'var(--fg)', fontFamily: 'var(--font-sans)', fontSize: 14, outline: 'none' }}
       />
       <button onClick={send} title="Send" style={{ width: 40, height: 40, borderRadius: 11, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent)', border: 'none', color: '#fff', cursor: 'pointer' }}>
