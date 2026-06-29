@@ -337,14 +337,17 @@ function BubbleGroup({ group, onSend }) {
   const lastTime = group.items[group.items.length - 1].time;
   if (group.isUser) {
     return (
-      <div className="me">
-        {group.items.map((m, i) => (
-          <span key={i} style={{ display: 'contents' }}>
-            {m.text ? <div className="pb-me">{m.text}</div> : null}
-            <MsgExtras m={m} onSend={onSend} />
-          </span>
-        ))}
-        {lastTime ? <div className="ts">{lastTime}</div> : null}
+      <div className="grp">
+        <span className={`ava is-${head.agentTint || 'accent'}`} style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{head.agentInitials}</span>
+        <div className="stack">
+          {group.items.map((m, i) => (
+            <span key={i} style={{ display: 'contents' }}>
+              {m.text ? <div className="pb-me">{m.text}</div> : null}
+              <MsgExtras m={m} onSend={onSend} />
+            </span>
+          ))}
+          {lastTime ? <div className="ts">{lastTime}</div> : null}
+        </div>
       </div>
     );
   }
@@ -694,9 +697,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 </div>
                 <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: '22px 24px' }}>
                   {/* Readable column cap so a wide screen (iPad landscape, big desktop) keeps
-                      the thread + its tables/charts centered instead of stretched. Widened
-                      2026-06-25 so the conversation fills the column instead of feeling cramped. */}
-                  <div style={{ maxWidth: 920, margin: '0 auto' }}>
+                      the thread + its tables/charts centered instead of stretched. Set to 660px
+                      to match the kit design (templates/chat.html) and reflow to full width on mobile. */}
+                  <div style={{ maxWidth: 660, margin: '0 auto', width: '100%' }}>
                     {/* Always the conversation thread: messages stream in as they land, and
                         each finished turn's steps fold into the collapsed WorkDoneCard. While
                         the agent works, the moving WorkingTurn indicator shows below — the goal

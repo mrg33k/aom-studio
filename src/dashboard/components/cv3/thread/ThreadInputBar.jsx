@@ -77,11 +77,22 @@ export default function ThreadInputBar() {
 
   const handlePaste = useCallback((e) => {
     const text = e.clipboardData?.getData('text') || ''
+    if (!text) return
+    e.preventDefault()
     if (shouldChipPaste(text)) {
-      e.preventDefault()
       addPasteChip(text)
+    } else {
+      const el = e.target
+      const start = el.selectionStart ?? input.length
+      const end = el.selectionEnd ?? start
+      const next = input.slice(0, start) + text + input.slice(end)
+      setInput(next)
+      requestAnimationFrame(() => {
+        const inp = inputRef.current
+        if (inp) inp.setSelectionRange(start + text.length, start + text.length)
+      })
     }
-  }, [addPasteChip])
+  }, [addPasteChip, input, setInput, inputRef])
 
   const hasContent = input.trim().length > 0 || (pasteChips?.length > 0)
 
@@ -196,7 +207,7 @@ export default function ThreadInputBar() {
           onFocus={(e) => { setChatInputFocused(true); updateCaret(e) }}
           onBlur={() => setChatInputFocused(false)}
           onPaste={handlePaste}
-          placeholder={selectedImageTool ? 'Describe the image to generate...' : `Message ${selectedAgent.name}...`}
+          placeholder={selectedImageTool ? 'Describe the image to generate...' : `Nudge ${selectedAgent.name}, or jump in…`}
           style={{
             flex: 1,
             background: 'none',
