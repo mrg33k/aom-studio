@@ -108,6 +108,12 @@
       <div class="composer" data-cv6-composer data-cv6-keep="home-composer"></div>
       </div>
       </div>
+      <!-- Stable anchor for the in-place Files overlay (HomeFilesPanel portals here). Empty +
+           zero-height in normal flow; the panel inside it is position:absolute and covers the
+           whole .convo column (which is position:relative). data-cv6-keep grafts this exact node
+           back across every re-bind so the portal never re-points and the overlay can't escape
+           the column. -->
+      <div class="home-files" data-cv6-keep="home-files"></div>
     </div>
 
   </div>

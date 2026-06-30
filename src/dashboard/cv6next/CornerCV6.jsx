@@ -407,8 +407,9 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
 // conversation header used to jump to the Organize tool; now it opens this panel in place —
 // the SAME shelf the full Chat tool's Files drawer shows (the room's real library files +
 // links shared in the conversation). Rendered as an overlay over the Conversation column so
-// you never leave Home. host = the [data-screen="convo"] column (made position:relative on
-// mount); null host = closed.
+// you never leave Home. host = the .home-files anchor inside the Conversation column (a
+// data-cv6-keep node that survives re-binds); the panel is position:absolute and covers the
+// .convo column, which is position:relative in CSS. null host = closed.
 function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
   const libProjectSlug = room?.isMission ? room.projectSlug : (room?.isProject ? room.id : null);
   const [roomFiles, setRoomFiles] = useState([]);
@@ -786,17 +787,19 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     obs.observe(document.body, { childList: true, subtree: true });
     return () => obs.disconnect();
   }, [isDesktop]);
-  // Files panel host: the whole Conversation column. The "Files" button overlays the room's
-  // file shelf on top of the thread+composer (HomeFilesPanel portals here). Tracked across
-  // template re-binds like the other hosts; made position:relative so the overlay anchors to
-  // the column. filesOpen toggles it; it auto-closes when the open room changes/closes.
+  // Files panel host: a STABLE data-cv6-keep anchor inside the Conversation column, NOT the
+  // column itself. Earlier this portaled into [data-screen="convo"] and set position:relative
+  // imperatively — but the column is rebuilt on every ~2.5s realtime re-bind, so that inline
+  // position got wiped and the overlay momentarily escaped its column (it read as a separate
+  // third column). The .home-files node is grafted back across re-binds like the thread/composer
+  // hosts, so the portal target never changes; the overlay anchors via .convo{position:relative}
+  // in CSS. filesOpen toggles it; it auto-closes when the open room changes/closes.
   const [convoColHost, setConvoColHost] = useState(null);
   const [filesOpen, setFilesOpen] = useState(false);
   useEffect(() => {
     if (!isDesktop) { setConvoColHost(null); return undefined; }
     const pick = () => {
-      const el = document.querySelector('[data-screen="convo"]');
-      if (el && el.style.position !== 'relative') el.style.position = 'relative';
+      const el = document.querySelector('[data-screen="convo"] .home-files');
       setConvoColHost((prev) => (prev === el ? prev : (el || null)));
     };
     pick();
