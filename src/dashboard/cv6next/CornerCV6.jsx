@@ -16,7 +16,7 @@ import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
-import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel, WorkingTurn } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
@@ -30,7 +30,7 @@ import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
 import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
-import { useRoomThread, useGoalThread, useRoomPlan } from './data/useRoomThread.js';
+import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
 import { useDemoBlocksFeed } from './data/useDemoBlocks.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
@@ -252,7 +252,7 @@ function groupChatMessages(list) {
   return groups;
 }
 
-function Cv6QuickThread({ target, messages, blocks, goal, plan, planActions, onReview, onSend, awaiting, liveSteps, room }) {
+function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awaiting, liveSteps, room }) {
   if (!target) return null;
   const list = Array.isArray(messages) ? messages : [];
   const groups = groupChatMessages(list);
@@ -315,9 +315,6 @@ function Cv6QuickThread({ target, messages, blocks, goal, plan, planActions, onR
             quick chat reads identically. On iff the agent is working this turn (awaiting),
             its steps ticking from real tool activity. (Patrik 2026-06-27: was missing here.) */}
         {awaiting ? <WorkingTurn room={room} steps={liveSteps} goal={askGoal} /> : null}
-        {/* The editable forward plan, pinned at the foot of the thread (goal-thread-plan
-            mission): NEXT (agent suggestions) + YOURS (added steps), check / hand-off / add. */}
-        {planActions ? <PlanPanel goal={goal} plan={plan} actions={planActions} /> : null}
       </div>
       </SendCtx.Provider>
     ),
@@ -671,8 +668,6 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // Live goal thread for the col3 quick room — feeds Cv6QuickThread's live step loader so the
   // quick reply shows the same ticking progress the full Chat tool does (Patrik #1, 2026-06-26).
   const quickGoal = useGoalThread(worldId, knavOpenedRoom);
-  // The editable forward plan for the col3 quick room (goal-thread-plan mission).
-  const quickPlan = useRoomPlan(worldId, knavOpenedRoom);
   // Pin the col3 quick chat to the newest message: when a room opens or a message lands, scroll
   // the thread to the bottom (Patrik 2026-06-25: it was loading at the top). rAF so it runs after
   // the template engine paints the new rows. The thread element only exists on desktop home.
@@ -1283,8 +1278,6 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         messages={(quickThread && quickThread.messages ? quickThread.messages : []).slice(-40)}
         blocks={quickThread && quickThread.blocks}
         goal={quickGoal}
-        plan={quickPlan && quickPlan.plan}
-        planActions={quickPlan && quickPlan.actions}
         onSend={quickSend}
         awaiting={quickThread && quickThread.awaiting}
         liveSteps={quickThread && quickThread.liveSteps}
