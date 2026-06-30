@@ -228,8 +228,9 @@ function Result({ block }) {
 
 // Tappable action chips shared by email/summary/media blocks — each posts the label as a
 // real user message so the agent acts on it (no dead controls). `primaryFirst` makes the
-// first chip the is-primary call to action.
-function ActionChips({ actions, primaryFirst = true }) {
+// first chip the is-primary call to action. Exported so chat surfaces can render per-message
+// suggestion chips (metadata.chips) in-thread without a separate panel.
+export function ActionChips({ actions, primaryFirst = true }) {
   const list = Array.isArray(actions) ? actions.filter(Boolean) : [];
   const send = useThreadSend();
   if (!list.length) return null;

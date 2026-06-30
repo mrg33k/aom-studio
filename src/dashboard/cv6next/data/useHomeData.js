@@ -72,7 +72,7 @@ function relTime(ts) {
   return `${Math.round(h / 24)}d`;
 }
 
-export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = {}) {
+export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], missionRooms = [] } = {}) {
   // Agents render as TITLES (curated set), never names. id stays the agent slug so the chat
   // opens the right thread. (Agents-as-titles + Agents accordion, decided 2026-06-23.)
   const agentRooms = curateTitledAgents(agents).map((a) => {
@@ -164,6 +164,14 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [] } = 
     if (!p.last_message_at || !p.slug) continue;
     bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at });
   }
+  // Activity-based mission recency: any mission with recent messages surfaces in
+  // Recently Active even if it hasn't sent an inbox ping. Same bump path as projects;
+  // a later inbox bump would overwrite with a fresher timestamp if applicable.
+  for (const mr of missionRooms || []) {
+    if (!mr.last_message_at || !mr.slug) continue;
+    const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
+    bump('m:' + mr.slug, { key: 'm:' + mr.slug, id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: missionLabel(mr.slug) || mr.slug, sub: pn || 'Mission', ts: mr.last_message_at });
+  }
   const recent = Object.values(recentMap)
     // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).
     .filter((r) => { const n = String(r.name || '').trim().toLowerCase(); return n && n !== 'undefined' && n !== 'null'; })
@@ -218,13 +226,13 @@ export function useHome() {
   }, []);
 
   const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
-  const { agents, projectRooms, inboxItems } = useDataPipe(null, worldId, currentUserSlug);
+  const { agents, projectRooms, inboxItems, missionRooms } = useDataPipe(null, worldId, currentUserSlug);
 
   // Memoize the shaped data so its identity is stable between renders (it only changes
   // when the underlying pipe arrays change). Without this, `data` was a new object every
   // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
   // list under the user's finger and making taps miss (the "can't open a chat" bug).
-  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems }), [agents, projectRooms, inboxItems]);
+  const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms }), [agents, projectRooms, inboxItems, missionRooms]);
   const loading = !worldId || (!agents && !projectRooms && !inboxItems);
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }

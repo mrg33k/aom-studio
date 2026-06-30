@@ -300,6 +300,10 @@ export function useRoomThread(worldId, room) {
           // We attach them to THIS message so the thread renders inline as that agent
           // turn (history stays above it), instead of taking over the whole screen.
           const msgBlocks = Array.isArray(m.metadata?.blocks) && m.metadata.blocks.length ? m.metadata.blocks : null;
+          // Suggested-action chips ride on metadata.chips (stripped from the reply body by
+          // chips.py). Render them as tappable chips at the tail of the agent's turn so the
+          // suggestion reads as part of what the agent just said — not a separate panel.
+          const msgChips = Array.isArray(m.metadata?.chips) && m.metadata.chips.length ? m.metadata.chips : null;
           // Build the grouped attachments array MessageAttachments renders from. Priority:
           // structured metadata.attachments[] → single attachment_url column → parsed text.
           let attachments = [];
@@ -345,6 +349,7 @@ export function useRoomThread(worldId, room) {
             fileSize: m.file_size || 0,
             attachments, // Array of {url, name, mime, size} for grouped rendering
             blocks: msgBlocks,
+            chips: msgChips, // tappable suggestion chips from metadata.chips
           };
         }).filter((m) => m.text || m.isFile || m.blocks || m.attachments?.length);
         // Only re-commit when the thread actually changed (see sigRef). A no-op poll keeps the

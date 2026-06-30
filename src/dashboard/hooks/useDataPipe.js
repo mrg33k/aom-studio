@@ -183,6 +183,9 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
   // Project rooms from agent_status (type=project) — used for non-AOM worlds where
   // the projects table may be empty but agent_status has project room entries.
   const [supabaseProjectRooms, setSupabaseProjectRooms] = useState([])
+  // Mission rooms: missions with last_message_at computed from messages, so Recently Active
+  // on Home can surface missions the user actively worked in (not only inbox-pinged ones).
+  const [missionRooms, setMissionRooms] = useState([])
   // Unique channel ID per hook instance -- prevents duplicate channel name conflicts when
   // useDataPipe is mounted in multiple components (GameDashboard, UnifiedPanel, ChecklistMode, GameHUD)
   const channelIdRef = useRef(`pipe-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`)
@@ -443,15 +446,27 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
         // latest message in the project; every message carries a `project` field
         // (mission-tagged ones included), matching the missions-tree recency rule.
         // Projects with no recent activity fall to the bottom, then alphabetical.
+        // Also compute per-mission recency so Recently Active can surface missions
+        // the user actively worked in (not only ones with an inbox-ping).
         {
           const projRecency = {}
+          const missionRecency = {}
           for (const m of (data.messages || [])) {
-            if (!m.project || !m.timestamp) continue
+            if (!m.timestamp) continue
             const t = new Date(m.timestamp).getTime()
-            if (!Number.isNaN(t) && (!projRecency[m.project] || t > projRecency[m.project])) projRecency[m.project] = t
+            if (Number.isNaN(t)) continue
+            if (m.project && (!projRecency[m.project] || t > projRecency[m.project])) projRecency[m.project] = t
+            const ms = m.metadata && m.metadata.mission_slug
+            if (ms) {
+              if (!missionRecency[ms] || t > missionRecency[ms].ts) missionRecency[ms] = { ts: t, project: m.project || '' }
+            }
           }
           for (const p of merged) p.last_message_at = projRecency[p.slug] || 0
           merged.sort((a, b) => (b.last_message_at - a.last_message_at) || (a.name || '').localeCompare(b.name || ''))
+          // Expose mission recency so useHome can populate Recently Active without
+          // waiting for an inbox ping. Stored as { slug, project, last_message_at }.
+          const missionList = Object.entries(missionRecency).map(([slug, v]) => ({ slug, project: v.project, last_message_at: v.ts }))
+          setMissionRooms(missionList)
         }
         if (merged.length > 0) {
           const sig = JSON.stringify(merged)
@@ -866,6 +881,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
     lastUpdated,
     agents,
     projectRooms: supabaseProjectRooms,
+    missionRooms,
     refetch: fetchAll,
   }
 }

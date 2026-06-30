@@ -9,8 +9,8 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
-import { useRoomThread, useGoalThread, useRoomPlan } from './data/useRoomThread.js';
-import { GoalThreadBody, SendCtx, AgentBlocks, PlanPanel, buildSteps, WorkingTurn } from './ChatGoalThread.jsx';
+import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
+import { SendCtx, AgentBlocks, ActionChips, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
@@ -309,7 +309,7 @@ function groupChat(messages) {
   return groups;
 }
 
-// The rich content of one message (blocks + attachments), shown below its bubble.
+// The rich content of one message (blocks + attachments + suggestion chips), shown below its bubble.
 function MsgExtras({ m, onSend }) {
   const handleReview = (attachment) => { if (onSend) onSend({ type: 'review', attachment }); };
   return (
@@ -325,6 +325,14 @@ function MsgExtras({ m, onSend }) {
       {m.attachments?.length ? (
         <div style={{ marginTop: 8, width: '100%' }}>
           <MessageAttachments attachments={m.attachments} onReview={handleReview} />
+        </div>
+      ) : null}
+      {/* Suggestion chips from metadata.chips: tappable quick replies the agent proposed.
+          Rendered at the tail of the agent's turn so they feel like part of the reply,
+          not a separate panel outside the thread (Patrik 2026-06-30). */}
+      {!m.isUser && m.chips?.length ? (
+        <div style={{ marginTop: 8, width: '100%' }}>
+          <ActionChips actions={m.chips} primaryFirst={false} />
         </div>
       ) : null}
     </>
@@ -455,9 +463,6 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   const { messages, blocks, send, awaiting, liveSteps } = useRoomThread(worldId, selected);
   const goal = useGoalThread(worldId, selected);
-  // The editable forward plan for this room (goal-thread-plan mission) — drives the
-  // interactive "Context / goals" plan in the right control column.
-  const { plan, actions: planActions } = useRoomPlan(worldId, selected);
   // The conversation thread (PlainThread) always renders; while `awaiting`, the agent's LIVE
   // step thread builds right below the just-sent message (WorkingTurn), and each finished turn
   // shows its step thread inline (AgentBlocks). The thread is the conversation (Patrik 2026-06-29).
@@ -530,7 +535,6 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     setControlBusy(false);
     flashNote(ok ? note : 'Could not reach the agent. Try again.');
   };
-  const approvePlan = () => sendControl('Approved. Go ahead with the current plan.', 'Sent your approval.');
   const handoffAgent = () => sendControl('Please hand this off to another agent. Tell me who you are handing it to and why.', 'Asked for a hand off.');
   const pauseAgent = () => sendControl('Please pause here and wait for my next message before continuing.', 'Asked the agent to pause.');
   const retaskAgent = () => {
@@ -789,19 +793,13 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   {controlNote ? <div style={{ marginTop: 10, fontSize: 11.5, color: 'var(--muted)' }}>{controlNote}</div> : null}
                 </div>
 
-                {/* 2. Quick actions (held-c: agent task approval backend doesn't exist) */}
+                {/* 2. Quick actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>2</span>
                   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Quick actions</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
                   <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={onFileChosen} />
-                  <button onClick={approvePlan} disabled={controlBusy} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Tell the agent its current plan is approved">
-                    <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--success-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--success)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7"/></svg>
-                    </span>
-                    Approve plan
-                  </button>
                   <button onClick={handoffAgent} disabled={controlBusy} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 38, padding: '0 11px', border: '1px solid var(--hair)', borderRadius: 10, background: 'var(--surface)', color: 'var(--fg)', fontSize: 12.5, fontWeight: 500, cursor: controlBusy ? 'wait' : 'pointer' }} title="Ask the agent to hand this off to another agent">
                     <span style={{ width: 24, height: 24, borderRadius: 7, background: 'var(--accent-weak)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg>
@@ -814,18 +812,6 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     </span>
                     {controlBusy ? 'Working…' : 'Add a file'}
                   </button>
-                </div>
-
-                {/* 3. Context / Goals */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--accent)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none' }}>3</span>
-                  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Context / goals</span>
-                </div>
-                <div style={{ marginBottom: 20 }}>
-                  <PlanPanel goal={goal} plan={plan} actions={planActions} />
-                  {!plan?.length && !goal?.title ? (
-                    <div style={{ color: 'var(--faint)', fontSize: 12.5 }}>No plan yet. Add the next step below once a room is moving.</div>
-                  ) : null}
                 </div>
                 </>
                 )}

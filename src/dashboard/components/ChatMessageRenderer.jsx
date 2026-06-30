@@ -37,7 +37,13 @@ function parseMarkdown(text) {
     // Strip internal control markers the agent embeds (staged-draft tags) so they
     // never leak as raw text/links into the chat. Covers both formats:
     //   [staged_draft:ID|conn:ID]   and   [staged_draft-ID](com:ID)
-    const cleaned = String(text).replace(/\[staged_draft[^\]]*\](\([^)]*\))?/gi, '').replace(/[ \t]{2,}/g, ' ').trim()
+    // Also strip goal-thread / chips block tags that should have been extracted
+    // server-side but may leak on edge cases (malformed JSON, \Z-anchor miss, etc.).
+    const cleaned = String(text)
+      .replace(/\[staged_draft[^\]]*\](\([^)]*\))?/gi, '')
+      .replace(/<goal-thread>[\s\S]*?<\/goal-thread>/gi, '')
+      .replace(/<chips>[\s\S]*?<\/chips>/gi, '')
+      .replace(/[ \t]{2,}/g, ' ').trim()
     let html = marked.parse(preprocessBareUrls(cleaned))
     html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     // Strip inline styling that leaks in from quoted emails / pasted HTML (e.g. a signature's
