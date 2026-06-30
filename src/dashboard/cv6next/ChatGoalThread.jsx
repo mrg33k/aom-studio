@@ -22,7 +22,7 @@ export function buildSteps(blocks) {
   const byIndex = new Map();
   const ensure = (i) => {
     const key = Number.isFinite(+i) ? +i : 0;
-    if (!byIndex.has(key)) byIndex.set(key, { index: key, title: '', detail: '', state: 'pending', results: [], progress: null });
+    if (!byIndex.has(key)) byIndex.set(key, { index: key, title: '', detail: '', state: 'pending', results: [], progress: null, kind: '' });
     return byIndex.get(key);
   };
   for (const b of blocks) {
@@ -32,6 +32,7 @@ export function buildSteps(blocks) {
       step.title = b.title || step.title;
       step.detail = b.detail || step.detail;
       step.state = b.state || step.state;
+      if (b.kind) step.kind = b.kind;
       if (b.progress != null) step.progress = b.progress;
     } else {
       step.results.push(b);
@@ -104,6 +105,23 @@ function normalizeData(b) {
   return { title: b.title || 'Data', columns, rows, totals };
 }
 
+// Pick a done-state icon that fits what the row is ABOUT, so a finished step or message reads
+// by its action at a glance instead of a row of identical checks (Patrik 2026-06-30: use icons
+// that apply to the action). Keyword match on the row text; falls back to a check. Stroke icons,
+// currentColor, so they inherit the row's done/accent color from the kit CSS.
+function actionGlyph(text) {
+  const t = String(text || '').toLowerCase();
+  const svg = (children) => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{children}</svg>;
+  if (/\b(ship|shipped|deploy|deployed|live|launch|launched|release|released|push|pushed|publish|published)\b/.test(t)) return svg(<><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></>); // up — shipped/live
+  if (/\b(search|find|found|look|looking|scan|scanned|explore|explored|grep|hunt|locate)\b/.test(t)) return svg(<><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></>); // search
+  if (/\b(read|reading|review|reviewed|inspect|inspected|check|checked|view|viewed|look over)\b/.test(t)) return svg(<><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" /><circle cx="12" cy="12" r="2.6" /></>); // eye — read/review
+  if (/\b(write|wrote|edit|edited|updat|chang|fix|fixed|add|added|remov|creat|made|build|built|rename|renamed|refactor|implement|implemented|wire|wired)\b/.test(t)) return svg(<><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>); // pencil — make a change
+  if (/\b(run|ran|test|tested|compile|compiled|verif|verified|confirm|confirmed|deploy check)\b/.test(t)) return svg(<path d="M8 5v14l11-7Z" />); // play — run/test
+  if (/\b(send|sent|email|emailed|message|messaged|reply|replied|respond|responded|share|shared)\b/.test(t)) return svg(<path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" />); // plane — send/reply
+  if (/\?|\b(question|confirm|should i|which|want me|choose|decide|prefer)\b/.test(t)) return svg(<><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.8.4-1 .8-1 1.6" /><path d="M12 17h.01" /></>); // question
+  return svg(<path d="m5 13 4 4L19 7" />); // check (default)
+}
+
 // The three step-state icons (pending ring / working spinner / done check). The kit's
 // CSS (.gstep.is-* .gsico .i-*) reveals exactly one per step state, so we always render
 // all three and let the class on the parent .gstep pick. Spinner spin comes from CSS too.
@@ -122,21 +140,35 @@ const StepIcons = (
 function StepRow({ step }) {
   const state = step.state === 'done' ? 'done' : (step.state === 'active' || step.state === 'working') ? 'active' : (step.state === 'queued') ? 'queued' : 'pending';
   const isActive = state === 'active';
+  const isNote = step.kind === 'note';
   const progress = step.progress != null ? Math.min(100, Math.max(0, step.progress)) : 0;
+  // The done icon fits the row's action (search / edit / ship / …); pending + working keep the
+  // kit's ring + spinner so a live turn still reads as progress. CSS reveals exactly one.
+  const icons = (
+    <span className="gsico">
+      <span className="i-pend"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9" /></svg></span>
+      <span className="i-work"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6" /></svg></span>
+      <span className="i-done">{actionGlyph(step.title)}</span>
+    </span>
+  );
   return (
     <div className={`gstep is-${state}`} data-step={step.index}>
       <div className="gsrail">
-        {StepIcons}
+        {icons}
         <span className="gsline" />
       </div>
       <div className="gsbody">
-        <div>
-          <span className="gstitle">{step.title || 'Step'}</span>
-          <span className="gschip c-work">Working</span>
-          <span className="gschip c-done">Done</span>
-          <span className="gschip c-queued">Queued</span>
-        </div>
-        {step.detail ? <div className="gssub">{step.detail}</div> : null}
+        {isNote ? (
+          <div className="gsnote" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{step.title}</div>
+        ) : (
+          <div>
+            <span className="gstitle">{step.title || 'Step'}</span>
+            <span className="gschip c-work">Working</span>
+            <span className="gschip c-done">Done</span>
+            <span className="gschip c-queued">Queued</span>
+          </div>
+        )}
+        {step.detail && !isNote ? <div className="gssub">{step.detail}</div> : null}
         {isActive ? (
           <div style={{ marginTop: 8, marginBottom: 6 }}>
             <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'var(--surface-2)', overflow: 'hidden' }}>

@@ -3,7 +3,7 @@
 // /api/dashboard/supabase-messages endpoint (the same one the dashboard uses). No fake
 // data: messages are the room's real thread, oldest -> newest.
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase.js';
 import { titleForAgent } from './agentTitles.js';
@@ -54,27 +54,35 @@ function workStepsToBlocks(steps) {
   return ordered.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: 'done' }));
 }
 
-// Attach each turn's persisted working steps to the agent message that answered it. Steps
-// are keyed to the USER message id (parent_message_id); we hang them on the FIRST agent
-// message after that user turn, once per turn. Skipped when the agent already authored its
-// own blocks (that record persists already) and for the turn still working live (the
-// WorkingTurn renders that; it persists here the moment it settles).
+// Render every agent turn as the step/checkmark thread (Patrik 2026-06-30: agent talk is dense,
+// the checkmark rows read cleaner). For each plain agent message we build its blocks as: the
+// turn's persisted working steps (done rows) + the reply text itself as a `note` row, so the
+// whole turn is one scannable checklist. Steps are keyed to the USER message (parent_message_id)
+// and hung on the FIRST agent reply of the turn. Left untouched: messages the agent already
+// authored structured blocks for (curated thread), file cards, and the turn still working live
+// (WorkingTurn shows that; it persists the moment it settles).
 function injectWorkSteps(list, stepsByParent, awaiting, awaitingId) {
-  if (!Array.isArray(list) || !stepsByParent) return list;
+  if (!Array.isArray(list)) return list;
+  const byParent = stepsByParent || {};
   let lastUserId = '';
-  const used = new Set();
+  const usedWork = new Set();
   return list.map((m) => {
     if (m.isUser) { lastUserId = m.id ? String(m.id) : lastUserId; return m; }
-    // A file card doesn't render blocks — let the steps hang on the next real reply instead.
-    if (m.isFile) return m;
-    if (!lastUserId || used.has(lastUserId)) return m;
-    used.add(lastUserId);
-    if (Array.isArray(m.blocks) && m.blocks.length) return m;
-    if (awaiting && lastUserId === String(awaitingId || '')) return m;
-    const steps = stepsByParent[lastUserId];
-    const blocks = steps && steps.length ? workStepsToBlocks(steps) : [];
-    if (!blocks.length) return m;
-    return { ...m, blocks };
+    if (m.isFile) return m;                                    // file cards don't render blocks
+    if (Array.isArray(m.blocks) && m.blocks.length) return m;  // agent-authored thread — leave it
+    const out = [];
+    // Work steps: once per turn, on the first plain agent reply, unless this turn is live now.
+    if (lastUserId && !usedWork.has(lastUserId)) {
+      usedWork.add(lastUserId);
+      if (!(awaiting && lastUserId === String(awaitingId || ''))) {
+        const steps = byParent[lastUserId];
+        if (steps && steps.length) out.push(...workStepsToBlocks(steps));
+      }
+    }
+    // The reply text becomes a done `note` row in the same checkmark thread.
+    if (m.text && m.text.trim()) out.push({ type: 'step', kind: 'note', stepIndex: out.length, title: m.text, state: 'done' });
+    if (!out.length) return m;
+    return { ...m, blocks: out, text: '' };
   });
 }
 
@@ -98,6 +106,7 @@ export function useRoomThread(worldId, room) {
   // Every turn's working steps, grouped by the user message they answered (parent_message_id),
   // so finished turns keep the steps that ticked while the agent worked (not just the live one).
   const [stepsByParent, setStepsByParent] = useState({});
+  const stepsSigRef = useRef('');
   // On room open we baseline to the newest existing message so a thread that simply
   // ends on your earlier message doesn't show "working" — only a genuinely NEW send does.
   const baselineRef = useRef(false);
@@ -177,15 +186,6 @@ export function useRoomThread(worldId, room) {
         // (the generic working indicator still renders from `awaiting`).
         const mine = lastSentId ? all.filter((s) => String(s.parent_message_id) === lastSentId) : [];
         setLiveSteps(mine);
-        // Keep the per-turn map fresh from the same feed so the moment this turn settles its
-        // steps are already there to persist in the conversation (no blank handoff gap).
-        const byParent = {};
-        for (const s of all) {
-          const pid = s && s.parent_message_id ? String(s.parent_message_id) : '';
-          if (!pid) continue;
-          (byParent[pid] = byParent[pid] || []).push(s);
-        }
-        setStepsByParent((prev) => ({ ...prev, ...byParent }));
         // `settled` (step_index 9999) IS "the agent stopped working" — stop the bar on it,
         // no guessing, so working-vs-stopped is honest (Patrik 2026-06-27).
         if (mine.some((s) => s.step_index === 9999 || s.text === 'settled')) { setAwaiting(false); return; }
@@ -221,13 +221,19 @@ export function useRoomThread(worldId, room) {
           if (!pid) continue;
           (byParent[pid] = byParent[pid] || []).push(s);
         }
-        setStepsByParent(byParent);
+        // Only commit when the grouped steps actually changed (count + newest id per turn).
+        // The feed is identical between polls in a quiet room; committing a fresh object each
+        // time would churn a re-render and yank the scroll (same guard as the message poll).
+        const sig = Object.keys(byParent).sort().map((k) => `${k}:${byParent[k].length}:${byParent[k][0]?.id || ''}`).join('~');
+        if (sig !== stepsSigRef.current) { stepsSigRef.current = sig; setStepsByParent(byParent); }
       })
       .catch(() => {});
     load();
-    const t = setInterval(load, 8000);
+    // While a turn is live, refresh a touch faster so a settled turn's steps land promptly;
+    // otherwise a relaxed poll (the events are durable, so there's no rush).
+    const t = setInterval(load, awaiting ? 3000 : 12000);
     return () => { alive = false; clearInterval(t); };
-  }, [worldId, room?.id, room?.isMission, room?.isProject, room?.projectSlug, reloadKey]);
+  }, [worldId, room?.id, room?.isMission, room?.isProject, room?.projectSlug, reloadKey, awaiting]);
 
   useEffect(() => {
     if (!worldId || !room?.id) { setMessages([]); setStatus('loading'); return undefined; }
@@ -421,10 +427,12 @@ export function useRoomThread(worldId, room) {
   }, [worldId, room?.id, room?.name, room?.isProject, room?.isMission, room?.missionSlug, reloadKey]);
 
   // Merge the optimistic outbox at the tail (newest) so a just-sent message shows at once.
-  const merged = pending.length ? [...messages, ...pending] : messages;
-  // Hang each finished turn's working steps on the agent reply that answered it, so the live
-  // steps stay in the conversation as a step thread instead of disappearing when work settles.
-  const withWork = injectWorkSteps(merged, stepsByParent, awaiting, lastSentId);
+  // Memoized so the returned array keeps a STABLE reference when nothing changed — otherwise a
+  // fresh array every render defeats the message poll's no-op guard and yanks the scroll.
+  const withWork = useMemo(
+    () => injectWorkSteps(pending.length ? [...messages, ...pending] : messages, stepsByParent, awaiting, lastSentId),
+    [messages, pending, stepsByParent, awaiting, lastSentId],
+  );
   return { messages: withWork, blocks, status, send, awaiting, liveSteps };
 }
 
