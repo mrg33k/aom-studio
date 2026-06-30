@@ -1465,7 +1465,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
     search: () => onOpenNav?.(), openNav: () => onOpenNav?.(), openProfile: () => {}, openCommandK: () => {},
     voiceInput: () => {}, composeMessage: () => {}, sendMessage: () => {},
     chooseOption: () => {}, openAgentMenu: () => {}, pauseAgent: () => {}, retaskAgent: () => {},
-    approvePlan: () => {}, handoffAgent: () => {}, addContext: () => {}, addAttachment: () => {},
+    handoffAgent: () => {}, addContext: () => {}, addAttachment: () => {},
     openAttachment: () => {}, review: () => {}, setDataView: () => {}, toggleFollow: () => {}, retry: () => {},
   }), [onNav, onOpenNav]);
   // One conversation surface. When the agent emits a structured Goal Thread it renders

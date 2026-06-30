@@ -36,7 +36,6 @@
     { "name": "openAgentMenu", "arg": "room.id" },
     { "name": "pauseAgent", "arg": "room.id" },
     { "name": "retaskAgent", "arg": "room.id" },
-    { "name": "approvePlan", "arg": "goal.id" },
     { "name": "handoffAgent", "arg": "room.id" },
     { "name": "addContext", "arg": "goal.id" },
     { "name": "addAttachment", "arg": "goal.id" },
