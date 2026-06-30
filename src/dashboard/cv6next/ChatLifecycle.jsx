@@ -237,7 +237,7 @@ function GoalTurn({ m, goal, blocks }) {
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg)' }}>{m.agentName}</span>
           <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{m.time}</span>
         </div>
-        <GoalThreadBody goal={goal} blocks={blocks || m.blocks} />
+        <GoalThreadBody goal={goal} blocks={blocks || m.blocks} header={false} />
       </div>
     </div>
   );

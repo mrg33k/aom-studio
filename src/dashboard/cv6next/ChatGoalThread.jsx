@@ -86,7 +86,7 @@ export function WorkingTurn({ room, liveSteps, steps, goal }) {
       <span className="ava is-green" style={{ width: 30, height: 30, fontSize: 11, flex: 'none', borderRadius: 9 }}>{room?.initials || '·'}</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         {room?.name ? <div className="gname" style={{ marginBottom: 6 }}>{room.name}</div> : null}
-        <GoalThreadBody goal={goal} blocks={blocks} />
+        <GoalThreadBody goal={goal} blocks={blocks} header={false} />
       </div>
     </div>
   );
@@ -585,7 +585,12 @@ function useThreadSend() { return React.useContext(SendCtx); }
 // never re-renders the answer that already lives in the conversation message above it
 // (Patrik 2026-06-27: keep the pinned thread, make it collapsible, no duplicate summary).
 // The full-screen mobile thread and the demo pass collapsible=false so they stay expanded.
-export function GoalThreadBody({ goal, blocks, collapsible = false, defaultCollapsed = true }) {
+// `header` draws the "Goal: <ask> — X of Y" line + progress bar above the steps. Patrik
+// 2026-06-30: in the live conversation the thread IS the conversation — the user's message
+// right above already names the goal, so the header is redundant and (as the working turn)
+// sometimes lingers at the bottom of the screen. Real chat surfaces pass header={false} for
+// just the step thread; the demo keeps it true to show the full element.
+export function GoalThreadBody({ goal, blocks, collapsible = false, defaultCollapsed = true, header = true }) {
   const steps = useMemo(() => buildSteps(blocks), [blocks]);
   // The header reads as the real goal: the room goal if set, else the first step the agent
   // actually named (never the old "Working thread" placeholder).
@@ -603,7 +608,7 @@ export function GoalThreadBody({ goal, blocks, collapsible = false, defaultColla
     : undefined;
   return (
     <div className={`gthread${collapsible ? ' is-collapsible' : ''}`}>
-      {React.createElement(
+      {header ? React.createElement(
         collapsible ? 'button' : 'div',
         {
           className: 'gthead',
@@ -619,8 +624,8 @@ export function GoalThreadBody({ goal, blocks, collapsible = false, defaultColla
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
           </span>
         ) : null,
-      )}
-      <div className="gtprog" style={{ margin: showSteps ? '0 0 14px' : '0' }}><i style={{ width: `${pct}%` }} /></div>
+      ) : null}
+      {header ? <div className="gtprog" style={{ margin: showSteps ? '0 0 14px' : '0' }}><i style={{ width: `${pct}%` }} /></div> : null}
       {showSteps ? steps.map((s) => <StepRow key={s.index} step={s} />) : null}
       {showSteps ? <div style={{ height: 8 }} /> : null}
     </div>
@@ -651,7 +656,7 @@ export function WorkDoneCard({ goal, blocks }) {
       </button>
       {open ? (
         <div className="wdcard-body">
-          <GoalThreadBody goal={goal || { title: 'Completed steps' }} blocks={blocks} />
+          <GoalThreadBody goal={goal || { title: 'Completed steps' }} blocks={blocks} header={false} />
         </div>
       ) : null}
     </div>
@@ -668,7 +673,7 @@ export function WorkDoneCard({ goal, blocks }) {
 export function AgentBlocks({ goal, blocks }) {
   const steps = useMemo(() => buildSteps(blocks), [blocks]);
   const hasSteps = steps.length > 0;
-  if (hasSteps) return <GoalThreadBody goal={goal} blocks={blocks} />;
+  if (hasSteps) return <GoalThreadBody goal={goal} blocks={blocks} header={false} />;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {(Array.isArray(blocks) ? blocks : []).map((b, i) => <Result key={i} block={b} />)}
@@ -884,7 +889,7 @@ export default function ChatGoalThread({ room, goal, blocks, onBack, onOpenNav, 
           {/* Cap the thread to a readable column so on iPad it stays phone-width and
               centered, instead of stretching the tables + charts edge to edge. */}
           <div style={{ maxWidth: 680, margin: '0 auto' }}>
-            <GoalThreadBody goal={goal} blocks={blocks} />
+            <GoalThreadBody goal={goal} blocks={blocks} header={false} />
           </div>
         </div>
         <div className="mcomposer">
