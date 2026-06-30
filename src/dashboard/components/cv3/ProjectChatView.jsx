@@ -44,10 +44,14 @@ export default function ProjectChatView() {
 
   return (
     <div style={{
-      flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden',
       position: 'relative',
       fontFamily: "'Inter', sans-serif",
     }}>
+      <div style={{
+        flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column',
+        overflow: 'hidden', position: 'relative',
+      }}>
       <TaskStatusCardStyles />
 
       <ProjectChatHeader />
@@ -67,8 +71,6 @@ export default function ProjectChatView() {
       )}
 
       {canonFilesOpen && <CanonFilesPanel />}
-
-      {filesOpen && <ProjectFilesPanel />}
 
       {chatSearchOpen && <ProjectSearchBar />}
 
@@ -116,6 +118,9 @@ export default function ProjectChatView() {
           {lastActionToast.text}
         </div>
       )}
+      </div>
+
+      {filesOpen && <ProjectFilesPanel />}
     </div>
   )
 }

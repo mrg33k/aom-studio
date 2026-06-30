@@ -20,24 +20,52 @@ function renderMd(src) {
 // to this project's files bucket via /api/dashboard/files?type=text. Clicking
 // a row toggles an inline content viewer; markdown rows are rendered as HTML,
 // everything else falls back to a <pre> block.
+//
+// Layout: a narrow drawer that slides in from the RIGHT and sits beside the
+// conversation (ProjectChatView lays itself out as a row). The conversation
+// stays visible and just narrows; the drawer scrolls independently.
 export default function ProjectFilesPanel() {
   const { selectedProject } = useChatCore()
   const { uploading } = useChatAttachmentsCtx()
-  const { filesOpen } = useChatSettingsCtx()
+  const { filesOpen, setFilesOpen } = useChatSettingsCtx()
   const { projectFiles, filesLoading } = useProjectChatFiles({
     filesOpen, selectedProject, uploading,
   })
   const [openId, setOpenId] = useState(null)
   return (
-    <div style={{
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
-      background: 'rgba(8,14,28,0.95)',
-      padding: '10px 14px',
+    <aside style={{
+      width: 300,
       flexShrink: 0,
+      borderLeft: '1px solid rgba(255,255,255,0.08)',
+      background: 'rgba(8,14,28,0.97)',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      animation: 'cv3FilesSlideIn 0.22s ease',
     }}>
-      <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-        Project Files
+      <style>{`@keyframes cv3FilesSlideIn { from { transform: translateX(100%); opacity: 0.3 } to { transform: translateX(0); opacity: 1 } }`}</style>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '10px 14px',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+        flexShrink: 0,
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>
+          Project Files
+        </div>
+        <button
+          type="button"
+          onClick={() => setFilesOpen(false)}
+          title="Close files"
+          style={{
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            color: C.muted, fontSize: 16, lineHeight: 1, padding: '2px 4px',
+          }}
+        >
+          ×
+        </button>
       </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: '10px 14px' }}>
       {filesLoading ? (
         <div style={{ fontSize: 13, color: C.muted, padding: '18px 0', textAlign: 'center' }}>Loading files...</div>
       ) : projectFiles.length === 0 ? (
@@ -117,6 +145,7 @@ export default function ProjectFilesPanel() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </aside>
   )
 }
