@@ -36,6 +36,48 @@ function hhmm(ts) {
   return `${date}, ${time}`;
 }
 
+// Persisted real-activity steps for a FINISHED turn → step blocks, every row done (no
+// spinner). The live steps the agent ticked while working are stored server-side (events,
+// keyed to the user message); turning them into the turn's blocks keeps them in the
+// conversation as the durable record instead of vanishing when the turn settles.
+// (Patrik 2026-06-30: the live steps should stay in the conversation after the work.)
+function workStepsToBlocks(steps) {
+  const real = (steps || []).filter((s) => s && s.step_index !== 9999 && s.text && s.text !== 'settled');
+  const byIdx = new Map();
+  for (const s of real) {
+    const k = Number.isFinite(+s.step_index) ? +s.step_index : 0;
+    const t = s.timestamp ? new Date(s.timestamp).getTime() : 0;
+    const prev = byIdx.get(k);
+    if (!prev || t >= prev._t) byIdx.set(k, { text: s.text, _t: t });
+  }
+  const ordered = [...byIdx.values()].sort((a, b) => a._t - b._t);
+  return ordered.map((s, i) => ({ type: 'step', stepIndex: i, title: s.text, state: 'done' }));
+}
+
+// Attach each turn's persisted working steps to the agent message that answered it. Steps
+// are keyed to the USER message id (parent_message_id); we hang them on the FIRST agent
+// message after that user turn, once per turn. Skipped when the agent already authored its
+// own blocks (that record persists already) and for the turn still working live (the
+// WorkingTurn renders that; it persists here the moment it settles).
+function injectWorkSteps(list, stepsByParent, awaiting, awaitingId) {
+  if (!Array.isArray(list) || !stepsByParent) return list;
+  let lastUserId = '';
+  const used = new Set();
+  return list.map((m) => {
+    if (m.isUser) { lastUserId = m.id ? String(m.id) : lastUserId; return m; }
+    // A file card doesn't render blocks — let the steps hang on the next real reply instead.
+    if (m.isFile) return m;
+    if (!lastUserId || used.has(lastUserId)) return m;
+    used.add(lastUserId);
+    if (Array.isArray(m.blocks) && m.blocks.length) return m;
+    if (awaiting && lastUserId === String(awaitingId || '')) return m;
+    const steps = stepsByParent[lastUserId];
+    const blocks = steps && steps.length ? workStepsToBlocks(steps) : [];
+    if (!blocks.length) return m;
+    return { ...m, blocks };
+  });
+}
+
 // Fetch the room's thread. `room` is an agent room { id (slug), name }.
 export function useRoomThread(worldId, room) {
   const [messages, setMessages] = useState([]);
@@ -53,6 +95,9 @@ export function useRoomThread(worldId, room) {
   const [lastSentId, setLastSentId] = useState('');
   const lastSentTsRef = useRef(0);
   const [liveSteps, setLiveSteps] = useState([]);
+  // Every turn's working steps, grouped by the user message they answered (parent_message_id),
+  // so finished turns keep the steps that ticked while the agent worked (not just the live one).
+  const [stepsByParent, setStepsByParent] = useState({});
   // On room open we baseline to the newest existing message so a thread that simply
   // ends on your earlier message doesn't show "working" — only a genuinely NEW send does.
   const baselineRef = useRef(false);
@@ -72,7 +117,7 @@ export function useRoomThread(worldId, room) {
   // first load (even an empty one) always commits.
   useEffect(() => { sigRef.current = null; setMessages([]); setBlocks(null); }, [room?.id]);
   // Switching rooms drops any in-flight "working" state too.
-  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); lastSentTsRef.current = 0; baselineRef.current = false; }, [room?.id]);
+  useEffect(() => { setAwaiting(false); setLastSentId(''); setLiveSteps([]); setStepsByParent({}); lastSentTsRef.current = 0; baselineRef.current = false; }, [room?.id]);
 
   // Post a real user message into this room (composer + choice/question taps).
   // Agent rooms POST to the agent slug; project rooms to the project slug. After
@@ -132,6 +177,15 @@ export function useRoomThread(worldId, room) {
         // (the generic working indicator still renders from `awaiting`).
         const mine = lastSentId ? all.filter((s) => String(s.parent_message_id) === lastSentId) : [];
         setLiveSteps(mine);
+        // Keep the per-turn map fresh from the same feed so the moment this turn settles its
+        // steps are already there to persist in the conversation (no blank handoff gap).
+        const byParent = {};
+        for (const s of all) {
+          const pid = s && s.parent_message_id ? String(s.parent_message_id) : '';
+          if (!pid) continue;
+          (byParent[pid] = byParent[pid] || []).push(s);
+        }
+        setStepsByParent((prev) => ({ ...prev, ...byParent }));
         // `settled` (step_index 9999) IS "the agent stopped working" — stop the bar on it,
         // no guessing, so working-vs-stopped is honest (Patrik 2026-06-27).
         if (mine.some((s) => s.step_index === 9999 || s.text === 'settled')) { setAwaiting(false); return; }
@@ -145,6 +199,35 @@ export function useRoomThread(worldId, room) {
     const t = setInterval(poll, 1500);
     return () => { alive = false; clearInterval(t); };
   }, [awaiting, lastSentId, worldId, room?.id, room?.isMission, room?.isProject, room?.projectSlug]);
+
+  // Persist EVERY turn's working steps (not just the live one). Polls the same step feed
+  // regardless of `awaiting` and groups by parent_message_id, so a finished turn's steps stay
+  // available to render in the conversation — and survive a reload (the events live in the DB).
+  useEffect(() => {
+    if (!worldId || !room?.id) { setStepsByParent({}); return undefined; }
+    let alive = true;
+    const agentParam = (room.isMission || room.isProject) ? 'corner' : room.id;
+    const projParam = room.isMission ? room.projectSlug : (room.isProject ? room.id : '');
+    const q = new URLSearchParams({ client_id: worldId, agent: agentParam, limit: '100' });
+    if (projParam) q.set('project', projParam);
+    const load = () => authFetch(`/api/dashboard/message-steps?${q.toString()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        const all = Array.isArray(d.steps) ? d.steps : [];
+        const byParent = {};
+        for (const s of all) {
+          const pid = s && s.parent_message_id ? String(s.parent_message_id) : '';
+          if (!pid) continue;
+          (byParent[pid] = byParent[pid] || []).push(s);
+        }
+        setStepsByParent(byParent);
+      })
+      .catch(() => {});
+    load();
+    const t = setInterval(load, 8000);
+    return () => { alive = false; clearInterval(t); };
+  }, [worldId, room?.id, room?.isMission, room?.isProject, room?.projectSlug, reloadKey]);
 
   useEffect(() => {
     if (!worldId || !room?.id) { setMessages([]); setStatus('loading'); return undefined; }
@@ -339,7 +422,10 @@ export function useRoomThread(worldId, room) {
 
   // Merge the optimistic outbox at the tail (newest) so a just-sent message shows at once.
   const merged = pending.length ? [...messages, ...pending] : messages;
-  return { messages: merged, blocks, status, send, awaiting, liveSteps };
+  // Hang each finished turn's working steps on the agent reply that answered it, so the live
+  // steps stay in the conversation as a step thread instead of disappearing when work settles.
+  const withWork = injectWorkSteps(merged, stepsByParent, awaiting, lastSentId);
+  return { messages: withWork, blocks, status, send, awaiting, liveSteps };
 }
 
 // ── The Goal Thread: real per-room step state (the step thread, our live conversation) ──
