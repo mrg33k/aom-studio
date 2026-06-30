@@ -313,6 +313,9 @@ export function useOrganize(worldId = 'aom') {
     if (slug === 'unfiled' || seenSlugs.has(slug)) continue;
     projectList.push({ id: slug, name: nameBySlug[slug] || prettify(slug), fileCount: fs.length, folderCount: 0, tint: tintFor(slug) });
   }
+  // Alphabetical by display name (case-insensitive), so the list is scannable instead of
+  // arriving in the table's recency order. This order also drives the desktop tree panel.
+  projectList.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 
   const inList = (id) => projectList.some((p) => p.id === id);
   const activeProjectId = (selectedId && inList(selectedId)) ? selectedId : (projectList[0]?.id || null);
