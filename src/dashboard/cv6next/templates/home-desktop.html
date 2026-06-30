@@ -45,61 +45,9 @@
 
   <div class="cols" data-state="ready">
 
-    <!-- ============ CATCH UP · the needs-you inbox ============ -->
-    <!-- The whole column is hidden when nothing needs you (catchUp.colState='none') and
-         slides in once when the first new item lands ('in'); 'has' = present, settled. -->
-    <div class="col catch" data-mod="is-:catchUp.colState">
-      <div style="display:flex;align-items:center;gap:9px;margin-bottom:14px;flex:none;"><span class="eyebrow">Catch up</span><span style="min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--accent-weak);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;" data-bind="catchUp.count">5</span><div style="margin-left:auto;display:flex;align-items:center;gap:8px;"><span style="font-size:11.5px;color:var(--muted);"><span data-bind="catchUp.position">1</span> of <span data-bind="catchUp.count">5</span></span><button class="cuarrow" data-action="catchUpPrev" aria-label="Previous catch-up"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button><button class="cuarrow" data-action="catchUpNext" aria-label="Next catch-up"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button></div></div>
-      <div style="flex:1;overflow:hidden;" class="scrollcap">
-
-        <!-- the focused card — bound to catchUp.current.*; the .custack backings peek behind
-             it to read as a stack you step through with the header arrows (Patrik, 2026-06-25) -->
-        <div class="custack" data-mod="is-:catchUp.stackState" style="position:relative;margin-bottom:44px;">
-        <div class="custack-back b2"></div>
-        <div class="custack-back b1"></div>
-        <div class="card glassy" style="overflow:hidden;position:relative;z-index:2;" data-action="openCatchUp" data-arg="catchUp.current.id">
-          <div style="padding:14px 16px 0;">
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-              <div class="glyph is-email" data-mod="is-:catchUp.current.kind"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
-              <div style="flex:1;min-width:0;"><div style="font-size:13.5px;font-weight:600;color:var(--fg);" data-bind="catchUp.current.from">Dana Whitfield · Acme</div><div style="font-size:11.5px;color:var(--muted);" data-bind="catchUp.current.subject">Re: Q2 partnership scope</div></div>
-              <span class="tag-pill is-email" data-mod="is-:catchUp.current.kind" data-bind="catchUp.current.kindLabel">Email</span>
-            </div>
-            <div class="csum" data-mod="is-:catchUp.current.contentState" style="background:var(--surface-2);border-radius:10px;padding:12px 15px;margin-bottom:14px;font-size:13px;line-height:1.55;color:var(--fg);text-align:center;" data-bind="catchUp.current.summary">Dana wants to expand the pilot to three teams and needs revised pricing before Friday. Warm tone; one open risk on the rollout timeline.</div>
-            <div class="caitems" data-mod="is-:catchUp.current.actionState">
-              <div class="eyebrow" style="margin-bottom:9px;">Action items</div>
-              <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;">
-                <!-- ONE template row per action item -->
-                <div class="echk" data-each="catchUp.current.actionItems"><span class="box"></span><span data-bind="actionItem.text">Send revised 3-team pricing by Friday</span></div>
-              </div>
-            </div>
-            <div class="attach" style="margin-bottom:15px;" data-each="catchUp.current.attachments" data-action="openAttachment" data-arg="attachment.id">
-              <div class="athumb" style="background:linear-gradient(135deg,#26303f,#161b24);"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--pink-400)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></div>
-              <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--fg);" data-bind="attachment.name">partnership-terms.pdf</div><div class="mono" style="font-size:10.5px;color:var(--faint);" data-bind="attachment.size">240 KB</div></div>
-              <button class="eact" style="height:30px;padding:0 12px;background:var(--accent-weak);color:var(--accent);" data-action="review" data-arg="attachment.id">Review</button>
-            </div>
-          </div>
-          <div class="csugg" data-mod="is-:catchUp.footerState" style="border-top:1px solid var(--divider);padding:12px 14px;">
-            <div class="eyebrow" style="margin-bottom:10px;">Suggested actions</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <button class="eact" style="background:var(--accent);color:#fff;" data-action="draftReply" data-arg="catchUp.current.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Draft reply</button>
-              <button class="eact" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--fg);" data-action="addToTracker" data-arg="catchUp.current.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Add to Tracker</button>
-              <button class="eact" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--fg);" data-action="goToRoom" data-arg="catchUp.current.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Go to room<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7;"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-              <button class="eact" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--fg);" data-action="snooze" data-arg="catchUp.current.id"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>Snooze</button>
-            </div>
-          </div>
-          <div class="creply" data-mod="is-:catchUp.footerState" style="border-top:1px solid var(--divider);padding:12px 14px;">
-            <textarea class="creply-input" rows="2" placeholder="Write a reply…" style="width:100%;box-sizing:border-box;resize:none;border:1px solid var(--hair);border-radius:10px;background:var(--surface-2);color:var(--fg);font-family:var(--font-sans);font-size:13px;line-height:1.45;padding:10px 12px;outline:none;"></textarea>
-            <div style="display:flex;gap:8px;justify-content:flex-end;">
-              <button class="eact" data-action="cancelReply" style="background:var(--surface-2);border:1px solid var(--hair);color:var(--fg);padding:0 16px;">Cancel</button>
-              <button class="eact" data-action="sendReply" style="background:var(--accent);color:#fff;padding:0 22px;">Send</button>
-            </div>
-          </div>
-          <div class="cstat" data-mod="is-:catchUp.footerState" style="border-top:1px solid var(--divider);padding:14px;font-size:13px;font-weight:600;color:var(--fg);"><span class="cstat-spin" data-mod="is-:catchUp.footerState"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg></span><span class="cstat-check" data-mod="is-:catchUp.footerState"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span data-bind="catchUp.statusText">Adding to tracker…</span></div>
-        </div>
-        </div><!-- /.custack -->
-
-      </div>
-    </div>
+    <!-- Catch Up column retired (Patrik 2026-06-30): Home is now two columns — All Rooms +
+         the selected room's Conversation. The needs-you inbox + its catchUp.* data plumbing
+         live on (mobile keeps its swipe deck); only the desktop column was removed. -->
 
     <!-- ============ ALL ROOMS · built for hundreds ============ -->
     <div class="col rooms">
@@ -150,7 +98,7 @@
       <div data-state="ready" data-mod="is-:goal.has" class="convo-ready" style="flex:1;display:flex;flex-direction:column;min-height:0;">
       <div class="convo-rest2"><div class="empty"><div class="e-ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg></div><div class="e-t">No active goal</div><div class="e-s">Pick a room to see its agent's goal and quick chat here.</div></div></div>
       <div class="convo-goalbody" style="flex:1;flex-direction:column;min-height:0;">
-      <div class="cvhdr"><span style="width:30px;height:30px;border-radius:50%;background:rgba(52,211,153,.2);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;" data-bind="room.initials">EL</span><div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.name">Elon</div><div style="font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.subtitle">Space Rising</div></div><div class="filesbtn" data-action="nav" data-target="organize"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>Files</div></div>
+      <div class="cvhdr"><span style="width:30px;height:30px;border-radius:50%;background:rgba(52,211,153,.2);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;" data-bind="room.initials">EL</span><div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.name">Elon</div><div style="font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.subtitle">Space Rising</div></div><div class="filesbtn" data-action="toggleFiles" style="cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>Files</div></div>
       <!-- Message list is rendered by React (Cv6QuickThread) portaled in here, so attachments
            draw as cards (image/gallery/file/collection) with Review, not plain text. Kept empty. -->
       <div class="convo-thread" data-cv6-keep="home-thread" style="flex:1;padding:18px 18px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:13px;"></div>

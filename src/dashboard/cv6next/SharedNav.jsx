@@ -14,7 +14,9 @@ import React from 'react';
 // each screen (organize/review/livescribe) lands.
 export const NAV_TOOLS = [
   { id: 'home',       label: 'Home',     route: 'home',       wired: true },
-  { id: 'chat',       label: 'Chat',     route: 'chat',       wired: true },
+  // Chat tab retired (Patrik 2026-06-30): the standalone conversations list was redundant
+  // with Home's All Rooms + col3 quick chat. The full Chat tool is still reachable by opening
+  // any room from Home (→ again on a row). Deep link ?view=chat still resolves for safety.
   { id: 'organize',   label: 'Organize', route: 'organize',   wired: true },
   { id: 'review',     label: 'Review',   route: 'review',     wired: true },
   { id: 'support',    label: 'Support',  route: 'support',    wired: true },

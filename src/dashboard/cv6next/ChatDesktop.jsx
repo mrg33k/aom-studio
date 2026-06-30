@@ -56,7 +56,7 @@ function missionDot(s) {
 
 // ── Files & Links shelf (right-column "Files" view) ──────────────────────────
 // Classify a shared file into a pill bucket from its mime + extension.
-function fileKind(name, mime) {
+export function fileKind(name, mime) {
   const m = String(mime || '').toLowerCase();
   const ext = String(name || '').toLowerCase().split('.').pop();
   if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'heic', 'avif'].includes(ext)) return 'photo';
@@ -117,7 +117,7 @@ function humanSize(bytes) {
 }
 // Build the de-duped, newest-first shelf of files + links from the loaded thread. Each item
 // carries who shared it, how long ago, and (for files) its size — the design's row meta.
-function shelfItems(messages) {
+export function shelfItems(messages) {
   const items = [];
   for (const msg of messages || []) {
     const who = msg.isUser ? 'You' : (msg.agentName || '');
@@ -144,7 +144,7 @@ function itemMeta(it) {
   return [it.who, relAgo(it.ts), tail].filter(Boolean).join(' · ');
 }
 // Map a project-files kind/name to a pill bucket + a clean kind label.
-function libKindLabel(k) {
+export function libKindLabel(k) {
   return ({ canon: 'doc', tape: 'notes', 'research-drop': 'research', deliverable: 'deliverable' })[k] || (k || 'file');
 }
 const FILE_PILLS = [
@@ -164,7 +164,7 @@ function fileGlyph(kind) {
     : 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6';
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 }
-function FilesShelf({ items, onReview }) {
+export function FilesShelf({ items, onReview }) {
   const [pill, setPill] = useState('all');
   const counts = useMemo(() => ({
     all: items.length, recent: Math.min(items.length, 12),

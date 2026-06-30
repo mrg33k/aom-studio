@@ -20,7 +20,7 @@ import { GoalThreadBody, SendCtx, AgentBlocks, WorkingTurn } from './ChatGoalThr
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
-import ChatDesktop from './ChatDesktop.jsx';
+import ChatDesktop, { FilesShelf, fileKind, libKindLabel, shelfItems } from './ChatDesktop.jsx';
 import SupportDesktop from './SupportDesktop.jsx';
 import Organize from './Organize.jsx';
 import Settings from './Settings.jsx';
@@ -403,6 +403,66 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
   );
 }
 
+// Files panel for the Home col3 quick chat (Patrik 2026-06-30). The "Files" button in the
+// conversation header used to jump to the Organize tool; now it opens this panel in place —
+// the SAME shelf the full Chat tool's Files drawer shows (the room's real library files +
+// links shared in the conversation). Rendered as an overlay over the Conversation column so
+// you never leave Home. host = the [data-screen="convo"] column (made position:relative on
+// mount); null host = closed.
+function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
+  const libProjectSlug = room?.isMission ? room.projectSlug : (room?.isProject ? room.id : null);
+  const [roomFiles, setRoomFiles] = useState([]);
+  useEffect(() => {
+    if (!libProjectSlug) { setRoomFiles([]); return undefined; }
+    let alive = true;
+    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(libProjectSlug)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        const flat = [];
+        for (const f of (d.files || [])) flat.push(f);
+        for (const m of (d.missions || [])) for (const f of (m.files || [])) flat.push(f);
+        setRoomFiles(flat);
+      })
+      .catch(() => { if (alive) setRoomFiles([]); });
+    return () => { alive = false; };
+  }, [libProjectSlug]);
+  // Shelf = the room's library files (project/mission rooms) + links from the conversation;
+  // agent rooms fall back to whatever files/links the conversation itself carries. Mirrors the
+  // full Chat tool's shelf build (ChatDesktop) so the two read identically.
+  const shelf = useMemo(() => {
+    const convo = shelfItems(messages || []);
+    if (!libProjectSlug) return convo;
+    const lib = roomFiles.map((f) => ({
+      type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
+      ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
+    }));
+    const links = convo.filter((i) => i.type === 'link');
+    const merged = [...lib, ...links];
+    merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
+    return merged;
+  }, [messages, roomFiles, libProjectSlug]);
+  if (!host) return null;
+  return createPortal(
+    <div style={{ position: 'absolute', inset: 0, zIndex: 12, background: 'var(--ground)', display: 'flex', flexDirection: 'column' }}>
+      <div className="cvhdr">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>Files</div>
+          <div style={{ fontSize: 11.5, color: 'var(--muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{room?.name || ''}</div>
+        </div>
+        <div className="filesbtn" onClick={onClose} role="button" title="Close files" style={{ cursor: 'pointer' }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          Close
+        </div>
+      </div>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 18px 20px' }}>
+        <FilesShelf items={shelf} onReview={onReview} />
+      </div>
+    </div>,
+    host,
+  );
+}
+
 function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onProjectConsumed }) {
   const isDesktop = useIsDesktop();
   const { state, data, worldId } = useHome();
@@ -726,6 +786,27 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     obs.observe(document.body, { childList: true, subtree: true });
     return () => obs.disconnect();
   }, [isDesktop]);
+  // Files panel host: the whole Conversation column. The "Files" button overlays the room's
+  // file shelf on top of the thread+composer (HomeFilesPanel portals here). Tracked across
+  // template re-binds like the other hosts; made position:relative so the overlay anchors to
+  // the column. filesOpen toggles it; it auto-closes when the open room changes/closes.
+  const [convoColHost, setConvoColHost] = useState(null);
+  const [filesOpen, setFilesOpen] = useState(false);
+  useEffect(() => {
+    if (!isDesktop) { setConvoColHost(null); return undefined; }
+    const pick = () => {
+      const el = document.querySelector('[data-screen="convo"]');
+      if (el && el.style.position !== 'relative') el.style.position = 'relative';
+      setConvoColHost((prev) => (prev === el ? prev : (el || null)));
+    };
+    pick();
+    const obs = new MutationObserver(pick);
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => obs.disconnect();
+  }, [isDesktop]);
+  // Close the files panel whenever the open room changes (or no room is open), so it never
+  // shows a stale room's files.
+  useEffect(() => { setFilesOpen(false); }, [knavOpenedKey]);
   const catchUpHtml = useMemo(() => composeScreen(homeMobileRaw, { mobile: true, pick: 5 }), []);
 
   const homeHtml = useMemo(
@@ -1020,6 +1101,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     review: (fileId) => { const c = curCardRef.current; onNav?.('review', fileId ? { name: String(fileId), project: c?.project || '', missionSlug: c?.missionSlug || '' } : null); },
     openAttachment: (fileId) => { const c = curCardRef.current; onNav?.('review', fileId ? { name: String(fileId), project: c?.project || '', missionSlug: c?.missionSlug || '' } : null); },
     voiceInput: () => {}, composeMessage: () => {},
+    // Files button in the col3 conversation header: open the room's file shelf in place
+    // (HomeFilesPanel overlay), instead of jumping to the Organize tool. Only meaningful when
+    // a room is open in col3; harmless otherwise.
+    toggleFiles: () => setFilesOpen((o) => !o),
     // Send a quick reply from the col3 room panel: read the uncontrolled input and post into the
     // opened room via the same thread the full Chat uses (Patrik: the quick reply room should work).
     sendMessage: (_arg, e) => {
@@ -1291,6 +1376,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         agents={data.agents}
         quickSend={quickSend}
         onClose={() => { setKnavOpenedRoom(null); setKnavRoomOpenState(null); setKnavOpenedKey(null); }}
+      />
+      <HomeFilesPanel
+        host={filesOpen && knavOpenedRoom ? convoColHost : null}
+        room={knavOpenedRoom}
+        messages={quickThread && quickThread.messages}
+        onClose={() => setFilesOpen(false)}
+        onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('review', files?.length ? { files } : null); }}
       />
       {trackerOverlay}
     </div>
