@@ -1003,12 +1003,17 @@
    one avatar + name with a single timestamp. Used by the Home quick-reply thread
    (Cv6QuickThread) and the Chat tool (PlainThread / MsgRow). Was: full-width blobs. */
 [data-cv6] .pconv { display:flex; flex-direction:column; gap:3px; }
-[data-cv6] .grp { display:flex; gap:10px; align-items:flex-start; margin-top:13px; }
+[data-cv6] .grp { display:flex; gap:10px; align-items:flex-start; margin-top:13px; position:relative; }
+/* Link the agent's messages with a vertical rail line under the avatar — same connector
+   the step thread uses (.gstep .gsline) — so a turn's bubbles read as one linked thread.
+   Scoped to agent groups (a user group carries .pb-me); the line runs from below the avatar
+   down to just above the timestamp. (Patrik 2026-06-30: link messages like the steps.) */
+[data-cv6] .grp:has(.pb)::before { content:""; position:absolute; left:14px; top:36px; bottom:16px; width:2px; border-radius:2px; background:var(--divider); }
 [data-cv6] .grp .gav { width:30px; height:30px; border-radius:9px; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex:none; color:#fff; }
 [data-cv6] .grp .stack { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1; }
-[data-cv6] .pb { background:transparent; border:none; border-radius:0; padding:0; font-size:13.5px; line-height:1.5; color:var(--fg); max-width:100%; align-self:flex-start; white-space:pre-wrap; word-break:break-word; }
-/* On the light theme, prose-style messages inherit the text color naturally (no bubble). */
-[data-app-theme="light"] [data-cv6] .pb { background:transparent; border-color:transparent; color:rgba(0,0,0,.87); }
+[data-cv6] .pb { background:var(--surface); border:1px solid var(--hair); border-radius:14px; border-top-left-radius:5px; padding:11px 14px; font-size:13.5px; line-height:1.5; color:var(--fg); max-width:100%; align-self:flex-start; white-space:pre-wrap; word-break:break-word; }
+/* On the light theme the agent bubble keeps a surface card, just darker text. */
+[data-app-theme="light"] [data-cv6] .pb { background:var(--surface); border-color:var(--hair); color:rgba(0,0,0,.87); }
 /* Markdown rendered inside a message (ChatMessageRenderer): match the message's type
    scale and inherit the message's text colour instead of the renderer default. */
 [data-cv6] .pb .cmr-content, [data-cv6] .pb-me .cmr-content { font-size:13.5px; line-height:1.5; color:inherit; }
