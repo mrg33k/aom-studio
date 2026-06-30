@@ -464,8 +464,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   const { messages, blocks, send, awaiting, liveSteps } = useRoomThread(worldId, selected);
   const lastActiveLabel = (() => {
     const m = messages?.[messages.length - 1];
-    if (!m?.timestamp) return null;
-    const d = new Date(m.timestamp);
+    if (!m?.ts) return null;
+    const d = new Date(m.ts);
     const diffMs = Date.now() - d;
     const diffMin = Math.floor(diffMs / 60000);
     if (diffMin < 1) return 'just now';
