@@ -352,6 +352,11 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
     const prevSig = prevUserSigRef.current;
     prevUserSigRef.current = lastUserSig;
     if (!el || !len) return;
+    // The thread polls every 3s and hands back a fresh array each time. When the count didn't
+    // change it's an identical re-render, not a new message — bail before any pin/scroll so the
+    // view stays exactly where you left it (this is the guard the desktop screen already has;
+    // without it a poll could re-snap your latest message to the top while you sat at the bottom).
+    if (len === prev) return;
     // First load for this room: land on the active exchange (pin the question if a reply
     // is pending, else the tail).
     if (prev === 0) { if (awaiting) pinLastUser('auto'); else bottomRef.current?.scrollIntoView(); return; }
