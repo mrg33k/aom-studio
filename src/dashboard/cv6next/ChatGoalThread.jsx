@@ -162,7 +162,11 @@ function StepRow({ step }) {
           <div className="gsnote" style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{step.title}</div>
         ) : (
           <div>
-            <span className="gstitle">{step.title || 'Step'}</span>
+            {/* Suppress the title when it's trivially "Done" — the chip already says so; showing
+                both produces "Done. Done" which reads as escaped text, not a finished step. */}
+            {!/^done\.?$/i.test((step.title || '').trim()) && (
+              <span className="gstitle">{step.title || 'Step'}</span>
+            )}
             <span className="gschip c-work">Working</span>
             <span className="gschip c-done">Done</span>
             <span className="gschip c-queued">Queued</span>

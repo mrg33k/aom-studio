@@ -462,6 +462,18 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   }, [selected, onNav]);
 
   const { messages, blocks, send, awaiting, liveSteps } = useRoomThread(worldId, selected);
+  const lastActiveLabel = (() => {
+    const m = messages?.[messages.length - 1];
+    if (!m?.timestamp) return null;
+    const d = new Date(m.timestamp);
+    const diffMs = Date.now() - d;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffH = Math.floor(diffMin / 60);
+    if (diffH < 24) return `${diffH}h ago`;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  })();
   const goal = useGoalThread(worldId, selected);
   // The conversation thread (PlainThread) always renders; while `awaiting`, the agent's LIVE
   // step thread builds right below the just-sent message (WorkingTurn), and each finished turn
@@ -700,7 +712,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   <button
                     onClick={toggleFollow}
                     title={following ? 'You will see this room on Home and get its updates. Click to mute.' : 'Muted. Click to follow along again.'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 7, flex: 'none', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', padding: '6px 12px', borderRadius: 18, border: following ? 'none' : '1px solid var(--hair)', color: following ? 'var(--success)' : 'var(--muted)', background: following ? 'var(--success-weak)' : 'var(--surface-2)' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 7, flex: 'none', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer', padding: '6px 12px', borderRadius: 18, border: following ? 'none' : '1px solid var(--hair)', color: following ? 'var(--accent)' : 'var(--muted)', background: following ? 'var(--accent-weak)' : 'var(--surface-2)' }}>
                     {following ? (
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     ) : (
@@ -812,6 +824,13 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                     {controlBusy ? 'Working…' : 'Add a file'}
                   </button>
                 </div>
+                {/* Bottom anchor — closes drawer composition so quick actions don't float in a void */}
+                {lastActiveLabel ? (
+                  <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--divider)', display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', flex: 'none', display: 'inline-block' }} />
+                    <span style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', color: 'var(--faint)', letterSpacing: '.04em' }}>Last active {lastActiveLabel}</span>
+                  </div>
+                ) : null}
                 </>
                 )}
               </>
