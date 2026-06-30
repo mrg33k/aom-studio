@@ -226,15 +226,27 @@ function FilesShelf({ items, onReview }) {
 // project's general chat; the chevron toggles the mission list; a mission row opens that
 // mission's own thread on the right. Mirrors the mobile project screen, here as a tree.
 const MISSION_CAP = 8; // a fanned-open project shows this many missions, then "show N more" — keeps the rail scannable when a project has dozens.
+// missions-tree hands back a NESTED tree (roots carry their sub-missions in `children`).
+// Flatten it depth-first into one indented list so missions living in a subfolder
+// actually show in the rail — the old code mapped only the roots and dropped every
+// nested mission. depth drives the indent so the folder structure stays legible.
+function flattenMissions(nodes, depth = 0, out = []) {
+  for (const m of (nodes || [])) {
+    out.push({ node: m, depth });
+    if (Array.isArray(m.children) && m.children.length) flattenMissions(m.children, depth + 1, out);
+  }
+  return out;
+}
 function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, expanded, onToggle, onPickProject, onPickMission }) {
-  const hasMissions = missions && missions.length > 0;
+  const flat = flattenMissions(missions);
+  const hasMissions = flat.length > 0;
   const [showAll, setShowAll] = useState(false);
   const slugOf = (m) => (String(m.slug || '').includes(':') ? m.slug : `${row.slug}:${m.slug}`);
-  const selectedIdx = missions.findIndex((m) => slugOf(m) === selectedMissionSlug);
+  const selectedIdx = flat.findIndex(({ node }) => slugOf(node) === selectedMissionSlug);
   // Always show the full list if asked, or if the selected mission sits past the cap (so it stays visible).
   const showEvery = showAll || selectedIdx >= MISSION_CAP;
-  const shownMissions = showEvery ? missions : missions.slice(0, MISSION_CAP);
-  const hiddenCount = missions.length - shownMissions.length;
+  const shownMissions = showEvery ? flat : flat.slice(0, MISSION_CAP);
+  const hiddenCount = flat.length - shownMissions.length;
   return (
     <div>
       <div className="room" onClick={onPickProject} style={{ cursor: 'pointer', background: selectedProject ? 'var(--accent-weak)' : undefined }}>
@@ -245,15 +257,15 @@ function ProjectGroup({ row, selectedProject, selectedMissionSlug, missions, exp
         </button>
         <svg className={`folder is-${row.tint || 'violet'}`} width="17" height="17" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg>
         <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: selectedProject ? 600 : 500 }}>{row.name}</span>
-        {hasMissions ? <span style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{missions.length}</span> : null}
+        {hasMissions ? <span style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{flat.length}</span> : null}
       </div>
       {expanded ? (
         <div style={{ margin: '2px 0 6px 16px', borderLeft: '1px solid var(--divider)', paddingLeft: 6 }}>
-          {hasMissions ? shownMissions.map((m) => {
+          {hasMissions ? shownMissions.map(({ node: m, depth }) => {
             const missionSlug = slugOf(m);
             const on = selectedMissionSlug === missionSlug;
             return (
-              <div key={m.slug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7 }}>
+              <div key={missionSlug} className="room" onClick={() => onPickMission(m)} style={{ cursor: 'pointer', background: on ? 'var(--accent-weak)' : undefined, paddingTop: 7, paddingBottom: 7, paddingLeft: depth * 14 }}>
                 <span className={`sdot is-${missionDot(m.status)}`} style={{ flex: 'none' }} />
                 <span className="rn" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: on ? 600 : 500, color: on ? 'var(--fg)' : 'var(--muted)' }}>{missionLabelClean(m.name || m.slug)}</span>
               </div>

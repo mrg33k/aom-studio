@@ -407,9 +407,6 @@ export function DesktopHomeView({
           <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8, height: 38, marginBottom: 14, padding: '0 12px', borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--hair)' }}>
             {sw('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 'var(--muted)', 16)}<span style={{ flex: 1, fontSize: 13, color: 'var(--faint)' }}>cmd+K to search</span>
           </div>
-          <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 14, marginBottom: 13, padding: '0 2px', fontSize: 11, color: 'var(--faint)' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="kbd">up</span><span className="kbd">dn</span> move</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="kbd">right</span> open</span><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span className="kbd">K</span> jump</span>
-          </div>
           <div className="scrollcap" style={{ flex: 1 }}>
             <div className="subhdr">Agents · {agentTotal}</div>
             <div style={{ marginBottom: 16 }}>
