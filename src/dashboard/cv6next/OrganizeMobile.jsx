@@ -162,7 +162,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
     openTreeNode: (id) => enterProject(id),
     openCrumb: (id) => (id === 'root' ? backToPicker() : enterProject(id)),
     openFile: (id) => tapFile(id),
-    setFilter: (id) => setFilter(id || 'all'),
+    setFilter: (id) => setFilter(id || 'recent'),
     openInReview: () => {
       const rf = data.viewFile?.reviewFile;
       onNav?.('review', rf ? { files: [rf], project: data.viewFile.projectSlug || '' } : null);

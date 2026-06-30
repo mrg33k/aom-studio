@@ -11,6 +11,7 @@ import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { GoalThreadBody, SendCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
 import { useDictation } from './data/useDictation.js';
+import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -79,7 +80,9 @@ function Message({ m, onSend }) {
           <span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{m.time}</span>
         </div>
         <div ref={ref} className={`longmsg${clamped && !open ? ' is-clamped' : ''}`} style={open ? { maxHeight: 'none' } : undefined}>
-          <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.text}</div>
+          {m.isUser
+            ? <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{m.text}</div>
+            : <div style={{ fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', wordBreak: 'break-word' }}><ChatMessageRenderer content={m.text} /></div>}
         </div>
         {clamped && (
           <button className="longmsg-more" onClick={() => setOpen((v) => !v)}>{open ? 'Show less' : 'Show more'}</button>

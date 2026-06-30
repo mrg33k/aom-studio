@@ -59,7 +59,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     openCrumb: (id) => (id === 'root' ? switchProject(null) : switchProject(id)),
     openFileMenu: () => {},
     openJob: () => {},
-    setFilter: (id) => setFilter(id || 'all'),
+    setFilter: (id) => setFilter(id || 'recent'),
     toggleSelect: () => {},
     toggleSelectMode: () => {},
     openInReview: () => {

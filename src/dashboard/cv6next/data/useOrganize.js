@@ -35,10 +35,12 @@ function formatSize(bytes) {
 
 function fileKind(name) {
   const ext = (name || '').toLowerCase().split('.').pop();
-  if (['md', 'txt', 'json', 'js', 'jsx', 'py'].includes(ext)) return 'doc';
-  if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp'].includes(ext)) return 'image';
-  if (['csv', 'xlsx', 'xls'].includes(ext)) return 'sheet';
+  if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'heic', 'bmp'].includes(ext)) return 'image';
+  if (['mp4', 'mov', 'webm', 'm4v', 'mkv', 'avi'].includes(ext)) return 'video';
   if (ext === 'pdf') return 'pdf';
+  if (['url', 'webloc'].includes(ext)) return 'link';
+  if (['csv', 'xlsx', 'xls'].includes(ext)) return 'sheet';
+  if (['md', 'txt', 'json', 'js', 'jsx', 'py'].includes(ext)) return 'doc';
   return 'doc';
 }
 
@@ -176,7 +178,7 @@ export function useOrganize(worldId = 'aom') {
   const [files, setFiles] = useState(null);        // metadata rows (no content)
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [selectedId, setSelectedId] = useState(null); // which project's files show
-  const [filter, setFilter] = useState('all');     // all | docs | images
+  const [filter, setFilter] = useState('recent');  // recent | links | docs | pdfs | images | video
   const [openedId, setOpenedId] = useState(null);  // which file is open (preview/reader)
   const [contentCache, setContentCache] = useState({}); // id -> { title, bodyHtml, editor, editorInitials }
   const [missionTree, setMissionTree] = useState({}); // projectSlug -> tree nodes array (nested)
@@ -339,7 +341,20 @@ export function useOrganize(worldId = 'aom') {
 
   // Files in the current project (flat for Phase 1 — folders arrive in Phase 2),
   // newest first, narrowed by the active filter.
-  const fileMatchesFilter = (kind) => filter === 'all' ? true : (filter === 'images' ? kind === 'image' : kind !== 'image');
+  // Filters (Patrik 2026-06-30): Recent (all, newest-first) · Links · Docs · Pdfs ·
+  // Images · Video. "docs" is the catch-all for anything that isn't one of the typed
+  // kinds, so no file is unreachable (sheets/unknowns land here too).
+  const fileMatchesFilter = (kind) => {
+    switch (filter) {
+      case 'links':  return kind === 'link';
+      case 'pdfs':   return kind === 'pdf';
+      case 'images': return kind === 'image';
+      case 'video':  return kind === 'video';
+      case 'docs':   return !['image', 'video', 'pdf', 'link'].includes(kind);
+      case 'recent':
+      default:       return true;
+    }
+  };
   const allFiles = (groups.get(openProject.id) || [])
     .slice()
     .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))
@@ -356,8 +371,12 @@ export function useOrganize(worldId = 'aom') {
       };
     });
 
-  const imageCount = allFiles.filter((f) => f.kind === 'image').length;
-  const docCount = allFiles.length - imageCount;
+  const countKind = (k) => allFiles.filter((f) => f.kind === k).length;
+  const imageCount = countKind('image');
+  const videoCount = countKind('video');
+  const pdfCount = countKind('pdf');
+  const linkCount = countKind('link');
+  const docCount = allFiles.filter((f) => !['image', 'video', 'pdf', 'link'].includes(f.kind)).length;
   const fileList = allFiles.filter((f) => fileMatchesFilter(f.kind));
 
   // The open file: the explicitly-opened one if it's in this project's list, else the first.
@@ -382,9 +401,12 @@ export function useOrganize(worldId = 'aom') {
     projects: projectList,
     breadcrumb: [{ id: 'root', name: 'Corner' }, openProject].filter((x) => x.id),
     filters: [
-      { id: 'all', label: `All ${allFiles.length}`, active: filter === 'all' ? 'on' : 'off' },
-      { id: 'docs', label: `Docs ${docCount}`, active: filter === 'docs' ? 'on' : 'off' },
-      { id: 'images', label: `Images ${imageCount}`, active: filter === 'images' ? 'on' : 'off' },
+      { id: 'recent', label: `Recent ${allFiles.length}`, active: filter === 'recent' ? 'on' : 'off' },
+      { id: 'links',  label: `Links ${linkCount}`,        active: filter === 'links'  ? 'on' : 'off' },
+      { id: 'docs',   label: `Docs ${docCount}`,          active: filter === 'docs'   ? 'on' : 'off' },
+      { id: 'pdfs',   label: `Pdfs ${pdfCount}`,          active: filter === 'pdfs'   ? 'on' : 'off' },
+      { id: 'images', label: `Images ${imageCount}`,      active: filter === 'images' ? 'on' : 'off' },
+      { id: 'video',  label: `Video ${videoCount}`,       active: filter === 'video'  ? 'on' : 'off' },
     ],
     preview: previewObj,
     openedId: openInList?.id || null,
@@ -442,7 +464,7 @@ export function useOrganize(worldId = 'aom') {
   else if (status === 'error') state = 'error';
   else if (!projectList.length) state = 'empty';
 
-  const selectProject = useCallback((id) => { setSelectedId(id); setFilter('all'); setOpenedId(null); }, []);
+  const selectProject = useCallback((id) => { setSelectedId(id); setFilter('recent'); setOpenedId(null); }, []);
 
   return { state, data, reload: load, selectProject, setFilter, openFile, activeProjectId };
 }
