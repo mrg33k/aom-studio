@@ -29,6 +29,20 @@ import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/da
 
 const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 
+// Canonical room identity (corner:one-write-path R2). ONE rule, mirrored by
+// scripts/backfill-room-id.py in AOM-EA — change them together:
+//   shared rooms:   client_id itself ('shared:<slug>')
+//   mission rooms:  <client_id>:mission:<canonical mission_slug>
+//   project rooms:  <client_id>:project:<project>
+//   agent 1:1:      <client_id>:agent:<agent>
+export function deriveRoomId({ clientId, agent, project, missionSlug }) {
+  if (!clientId) return null
+  if (String(clientId).startsWith('shared:')) return String(clientId)
+  if (missionSlug) return `${clientId}:mission:${missionSlug}`
+  if (project) return `${clientId}:project:${project}`
+  return `${clientId}:agent:${agent || 'elon'}`
+}
+
 export async function writeMessageRow({
   supabaseUrl,
   headers,
@@ -93,6 +107,12 @@ export async function writeMessageRow({
     text: messageText,
     source,
     client_id: clientId,
+    room_id: deriveRoomId({
+      clientId,
+      agent,
+      project: resolvedProject,
+      missionSlug: canonicalMission || (mergedMeta && mergedMeta.mission_slug) || null,
+    }),
     ...(resolvedProject ? { project: resolvedProject } : {}),
     ...(senderRole ? { sender_role: senderRole } : {}),
     ...(worldId ? { world_id: worldId } : {}),
