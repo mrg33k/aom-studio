@@ -460,6 +460,20 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
     const a = agents[0];
     return a ? { id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel } : null;
   }, [cleared, picked, agents]);
+  // Pin the default room (the first agent) into state the moment it's known, so a room-list
+  // refetch can never recompute or momentarily drop `selected`. The list refetches very often —
+  // realtime agent-status heartbeats fire one every ~2.5s while any agent is working, and the
+  // pipe briefly empties agents on a world change — and without this, the default thread's
+  // `selected` was rebuilt from `agents[0]` on every refetch. Any reorder or transient empty
+  // unmounted + remounted the conversation pane, which flashed the screen (the "blink") and
+  // reset the scroll to the top while you were reading. Once pinned, selected===picked is a
+  // stable reference immune to that churn. Guarded by `cleared` so ArrowLeft-to-directory sticks.
+  useEffect(() => {
+    if (picked || cleared) return undefined;
+    const a = agents[0];
+    if (a) setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel });
+    return undefined;
+  }, [picked, cleared, agents]);
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'ArrowLeft') return;
