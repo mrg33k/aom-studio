@@ -1,0 +1,131 @@
+// api/_lib/write-message.js — THE single write path for chat message rows.
+// corner:one-write-path R1 (2026-07-01).
+//
+// Every endpoint that persists a message row calls writeMessageRow. Routing
+// policy lives HERE and nowhere else:
+//
+//   1. Project resolution: explicit `project` field > project derived from
+//      the room the sender is standing in (`roomProject`) > an explicit
+//      [project:slug] tag in the text. NEVER fuzzy text matching — that
+//      class filed messages/files into wrong rooms (R-CROSSPOST-SCOPE,
+//      2026-07-01; Karen's invoice, shared:aom debris).
+//   2. Mission canonicalization: `mission` and `metadata.mission_slug` are
+//      normalized to the canonical "<project>:<slug>" form on EVERY path.
+//      The bare-slug drift split mission rooms into two threads (the
+//      split-session amnesia bug, bridge R16) — supabase-messages never
+//      canonicalized before R1; now both doors do.
+//   3. Crosspost: attempted whenever a project resolved; the collaborator
+//      gate inside crosspost.js decides (only projects with a real
+//      project_access collaborator have shared threads). Idempotent by
+//      deterministic row id, so racing reconcile-shared-rooms is safe.
+//
+// Tenant AUTH stays in the endpoints — they verify the caller and pass a
+// trusted clientId in. This module never reads the request.
+
+import crypto from 'crypto'
+import { detectProjectTag, crossPostToProjectThread } from './crosspost.js'
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
+import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
+
+const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
+
+export async function writeMessageRow({
+  supabaseUrl,
+  headers,
+  // content
+  text,
+  role = 'user',
+  source = 'corner-dashboard',
+  agent = 'elon',
+  clientId,          // VERIFIED tenant (or shared:<slug>) — endpoints own auth
+  id,                // optional stable id (bridge dispatch reuses it)
+  // routing inputs, in priority order
+  project,           // explicit project field
+  roomProject,       // project implied by the room the sender is in
+  mission,           // mission slug (canonicalized here)
+  // passthrough row fields
+  metadata,
+  userId,
+  userName,
+  senderRole,
+  worldId,
+  attachmentUrl,
+  fileMimeType,
+  fileSize,
+  replyTo,
+}) {
+  const messageText = (text || '').trim()
+  if (!messageText && !attachmentUrl) {
+    return { ok: false, status: 400, error: 'text or attachment required', row: null }
+  }
+  if (!clientId) {
+    return { ok: false, status: 400, error: 'clientId required', row: null }
+  }
+
+  // --- 1. Project resolution (explicit > room > tag; never fuzzy) ---
+  const resolvedProject =
+    (project && String(project).trim()) ||
+    (roomProject && String(roomProject).trim()) ||
+    detectProjectTag(messageText) ||
+    null
+
+  // --- 2. Mission canonicalization (both `mission` and metadata.mission_slug) ---
+  const incomingMeta = (metadata && typeof metadata === 'object') ? metadata : null
+  const rawMission =
+    (mission && String(mission).trim()) ||
+    (incomingMeta && incomingMeta.mission_slug && String(incomingMeta.mission_slug).trim()) ||
+    null
+  const canonicalMission = rawMission
+    ? canonicalizeMissionSlug(rawMission, MISSION_SLUG_LOOKUP)
+    : null
+  const mergedMeta = (canonicalMission || incomingMeta)
+    ? {
+        ...(incomingMeta || {}),
+        ...(canonicalMission ? { mission_slug: canonicalMission } : {}),
+      }
+    : null
+
+  // --- 3. Build + insert the row ---
+  const payload = {
+    id: id || crypto.randomUUID(),
+    agent,
+    role,
+    text: messageText,
+    source,
+    client_id: clientId,
+    ...(resolvedProject ? { project: resolvedProject } : {}),
+    ...(senderRole ? { sender_role: senderRole } : {}),
+    ...(worldId ? { world_id: worldId } : {}),
+    ...(userId ? { user_id: userId } : {}),
+    ...(userName ? { user_name: userName } : {}),
+    ...(attachmentUrl ? { attachment_url: attachmentUrl } : {}),
+    ...(fileMimeType ? { file_mime_type: fileMimeType } : {}),
+    ...(fileSize != null ? { file_size: fileSize } : {}),
+    ...(replyTo ? { reply_to: replyTo } : {}),
+    ...(mergedMeta ? { metadata: mergedMeta } : {}),
+  }
+
+  const sbRes = await fetch(`${supabaseUrl}/rest/v1/messages`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  })
+  if (!sbRes.ok) {
+    const err = await sbRes.text().catch(() => '')
+    return { ok: false, status: sbRes.status, error: err, row: payload }
+  }
+  const inserted = await sbRes.json().catch(() => null)
+  const insertedRow = (Array.isArray(inserted) ? inserted[0] : inserted) || payload
+
+  // --- 4. Crosspost (collaborator-gated inside crosspost.js; idempotent) ---
+  if (resolvedProject) {
+    await crossPostToProjectThread({
+      supabaseUrl,
+      headers,
+      sourceMessage: insertedRow,
+      project: resolvedProject,
+    })
+  }
+
+  return { ok: true, status: 200, row: insertedRow, error: null }
+}

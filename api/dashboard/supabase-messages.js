@@ -7,8 +7,7 @@
 // Multi-tenant: all reads + writes are scoped by client_id.
 // Default client_id = 'aom'. Pass ?client= on GET or client_id in POST body.
 
-import crypto from 'crypto'
-import { detectProjectTag, crossPostToProjectThread } from '../_lib/crosspost.js'
+import { writeMessageRow } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
 
 // Shared project rooms (`shared:<slug>`) are cross-tenant by design — a thread
@@ -174,75 +173,33 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- Project detection ---
-    // Priority: explicit project field > [project:slug] tag in text. Fuzzy
-    // slug/name matching against message text is GONE (corner:chat
-    // R-CROSSPOST-SCOPE, 2026-07-01): any message or file upload whose text
-    // happened to mention a project name ("AOM", "ambition", ...) was tagged
-    // into that project, vanished from the thread it was sent in (agent-thread
-    // queries exclude project-tagged rows), and surfaced in the wrong room +
-    // a phantom shared:<slug> twin. Receipts: Karen's 2026-05-25 invoice PDF;
-    // junk shared:aom / shared:aom-ea / shared:AOM-EA / shared:aom-studio
-    // threads. Route deliberately or not at all.
-    let resolvedProject = (project && project.trim()) ? project.trim() : null
-    if (!resolvedProject) {
-      resolvedProject = detectProjectTag(text)
-    }
-
-    const payload = {
-      id: crypto.randomUUID(),
-      agent,
-      role,
-      text: text.trim(),
-      source,
-      client_id: resolvedClientId,  // always include -- multi-tenant isolation
-      ...(resolvedProject ? { project: resolvedProject } : {}),
-      // Admin context: sender_role ('admin') + world_id when super-admin is in a client world.
-      // These fields are optional -- only present when admin is overriding world context.
-      ...(sender_role ? { sender_role } : {}),
-      ...(world_id ? { world_id } : {}),
-      // User identity (multi-user support)
-      ...(user_id ? { user_id } : {}),
-      ...(user_name ? { user_name } : {}),
-      // File attachment fields (optional)
-      ...(attachment_url ? { attachment_url } : {}),
-      ...(file_mime_type ? { file_mime_type } : {}),
-      ...(file_size != null ? { file_size } : {}),
-      // Threading (Follow-up right-click menu)
-      ...(reply_to ? { reply_to } : {}),
-      // Extensible metadata. Canonical keys: task_id (task-room scope; corner:task-rooms R2+),
-      // needs_verification, parent_task_id (legacy chain pointer), crosspost source, etc.
-      ...(metadata && typeof metadata === 'object' ? { metadata } : {}),
-    }
-
-    const url = `${SUPABASE_URL}/rest/v1/messages`
-    const sbRes = await fetch(url, {
-      method: 'POST',
+    // Single write path (corner:one-write-path R1): project resolution
+    // (explicit field > [project:slug] tag, NEVER fuzzy — R-CROSSPOST-SCOPE),
+    // mission_slug canonicalization, and the collaborator-gated crosspost all
+    // live in api/_lib/write-message.js. This endpoint only owns auth above.
+    const result = await writeMessageRow({
+      supabaseUrl: SUPABASE_URL,
       headers: supabaseHeaders(),
-      body: JSON.stringify(payload),
+      text,
+      role,
+      source,
+      agent,
+      clientId: resolvedClientId,  // verified above -- multi-tenant isolation
+      project,
+      metadata,
+      userId: user_id,
+      userName: user_name,
+      senderRole: sender_role,
+      worldId: world_id,
+      attachmentUrl: attachment_url,
+      fileMimeType: file_mime_type,
+      fileSize: file_size,
+      replyTo: reply_to,
     })
-
-    if (!sbRes.ok) {
-      const err = await sbRes.text()
-      return res.status(sbRes.status).json({ error: err })
+    if (!result.ok) {
+      return res.status(result.status || 500).json({ error: result.error || 'write failed' })
     }
-
-    const inserted = await sbRes.json()
-    const insertedRow = (Array.isArray(inserted) ? inserted[0] : inserted) || payload
-
-    // --- Cross-post to shared project thread ---
-    // Single source-of-truth writer. Idempotent by (source_message_id, project)
-    // so retries/reruns don't double-insert. See api/_lib/crosspost.js.
-    if (resolvedProject) {
-      await crossPostToProjectThread({
-        supabaseUrl: SUPABASE_URL,
-        headers: supabaseHeaders(),
-        sourceMessage: insertedRow,
-        project: resolvedProject,
-      })
-    }
-
-    return res.status(200).json({ ok: true, message: insertedRow })
+    return res.status(200).json({ ok: true, message: result.row })
   }
 
   // ---- DELETE: clear all messages for a client_id (world switch fresh-start) ------

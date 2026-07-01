@@ -10,7 +10,7 @@
 //   BRIDGE_ENABLED     -- Kill switch (default: true)
 
 import crypto from 'crypto'
-import { detectProjectTag, crossPostToProjectThread } from '../_lib/crosspost.js'
+import { writeMessageRow } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
@@ -40,87 +40,34 @@ function supabaseHeaders() {
 }
 
 async function writeFallbackToSupabase(body) {
-  // Fallback: persist message directly to Supabase (existing relay path handles response)
-  const messageText = (body.message || '').trim()
-
-  // Project tag detection runs here too so a user's `[project:slug]` mention
-  // gets the `project` field + shared-thread crosspost without round-tripping
-  // through the browser. See api/_lib/crosspost.js.
-  // shouldCrossPost tracks whether a crosspost to shared:<project> is warranted.
-  // Only true when the user explicitly tags [project:slug] in a 1:1 agent chat.
-  // Project-room sends already have a dedicated client_id thread — crossposting
-  // them creates the duplicate row that was appearing in Supabase.
-  let shouldCrossPost = false
-  let resolvedProject = (body.project && body.project.trim()) ? body.project.trim() : null
-  if (!resolvedProject) {
-    // Gate fuzzy project detection on project-scoped rooms. For agent 1:1 rooms
-    // (room = agent slug), only honour explicit [project:slug] tags — fuzzy name
-    // matching against message text causes messages that mention a project name to
-    // be silently tagged and then dropped from the agent thread on reload (the
-    // agent-thread query excludes rows with a non-empty project field).
-    const room = (body.room || '').trim()
-    if (room.startsWith('project:')) {
-      // The room name IS the project. Never fuzzy-match message text here —
-      // a message in project:ambition that mentions "corner" was getting
-      // tagged project=corner and filed into the wrong room's thread
-      // (corner:chat R-CROSSPOST-SCOPE, 2026-07-01).
-      resolvedProject = room.slice('project:'.length).trim() || null
-      // Already in a project room — no crosspost needed, the room IS the thread.
-    } else {
-      resolvedProject = detectProjectTag(messageText)
-      // Explicit [project:slug] tag in a 1:1 chat — crosspost to shared thread.
-      if (resolvedProject) shouldCrossPost = true
-    }
-  }
-
-  // R3 corner:mission-rooms — when the dashboard chat-send carries
-  // `mission` (because the user entered the room via a mission click),
-  // merge it into the row's metadata as `mission_slug`. bridge.py R1 reads
-  // `metadata.mission_slug` to load the mission's CONTEXT/VISION/BUILD as
-  // SDK system-prompt context. Existing `body.metadata` keys (reply_to,
-  // etc.) survive the merge.
-  // Normalize mission_slug to canonical "<project>:<mission>" form. Legacy
-  // send paths sometimes pass the bare slug, which splits the room view.
-  // canonicalize-mission-slug.js documents the drift.
-  const rawMissionFromBody = (body.mission && String(body.mission).trim()) || null
-  const missionSlugFromBody = canonicalizeMissionSlug(rawMissionFromBody, MISSION_SLUG_LOOKUP)
-  const incomingMeta = (body.metadata && typeof body.metadata === 'object') ? body.metadata : null
-  const mergedMeta = (missionSlugFromBody || incomingMeta)
-    ? { ...(incomingMeta || {}), ...(missionSlugFromBody ? { mission_slug: missionSlugFromBody } : {}) }
+  // Thin wrapper over the single write path (corner:one-write-path R1).
+  // Routing policy — project resolution (explicit > room > tag, never fuzzy),
+  // mission canonicalization, collaborator-gated crosspost — lives in
+  // api/_lib/write-message.js. This wrapper only marshals the chat-send body:
+  // the ONE thing it knows that the module can't is the room the sender is
+  // standing in (`project:<slug>` room → that slug IS the project).
+  const room = (body.room || '').trim()
+  const roomProject = room.startsWith('project:')
+    ? room.slice('project:'.length).trim() || null
     : null
 
-  const payload = {
-    id: body.id || crypto.randomUUID(),
-    agent: body.agent || 'elon',
-    role: 'user',
-    text: messageText,
-    source: 'corner-dashboard',
-    client_id: body.client_id || 'aom',
-    ...(resolvedProject ? { project: resolvedProject } : {}),
-    ...(body.user_id ? { user_id: body.user_id } : {}),
-    ...(body.user_name ? { user_name: body.user_name } : {}),
-    ...(mergedMeta ? { metadata: mergedMeta } : {}),
-  }
-
-  const url = `${SUPABASE_URL}/rest/v1/messages`
-  const sbRes = await fetch(url, {
-    method: 'POST',
+  const result = await writeMessageRow({
+    supabaseUrl: SUPABASE_URL,
     headers: supabaseHeaders(),
-    body: JSON.stringify(payload),
+    text: body.message,
+    role: 'user',
+    source: 'corner-dashboard',
+    agent: body.agent || 'elon',
+    clientId: body.client_id || 'aom',
+    id: body.id,
+    project: body.project,
+    roomProject,
+    mission: body.mission,
+    metadata: body.metadata,
+    userId: body.user_id,
+    userName: body.user_name,
   })
-  const inserted = sbRes.ok ? await sbRes.json() : null
-  const insertedRow = inserted?.[0] || payload
-
-  if (resolvedProject && shouldCrossPost) {
-    await crossPostToProjectThread({
-      supabaseUrl: SUPABASE_URL,
-      headers: supabaseHeaders(),
-      sourceMessage: insertedRow,
-      project: resolvedProject,
-    })
-  }
-
-  return { ok: sbRes.ok, message: insertedRow }
+  return { ok: result.ok, message: result.row }
 }
 
 // Detect ">>" chain operator and create N linked tasks. Returns null if no chain.
@@ -153,21 +100,19 @@ async function maybeCreateChain(body) {
   // skipped writeFallbackToSupabase. (This was the bug behind the "chain message
   // disappeared" report on 2026-04-16.)
   const userMsgId = body.id || crypto.randomUUID()
-  await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-    method: 'POST',
+  await writeMessageRow({
+    supabaseUrl: SUPABASE_URL,
     headers: supabaseHeaders(),
-    body: JSON.stringify({
-      id: userMsgId,
-      agent,
-      role: 'user',
-      text: message,
-      source: 'corner-dashboard',
-      client_id,
-      ...(project ? { project } : {}),
-      ...(body.user_id ? { user_id: body.user_id } : {}),
-      ...(body.user_name ? { user_name: body.user_name } : {}),
-      metadata: { chain_id, chain_total: total },
-    }),
+    id: userMsgId,
+    agent,
+    role: 'user',
+    text: message,
+    source: 'corner-dashboard',
+    clientId: client_id,
+    project: project || null,
+    userId: body.user_id,
+    userName: body.user_name,
+    metadata: { chain_id, chain_total: total },
   }).catch(() => {})
 
   // tasks table has no user_id / user_name columns (messages does). Stash the
@@ -216,34 +161,32 @@ async function maybeCreateChain(body) {
   const summaryLines = inserted.map(r => `${r.metadata.chain_seq}/${total} ${r.title}`)
   const chainText = `Queued chain of ${total} tasks:\n${summaryLines.join('\n')}`
 
-  const cardRes = await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
-    method: 'POST',
+  const cardRes = await writeMessageRow({
+    supabaseUrl: SUPABASE_URL,
     headers: supabaseHeaders(),
-    body: JSON.stringify({
-      id: chainMsgId,
-      agent,
-      role: 'assistant',
-      text: chainText,
-      source: 'chain-card',
-      client_id,
-      ...(project ? { project } : {}),
-      ...(body.user_id ? { user_id: body.user_id } : {}),
-      metadata: {
-        chain_id,
-        chain_total: total,
-        chain_status: 'queued',
-        chain_tasks: inserted.map(r => ({
-          id: r.id,
-          seq: r.metadata.chain_seq,
-          title: r.title,
-          status: r.status,
-        })),
-      },
-    }),
-  }).catch((e) => ({ ok: false, _err: String(e) }))
+    id: chainMsgId,
+    agent,
+    role: 'assistant',
+    text: chainText,
+    source: 'chain-card',
+    clientId: client_id,
+    project: project || null,
+    userId: body.user_id,
+    metadata: {
+      chain_id,
+      chain_total: total,
+      chain_status: 'queued',
+      chain_tasks: inserted.map(r => ({
+        id: r.id,
+        seq: r.metadata.chain_seq,
+        title: r.title,
+        status: r.status,
+      })),
+    },
+  }).catch((e) => ({ ok: false, error: String(e) }))
 
   if (!cardRes || !cardRes.ok) {
-    const detail = cardRes?._err || (cardRes?.text ? await cardRes.text().catch(() => '') : '')
+    const detail = String(cardRes?.error || '')
     console.error('[chat-bridge] chain-card insert failed', detail.slice(0, 300))
   }
 
