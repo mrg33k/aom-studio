@@ -71,9 +71,40 @@ export async function detectProjectFromText({ text, supabaseUrl, headers }) {
   return null
 }
 
+// True when <project> is a real shared room: an active projects row with at
+// least one project_access collaborator from a world other than the owner's.
+// This is the SAME room set reconcile-shared-rooms.py serves, so a missed
+// write-time crosspost self-heals within minutes. Fail-closed: on any lookup
+// error, report no collaborators — a skipped crosspost is recoverable
+// (reconcile), a junk shared:<slug> thread is forever.
+async function projectHasCollaborators({ supabaseUrl, headers, project }) {
+  try {
+    const pr = await fetch(
+      `${supabaseUrl}/rest/v1/projects?slug=eq.${encodeURIComponent(project)}&select=id,client_id&limit=1`,
+      { headers }
+    )
+    if (!pr.ok) return false
+    const [row] = await pr.json()
+    if (!row?.id) return false
+    const ar = await fetch(
+      `${supabaseUrl}/rest/v1/project_access?project_id=eq.${encodeURIComponent(row.id)}&select=client_id&limit=10`,
+      { headers }
+    )
+    if (!ar.ok) return false
+    const access = await ar.json()
+    return access.some(a => a.client_id && a.client_id !== row.client_id)
+  } catch (_) {
+    return false
+  }
+}
+
 // Insert one cross-post row for sourceMessage into shared:<project>.
-// No-op when source is already a crosspost or source client_id is already the
-// shared thread. Safe to call on retries — duplicate inserts collide on PK.
+// No-op when source is already a crosspost, source client_id is already the
+// shared thread, or the project has no collaborators (corner:chat
+// R-CROSSPOST-SCOPE, 2026-07-01: unconditional crossposting spawned phantom
+// shared threads for missions and fuzzy-tagged slugs — user messages piled up
+// there with no replies and read as agents going silent). Safe to call on
+// retries — duplicate inserts collide on PK.
 export async function crossPostToProjectThread({
   supabaseUrl,
   headers,
@@ -85,6 +116,7 @@ export async function crossPostToProjectThread({
   const targetClientId = `shared:${project}`
   if (sourceMessage.client_id === targetClientId) return
   if (!sourceMessage.id) return // need source id for idempotent row id
+  if (!(await projectHasCollaborators({ supabaseUrl, headers, project }))) return
 
   const payload = {
     id: crosspostRowId(sourceMessage.id, project),

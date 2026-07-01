@@ -10,7 +10,7 @@
 //   BRIDGE_ENABLED     -- Kill switch (default: true)
 
 import crypto from 'crypto'
-import { detectProjectFromText, detectProjectTag, crossPostToProjectThread } from '../_lib/crosspost.js'
+import { detectProjectTag, crossPostToProjectThread } from '../_lib/crosspost.js'
 import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
 import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
@@ -60,11 +60,11 @@ async function writeFallbackToSupabase(body) {
     // agent-thread query excludes rows with a non-empty project field).
     const room = (body.room || '').trim()
     if (room.startsWith('project:')) {
-      resolvedProject = await detectProjectFromText({
-        text: messageText,
-        supabaseUrl: SUPABASE_URL,
-        headers: supabaseHeaders(),
-      })
+      // The room name IS the project. Never fuzzy-match message text here —
+      // a message in project:ambition that mentions "corner" was getting
+      // tagged project=corner and filed into the wrong room's thread
+      // (corner:chat R-CROSSPOST-SCOPE, 2026-07-01).
+      resolvedProject = room.slice('project:'.length).trim() || null
       // Already in a project room — no crosspost needed, the room IS the thread.
     } else {
       resolvedProject = detectProjectTag(messageText)

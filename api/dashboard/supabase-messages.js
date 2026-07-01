@@ -8,7 +8,7 @@
 // Default client_id = 'aom'. Pass ?client= on GET or client_id in POST body.
 
 import crypto from 'crypto'
-import { detectProjectFromText, crossPostToProjectThread } from '../_lib/crosspost.js'
+import { detectProjectTag, crossPostToProjectThread } from '../_lib/crosspost.js'
 import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
 
 // Shared project rooms (`shared:<slug>`) are cross-tenant by design — a thread
@@ -174,16 +174,19 @@ export default async function handler(req, res) {
       }
     }
 
-    // --- Project auto-detection ---
-    // Priority: explicit project field > [project:slug] tag in text > slug/name
-    // lookup. Shared with chat-bridge via api/_lib/crosspost.js.
+    // --- Project detection ---
+    // Priority: explicit project field > [project:slug] tag in text. Fuzzy
+    // slug/name matching against message text is GONE (corner:chat
+    // R-CROSSPOST-SCOPE, 2026-07-01): any message or file upload whose text
+    // happened to mention a project name ("AOM", "ambition", ...) was tagged
+    // into that project, vanished from the thread it was sent in (agent-thread
+    // queries exclude project-tagged rows), and surfaced in the wrong room +
+    // a phantom shared:<slug> twin. Receipts: Karen's 2026-05-25 invoice PDF;
+    // junk shared:aom / shared:aom-ea / shared:AOM-EA / shared:aom-studio
+    // threads. Route deliberately or not at all.
     let resolvedProject = (project && project.trim()) ? project.trim() : null
     if (!resolvedProject) {
-      resolvedProject = await detectProjectFromText({
-        text,
-        supabaseUrl: SUPABASE_URL,
-        headers: supabaseHeaders(),
-      })
+      resolvedProject = detectProjectTag(text)
     }
 
     const payload = {
