@@ -104,7 +104,14 @@ export default async function handler(req, res) {
     // the project conversation and drops anything that belongs to a mission room.
     const projectOnlyFilter = (req.query.project && (req.query.project_only === '1' || req.query.project_only === 'true'))
       ? `&metadata->>mission_slug=is.null` : ''
-    const missionFilter = req.query.mission_slug ? `&metadata->>mission_slug=eq.${encodeURIComponent(req.query.mission_slug)}` : ''
+    // Mission rooms match by room_id OR legacy metadata (corner:one-write-path
+    // R3, 2026-07-01). room_id is canonical for EVERY row (trigger + backfill),
+    // so the room_id arm unifies threads whose metadata.mission_slug drifted
+    // bare vs composite (the split-room class). The metadata arm stays as
+    // belt-and-suspenders; OR is a strict superset of the old filter.
+    const missionFilter = req.query.mission_slug
+      ? `&or=(room_id.eq.${encodeURIComponent(`${clientId}:mission:${req.query.mission_slug}`)},metadata->>mission_slug.eq.${encodeURIComponent(req.query.mission_slug)})`
+      : ''
     const beforeFilter = req.query.before ? `&timestamp=lt.${encodeURIComponent(req.query.before)}` : ''
     const searchLimit = searchQuery ? 500 : limit  // search returns more results
     const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${projectOnlyFilter}${missionFilter}${beforeFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
