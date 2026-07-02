@@ -177,6 +177,8 @@ export function reviewItemsFromFiles(files, project = '') {
     .filter(Boolean);
 }
 
+const PAGE_SIZE = 40; // rows per page; "Load older items" grows the window by this much
+
 export function useReview(worldId = 'aom', injected = null) {
   const hasInjected = Array.isArray(injected) && injected.length > 0;
   const [queue, setQueue] = useState(null);
@@ -184,13 +186,18 @@ export function useReview(worldId = 'aom', injected = null) {
   const [filter, setFilter] = useState('ready'); // ready | pipeline
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [bodies, setBodies] = useState({}); // path -> rendered innerHTML ('' while loading)
+  // Review R2: how many items we currently show. "Load older items" grows this; the 30s
+  // poll refetches the same count (offset 0) so a refresh never drops loaded pages.
+  const [shown, setShown] = useState(PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(false);
 
   const load = useCallback(async () => {
     let ok = false;
     try {
-      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}`);
+      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${shown}&offset=0`);
       if (r?.ok) {
         const d = await r.json();
+        setHasMore(!!d.hasMore);
         const items = (d.items || []).map((it) => {
           // review-queue.js returns: { name, path, project, mission, kind, type:{key,label,color}, last_modified }
           // type is an OBJECT, not a string — extract the key for template matching
@@ -230,7 +237,10 @@ export function useReview(worldId = 'aom', injected = null) {
       console.error('[Review load]', e);
     }
     setStatus((prev) => (ok ? 'loaded' : (queue ? prev : 'error')));
-  }, [worldId, queue, openDelId]);
+  }, [worldId, queue, openDelId, shown]);
+
+  // "Load older items" — grow the window by one page; the load effect refetches.
+  const loadMore = useCallback(() => setShown((n) => n + PAGE_SIZE), []);
 
   useEffect(() => {
     // Injected files (from a chat "Review all") ARE the queue — show exactly those,
@@ -327,6 +337,9 @@ export function useReview(worldId = 'aom', injected = null) {
       isReady: filter === 'ready' ? 'on' : 'off',
       isPipeline: filter === 'pipeline' ? 'on' : 'off',
       items: (queue?.items || []).filter((i) => filter === 'ready' ? i.status === 'ready' : i.status === 'live'),
+      // 'yes' / 'no' so the template's data-switch shows the "Load older items" button only
+      // when older items exist (and not while the injected-files queue or a filter hides it).
+      hasMore: (!hasInjected && filter === 'ready' && hasMore) ? 'yes' : 'no',
     },
     deliverable: (() => {
       const open = (queue?.items || []).find((i) => i.id === openDelId);
@@ -362,6 +375,7 @@ export function useReview(worldId = 'aom', injected = null) {
     actions: {
       setQueueFilter: (f) => { setFilter(f); setOpenDelId(null); },
       openDeliverable: (id) => setOpenDelId(id),
+      loadMore,
       approve,
       requestChanges,
       sendChecklist,

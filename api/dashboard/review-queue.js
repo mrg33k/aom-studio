@@ -1,15 +1,18 @@
-// GET /api/dashboard/review-queue?world=<world-id>
+// GET /api/dashboard/review-queue?world=<world-id>[&limit=40&offset=0]
 //
-// Aggregates deliverables from the world's rooms into a review queue: the 40
-// most recent real deliverable files (newest first) updated within the last
-// 3 days. Excludes canon (VISION/CONTEXT/BUILD/RESEARCH) and the tape.
+// Aggregates deliverables from the world's rooms into a review queue: the most
+// recent real deliverable files (newest first), with NO age window — older work
+// stays reachable (Review R2). Excludes canon (VISION/CONTEXT/BUILD/RESEARCH) and
+// the tape. The full set is capped at HARD_CAP; the UI pages through it via
+// limit/offset ("Load older items"), default 40 per page.
 //
 // IMPORTANT: Vercel functions have NO disk access to the AOM-EA checkout, so the
 // canonical source is the RAG tunnel's /project-files-walk (same pattern as
 // project-files.js). We list the world's projects from Supabase, walk each via
 // the tunnel, and aggregate. Local fs is only a dev fallback.
 //
-// Response: { items: [ { name, path, project, mission, kind, type:{key,label,color}, last_modified } ] }
+// Response: { items: [ { name, path, project, mission, kind, type:{key,label,color}, last_modified } ],
+//             total, offset, hasMore, source }
 
 import fs from 'fs';
 import path from 'path';
@@ -24,8 +27,8 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABAS
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
-const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
-const MAX_ITEMS = 40;
+const DEFAULT_LIMIT = 40;     // one page of the queue (first load = same cost as before)
+const HARD_CAP = 500;         // ceiling on the total set served, regardless of cache depth
 
 // Kinds that are NOT review material (the canon docs + the agent's own tape).
 const EXCLUDE_KINDS = new Set(['canon', 'tape']);
@@ -152,8 +155,8 @@ async function runBounded(inputs, fn, { concurrency = 8, deadlineMs = 20000 } = 
   return results;
 }
 
-// Walk one project through the tunnel; return its review-eligible files (recent).
-async function walkProjectViaTunnel(slug, now) {
+// Walk one project through the tunnel; return its review-eligible files (newest first).
+async function walkProjectViaTunnel(slug) {
   try {
     const url = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`;
     const r = await fetchWithTimeout(url, 7000, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
@@ -166,7 +169,7 @@ async function walkProjectViaTunnel(slug, now) {
         const type = detectType(f.name);
         if (!type) continue;        // skip data/log/system files (.json, .jsonl, .log…)
         const ts = f.last_modified ? new Date(f.last_modified).getTime() : 0;
-        if (!ts || now - ts > THREE_DAYS_MS) continue;
+        if (!ts) continue;          // no timestamp = cannot order it; skip (no age window — R2)
         out.push({
           name: f.name,
           path: f.path,           // kept server-side only; UI shows name + room
@@ -187,7 +190,7 @@ async function walkProjectViaTunnel(slug, now) {
 }
 
 // Local-disk fallback (vercel dev only): reuse a shallow walk.
-function collectViaDisk(world, now) {
+function collectViaDisk(world) {
   const items = [];
   const projectsDir = path.join(AOM_EA_ROOT, 'corner', 'users', world, 'projects');
   if (!fs.existsSync(projectsDir)) return items;
@@ -220,8 +223,7 @@ function collectViaDisk(world, now) {
         if (!fs.existsSync(d)) continue;
         for (const f of walk(d)) {
           const type = detectType(f.name);
-          if (!type) continue;
-          if (now - f.mtime.getTime() > THREE_DAYS_MS) continue;
+          if (!type) continue;       // no age window (R2): newest-first + HARD_CAP bound the set
           items.push({ name: f.name, path: f.path, project: projSlug, mission: missionSlug, kind: 'deliverable', type, last_modified: f.mtime.toISOString() });
         }
       }
@@ -249,29 +251,44 @@ export default async function handler(req, res) {
     throw err;
   }
 
-  const now = Date.now();
+  // Pagination (Review R2): the UI pages through the full set via limit/offset so any
+  // item ever sent is reachable, while the first load stays a single 40-item page.
+  const limit = clampInt(req.query.limit, DEFAULT_LIMIT, 1, HARD_CAP);
+  const offset = clampInt(req.query.offset, 0, 0, HARD_CAP);
+  const page = (all, source) => {
+    const total = Math.min(all.length, HARD_CAP);
+    const items = all.slice(offset, Math.min(offset + limit, HARD_CAP));
+    return res.status(200).json({ items, total, offset, hasMore: offset + items.length < total, source });
+  };
+
   let items = [];
 
   // FAST PATH: serve the pre-built cache (a local cron walks disk and writes it).
   // This is what keeps the Review tool from hanging — the live tunnel walk of every
-  // project (~10s each, 55 of them) can never finish on the request path.
+  // project (~10s each, 55 of them) can never finish on the request path. The cron
+  // already sorts newest-first with no age window, so we page it directly.
   const cached = await readQueueCache(world);
-  if (cached && cached.length) {
-    return res.status(200).json({ items: cached.slice(0, MAX_ITEMS), source: 'cache' });
-  }
+  if (cached && cached.length) return page(cached, 'cache');
 
   // FALLBACK (no cache yet, or a non-aom world): aggregate through the RAG tunnel,
   // but BOUNDED — capped concurrency + per-walk timeout + overall deadline — so it
   // returns promptly (possibly partial) instead of hanging.
   const slugs = await listProjectSlugs(world);
   if (slugs.length) {
-    const perProject = await runBounded(slugs, (s) => walkProjectViaTunnel(s, now), { concurrency: 8, deadlineMs: 20000 });
+    const perProject = await runBounded(slugs, (s) => walkProjectViaTunnel(s), { concurrency: 8, deadlineMs: 20000 });
     items = perProject.flat();
   }
 
   // Local-dev fallback only when the tunnel path yielded nothing.
-  if (!items.length) items = collectViaDisk(world, now);
+  if (!items.length) items = collectViaDisk(world);
 
   items.sort((a, b) => new Date(b.last_modified).getTime() - new Date(a.last_modified).getTime());
-  return res.status(200).json({ items: items.slice(0, MAX_ITEMS), source: 'walk' });
+  return page(items, 'walk');
+}
+
+// Parse a query-string integer, clamped to [min, max], falling back to def.
+function clampInt(v, def, min, max) {
+  const n = parseInt(Array.isArray(v) ? v[0] : v, 10);
+  if (!Number.isFinite(n)) return def;
+  return Math.max(min, Math.min(max, n));
 }

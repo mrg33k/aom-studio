@@ -129,6 +129,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
       setPickedId(id);
       actions.openDeliverable(id);
     },
+    loadMore: () => actions.loadMore(),
     openPin: (id) => {
       // When clicking a pin (in viewer or comments list), scroll/highlight it.
       // For now, a simple log; Patrik can request modal/edit UI later.

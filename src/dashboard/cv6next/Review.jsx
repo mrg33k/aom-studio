@@ -140,6 +140,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
       search: () => { /* stub for now */ },
       setQueueFilter: (f) => actions.setQueueFilter(f),
       openDeliverable: onOpenDeliverable,
+      loadMore: () => actions.loadMore(),
     };
     return (
       <TemplateScreen html={pickListHtml} data={pickData} actions={pickActions} aliases={pickListAliases} state={state} style={{ width: '100%', height: '100%' }} />

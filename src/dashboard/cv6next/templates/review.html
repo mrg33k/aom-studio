@@ -48,10 +48,12 @@
         <button class="rseg" data-action="setQueueFilter" data-arg="pipeline" data-mod="is-:queue.isPipeline">Pipeline <span data-bind="queue.pipelineCount">3</span></button>
       </div>
       <div style="display:flex;align-items:center;gap:9px;height:36px;margin:0 20px 12px;padding:0 12px;border-radius:11px;background:var(--surface-2);border:1px solid var(--hair);color:var(--faint);font-size:13px;" data-action="searchQueue"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search the queue…</span></div>
-      <div style="flex:1;overflow:hidden;padding:0 12px;">
+      <div style="flex:1;overflow-y:auto;padding:0 12px;">
         <div style="padding:0 8px;margin:4px 0 6px;display:flex;align-items:center;justify-content:space-between;"><span class="eyebrow">Ready</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);">newest first</span></div>
         <!-- ONE row per queue item; is-open marks the open deliverable; is-:item.type on the glyph; count badge is-zero when 0 -->
         <div class="qitem is-on" data-each="queue.items" data-action="openDeliverable" data-arg="item.id" data-mod="is-:item.open"><div class="qglyph"><svg class="tglyph is-doc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:item.type"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></div><div style="flex:1;min-width:0;"><div class="qtitle" data-bind="item.title">Launch film · 0:42</div><div class="qmeta"><span data-bind="item.who">Gary</span> · <span data-bind="item.typeLabel">Video</span></div></div><span class="qcount" data-bind="item.count">3</span></div>
+        <!-- "Load older items" — shown only when older items exist beyond the current page (queue.hasMore = yes) -->
+        <div data-switch="queue.hasMore"><button data-case="yes" data-action="loadMore" style="width:100%;margin:6px 0 12px;height:36px;border-radius:11px;background:var(--surface-2);border:1px solid var(--hair);color:var(--muted);font-size:12.5px;cursor:pointer;transition:background var(--dur-move) var(--ease-out),color var(--dur-move) var(--ease-out);">Load older items</button></div>
       </div>
     </div>
     <!-- viewer (switches by deliverable.type · document shown) -->
@@ -140,6 +142,8 @@
   <div data-state="ready" style="flex:1;overflow:hidden;">
     <!-- ONE row per queue item; is-:item.type on .rgly; is-:item.queueState (building → dimmed + spinner) -->
     <div class="rrow" data-each="queue.items" data-action="openDeliverable" data-arg="item.id" data-mod="is-:item.queueState"><div class="rgly is-doc" data-mod="is-:item.type"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></div><div style="flex:1;min-width:0;"><div class="rttl" data-bind="item.title">Support ask · handoff</div><div class="rmeta"><span data-bind="item.typeLabel">Doc</span> · <span data-bind="item.who">Elon</span> · <span data-bind="item.location">Corner → Dashboard</span></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;"><span class="astat is-ready" data-mod="is-:item.status"><span class="sd"></span><span data-bind="item.statusLabel">READY</span></span><span class="mono" style="font-size:10px;color:var(--faint);" data-bind="item.time">11:15</span></div></div>
+    <!-- "Load older items" — shown only when older items exist beyond the current page -->
+    <div data-switch="queue.hasMore"><button data-case="yes" data-action="loadMore" style="width:calc(100% - 32px);margin:8px 16px 16px;height:36px;border-radius:11px;background:var(--surface-2);border:1px solid var(--hair);color:var(--muted);font-size:13px;cursor:pointer;transition:background var(--dur-move) var(--ease-out),color var(--dur-move) var(--ease-out);">Load older items</button></div>
   </div>
 </div>
 
