@@ -66,14 +66,10 @@
         <div class="cstep is-done" style="display:flex;align-items:center;gap:11px;" data-each="goal.checklist" data-mod="is-:step.state"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag">Verified</span></div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;"><span class="eyebrow" style="display:inline-flex;align-items:center;gap:7px;">Master-loop watchers</span><span style="font-size:11px;color:var(--success);font-weight:600;"><span data-bind="watchers.activeCount">2</span> active</span></div>
-      <div style="font-size:12px;line-height:1.5;color:var(--muted);margin-bottom:13px;">Rooms the master loop tracks. On means the loop keeps pushing that room forward by itself; off means it leaves the room to you.</div>
+      <div style="font-size:11.5px;line-height:1.45;color:var(--faint);margin-bottom:9px;">Rooms the master loop tracks. On means the loop keeps pushing that room forward by itself; off means it leaves the room to you.</div>
       <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:16px;">
         <!-- ONE row per watcher; the toggle reflects watcher.on (is-on) -->
         <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface-2);border-radius:11px;" data-each="watchers"><span class="ava is-green" data-mod="is-:watcher.tint" style="width:26px;height:26px;" data-bind="watcher.initials">EL</span><div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--fg);" data-bind="watcher.name">Elon</div><div style="font-size:11px;color:var(--muted);" data-bind="watcher.role">Driver · patching</div></div><span class="wtog is-on" data-mod="is-:watcher.on" style="opacity:.5;cursor:not-allowed;" title="Held until the live goal feed is connected"><span class="wtog-knob"></span></span></div>
-      </div>
-      <div style="display:flex;gap:9px;">
-        <button title="Held until the live goal feed is connected" style="flex:none;width:46px;height:42px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--accent);display:flex;align-items:center;justify-content:center;opacity:.5;cursor:not-allowed;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-        <button title="Held until the live goal feed is connected" style="flex:1;height:42px;border-radius:11px;border:none;background:var(--accent);color:#fff;font-size:13.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;opacity:.5;cursor:not-allowed;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Re-task</button>
       </div>
     </div>
   </div>

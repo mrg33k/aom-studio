@@ -40,11 +40,20 @@ function InboxRow({ it, open, onClick }) {
   );
 }
 
+// Design-gate R3 (Steffen, 2026-07-01): the recommended reply must read as THE
+// action, not one-of-N. Primary is taller, heavier, filled; peers drop to
+// quiet outline chips with muted text so the eye lands on the reply first.
 const chipStyle = (primary) => ({
-  display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 13px', borderRadius: 16,
+  display: 'inline-flex', alignItems: 'center', gap: 7,
+  height: primary ? 36 : 30,
+  padding: primary ? '0 16px' : '0 12px',
+  borderRadius: primary ? 18 : 15,
   border: primary ? 'none' : '1px solid var(--hair)',
-  background: primary ? 'var(--accent)' : 'var(--surface-2)',
-  color: primary ? '#fff' : 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer',
+  background: primary ? 'var(--accent)' : 'transparent',
+  color: primary ? '#fff' : 'var(--muted)',
+  fontSize: primary ? 13 : 12,
+  fontWeight: primary ? 600 : 500,
+  fontFamily: 'var(--font-sans)', cursor: 'pointer',
 });
 
 export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {

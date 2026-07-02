@@ -36,7 +36,11 @@ const BULK_CONTENT = new RegExp(
   // caught live 2026-07-01): profit-porn language no real correspondent uses.
   "insane (?:profits?|results|returns)|massive monthly profits?|" +
   "most profitable (?:month|week|year)|users have achieved|" +
-  "make (?:thousands|hundreds) of dollars)",
+  "make (?:thousands|hundreds) of dollars|" +
+  // Receipts/invoices are machinery even when the sender looks like a company
+  // contact (ElevenLabs receipt rendered as an open ask, caught 2026-07-01).
+  "your receipt from|receipt #\\s?\\d|invoice #?\\s?\\d|payment (?:received|confirmation)|" +
+  "order confirmation|thank you for your (?:order|purchase))",
   'i'
 );
 
