@@ -89,15 +89,21 @@ function useIsDesktop() {
 // desktop top bar + rails) hardcodes the full 8-tool set, so any tile pointing at a
 // tool we haven't wired to /dashboard yet would be a dead control ("doesn't open").
 // Until those screens are built live, drop those tiles so the nav only shows what works.
-const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'command', 'tracker', 'onboarding', 'livescribe', 'back']);
+// 'review' was missing here, so design templates whose chrome carries a Review tile
+// silently dropped it — a live tool with a stripped tile (2026-07-01 audit). The
+// design files also write the Scribe target as 'live-scribe'; accept both spellings.
+const LIVE_NAV = new Set(['home', 'chat', 'support', 'organize', 'review', 'command', 'tracker', 'onboarding', 'livescribe', 'live-scribe', 'back']);
 
 function composeScreen(raw, { mobile = false, pick = 0, sharedNav = false } = {}) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
   const nodes = doc.querySelectorAll('[data-cv6]');
   const screen = nodes[pick] || nodes[0];
   if (!screen) return '';
-  // Strip nav tiles that point at not-yet-built tools (no dead ends).
+  // Strip nav tiles that point at not-yet-built tools (no dead ends). Design files
+  // write the Scribe target as 'live-scribe'; the view machine routes 'livescribe' —
+  // normalize the attribute so the tile survives AND routes.
   screen.querySelectorAll('[data-action="nav"][data-target]').forEach((tile) => {
+    if (tile.getAttribute('data-target') === 'live-scribe') tile.setAttribute('data-target', 'livescribe');
     if (!LIVE_NAV.has(tile.getAttribute('data-target'))) tile.remove();
   });
   // One shared nav (design item 7): the desktop top bar is now mounted once in the
@@ -1585,7 +1591,7 @@ const COMMAND_ALIASES = {
   'ledger.others': 'room', 'ledger.rooms': 'room', watchers: 'watcher',
 };
 function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
-  const { state, data } = useCommand(worldId);
+  const { state, data, toggleWatcher } = useCommand(worldId);
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
@@ -1599,12 +1605,13 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
     return {
       nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
       openCommandK: () => onOpenNav?.(), openProfile: () => onOpenNav?.(),
-      // Ledger rows open their room's chat. Watcher/goal mutations have no honest
-      // store yet -> inert (not faked). The dock + ledger render real data.
-      openGoal: (id) => openRoomById(id), openJob: () => {}, toggleWatcher: () => {}, addWatcher: () => {},
+      // Ledger rows open their room's chat. The watcher toggle arms/disarms the
+      // master loop for that room (room-autopilot — the daemon honors the flag).
+      // Re-task/add-watcher still have no mechanism -> inert, not faked.
+      openGoal: (id) => openRoomById(id), openJob: () => {}, toggleWatcher: (id) => toggleWatcher?.(id), addWatcher: () => {},
       manageActivity: () => {}, retaskGoal: () => {},
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data]);
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }

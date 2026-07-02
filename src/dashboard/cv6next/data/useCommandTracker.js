@@ -5,7 +5,7 @@
 // summary (no invented steps). Tracker = the real CV6 bug tracker (/api/dashboard/cv6-bugs).
 // No fake data.
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
@@ -60,27 +60,28 @@ export function useWorldId() {
 // honest structured source yet, so they bind to honest placeholders, not invented steps.
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// The goal-detail loop view (structured checklist + master-loop watchers) has NO honest
-// backend feed yet. Rather than ship an empty rail, we show a clearly SAMPLE-labelled
-// preview of the design so the shape is visible, and the mutating controls (Re-task,
-// add/toggle watcher) render visibly held (disabled) in the template. Not faked as live:
-// every consuming section carries a SAMPLE badge. Replace with the real loop feed when wired.
-const SAMPLE_CHECKLIST = [
-  { label: 'Pull the room canon and scan the queue', tag: 'Verified', state: 'done' },
-  { label: 'Push the active goal forward one step', tag: 'Verified', state: 'done' },
-  { label: 'Drive the conversation toward the goal', tag: 'Running', state: 'active' },
-  { label: 'Verify the finished step on the live surface', tag: 'Queued', state: 'queued' },
-];
-function sampleWatchers() {
-  const list = [
-    { id: 'sample-driver', name: 'Elon', role: 'Driver · sample', initials: 'EL', tint: 'green', on: 'on' },
-    { id: 'sample-review', name: 'Studio', role: 'Reviewer · sample', initials: 'ST', tint: 'violet', on: 'off' },
-  ];
-  list.activeCount = 1; // array carrying .activeCount (engine binds watchers.activeCount + data-each="watchers")
-  return list;
+// The goal-detail loop view is REAL now (corner:corner-ui-cv6:command, 2026-07-01):
+// the checklist is the focused room's room-goal-steps (the same per-room plan the
+// Chat goal thread reads/writes) and the watchers rail is the master loop's
+// per-room autopilot state from room-goals — the toggle arms/disarms the loop for
+// that room via room-autopilot (master-loop-tick.py honors it). No SAMPLE data.
+
+// Map a step list to the template's checklist rows. One active row max, and only
+// when an agent is actually live (same guardrail as the Chat goal thread).
+function checklistFromSteps(steps, live) {
+  let activeAssigned = false;
+  return (steps || []).map((s) => {
+    let state = 'queued';
+    let tag = s.proposed ? 'Proposed' : 'Queued';
+    if (s.done) { state = 'done'; tag = 'Done'; }
+    else if (live && !activeAssigned) { state = 'active'; tag = 'Running'; activeAssigned = true; }
+    return { label: s.text || '', tag, state };
+  });
 }
 
-function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {} }) {
+const bareKey = (s) => String(s || '').split(':').pop().trim() || String(s || '');
+
+function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {}, goalRooms = {}, focusSteps = [], focusKey = '' }) {
   // Activity dock = live agent sessions. Each is one running Claude session.
   const jobs = (sessions || []).map((s) => {
     const name = titleForAgent(s.agent);
@@ -112,31 +113,48 @@ function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {} }) {
   });
   const liveCount = rooms.filter((r) => r.status === 'live').length;
 
-  // Focused goal = honest summary of what's live right now (no fabricated checklist).
+  // Focused goal: the loop's real goal for the focused room (lead agent session,
+  // else the most recently active room), with its real step checklist.
   const lead = sessions[0];
+  const focusGoal = goalRooms[focusKey] || goalRooms[bareKey(focusKey)] || null;
+  const live = Boolean(lead);
+  const checklist = checklistFromSteps(focusSteps, live);
+  const doneCount = checklist.filter((c) => c.state === 'done').length;
+  const openQuestions = Object.values(goalRooms).filter((r) => r && r.open_question).length;
+
   const goal = lead
     ? { id: lead.agent, roomName: titleForAgent(lead.agent), tint: 'violet', status: 'live', statusLabel: 'LIVE',
-        title: `${sessions.length} agent session${sessions.length > 1 ? 's' : ''} active`,
-        driverLine: `${titleForAgent(lead.agent)} · ${firstLine(lead.task_text) || 'working'}`,
-        stepCount: '', queueNote: '', checklist: [] }
-    : { id: '', roomName: active[0]?.name || 'No active session', tint: 'violet', status: 'ready', statusLabel: '',
-        title: active.length ? 'No agent sessions running right now' : 'Nothing active right now',
-        driverLine: '', stepCount: '', queueNote: '', checklist: [] };
+        title: focusGoal?.goal || `${sessions.length} agent session${sessions.length > 1 ? 's' : ''} active`,
+        driverLine: `${titleForAgent(lead.agent)} · ${firstLine(lead.task_text) || 'working'}` }
+    : { id: active[0]?.slug || '', roomName: active[0]?.name || 'No active session', tint: 'violet', status: 'ready', statusLabel: '',
+        title: focusGoal?.goal || (active.length ? 'No agent sessions running right now' : 'Nothing active right now'),
+        driverLine: focusGoal?.status ? `Loop · ${focusGoal.status}` : '' };
+  goal.stepCount = checklist.length ? `${doneCount}/${checklist.length}` : '0';
+  goal.queueNote = openQuestions ? `${openQuestions} open question${openQuestions > 1 ? 's' : ''} for you` : 'queue clear';
+  goal.checklist = checklist;
 
-  // Goal SUMMARY (title / driver / status) stays real. The structured checklist + watchers
-  // have no real source, so they bind to a SAMPLE preview (clearly badged in the template).
-  const goalWithPreview = {
-    ...goal, isSample: true,
-    stepCount: String(SAMPLE_CHECKLIST.length),
-    queueNote: '1 in master-loop queue',
-    checklist: SAMPLE_CHECKLIST,
-  };
+  // Watchers = the master loop's per-room autopilot state. Toggling is wired to
+  // room-autopilot (real: master-loop-tick.py reads the flag). Rooms the loop
+  // tracks appear here; 'on' means the loop keeps pushing that room by itself.
+  const watcherRows = Object.entries(goalRooms)
+    .filter(([, r]) => r && (r.goal || r.status))
+    .sort(([, a], [, b]) => String(b.last_reviewed || '').localeCompare(String(a.last_reviewed || '')))
+    .slice(0, 6)
+    .map(([key, r]) => {
+      const name = titleCase(bareKey(key).replace(/^agent:/, ''));
+      const on = r.autopilot !== false; // absent/true = loop default ON (matches master-loop-tick)
+      return {
+        id: key, name, role: `Master loop · ${r.status || 'tracked'}`,
+        initials: name.slice(0, 2).toUpperCase(), tint: tintFor(name), on: on ? 'on' : 'off',
+      };
+    });
+  watcherRows.activeCount = watcherRows.filter((w) => w.on === 'on').length;
 
   return {
     ledger: { roomCount: rooms.length, liveCount, blockedCount: 0, rooms, others: rooms },
     activity: { count: jobs.length, jobs },
-    goal: goalWithPreview,
-    watchers: sampleWatchers(),
+    goal,
+    watchers: watcherRows,
   };
 }
 
@@ -216,9 +234,64 @@ export function useCommand(worldIdArg) {
     return () => { alive = false; clearInterval(id); };
   }, [worldId]);
 
-  const data = useMemo(() => shapeCommand({ sessions, projectRooms, lastByRoom }), [sessions, projectRooms, lastByRoom]);
+  // The loop's per-room goal memory (goal ledger) — 60s cadence like the ledger feed.
+  const [goalRooms, setGoalRooms] = useState({});
+  const goalRoomsSig = useRef('');
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    const load = () => authFetch('/api/dashboard/room-goals?world=' + encodeURIComponent(worldId))
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d || typeof d.rooms !== 'object') return;
+        const sig = JSON.stringify(d.rooms);
+        if (sig === goalRoomsSig.current) return;
+        goalRoomsSig.current = sig; setGoalRooms(d.rooms || {});
+      })
+      .catch(() => {});
+    load();
+    const id = setInterval(load, 60000);
+    return () => { alive = false; clearInterval(id); };
+  }, [worldId]);
+
+  // The focused room's real step checklist (same store the Chat goal thread uses).
+  const focusKey = sessions[0] ? `agent:${sessions[0].agent}` : (projectRooms || [])
+    .filter((p) => p.last_message_at)
+    .sort((a, b) => b.last_message_at - a.last_message_at)[0]?.slug || '';
+  const [focusSteps, setFocusSteps] = useState([]);
+  useEffect(() => {
+    if (!worldId || !focusKey) { setFocusSteps([]); return undefined; }
+    let alive = true;
+    const load = () => authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}&room=${encodeURIComponent(focusKey)}`)
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => { if (alive && d) setFocusSteps(Array.isArray(d.list) ? d.list : []); })
+      .catch(() => {});
+    load();
+    const id = setInterval(load, 15000);
+    return () => { alive = false; clearInterval(id); };
+  }, [worldId, focusKey]);
+
+  // Arm/disarm the master loop for a room (the watchers toggle). Optimistic; the
+  // 60s goal poll reconciles to the file the daemon actually reads.
+  const toggleWatcher = useCallback(async (key) => {
+    if (!worldId || !key) return;
+    const cur = goalRooms[key] || goalRooms[String(key).split(':').pop()] || {};
+    const next = cur.autopilot === false;
+    setGoalRooms((g) => ({ ...g, [key]: { ...(g[key] || {}), autopilot: next } }));
+    try {
+      await authFetch('/api/dashboard/room-autopilot', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world: worldId, slug: key, on: next }),
+      });
+    } catch { /* poll reconciles */ }
+  }, [worldId, goalRooms]);
+
+  const data = useMemo(
+    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, focusSteps, focusKey }),
+    [sessions, projectRooms, lastByRoom, goalRooms, focusSteps, focusKey],
+  );
   const state = worldId ? 'ready' : 'loading';
-  return { state, data };
+  return { state, data, toggleWatcher };
 }
 
 // ── Tracker: the real CV6 bug tracker ──
