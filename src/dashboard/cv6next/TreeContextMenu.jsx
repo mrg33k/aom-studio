@@ -93,6 +93,14 @@ function FolderIcon() {
     </svg>
   );
 }
+function FolderPlusIcon() {
+  return (
+    <svg style={S.rowIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
+      <path d="M12 10.5v5M9.5 13h5" />
+    </svg>
+  );
+}
 
 function MenuRow({ icon, label, sub, onPick, disabled }) {
   const [hover, setHover] = useState(false);
@@ -123,10 +131,12 @@ function MenuRow({ icon, label, sub, onPick, disabled }) {
 // listProjects   — () => [{ slug, name }] move destinations (current filtered out here)
 // onRename       — async (target, newName) => throws on failure
 // onMove         — async (target, destProjectSlug) => throws on failure
-export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename, onMove }) {
+// onCreate       — async (target, name) => throws on failure ("New subfolder";
+//                  omit to hide the item)
+export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename, onMove, onCreate }) {
   const [menu, setMenu] = useState(null);      // { x, y, target }
   const [mode, setMode] = useState('menu');    // 'menu' | 'move'
-  const [rename, setRename] = useState(null);  // { target, value }
+  const [rename, setRename] = useState(null);  // { kind: 'rename'|'create', target, value }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const inputRef = useRef(null);
@@ -219,12 +229,30 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
   const startRename = useCallback(() => {
     const target = menu?.target;
     close();
-    if (target) setRename({ target, value: target.name || '' });
+    if (target) setRename({ kind: 'rename', target, value: target.name || '' });
+  }, [menu, close]);
+
+  const startCreate = useCallback(() => {
+    const target = menu?.target;
+    close();
+    if (target) setRename({ kind: 'create', target, value: '' });
   }, [menu, close]);
 
   const submitRename = useCallback(async () => {
     if (!rename || busy) return;
     const next = String(inputRef.current?.value ?? rename.value ?? '').trim();
+    if (rename.kind === 'create') {
+      if (!next) { closeAll(); return; }
+      setBusy(true); setError('');
+      try {
+        await onCreate(rename.target, next);
+        closeAll();
+      } catch (e) {
+        setBusy(false);
+        setError(e?.message || 'Could not create the subfolder — try again.');
+      }
+      return;
+    }
     if (!next || next === rename.target.name) { closeAll(); return; }
     setBusy(true); setError('');
     try {
@@ -234,7 +262,7 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
       setBusy(false);
       setError(e?.message || 'Rename failed — try again.');
     }
-  }, [rename, busy, onRename, closeAll]);
+  }, [rename, busy, onRename, onCreate, closeAll]);
 
   const submitMove = useCallback(async (destSlug) => {
     const target = menu?.target;
@@ -260,6 +288,9 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
             {mode === 'menu' && (
               <>
                 <MenuRow icon={<PencilIcon />} label="Rename" onPick={startRename} disabled={menu.target.canRename === false} />
+                {onCreate && (menu.target.kind === 'project' || menu.target.path) ? (
+                  <MenuRow icon={<FolderPlusIcon />} label="New subfolder" onPick={startCreate} />
+                ) : null}
                 {menu.target.kind === 'mission' && (
                   <MenuRow icon={<MoveIcon />} label="Move to project…" onPick={() => setMode('move')} disabled={!menu.target.canMove} />
                 )}
@@ -282,11 +313,14 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
           <>
             <div style={S.scrim} onClick={busy ? undefined : closeAll} />
             <div style={S.dialog}>
-              <div style={{ fontSize: 15, fontWeight: 700 }}>Rename {rename.target.kind}</div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>
+                {rename.kind === 'create' ? `New subfolder in ${rename.target.name}` : `Rename ${rename.target.kind}`}
+              </div>
               <input
                 ref={inputRef}
                 style={S.input}
                 defaultValue={rename.value}
+                placeholder={rename.kind === 'create' ? 'Subfolder name' : undefined}
                 disabled={busy}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') submitRename();
@@ -297,7 +331,7 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
               <div style={S.btnRow}>
                 <button style={S.btn} onClick={closeAll} disabled={busy}>Cancel</button>
                 <button style={{ ...S.btn, ...S.btnPrimary, opacity: busy ? 0.6 : 1 }} onClick={submitRename} disabled={busy}>
-                  {busy ? 'Saving…' : 'Save'}
+                  {busy ? (rename.kind === 'create' ? 'Creating…' : 'Saving…') : (rename.kind === 'create' ? 'Create' : 'Save')}
                 </button>
               </div>
             </div>
@@ -348,6 +382,44 @@ export async function moveNode(authFetch, target, destProjectSlug, worldId) {
   });
   if (!r?.ok) {
     let msg = 'The mission could not be moved.';
+    try { const j = await r.json(); if (j?.error) msg = j.error; } catch { /* keep default */ }
+    throw new Error(msg);
+  }
+}
+
+// "New subfolder" = scaffold a real nested mission home on disk under the
+// right-clicked project or mission. Slug derives from the typed name; the
+// typed name becomes the display name.
+export function slugifyName(name) {
+  return String(name || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^[^a-z]+/, '')
+    .replace(/-+$/g, '')
+    .slice(0, 50);
+}
+
+// Disk home of the parent the new subfolder goes under. Projects live at
+// corner/users/<world>/projects/<slug>; the platform project 'corner' is the
+// repo's corner/ root (its missions live at corner/missions/). Missions use
+// their registry path.
+export function parentPathFor(target, worldId) {
+  if (target.kind === 'mission') return target.path || null;
+  if (target.projectSlug === 'corner') return 'corner';
+  return `corner/users/${worldId}/projects/${target.projectSlug}`;
+}
+
+export async function createNode(authFetch, target, name, worldId) {
+  const slug = slugifyName(name);
+  if (!slug) throw new Error('Give the subfolder a name with at least one letter.');
+  const parent = parentPathFor(target, worldId);
+  if (!parent) throw new Error('This item has no folder to create inside yet.');
+  const r = await authFetch('/api/dashboard/mission-create', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ world: worldId, parent_path: parent, slug, name }),
+  });
+  if (!r?.ok) {
+    let msg = 'The subfolder could not be created.';
     try { const j = await r.json(); if (j?.error) msg = j.error; } catch { /* keep default */ }
     throw new Error(msg);
   }

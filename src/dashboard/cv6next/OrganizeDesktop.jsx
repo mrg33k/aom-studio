@@ -7,7 +7,7 @@
 import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
-import { useTreeContextMenu, renameNode, moveNode, findMissionNode } from './TreeContextMenu.jsx';
+import { useTreeContextMenu, renameNode, moveNode, createNode, findMissionNode } from './TreeContextMenu.jsx';
 import { authFetch } from '../lib/authFetch';
 import template from './templates/organize.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -90,6 +90,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     listProjects: () => (projects || []).map((p) => ({ slug: p.slug, name: p.name })),
     onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); await reload({ bust: true }); },
     onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); await reload({ bust: true }); },
+    onCreate: async (target, name) => { await createNode(authFetch, target, name, worldId); await reload({ bust: true }); },
   });
 
   // Mark the open row from the hook's openedId so the highlighted row and the

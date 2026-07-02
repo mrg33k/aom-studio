@@ -15,7 +15,7 @@ import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
-import { useTreeContextMenu, renameNode, moveNode, findMissionNode } from './TreeContextMenu.jsx';
+import { useTreeContextMenu, renameNode, moveNode, createNode, findMissionNode } from './TreeContextMenu.jsx';
 import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx, ReviewCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
@@ -596,6 +596,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     listProjects: () => (homeProjectsRef.current || []).filter((p) => p.slug).map((p) => ({ slug: p.slug, name: p.name })),
     onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); setMissionReload((k) => k + 1); },
     onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); setMissionReload((k) => k + 1); },
+    onCreate: async (target, name) => { await createNode(authFetch, target, name, worldId); setMissionReload((k) => k + 1); },
   });
   // Latest data for the context-menu resolver (refs, so the delegated listener
   // never needs re-binding — same pattern as curCardRef).
