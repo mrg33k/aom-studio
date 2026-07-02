@@ -398,17 +398,23 @@ export function useRoomThread(worldId, room) {
     // On INSERT, call load() to refresh and render the new message immediately.
     let channel = null;
     if (supabase) {
-      const filters = [`client_id=eq.${worldId}`];
+      // room_id single-filter subscription (corner:one-write-path R5, 2026-07-01).
+      // postgres_changes supports exactly ONE `column=eq.value` filter; the old
+      // multi-filter join('and') was invalid syntax and referenced mission_slug,
+      // which isn't a messages column — realtime never matched and the 10s poll
+      // carried all updates. Every row now has a canonical room_id (trigger +
+      // backfill), so one equality filter scopes the room precisely. If a slug
+      // is ever non-canonical the filter just misses and the poll still covers.
+      let roomIdFilter;
       if (room.isMission) {
-        const missionSlug = String(room.missionSlug || room.id || '').split(':').pop();
-        filters.push(`mission_slug=eq.${missionSlug}`);
+        const missionSlug = String(room.missionSlug || room.id || '');
+        roomIdFilter = `${worldId}:mission:${missionSlug}`;
       } else if (room.isProject) {
-        filters.push(`project=eq.${room.id}`);
-        filters.push(`mission_slug=is.null`); // project_only: exclude mission-tagged rows
+        roomIdFilter = `${worldId}:project:${room.id}`;
       } else {
-        filters.push(`agent=eq.${room.id}`);
+        roomIdFilter = `${worldId}:agent:${room.id}`;
       }
-      const filter = filters.join('and');
+      const filter = `room_id=eq.${roomIdFilter}`;
 
       channel = supabase
         .channel(`cv6-thread-${worldId}-${room.id}`)

@@ -9,6 +9,10 @@
 
 import { writeMessageRow } from '../_lib/write-message.js'
 import { verifyTenant, TenantAuthError, extractJwt } from '../_lib/verifyTenant.js'
+import missionsRegistry from '../../src/dashboard/data/missions-registry.json' with { type: 'json' }
+import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
+
+const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 
 // Shared project rooms (`shared:<slug>`) are cross-tenant by design — a thread
 // any participating tenant can post to. Tenant equality doesn't apply, but we
@@ -98,20 +102,36 @@ export default async function handler(req, res) {
     //   ?before=<iso>                 — only messages strictly earlier than this timestamp
     // Optional + backward-compatible — existing callers pass none of these
     // and get the original behavior.
-    const projectFilter = req.query.project ? `&project=eq.${encodeURIComponent(req.query.project)}` : ''
-    // Exclude mission-tagged rows from the project chat. metadata->>mission_slug is null
-    // for project-level messages (and for rows with no metadata), so is.null keeps exactly
-    // the project conversation and drops anything that belongs to a mission room.
-    const projectOnlyFilter = (req.query.project && (req.query.project_only === '1' || req.query.project_only === 'true'))
-      ? `&metadata->>mission_slug=is.null` : ''
-    // Mission rooms match by room_id OR legacy metadata (corner:one-write-path
-    // R3, 2026-07-01). room_id is canonical for EVERY row (trigger + backfill),
-    // so the room_id arm unifies threads whose metadata.mission_slug drifted
-    // bare vs composite (the split-room class). The metadata arm stays as
-    // belt-and-suspenders; OR is a strict superset of the old filter.
-    const missionFilter = req.query.mission_slug
-      ? `&or=(room_id.eq.${encodeURIComponent(`${clientId}:mission:${req.query.mission_slug}`)},metadata->>mission_slug.eq.${encodeURIComponent(req.query.mission_slug)})`
-      : ''
+    // Room filters (corner:one-write-path R3/R5, 2026-07-01): every row carries
+    // a canonical room_id (trigger + backfill), so each room mode matches
+    // room_id FIRST with the legacy column arm kept inside an or() as
+    // belt-and-suspenders — the match set only ever grows.
+    const projectOnly = req.query.project_only === '1' || req.query.project_only === 'true'
+    let projectFilter = ''
+    let projectOnlyFilter = ''
+    if (req.query.project && !req.query.mission_slug) {
+      const p = req.query.project
+      const rid = encodeURIComponent(`${clientId}:project:${p}`)
+      if (projectOnly) {
+        // Project CHAT: exactly the project-level thread (mission rows have
+        // mission room_ids). Legacy arm: project + no mission metadata.
+        projectFilter = `&or=(room_id.eq.${rid},and(project.eq.${encodeURIComponent(p)},metadata->>mission_slug.is.null))`
+      } else {
+        // Project + its missions: project room, any of its mission rooms
+        // (canonical mission slugs are "<project>:<slug>"), or legacy
+        // project-tagged rows.
+        projectFilter = `&or=(room_id.eq.${rid},room_id.like.${encodeURIComponent(`${clientId}:mission:${p}:`)}*,project.eq.${encodeURIComponent(p)})`
+      }
+    }
+    // Mission rooms: canonicalize the incoming slug server-side (the UI sends
+    // the BARE form) so the room_id arm actually matches the canonical ids the
+    // trigger writes; the raw-metadata arm keeps legacy stragglers visible.
+    const missionFilter = (() => {
+      if (!req.query.mission_slug) return ''
+      const raw = req.query.mission_slug
+      const canon = canonicalizeMissionSlug(raw, MISSION_SLUG_LOOKUP) || raw
+      return `&or=(room_id.eq.${encodeURIComponent(`${clientId}:mission:${canon}`)},metadata->>mission_slug.eq.${encodeURIComponent(raw)},metadata->>mission_slug.eq.${encodeURIComponent(canon)})`
+    })()
     const beforeFilter = req.query.before ? `&timestamp=lt.${encodeURIComponent(req.query.before)}` : ''
     const searchLimit = searchQuery ? 500 : limit  // search returns more results
     const url = `${SUPABASE_URL}/rest/v1/messages?select=*${agentFilter}${projectFilter}${projectOnlyFilter}${missionFilter}${beforeFilter}${clientFilter}${searchFilter}&order=timestamp.desc&limit=${searchLimit}`
