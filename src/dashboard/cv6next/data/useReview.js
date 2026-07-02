@@ -238,6 +238,33 @@ export function useReview(worldId = 'aom', injected = null) {
   // '__root' = files sitting at the project root with no mission folder.
   const [projSel, setProjSel] = useState(null);
   const [missionSel, setMissionSel] = useState(null);
+  // Type filter under the Files heading: null = all | doc | web | image | video.
+  const [typeFilter, setTypeFilter] = useState(null);
+  // The FULL project registry + mission tree (same endpoints Organize's rail uses),
+  // so EVERY project lists — not just those with items in the loaded queue window.
+  const [projects, setProjects] = useState(null);
+  const [missionTree, setMissionTree] = useState({});
+
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      try {
+        const r = await authFetch('/api/dashboard/projects', { credentials: 'include' });
+        const d = await r.json();
+        if (!dead && d?.ok && Array.isArray(d.projects)) setProjects(d.projects);
+      } catch (e) { console.error('[Review projects]', e); }
+      try {
+        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId || 'aom')}`, { credentials: 'include' });
+        const d = r?.ok ? await r.json() : null;
+        if (!dead && d && Array.isArray(d.projects)) {
+          const next = {};
+          for (const p of d.projects) { if (p?.slug) next[p.slug] = p.tree || []; }
+          setMissionTree(next);
+        }
+      } catch (e) { console.error('[Review missions-tree]', e); }
+    })();
+    return () => { dead = true; };
+  }, [worldId]);
 
   const load = useCallback(async () => {
     let ok = false;
@@ -415,54 +442,96 @@ export function useReview(worldId = 'aom', injected = null) {
 
   const byNewest = (a, b) => String(b.ts || '').localeCompare(String(a.ts || ''));
   const byName = (x, y) => String(x || '').localeCompare(String(y || ''), undefined, { sensitivity: 'base' });
+  const prettify = (slug) => String(slug || 'Untitled').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
-  // Project → mission tree, built from the queue itself (a project appears only when
-  // it has deliverables). d0 = 'All projects' + one row per project; d1 = the selected
-  // project's missions ('Project files' = items at project root). is-open marks the
-  // active scope — exactly one node is on at a time.
+  // Per-project / per-mission counts from the loaded queue window.
   const allItems = queue?.items || [];
-  const projMap = new Map();
+  const countsByProj = new Map();
   for (const i of allItems) {
     const key = i.whoRaw || '';
-    if (!projMap.has(key)) projMap.set(key, { slug: key, name: i.who || 'Unfiled', tint: i.whoTint, count: 0, missions: new Map(), rootCount: 0 });
-    const p = projMap.get(key);
-    p.count += 1;
-    if (i.missionRaw) p.missions.set(i.missionRaw, (p.missions.get(i.missionRaw) || 0) + 1);
-    else p.rootCount += 1;
+    if (!countsByProj.has(key)) countsByProj.set(key, { count: 0, missions: new Map(), rootCount: 0, tint: i.whoTint });
+    const c = countsByProj.get(key);
+    c.count += 1;
+    if (i.missionRaw) c.missions.set(i.missionRaw, (c.missions.get(i.missionRaw) || 0) + 1);
+    else c.rootCount += 1;
   }
-  const projList = [...projMap.values()].sort((a, b) => byName(a.name, b.name));
-  const activeProj = projSel && projMap.has(projSel) ? projSel : null;
+
+  // EVERY project in this world (registry, same filter Organize applies), plus any
+  // queue project the registry misses — so the list is complete, not queue-derived.
+  const CRUFT = /(^|-)(smoke|proj-tool|loop-test|test-project|lr2test)/i;
+  const registry = (projects || []).filter((p) => p.slug && p.client_id === (worldId || 'aom') && !CRUFT.test(p.slug));
+  const seenSlugs = new Set(registry.map((p) => p.slug));
+  const projList = registry.map((p) => ({ slug: p.slug, name: p.name || prettify(p.slug) }));
+  for (const slug of countsByProj.keys()) {
+    if (slug && !seenSlugs.has(slug) && !CRUFT.test(slug)) projList.push({ slug, name: prettify(slug) });
+  }
+  projList.sort((a, b) => byName(a.name, b.name));
+
+  const activeProj = projSel && projList.some((p) => p.slug === projSel) ? projSel : null;
   const activeMission = activeProj ? missionSel : null;
-  // The queue items carry chip tints (green|lime|amber|violet); the .folder glyph has
-  // no is-green — map it to the nearest folder tint.
+  // Chip tints are green|lime|amber|violet; the .folder glyph has no is-green — map it.
   const folderTint = (t) => (t === 'green' ? 'teal' : (t || 'violet'));
+  // A mission node matches items filed exactly there or in its sub-missions.
+  const missionMatches = (raw, slug) => raw === slug || String(raw || '').startsWith(`${slug}/`) || String(raw || '').startsWith(`${slug}:`);
+
+  // Missions of a project = union of the missions-tree top level and whatever the
+  // queue items actually carry (so nothing filed is unreachable).
+  const missionRowsFor = (slug) => {
+    const rows = (missionTree[slug] || []).map((m) => {
+      const raw = String(m.slug || '');
+      const leaf = raw.includes(':') ? raw.slice(raw.lastIndexOf(':') + 1) : raw;
+      return { slug: leaf, name: (m.name && !String(m.name).includes(':')) ? m.name : prettify(leaf) };
+    }).filter((m) => m.slug);
+    const seen = new Set(rows.map((m) => m.slug));
+    for (const mslug of (countsByProj.get(slug)?.missions || new Map()).keys()) {
+      if (!seen.has(mslug)) rows.push({ slug: mslug, name: prettify(mslug) });
+    }
+    return rows.sort((a, b) => byName(a.name, b.name));
+  };
+
   // The engine allows ONE is-* class per element (each is-: mod drops the previous),
-  // so depth + selection ride a single mode value: d0 | d0on | d1 | d1on.
-  const tree = [{ id: '__all', name: 'All projects', count: allItems.length, tint: 'accent', mode: activeProj ? 'd0' : 'd0on' }];
+  // so depth + selection ride a single mode value: d0 | d0on | d1 | d1on. Counts are
+  // '' at zero so the row stays clean instead of carrying a dead 0.
+  const tree = [{ id: '__all', name: 'All projects', count: allItems.length || '', tint: 'accent', mode: activeProj ? 'd0' : 'd0on' }];
   for (const p of projList) {
     const isActive = p.slug === activeProj;
-    tree.push({ id: `p:${p.slug}`, name: p.name, count: p.count, tint: folderTint(p.tint), mode: isActive && !activeMission ? 'd0on' : 'd0' });
+    const c = countsByProj.get(p.slug);
+    const tint = folderTint(c?.tint || tintFor(p.slug));
+    tree.push({ id: `p:${p.slug}`, name: p.name, count: c?.count || '', tint, mode: isActive && !activeMission ? 'd0on' : 'd0' });
     if (isActive) {
-      const ms = [...p.missions.entries()].sort((a, b) => byName(a[0], b[0]));
-      for (const [slug, count] of ms) tree.push({ id: `m:${slug}`, name: slug, count, tint: folderTint(p.tint), mode: activeMission === slug ? 'd1on' : 'd1' });
-      if (p.rootCount && ms.length) tree.push({ id: 'm:__root', name: 'Project files', count: p.rootCount, tint: folderTint(p.tint), mode: activeMission === '__root' ? 'd1on' : 'd1' });
+      const ms = missionRowsFor(p.slug);
+      for (const m of ms) {
+        const count = allItems.filter((i) => i.whoRaw === p.slug && missionMatches(i.missionRaw, m.slug)).length;
+        tree.push({ id: `m:${m.slug}`, name: m.name, count: count || '', tint, mode: activeMission === m.slug ? 'd1on' : 'd1' });
+      }
+      if ((c?.rootCount || 0) > 0 && ms.length) tree.push({ id: 'm:__root', name: 'Project files', count: c.rootCount, tint, mode: activeMission === '__root' ? 'd1on' : 'd1' });
     }
   }
-  const activeName = activeProj ? (projMap.get(activeProj)?.name || activeProj) : '';
-  const scopeLabel = activeProj
-    ? (activeMission ? `${activeName} / ${activeMission === '__root' ? 'project files' : activeMission}` : activeName)
-    : 'All projects';
+
+  // Files scoped by the tree selection, then the type chips (Doc / Web / Image / Video).
+  const TYPE_GROUP = { doc: 'doc', copy: 'doc', code: 'doc', sitelive: 'web', siteshot: 'web', image: 'image', photo: 'image', video: 'video' };
+  const groupOf = (t) => TYPE_GROUP[t] || 'doc';
+  const scoped = allItems
+    .filter((i) => !activeProj || i.whoRaw === activeProj)
+    .filter((i) => !activeMission || (activeMission === '__root' ? !i.missionRaw : missionMatches(i.missionRaw, activeMission)));
+  const chipCounts = { doc: 0, web: 0, image: 0, video: 0 };
+  for (const i of scoped) chipCounts[groupOf(i.type)] += 1;
+  const CHIP_LABELS = { doc: 'Doc', web: 'Web', image: 'Image', video: 'Video' };
+  const filters = [
+    { id: 'all', label: `All ${scoped.length}`, active: !typeFilter ? 'on' : 'off' },
+    ...['doc', 'web', 'image', 'video']
+      .filter((k) => chipCounts[k] > 0)
+      .map((k) => ({ id: k, label: `${CHIP_LABELS[k]} ${chipCounts[k]}`, active: typeFilter === k ? 'on' : 'off' })),
+  ];
 
   const data = {
     queue: {
       readyCount: queue?.readyCount || 0,
-      items: allItems
-        .filter((i) => !activeProj || i.whoRaw === activeProj)
-        .filter((i) => !activeMission || (activeMission === '__root' ? !i.missionRaw : i.missionRaw === activeMission))
+      items: (typeFilter ? scoped.filter((i) => groupOf(i.type) === typeFilter) : scoped)
         .slice()
         .sort(byNewest),
       tree,
-      scopeLabel,
+      filters,
       // 'yes' / 'no' so the template's data-switch shows the "Load older items" button only
       // when older items exist (and not while the injected-files queue hides it).
       hasMore: (!hasInjected && hasMore) ? 'yes' : 'no',
@@ -519,12 +588,18 @@ export function useReview(worldId = 'aom', injected = null) {
       requestChanges,
       sendChecklist,
       // One action for every tree node: '__all' resets, 'p:<slug>' picks a project
-      // (and clears the mission), 'm:<slug>' / 'm:__root' narrows within it.
+      // (and clears the mission), 'm:<slug>' / 'm:__root' narrows within it. Any
+      // scope change resets the type chips (Organize resets its filter the same way).
       selectQueueNode: (id) => {
         const s = String(id || '');
         if (s === '__all') { setProjSel(null); setMissionSel(null); }
         else if (s.startsWith('p:')) { setProjSel(s.slice(2)); setMissionSel(null); }
         else if (s.startsWith('m:')) setMissionSel(s.slice(2));
+        setTypeFilter(null);
+        setOpenDelId(null);
+      },
+      setTypeFilter: (id) => {
+        setTypeFilter(['doc', 'web', 'image', 'video'].includes(id) ? id : null);
         setOpenDelId(null);
       },
     },

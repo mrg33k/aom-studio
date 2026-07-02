@@ -135,10 +135,12 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   const aliases = {
     'queue.items': 'item',
     'queue.tree': 'node',
+    'queue.filters': 'filter',
     'deliverable.pins': 'pin',
     'deliverable.comments': 'comment',
     'item': 'item',
     'node': 'node',
+    'filter': 'filter',
     'pin': 'pin',
     'comment': 'comment',
   };
@@ -147,9 +149,10 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     nav: (target) => target === 'back' ? onNav?.('back') : onNav?.(target),
     openCommandK: () => { /* stub */ },
     openProfile: () => { /* stub */ },
-    // Tree click changes the scope; clearing the picked id lets the auto-open
-    // effect land on the first deliverable of the new scope.
+    // Tree / chip clicks change the scope; clearing the picked id lets the
+    // auto-open effect land on the first deliverable of the new scope.
     selectQueueNode: (id) => { actions.selectQueueNode(id); setPickedId(null); },
+    setTypeFilter: (id) => { actions.setTypeFilter(id); setPickedId(null); },
     openDeliverable: (id) => {
       setPickedId(id);
       actions.openDeliverable(id);

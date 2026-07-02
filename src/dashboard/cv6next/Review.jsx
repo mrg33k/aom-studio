@@ -96,7 +96,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     wrapRef: readRef, pins, addPin, deletePin, enabled: screen === 'read',
   });
 
-  const pickListAliases = { 'queue.items': 'item', 'queue.tree': 'node', 'item': 'item', 'node': 'node' };
+  const pickListAliases = { 'queue.items': 'item', 'queue.tree': 'node', 'queue.filters': 'filter', 'item': 'item', 'node': 'node', 'filter': 'filter' };
 
   const readAliases = {
     'queue.items': 'item',
@@ -112,6 +112,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
       nav: (target) => target === 'back' ? onNav?.('back') : onNav?.(target),
       openNav: onOpenNav,
       selectQueueNode: (id) => actions.selectQueueNode(id),
+      setTypeFilter: (id) => actions.setTypeFilter(id),
       openDeliverable: onOpenDeliverable,
       loadMore: () => actions.loadMore(),
     };
