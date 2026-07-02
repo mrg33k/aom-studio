@@ -10,14 +10,14 @@
 // data-state="ready" and drop the shared loading/empty/error blocks into the same
 // flex slot so they REPLACE the body instead of overlaying it (O1).
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/organize.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
 // data-each item aliases the engine can't derive (tree→node, breadcrumb→crumb, etc.).
-const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder' };
+const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission' };
 
 const SCREEN_BG = '#05080b';
 
@@ -126,9 +126,24 @@ const BROWSE_HTML = composeBrowse(template);
 const VIEW_HTML = composeView(template);
 
 export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, setFilter, reload, openFile } = useOrganize('aom');
+  const { state, data, selectProject, selectMission, setFilter, setQuery, reload, openFile } = useOrganize('aom');
   const [projectId, setProjectId] = useState(null); // null = show the picker (no forced project)
   const [pickedFileId, setPickedFileId] = useState(null);
+
+  // Type-to-find: delegated input event (engine wires clicks only); kept DOM node
+  // holds the text, cleared here when the project changes (hook resets its query).
+  const wrapRef = useRef(null);
+  const debRef = useRef(null);
+  const onSearchInput = (e) => {
+    const el = e.target;
+    if (!el?.matches?.('[data-org-search]')) return;
+    clearTimeout(debRef.current);
+    debRef.current = setTimeout(() => setQuery(el.value), 120);
+  };
+  useEffect(() => {
+    const el = wrapRef.current?.querySelector('[data-org-search]');
+    if (el) el.value = '';
+  }, [projectId]);
 
   const enterProject = (id) => { setProjectId(id); setPickedFileId(null); selectProject(id); };
   const backToPicker = () => { setProjectId(null); setPickedFileId(null); };
@@ -163,6 +178,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
     openCrumb: (id) => (id === 'root' ? backToPicker() : enterProject(id)),
     openFile: (id) => tapFile(id),
     setFilter: (id) => setFilter(id || 'recent'),
+    setMission: (id) => selectMission(id || '__all'),
     openInReview: () => {
       const rf = data.viewFile?.reviewFile;
       onNav?.('review', rf ? { files: [rf], project: data.viewFile.projectSlug || '' } : null);
@@ -178,5 +194,9 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
   // The picker drives off real projects; once inside a project, honor load state.
   const screenState = projectId ? state : (state === 'loading' || state === 'error' || state === 'empty' ? state : 'ready');
 
-  return <TemplateScreen html={html} data={bindData} actions={actions} state={screenState} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div ref={wrapRef} onInput={onSearchInput} style={{ width: '100%', height: '100%' }}>
+      <TemplateScreen html={html} data={bindData} actions={actions} state={screenState} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
 }

@@ -4,7 +4,7 @@
 // screen node from the design fragment, inject the shared loading/error/empty states,
 // and bind real data + actions behind it (no redraw).
 
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import template from './templates/organize.html?raw';
@@ -30,7 +30,24 @@ function composeOrganize(raw, screenName) {
 const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
 export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, selectMission, setFilter, openFile } = useOrganize('aom');
+  const { state, data, selectProject, selectMission, setFilter, setQuery, openFile, activeProjectId } = useOrganize('aom');
+
+  // The search input is an uncontrolled kept DOM node (see template); the engine only
+  // wires clicks, so the input event is delegated from this React wrapper. Debounced a
+  // beat so each keystroke doesn't force a full template rebind mid-word.
+  const wrapRef = useRef(null);
+  const debRef = useRef(null);
+  const onSearchInput = (e) => {
+    const el = e.target;
+    if (!el?.matches?.('[data-org-search]')) return;
+    clearTimeout(debRef.current);
+    debRef.current = setTimeout(() => setQuery(el.value), 120);
+  };
+  // Hook resets the query when the project changes; mirror that in the DOM node.
+  useEffect(() => {
+    const el = wrapRef.current?.querySelector('[data-org-search]');
+    if (el) el.value = '';
+  }, [activeProjectId]);
   // Switching project resets the open file inside the hook (auto-opens the new
   // project's first file), so the preview always follows the selected project.
   const switchProject = (id) => { selectProject(id); };
@@ -80,5 +97,9 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     pickDestination: () => {}, deleteSelection: () => {}, renameSelection: () => {}, shareSelection: () => {},
   };
 
-  return <TemplateScreen html={DESKTOP_HTML} data={bindData} actions={actions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div ref={wrapRef} onInput={onSearchInput} style={{ width: '100%', height: '100%' }}>
+      <TemplateScreen html={DESKTOP_HTML} data={bindData} actions={actions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
 }

@@ -188,6 +188,10 @@ export function useOrganize(worldId = 'aom') {
   // node click hands in every segment of a colon-joined mission path); the first
   // candidate that exists as a mission folder with files wins, else no narrowing.
   const [missionSel, setMissionSel] = useState(null); // null | ['__all'] | ['__root'] | [slug, ...]
+  // Type-to-find within the current project scope. Persists across mission/type chip
+  // flips (refining, not restarting); resets when the project changes. The input is an
+  // uncontrolled kept DOM node — the component clears it on project switch to match.
+  const [query, setQuery] = useState('');
   const [openedId, setOpenedId] = useState(null);  // which file is open (preview/reader)
   const [contentCache, setContentCache] = useState({}); // id -> { title, bodyHtml, editor, editorInitials }
   const [missionTree, setMissionTree] = useState({}); // projectSlug -> tree nodes array (nested)
@@ -430,7 +434,10 @@ export function useOrganize(worldId = 'aom') {
   // back to Recent instead of showing an inexplicable empty column.
   const kindCountFor = { links: linkCount, docs: docCount, pdfs: pdfCount, images: imageCount, video: videoCount };
   const effFilter = (filter !== 'recent' && !kindCountFor[filter]) ? 'recent' : filter;
-  const fileList = missionFiles.filter((f) => fileMatchesFilter(f.kind, effFilter));
+  const q = query.trim().toLowerCase();
+  const fileList = missionFiles
+    .filter((f) => fileMatchesFilter(f.kind, effFilter))
+    .filter((f) => !q || f.name.toLowerCase().includes(q));
 
   // The open file: the explicitly-opened one if it's in this project's list, else the first.
   const openInList = fileList.find((f) => f.id === openedId) || fileList[0] || null;
@@ -523,7 +530,7 @@ export function useOrganize(worldId = 'aom') {
   else if (status === 'error') state = 'error';
   else if (!projectList.length) state = 'empty';
 
-  const selectProject = useCallback((id) => { setSelectedId(id); setFilter('recent'); setMissionSel(null); setOpenedId(null); }, []);
+  const selectProject = useCallback((id) => { setSelectedId(id); setFilter('recent'); setMissionSel(null); setQuery(''); setOpenedId(null); }, []);
 
   // Narrow to a mission. Accepts one slug or an ordered candidate list (a tree node
   // click passes every segment of a colon-joined mission path; the first segment
@@ -535,5 +542,5 @@ export function useOrganize(worldId = 'aom') {
     setOpenedId(null);
   }, []);
 
-  return { state, data, reload: load, selectProject, selectMission, setFilter, openFile, activeProjectId };
+  return { state, data, reload: load, selectProject, selectMission, setFilter, setQuery, openFile, activeProjectId };
 }

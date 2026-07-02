@@ -50,6 +50,12 @@
     <!-- file list -->
     <div style="width:380px;flex:none;border-right:1px solid var(--divider);overflow:hidden;display:flex;flex-direction:column;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;"><span style="color:var(--fg);font-weight:600;font-size:15px;" data-bind="folder.name">Dashboard</span><span style="font-family:var(--font-mono);font-size:11.5px;color:var(--faint);"><span data-bind="folder.fileCount">12</span> files</span></div>
+      <!-- type-to-find: uncontrolled kept node (data-cv6-keep) so focus + caret survive
+           the engine's innerHTML rebinds while typing; the host component delegates the
+           input event (the engine only wires clicks) -->
+      <div style="padding:0 20px 10px;flex:none;">
+        <input data-org-search data-cv6-keep="org-search-desktop" type="text" placeholder="Find a file…" style="width:100%;height:34px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:11px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+      </div>
       <!-- mission chips: narrow within the project; ONE per mission folder that has
            files (empty projects render no row); is-on marks the active narrowing -->
       <div style="display:flex;gap:8px;padding:0 20px;overflow-x:auto;scrollbar-width:none;flex:none;">
@@ -97,10 +103,18 @@
   <div style="position:absolute;left:0;right:0;top:138px;bottom:82px;overflow:hidden;padding:12px 16px 0;">
     <!-- breadcrumb -->
     <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-bottom:12px;" data-each="breadcrumb" data-action="openCrumb" data-arg="crumb.id"><span data-bind="crumb.name">Corner</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+    <!-- type-to-find (kept node; host delegates the input event) -->
+    <div style="margin-bottom:10px;">
+      <input data-org-search data-cv6-keep="org-search-mobile" type="text" placeholder="Find a file…" style="width:100%;height:40px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:0 13px;color:var(--fg);font-size:14px;font-family:var(--font-sans);outline:none;">
+    </div>
+    <!-- mission chips: same narrowing as desktop; row renders empty when the project has no mission folders -->
+    <div style="display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;">
+      <button class="ochip is-on" data-each="missions" data-action="setMission" data-arg="mission.id" data-mod="is-:mission.active" style="flex:none;margin-bottom:10px;"><span data-bind="mission.label">All 12</span></button>
+    </div>
     <!-- filter chips -->
-    <div style="display:flex;align-items:center;gap:7px;margin-bottom:14px;">
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none;">
       <!-- ONE chip per filter; is-on marks the active filter -->
-      <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active"><span data-bind="filter.label">All 12</span></button>
+      <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active" style="flex:none;"><span data-bind="filter.label">All 12</span></button>
       <span style="margin-left:auto;font-size:12.5px;font-weight:600;color:var(--accent);" data-action="toggleSelectMode">Done</span>
     </div>
     <div style="background:var(--surface);border:1px solid var(--hair);border-radius:16px;overflow:hidden;">
