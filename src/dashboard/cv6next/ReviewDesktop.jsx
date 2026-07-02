@@ -18,12 +18,19 @@ function composeDesktopReview(raw) {
   // Strip the baked-in topbar — the shell renders the shared DesktopNav, so the
   // template's own nav would stack a second header (matches composeScreen line 73).
   screen.querySelector('.topbar')?.remove();
-  // Append shared states to the viewer region
+  // Mount the shared states INTO the viewer's slot (right after it, flex-sized the
+  // same), so loading/empty/error replace the viewer between queue and side panel —
+  // not bolt on as a stray fourth column after the side panel.
   const ready = screen.querySelector('[data-state="ready"]');
   if (ready) {
     const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
+    let after = ready;
     sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => {
-      ready.parentNode.appendChild(b.cloneNode(true));
+      const c = b.cloneNode(true);
+      const st = c.getAttribute('data-state');
+      c.setAttribute('style', `${c.getAttribute('style') || ''};flex:1;min-width:0;${st === 'loading' ? 'padding:20px 28px;box-sizing:border-box;' : 'display:flex;align-items:center;justify-content:center;'}`);
+      after.parentNode.insertBefore(c, after.nextSibling);
+      after = c;
     });
   }
   return screen.outerHTML;

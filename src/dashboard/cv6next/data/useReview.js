@@ -337,6 +337,13 @@ export function useReview(worldId = 'aom', injected = null) {
     }
   }, [load, queue, worldId]);
 
+  // The open deliverable's body is still in flight ('' is the loading sentinel).
+  // Gated on the item actually existing in the queue, so a stale/unmatched id can
+  // never pin the tool on the loading cover forever.
+  const bodyLoading = !!openDelId
+    && (queue?.items || []).some((i) => i.id === openDelId)
+    && !bodies[openDelId];
+
   const data = {
     queue: {
       readyCount: queue?.readyCount || 0,
@@ -358,14 +365,13 @@ export function useReview(worldId = 'aom', injected = null) {
           openCount: 0, pins: [], comments: [],
         };
       }
-      const loaded = bodies[openDelId];
-      const bodyHtml = (loaded === undefined || loaded === '')
-        ? '<div style="padding:14px 0;color:#888;">Loading the file…</div>'
-        : loaded;
-      return { ...open, bodyHtml };
+      return { ...open, bodyHtml: bodies[openDelId] || '' };
     })(),
     empty: { title: "You're all caught up", body: 'Nothing needs your review right now. New deliverables the agent flags will land here.', actionLabel: 'Browse waiting' },
-    loading: { label: 'Gathering deliverables…' },
+    // The shared loading fragment covers the viewer BOTH while the queue gathers and
+    // while an opened file's body is in flight — one standard loading look (states.html),
+    // never the raw template with placeholder copy.
+    loading: { label: bodyLoading ? 'Opening the file…' : 'Gathering deliverables…' },
     error: { title: "We couldn't load your review queue", body: 'Your connection dropped. Nothing was lost. Your last view is saved.', code: 'review · retrying' },
   };
 
@@ -377,7 +383,11 @@ export function useReview(worldId = 'aom', injected = null) {
     // When the queue has loaded but the current filter has ZERO deliverables, resolve
     // to 'empty' so the shared "You're all caught up" branch shows (both Review.jsx and
     // ReviewDesktop.jsx inject it) instead of a blank ready viewer. (QA #15)
-    state: status === 'loaded' ? (data.queue.items.length > 0 ? 'ready' : 'empty') : status,
+    // While the OPEN deliverable's body is still fetching, stay on 'loading' so the
+    // standard skeleton covers the viewer instead of a half-rendered document frame.
+    state: status === 'loaded'
+      ? (data.queue.items.length > 0 ? (bodyLoading ? 'loading' : 'ready') : 'empty')
+      : status,
     data,
     actions: {
       setQueueFilter: (f) => { setFilter(f); setOpenDelId(null); },

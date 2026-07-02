@@ -123,6 +123,10 @@ function applyBindings(el, scopes, ctx) {
   if (st != null) {
     const visible = stateMatches(st, ctx.state);
     el.hidden = !visible;
+    // The [hidden] UA rule loses to an inline display (e.g. the Review viewer's
+    // style="display:flex"), which left non-matching branches VISIBLE — raw template
+    // copy showing through every loading state. Force it.
+    if (!visible && el.style) el.style.setProperty('display', 'none', 'important');
     if (!visible) return; // do not bind (or expand each inside) a hidden branch
   }
 
@@ -150,10 +154,14 @@ function applyBindings(el, scopes, ctx) {
   // Distinct from data-bind (which sets textContent). The host stays agnostic;
   // the source must already be trusted/rendered HTML built by the screen's data
   // hook (same-tenant files via the tenant-gated project-file endpoint).
+  // Skip the write when the string is unchanged: resetting innerHTML replaces the
+  // children even for identical markup, which restarts a playing <video> / reloads a
+  // PDF <iframe> on every rebind. Paired with data-cv6-keep (TemplateScreen grafts the
+  // same node across re-binds) this keeps live media alive through data ticks.
   const htmlPath = el.getAttribute('data-html');
   if (htmlPath != null) {
     const v = resolvePath(scopes, htmlPath);
-    if (v != null) el.innerHTML = String(v);
+    if (v != null && el.__cv6Html !== String(v)) { el.innerHTML = String(v); el.__cv6Html = String(v); }
   }
 
   // data-mod — drive a documented per-item visual variation from data. Form
