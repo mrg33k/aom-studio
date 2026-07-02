@@ -157,14 +157,6 @@ function nonTextPreview(name, kind) {
   );
 }
 
-// Build the project-file raw URL for a corner path. AUTH NOTE (matches Review's
-// buildDeliverableBody): the dashboard session is a localStorage Bearer token, NOT a
-// cookie, so a plain <img src> to this tenant-gated endpoint carries no auth and 401s.
-// Bytes must be pulled with authFetch and the <img> handed a blob URL.
-function projectFileRaw(cornerPath) {
-  return `/api/dashboard/project-file?path=${encodeURIComponent(cornerPath)}&raw=1`;
-}
-
 // Full corner path for a mirror row: corner/users/<world>/projects/<slug>/<rel>/<name>.
 // rel_path is the dir within the project (no filename), '' at the project root.
 function cornerPathOf(row, worldId) {
@@ -173,22 +165,17 @@ function cornerPathOf(row, worldId) {
   return `corner/users/${worldId}/projects/${row.project}/${rel}${row.name}`;
 }
 
-// Image preview: actually SHOW the image. The bug was every image falling through to the
-// "can't preview inline yet" placeholder. Fetch the bytes through authFetch (token-bearing)
-// and render the <img> from a blob URL, exactly like the Review viewer. On any failure,
-// fall back to the honest placeholder rather than a broken image.
-async function imageBodyHtml(f, worldId) {
+// Image preview: actually SHOW the image, streaming straight off the rag tunnel like
+// video does. The old path pulled bytes through the Vercel raw proxy (which 404'd
+// anything under assets/ via its hidden list, and buffers whole files against the
+// lambda response cap — big screenshots died). <img> needs no auth header and the
+// tunnel sends CORS *; on error the img is swapped for the honest placeholder.
+function imageBodyHtml(f, worldId) {
   const cornerPath = cornerPathOf(f, worldId);
   if (!cornerPath) return nonTextPreview(f.name, 'image');
-  try {
-    const r = await authFetch(projectFileRaw(cornerPath), { credentials: 'include' });
-    if (!r || !r.ok) return nonTextPreview(f.name, 'image');
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    return `<img src="${url}" alt="${escapeHtml(f.name || 'Image')}" loading="lazy" style="max-width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);" />`;
-  } catch {
-    return nonTextPreview(f.name, 'image');
-  }
+  const src = `${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}`;
+  const fallback = nonTextPreview(f.name, 'image').replace(/"/g, '&quot;');
+  return `<img src="${src}" alt="${escapeHtml(f.name || 'Image')}" loading="lazy" onerror="this.outerHTML=this.dataset.fb" data-fb="${fallback}" style="max-width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);" />`;
 }
 
 export function useOrganize(worldId = 'aom') {
@@ -280,8 +267,8 @@ export function useOrganize(worldId = 'aom') {
           : nonTextPreview(f.name, 'video');
         title = f.name || 'Untitled';
       } else if (kind === 'image') {
-        // Real image render (blob URL via authFetch) instead of the placeholder.
-        bodyHtml = await imageBodyHtml(f, worldId);
+        // Real image render, streaming off the tunnel (see imageBodyHtml).
+        bodyHtml = imageBodyHtml(f, worldId);
         title = f.name || 'Untitled';
       } else if (f.content) {
         const parsed = parseMarkdown(f.content);

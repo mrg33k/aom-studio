@@ -167,8 +167,17 @@ export default async function handler(req, res) {
   }
 
   // ── Hidden-file check ─────────────────────────────────────────────────────
-  // Block any segment in the path that is in the hidden list.
-  if (containsHiddenSegment(rest)) {
+  // Dotfile segments are blocked in every mode (secrets: .env etc).
+  if (rest.some((s) => s.startsWith('.'))) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  // The hidden list is a LISTING/doc-viewer concern (keep scaffolding files out
+  // of the reading surface). A raw byte fetch of one exact path is not a listing —
+  // the Organize mirror lists every project file and its images/videos routinely
+  // live under assets/ — so ?raw=1 skips it. Mirrors the rag-server R1 fix
+  // (corner:corner-ui-cv6:organize, 2026-07-02); tenant gate still runs below.
+  const rawRequested = String(req.query.raw || '') === '1';
+  if (!rawRequested && containsHiddenSegment(rest)) {
     return res.status(404).json({ error: 'Not found' });
   }
 

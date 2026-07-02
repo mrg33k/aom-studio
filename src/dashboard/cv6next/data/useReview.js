@@ -72,9 +72,10 @@ async function buildDeliverableBody(item) {
 
   try {
     if (type === 'image' || type === 'photo') {
-      const b = await blobOf();
-      return b.err ? errDiv(b.err)
-        : `<img src="${b.url}" alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
+      // Streams off the tunnel like video — the blob-through-proxy path 404'd
+      // assets/ files and dies on big screenshots (lambda response cap).
+      const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
+      return `<img src="${src}" alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
     }
     if (type === 'video') {
       // Corner-path videos stream straight off the rag tunnel (Range-capable, CORS *).
@@ -84,9 +85,8 @@ async function buildDeliverableBody(item) {
       return `<video src="${src}" controls preload="metadata" playsinline style="max-width:100%;border-radius:10px;display:block;background:#000;"></video>`;
     }
     if (type === 'siteshot') {
-      const b = await blobOf();
-      return b.err ? errDiv(b.err)
-        : browserChrome(item.title, `<img src="${b.url}" alt="${escapeHtml(item.title)}" style="width:100%;height:auto;display:block;" />`);
+      const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
+      return browserChrome(item.title, `<img src="${src}" alt="${escapeHtml(item.title)}" style="width:100%;height:auto;display:block;" />`);
     }
     if (type === 'sitelive') {
       // A live site delivered by link: browser-chrome canvas + sandboxed iframe with
