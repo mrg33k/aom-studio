@@ -436,14 +436,16 @@ export function useReview(worldId = 'aom', injected = null) {
   // The queue items carry chip tints (green|lime|amber|violet); the .folder glyph has
   // no is-green — map it to the nearest folder tint.
   const folderTint = (t) => (t === 'green' ? 'teal' : (t || 'violet'));
-  const tree = [{ id: '__all', name: 'All projects', count: allItems.length, depth: 'd0', tint: 'accent', open: activeProj ? 'off' : 'on' }];
+  // The engine allows ONE is-* class per element (each is-: mod drops the previous),
+  // so depth + selection ride a single mode value: d0 | d0on | d1 | d1on.
+  const tree = [{ id: '__all', name: 'All projects', count: allItems.length, tint: 'accent', mode: activeProj ? 'd0' : 'd0on' }];
   for (const p of projList) {
     const isActive = p.slug === activeProj;
-    tree.push({ id: `p:${p.slug}`, name: p.name, count: p.count, depth: 'd0', tint: folderTint(p.tint), open: isActive && !activeMission ? 'on' : 'off' });
+    tree.push({ id: `p:${p.slug}`, name: p.name, count: p.count, tint: folderTint(p.tint), mode: isActive && !activeMission ? 'd0on' : 'd0' });
     if (isActive) {
       const ms = [...p.missions.entries()].sort((a, b) => byName(a[0], b[0]));
-      for (const [slug, count] of ms) tree.push({ id: `m:${slug}`, name: slug, count, depth: 'd1', tint: folderTint(p.tint), open: activeMission === slug ? 'on' : 'off' });
-      if (p.rootCount && ms.length) tree.push({ id: 'm:__root', name: 'Project files', count: p.rootCount, depth: 'd1', tint: folderTint(p.tint), open: activeMission === '__root' ? 'on' : 'off' });
+      for (const [slug, count] of ms) tree.push({ id: `m:${slug}`, name: slug, count, tint: folderTint(p.tint), mode: activeMission === slug ? 'd1on' : 'd1' });
+      if (p.rootCount && ms.length) tree.push({ id: 'm:__root', name: 'Project files', count: p.rootCount, tint: folderTint(p.tint), mode: activeMission === '__root' ? 'd1on' : 'd1' });
     }
   }
   const activeName = activeProj ? (projMap.get(activeProj)?.name || activeProj) : '';

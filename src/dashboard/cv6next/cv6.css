@@ -510,10 +510,11 @@
 [data-cv6][data-screen^="organize"] .destrow.is-on .radio::after { content:''; width:11px; height:11px; border-radius:50%; background:var(--accent); }
 
 /* ---- Review tool (queue · deliverable viewer + pins · decision) ---- */
-/* project → mission tree in the queue column — same rows as Organize's left rail */
+/* project → mission tree in the queue column — same rows as Organize's left rail.
+   ONE is-* class per row (engine rule): d0 | d0on | d1 | d1on = depth + selection. */
 [data-cv6][data-screen^="review"] .trow { display:flex; align-items:center; gap:9px; padding:8px; border-radius:8px; font-size:14px; color:var(--fg); cursor:pointer; }
-[data-cv6][data-screen^="review"] .trow.is-open { background:var(--accent-weak); color:var(--accent); }
-[data-cv6][data-screen^="review"] .trow.is-d1 { padding-left:30px; box-shadow:inset 1px 0 0 rgba(255,255,255,.09); }
+[data-cv6][data-screen^="review"] .trow.is-d0on, [data-cv6][data-screen^="review"] .trow.is-d1on { background:var(--accent-weak); color:var(--accent); }
+[data-cv6][data-screen^="review"] .trow.is-d1, [data-cv6][data-screen^="review"] .trow.is-d1on { padding-left:30px; box-shadow:inset 1px 0 0 rgba(255,255,255,.09); }
 [data-cv6][data-screen^="review"] .qitem { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:11px; cursor:pointer; }
 [data-cv6][data-screen^="review"] .qitem.is-on { background:var(--accent-weak); }
 [data-cv6][data-screen^="review"] .qglyph { width:34px; height:34px; border-radius:10px; background:var(--chip); display:flex; align-items:center; justify-content:center; flex:none; color:var(--muted); }
