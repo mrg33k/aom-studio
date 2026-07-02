@@ -234,6 +234,11 @@ export function useReview(worldId = 'aom', injected = null) {
   // poll refetches the same count (offset 0) so a refresh never drops loaded pages.
   const [shown, setShown] = useState(PAGE_SIZE);
   const [hasMore, setHasMore] = useState(false);
+  // Queue find + order (same toolkit as Organize): type-to-find narrows the visible
+  // queue; sort is a view preference (newest | az). Search text lives in a kept DOM
+  // input; the host component delegates the input event here.
+  const [qSearch, setQSearch] = useState('');
+  const [qSort, setQSort] = useState('newest');
 
   const load = useCallback(async () => {
     let ok = false;
@@ -260,6 +265,7 @@ export function useReview(worldId = 'aom', injected = null) {
             status: 'ready', // queue only returns ready items; live ones handled separately
             statusLabel: 'READY',
             time: relTime(it.last_modified),
+            ts: it.last_modified || '', // raw timestamp so the queue can sort by recency
             location: it.mission ? `${it.project} / ${it.mission}` : it.project,
             queueState: 'ready',
             // The viewer caption used to read "name · 0 KB" — a fabricated size (the queue
@@ -408,7 +414,21 @@ export function useReview(worldId = 'aom', injected = null) {
       pipelineCount: queue?.pipelineCount || 0,
       isReady: filter === 'ready' ? 'on' : 'off',
       isPipeline: filter === 'pipeline' ? 'on' : 'off',
-      items: (queue?.items || []).filter((i) => filter === 'ready' ? i.status === 'ready' : i.status === 'live'),
+      items: (queue?.items || [])
+        .filter((i) => filter === 'ready' ? i.status === 'ready' : i.status === 'live')
+        .filter((i) => {
+          const s = qSearch.trim().toLowerCase();
+          return !s || `${i.title} ${i.who} ${i.typeLabel} ${i.location || ''}`.toLowerCase().includes(s);
+        })
+        .slice()
+        .sort((a, b) => (qSort === 'az'
+          ? String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base', numeric: true })
+          : String(b.ts || '').localeCompare(String(a.ts || '')))),
+      sorts: [
+        { id: 'newest', label: 'Newest', active: qSort === 'newest' ? 'on' : 'off' },
+        { id: 'az',     label: 'A-Z',    active: qSort === 'az'     ? 'on' : 'off' },
+      ],
+      orderLabel: qSort === 'az' ? 'a → z' : 'newest first',
       // 'yes' / 'no' so the template's data-switch shows the "Load older items" button only
       // when older items exist (and not while the injected-files queue or a filter hides it).
       hasMore: (!hasInjected && filter === 'ready' && hasMore) ? 'yes' : 'no',
@@ -462,6 +482,8 @@ export function useReview(worldId = 'aom', injected = null) {
       approve,
       requestChanges,
       sendChecklist,
+      setQueueSearch: (s) => setQSearch(s || ''),
+      setQueueSort: (id) => setQSort(id === 'az' ? 'az' : 'newest'),
     },
   };
 }

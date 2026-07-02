@@ -131,6 +131,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
 
   const aliases = {
     'queue.items': 'item',
+    'queue.sorts': 'sort',
     'deliverable.pins': 'pin',
     'deliverable.comments': 'comment',
     'item': 'item',
@@ -138,12 +139,22 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     'comment': 'comment',
   };
 
+  // Queue search is an uncontrolled kept input (template); the engine only wires
+  // clicks, so the input event is delegated from the wrapper div below.
+  const qDebRef = useRef(null);
+  const onQueueSearchInput = (e) => {
+    const el = e.target;
+    if (!el?.matches?.('[data-review-qsearch]')) return;
+    clearTimeout(qDebRef.current);
+    qDebRef.current = setTimeout(() => actions.setQueueSearch(el.value), 120);
+  };
+
   const desktopActions = {
     nav: (target) => target === 'back' ? onNav?.('back') : onNav?.(target),
     openCommandK: () => { /* stub */ },
     openProfile: () => { /* stub */ },
-    searchQueue: () => { /* stub */ },
     setQueueFilter: (f) => actions.setQueueFilter(f),
+    setQueueSort: (id) => actions.setQueueSort(id),
     openDeliverable: (id) => {
       setPickedId(id);
       actions.openDeliverable(id);
@@ -163,7 +174,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   };
 
   return (
-    <div ref={viewerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div ref={viewerRef} onInput={onQueueSearchInput} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
       {pinOverlay}
     </div>
