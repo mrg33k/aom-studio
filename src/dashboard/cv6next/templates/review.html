@@ -42,16 +42,16 @@
   <div style="display:flex;flex:1;min-height:0;">
     <!-- queue -->
     <div style="width:320px;flex:none;border-right:1px solid var(--divider);display:flex;flex-direction:column;overflow:hidden;">
-      <div style="padding:18px 20px 12px;flex:none;"><div style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Queue</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;"><span data-bind="queue.readyCount">5</span> ready · mixed formats</div></div>
-      <!-- Project → mission tree: the SAME left-rail selection Organize uses. ONE row
-           per node; d0 = project (All projects first), d1 = missions of the selected
-           project; is-open marks the active scope. -->
-      <div style="flex:none;max-height:44%;overflow-y:auto;padding:0 12px 10px;border-bottom:1px solid var(--divider);margin-bottom:8px;">
-        <div class="eyebrow" style="margin:2px 8px 10px;">Projects</div>
+      <div style="padding:18px 20px 12px;flex:none;"><div style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Queue</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;"><span data-bind="queue.readyCount">5</span> deliverables waiting</div></div>
+      <!-- Deliverables heading first; the filter sits directly UNDER it. -->
+      <div style="padding:0 20px 8px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;"><span class="eyebrow" style="flex:none;">Deliverables</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="queue.scopeLabel">All projects</span></div>
+      <!-- The filter: project → mission tree, the SAME left-rail selection Organize
+           uses. ONE row per node; d0 = project (All projects first, only projects with
+           deliverables appear), d1 = missions of the selected project. -->
+      <div style="flex:none;max-height:40%;overflow-y:auto;padding:0 12px 10px;border-bottom:1px solid var(--divider);margin-bottom:8px;">
         <div class="trow is-d0on" data-each="queue.tree" data-action="selectQueueNode" data-arg="node.id" data-mod="is-:node.mode"><svg class="folder is-violet" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="node.name">Project</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);flex:none;" data-bind="node.count">4</span></div>
       </div>
       <div style="flex:1;overflow-y:auto;padding:0 12px;">
-        <div style="padding:0 8px;margin:4px 0 6px;display:flex;align-items:center;justify-content:space-between;gap:10px;"><span class="eyebrow" style="flex:none;">Deliverables</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="queue.scopeLabel">All projects</span></div>
         <!-- ONE row per queue item; is-open marks the open deliverable; is-:item.type on the glyph; count badge is-zero when 0 -->
         <div class="qitem is-on" data-each="queue.items" data-action="openDeliverable" data-arg="item.id" data-mod="is-:item.open"><div class="qglyph"><svg class="tglyph is-doc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:item.type"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></div><div style="flex:1;min-width:0;"><div class="qtitle" data-bind="item.title">Launch film · 0:42</div><div class="qmeta"><span data-bind="item.who">Gary</span> · <span data-bind="item.typeLabel">Video</span></div></div><span class="qcount" data-bind="item.count" data-mod="is-:item.countState">3</span></div>
         <!-- "Load older items" — shown only when older items exist beyond the current page (queue.hasMore = yes) -->
@@ -136,12 +136,12 @@
 <div data-cv6 data-theme="dark" data-screen="review-mobile" data-screen-label="Review · Pick list" class="cv6-screen" style="position:relative;width:390px;height:800px;flex:none;border-radius:24px;overflow:hidden;box-shadow:0 30px 70px -28px rgba(0,0,0,.5);display:flex;flex-direction:column;">
   <div class="mhdr">
     <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
-    <div class="mhtitle"><div class="mttl">Review</div><div class="msub"><span data-bind="queue.readyCount">40</span> ready to review</div></div>
+    <div class="mhtitle"><div class="mttl">Review</div><div class="msub"><span data-bind="queue.readyCount">40</span> deliverables waiting</div></div>
     <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
-  <!-- Project → mission tree: the SAME left-rail selection Organize uses -->
-  <div style="flex:none;max-height:36%;overflow-y:auto;padding:6px 8px 8px;border-bottom:1px solid var(--divider);">
-    <div class="eyebrow" style="margin:6px 12px 8px;">Projects</div>
+  <!-- Deliverables heading first; the filter (project → mission tree) sits UNDER it -->
+  <div style="padding:10px 16px 6px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;"><span class="eyebrow" style="flex:none;">Deliverables</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="queue.scopeLabel">All projects</span></div>
+  <div style="flex:none;max-height:34%;overflow-y:auto;padding:0 8px 8px;border-bottom:1px solid var(--divider);">
     <div class="trow is-d0on" data-each="queue.tree" data-action="selectQueueNode" data-arg="node.id" data-mod="is-:node.mode"><svg class="folder is-violet" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="node.name">Project</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);flex:none;" data-bind="node.count">4</span></div>
   </div>
   <div data-state="ready" style="flex:1;overflow:hidden;">
