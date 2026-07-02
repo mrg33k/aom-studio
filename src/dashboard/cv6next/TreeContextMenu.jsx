@@ -79,10 +79,13 @@ function PencilIcon() {
   );
 }
 function MoveIcon() {
+  // Deliberately NOT a folder glyph: at 15px a folder-with-arrow and the
+  // folder-plus of "New subfolder" are indistinguishable blobs on adjacent
+  // rows. A bar + right arrow ("move out to") stays legible at menu size.
   return (
     <svg style={S.rowIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
-      <path d="M10 13h6m0 0-2.4-2.4M16 13l-2.4 2.4" />
+      <path d="M4 4v16" />
+      <path d="M9 12h11M16 8l4 4-4 4" />
     </svg>
   );
 }
