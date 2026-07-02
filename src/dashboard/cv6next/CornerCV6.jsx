@@ -28,7 +28,7 @@ import Onboarding from './Onboarding.jsx';
 import LiveScribe from './LiveScribe.jsx';
 import Search from './Search.jsx';
 import { MobileNav, DesktopNav } from './SharedNav.jsx';
-import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, useChatList } from './data/useHomeData.js';
+import { useHome, useProjectMissions, shapeProjectState, createMissionInProject, createProjectFromHome, useChatList } from './data/useHomeData.js';
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
@@ -217,6 +217,84 @@ const ADD_TRACKER_SHEET_HTML = `
     </div>
     <!-- create-new affordance -->
     <div class="trk" data-action="newTrackerForItem" style="border:1px dashed var(--hair);gap:11px;cursor:pointer;"><span style="width:27px;height:27px;border-radius:8px;background:var(--accent-weak);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span style="font-size:14px;font-weight:600;color:var(--accent);">New tracker for this mission</span></div>
+  </div>
+</div>`;
+
+// Start-a-mission / New-project composer — the live build of the CV6 "New mission / new
+// project" design (deliverables/design-system-2026-06-28/guidelines/pattern-new-mission.html).
+// One overlay, two modes via data-switch on composer.mode: "Start a mission" (goal + project +
+// assign + priority + when → createMissionInProject) and "New project" (name + about →
+// createProjectFromHome). Picks ride the DOM (.is-on) so the uncontrolled text boxes survive.
+const NEW_COMPOSER_ALIASES = { 'composer.projects': 'proj', 'composer.agents': 'ag' };
+const NEW_COMPOSER_HTML = `
+<div data-cv6 data-theme="dark" style="position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+  <style>
+    .cmp-card .cmp-field{display:flex;flex-direction:column;gap:8px;}
+    .cmp-card .cmp-flab{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
+    .cmp-card .cmp-inp{border:1px solid var(--hair);background:var(--surface-2);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--fg);font-family:var(--font-sans);width:100%;box-sizing:border-box;}
+    .cmp-card textarea.cmp-inp{resize:none;line-height:1.5;}
+    .cmp-card .cmp-inp::placeholder{color:var(--faint);}
+    .cmp-card .cmp-seg{display:flex;gap:7px;flex-wrap:wrap;}
+    .cmp-card .cmp-seg button{height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--muted);font-size:13px;font-weight:600;font-family:var(--font-sans);cursor:pointer;}
+    .cmp-card .cmp-seg button.is-on{border-color:transparent;background:var(--accent);color:#fff;}
+    .cmp-card .cmp-tab{flex:1;height:38px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--muted);font-size:13px;font-weight:600;font-family:var(--font-sans);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
+    .cmp-card .cmp-tab.is-on{border-color:transparent;background:var(--accent);color:#fff;}
+    .cmp-card .cmp-row{display:flex;align-items:center;gap:9px;padding:11px 13px;border:1px solid var(--hair);background:var(--surface-2);border-radius:11px;cursor:pointer;color:var(--fg);font-size:14px;font-weight:600;}
+    .cmp-card .cmp-row.is-on{border-color:var(--accent);background:var(--accent-weak);}
+    .cmp-card .cmp-row .cmp-chk{margin-left:auto;color:var(--accent);opacity:0;display:flex;}
+    .cmp-card .cmp-row.is-on .cmp-chk{opacity:1;}
+    .cmp-card .cmp-list{display:flex;flex-direction:column;gap:7px;max-height:168px;overflow-y:auto;}
+  </style>
+  <div data-action="closeComposer" style="position:absolute;inset:0;background:rgba(4,6,9,.62);"></div>
+  <div class="cmp-card" style="position:relative;width:100%;max-width:520px;max-height:92%;display:flex;flex-direction:column;border-radius:20px;overflow:hidden;background:var(--ground);box-shadow:0 34px 80px -22px rgba(0,0,0,.62);border:1px solid var(--hair);">
+    <div style="display:flex;align-items:center;gap:12px;padding:20px 22px 14px;border-bottom:1px solid var(--divider);flex:none;">
+      <span style="width:40px;height:40px;border-radius:12px;background:var(--accent-weak);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></svg></span>
+      <div style="flex:1;min-width:0;"><div style="font-size:18px;font-weight:700;letter-spacing:-.01em;color:var(--fg);" data-bind="composer.title">Start a mission</div><div style="font-size:12px;color:var(--muted);" data-bind="composer.subtitle">A room + an agent, pointed at one goal</div></div>
+      <span class="ib" data-action="closeComposer" style="width:32px;height:32px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
+    </div>
+    <div style="display:flex;gap:7px;padding:14px 22px 2px;flex:none;">
+      <button class="cmp-tab" data-mod="is-:composer.tabMission" data-action="setComposerMode" data-arg="mission"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></svg>Start a mission</button>
+      <button class="cmp-tab" data-mod="is-:composer.tabProject" data-action="setComposerMode" data-arg="project"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>New project</button>
+    </div>
+    <div data-switch="composer.mode" style="padding:16px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:18px;">
+      <div data-case="mission" style="display:flex;flex-direction:column;gap:18px;">
+        <div class="cmp-field">
+          <div class="cmp-flab">What should the room get done?</div>
+          <textarea class="cmp-inp" data-bind="draft.goal" placeholder="e.g. Lock the print framing before Apr 29" style="min-height:64px;"></textarea>
+        </div>
+        <div class="cmp-field">
+          <div class="cmp-flab">Project</div>
+          <div class="cmp-list">
+            <div class="cmp-row cmp-projrow" data-each="composer.projects" data-mod="is-:proj.picked" data-action="pickComposerProject" data-arg="proj.slug"><span style="width:20px;height:20px;border-radius:6px;background:rgba(139,124,246,.16);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="proj.name">Project</span><span class="cmp-chk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+          </div>
+        </div>
+        <div class="cmp-field">
+          <div class="cmp-flab">Assign to</div>
+          <div class="cmp-list">
+            <div class="cmp-row cmp-agrow" data-each="composer.agents" data-mod="is-:ag.picked" data-action="pickComposerAgent" data-arg="ag.id"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="ag.name">Auto</span><span class="cmp-chk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div class="cmp-field" style="flex:1;min-width:150px;"><div class="cmp-flab">Priority</div><div class="cmp-seg cmp-pri"><button data-mod="is-:composer.priSel.low" data-action="setComposerPriority" data-arg="low">Low</button><button data-mod="is-:composer.priSel.med" data-action="setComposerPriority" data-arg="med">Med</button><button data-mod="is-:composer.priSel.high" data-action="setComposerPriority" data-arg="high">High</button></div></div>
+          <div class="cmp-field" style="flex:1;min-width:150px;"><div class="cmp-flab">When</div><div class="cmp-seg cmp-when"><button data-mod="is-:composer.whenSel.now" data-action="setComposerWhen" data-arg="now">Now</button><button data-mod="is-:composer.whenSel.week" data-action="setComposerWhen" data-arg="this-week">This week</button></div></div>
+        </div>
+      </div>
+      <div data-case="project" style="display:flex;flex-direction:column;gap:18px;">
+        <div class="cmp-field">
+          <div class="cmp-flab">Project name</div>
+          <input class="cmp-inp" data-bind="draft.name" placeholder="e.g. Space Rising">
+        </div>
+        <div class="cmp-field">
+          <div class="cmp-flab">What's it about? <span style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--faint);">· gives agents the gist</span></div>
+          <textarea class="cmp-inp" data-bind="draft.about" placeholder="A line or two on what this project is for" style="min-height:72px;"></textarea>
+        </div>
+      </div>
+    </div>
+    <div style="padding:4px 22px 20px;display:flex;align-items:center;gap:11px;flex:none;border-top:1px solid var(--divider);padding-top:16px;">
+      <span style="flex:1;font-size:11.5px;color:var(--faint);line-height:1.4;">The more you give it, the better the room starts.</span>
+      <button data-action="closeComposer" style="height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Cancel</button>
+      <button data-action="submitComposer" style="height:44px;padding:0 20px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;gap:8px;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span data-bind="composer.ctaLabel">Start mission</span></button>
+    </div>
   </div>
 </div>`;
 
@@ -496,6 +574,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const [missionSeed, setMissionSeed] = useState(null);
   const missionFormRef = useRef(null);
   const missionAgentRef = useRef('');
+  // Start-a-mission / New-project composer (the All-rooms "New" button, CV6 design system).
+  // `composer` (null | { mode }) drives the overlay + the mission/project switch; the field
+  // picks (project/agent/priority/when) live in a ref + are toggled on the DOM directly so the
+  // overlay never re-binds mid-typing and wipes the uncontrolled goal/name boxes.
+  const [composer, setComposer] = useState(null);
+  const composerFormRef = useRef(null);
+  const composerSelRef = useRef({ mode: 'mission', projectId: '', agentId: '__auto', priority: 'med', when: 'now' });
   // Catch Up full deck (Home state D): cycle the real needs-you cards.
   const [catchUpOpen, setCatchUpOpen] = useState(false);
   const [catchUpIndex, setCatchUpIndex] = useState(0);
@@ -1066,7 +1151,18 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     // Search opens the command palette (room/agent search), not the nav menu.
     openCommandK: () => (onCommandK ? onCommandK() : onOpenNav?.()), search: () => (onCommandK ? onCommandK() : onOpenNav?.()), openNav: () => onOpenNav?.(),
     openNotifications: () => {}, openProfile: () => {}, toggleTheme: () => {},
-    newRoom: () => {}, showMoreProjects: () => setProjShowAll(true),
+    // All-rooms "New" → open the Start-a-mission composer (CV6 design). Default it to a
+    // mission in the first project with Auto-assign; the user can flip to New project inside.
+    newRoom: () => {
+      // Freeze the project/agent lists into the composer state so a realtime data tick can't
+      // re-bind the overlay and wipe a half-typed goal (the picks ride a ref, not live data).
+      const projSnap = (data.projects || []).map((p) => ({ id: p.id, slug: p.slug || p.id, name: p.name }));
+      const agentSnap = (data.agents || []).map((a) => ({ id: a.id, name: a.name }));
+      const first = projSnap[0];
+      composerSelRef.current = { mode: 'mission', projectId: first ? first.slug : '', agentId: '__auto', agentName: '', priority: 'med', when: 'now' };
+      setComposer({ mode: 'mission', projects: projSnap, agents: agentSnap });
+    },
+    showMoreProjects: () => setProjShowAll(true),
     // Catch Up deck navigation (desktop arrows + mobile next). Clamp against the LIVE deck
     // length (inbox minus device-dismissed) so the arrows never run past the last card.
     catchUpPrev: () => setCatchUpIndex((i) => Math.max(0, i - 1)),
@@ -1164,6 +1260,64 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [worldId, openedProject, missionSeed]);
+
+  // Start-a-mission / New-project composer actions. Field picks (project/agent/priority/when)
+  // are written to composerSelRef AND toggled on the DOM directly — no setState — so the
+  // uncontrolled goal/name/about boxes are never wiped mid-edit by a re-bind. Only the mode
+  // toggle (which swaps the whole field set anyway) goes through React state.
+  const composerActions = useMemo(() => ({
+    closeComposer: () => setComposer(null),
+    setComposerMode: (mode) => {
+      const m = mode === 'project' ? 'project' : 'mission';
+      composerSelRef.current = { ...composerSelRef.current, mode: m };
+      setComposer((c) => ({ ...c, mode: m })); // keep the frozen project/agent lists
+    },
+    pickComposerProject: (slug, e) => {
+      composerSelRef.current.projectId = slug;
+      composerFormRef.current?.querySelectorAll('.cmp-projrow').forEach((r) => r.classList.remove('is-on'));
+      e?.currentTarget?.classList.add('is-on');
+    },
+    pickComposerAgent: (id, e) => {
+      composerSelRef.current.agentId = id;
+      const nm = e?.currentTarget?.querySelector('span')?.textContent?.trim() || '';
+      composerSelRef.current.agentName = (id === '__auto') ? '' : nm; // Auto = let the room route it
+      composerFormRef.current?.querySelectorAll('.cmp-agrow').forEach((r) => r.classList.remove('is-on'));
+      e?.currentTarget?.classList.add('is-on');
+    },
+    setComposerPriority: (v, e) => {
+      composerSelRef.current.priority = v;
+      composerFormRef.current?.querySelectorAll('.cmp-pri button').forEach((b) => b.classList.remove('is-on'));
+      e?.currentTarget?.classList.add('is-on');
+    },
+    setComposerWhen: (v, e) => {
+      composerSelRef.current.when = v;
+      composerFormRef.current?.querySelectorAll('.cmp-when button').forEach((b) => b.classList.remove('is-on'));
+      e?.currentTarget?.classList.add('is-on');
+    },
+    submitComposer: () => {
+      const root = composerFormRef.current;
+      const sel = composerSelRef.current;
+      if (sel.mode === 'project') {
+        const name = root?.querySelector('[data-bind="draft.name"]')?.value?.trim() || '';
+        const about = root?.querySelector('[data-bind="draft.about"]')?.value?.trim() || '';
+        if (!name) return; // a project needs a name
+        createProjectFromHome({ worldId, name, about });
+        setComposer(null);
+        setMissionReload((k) => k + 1);
+        return;
+      }
+      const goal = root?.querySelector('[data-bind="draft.goal"]')?.value?.trim() || '';
+      if (!goal) return; // a mission needs a goal (its first line becomes the title)
+      const projectSlug = sel.projectId;
+      if (!projectSlug) return; // a mission must live in a project
+      const title = goal.split('\n')[0].slice(0, 80);
+      const priLabel = { low: 'Low', med: 'Medium', high: 'High' }[sel.priority] || '';
+      const whenLabel = { now: 'Now', 'this-week': 'This week' }[sel.when] || '';
+      createMissionInProject({ worldId, projectSlug, title, goal, agentName: sel.agentName || '', priority: priLabel, when: whenLabel });
+      setComposer(null);
+      setMissionReload((k) => k + 1);
+    },
+  }), [worldId]);
 
   // Card footer state drives the bottom of the catch-up card: 'none' = caught up (hide it),
   // 'actions' = the suggested-action buttons, 'reply' = the inline reply composer.
@@ -1363,6 +1517,30 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     goal: displayedGoal,
     convo,
   };
+  // Start-a-mission / New-project composer overlay (the All-rooms "New"). Highlights for the
+  // current picks are computed fresh from the ref each render, so a mode toggle restores them.
+  const composerMode = composer?.mode || 'mission';
+  const csel = composerSelRef.current;
+  const composerData = composer ? {
+    composer: {
+      mode: composerMode,
+      title: composerMode === 'project' ? 'New project' : 'Start a mission',
+      subtitle: composerMode === 'project' ? 'A home for related missions & files' : 'A room + an agent, pointed at one goal',
+      ctaLabel: composerMode === 'project' ? 'Create project' : 'Start mission',
+      tabMission: composerMode === 'mission' ? 'on' : 'off',
+      tabProject: composerMode === 'project' ? 'on' : 'off',
+      projects: (composer.projects || []).map((p) => ({ id: p.id, slug: p.slug, name: p.name, picked: (p.slug === csel.projectId) ? 'on' : 'off' })),
+      agents: [{ id: '__auto', name: 'Auto', picked: (!csel.agentId || csel.agentId === '__auto') ? 'on' : 'off' }, ...(composer.agents || []).map((a) => ({ id: a.id, name: a.name, picked: (csel.agentId === a.id) ? 'on' : 'off' }))],
+      priSel: { low: csel.priority === 'low' ? 'on' : 'off', med: csel.priority === 'med' ? 'on' : 'off', high: csel.priority === 'high' ? 'on' : 'off' },
+      whenSel: { now: csel.when === 'now' ? 'on' : 'off', week: csel.when === 'this-week' ? 'on' : 'off' },
+    },
+  } : null;
+  const composerOverlay = composer ? (
+    <div ref={composerFormRef} style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
+      <TemplateScreen html={NEW_COMPOSER_HTML} data={composerData} actions={composerActions} state="ready"
+        aliases={NEW_COMPOSER_ALIASES} style={{ width: '100%', height: '100%' }} />
+    </div>
+  ) : null;
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
@@ -1394,6 +1572,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
         onReview={(f) => { const files = Array.isArray(f) ? f : (f && typeof f === 'object' ? [f] : null); onNav?.('review', files?.length ? { files } : null); }}
       />
       {trackerOverlay}
+      {composerOverlay}
     </div>
   );
 }

@@ -325,7 +325,7 @@ function slugify(s) {
   if (!/^[a-z]/.test(v)) v = 'm-' + v;       // slug must start with a letter
   return v.slice(0, 48);
 }
-export async function createMissionInProject({ worldId, projectSlug, title, goal, agentName }) {
+export async function createMissionInProject({ worldId, projectSlug, title, goal, agentName, priority, when }) {
   const mission_slug = slugify(title);
   if (!worldId || !projectSlug || !mission_slug) return null;
   try {
@@ -334,11 +334,41 @@ export async function createMissionInProject({ worldId, projectSlug, title, goal
       body: JSON.stringify({ parent_slug: projectSlug, mission_slug, name: title, client_id: worldId }),
     });
     const d = r && r.ok ? await r.json() : null;
-    if (d?.ok && (goal || agentName)) {
-      const note = [goal ? `Goal: ${goal}` : '', agentName ? `Assigned: ${agentName}` : ''].filter(Boolean).join(' · ');
+    if (d?.ok && (goal || agentName || priority || when)) {
+      // Fold everything the user gave the composer (goal, assignee, priority, when) into the
+      // opening note so nothing typed/picked is lost — the endpoint itself only takes a name.
+      const note = [
+        goal ? `Goal: ${goal}` : '',
+        agentName ? `Assigned: ${agentName}` : '',
+        priority ? `Priority: ${priority}` : '',
+        when ? `When: ${when}` : '',
+      ].filter(Boolean).join(' · ');
       await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ client_id: worldId, agent: 'corner', project: projectSlug, text: note, role: 'user', source: 'corner-dashboard', metadata: { mission_slug } }),
+      }).catch(() => {});
+    }
+    return d;
+  } catch { return null; }
+}
+
+// Create a project for real from the Home composer, via the same endpoint the 1:1 chat's
+// novel-topic flow uses. It takes a slug + name and scaffolds the room (VISION/CONTEXT/BUILD
+// + a kickoff greeting). If the user described it ("What's it about?"), that text is posted
+// into the new room as their first message so the room can self-build around it.
+export async function createProjectFromHome({ worldId, name, about, agentName }) {
+  const slug = slugify(name);
+  if (!worldId || !slug) return null;
+  try {
+    const r = await authFetch('/api/dashboard/create-project-from-chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, name: name || slug, client_id: worldId, agent_slug: 'ea' }),
+    });
+    const d = r && r.ok ? await r.json() : null;
+    if (d?.ok && about && about.trim()) {
+      await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: worldId, agent: 'corner', project: slug, text: about.trim(), role: 'user', source: 'corner-dashboard' }),
       }).catch(() => {});
     }
     return d;

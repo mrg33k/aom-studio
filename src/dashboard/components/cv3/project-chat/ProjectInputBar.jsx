@@ -209,11 +209,12 @@ export default function ProjectInputBar() {
               }
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
-                if ((!input.trim() && !pasteChips?.length) || sending) return
+                const textToSend = inputRef.current?.value ?? input
+                if ((!textToSend.trim() && !pasteChips?.length) || sending) return
                 const missionPrefix = attachedMission
                   ? `[Mission: ${attachedMission.path}] `
                   : ''
-                sendProjectText(missionPrefix + input)
+                sendProjectText(missionPrefix + textToSend)
                 setInput('')
                 if (attachedMission) setAttachedMission(null)
               }
@@ -324,11 +325,12 @@ export default function ProjectInputBar() {
             <button
               title="Send"
               onClick={() => {
-                if ((!input.trim() && !pasteChips?.length) || sending) return
+                const textToSend = inputRef.current?.value ?? input
+                if ((!textToSend.trim() && !pasteChips?.length) || sending) return
                 const missionPrefix = attachedMission
                   ? `[Mission: ${attachedMission.path}] `
                   : ''
-                sendProjectText(missionPrefix + input)
+                sendProjectText(missionPrefix + textToSend)
                 setInput('')
                 if (attachedMission) setAttachedMission(null)
               }}

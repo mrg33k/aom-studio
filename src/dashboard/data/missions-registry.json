@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-29T21:32:08.447Z",
+  "generated_at": "2026-07-02T02:51:16.580Z",
   "missions": [
     {
       "slug": "corner:business-ops",
@@ -1178,6 +1178,20 @@
       "path": "corner/missions/older-versions/missions/mail-room"
     },
     {
+      "slug": "corner:one-write-path",
+      "raw_slug": "one-write-path",
+      "folder_name": "one-write-path",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "One Write Path",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/one-write-path"
+    },
+    {
       "slug": "corner:organize",
       "raw_slug": "organize",
       "folder_name": "organize",
@@ -1332,6 +1346,20 @@
       "path": "corner/missions/review/missions/review-panel"
     },
     {
+      "slug": "corner:state-to-supabase",
+      "raw_slug": "state-to-supabase",
+      "folder_name": "state-to-supabase",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "State To Supabase",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/state-to-supabase"
+    },
+    {
       "slug": "corner:support",
       "raw_slug": "support",
       "folder_name": "support",
@@ -1456,6 +1484,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/missions/tracker/missions/trackers-panel"
+    },
+    {
+      "slug": "corner:turn-events",
+      "raw_slug": "turn-events",
+      "folder_name": "turn-events",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "Turn Events",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/turn-events"
     },
     {
       "slug": "agent-hooks:coding-hook",
@@ -3393,8 +3435,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 104,
-      "in_flight": 104,
+      "total": 107,
+      "in_flight": 107,
       "done": 0
     },
     {

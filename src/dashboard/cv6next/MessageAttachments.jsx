@@ -40,17 +40,20 @@ function fileGlyph(kind, className = '') {
   return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}><path d={d} /></svg>;
 }
 
-// Single image thumbnail (rounded, click → lightbox).
-function SingleImage({ file }) {
+// Single image thumbnail (rounded, click → lightbox, with Review button).
+function SingleImage({ file, onReview }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   return (
     <>
-      <img
-        src={fileHref(file.url)}
-        alt={file.name}
-        onClick={() => setLightboxOpen(true)}
-        style={{ maxWidth: '100%', maxHeight: 240, width: 'auto', height: 'auto', objectFit: 'contain', alignSelf: 'flex-start', borderRadius: 8, cursor: 'pointer' }}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <img
+          src={fileHref(file.url)}
+          alt={file.name}
+          onClick={() => setLightboxOpen(true)}
+          style={{ maxWidth: '100%', maxHeight: 240, width: 'auto', height: 'auto', objectFit: 'contain', alignSelf: 'flex-start', borderRadius: 8, cursor: 'pointer' }}
+        />
+        <button onClick={() => onReview?.(file)} title="Open in the Review tab" style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '6px 10px', borderRadius: 8, cursor: 'pointer', width: 'fit-content' }}>Review</button>
+      </div>
       {lightboxOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }} onClick={() => setLightboxOpen(false)}>
           <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
@@ -66,7 +69,7 @@ function SingleImage({ file }) {
 }
 
 // Gallery renderer: 3-col grid with first tile .span2, "+N" on last, caption.
-function ImageGallery({ files }) {
+function ImageGallery({ files, onReview }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
   const showCount = 5; // Show 5 tiles, 6th gets "+N"
@@ -92,13 +95,13 @@ function ImageGallery({ files }) {
         <span>{files.length} image{files.length === 1 ? '' : 's'} · {formatSize(files.reduce((s, f) => s + (f.size || 0), 0))}</span>
       </div>
 
-      {lightboxOpen && <GalleryLightbox files={files} idx={lightboxIdx} onIdx={setLightboxIdx} onClose={() => setLightboxOpen(false)} />}
+      {lightboxOpen && <GalleryLightbox files={files} idx={lightboxIdx} onIdx={setLightboxIdx} onClose={() => setLightboxOpen(false)} onReview={onReview} />}
     </>
   );
 }
 
 // Lightbox viewer for collections: look-only, prev/next, counter, "Comment in Review" button.
-function GalleryLightbox({ files, idx, onIdx, onClose }) {
+function GalleryLightbox({ files, idx, onIdx, onClose, onReview }) {
   const f = files[idx] || {};
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 }} onClick={onClose}>
@@ -134,7 +137,7 @@ function GalleryLightbox({ files, idx, onIdx, onClose }) {
         </div>
         <div className="fcv-foot">
           <span style={{ flex: 1, fontSize: '11.5px', color: 'var(--muted)', lineHeight: 1.4 }}>Look-only here. Swipe or tap the arrows.</span>
-          <button className="fc-rev" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px' }}>
+          <button onClick={() => onReview?.(f)} className="fc-rev" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 14px' }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
             Comment in Review
           </button>
@@ -162,7 +165,7 @@ function SingleFile({ file, onReview }) {
 }
 
 // File collection card: header + grid/list + footer with "Review all" button.
-function FileCollection({ files, onReviewAll }) {
+function FileCollection({ files, onReviewAll, onReview }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   // Classify: >=2 images → .fc-grid; otherwise → .fc-list
   const hasImages = files.some((f) => fileKind(f.name, f.mime) === 'photo');
@@ -220,7 +223,7 @@ function FileCollection({ files, onReviewAll }) {
         </div>
       </div>
 
-      {lightboxOpen && <GalleryLightbox files={files} idx={0} onIdx={() => {}} onClose={() => setLightboxOpen(false)} />}
+      {lightboxOpen && <GalleryLightbox files={files} idx={0} onIdx={() => {}} onClose={() => setLightboxOpen(false)} onReview={onReview} />}
     </>
   );
 }
@@ -242,12 +245,12 @@ export default function MessageAttachments({ attachments, onReview }) {
   return (
     <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* Image single or gallery */}
-      {images.length === 1 && <SingleImage file={images[0]} />}
-      {images.length > 1 && <ImageGallery files={images} />}
+      {images.length === 1 && <SingleImage file={images[0]} onReview={onReview} />}
+      {images.length > 1 && <ImageGallery files={images} onReview={onReview} />}
 
       {/* File single or collection */}
       {files.length === 1 && <SingleFile file={files[0]} onReview={onReview} />}
-      {files.length > 1 && <FileCollection files={files} onReviewAll={onReview} />}
+      {files.length > 1 && <FileCollection files={files} onReviewAll={onReview} onReview={onReview} />}
     </div>
   );
 }
