@@ -559,6 +559,10 @@
     {
       "source": "/swan/:path*",
       "destination": "/swan/:path*"
+    },
+    {
+      "source": "/holistic-balance/deck",
+      "destination": "/holisticbalance/business-deck.html"
     }
   ],
   "redirects": [
