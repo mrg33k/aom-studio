@@ -213,7 +213,7 @@ export function reviewItemsFromFiles(files, project = '') {
         id: path, title: name,
         who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),
         type: key, typeLabel: typeLabel(key), typeGlyph: typeGlyph(key),
-        count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '', missionLabel: '',
+        count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '', missionLabel: '', missionRaw: '',
         location: project || '', queueState: 'ready', file: typeLabel(key),
         bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
       };
@@ -233,11 +233,11 @@ export function useReview(worldId = 'aom', injected = null) {
   // poll refetches the same count (offset 0) so a refresh never drops loaded pages.
   const [shown, setShown] = useState(PAGE_SIZE);
   const [hasMore, setHasMore] = useState(false);
-  // Queue find + order (same toolkit as Organize): type-to-find narrows the visible
-  // queue; sort is a view preference (newest | az | project | mission). Search text
-  // lives in a kept DOM input; the host component delegates the input event here.
-  const [qSearch, setQSearch] = useState('');
-  const [qSort, setQSort] = useState('newest');
+  // Queue scope (the same left-rail selection Organize uses): pick a project, then a
+  // mission within it. null = all projects / every mission in the selected project;
+  // '__root' = files sitting at the project root with no mission folder.
+  const [projSel, setProjSel] = useState(null);
+  const [missionSel, setMissionSel] = useState(null);
 
   const load = useCallback(async () => {
     let ok = false;
@@ -271,6 +271,7 @@ export function useReview(worldId = 'aom', injected = null) {
             // mission tail ("/ reports-page"), empty when the file sits at project root,
             // so the line never reads "Space-rising · space-rising / ...".
             missionLabel: it.mission ? `/ ${it.mission}` : '',
+            missionRaw: it.mission || '', // raw slug the project → mission tree scopes by
             queueState: 'ready',
             // The viewer caption used to read "name · 0 KB" — a fabricated size (the queue
             // endpoint never carries file bytes in production; it walks a tunnel that returns
@@ -412,43 +413,54 @@ export function useReview(worldId = 'aom', injected = null) {
     && (queue?.items || []).some((i) => i.id === openDelId)
     && !bodies[openDelId];
 
-  // Sort comparators. Project groups by project (a → z), newest within; Mission
-  // groups by project then mission (root files first), newest within — the same
-  // project/mission scoping Organize gives, expressed as a queue order.
-  const byTitle = (a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base', numeric: true });
   const byNewest = (a, b) => String(b.ts || '').localeCompare(String(a.ts || ''));
   const byName = (x, y) => String(x || '').localeCompare(String(y || ''), undefined, { sensitivity: 'base' });
-  const compare = (a, b) => {
-    if (qSort === 'az') return byTitle(a, b);
-    if (qSort === 'project' || qSort === 'mission') {
-      const p = byName(a.whoRaw || a.who, b.whoRaw || b.who);
-      if (p) return p;
-      if (qSort === 'mission') {
-        const m = byName(a.missionLabel, b.missionLabel);
-        if (m) return m;
-      }
-      return byNewest(a, b);
+
+  // Project → mission tree, built from the queue itself (a project appears only when
+  // it has deliverables). d0 = 'All projects' + one row per project; d1 = the selected
+  // project's missions ('Project files' = items at project root). is-open marks the
+  // active scope — exactly one node is on at a time.
+  const allItems = queue?.items || [];
+  const projMap = new Map();
+  for (const i of allItems) {
+    const key = i.whoRaw || '';
+    if (!projMap.has(key)) projMap.set(key, { slug: key, name: i.who || 'Unfiled', tint: i.whoTint, count: 0, missions: new Map(), rootCount: 0 });
+    const p = projMap.get(key);
+    p.count += 1;
+    if (i.missionRaw) p.missions.set(i.missionRaw, (p.missions.get(i.missionRaw) || 0) + 1);
+    else p.rootCount += 1;
+  }
+  const projList = [...projMap.values()].sort((a, b) => byName(a.name, b.name));
+  const activeProj = projSel && projMap.has(projSel) ? projSel : null;
+  const activeMission = activeProj ? missionSel : null;
+  // The queue items carry chip tints (green|lime|amber|violet); the .folder glyph has
+  // no is-green — map it to the nearest folder tint.
+  const folderTint = (t) => (t === 'green' ? 'teal' : (t || 'violet'));
+  const tree = [{ id: '__all', name: 'All projects', count: allItems.length, depth: 'd0', tint: 'accent', open: activeProj ? 'off' : 'on' }];
+  for (const p of projList) {
+    const isActive = p.slug === activeProj;
+    tree.push({ id: `p:${p.slug}`, name: p.name, count: p.count, depth: 'd0', tint: folderTint(p.tint), open: isActive && !activeMission ? 'on' : 'off' });
+    if (isActive) {
+      const ms = [...p.missions.entries()].sort((a, b) => byName(a[0], b[0]));
+      for (const [slug, count] of ms) tree.push({ id: `m:${slug}`, name: slug, count, depth: 'd1', tint: folderTint(p.tint), open: activeMission === slug ? 'on' : 'off' });
+      if (p.rootCount && ms.length) tree.push({ id: 'm:__root', name: 'Project files', count: p.rootCount, depth: 'd1', tint: folderTint(p.tint), open: activeMission === '__root' ? 'on' : 'off' });
     }
-    return byNewest(a, b);
-  };
+  }
+  const activeName = activeProj ? (projMap.get(activeProj)?.name || activeProj) : '';
+  const scopeLabel = activeProj
+    ? (activeMission ? `${activeName} / ${activeMission === '__root' ? 'project files' : activeMission}` : activeName)
+    : 'All projects';
 
   const data = {
     queue: {
       readyCount: queue?.readyCount || 0,
-      items: (queue?.items || [])
-        .filter((i) => {
-          const s = qSearch.trim().toLowerCase();
-          return !s || `${i.title} ${i.who} ${i.typeLabel} ${i.location || ''}`.toLowerCase().includes(s);
-        })
+      items: allItems
+        .filter((i) => !activeProj || i.whoRaw === activeProj)
+        .filter((i) => !activeMission || (activeMission === '__root' ? !i.missionRaw : i.missionRaw === activeMission))
         .slice()
-        .sort(compare),
-      sorts: [
-        { id: 'newest',  label: 'Newest',  active: qSort === 'newest'  ? 'on' : 'off' },
-        { id: 'az',      label: 'A-Z',     active: qSort === 'az'      ? 'on' : 'off' },
-        { id: 'project', label: 'Project', active: qSort === 'project' ? 'on' : 'off' },
-        { id: 'mission', label: 'Mission', active: qSort === 'mission' ? 'on' : 'off' },
-      ],
-      orderLabel: { az: 'a → z', project: 'by project', mission: 'by project / mission' }[qSort] || 'newest first',
+        .sort(byNewest),
+      tree,
+      scopeLabel,
       // 'yes' / 'no' so the template's data-switch shows the "Load older items" button only
       // when older items exist (and not while the injected-files queue hides it).
       hasMore: (!hasInjected && hasMore) ? 'yes' : 'no',
@@ -504,8 +516,15 @@ export function useReview(worldId = 'aom', injected = null) {
       approve,
       requestChanges,
       sendChecklist,
-      setQueueSearch: (s) => setQSearch(s || ''),
-      setQueueSort: (id) => setQSort(['az', 'project', 'mission'].includes(id) ? id : 'newest'),
+      // One action for every tree node: '__all' resets, 'p:<slug>' picks a project
+      // (and clears the mission), 'm:<slug>' / 'm:__root' narrows within it.
+      selectQueueNode: (id) => {
+        const s = String(id || '');
+        if (s === '__all') { setProjSel(null); setMissionSel(null); }
+        else if (s.startsWith('p:')) { setProjSel(s.slice(2)); setMissionSel(null); }
+        else if (s.startsWith('m:')) setMissionSel(s.slice(2));
+        setOpenDelId(null);
+      },
     },
   };
 }

@@ -4,8 +4,9 @@
   WIRED — Review tool   ·   Source: ui_kits/tools/review.html + review.js
   Contract: wired/tools/review.json
   ----------------------------------------------------------------------------
-  Desktop: queue (search + Newest/A-Z/Project/Mission sort) · deliverable viewer
-           with pin-comments · decision side panel (approve / request changes).
+  Desktop: queue (project → mission tree, the same left-rail selection Organize
+           uses, over the scoped deliverable list) · deliverable viewer with
+           pin-comments · decision side panel (approve / request changes).
   Mobile:  pick-what-to-review (type chips) · viewer · pin-comments · decision.
   The VIEWER SWITCHES BY deliverable.type (doc|photo|video|siteshot|sitelive) —
   the document viewer is wired here as the canonical type; the host swaps the
@@ -42,17 +43,15 @@
     <!-- queue -->
     <div style="width:320px;flex:none;border-right:1px solid var(--divider);display:flex;flex-direction:column;overflow:hidden;">
       <div style="padding:18px 20px 12px;flex:none;"><div style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Queue</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;"><span data-bind="queue.readyCount">5</span> ready · mixed formats</div></div>
-      <!-- Sort = ONE view preference (Newest / A-Z / Project / Mission — same toolkit as Organize) -->
-      <div style="margin:0 20px 12px;display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:2px;">
-        <button class="rseg is-on" data-each="queue.sorts" data-action="setQueueSort" data-arg="sort.id" data-mod="is-:sort.active" style="flex:1;padding:0 8px;"><span data-bind="sort.label">Newest</span></button>
-      </div>
-      <!-- real type-to-find (was a dead mock box): kept node so focus survives rebinds;
-           the host component delegates the input event. -->
-      <div style="display:flex;align-items:center;gap:8px;margin:0 20px 12px;">
-        <input data-review-qsearch data-cv6-keep="review-qsearch-desktop" type="text" placeholder="Search the queue…" style="flex:1;min-width:0;height:36px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:11px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+      <!-- Project → mission tree: the SAME left-rail selection Organize uses. ONE row
+           per node; d0 = project (All projects first), d1 = missions of the selected
+           project; is-open marks the active scope. -->
+      <div style="flex:none;max-height:44%;overflow-y:auto;padding:0 12px 10px;border-bottom:1px solid var(--divider);margin-bottom:8px;">
+        <div class="eyebrow" style="margin:2px 8px 10px;">Projects</div>
+        <div class="trow is-open" data-each="queue.tree" data-action="selectQueueNode" data-arg="node.id" data-mod="is-:node.depth;is-:node.open"><svg class="folder is-violet" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="node.name">Project</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);flex:none;" data-bind="node.count">4</span></div>
       </div>
       <div style="flex:1;overflow-y:auto;padding:0 12px;">
-        <div style="padding:0 8px;margin:4px 0 6px;display:flex;align-items:center;justify-content:space-between;"><span class="eyebrow">Queue</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);" data-bind="queue.orderLabel">newest first</span></div>
+        <div style="padding:0 8px;margin:4px 0 6px;display:flex;align-items:center;justify-content:space-between;gap:10px;"><span class="eyebrow" style="flex:none;">Deliverables</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="queue.scopeLabel">All projects</span></div>
         <!-- ONE row per queue item; is-open marks the open deliverable; is-:item.type on the glyph; count badge is-zero when 0 -->
         <div class="qitem is-on" data-each="queue.items" data-action="openDeliverable" data-arg="item.id" data-mod="is-:item.open"><div class="qglyph"><svg class="tglyph is-doc" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:item.type"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></div><div style="flex:1;min-width:0;"><div class="qtitle" data-bind="item.title">Launch film · 0:42</div><div class="qmeta"><span data-bind="item.who">Gary</span> · <span data-bind="item.typeLabel">Video</span></div></div><span class="qcount" data-bind="item.count" data-mod="is-:item.countState">3</span></div>
         <!-- "Load older items" — shown only when older items exist beyond the current page (queue.hasMore = yes) -->
@@ -138,15 +137,12 @@
   <div class="mhdr">
     <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
     <div class="mhtitle"><div class="mttl">Review</div><div class="msub"><span data-bind="queue.readyCount">40</span> ready to review</div></div>
-    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
+    <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
-  <!-- type-to-find (kept node; host delegates the input event) -->
-  <div style="display:flex;align-items:center;gap:8px;padding:10px 16px 10px;flex:none;">
-    <input data-review-qsearch data-cv6-keep="review-qsearch-mobile" type="text" placeholder="Search the queue…" style="flex:1;min-width:0;height:40px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:12px;padding:0 13px;color:var(--fg);font-size:14px;font-family:var(--font-sans);outline:none;">
-  </div>
-  <!-- Sort = ONE view preference (Newest / A-Z / Project / Mission — same toolkit as Organize) -->
-  <div style="display:flex;gap:4px;margin:0 16px 12px;flex:none;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:2px;">
-    <button class="rseg is-on" data-each="queue.sorts" data-action="setQueueSort" data-arg="sort.id" data-mod="is-:sort.active" style="flex:1;padding:0 8px;height:34px;border:none;"><span data-bind="sort.label">Newest</span></button>
+  <!-- Project → mission tree: the SAME left-rail selection Organize uses -->
+  <div style="flex:none;max-height:36%;overflow-y:auto;padding:6px 8px 8px;border-bottom:1px solid var(--divider);">
+    <div class="eyebrow" style="margin:6px 12px 8px;">Projects</div>
+    <div class="trow is-open" data-each="queue.tree" data-action="selectQueueNode" data-arg="node.id" data-mod="is-:node.depth;is-:node.open"><svg class="folder is-violet" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:node.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="node.name">Project</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--faint);flex:none;" data-bind="node.count">4</span></div>
   </div>
   <div data-state="ready" style="flex:1;overflow:hidden;">
     <!-- ONE row per queue item; is-:item.type on .rgly; is-:item.queueState (building → dimmed + spinner) -->

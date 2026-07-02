@@ -96,18 +96,8 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     wrapRef: readRef, pins, addPin, deletePin, enabled: screen === 'read',
   });
 
-  const pickListAliases = { 'queue.items': 'item', 'queue.sorts': 'sort', 'item': 'item' };
+  const pickListAliases = { 'queue.items': 'item', 'queue.tree': 'node', 'item': 'item', 'node': 'node' };
 
-  // Queue search: uncontrolled kept input in the pick list; the engine only wires
-  // clicks, so the input event is delegated from the pick screen's wrapper div.
-  const pickWrapRef = useRef(null);
-  const qDebRef = useRef(null);
-  const onQueueSearchInput = (e) => {
-    const el = e.target;
-    if (!el?.matches?.('[data-review-qsearch]')) return;
-    clearTimeout(qDebRef.current);
-    qDebRef.current = setTimeout(() => actions.setQueueSearch(el.value), 120);
-  };
   const readAliases = {
     'queue.items': 'item',
     'deliverable.pins': 'pin',
@@ -118,19 +108,16 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   };
 
   if (screen === 'pick') {
-    const pickData = data;
     const pickActions = {
       nav: (target) => target === 'back' ? onNav?.('back') : onNav?.(target),
       openNav: onOpenNav,
-      // The header magnifier focuses the real search input below it.
-      search: () => pickWrapRef.current?.querySelector('[data-review-qsearch]')?.focus(),
-      setQueueSort: (id) => actions.setQueueSort(id),
+      selectQueueNode: (id) => actions.selectQueueNode(id),
       openDeliverable: onOpenDeliverable,
       loadMore: () => actions.loadMore(),
     };
     return (
-      <div ref={pickWrapRef} onInput={onQueueSearchInput} style={{ width: '100%', height: '100%' }}>
-        <TemplateScreen html={pickListHtml} data={pickData} actions={pickActions} aliases={pickListAliases} state={state} style={{ width: '100%', height: '100%' }} />
+      <div style={{ width: '100%', height: '100%' }}>
+        <TemplateScreen html={pickListHtml} data={data} actions={pickActions} aliases={pickListAliases} state={state} style={{ width: '100%', height: '100%' }} />
       </div>
     );
   }
