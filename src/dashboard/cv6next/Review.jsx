@@ -85,6 +85,15 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   const pickListHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 2 }), []);
   const readHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 1 }), []);
 
+  // Keep the selected tree node in view on the pick list (full registry = the
+  // selection can land outside the tree's scroll window; rebuilds reset scroll).
+  const pickWrapRef = useRef(null);
+  useEffect(() => {
+    if (screen !== 'pick') return;
+    const sel = pickWrapRef.current?.querySelector('.trow.is-d0on, .trow.is-d1on');
+    sel?.scrollIntoView({ block: 'nearest' });
+  });
+
   // read-view ref + pin interaction. These hooks MUST run on EVERY render (both the
   // 'pick' and 'read' screens), so they live ABOVE the `if (screen === 'pick')` early return.
   // They used to sit below it, so switching pick→read added hooks mid-life and tripped
@@ -117,7 +126,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
       loadMore: () => actions.loadMore(),
     };
     return (
-      <div style={{ width: '100%', height: '100%' }}>
+      <div ref={pickWrapRef} style={{ width: '100%', height: '100%' }}>
         <TemplateScreen html={pickListHtml} data={data} actions={pickActions} aliases={pickListAliases} state={state} style={{ width: '100%', height: '100%' }} />
       </div>
     );

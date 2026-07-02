@@ -93,6 +93,14 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
 
   const desktopHtml = useMemo(() => composeDesktopReview(reviewRaw), []);
 
+  // Keep the selected tree node in view: with the full registry listed, a project
+  // low in the alphabet lands outside the tree's scroll window the moment it is
+  // clicked (TemplateScreen rebuilds the DOM, resetting scroll). Runs per data tick.
+  useEffect(() => {
+    const sel = viewerRef.current?.querySelector('.trow.is-d0on, .trow.is-d1on');
+    sel?.scrollIntoView({ block: 'nearest' });
+  });
+
   const desktopData = {
     ...data,
     queue: {
