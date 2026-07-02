@@ -35,6 +35,12 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project) : null),
     [target],
   );
+  // A file parsed from message text can carry a name but NO url (useRoomThread's
+  // "Attached file:" shape). reviewItemsFromFiles drops it (nothing to fetch), which
+  // used to strand the user on the default queue instead of the file they clicked.
+  // Fall back to resolving that filename against the real queue, same as Catch-up.
+  const targetName = target?.name
+    || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
   const { state, data, actions } = useReview(worldId || 'aom', injected);
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin } = usePins(pickedId, worldId || 'aom');
@@ -45,20 +51,20 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // the first one.
   const targetId = useMemo(() => {
     if (injected && injected.length) return injected[0].id;
-    if (!target?.name) return null;
+    if (!targetName) return null;
     const base = (p) => String(p || '').split('/').pop();
     const items = data.queue.items;
-    const m = items.find((i) => base(i.id) === target.name && (!target.project || i.whoRaw === target.project))
-      || items.find((i) => base(i.id) === target.name);
+    const m = items.find((i) => base(i.id) === targetName && (!target?.project || i.whoRaw === target.project))
+      || items.find((i) => base(i.id) === targetName);
     return m ? m.id : null;
-  }, [target, injected, data.queue.items]);
+  }, [target, targetName, injected, data.queue.items]);
 
   // Auto-open on entry (mirrors Organize previewing the first file) so you land on
   // something to review instead of a blank viewer — preferring the catch-up target.
   const firstId = data.queue.items[0]?.id || null;
   const targetAppliedRef = useRef(false);
   useEffect(() => {
-    if ((injected?.length || target?.name) && !targetAppliedRef.current) {
+    if ((injected?.length || targetName) && !targetAppliedRef.current) {
       if (!data.queue.items.length) return; // wait for the queue to land
       targetAppliedRef.current = true;
       const openId = targetId || firstId;

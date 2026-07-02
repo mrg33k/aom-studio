@@ -143,7 +143,9 @@ function typeGlyph(type) {
 
 // Detect the viewer type key from a filename / mime, for files handed straight in
 // from a chat message (not the queue endpoint, which already typed them).
-function typeKeyOf(name, mime) {
+// `url` disambiguates a live site: an http(s) address with no recognizable file
+// extension is a deployed page, not a document — review it in the sitelive viewer.
+function typeKeyOf(name, mime, url = '') {
   const ext = String(name || '').toLowerCase().split('.').pop();
   const m = String(mime || '').toLowerCase();
   if (m.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'avif'].includes(ext)) return 'image';
@@ -151,6 +153,7 @@ function typeKeyOf(name, mime) {
   if (['pdf', 'docx', 'doc', 'pptx', 'ppt', 'xlsx'].includes(ext)) return 'doc';
   if (['md', 'txt'].includes(ext)) return 'copy';
   if (['js', 'jsx', 'ts', 'tsx', 'py', 'go', 'rs', 'java'].includes(ext)) return 'code';
+  if (/^https?:\/\//i.test(String(url || name || ''))) return 'sitelive';
   return 'doc';
 }
 
@@ -161,10 +164,14 @@ function typeKeyOf(name, mime) {
 export function reviewItemsFromFiles(files, project = '') {
   return (files || [])
     .map((f) => {
-      const path = String(f.url || f.path || f.attachmentUrl || '').replace(/^\/+/, '');
+      const rawUrl = String(f.url || f.path || f.attachmentUrl || '');
+      // A live-site hand-in (goal-thread artifact) keeps its absolute URL intact;
+      // a corner path sheds leading slashes to match queue item ids.
+      const path = /^https?:\/\//i.test(rawUrl) ? rawUrl : rawUrl.replace(/^\/+/, '');
       if (!path) return null;
       const name = f.name || f.fileName || path.split('/').pop() || 'File';
-      const key = typeKeyOf(name, f.mime || f.fileMime);
+      // An explicit type (e.g. 'sitelive' from an artifact card) wins over detection.
+      const key = f.type || typeKeyOf(name, f.mime || f.fileMime, rawUrl);
       return {
         id: path, title: name,
         who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),

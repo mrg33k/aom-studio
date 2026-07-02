@@ -10,7 +10,7 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { useChatList, useProjectMissions } from './data/useHomeData.js';
 import { authFetch } from '../lib/authFetch';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
-import { SendCtx, AgentBlocks, ActionChips, WorkingTurn } from './ChatGoalThread.jsx';
+import { SendCtx, ReviewCtx, AgentBlocks, ActionChips, WorkingTurn } from './ChatGoalThread.jsx';
 import Cv6FullComposer from './Cv6FullComposer.jsx';
 import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
@@ -698,6 +698,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   return (
     <SendCtx.Provider value={send || (() => {})}>
+    <ReviewCtx.Provider value={(file) => { if (file) onReviewFile?.(file, reviewProject); }}>
       <div data-cv6 data-theme="dark" className="cv6-screen" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* topbar now mounted once in the shell (SharedNav DesktopNav) */}
         <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
@@ -875,6 +876,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         agents={agents}
         quickSend={send}
       />
+    </ReviewCtx.Provider>
     </SendCtx.Provider>
   );
 }

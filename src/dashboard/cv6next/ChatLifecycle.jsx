@@ -8,7 +8,7 @@
 // emitting a live Goal Thread, ChatGoalThread renders that instead. Honest with real
 // data: we fold by DAY (which we have), not by past "goals" (never stored).
 import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
-import { GoalThreadBody, SendCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks } from './ChatGoalThread.jsx';
 import { Result } from './BlockRenderer.jsx';
 import { useDictation } from './data/useDictation.js';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
@@ -408,6 +408,7 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
         {/* Cap the thread to a readable column so on iPad it stays phone-width and centered,
             instead of stretching messages + cards edge to edge. */}
         <SendCtx.Provider value={onSend || (() => {})}>
+        <ReviewCtx.Provider value={(file) => { if (file) reviewHandoff([file]); }}>
         <div style={{ maxWidth: 680, margin: '0 auto' }}>
           {empty ? (
             <div className="empty" style={{ marginTop: 40 }}>
@@ -448,6 +449,7 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
           <div style={{ height: awaiting ? '78vh' : 4 }} />
           <div ref={bottomRef} style={{ height: 4 }} />
         </div>
+        </ReviewCtx.Provider>
         </SendCtx.Provider>
       </div>
 

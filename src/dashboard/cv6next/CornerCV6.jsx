@@ -16,7 +16,7 @@ import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
 import ActivityDock from './ActivityDock.jsx';
-import { GoalThreadBody, SendCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
+import { GoalThreadBody, SendCtx, ReviewCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
@@ -358,6 +358,7 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awai
       </div>
     ) : (
       <SendCtx.Provider value={onSend || (() => {})}>
+      <ReviewCtx.Provider value={(file) => { if (file) onReview?.(file); }}>
       <div className="pconv">
         {groups.map((g, gi) => {
           const head = g.items[0];
@@ -400,6 +401,7 @@ function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awai
             its steps ticking from real tool activity. (Patrik 2026-06-27: was missing here.) */}
         {awaiting ? <WorkingTurn room={room} steps={liveSteps} goal={askGoal} /> : null}
       </div>
+      </ReviewCtx.Provider>
       </SendCtx.Provider>
     ),
     target,

@@ -330,12 +330,21 @@ function SummaryBlock({ block }) {
 }
 
 // Something the agent sends to show a result or confirm (kit .cartifact): a screenshot or
-// live-site card with a Review action. Review posts an open-in-review message (the full pin
-// canvas is a separate surface); a real attachment URL opens directly.
+// live-site card with a Review action. Review opens the deliverable in the Review tool
+// (pin-comment canvas) when the surface provides ReviewCtx; without it, a real attachment
+// URL opens directly and a bare name falls back to asking the agent.
 function ArtifactBlock({ block }) {
   const send = useThreadSend();
+  const openReview = useThreadReview();
   const isShot = block.kind !== 'live';
-  const onReview = () => { if (block.url) window.open(block.url, '_blank', 'noopener'); else send(`Open ${block.name || 'this'} in Review`); };
+  const onReview = () => {
+    if (openReview && block.url) {
+      openReview({ url: block.url, name: block.name || block.url, type: isShot ? '' : 'sitelive' });
+      return;
+    }
+    if (block.url) window.open(block.url, '_blank', 'noopener');
+    else send(`Open ${block.name || 'this'} in Review`);
+  };
   return (
     <div className="cartifact" style={{ marginTop: 4 }}>
       {!isShot ? (
@@ -614,6 +623,11 @@ function GalleryBlock({ block }) {
 // Lightweight context so choice/question taps reach the room's send() without prop drilling.
 const SendCtx = React.createContext(() => {});
 function useThreadSend() { return React.useContext(SendCtx); }
+// Open-in-Review for thread blocks: the hosting surface provides a handler that takes ONE
+// file ({ url, name, type? }) and lands the user in the Review tool on that deliverable.
+// Null (no provider) = surface has no Review hand-off; blocks keep their fallback behavior.
+const ReviewCtx = React.createContext(null);
+function useThreadReview() { return React.useContext(ReviewCtx); }
 
 // The thread itself (goal header + steps with their results), shared by the mobile screen
 // and the desktop 3-column layout. Wrap in a SendCtx provider so taps post real messages.
@@ -900,7 +914,7 @@ export function PlanPanel({ goal, plan, actions, defaultCollapsed = false }) {
   );
 }
 
-export { SendCtx };
+export { SendCtx, ReviewCtx };
 
 export default function ChatGoalThread({ room, goal, blocks, onBack, onOpenNav, onSend }) {
   const [draft, setDraft] = useState('');

@@ -36,6 +36,11 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     () => (target?.files?.length ? reviewItemsFromFiles(target.files, target.project) : null),
     [target],
   );
+  // A file parsed from message text can carry a name but NO url; reviewItemsFromFiles
+  // drops it (nothing to fetch), which used to strand the user on the pick list instead
+  // of the file they clicked. Fall back to resolving that filename against the queue.
+  const targetName = target?.name
+    || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
   const { state, data, actions } = useReview(worldId || 'aom', injected);
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
@@ -64,17 +69,17 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
       onOpenDeliverable(injected[0].id);
       return;
     }
-    if (!target?.name) return;
-    const key = `${target.name}|${target.project || ''}`;
+    if (!targetName) return;
+    const key = `${targetName}|${target?.project || ''}`;
     if (targetAppliedRef.current === key) return;
     const items = data.queue.items;
     if (!items.length) return; // queue still loading — retry when it lands
     const base = (p) => String(p || '').split('/').pop();
-    const match = items.find((i) => base(i.id) === target.name && (!target.project || i.whoRaw === target.project))
-      || items.find((i) => base(i.id) === target.name);
+    const match = items.find((i) => base(i.id) === targetName && (!target?.project || i.whoRaw === target.project))
+      || items.find((i) => base(i.id) === targetName);
     targetAppliedRef.current = key;
     if (match) onOpenDeliverable(match.id);
-  }, [target, injected, data.queue.items, onOpenDeliverable]);
+  }, [target, targetName, injected, data.queue.items, onOpenDeliverable]);
 
   const pickListHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 2 }), []);
   const readHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 1 }), []);

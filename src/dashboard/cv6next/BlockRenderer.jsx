@@ -10,6 +10,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
+import { ReviewCtx } from './ChatGoalThread.jsx';
 
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
@@ -181,10 +182,17 @@ function SummaryBlock({ block, onAction }) {
   );
 }
 
-// Artifact block renderer.
+// Artifact block renderer. Review opens the deliverable in the Review tool (pin-comment
+// canvas) when the surface provides ReviewCtx; without it, a real URL opens directly and
+// a bare name falls back to asking the agent.
 function ArtifactBlock({ block, onAction }) {
+  const openReview = React.useContext(ReviewCtx);
   const isShot = block.kind !== 'live';
   const onReview = () => {
+    if (openReview && block.url) {
+      openReview({ url: block.url, name: block.name || block.url, type: isShot ? '' : 'sitelive' });
+      return;
+    }
     if (block.url) window.open(block.url, '_blank', 'noopener');
     else onAction?.(`Open ${block.name || 'this'} in Review`);
   };
