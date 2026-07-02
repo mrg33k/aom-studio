@@ -101,7 +101,12 @@ export default async function handler(req, res) {
       updated_by: updatedBy,
       updated_at: new Date().toISOString(),
     }
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/mission_meta`, {
+    // on_conflict is REQUIRED for merge-duplicates to upsert here: the table's
+    // PK is id, the natural key is a UNIQUE(client_id, project_slug,
+    // mission_slug) constraint. Without it the second rename of any mission
+    // 409s (23505) after the disk + agent_status writes already succeeded —
+    // the user sees "could not be renamed" for a rename that actually worked.
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/mission_meta?on_conflict=client_id,project_slug,mission_slug`, {
       method: 'POST',
       headers: sbHeaders({ Prefer: 'resolution=merge-duplicates,return=representation' }),
       body: JSON.stringify(row),
@@ -127,7 +132,7 @@ export default async function handler(req, res) {
       updated_by: updatedBy,
       updated_at: new Date().toISOString(),
     }
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/mission_meta`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/mission_meta?on_conflict=client_id,project_slug,mission_slug`, {
       method: 'POST',
       headers: sbHeaders({ Prefer: 'resolution=merge-duplicates,return=representation' }),
       body: JSON.stringify(row),
