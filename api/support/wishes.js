@@ -109,9 +109,12 @@ export default async function handler(req, res) {
     // (loosen mailNoise.js and it reappears). ?include_noise=1 shows everything.
     let filtered = wishes;
     if (req.query.include_noise !== '1' && status !== 'spam') {
-      const { isNoiseMail, getKnownSenders, isKnownSender } = await import('../_lib/mailNoise.js');
-      const allow = await getKnownSenders();
-      filtered = wishes.filter((w) => !isNoiseMail(w.email, '', w.message || '', { knownSender: isKnownSender(w.email, allow) }).noisy);
+      const { isNoiseMail, getKnownSenders, isKnownSender, isBlockedSender } = await import('../_lib/mailNoise.js');
+      const lists = await getKnownSenders();
+      filtered = wishes.filter((w) => !isNoiseMail(w.email, '', w.message || '', {
+        knownSender: isKnownSender(w.email, lists),
+        blockedSender: isBlockedSender(w.email, lists),
+      }).noisy);
     }
     return res.status(200).json({ ok: true, wishes: filtered });
   }

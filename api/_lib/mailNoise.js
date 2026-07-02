@@ -88,37 +88,55 @@ function looksLikeNewsletter(body) {
 // arsenal false-positives, 2026-06-14 — re-confirmed live 2026-07-01 when this
 // port flagged Struck/Sirotin threads). Hard noise-sender check still wins.
 // 60s module-level cache; fail-open to empty sets, never block on it.
-let _allowCache = null;
-let _allowAt = 0;
-export async function getKnownSenders() {
-  if (_allowCache && Date.now() - _allowAt < 60000) return _allowCache;
-  const empty = { domains: new Set(), addresses: new Set() };
+// The blocklist is the same idea in reverse (cm_state kind='support_blocklist'):
+// repeat blast operations that keep rewording past the content heuristics
+// (OddsJam sent three differently-phrased promos in one day, 2026-07-01). A
+// domain added there dies at display with no deploy.
+let _listsCache = null;
+let _listsAt = 0;
+async function getSenderLists() {
+  if (_listsCache && Date.now() - _listsAt < 60000) return _listsCache;
+  const toSets = (p) => ({
+    domains: new Set(((p && p.domains) || []).map((d) => String(d).toLowerCase().trim())),
+    addresses: new Set(((p && p.addresses) || []).map((a) => String(a).toLowerCase().trim())),
+  });
+  const empty = { allow: toSets(null), block: toSets(null) };
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return empty;
   try {
     const r = await fetch(
-      `${url}/rest/v1/cm_state?kind=eq.support_allowlist&scope_id=eq.all&client_id=eq.aom&select=payload&limit=1`,
+      `${url}/rest/v1/cm_state?kind=in.(support_allowlist,support_blocklist)&scope_id=eq.all&client_id=eq.aom&select=kind,payload`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } }
     );
     const rows = r.ok ? await r.json() : [];
-    const p = rows?.[0]?.payload || {};
-    _allowCache = {
-      domains: new Set((p.domains || []).map((d) => String(d).toLowerCase().trim())),
-      addresses: new Set((p.addresses || []).map((a) => String(a).toLowerCase().trim())),
-    };
-    _allowAt = Date.now();
-    return _allowCache;
+    const byKind = {};
+    for (const row of rows) byKind[row.kind] = row.payload;
+    _listsCache = { allow: toSets(byKind.support_allowlist), block: toSets(byKind.support_blocklist) };
+    _listsAt = Date.now();
+    return _listsCache;
   } catch {
     return empty;
   }
 }
 
-export function isKnownSender(email, allow) {
+// Back-compat surface: callers hold one lists object and ask both questions.
+export async function getKnownSenders() {
+  return getSenderLists();
+}
+
+const inList = (email, set) => {
   const addr = String(email || '').toLowerCase().trim();
-  if (!addr || !addr.includes('@') || !allow) return false;
-  if (allow.addresses.has(addr)) return true;
-  return allow.domains.has(addr.split('@', 2)[1]);
+  if (!addr || !addr.includes('@') || !set) return false;
+  if (set.addresses.has(addr)) return true;
+  return set.domains.has(addr.split('@', 2)[1]);
+};
+
+export function isKnownSender(email, lists) {
+  return inList(email, lists && lists.allow);
+}
+export function isBlockedSender(email, lists) {
+  return inList(email, lists && lists.block);
 }
 
 // A real reply drags quoted history and forwarded signatures along — links and
@@ -132,10 +150,16 @@ function ownWords(body) {
 
 // (noisy, reason) — mirror of support-triage.is_noise. Pass knownSender=true
 // (via isKnownSender + getKnownSenders) to skip the structural heuristics.
-export function isNoiseMail(email, subject = '', rawBody = '', { knownSender = false } = {}) {
+export function isNoiseMail(email, subject = '', rawBody = '', { knownSender = false, blockedSender = false } = {}) {
   const addr = String(email || '').toLowerCase();
+  if (blockedSender) return { noisy: true, reason: `blocklisted sender (${addr})` };
   if (NOISE_SENDER.test(addr)) return { noisy: true, reason: `noise sender (${addr})` };
   if (knownSender) return { noisy: false, reason: '' };
+  // The watcher's summarizer classifies wish heads itself — "Pitching a purchase:"
+  // as a bullet IS the verdict, regardless of how the blast words its body.
+  if (/^\s*[•·]\s*pitching a purchase\b/im.test(rawBody)) {
+    return { noisy: true, reason: 'summarizer verdict: pitching a purchase' };
+  }
   const body = ownWords(rawBody);
   const blob = `${subject}\n${body}`;
   const bulk = blob.match(BULK_CONTENT);

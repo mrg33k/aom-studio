@@ -20,7 +20,7 @@
 
 import { getGmailTokenByConnection, gmailFetch } from '../_lib/gmailClient.js'
 import { verifyTenant } from '../_lib/verifyTenant.js'
-import { isNoiseMail, getKnownSenders, isKnownSender } from '../_lib/mailNoise.js'
+import { isNoiseMail, getKnownSenders, isKnownSender, isBlockedSender } from '../_lib/mailNoise.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -166,7 +166,7 @@ async function trackAccount(connId, email, days, opts = {}) {
         }),
       )
       // Unique real senders we have NOT replied to yet, newest kept per sender.
-      const allow = await getKnownSenders()
+      const lists = await getKnownSenders()
       const senders = new Map()
       for (const m of messages) {
         if (!m) continue
@@ -177,7 +177,7 @@ async function trackAccount(connId, email, days, opts = {}) {
         if (headerVal(headers, 'List-Unsubscribe')) continue
         // Content-level noise gate (shared with the wish board): sender lists never
         // keep up; the subject + snippet tell the truth about blasts and cold pitches.
-        if (isNoiseMail(fe, headerVal(headers, 'Subject'), m.snippet || '', { knownSender: isKnownSender(fe, allow) }).noisy) continue
+        if (isNoiseMail(fe, headerVal(headers, 'Subject'), m.snippet || '', { knownSender: isKnownSender(fe, lists), blockedSender: isBlockedSender(fe, lists) }).noisy) continue
         // Already answered (this thread or this person is in our sent scan)? Not "needs".
         if (repliedThreads.has(m.threadId) || repliedEmails.has(fe)) continue
         if (!senders.has(fe)) {
