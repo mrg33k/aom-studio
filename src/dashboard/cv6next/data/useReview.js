@@ -81,8 +81,10 @@ async function buildDeliverableBody(item) {
       // Corner-path videos stream straight off the rag tunnel (Range-capable, CORS *).
       // The old blob path pulled the WHOLE file through the Vercel raw proxy, which
       // buffers in the lambda and dies on video-sized payloads — videos never loaded.
+      // No native controls: the DS7 scrub bar (ReviewPins useVideoScrub) is the player
+      // chrome — timeline with numbered comment markers, play button, mono times.
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
-      return `<video src="${src}" controls preload="metadata" playsinline style="max-width:100%;border-radius:10px;display:block;background:#000;"></video>`;
+      return `<video src="${src}" preload="metadata" playsinline style="max-width:100%;border-radius:10px;display:block;background:#000;"></video>`;
     }
     if (type === 'siteshot') {
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
@@ -421,7 +423,15 @@ export function useReview(worldId = 'aom', injected = null) {
           openCount: 0, pins: [], comments: [],
         };
       }
-      return { ...open, bodyHtml: bodies[openDelId] || '' };
+      // Video deliverables speak the DS7 timeline language: the comments panel is
+      // "Timeline comments" and rows carry "at m:ss" anchors (set in Review.jsx).
+      const isVid = open.type === 'video';
+      return {
+        ...open,
+        bodyHtml: bodies[openDelId] || '',
+        commentsLabel: isVid ? 'Timeline comments' : 'Pin-comments',
+        commentsLabelLower: isVid ? 'timeline comments' : 'pin-comments',
+      };
     })(),
     empty: { title: "You're all caught up", body: 'Nothing needs your review right now. New deliverables the agent flags will land here.', actionLabel: 'Browse waiting' },
     // The shared loading fragment covers the viewer BOTH while the queue gathers and

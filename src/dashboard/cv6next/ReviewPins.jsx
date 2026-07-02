@@ -73,13 +73,12 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
       const x = (e.clientX - rect.left) / rect.width;
       const y = (e.clientY - rect.top) / rect.height;
       if (x < 0 || y < 0 || x > 1 || y > 1) return;
-      // On a video frame, anchor the comment to the playback time — but let clicks on
-      // the native control strip (bottom of the element) drive the player, not a pin.
+      // Clicks on the scrub bar belong to the player, never to a pin.
+      if (e.target.closest('[data-vscrub]')) return;
+      // DS7 video behavior ("Paused · drop a pin on this frame"): clicking a PLAYING
+      // video pauses it; a pin only drops on a paused frame, anchored to that time.
       const video = docElem.querySelector('video');
-      if (video) {
-        const vr = video.getBoundingClientRect();
-        if (e.clientY > vr.bottom - 44 && e.clientY <= vr.bottom && e.clientX >= vr.left && e.clientX <= vr.right) return;
-      }
+      if (video && !video.paused) { video.pause(); return; }
       const t = (video && Number.isFinite(video.currentTime)) ? video.currentTime : null;
       const wrapRect = wrap.getBoundingClientRect();
       const pos = clampPos(e.clientX - wrapRect.left + 10, e.clientY - wrapRect.top + 10, wrap);
@@ -115,6 +114,133 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
   }, [wrapRef]);
 
   const close = useCallback(() => setUi(null), []);
+
+  // ── DS7 video player chrome (design-system (7) ui_kits/tools/review.html) ──
+  // Builds the scrub bar under the video (play button · mono current time · 6px track
+  // with accent progress + numbered teardrop markers · duration) and scopes on-frame
+  // pins to their moment: a video pin only shows within ±PIN_WINDOW s of its saved
+  // time (or while its comment popover is open) — never across the whole playback.
+  // Imperative on purpose: TemplateScreen rebuilds its DOM on data ticks, but the
+  // video lives inside the data-cv6-keep body node, so chrome attached next to it
+  // survives; pins are rebuilt each tick, so visibility is re-applied via observer.
+  const openPinRef = useRef(null);
+  openPinRef.current = openPinById;
+  const applyVisRef = useRef(() => {});
+
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return undefined;
+    let disposed = false;
+    let video = null;
+
+    const PIN_WINDOW = 1.25;
+    const MONO = 'var(--font-mono, ui-monospace, Menlo, monospace)';
+    const fmt = (sec) => {
+      const s = Math.max(0, Math.floor(Number(sec) || 0));
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    };
+    const glyph = (playing) => (playing
+      ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>'
+      : '<svg width="15" height="15" viewBox="0 0 24 24" fill="#fff"><path d="m8 5 11 7-11 7Z"/></svg>');
+
+    const applyPinVisibility = () => {
+      const doc = wrap.querySelector('.doc');
+      if (!doc) return;
+      const { pins: livePins, ui: openUi } = stateRef.current;
+      for (const node of doc.querySelectorAll('.pin')) {
+        if (getComputedStyle(node).position !== 'absolute') continue; // comment-row pins stay
+        const pin = (livePins || []).find((p) => p.n === parseInt(node.textContent, 10));
+        if (!pin || pin.t == null || !video) { node.style.display = ''; continue; }
+        const openForThis = openUi && openUi.mode === 'view' && openUi.pinId === pin.id;
+        const near = Math.abs(video.currentTime - Number(pin.t)) <= PIN_WINDOW;
+        node.style.display = (near || openForThis) ? '' : 'none';
+      }
+    };
+    applyVisRef.current = applyPinVisibility;
+
+    const renderMarkers = (marksEl) => {
+      const withT = (stateRef.current.pins || []).filter((p) => p.t != null);
+      const sig = `${video?.duration || 0}|${withT.map((p) => `${p.id}:${p.t}`).join(',')}`;
+      if (marksEl.dataset.sig === sig) return;
+      marksEl.dataset.sig = sig;
+      marksEl.textContent = '';
+      const dur = video?.duration;
+      if (!dur || !Number.isFinite(dur)) return;
+      for (const p of withT) {
+        const m = document.createElement('div');
+        m.textContent = String(p.n);
+        m.style.cssText = `position:absolute;top:-5px;left:${Math.min(100, (Number(p.t) / dur) * 100)}%;width:16px;height:16px;border-radius:50% 50% 50% 3px;background:#fff;color:#16161a;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;transform:translateX(-50%);box-shadow:0 2px 6px rgba(0,0,0,.4);cursor:pointer;`;
+        m.addEventListener('click', (e) => { e.stopPropagation(); openPinRef.current?.(p.id); });
+        marksEl.appendChild(m);
+      }
+    };
+
+    const enhance = (v) => {
+      const host = v.parentElement;
+      if (!host || host.querySelector('[data-vscrub]')) return;
+      v.removeAttribute('controls');
+      v.style.borderRadius = '10px 10px 0 0';
+      const bar = document.createElement('div');
+      bar.setAttribute('data-vscrub', '1');
+      bar.style.cssText = 'display:flex;align-items:center;gap:12px;height:46px;padding:0 16px;background:#16161a;border-radius:0 0 10px 10px;';
+      bar.innerHTML =
+        `<button data-vplay type="button" style="width:26px;height:26px;flex:none;border:none;background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;">${glyph(false)}</button>`
+        + `<span data-vcur style="color:#fff;font-family:${MONO};font-size:11px;font-weight:600;">0:00</span>`
+        + '<div data-vtrack style="flex:1;height:6px;border-radius:3px;background:#33333b;position:relative;cursor:pointer;">'
+        + '<div data-vplayed style="position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#0066FF;width:0%;"></div>'
+        + '<div data-vmarks></div>'
+        + '<div data-vknob style="position:absolute;left:0%;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.5);pointer-events:none;"></div>'
+        + '</div>'
+        + `<span data-vdur style="color:#9a9aa2;font-family:${MONO};font-size:11px;">0:00</span>`;
+      v.insertAdjacentElement('afterend', bar);
+
+      const playBtn = bar.querySelector('[data-vplay]');
+      const track = bar.querySelector('[data-vtrack]');
+      const played = bar.querySelector('[data-vplayed]');
+      const knob = bar.querySelector('[data-vknob]');
+      const cur = bar.querySelector('[data-vcur]');
+      const durEl = bar.querySelector('[data-vdur]');
+
+      const update = () => {
+        const dur = v.duration;
+        const pct = (dur && Number.isFinite(dur)) ? Math.min(100, (v.currentTime / dur) * 100) : 0;
+        played.style.width = `${pct}%`;
+        knob.style.left = `${pct}%`;
+        cur.textContent = fmt(v.currentTime);
+        if (dur && Number.isFinite(dur)) durEl.textContent = fmt(dur);
+        playBtn.innerHTML = glyph(!v.paused);
+        applyPinVisibility();
+      };
+      playBtn.addEventListener('click', (e) => { e.stopPropagation(); if (v.paused) v.play(); else v.pause(); });
+      track.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const r = track.getBoundingClientRect();
+        const dur = v.duration;
+        if (dur && Number.isFinite(dur) && r.width) v.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * dur;
+      });
+      for (const ev of ['timeupdate', 'seeked', 'loadedmetadata', 'durationchange', 'play', 'pause']) v.addEventListener(ev, update);
+      v.addEventListener('loadedmetadata', () => renderMarkers(bar.querySelector('[data-vmarks]')));
+      update();
+    };
+
+    const tick = () => {
+      if (disposed) return;
+      const v = wrap.querySelector('.doc video');
+      if (v && v !== video) { video = v; enhance(v); }
+      if (video && !wrap.contains(video)) video = null;
+      const marksEl = wrap.querySelector('[data-vmarks]');
+      if (video && marksEl) renderMarkers(marksEl);
+      applyPinVisibility();
+    };
+    const iv = setInterval(tick, 600);
+    const mo = new MutationObserver(tick);
+    mo.observe(wrap, { childList: true, subtree: true });
+    tick();
+    return () => { disposed = true; clearInterval(iv); mo.disconnect(); };
+  }, [wrapRef]);
+
+  // Popover open/close changes which pin is force-shown — re-apply immediately.
+  useEffect(() => { applyVisRef.current(); }, [ui]);
 
   const overlay = ui ? (
     <PinPopover
