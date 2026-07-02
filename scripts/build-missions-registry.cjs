@@ -14,7 +14,14 @@ const STUDIO_ROOT = path.resolve(__dirname, '..')
 const REPO_ROOT = process.env.AOM_EA_ROOT
   ? path.resolve(process.env.AOM_EA_ROOT)
   : path.resolve(STUDIO_ROOT, '..')
-const OUT_PATH = path.join(STUDIO_ROOT, 'src', 'dashboard', 'data', 'missions-registry.json')
+// MISSIONS_REGISTRY_OUT override (realtime contract, 2026-07-02): the launchd job
+// com.aom-ea.missions-registry runs this same builder every 60s and writes to
+// AOM-EA/corner/users/aom/missions/master-loop/deliverables/missions-registry-live.json, which missions-tree.js fetches
+// through the RAG tunnel ahead of this deploy-baked copy — so mission renames and
+// status changes reach the dashboard without a deploy.
+const OUT_PATH = process.env.MISSIONS_REGISTRY_OUT
+  ? path.resolve(process.env.MISSIONS_REGISTRY_OUT)
+  : path.join(STUDIO_ROOT, 'src', 'dashboard', 'data', 'missions-registry.json')
 
 // On Vercel the parent AOM-EA repo isn't checked out — only aom-studio.
 // Skip so we don't clobber the registry that was committed locally.

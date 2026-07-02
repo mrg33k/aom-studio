@@ -732,6 +732,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
     let agentStatusChannel = null
     let tasksChannel = null
     let messagesChannel = null
+    let projectsChannel = null
     if (supabase) {
       const cid = channelIdRef.current
       console.log('[Corner Realtime] Subscribing to agent_status, tasks, messages... id:', cid)
@@ -762,6 +763,18 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           scheduleFetch()
         })
         .subscribe((status) => console.log('[Corner Realtime] messages sub:', status))
+
+      // projects table: any change triggers (debounced) refresh. Realtime contract
+      // (2026-07-02): the project-registry reconciler auto-inserts a row when a new
+      // project folder lands on disk — without this channel that row waited on the
+      // 60s poll to reach the screen.
+      projectsChannel = supabase
+        .channel(`projects-changes-${cid}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, () => {
+          console.log('[Corner Realtime] projects changed')
+          scheduleFetch()
+        })
+        .subscribe((status) => console.log('[Corner Realtime] projects sub:', status))
     } else {
       console.log('[Corner Realtime] supabase client is null -- no Realtime subscriptions')
     }
@@ -772,6 +785,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
       if (agentStatusChannel) supabase.removeChannel(agentStatusChannel)
       if (tasksChannel) supabase.removeChannel(tasksChannel)
       if (messagesChannel) supabase.removeChannel(messagesChannel)
+      if (projectsChannel) supabase.removeChannel(projectsChannel)
     }
   }, [worldId, fetchAll])
 

@@ -30,6 +30,39 @@ import missionsRegistry from '../../src/dashboard/data/missions-registry.json' w
 import { canonicalizeMissionSlug, buildSlugLookup } from '../../src/dashboard/data/canonicalize-mission-slug.js'
 const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 
+// Realtime contract (2026-07-02): prefer the LIVE registry snapshot that the Mac's
+// launchd job (com.aom-ea.missions-registry, 60s interval) writes to
+// corner/users/aom/missions/master-loop/deliverables/missions-registry-live.json — mission renames and status changes reach
+// the tree within ~a minute instead of waiting for a deploy. The deploy-baked import
+// above stays as the fallback (tunnel down, local dev). Cached for 30s per warm
+// lambda so tree renders don't pay a tunnel round-trip each time. The ghost guard
+// below also benefits: generated_at now advances every minute, so renamed missions
+// stop resurfacing from stale mission_created events within a minute too.
+const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com'
+const LIVE_REGISTRY_PATH = 'corner/users/aom/missions/master-loop/deliverables/missions-registry-live.json'
+let _registryCache = { at: 0, registry: null, lookup: null }
+async function loadRegistry() {
+  const now = Date.now()
+  if (_registryCache.registry && now - _registryCache.at < 30000) return _registryCache
+  try {
+    const ctrl = new AbortController()
+    const t = setTimeout(() => ctrl.abort(), 4000)
+    const r = await fetch(
+      `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(LIVE_REGISTRY_PATH)}`,
+      { headers: { 'User-Agent': 'aom-vercel-proxy' }, signal: ctrl.signal },
+    ).finally(() => clearTimeout(t))
+    if (r.ok) {
+      const fresh = await r.json()
+      if (fresh && Array.isArray(fresh.missions)) {
+        _registryCache = { at: now, registry: fresh, lookup: buildSlugLookup(fresh) }
+        return _registryCache
+      }
+    }
+  } catch { /* fall through to the bundled registry */ }
+  _registryCache = { at: now, registry: missionsRegistry, lookup: MISSION_SLUG_LOOKUP }
+  return _registryCache
+}
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY
 
@@ -69,6 +102,9 @@ export default async function handler(req, res) {
   if (!jwt) return res.status(401).json({ error: 'jwt required' })
 
   const clientId = String(req.query.client || 'aom').trim().toLowerCase()
+
+  // Live-first mission registry (see loadRegistry above).
+  const { registry: liveRegistry, lookup: liveSlugLookup } = await loadRegistry()
 
   // Load shared project slugs so the tree mirrors the user's task panel.
   let sharedSlugs = []
@@ -156,7 +192,7 @@ export default async function handler(req, res) {
         // Mission-level recency (only mission-tagged rows).
         const rawSlug = row?.metadata?.mission_slug
         if (rawSlug) {
-          const slug = canonicalizeMissionSlug(rawSlug, MISSION_SLUG_LOOKUP)
+          const slug = canonicalizeMissionSlug(rawSlug, liveSlugLookup)
           if (!missionLastSeenAt.has(slug)) missionLastSeenAt.set(slug, at)
         }
       }
@@ -233,7 +269,7 @@ export default async function handler(req, res) {
     return projectMap.get(slug)
   }
 
-  for (const m of (missionsRegistry?.missions || [])) {
+  for (const m of (liveRegistry?.missions || [])) {
     // Skip missions whose project belongs to a different tenant.
     if (allowedProjectSlugs !== null && !allowedProjectSlugs.has(m.project_slug)) continue
     const proj = getProject(m.project_slug)
@@ -303,7 +339,7 @@ export default async function handler(req, res) {
   // the last build is a genuinely-new mission not yet baked in — keep it (the
   // original reason this merge exists). Null/unparseable timestamps fall through
   // to the old keep-it behaviour so a missing date never hides a real mission.
-  const registryBuiltAt = Date.parse(missionsRegistry?.generated_at || '') || 0
+  const registryBuiltAt = Date.parse(liveRegistry?.generated_at || '') || 0
   for (const em of eventMissions) {
     if (allowedProjectSlugs !== null && !allowedProjectSlugs.has(em.projectSlug)) continue
     const proj = getProject(em.projectSlug)
@@ -453,7 +489,7 @@ export default async function handler(req, res) {
 
   return res.status(200).json({
     projects,
-    registry_generated_at: missionsRegistry?.generated_at || null,
+    registry_generated_at: liveRegistry?.generated_at || null,
   })
 }
 
