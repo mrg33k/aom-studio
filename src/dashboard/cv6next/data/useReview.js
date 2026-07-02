@@ -213,7 +213,7 @@ export function reviewItemsFromFiles(files, project = '') {
         id: path, title: name,
         who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),
         type: key, typeLabel: typeLabel(key), typeGlyph: typeGlyph(key),
-        count: 0, status: 'ready', statusLabel: 'READY', time: '',
+        count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '',
         location: project || '', queueState: 'ready', file: typeLabel(key),
         bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
       };
@@ -262,6 +262,7 @@ export function useReview(worldId = 'aom', injected = null) {
             typeLabel: typeLabel(typeKey),
             typeGlyph: typeGlyph(typeKey),
             count: 0, // no comments yet from queue endpoint
+            countState: 'zero', // .qcount.is-zero — dim the badge instead of a bright accent 0
             status: 'ready', // queue only returns ready items; live ones handled separately
             statusLabel: 'READY',
             time: relTime(it.last_modified),
