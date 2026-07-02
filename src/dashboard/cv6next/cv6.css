@@ -1035,3 +1035,28 @@
 [data-cv6] .gworking .gworking-fill { position:absolute; top:0; bottom:0; left:0; width:38%; border-radius:2px; background:var(--accent); animation:gworking-slide 1.15s cubic-bezier(.45,0,.55,1) infinite; }
 @keyframes gworking-slide { 0% { left:-40%; } 100% { left:100%; } }
 @media (prefers-reduced-motion: reduce) { [data-cv6] .gworking .gworking-fill { animation-duration:2.4s; } }
+
+/* ── Review R6 — viewer switches by deliverable.type (wired/tools/review.json viewerRule).
+   Browser chrome ported verbatim from the design system (ui_kits/tools/review.html);
+   media types (image/photo/video/siteshot/sitelive) render full-bleed on the dark stage
+   instead of inside the white document paper — !important because the .doc width/padding
+   ride the template's inline style. */
+[data-cv6][data-screen^="review"] .browser { width:100%; max-width:100%; border-radius:10px; overflow:hidden; box-shadow:0 18px 54px rgba(0,0,0,.55); background:#fff; position:relative; }
+[data-cv6][data-screen^="review"] .bchrome { height:42px; background:#e9e7e4; display:flex; align-items:center; gap:9px; padding:0 14px; border-bottom:1px solid #d9d6d2; }
+[data-cv6][data-screen^="review"] .bdot { width:11px; height:11px; border-radius:50%; flex:none; }
+[data-cv6][data-screen^="review"] .burl { flex:1; height:24px; border-radius:7px; background:#fff; border:1px solid #d9d6d2; display:flex; align-items:center; gap:7px; padding:0 10px; font-size:11.5px; color:#888; font-family:var(--font-mono); overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+[data-cv6][data-screen^="review"] .doc.is-image,
+[data-cv6][data-screen^="review"] .doc.is-photo,
+[data-cv6][data-screen^="review"] .doc.is-video,
+[data-cv6][data-screen^="review"] .doc.is-siteshot,
+[data-cv6][data-screen^="review"] .doc.is-sitelive { background:transparent !important; box-shadow:none !important; padding:0 !important; width:min(760px, 100%) !important; }
+[data-cv6][data-screen^="review"] .doc.is-image [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-photo [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-video [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-siteshot [data-bind="deliverable.file"],
+[data-cv6][data-screen^="review"] .doc.is-sitelive [data-bind="deliverable.file"] { color:#7a7a82 !important; }
+[data-cv6][data-screen^="review"] .doc.is-image h1,
+[data-cv6][data-screen^="review"] .doc.is-photo h1,
+[data-cv6][data-screen^="review"] .doc.is-video h1,
+[data-cv6][data-screen^="review"] .doc.is-siteshot h1,
+[data-cv6][data-screen^="review"] .doc.is-sitelive h1 { color:#e6e8ea !important; font-size:16px !important; margin:0 0 12px !important; }

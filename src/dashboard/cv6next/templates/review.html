@@ -58,7 +58,7 @@
     </div>
     <!-- viewer (switches by deliverable.type · document shown) -->
     <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;position:relative;padding:28px;" data-state="ready">
-      <div class="doc" style="width:560px;padding:46px 50px;">
+      <div class="doc" style="width:560px;padding:46px 50px;" data-mod="is-:deliverable.type">
         <div style="font-family:var(--font-mono);font-size:12px;color:#999;margin-bottom:18px;" data-bind="deliverable.file">handoff.md · 8 KB</div>
         <h1 style="font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0 0 16px;" data-bind="deliverable.title">Support ask · handoff</h1>
         <div style="font-size:15px;line-height:1.65;color:#333;" data-html="deliverable.bodyHtml" data-cv6-keep="review-body"><p style="margin:0 0 14px;">Repo <code>space-rising</code> isn't found in the <code>task-runner.sh</code> resolver, so docs-only projects fail to route ahead of the Apr 29 print.</p></div>
@@ -106,7 +106,7 @@
       <button class="typechip is-on" data-each="queue.items" data-action="openDeliverable" data-arg="item.id" data-mod="is-:item.open"><svg class="tglyph is-doc" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" data-mod="is-:item.type"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><span data-bind="item.typeLabel">Document</span></button>
     </div>
     <!-- viewer (document canonical) -->
-    <div class="doc" style="border-radius:10px;padding:18px 18px;height:392px;overflow:hidden;" data-state="ready">
+    <div class="doc" style="border-radius:10px;padding:18px 18px;height:392px;overflow:hidden;" data-state="ready" data-mod="is-:deliverable.type">
       <div style="font-family:var(--font-mono);font-size:11px;color:#999;margin-bottom:12px;" data-bind="deliverable.file">handoff.md · 8 KB</div>
       <h1 style="font-size:18px;font-weight:700;margin:0 0 10px;" data-bind="deliverable.title">Support ask · handoff</h1>
       <div style="font-size:13.5px;line-height:1.6;color:#333;height:320px;overflow:auto;" data-html="deliverable.bodyHtml" data-cv6-keep="review-body"><p style="margin:0;">Repo <code>space-rising</code> isn't in the resolver, so docs-only projects fail to route.</p></div>

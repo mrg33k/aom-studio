@@ -47,6 +47,21 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
       if (!on) return;
       // Clicks inside an open popover belong to the popover.
       if (e.target.closest('[data-review-popover]')) return;
+      // The Pin-mode toggle rides inside iframe-based viewers (PDF / live site), whose
+      // content swallows clicks. It flips its sibling .pinshield — a transparent layer
+      // that hands clicks back to this listener — on and off. Pure DOM state: the body
+      // markup only rewrites when the file changes (data-html guard), so it holds.
+      const toggle = e.target.closest('.pinmode-toggle');
+      if (toggle && wrap.contains(toggle)) {
+        const shield = toggle.parentElement?.querySelector('.pinshield');
+        if (shield) {
+          const turnOn = shield.style.display === 'none';
+          shield.style.display = turnOn ? 'block' : 'none';
+          toggle.textContent = turnOn ? 'Pin mode: on' : 'Pin mode: off';
+          toggle.style.background = turnOn ? '#0066FF' : 'rgba(0,0,0,.55)';
+        }
+        return;
+      }
       // The template engine handles pin clicks itself (data-action="openPin" stops
       // propagation), so a click landing here is never on a pin marker.
       const docElem = e.target.closest('.doc');

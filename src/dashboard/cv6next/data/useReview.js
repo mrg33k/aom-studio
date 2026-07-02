@@ -55,6 +55,20 @@ async function buildDeliverableBody(item) {
     return { url: URL.createObjectURL(blob) };
   }
 
+  // Browser chrome (design .browser/.bchrome/.burl) wrapping site content, and the
+  // pin-shield for content that swallows clicks (iframes: PDFs + live sites). The
+  // shield is a transparent layer the Pin-mode toggle flips on so clicks reach the
+  // pin-comment listener; off, the content scrolls/navigates normally. The toggle is
+  // plain markup — the delegated Review click listener owns its behavior.
+  const pinShield = () => (
+    '<div class="pinshield" style="position:absolute;inset:0;display:none;cursor:crosshair;z-index:4;"></div>'
+    + '<button class="pinmode-toggle" type="button" style="position:absolute;top:10px;right:10px;z-index:5;display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;border:none;border-radius:15px;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;">Pin mode: off</button>'
+  );
+  const browserChrome = (urlLabel, inner) => (
+    `<div class="browser"><div class="bchrome"><span class="bdot" style="background:#f87171;"></span><span class="bdot" style="background:#fbbf24;"></span><span class="bdot" style="background:#34d399;"></span><div class="burl">${escapeHtml(urlLabel)}</div></div>`
+    + `<div style="position:relative;">${inner}</div></div>`
+  );
+
   try {
     if (type === 'image' || type === 'photo') {
       const b = await blobOf();
@@ -66,11 +80,29 @@ async function buildDeliverableBody(item) {
       return b.err ? errDiv(b.err)
         : `<video src="${b.url}" controls style="max-width:100%;border-radius:10px;display:block;"></video>`;
     }
+    if (type === 'siteshot') {
+      const b = await blobOf();
+      return b.err ? errDiv(b.err)
+        : browserChrome(item.title, `<img src="${b.url}" alt="${escapeHtml(item.title)}" style="width:100%;height:auto;display:block;" />`);
+    }
+    if (type === 'sitelive') {
+      // A live site delivered by link: browser-chrome canvas + sandboxed iframe with
+      // the pin layer, plus the Open-live affordance (design live-site review canvas).
+      // Sites that refuse framing (CSP) show blank — the Open-live link stays the out.
+      const href = isAbs ? path : `https://${path}`;
+      const bare = href.replace(/^https?:\/\//i, '');
+      return (
+        `<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:rgba(0,102,255,.10);border:1px solid rgba(0,102,255,.28);border-radius:11px;padding:10px 13px;">`
+        + `<span style="flex:1;font-size:12.5px;color:#c9ccd1;">Delivered as a live link. Flip on Pin mode to comment, or open it full-size.</span>`
+        + `<a href="${href}" target="_blank" rel="noopener" style="text-decoration:none;height:32px;padding:0 13px;border-radius:9px;background:#0066FF;color:#fff;font-size:12px;font-weight:600;display:inline-flex;align-items:center;">Open live ↗</a></div>`
+        + browserChrome(bare, `<iframe src="${href}" title="${escapeHtml(item.title)}" sandbox="allow-scripts allow-same-origin allow-forms" style="width:100%;height:62vh;border:0;display:block;background:#fff;"></iframe>${pinShield()}`)
+      );
+    }
     if (type === 'doc') {
       const b = await blobOf();
       if (b.err) return errDiv(b.err);
       if (/\.pdf$/i.test(path)) {
-        return `<iframe src="${b.url}" title="${escapeHtml(item.title)}" style="width:100%;height:60vh;border:0;border-radius:10px;"></iframe>`;
+        return `<div style="position:relative;"><iframe src="${b.url}" title="${escapeHtml(item.title)}" style="width:100%;height:62vh;border:0;border-radius:10px;display:block;"></iframe>${pinShield()}</div>`;
       }
       return errDiv(`Preview is not available for this file type. <a href="${b.url}" download="${escapeHtml(item.title)}" style="color:#0066FF;">Download ${escapeHtml(item.title)}</a>`);
     }
