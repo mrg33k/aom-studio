@@ -22,6 +22,13 @@
 <body data-cv6>
 <!-- Desktop screen -->
 <div data-cv6 data-screen="livescribe-desktop" style="width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;">
+  <!-- .capbtn must live INSIDE the screen div: composeLiveScribe ships only the
+       screen's outerHTML, so head styles never reach the live page (the bare
+       "Start capture" text bug, 2026-07-01). -->
+  <style>
+    [data-screen="livescribe-desktop"] .capbtn { height:36px; padding:0 16px; border-radius:10px; border:none; background:var(--accent); color:#fff; font-size:13px; font-weight:600; font-family:var(--font-sans); display:flex; align-items:center; gap:7px; cursor:pointer; }
+    [data-screen="livescribe-desktop"] .capbtn.is-on { background:#F87171; }
+  </style>
   <!-- Header with timer + waveform + Stop button -->
   <div style="display:flex;align-items:center;gap:14px;padding:18px 24px;border-bottom:1px solid var(--divider);">
     <span style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:14px;color:var(--fg);"><span class="rec"></span><span data-bind="session.elapsed">00:00</span></span>
