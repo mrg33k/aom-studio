@@ -199,9 +199,12 @@ export function useOrganize(worldId = 'aom') {
   const [missionTree, setMissionTree] = useState({}); // projectSlug -> tree nodes array (nested)
   const inFlight = useRef(new Set()); // file ids whose content fetch is in progress (dedup)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (opts) => {
     // The disk mirror is the source of truth: every file in every project,
     // each row carrying project slug + folder path. Metadata only here.
+    // opts.bust — post-mutation reload (rename/move): skip the missions-tree
+    // lambda's 30s registry cache so the change shows now, not next poll.
+    const bust = opts && opts.bust ? '&bust=1' : '';
     let gotFiles = false;
     try {
       const filesRes = await authFetch(
@@ -228,7 +231,7 @@ export function useOrganize(worldId = 'aom') {
 
     // Tertiary, best-effort: mission tree for nested room structure in the tree panel.
     try {
-      const mtRes = await authFetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId), { credentials: 'include' });
+      const mtRes = await authFetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId) + bust, { credentials: 'include' });
       const mtData = mtRes.ok ? await mtRes.json() : null;
       if (mtData && Array.isArray(mtData.projects)) {
         const next = {};
@@ -551,5 +554,7 @@ export function useOrganize(worldId = 'aom') {
     setOpenedId(null);
   }, []);
 
-  return { state, data, reload: load, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId };
+  // projects + missionTree exposed raw for the right-click context menu
+  // (rename/move needs registry paths + move destinations, not display rows).
+  return { state, data, reload: load, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId, projects, missionTree };
 }

@@ -382,7 +382,9 @@ export function useProjectMissions(worldId, reloadKey = 0) {
   useEffect(() => {
     if (!worldId) return undefined;
     let alive = true;
-    authFetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId), { credentials: 'include' })
+    // reloadKey > 0 means a post-mutation refetch (rename/move from the context
+    // menu) — bust the missions-tree lambda's 30s registry cache so it shows now.
+    authFetch('/api/dashboard/missions-tree?client=' + encodeURIComponent(worldId) + (reloadKey > 0 ? '&bust=1' : ''), { credentials: 'include' })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         if (!alive || !j || !Array.isArray(j.projects)) return;

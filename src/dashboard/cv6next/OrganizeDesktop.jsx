@@ -4,9 +4,11 @@
 // screen node from the design fragment, inject the shared loading/error/empty states,
 // and bind real data + actions behind it (no redraw).
 
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useCallback } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
+import { useTreeContextMenu, renameNode, moveNode, findMissionNode } from './TreeContextMenu.jsx';
+import { authFetch } from '../lib/authFetch';
 import template from './templates/organize.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -30,7 +32,8 @@ function composeOrganize(raw, screenName) {
 const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
 export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId } = useOrganize('aom');
+  const worldId = 'aom';
+  const { state, data, reload, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId, projects, missionTree } = useOrganize(worldId);
 
   // The search input is an uncontrolled kept DOM node (see template); the engine only
   // wires clicks, so the input event is delegated from this React wrapper. Debounced a
@@ -51,6 +54,43 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
   // Switching project resets the open file inside the hook (auto-opens the new
   // project's first file), so the preview always follows the selected project.
   const switchProject = (id) => { selectProject(id); };
+
+  // ── R-TREE-MENU: right-click / long-press on tree rows → Rename / Move ──
+  // Tree row ids (stamped as data-cv6-arg by the engine): a bare slug is a
+  // project, a colon-joined path is a mission of that project.
+  const projectName = useCallback((slug) => {
+    const p = (projects || []).find((x) => x.slug === slug);
+    return p?.name || slug;
+  }, [projects]);
+  const resolveHit = useCallback((rowEl) => {
+    if (!rowEl.classList.contains('trow')) return null;
+    const id = rowEl.getAttribute('data-cv6-arg') || '';
+    if (!id || id === '__all') return null;
+    if (!id.includes(':')) {
+      return { kind: 'project', projectSlug: id, name: projectName(id) };
+    }
+    const projectSlug = id.slice(0, id.indexOf(':'));
+    const found = findMissionNode(missionTree?.[projectSlug], id, id.slice(id.lastIndexOf(':') + 1));
+    const node = found?.node;
+    const path = node?.path || null;
+    return {
+      kind: 'mission',
+      projectSlug,
+      missionSlug: node?.folder_name || String(node?.slug || id).split(':').pop(),
+      name: node?.name || id.split(':').pop(),
+      path,
+      // Platform missions (corner/missions/...) have no per-project home to
+      // move between; user-project missions do. No path = record-only, movable.
+      canMove: !path || path.startsWith('corner/users/'),
+    };
+  }, [missionTree, projectName]);
+  const { overlay: ctxOverlay } = useTreeContextMenu({
+    wrapRef,
+    resolveHit,
+    listProjects: () => (projects || []).map((p) => ({ slug: p.slug, name: p.name })),
+    onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); await reload({ bust: true }); },
+    onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); await reload({ bust: true }); },
+  });
 
   // Mark the open row from the hook's openedId so the highlighted row and the
   // preview never disagree. Content/preview/viewFile already come from the hook.
@@ -101,6 +141,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
   return (
     <div ref={wrapRef} onInput={onSearchInput} style={{ width: '100%', height: '100%' }}>
       <TemplateScreen html={DESKTOP_HTML} data={bindData} actions={actions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
+      {ctxOverlay}
     </div>
   );
 }

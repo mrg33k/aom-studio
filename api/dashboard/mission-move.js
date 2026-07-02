@@ -60,7 +60,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { world, project_slug, mission_slug, new_project_slug } = req.body || {};
+  const { world, project_slug, mission_slug, new_project_slug, source_path } = req.body || {};
   const w = (world || 'aom').toString();
 
   if (!project_slug || !SLUG_RE.test(project_slug)) return res.status(400).json({ error: 'project_slug required' });
@@ -80,7 +80,20 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: 'Target project does not exist' });
   }
 
-  const source_path = `corner/users/${w}/projects/${project_slug}/missions/${mission_slug}`;
+  // R-TREE-MENU: the caller may pass the mission's real registry path (nested
+  // missions live at .../missions/<parent>/missions/<leaf>, which the naive
+  // construction below misses). Validate hard: relative, no traversal, inside
+  // corner/users/, a mission folder, and its leaf must be the mission_slug.
+  let src_rel = `corner/users/${w}/projects/${project_slug}/missions/${mission_slug}`;
+  if (typeof source_path === 'string' && source_path.trim()) {
+    const sp = source_path.trim().replace(/\/+$/, '');
+    const parts = sp.split('/');
+    const okPath = !sp.startsWith('/') && !sp.includes('\\') && !parts.includes('..')
+      && sp.startsWith(`corner/users/${w}/`) && sp.includes('/missions/')
+      && parts[parts.length - 1] === mission_slug;
+    if (!okPath) return res.status(400).json({ error: 'invalid source_path' });
+    src_rel = sp;
+  }
   const dest_path = `corner/users/${w}/projects/${new_project_slug}/missions/${mission_slug}`;
 
   // 1. Move the folder on disk via the tunnel. A mission with no materialized
@@ -91,7 +104,7 @@ export default async function handler(req, res) {
     const r = await fetch(`${RAG_TUNNEL_URL}/command-deck-move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'User-Agent': 'aom-vercel-proxy' },
-      body: JSON.stringify({ source_path, dest_path }),
+      body: JSON.stringify({ source_path: src_rel, dest_path }),
     });
     const moveResp = await r.json().catch(() => ({}));
     if (r.ok && moveResp?.ok) {

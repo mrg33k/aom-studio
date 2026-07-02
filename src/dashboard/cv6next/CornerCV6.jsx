@@ -15,6 +15,7 @@ import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
+import { useTreeContextMenu, renameNode, moveNode, findMissionNode } from './TreeContextMenu.jsx';
 import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx, ReviewCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
@@ -555,6 +556,52 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const { state, data, worldId } = useHome();
   const [missionReload, setMissionReload] = useState(0);
   const missionsByProject = useProjectMissions(worldId, missionReload);
+
+  // ── R-TREE-MENU: right-click / long-press on the Rooms rail → Rename / Move ──
+  // .projrow carries the project id, .missrow the full colon mission slug (both
+  // stamped as data-cv6-arg by the template engine at bind time).
+  const homeWrapRef = useRef(null);
+  const homeProjectsRef = useRef([]);
+  const missionsByProjectRef = useRef({});
+  const resolveHomeHit = useCallback((rowEl) => {
+    const id = rowEl.getAttribute('data-cv6-arg') || '';
+    if (!id) return null;
+    const projects = homeProjectsRef.current || [];
+    if (rowEl.classList.contains('projrow')) {
+      const p = projects.find((x) => x.id === id || x.slug === id);
+      if (!p?.slug) return null;
+      return { kind: 'project', projectSlug: p.slug, name: p.name || p.slug };
+    }
+    if (rowEl.classList.contains('missrow')) {
+      const projectSlug = id.includes(':') ? id.slice(0, id.indexOf(':')) : null;
+      if (!projectSlug) return null;
+      const leaf = id.slice(id.lastIndexOf(':') + 1);
+      const found = findMissionNode(missionsByProjectRef.current?.[projectSlug], id, leaf);
+      const node = found?.node;
+      const path = node?.path || null;
+      return {
+        kind: 'mission',
+        projectSlug,
+        missionSlug: node?.folder_name || leaf,
+        name: node?.name || leaf,
+        path,
+        canMove: !path || path.startsWith('corner/users/'),
+      };
+    }
+    return null;
+  }, []);
+  const { overlay: treeCtxOverlay } = useTreeContextMenu({
+    wrapRef: homeWrapRef,
+    resolveHit: resolveHomeHit,
+    listProjects: () => (homeProjectsRef.current || []).filter((p) => p.slug).map((p) => ({ slug: p.slug, name: p.name })),
+    onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); setMissionReload((k) => k + 1); },
+    onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); setMissionReload((k) => k + 1); },
+  });
+  // Latest data for the context-menu resolver (refs, so the delegated listener
+  // never needs re-binding — same pattern as curCardRef).
+  homeProjectsRef.current = data.projects || [];
+  missionsByProjectRef.current = missionsByProject || {};
+
   // Desktop Home: which project folders are fanned open to their missions, and which have
   // had "show N more" tapped. Matches the Chat rail tree.
   const [expandedHomeProjects, setExpandedHomeProjects] = useState(() => new Set());
@@ -1544,9 +1591,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     </div>
   ) : null;
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div ref={homeWrapRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={homeHtml} data={homeData} actions={actions} state={state}
         aliases={HOME_ALIASES} style={{ width: '100%', height: '100%' }} />
+      {treeCtxOverlay}
       <Cv6QuickThread
         target={knavOpenedRoom ? threadHost : null}
         messages={(quickThread && quickThread.messages ? quickThread.messages : []).slice(-40)}

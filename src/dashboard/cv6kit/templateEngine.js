@@ -200,6 +200,15 @@ function applyBindings(el, scopes, ctx) {
   if (action) {
     const argPath = el.getAttribute('data-arg');
     const target = el.getAttribute('data-target');
+    // Stamp the RESOLVED arg onto the node so delegated listeners on a stable
+    // wrapper (context menus, long-press) can identify a row without a rebind
+    // — the click closure below is invisible to them. Scalar ids only.
+    if (argPath) {
+      const resolved = resolvePath(scopes, argPath);
+      if (resolved != null && (typeof resolved === 'string' || typeof resolved === 'number')) {
+        el.setAttribute('data-cv6-arg', String(resolved));
+      }
+    }
     const handler = (e) => {
       const fn = ctx.actions[action];
       if (typeof fn !== 'function') return;

@@ -2,11 +2,13 @@
 // Built from wired/tools/review.html + review.json, fed by real useReview.
 // No design changes, only data wiring.
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useReviewPinUI } from './ReviewPins.jsx';
+import { useTreeContextMenu, renameNode, moveNode, findMissionNode } from './TreeContextMenu.jsx';
+import { authFetch } from '../lib/authFetch';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -48,7 +50,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // Fall back to resolving that filename against the real queue, same as Catch-up.
   const targetName = target?.name
     || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
-  const { state, data, actions } = useReview(worldId || 'aom', injected);
+  const { state, data, actions, scope, projectsRaw, missionTreeRaw, refreshTree } = useReview(worldId || 'aom', injected);
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
 
@@ -57,6 +59,43 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // tick) + the design popover composer/viewer rendered outside the template DOM.
   const viewerRef = useRef(null);
   const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef: viewerRef, pins, addPin, deletePin });
+
+  // ── R-TREE-MENU: right-click / long-press on the queue tree → Rename / Move ──
+  // Tree node ids: 'p:<projectSlug>' or 'm:<missionLeaf>' (missions render only
+  // under the ACTIVE project, so the leaf resolves against scope.project).
+  const resolveHit = useCallback((rowEl) => {
+    if (!rowEl.classList.contains('trow')) return null;
+    const id = rowEl.getAttribute('data-cv6-arg') || '';
+    if (id.startsWith('p:')) {
+      const slug = id.slice(2);
+      const p = (projectsRaw || []).find((x) => x.slug === slug);
+      return { kind: 'project', projectSlug: slug, name: p?.name || slug };
+    }
+    if (id.startsWith('m:')) {
+      const leaf = id.slice(2);
+      const proj = scope?.project;
+      if (!proj || leaf === '__root') return null;
+      const found = findMissionNode(missionTreeRaw?.[proj], `${proj}:${leaf}`, leaf);
+      const node = found?.node;
+      const path = node?.path || null;
+      return {
+        kind: 'mission',
+        projectSlug: proj,
+        missionSlug: node?.folder_name || leaf,
+        name: node?.name || leaf,
+        path,
+        canMove: !path || path.startsWith('corner/users/'),
+      };
+    }
+    return null;
+  }, [projectsRaw, missionTreeRaw, scope]);
+  const { overlay: ctxOverlay } = useTreeContextMenu({
+    wrapRef: viewerRef,
+    resolveHit,
+    listProjects: () => (projectsRaw || []).map((p) => ({ slug: p.slug, name: p.name })),
+    onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId || 'aom'); refreshTree(); },
+    onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId || 'aom'); refreshTree(); },
+  });
 
   // Catch-up → Review carries a filename (+ its project); resolve it to a real queue
   // item (the queue carries real paths) so we open the exact deliverable the user came
@@ -183,6 +222,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     <div ref={viewerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
       {pinOverlay}
+      {ctxOverlay}
     </div>
   );
 }

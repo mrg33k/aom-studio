@@ -41,9 +41,9 @@ const MISSION_SLUG_LOOKUP = buildSlugLookup(missionsRegistry)
 const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com'
 const LIVE_REGISTRY_PATH = 'corner/users/aom/missions/master-loop/deliverables/missions-registry-live.json'
 let _registryCache = { at: 0, registry: null, lookup: null }
-async function loadRegistry() {
+async function loadRegistry(force) {
   const now = Date.now()
-  if (_registryCache.registry && now - _registryCache.at < 30000) return _registryCache
+  if (!force && _registryCache.registry && now - _registryCache.at < 30000) return _registryCache
   try {
     const ctrl = new AbortController()
     const t = setTimeout(() => ctrl.abort(), 4000)
@@ -103,8 +103,10 @@ export default async function handler(req, res) {
 
   const clientId = String(req.query.client || 'aom').trim().toLowerCase()
 
-  // Live-first mission registry (see loadRegistry above).
-  const { registry: liveRegistry, lookup: liveSlugLookup } = await loadRegistry()
+  // Live-first mission registry (see loadRegistry above). bust=1 skips the 30s
+  // cache — the dashboard sends it on the refetch right after a rename/move so
+  // the change is visible immediately instead of a cache-window later.
+  const { registry: liveRegistry, lookup: liveSlugLookup } = await loadRegistry(!!req.query.bust)
 
   // Load shared project slugs so the tree mirrors the user's task panel.
   let sharedSlugs = []

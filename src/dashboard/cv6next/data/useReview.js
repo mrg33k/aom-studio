@@ -245,6 +245,9 @@ export function useReview(worldId = 'aom', injected = null) {
   const [projects, setProjects] = useState(null);
   const [missionTree, setMissionTree] = useState({});
 
+  // treeReload bumps after a rename/move from the context menu; >0 also busts
+  // the missions-tree lambda's 30s registry cache so the change shows now.
+  const [treeReload, setTreeReload] = useState(0);
   useEffect(() => {
     let dead = false;
     (async () => {
@@ -254,7 +257,7 @@ export function useReview(worldId = 'aom', injected = null) {
         if (!dead && d?.ok && Array.isArray(d.projects)) setProjects(d.projects);
       } catch (e) { console.error('[Review projects]', e); }
       try {
-        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId || 'aom')}`, { credentials: 'include' });
+        const r = await authFetch(`/api/dashboard/missions-tree?client=${encodeURIComponent(worldId || 'aom')}${treeReload > 0 ? '&bust=1' : ''}`, { credentials: 'include' });
         const d = r?.ok ? await r.json() : null;
         if (!dead && d && Array.isArray(d.projects)) {
           const next = {};
@@ -264,7 +267,7 @@ export function useReview(worldId = 'aom', injected = null) {
       } catch (e) { console.error('[Review missions-tree]', e); }
     })();
     return () => { dead = true; };
-  }, [worldId]);
+  }, [worldId, treeReload]);
 
   const load = useCallback(async () => {
     let ok = false;
@@ -581,6 +584,14 @@ export function useReview(worldId = 'aom', injected = null) {
       ? (data.queue.items.length > 0 ? (bodyLoading ? 'loading' : 'ready') : 'empty')
       : status,
     data,
+    // Raw scope + registry data for the right-click context menu: which project
+    // and mission the tree currently narrows to ('m:<leaf>' node ids are only
+    // meaningful inside the active project), the registry mission trees (carry
+    // path/folder_name for rename+move), and the projects list for destinations.
+    scope: { project: activeProj, mission: activeMission },
+    projectsRaw: projects || [],
+    missionTreeRaw: missionTree,
+    refreshTree: () => setTreeReload((k) => k + 1),
     actions: {
       openDeliverable: (id) => setOpenDelId(id),
       loadMore,
