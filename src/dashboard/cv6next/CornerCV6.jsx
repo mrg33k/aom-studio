@@ -1990,7 +1990,7 @@ export default function CornerCV6() {
   }, []);
   const onNav = useCallback((target, arg) => {
     if (target === 'back') { back(); return; }
-    if (['home', 'support', 'command', 'tracker', 'organize', 'review', 'settings'].includes(target)) {
+    if (['home', 'support', 'command', 'tracker', 'organize', 'review', 'settings', 'livescribe'].includes(target)) {
       // Carry a catch-up "Review this file" target into the Review tool; a plain
       // toolbar nav('review') passes no arg and clears any prior target.
       if (target === 'review') setReviewTarget(arg && typeof arg === 'object' ? arg : null);
