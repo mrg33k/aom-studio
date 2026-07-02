@@ -381,7 +381,8 @@ export function useOrganize(worldId = 'aom') {
   const allFiles = (groups.get(openProject.id) || [])
     .slice()
     .sort((a, b) => (sort === 'az'
-      ? String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' })
+      // numeric:true = natural sort, so shot-2 lands before shot-10
+      ? String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base', numeric: true })
       : String(b.updated_at || '').localeCompare(String(a.updated_at || ''))))
     .map((f) => {
       const fname = f.name || 'Untitled';
