@@ -213,7 +213,7 @@ export function reviewItemsFromFiles(files, project = '') {
         id: path, title: name,
         who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),
         type: key, typeLabel: typeLabel(key), typeGlyph: typeGlyph(key),
-        count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '',
+        count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '', missionLabel: '',
         location: project || '', queueState: 'ready', file: typeLabel(key),
         bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
       };
@@ -268,6 +268,10 @@ export function useReview(worldId = 'aom', injected = null) {
             time: relTime(it.last_modified),
             ts: it.last_modified || '', // raw timestamp so the queue can sort by recency
             location: it.mission ? `${it.project} / ${it.mission}` : it.project,
+            // Mobile row meta already shows the project (who) — this carries ONLY the
+            // mission tail ("/ reports-page"), empty when the file sits at project root,
+            // so the line never reads "Space-rising · space-rising / ...".
+            missionLabel: it.mission ? `/ ${it.mission}` : '',
             queueState: 'ready',
             // The viewer caption used to read "name · 0 KB" — a fabricated size (the queue
             // endpoint never carries file bytes in production; it walks a tunnel that returns
