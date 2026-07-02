@@ -31,7 +31,12 @@ const BULK_CONTENT = new RegExp(
   "the most important .{0,40} of the day|chosen by .{0,30} editors?|read in (?:your )?browser|" +
   "save up to \\d+%|store wide|sound packs?|bundle includes|click the .{0,30} button|" +
   "registration (?:approved|pending approval) for|is starting in \\d+ (?:hour|minute)|" +
-  "add to (?:your )?calendar|rsvp now)",
+  "add to (?:your )?calendar|rsvp now|" +
+  // Hype-blast phrasing (OddsJam-style promos that ride personal-looking senders,
+  // caught live 2026-07-01): profit-porn language no real correspondent uses.
+  "insane (?:profits?|results|returns)|massive monthly profits?|" +
+  "most profitable (?:month|week|year)|users have achieved|" +
+  "make (?:thousands|hundreds) of dollars)",
   'i'
 );
 

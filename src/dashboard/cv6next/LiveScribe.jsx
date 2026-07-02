@@ -40,20 +40,68 @@ const HTML_DESKTOP = composeLiveScribe(template, 'livescribe-desktop');
 const HTML_MOBILE = composeLiveScribe(template, 'livescribe-mobile');
 
 export default function LiveScribe({ onNav, onOpenNav }) {
-  const { state, data } = useLiveScribe('aom');
+  const { state, data, controls } = useLiveScribe('aom');
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const handleStopAndSave = async () => {
+    if (!controls) return;
+    await controls.stop();
+    await controls.saveSession();
+  };
+
+  const handleSendToDashboard = async () => {
+    // Save session first
+    const saved = await controls.saveSession();
+    if (!saved) return;
+
+    // Generate markdown summary
+    const actionItemsText = data.actionItems?.length
+      ? data.actionItems.map(ai => `- [ ] ${ai.text}${ai.owner ? ` (@${ai.owner})` : ''}`).join('\n')
+      : '';
+    const decisionsText = data.decisions?.length
+      ? data.decisions.map(d => `- ✓ ${d.text}`).join('\n')
+      : '';
+
+    const summary = [
+      '## Meeting Summary',
+      '',
+      `Recorded: ${data.session?.target}`,
+      `Duration: ${data.session?.elapsed}`,
+      '',
+    ];
+    if (actionItemsText) {
+      summary.push('### Action Items');
+      summary.push(actionItemsText);
+      summary.push('');
+    }
+    if (decisionsText) {
+      summary.push('### Decisions');
+      summary.push(decisionsText);
+      summary.push('');
+    }
+
+    const markdown = summary.join('\n');
+
+    // Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(markdown);
+      console.log('Session summary copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err);
+    }
+  };
 
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
     openNav: () => onOpenNav?.(),
     openCommandK: () => {},
     search: () => {},
-    // Held-c (no transcription backend yet): inert, never faked. The template also
-    // renders these controls disabled with "not wired yet" tooltips.
+    // Real wiring to hook controls
+    // Held controls (pause / ask-helper) are removed from the template rather than
+    // stubbed — no dead taps. The extracted counts render as plain stats.
     openExtracted: () => {},
-    pauseRecording: () => {},
-    stopAndSave: () => {},
-    askHelper: () => {},
+    stopAndSave: handleStopAndSave,
+    sendToDashboard: handleSendToDashboard,
   };
 
   const html = isMobile ? HTML_MOBILE : HTML_DESKTOP;

@@ -31,7 +31,7 @@
       <span style="height:80%;animation:wave 1s ease-in-out infinite .05s;"></span>
     </span>
     <div style="flex:1;font-size:12.5px;color:var(--muted);">Capturing to <span style="color:var(--fg);font-weight:500;" data-bind="session.target">—</span></div>
-    <button style="height:36px;padding:0 16px;border-radius:10px;border:none;background:#F87171;color:#fff;font-size:13px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;gap:7px;cursor:not-allowed;opacity:.5;" title="Stop & save not wired yet" disabled>
+    <button style="height:36px;padding:0 16px;border-radius:10px;border:none;background:#F87171;color:#fff;font-size:13px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;gap:7px;cursor:pointer;" data-action="stopAndSave" title="Stop and save the session">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>Stop &amp; save
     </button>
   </div>
@@ -78,11 +78,6 @@
           </div>
         </div>
         <div style="font-size:12.5px;line-height:1.5;color:var(--fg);background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:9px 11px;margin-bottom:9px;" data-bind="helper.answerHtml">The helper is ready.</div>
-        <div style="display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:10px;background:var(--surface);border:1px solid var(--hair);cursor:not-allowed;opacity:.5;" title="Ask helper not wired yet" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z"/></svg>
-          <span style="flex:1;font-size:12.5px;color:var(--faint);">Ask the helper…</span>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-        </div>
       </div>
       <!-- Action items -->
       <div class="eyebrow" style="margin-bottom:10px;">Action items</div>
@@ -111,8 +106,8 @@
           No decisions yet.
         </div>
       </div>
-      <!-- Send button (held-c) -->
-      <button style="width:100%;height:46px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:not-allowed;opacity:.5;" title="Send to room not wired yet" disabled>
+      <!-- Send button -->
+      <button style="width:100%;height:46px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="sendToDashboard" title="Save session and copy to clipboard">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Send to <span data-bind="session.targetShort">—</span>
       </button>
     </div>

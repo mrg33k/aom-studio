@@ -22,7 +22,9 @@ export const NAV_TOOLS = [
   { id: 'support',    label: 'Support',  route: 'support',    wired: true },
   { id: 'tracker',    label: 'Tracker',  route: 'tracker',    wired: true },
   { id: 'command',    label: 'Command',  route: 'command',    wired: true },
-  { id: 'livescribe', label: 'Scribe',   route: 'livescribe', wired: false, mobileLabel: 'Live Scribe' },
+  // Wired 2026-07-01: real capture v1 (mic → Gemini transcription → extracted
+  // action items/decisions, sessions persisted via livescribe-sessions).
+  { id: 'livescribe', label: 'Scribe',   route: 'livescribe', wired: true, mobileLabel: 'Live Scribe' },
 ];
 
 // What the nav actually renders today: the wired tools, in the design's order.
