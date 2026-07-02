@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { marked } from 'marked';
 import { authFetch } from '../../lib/authFetch';
+import { supabase } from '../../lib/supabase';
 import { titleForAgent } from './agentTitles';
 
 marked.setOptions({ gfm: true, breaks: false });
@@ -290,8 +291,29 @@ export function useReview(worldId = 'aom', injected = null) {
       return undefined;
     }
     load();
+    // Realtime contract (review R7): a new file lands as a messages INSERT (the watcher
+    // posts the chat bubble at the same instant it rebuilds the queue cache), so a
+    // messages INSERT is our "the queue probably changed" signal. Refetch on it, debounced
+    // past the server's ~1.2s share->rebuild window so we read the fresh cache, not race
+    // it. The 30s poll stays as the dropped-subscription fallback (same pattern as
+    // useDataPipe).
     const t = setInterval(load, 30000);
-    return () => clearInterval(t);
+    let debounce = null;
+    let channel = null;
+    if (supabase) {
+      channel = supabase
+        .channel(`review-queue-messages-${Math.random().toString(36).slice(2, 8)}`)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => {
+          if (debounce) clearTimeout(debounce);
+          debounce = setTimeout(() => { debounce = null; load(); }, 3000);
+        })
+        .subscribe();
+    }
+    return () => {
+      clearInterval(t);
+      if (debounce) clearTimeout(debounce);
+      if (channel) supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load, hasInjected, injected]);
 
