@@ -581,6 +581,7 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       const path = node?.path || null;
       return {
         kind: 'mission',
+        treeId: id,
         projectSlug,
         missionSlug: node?.folder_name || leaf,
         name: node?.name || leaf,
@@ -596,7 +597,16 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     listProjects: () => (homeProjectsRef.current || []).filter((p) => p.slug).map((p) => ({ slug: p.slug, name: p.name })),
     onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); setMissionReload((k) => k + 1); },
     onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); setMissionReload((k) => k + 1); },
-    onCreate: async (target, name) => { await createNode(authFetch, target, name, worldId); setMissionReload((k) => k + 1); },
+    onCreate: async (target, name) => {
+      await createNode(authFetch, target, name, worldId);
+      // Show the result: fan the parent project open (and the parent mission
+      // node for nested creates) so the new subfolder is visible immediately —
+      // creating into a closed folder must not look like nothing happened.
+      const proj = (homeProjectsRef.current || []).find((p) => p.slug === target.projectSlug);
+      if (proj?.id) setExpandedHomeProjects((prev) => new Set(prev).add(proj.id));
+      if (target.kind === 'mission' && target.treeId) setExpandedHomeNodes((prev) => new Set(prev).add(target.treeId));
+      setMissionReload((k) => k + 1);
+    },
   });
   // Latest data for the context-menu resolver (refs, so the delegated listener
   // never needs re-binding — same pattern as curCardRef).
