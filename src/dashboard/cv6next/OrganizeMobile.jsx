@@ -17,7 +17,7 @@ import template from './templates/organize.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
 // data-each item aliases the engine can't derive (tree→node, breadcrumb→crumb, etc.).
-const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission' };
+const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission', sorts: 'sort' };
 
 const SCREEN_BG = '#05080b';
 
@@ -126,7 +126,7 @@ const BROWSE_HTML = composeBrowse(template);
 const VIEW_HTML = composeView(template);
 
 export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, selectMission, setFilter, setQuery, reload, openFile } = useOrganize('aom');
+  const { state, data, selectProject, selectMission, setFilter, setQuery, setSort, reload, openFile } = useOrganize('aom');
   const [projectId, setProjectId] = useState(null); // null = show the picker (no forced project)
   const [pickedFileId, setPickedFileId] = useState(null);
 
@@ -179,6 +179,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
     openFile: (id) => tapFile(id),
     setFilter: (id) => setFilter(id || 'recent'),
     setMission: (id) => selectMission(id || '__all'),
+    setSort: (id) => setSort(id === 'az' ? 'az' : 'newest'),
     openInReview: () => {
       const rf = data.viewFile?.reviewFile;
       onNav?.('review', rf ? { files: [rf], project: data.viewFile.projectSlug || '' } : null);

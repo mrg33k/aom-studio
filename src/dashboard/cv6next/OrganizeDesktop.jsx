@@ -12,7 +12,7 @@ import statesRaw from './templates/states-extra.html?raw';
 
 // data-each item aliases the engine can't derive (tree→node, breadcrumb→crumb,
 // destinations→dest, folders→subfolder); the singularizable ones are kept explicit too.
-const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission' };
+const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission', sorts: 'sort' };
 
 function composeOrganize(raw, screenName) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -30,7 +30,7 @@ function composeOrganize(raw, screenName) {
 const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
 export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, selectMission, setFilter, setQuery, openFile, activeProjectId } = useOrganize('aom');
+  const { state, data, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId } = useOrganize('aom');
 
   // The search input is an uncontrolled kept DOM node (see template); the engine only
   // wires clicks, so the input event is delegated from this React wrapper. Debounced a
@@ -78,6 +78,7 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
       selectMission(segs.slice(1).reverse());
     },
     setMission: (id) => selectMission(id || '__all'),
+    setSort: (id) => setSort(id === 'az' ? 'az' : 'newest'),
     openProject: (id) => switchProject(id),
     openFolder: (id) => switchProject(id),
     openCrumb: (id) => (id === 'root' ? switchProject(null) : switchProject(id)),

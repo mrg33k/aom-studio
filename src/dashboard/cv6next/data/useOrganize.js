@@ -192,6 +192,8 @@ export function useOrganize(worldId = 'aom') {
   // flips (refining, not restarting); resets when the project changes. The input is an
   // uncontrolled kept DOM node — the component clears it on project switch to match.
   const [query, setQuery] = useState('');
+  // Sort is a VIEW preference (newest | az), not scope — it survives project switches.
+  const [sort, setSort] = useState('newest');
   const [openedId, setOpenedId] = useState(null);  // which file is open (preview/reader)
   const [contentCache, setContentCache] = useState({}); // id -> { title, bodyHtml, editor, editorInitials }
   const [missionTree, setMissionTree] = useState({}); // projectSlug -> tree nodes array (nested)
@@ -378,7 +380,9 @@ export function useOrganize(worldId = 'aom') {
   };
   const allFiles = (groups.get(openProject.id) || [])
     .slice()
-    .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))
+    .sort((a, b) => (sort === 'az'
+      ? String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' })
+      : String(b.updated_at || '').localeCompare(String(a.updated_at || ''))))
     .map((f) => {
       const fname = f.name || 'Untitled';
       const kind = resolveKind(f.kind, fname);
@@ -474,6 +478,10 @@ export function useOrganize(worldId = 'aom') {
       { id: 'video',  label: `Video ${videoCount}`,       count: videoCount, active: effFilter === 'video'  ? 'on' : 'off' },
     ].filter((c) => c.id === 'recent' || c.count > 0),
     missions: missionChips,
+    sorts: [
+      { id: 'newest', label: 'Newest', active: sort === 'newest' ? 'on' : 'off' },
+      { id: 'az',     label: 'A-Z',    active: sort === 'az'     ? 'on' : 'off' },
+    ],
     preview: previewObj,
     openedId: openInList?.id || null,
     viewFile: openInList
@@ -542,5 +550,5 @@ export function useOrganize(worldId = 'aom') {
     setOpenedId(null);
   }, []);
 
-  return { state, data, reload: load, selectProject, selectMission, setFilter, setQuery, openFile, activeProjectId };
+  return { state, data, reload: load, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId };
 }
