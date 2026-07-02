@@ -1,6 +1,6 @@
 // cv6next — Review tool data. Real deliverables queue shaped to the wired template.
-// Loads from /api/dashboard/review-queue, filters by Ready/Pipeline, and wires
-// approve / request-changes as real decision events. No fake data.
+// Loads from /api/dashboard/review-queue (search + sort in the queue panel) and
+// wires approve / request-changes as real decision events. No fake data.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { marked } from 'marked';
@@ -227,7 +227,6 @@ export function useReview(worldId = 'aom', injected = null) {
   const hasInjected = Array.isArray(injected) && injected.length > 0;
   const [queue, setQueue] = useState(null);
   const [openDelId, setOpenDelId] = useState(null);
-  const [filter, setFilter] = useState('ready'); // ready | pipeline
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [bodies, setBodies] = useState({}); // path -> rendered innerHTML ('' while loading)
   // Review R2: how many items we currently show. "Load older items" grows this; the 30s
@@ -235,8 +234,8 @@ export function useReview(worldId = 'aom', injected = null) {
   const [shown, setShown] = useState(PAGE_SIZE);
   const [hasMore, setHasMore] = useState(false);
   // Queue find + order (same toolkit as Organize): type-to-find narrows the visible
-  // queue; sort is a view preference (newest | az). Search text lives in a kept DOM
-  // input; the host component delegates the input event here.
+  // queue; sort is a view preference (newest | az | project | mission). Search text
+  // lives in a kept DOM input; the host component delegates the input event here.
   const [qSearch, setQSearch] = useState('');
   const [qSort, setQSort] = useState('newest');
 
@@ -285,7 +284,7 @@ export function useReview(worldId = 'aom', injected = null) {
             openCount: 0,
           };
         });
-        setQueue({ items, readyCount: items.filter((i) => i.status === 'ready').length, pipelineCount: 0 });
+        setQueue({ items, readyCount: items.length });
         ok = true;
       }
     } catch (e) {
@@ -301,7 +300,7 @@ export function useReview(worldId = 'aom', injected = null) {
     // Injected files (from a chat "Review all") ARE the queue — show exactly those,
     // live from the message, and skip the endpoint entirely.
     if (hasInjected) {
-      setQueue({ items: injected, readyCount: injected.length, pipelineCount: 0 });
+      setQueue({ items: injected, readyCount: injected.length });
       setStatus('loaded');
       return undefined;
     }
@@ -413,30 +412,46 @@ export function useReview(worldId = 'aom', injected = null) {
     && (queue?.items || []).some((i) => i.id === openDelId)
     && !bodies[openDelId];
 
+  // Sort comparators. Project groups by project (a → z), newest within; Mission
+  // groups by project then mission (root files first), newest within — the same
+  // project/mission scoping Organize gives, expressed as a queue order.
+  const byTitle = (a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base', numeric: true });
+  const byNewest = (a, b) => String(b.ts || '').localeCompare(String(a.ts || ''));
+  const byName = (x, y) => String(x || '').localeCompare(String(y || ''), undefined, { sensitivity: 'base' });
+  const compare = (a, b) => {
+    if (qSort === 'az') return byTitle(a, b);
+    if (qSort === 'project' || qSort === 'mission') {
+      const p = byName(a.whoRaw || a.who, b.whoRaw || b.who);
+      if (p) return p;
+      if (qSort === 'mission') {
+        const m = byName(a.missionLabel, b.missionLabel);
+        if (m) return m;
+      }
+      return byNewest(a, b);
+    }
+    return byNewest(a, b);
+  };
+
   const data = {
     queue: {
       readyCount: queue?.readyCount || 0,
-      pipelineCount: queue?.pipelineCount || 0,
-      isReady: filter === 'ready' ? 'on' : 'off',
-      isPipeline: filter === 'pipeline' ? 'on' : 'off',
       items: (queue?.items || [])
-        .filter((i) => filter === 'ready' ? i.status === 'ready' : i.status === 'live')
         .filter((i) => {
           const s = qSearch.trim().toLowerCase();
           return !s || `${i.title} ${i.who} ${i.typeLabel} ${i.location || ''}`.toLowerCase().includes(s);
         })
         .slice()
-        .sort((a, b) => (qSort === 'az'
-          ? String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base', numeric: true })
-          : String(b.ts || '').localeCompare(String(a.ts || '')))),
+        .sort(compare),
       sorts: [
-        { id: 'newest', label: 'Newest', active: qSort === 'newest' ? 'on' : 'off' },
-        { id: 'az',     label: 'A-Z',    active: qSort === 'az'     ? 'on' : 'off' },
+        { id: 'newest',  label: 'Newest',  active: qSort === 'newest'  ? 'on' : 'off' },
+        { id: 'az',      label: 'A-Z',     active: qSort === 'az'      ? 'on' : 'off' },
+        { id: 'project', label: 'Project', active: qSort === 'project' ? 'on' : 'off' },
+        { id: 'mission', label: 'Mission', active: qSort === 'mission' ? 'on' : 'off' },
       ],
-      orderLabel: qSort === 'az' ? 'a → z' : 'newest first',
+      orderLabel: { az: 'a → z', project: 'by project', mission: 'by project / mission' }[qSort] || 'newest first',
       // 'yes' / 'no' so the template's data-switch shows the "Load older items" button only
-      // when older items exist (and not while the injected-files queue or a filter hides it).
-      hasMore: (!hasInjected && filter === 'ready' && hasMore) ? 'yes' : 'no',
+      // when older items exist (and not while the injected-files queue hides it).
+      hasMore: (!hasInjected && hasMore) ? 'yes' : 'no',
     },
     deliverable: (() => {
       const open = (queue?.items || []).find((i) => i.id === openDelId);
@@ -445,7 +460,7 @@ export function useReview(worldId = 'aom', injected = null) {
           id: '', file: '', title: '', bodyHtml: '', type: 'doc', typeLabel: 'Document',
           who: '', whoInitials: '', whoTint: 'green', location: '',
           commentsLabel: 'Pin-comments', commentsLabelLower: 'pin-comments',
-          openCount: 0, pins: [], comments: [],
+          openCount: 0, pins: [], comments: [], hasNotes: 'no',
         };
       }
       // Video deliverables speak the DS7 timeline language: the comments panel is
@@ -456,6 +471,9 @@ export function useReview(worldId = 'aom', injected = null) {
         bodyHtml: bodies[openDelId] || '',
         commentsLabel: isVid ? 'Timeline comments' : 'Pin-comments',
         commentsLabelLower: isVid ? 'timeline comments' : 'pin-comments',
+        // The host component overrides from live pins; 'no' keeps the send-notes
+        // button hidden until a comment actually exists.
+        hasNotes: 'no',
       };
     })(),
     empty: { title: "You're all caught up", body: 'Nothing needs your review right now. New deliverables the agent flags will land here.', actionLabel: 'Browse waiting' },
@@ -481,14 +499,13 @@ export function useReview(worldId = 'aom', injected = null) {
       : status,
     data,
     actions: {
-      setQueueFilter: (f) => { setFilter(f); setOpenDelId(null); },
       openDeliverable: (id) => setOpenDelId(id),
       loadMore,
       approve,
       requestChanges,
       sendChecklist,
       setQueueSearch: (s) => setQSearch(s || ''),
-      setQueueSort: (id) => setQSort(id === 'az' ? 'az' : 'newest'),
+      setQueueSort: (id) => setQSort(['az', 'project', 'mission'].includes(id) ? id : 'newest'),
     },
   };
 }

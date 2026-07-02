@@ -126,6 +126,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
       })),
       openCount: pins.length,
       notesWord: pins.length === 1 ? 'note' : 'notes',
+      // Drives the template's data-switch: the send-notes button only exists once
+      // a comment is actually pinned.
+      hasNotes: pins.length ? 'yes' : 'no',
     },
   };
 
@@ -153,7 +156,6 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     nav: (target) => target === 'back' ? onNav?.('back') : onNav?.(target),
     openCommandK: () => { /* stub */ },
     openProfile: () => { /* stub */ },
-    setQueueFilter: (f) => actions.setQueueFilter(f),
     setQueueSort: (id) => actions.setQueueSort(id),
     openDeliverable: (id) => {
       setPickedId(id);

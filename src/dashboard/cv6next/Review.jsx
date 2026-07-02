@@ -118,20 +118,12 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   };
 
   if (screen === 'pick') {
-    const pickData = {
-      ...data,
-      queue: {
-        ...data.queue,
-        isReady: data.queue.isReady === 'on' ? 'on' : 'off',
-        isPipeline: data.queue.isPipeline === 'on' ? 'on' : 'off',
-      },
-    };
+    const pickData = data;
     const pickActions = {
       nav: (target) => target === 'back' ? onNav?.('back') : onNav?.(target),
       openNav: onOpenNav,
       // The header magnifier focuses the real search input below it.
       search: () => pickWrapRef.current?.querySelector('[data-review-qsearch]')?.focus(),
-      setQueueFilter: (f) => actions.setQueueFilter(f),
       setQueueSort: (id) => actions.setQueueSort(id),
       openDeliverable: onOpenDeliverable,
       loadMore: () => actions.loadMore(),
@@ -166,6 +158,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
       })),
       openCount: pins.length,
       notesWord: pins.length === 1 ? 'note' : 'notes',
+      hasNotes: pins.length ? 'yes' : 'no',
       // Drives .mpinbar.is-none: hide the whole pin-comment bar when there are no pins,
       // so the decision buttons stay the hero (no ghost "0 pin-comments" bar).
       pinState: pins.length ? 'has' : 'none',
