@@ -31,6 +31,26 @@ function relTime(d) {
 }
 function firstLine(s) { return String(s || '').split('\n')[0].slice(0, 140); }
 
+// wish.message = subject line + • summary bullets + "--- ORIGINAL MESSAGE ---" +
+// original text + optional [staged_draft:ID|conn:ID] tag (support-email-watch.py).
+// Split it here so the pane renders summary and original as separate cards.
+const ORIGINAL_DELIM = '--- ORIGINAL MESSAGE ---';
+const STAGED_TAG = /\[staged_draft:([^|\]]+)\|conn:([^\]]+)\]/;
+function parseWishMessage(message) {
+  const raw = String(message || '');
+  const tag = raw.match(STAGED_TAG);
+  const cleaned = raw.replace(STAGED_TAG, '').trim();
+  const [head, ...rest] = cleaned.split(ORIGINAL_DELIM);
+  const lines = head.split('\n').map((l) => l.trim()).filter(Boolean);
+  const bullets = lines.filter((l) => /^[•·]/.test(l)).map((l) => l.replace(/^[•·]\s*/, ''));
+  return {
+    subjectLine: lines[0] || '',
+    summary: bullets.slice(0, 5),
+    original: rest.join(ORIGINAL_DELIM).trim(),
+    hasStaged: Boolean(tag),
+  };
+}
+
 export function useSupportInbox(worldId = 'aom') {
   const isAom = worldId === 'aom';
   const [wishes, setWishes] = useState(null);
@@ -66,16 +86,26 @@ export function useSupportInbox(worldId = 'aom') {
   for (const w of wishes || []) {
     const from = (w.email || w.name || '').toLowerCase();
     if (NOREPLY.test(from)) continue;
+    if (w.status === 'dismissed' || w.status === 'spam') continue; // server filters too; belt and braces
+    const parsed = parseWishMessage(w.message);
     const item = {
-      id: w.id, initials: initials(w.name || w.email), avatarTint: tintFor(w.email || w.name),
-      subject: firstLine(w.message) || 'New request', time: relTime(w.updated_at || w.created_at),
-      snippet: `${w.name || w.email || 'Someone'} · ${firstLine(w.latest_response || w.message)}`,
-      // thread-view fields (P9): real sender + full original message; no fabricated thread history
-      sender: w.name || w.email || 'Someone', senderSub: `to you · ${w.email ? 'Support' : 'Support'}`,
-      body: String(w.message || '').trim(), threadCount: 1,
+      id: w.id, wishId: w.id, kind: 'wish', accessCode: w.access_code,
+      initials: initials(w.name || w.email), avatarTint: tintFor(w.email || w.name),
+      subject: parsed.subjectLine || firstLine(w.message) || 'New request',
+      time: relTime(w.updated_at || w.created_at),
+      snippet: `${w.name || w.email || 'Someone'} · ${firstLine(w.latest_response?.body || w.latest_response || parsed.original || w.message)}`,
+      sender: w.name || w.email || 'Someone', senderSub: `to you · ${w.email || 'Support'}`,
+      address: w.email || '',
+      body: parsed.original || String(w.message || '').trim(),
+      summary: parsed.summary,
+      hasStaged: parsed.hasStaged,
+      recommendation: Array.isArray(w.recommendation) ? w.recommendation : [],
+      replyOptions: Array.isArray(w.reply_options) ? w.reply_options : [],
+      status: w.status,
+      threadCount: 1,
       tags: [],
     };
-    if (w.status === 'resolved') watching.push({ id: w.id, subject: item.subject, time: item.time, snippet: item.snippet, sender: item.sender, senderSub: item.senderSub, body: item.body, threadCount: 1 });
+    if (w.status === 'resolved') watching.push(item);
     else needsYou.push(item);
   }
   for (const box of mailboxes || []) {
@@ -92,9 +122,9 @@ export function useSupportInbox(worldId = 'aom') {
       const body = String(it.lastInbound?.body || it.lastInbound?.snippet || it.snippet || '').trim();
       const threadCount = it.messageCount || (Array.isArray(it.messages) ? it.messages.length : 1) || 1;
       if (kind === 'need') {
-        needsYou.push({ id, initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, body, threadCount, tags: [] });
+        needsYou.push({ id, kind: 'email', initials: initials(it.from || it.email), avatarTint: tintFor(it.email || it.from), subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount, tags: [] });
       } else {
-        watching.push({ id, subject, time, snippet, sender, senderSub, body, threadCount });
+        watching.push({ id, kind: 'email', subject, time, snippet, sender, senderSub, address: it.email || '', body, threadCount });
       }
     }
   }

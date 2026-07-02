@@ -1,90 +1,311 @@
-// cv6next — Support, desktop (master-detail: inbox list + ask reading pane).
-// Structure from ccds6 _archive "Support desktop" (Claude Design's desktop layout),
-// built in React with REAL data from useSupportInbox. Honest by omission: the design's
-// auto-send countdown + AI suggested-reply buttons are NOT rendered, because there is no
-// such mechanism and the reply path (real client email) is held for Patrik's go-ahead
-// (see mission BUILD "approve & send"). So the detail is a reading pane; replying routes
-// through the Mail flow, which holds. No fake countdown, no dead Send/Resolve controls.
+// cv6next — Support, desktop. Built from the CV6 design system's
+// wired/tools/support.html (design-system-current; Patrik pointed at
+// "Design System (7)" 2026-07-01 — identical file): inbox rail (Open/Waiting)
+// + email-review pane with AI summary, original email, suggested actions, and
+// the reply composer. Every control is wired to a real mechanism:
+//   Summary card      ← wish message bullets (+ /api/support/suggest)
+//   Suggested chips   ← wish reply_options / staged Gmail draft
+//   Send              ← staged draft untouched → send-staged.js (fires the draft);
+//                       edited/custom text     → reply.js (in-thread, as you)
+//   Resolve           ← PATCH /api/support/wishes (status: resolved)
+//   Add to Tracker    ← POST /api/dashboard/trackers (Support follow-ups)
+//   Assign to agent   ← onAssignEmail (existing flow)
+// Email-scan rows (no wish behind them) keep the reading pane + Assign only —
+// their reply plumbing is the wish pipeline; no dead Send button on them.
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useSupportInbox } from './data/useSupportInbox.js';
+import { authFetch } from '../lib/authFetch';
 
-const NAV = [
-  { k: 'home', label: 'Home', d: 'M3 11l9-7 9 7|M5 9.8V20h14V9.8' },
-  { k: 'chat', label: 'Chat', d: 'M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z' },
-  { k: 'support', label: 'Support', d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z' },
-  { k: 'tracker', label: 'Tracker', d: 'M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z|M12 2v3M12 19v3M2 12h3M19 12h3' },
-  { k: 'command', label: 'Command', d: 'M7 4H4v16h3M17 4h3v16h-3' },
-];
+const SUPPORT_TRACKER_NAME = 'Support follow-ups';
+
+function Star({ size = 14 }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z" /></svg>;
+}
 
 function InboxRow({ it, open, onClick }) {
   return (
-    <div onClick={onClick} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '14px', borderRadius: 10, background: open ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer', marginBottom: 2 }}>
+    <div onClick={onClick} className={open ? 'ask is-open' : 'ask'} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: 14, borderRadius: 10, background: open ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer', marginBottom: 2 }}>
       <div className={`ava is-${it.avatarTint || 'violet'}`} style={{ width: 38, height: 38, fontSize: 12, flex: 'none' }}>{it.initials || '·'}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</div>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.snippet}</div>
       </div>
-      <span style={{ fontSize: 11, color: 'var(--faint)', flex: 'none' }}>{it.time}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flex: 'none' }}>
+        <span style={{ fontSize: 11, color: 'var(--faint)' }}>{it.time}</span>
+        {it.hasStaged ? <span className="pill" style={{ fontSize: 10, padding: '2px 7px', borderRadius: 8, background: 'var(--success-weak)', color: 'var(--success)', fontWeight: 600 }}>Draft ready</span>
+          : it.kind === 'email' ? <span className="pill is-email" style={{ fontSize: 10, padding: '2px 7px', borderRadius: 8 }}>Email</span> : null}
+      </div>
     </div>
   );
 }
 
+const chipStyle = (primary) => ({
+  display: 'inline-flex', alignItems: 'center', gap: 6, height: 32, padding: '0 13px', borderRadius: 16,
+  border: primary ? 'none' : '1px solid var(--hair)',
+  background: primary ? 'var(--accent)' : 'var(--surface-2)',
+  color: primary ? '#fff' : 'var(--fg)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer',
+});
+
 export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
-  const { state, data } = useSupportInbox('aom');
+  const { state, data, reload } = useSupportInbox('aom');
   const needsYou = data?.needsYou || [];
   const watching = data?.watching || [];
   const [tab, setTab] = useState('open'); // open | waiting
   const list = tab === 'open' ? needsYou : watching;
   const [picked, setPicked] = useState(null);
   const selected = useMemo(() => picked || list[0] || null, [picked, list]);
+  const isWish = selected?.kind === 'wish';
+
+  // Reply-pane intelligence: staged draft body + reply options via /api/support/suggest.
+  const [suggest, setSuggest] = useState(null); // { summary, recommendation, options, staged, original }
+  const [suggestState, setSuggestState] = useState('idle'); // idle | loading | ready | error
+  const suggestFor = useRef(null);
+  useEffect(() => {
+    setSuggest(null);
+    if (!selected || selected.kind !== 'wish') { setSuggestState('idle'); return; }
+    let dead = false;
+    suggestFor.current = selected.id;
+    setSuggestState('loading');
+    authFetch(`/api/support/suggest?wish_id=${encodeURIComponent(selected.wishId)}`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d) => {
+        if (dead || suggestFor.current !== selected.id) return;
+        if (d.ok) { setSuggest(d); setSuggestState('ready'); } else setSuggestState('error');
+      })
+      .catch(() => { if (!dead && suggestFor.current === selected.id) setSuggestState('error'); });
+    return () => { dead = true; };
+  }, [selected?.id, selected?.kind, selected?.wishId]);
+
+  // Composer. Draft-reply chips fill it; the send path depends on whether the
+  // text is still exactly the staged draft (fire the draft) or edited (reply.js).
+  const [composer, setComposer] = useState('');
+  const [sendState, setSendState] = useState('idle'); // idle | sending | sent | error
+  const [sendError, setSendError] = useState('');
+  const [showEarlier, setShowEarlier] = useState(false);
+  useEffect(() => { setComposer(''); setSendState('idle'); setSendError(''); setShowEarlier(false); }, [selected?.id]);
+
+  const stagedBody = suggest?.staged?.body || null;
+  const options = suggest?.options || selected?.replyOptions || [];
+  const summary = (suggest?.summary?.length ? suggest.summary : selected?.summary) || [];
+  const recommendation = (suggest?.recommendation?.length ? suggest.recommendation : selected?.recommendation) || [];
+
+  const doSend = useCallback(async () => {
+    const text = composer.trim();
+    if (!text || !isWish || sendState === 'sending') return;
+    setSendState('sending'); setSendError('');
+    try {
+      let r;
+      if (stagedBody && text === stagedBody.trim() && suggest?.staged?.draft_id) {
+        // Untouched staged draft → fire the exact Gmail draft the agent staged.
+        r = await authFetch('/api/support/send-staged', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ action: 'send', wish_id: selected.wishId, draft_id: suggest.staged.draft_id, connection_id: suggest.staged.connection_id }),
+        });
+      } else {
+        r = await authFetch('/api/support/reply', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ wish_id: selected.wishId, text }),
+        });
+      }
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || d.ok === false) throw new Error(d.error || `send failed (${r.status})`);
+      setSendState('sent');
+      setComposer('');
+      setTimeout(() => { reload(); }, 800);
+    } catch (e) {
+      setSendState('error');
+      setSendError(String(e.message || e).slice(0, 120));
+    }
+  }, [composer, isWish, sendState, stagedBody, suggest, selected, reload]);
+
+  const doResolve = useCallback(async () => {
+    if (!isWish) return;
+    try {
+      await authFetch(`/api/support/wishes?id=${encodeURIComponent(selected.wishId)}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+        body: JSON.stringify({ status: 'resolved' }),
+      });
+      setPicked(null);
+      reload();
+    } catch { /* row keeps rendering; next reload shows truth */ }
+  }, [isWish, selected, reload]);
+
+  const [trackerState, setTrackerState] = useState('idle'); // idle | adding | added
+  const addToTracker = useCallback(async () => {
+    if (!selected || trackerState === 'adding') return;
+    setTrackerState('adding');
+    try {
+      const lr = await authFetch('/api/dashboard/trackers?world=aom', { credentials: 'include' });
+      const ld = await lr.json();
+      let trk = (ld.trackers || []).find((t) => t.name === SUPPORT_TRACKER_NAME);
+      if (!trk) {
+        const cr = await authFetch('/api/dashboard/trackers', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ action: 'create', world: 'aom', name: SUPPORT_TRACKER_NAME, scope: 'Support', template: 'mission', columns: ['Item', 'Status'] }),
+        });
+        trk = (await cr.json()).tracker;
+      }
+      if (trk) {
+        await authFetch('/api/dashboard/trackers', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+          body: JSON.stringify({ action: 'add-row', world: 'aom', id: trk.id, row: { Item: `${selected.sender}: ${selected.subject}`, Status: 'Open' } }),
+        });
+      }
+      setTrackerState('added');
+      setTimeout(() => setTrackerState('idle'), 2500);
+    } catch { setTrackerState('idle'); }
+  }, [selected, trackerState]);
 
   return (
     <div data-cv6 data-theme="dark" className="cv6-screen" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* topbar now mounted once in the shell (SharedNav DesktopNav) */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
-        {/* inbox list */}
-        <div style={{ flex: 1, minWidth: 0, borderRight: '1px solid var(--divider)', overflowY: 'auto' }}>
+        {/* inbox rail */}
+        <div style={{ width: 392, flex: 'none', borderRight: '1px solid var(--divider)', overflowY: 'auto' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 14px' }}>
             <div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--fg)' }}>Support</div>
-              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>{needsYou.length} open · {watching.length} watching</div>
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Inbox</div>
+              <div style={{ fontSize: 12.5, color: 'var(--muted)', marginTop: 3 }}>{needsYou.length} open · {watching.length} waiting on you</div>
             </div>
             <div style={{ display: 'flex', gap: 7 }}>
-              {[['open', 'Open'], ['waiting', 'Watching']].map(([k, label]) => (
+              {[['open', 'Open'], ['waiting', 'Waiting']].map(([k, label]) => (
                 <button key={k} onClick={() => { setTab(k); setPicked(null); }} style={{ height: 32, padding: '0 13px', borderRadius: 16, border: tab === k ? 'none' : '1px solid var(--hair)', background: tab === k ? 'var(--accent-weak)' : 'transparent', color: tab === k ? 'var(--accent)' : 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>{label}</button>
               ))}
             </div>
           </div>
+          <div className="eyebrow" style={{ margin: '0 24px 8px', fontSize: 11, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--faint)', fontWeight: 600 }}>{tab === 'open' ? 'Open asks' : 'Waiting'}</div>
           <div style={{ padding: '0 16px 16px' }}>
             {state === 'loading' ? <div style={{ color: 'var(--muted)', fontSize: 13, padding: 14 }}>Gathering your inbox…</div>
-              : list.length === 0 ? <div style={{ color: 'var(--muted)', fontSize: 13.5, padding: 14 }}>{tab === 'open' ? "You're all caught up. New asks the agent flags as real land here." : 'Nothing being watched right now.'}</div>
+              : list.length === 0 ? <div style={{ color: 'var(--muted)', fontSize: 13.5, padding: 14 }}>{tab === 'open' ? "You're all caught up. New asks the agent flags as real land here." : 'Nothing waiting right now.'}</div>
                 : list.map((it) => <InboxRow key={it.id} it={it} open={selected?.id === it.id} onClick={() => setPicked(it)} />)}
           </div>
         </div>
 
-        {/* ask reading pane */}
-        <div style={{ width: 520, flex: 'none', display: 'flex', flexDirection: 'column' }}>
+        {/* email review */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }} data-state="ready">
           {selected ? (
             <>
-              <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--divider)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '18px 26px', borderBottom: '1px solid var(--divider)' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--fg)' }}>{selected.subject}</div>
-                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{selected.time}</div>
+                  <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.015em', color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selected.subject}</div>
+                  <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{selected.sender}{selected.address ? ` · ${selected.address}` : ''} · {selected.time}</div>
                 </div>
-                <button className="assign" onClick={() => onAssignEmail?.(selected.id)} style={{ flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 7, height: 36, padding: '0 13px', borderRadius: 10, border: 'none', background: 'var(--accent)', color: '#fff', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>Assign to agent</button>
+                <button onClick={() => onAssignEmail?.(selected.id)} style={{ height: 36, padding: '0 14px', borderRadius: 10, border: '1px solid var(--hair)', background: 'transparent', color: 'var(--fg)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>Assign</button>
+                {isWish && (
+                  <button onClick={doResolve} style={{ height: 36, padding: '0 15px', borderRadius: 10, border: 'none', background: 'var(--success-weak)', color: 'var(--success)', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>Resolve
+                  </button>
+                )}
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', padding: 22 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  <div className={`ava is-${selected.avatarTint || 'violet'}`} style={{ width: 34, height: 34, fontSize: 12, flex: 'none' }}>{selected.initials || '·'}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 14, fontWeight: 600, color: 'var(--fg)' }}>{selected.sender || 'Sender'}</div><div style={{ fontSize: 12, color: 'var(--muted)' }}>{selected.senderSub || selected.time}</div></div>
-                </div>
-                <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--fg)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{selected.body || selected.snippet || 'No message body.'}</p>
-                <div style={{ marginTop: 22, display: 'flex', alignItems: 'flex-start', gap: 9, background: 'var(--warn-weak)', borderRadius: 10, padding: '11px 13px' }}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none', marginTop: 1 }}><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" /></svg>
-                  <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--fg)' }}>Replies go out through your Mail room, which holds for your go-ahead before anything sends. Open this ask in Mail to answer it.</div>
+
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', justifyContent: 'center', padding: '22px 0' }}>
+                <div style={{ width: 700, maxWidth: '92%', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* AI summary */}
+                  {(summary.length > 0 || recommendation.length > 0) && (
+                    <div style={{ border: '1px solid var(--accent-weak)', background: 'linear-gradient(180deg,var(--accent-weak),transparent)', borderRadius: 16, padding: '18px 20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                        <Star />
+                        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)' }}>Summary by your agent</span>
+                        {suggestState === 'loading' && <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>thinking…</span>}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                        {summary.map((pt, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flex: 'none', marginTop: 7 }} />
+                            <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{pt}</div>
+                          </div>
+                        ))}
+                        {recommendation.map((pt, i) => (
+                          <div key={`r${i}`} style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--warn)', flex: 'none', marginTop: 7 }} />
+                            <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{pt}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* original email */}
+                  <div style={{ border: '1px solid var(--hair)', background: 'var(--surface)', borderRadius: 16, overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 13, padding: '18px 22px', borderBottom: '1px solid var(--divider)' }}>
+                      <span className={`ava is-${selected.avatarTint || 'violet'}`} style={{ width: 44, height: 44, fontSize: 15 }}>{selected.initials || '·'}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)' }}>{selected.sender} {selected.address ? <span style={{ fontWeight: 400, color: 'var(--faint)', fontSize: 13 }}>&lt;{selected.address}&gt;</span> : null}</div>
+                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>to Patrik (you)</div>
+                      </div>
+                      <span className="mono" style={{ fontSize: 11, color: 'var(--faint)' }}>{selected.time}</span>
+                    </div>
+                    <div style={{ padding: '22px 26px', fontSize: 14.5, lineHeight: 1.75, color: 'var(--fg)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {(() => {
+                        const full = (suggest?.original || selected.body || 'No message body.');
+                        const cut = full.search(/^\s*>|^-{2,}\s*Forwarded message|^Begin forwarded message:|^On .{5,80} wrote:/m);
+                        const head = cut >= 0 ? full.slice(0, cut).trim() : full;
+                        const tail = cut >= 0 ? full.slice(cut).trim() : '';
+                        return (
+                          <>
+                            {head || full}
+                            {tail && !showEarlier && (
+                              <button onClick={() => setShowEarlier(true)} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 36, padding: '0 14px', marginTop: 16, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                                <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--muted)' }}>Earlier in this thread</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>Show</span>
+                              </button>
+                            )}
+                            {tail && showEarlier && <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--divider)', color: 'var(--muted)', fontSize: 13 }}>{tail}</div>}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* suggested actions + composer — wishes only (email-scan rows reply via the wish pipeline) */}
+              {isWish ? (
+                <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexWrap: 'wrap' }}>
+                    <Star />
+                    <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested</span>
+                    {options.length === 0 && suggestState === 'loading' && <span style={{ fontSize: 12, color: 'var(--muted)' }}>drafting…</span>}
+                    {options.map((o, i) => (
+                      <button key={i} onClick={() => setComposer(o.text)} style={chipStyle(i === 0)}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                        {o.label || 'Draft reply'}
+                      </button>
+                    ))}
+                    <button onClick={addToTracker} style={chipStyle(false)}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M2 12h3M19 12h3" /></svg>
+                      {trackerState === 'added' ? 'Added ✓' : trackerState === 'adding' ? 'Adding…' : 'Add to Tracker'}
+                    </button>
+                  </div>
+                  {sendState === 'sent' ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 42, borderRadius: 11, background: 'var(--success-weak)', color: 'var(--success)', padding: '0 14px', fontSize: 13.5, fontWeight: 600 }}>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="m5 13 4 4L19 7" /></svg>
+                      Sent as you, on the same thread.
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+                      <textarea
+                        value={composer}
+                        onChange={(e) => setComposer(e.target.value)}
+                        placeholder="Write a reply, or tap a suggestion above…"
+                        rows={composer ? Math.min(8, composer.split('\n').length + 1) : 1}
+                        style={{ flex: 1, minHeight: 42, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', padding: '11px 14px', fontSize: 14, lineHeight: 1.5, color: 'var(--fg)', fontFamily: 'var(--font-sans)', resize: 'vertical', outline: 'none' }}
+                      />
+                      <button onClick={doSend} disabled={!composer.trim() || sendState === 'sending'} title={stagedBody && composer.trim() === stagedBody.trim() ? 'Fires the staged draft as-is' : 'Sends in-thread, as you'} style={{ width: 42, height: 42, borderRadius: 11, border: 'none', background: composer.trim() ? 'var(--accent)' : 'var(--surface-2)', color: composer.trim() ? '#fff' : 'var(--faint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none', cursor: composer.trim() ? 'pointer' : 'default' }}>
+                        {sendState === 'sending'
+                          ? <span style={{ fontSize: 11 }}>…</span>
+                          : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 19V5M5 12l7-7 7 7" /></svg>}
+                      </button>
+                    </div>
+                  )}
+                  {sendState === 'error' && <div style={{ fontSize: 12.5, color: 'var(--warn)' }}>Send failed: {sendError}. Nothing went out — try again.</div>}
+                </div>
+              ) : (
+                <div style={{ borderTop: '1px solid var(--divider)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--warn)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}><circle cx="12" cy="12" r="9" /><path d="M12 8v4l3 2" /></svg>
+                  <div style={{ fontSize: 12.5, lineHeight: 1.5, color: 'var(--muted)' }}>This landed straight from your mailbox scan. Assign it to your agent and it becomes an ask you can reply to from here.</div>
+                </div>
+              )}
             </>
           ) : (
             <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--muted)', fontSize: 14, padding: 24 }}>Pick an ask on the left to read it.</div>

@@ -58,7 +58,12 @@ export default async function handler(req, res) {
       const updates = await ur.json();
       return res.status(200).json({ ok: true, wish, updates, status_label: CLIENT_LABEL[wish.status] || wish.status });
     }
-    const statusFilter = status ? `&status=eq.${encodeURIComponent(status)}` : '';
+    // Default admin list = real asks only. dismissed/spam stay out unless asked
+    // for explicitly (?status=spam), and the noise gate below drops blasts that
+    // predate the watcher's spam gate ("filter way better", Patrik 2026-07-01).
+    const statusFilter = status
+      ? `&status=eq.${encodeURIComponent(status)}`
+      : '&status=in.(heard,working,needs_team,resolved)';
     const r = await supa(`support_wishes?select=*&order=created_at.desc${statusFilter}`);
     const data = await r.json();
     // Attach each wish's latest response inline so the board can show "what we
@@ -98,7 +103,17 @@ export default async function handler(req, res) {
         try { w.reply_options = JSON.parse(w.reply_options); } catch { w.reply_options = null; }
       }
     }
-    return res.status(200).json({ ok: true, wishes });
+    // Noise gate on DISPLAY only: blasts that became wishes before the watcher's
+    // spam gate existed (or slipped it) don't render as asks. The rows are left
+    // untouched — a false positive here costs one list slot, never the wish
+    // (loosen mailNoise.js and it reappears). ?include_noise=1 shows everything.
+    let filtered = wishes;
+    if (req.query.include_noise !== '1' && status !== 'spam') {
+      const { isNoiseMail, getKnownSenders, isKnownSender } = await import('../_lib/mailNoise.js');
+      const allow = await getKnownSenders();
+      filtered = wishes.filter((w) => !isNoiseMail(w.email, '', w.message || '', { knownSender: isKnownSender(w.email, allow) }).noisy);
+    }
+    return res.status(200).json({ ok: true, wishes: filtered });
   }
 
   if (req.method === 'PATCH') {
