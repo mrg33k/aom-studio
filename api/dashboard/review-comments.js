@@ -8,48 +8,32 @@
 // on documents and still frames (Patrik R-MATCH: "video commenting must work,
 // comments on all files by point selection in the document or still frame").
 //
-// Same disk+tunnel persistence pattern as review-checklist.js (Vercel has no disk).
-// File shape: { items: { "<deliverableId>": [ {id,type,t?,x?,y?,text,created} ] }, updated }
+// Persistence: cm_state row per world (kind='dash_review_comments', scope_id='all',
+// client_id=<world>, payload={ items:{...}, updated }) — corner:state-to-supabase R1.
+// The legacy review-comments.json (tunnel/disk) is read once per world to self-migrate.
 
-import fs from 'fs';
-import path from 'path';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { stateGetWithLegacy, stateSet } from '../_lib/stateStore.js';
 
-const AOM_EA_ENV = process.env.AOM_EA_ROOT;
-const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
-const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
-const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
+const KIND = 'dash_review_comments';
+const LEGACY_REL = 'corner/users/aom/missions/master-loop/deliverables/review-comments.json';
 
-const NAME = 'review-comments.json';
-const REL = `corner/users/aom/missions/master-loop/deliverables/${NAME}`;
-const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
-
-async function readSource() {
-  try {
-    const url = `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(REL)}`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
-    if (r.ok) return await r.text();
-  } catch (_) { /* fall through */ }
-  try {
-    const p = path.join(AOM_EA_ROOT, REL);
-    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
-  } catch (_) { /* ignore */ }
-  return null;
+async function loadComments(world) {
+  const payload = await stateGetWithLegacy({
+    kind: KIND,
+    scopeId: 'all',
+    clientId: world,
+    legacyPath: LEGACY_REL,
+    fromLegacy: (file) => (file && file.items && typeof file.items === 'object')
+      ? { items: file.items, updated: file.updated }
+      : null,
+    empty: { items: {} },
+  });
+  return (payload.items && typeof payload.items === 'object') ? payload.items : {};
 }
 
-async function writeSource(content) {
-  try {
-    const r = await fetch(`${RAG_TUNNEL_URL}/command-deck-write`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'aom-vercel-proxy' },
-      body: JSON.stringify({ name: NAME, content }),
-    });
-    if (r.ok) return true;
-  } catch (_) { /* fall through */ }
-  try {
-    fs.writeFileSync(path.join(AOM_EA_ROOT, REL), content, 'utf8');
-    return true;
-  } catch (_) { return false; }
+async function saveComments(world, items) {
+  return stateSet(KIND, 'all', world, { items, updated: new Date().toISOString() });
 }
 
 const clean = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
@@ -63,13 +47,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    const raw = await readSource();
-    let data;
-    try { data = raw ? JSON.parse(raw) : { items: {} }; } catch (_) { data = { items: {} }; }
-    if (!data.items || typeof data.items !== 'object') data.items = {};
+    const world = clean(req.query.world || 'aom', 60) || 'aom';
+    const items = await loadComments(world);
     const deliverable = req.query.deliverable;
-    if (deliverable) return res.status(200).json({ deliverable, list: data.items[deliverable] || [] });
-    return res.status(200).json({ items: data.items, updated: data.updated || null });
+    if (deliverable) return res.status(200).json({ deliverable, list: items[deliverable] || [] });
+    return res.status(200).json({ items, updated: new Date().toISOString() });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
@@ -85,12 +67,9 @@ export default async function handler(req, res) {
   const did = clean(deliverable, 400);
   if (!did) return res.status(400).json({ error: 'deliverable required' });
 
-  const raw = await readSource();
-  let data;
-  try { data = raw ? JSON.parse(raw) : { items: {} }; } catch (_) { return res.status(500).json({ error: 'comments unreadable' }); }
-  if (!data.items || typeof data.items !== 'object') data.items = {};
-  if (!Array.isArray(data.items[did])) data.items[did] = [];
-  const list = data.items[did];
+  let items = await loadComments(world);
+  if (!Array.isArray(items[did])) items[did] = [];
+  const list = items[did];
 
   if (action === 'add') {
     const text = clean(req.body.text, 600);
@@ -110,17 +89,15 @@ export default async function handler(req, res) {
       if (pt != null) entry.t = Math.round(pt * 1000) / 1000;
     }
     list.push(entry);
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveComments(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true, id, comment: entry });
   }
 
   if (action === 'delete') {
     const id = clean(req.body.id, 80);
-    data.items[did] = list.filter((x) => x.id !== id);
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    items[did] = list.filter((x) => x.id !== id);
+    const ok = await saveComments(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true });
   }

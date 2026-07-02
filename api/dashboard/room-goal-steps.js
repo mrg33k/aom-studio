@@ -4,9 +4,12 @@
 // A per-room "mission goals" checklist — the ordered list of goal steps the agent
 // is working for a room (shown in the Chat tool's right context panel). The user
 // adds steps and marks them done; the FIRST not-done step renders as the active
-// goal. Stored as a single JSON on the studio disk, read+written through the RAG
-// tunnel (Vercel has no disk). Same proven pattern as review-checklist.js — real
-// data only, no fabricated steps.
+// goal.
+//
+// Persistence: cm_state row per world (kind='dash_room_goal_steps', scope_id='all',
+// client_id=<world>, payload={ items:{...}, updated }) — corner:state-to-supabase R1.
+// The legacy room-goal-steps.json (tunnel/disk) is read once per world to self-migrate.
+// NOTE: plan-propose.py still writes the legacy file and gets re-pointed in the Command round.
 //
 // File shape: { items: { "<roomKey>": [ { id, text, done, source, proposed } ] }, updated }
 //   source   : 'user' | 'agent'  — who put the step on the plan (default 'user')
@@ -24,45 +27,28 @@
 // POST toggle  { action:'toggle', world, room, id }           -> { ok, done }
 // POST delete  { action:'delete', world, room, id }           -> { ok }       (also = dismiss a proposal)
 
-import fs from 'fs';
-import path from 'path';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { stateGetWithLegacy, stateSet } from '../_lib/stateStore.js';
 
-const AOM_EA_ENV = process.env.AOM_EA_ROOT;
-const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
-const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
-const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
+const KIND = 'dash_room_goal_steps';
+const LEGACY_REL = 'corner/users/aom/missions/master-loop/deliverables/room-goal-steps.json';
 
-const NAME = 'room-goal-steps.json';
-const REL = `corner/users/aom/missions/master-loop/deliverables/${NAME}`;
-const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
-
-async function readSource() {
-  try {
-    const url = `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(REL)}`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
-    if (r.ok) return await r.text();
-  } catch (_) { /* fall through */ }
-  try {
-    const p = path.join(AOM_EA_ROOT, REL);
-    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
-  } catch (_) { /* ignore */ }
-  return null;
+async function loadSteps(world) {
+  const payload = await stateGetWithLegacy({
+    kind: KIND,
+    scopeId: 'all',
+    clientId: world,
+    legacyPath: LEGACY_REL,
+    fromLegacy: (file) => (file && file.items && typeof file.items === 'object')
+      ? { items: file.items, updated: file.updated }
+      : null,
+    empty: { items: {} },
+  });
+  return (payload.items && typeof payload.items === 'object') ? payload.items : {};
 }
 
-async function writeSource(content) {
-  try {
-    const r = await fetch(`${RAG_TUNNEL_URL}/command-deck-write`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'aom-vercel-proxy' },
-      body: JSON.stringify({ name: NAME, content }),
-    });
-    if (r.ok) return true;
-  } catch (_) { /* fall through */ }
-  try {
-    fs.writeFileSync(path.join(AOM_EA_ROOT, REL), content, 'utf8');
-    return true;
-  } catch (_) { return false; }
+async function saveSteps(world, items) {
+  return stateSet(KIND, 'all', world, { items, updated: new Date().toISOString() });
 }
 
 const clean = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
@@ -75,13 +61,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    const raw = await readSource();
-    let data;
-    try { data = raw ? JSON.parse(raw) : { items: {} }; } catch (_) { data = { items: {} }; }
-    if (!data.items || typeof data.items !== 'object') data.items = {};
+    const world = clean(req.query.world || 'aom', 60) || 'aom';
+    const items = await loadSteps(world);
     const room = req.query.room;
-    if (room) return res.status(200).json({ room, list: data.items[room] || [] });
-    return res.status(200).json({ items: data.items, updated: data.updated || null });
+    if (room) return res.status(200).json({ room, list: items[room] || [] });
+    return res.status(200).json({ items, updated: new Date().toISOString() });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
@@ -97,12 +81,9 @@ export default async function handler(req, res) {
   const rkey = clean(room, 400);
   if (!rkey) return res.status(400).json({ error: 'room required' });
 
-  const raw = await readSource();
-  let data;
-  try { data = raw ? JSON.parse(raw) : { items: {} }; } catch (_) { return res.status(500).json({ error: 'goal steps unreadable' }); }
-  if (!data.items || typeof data.items !== 'object') data.items = {};
-  if (!Array.isArray(data.items[rkey])) data.items[rkey] = [];
-  const list = data.items[rkey];
+  let items = await loadSteps(world);
+  if (!Array.isArray(items[rkey])) items[rkey] = [];
+  const list = items[rkey];
 
   const norm = (s) => clean(s, 280).toLowerCase();
 
@@ -111,8 +92,7 @@ export default async function handler(req, res) {
     if (!text) return res.status(400).json({ error: 'text required' });
     const id = 'g-' + Date.now().toString(36);
     list.push({ id, text, done: false, source: 'user', proposed: false });
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveSteps(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true, id });
   }
@@ -127,8 +107,7 @@ export default async function handler(req, res) {
     if (existing) return res.status(200).json({ ok: true, id: existing.id, existed: true });
     const id = 'g-' + Date.now().toString(36);
     list.push({ id, text, done: false, source: 'agent', proposed: true });
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveSteps(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true, id });
   }
@@ -141,8 +120,7 @@ export default async function handler(req, res) {
     const it = list.find((x) => x.id === id);
     if (!it) return res.status(404).json({ error: 'item not found' });
     it.text = text; it.source = 'user'; it.proposed = false;
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveSteps(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true });
   }
@@ -153,8 +131,7 @@ export default async function handler(req, res) {
     const it = list.find((x) => x.id === id);
     if (!it) return res.status(404).json({ error: 'item not found' });
     it.source = 'user'; it.proposed = false;
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveSteps(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true });
   }
@@ -164,17 +141,15 @@ export default async function handler(req, res) {
     const it = list.find((x) => x.id === id);
     if (!it) return res.status(404).json({ error: 'item not found' });
     it.done = !it.done;
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveSteps(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true, done: it.done });
   }
 
   if (action === 'delete') {
     const id = clean(req.body.id, 64);
-    data.items[rkey] = list.filter((x) => x.id !== id);
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    items[rkey] = list.filter((x) => x.id !== id);
+    const ok = await saveSteps(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true });
   }

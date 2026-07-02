@@ -2,56 +2,39 @@
 // POST /api/dashboard/review-checklist  { action, world, deliverable, ... }
 //
 // A per-deliverable "what's next" checklist. The user opens a deliverable in the
-// Review tool and builds a clean list of next steps the agent should do. Stored
-// as a single JSON on the studio disk, read+written through the RAG tunnel
-// (Vercel has no disk). Same pattern as cv6-bugs.js.
+// Review tool and builds a clean list of next steps the agent should do.
 //
-// File shape: { items: { "<deliverableId>": [ { id, text, done } ] }, updated }
+// Persistence: cm_state row per world (kind='dash_review_checklist', scope_id='all',
+// client_id=<world>, payload={ items:{...}, updated }) — corner:state-to-supabase R1.
+// The legacy review-checklist.json (tunnel/disk) is read once per world to self-migrate.
 //
 // GET  -> { items: {...} }  (or { deliverable, list:[...] } when ?deliverable given)
 // POST add    { action:'add', world, deliverable, text }      -> { ok, id }
 // POST toggle { action:'toggle', world, deliverable, id }     -> { ok, done }
 // POST delete { action:'delete', world, deliverable, id }     -> { ok }
 
-import fs from 'fs';
-import path from 'path';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { stateGetWithLegacy, stateSet } from '../_lib/stateStore.js';
 
-const AOM_EA_ENV = process.env.AOM_EA_ROOT;
-const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
-const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
-const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
+const KIND = 'dash_review_checklist';
+const LEGACY_REL = 'corner/users/aom/missions/master-loop/deliverables/review-checklist.json';
 
-const NAME = 'review-checklist.json';
-const REL = `corner/users/aom/missions/master-loop/deliverables/${NAME}`;
-const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
-
-async function readSource() {
-  try {
-    const url = `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(REL)}`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
-    if (r.ok) return await r.text();
-  } catch (_) { /* fall through */ }
-  try {
-    const p = path.join(AOM_EA_ROOT, REL);
-    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
-  } catch (_) { /* ignore */ }
-  return null;
+async function loadChecklist(world) {
+  const payload = await stateGetWithLegacy({
+    kind: KIND,
+    scopeId: 'all',
+    clientId: world,
+    legacyPath: LEGACY_REL,
+    fromLegacy: (file) => (file && file.items && typeof file.items === 'object')
+      ? { items: file.items, updated: file.updated }
+      : null,
+    empty: { items: {} },
+  });
+  return (payload.items && typeof payload.items === 'object') ? payload.items : {};
 }
 
-async function writeSource(content) {
-  try {
-    const r = await fetch(`${RAG_TUNNEL_URL}/command-deck-write`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'aom-vercel-proxy' },
-      body: JSON.stringify({ name: NAME, content }),
-    });
-    if (r.ok) return true;
-  } catch (_) { /* fall through */ }
-  try {
-    fs.writeFileSync(path.join(AOM_EA_ROOT, REL), content, 'utf8');
-    return true;
-  } catch (_) { return false; }
+async function saveChecklist(world, items) {
+  return stateSet(KIND, 'all', world, { items, updated: new Date().toISOString() });
 }
 
 const clean = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
@@ -64,13 +47,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    const raw = await readSource();
-    let data;
-    try { data = raw ? JSON.parse(raw) : { items: {} }; } catch (_) { data = { items: {} }; }
-    if (!data.items || typeof data.items !== 'object') data.items = {};
+    const world = clean(req.query.world || 'aom', 60) || 'aom';
+    const items = await loadChecklist(world);
     const deliverable = req.query.deliverable;
-    if (deliverable) return res.status(200).json({ deliverable, list: data.items[deliverable] || [] });
-    return res.status(200).json({ items: data.items, updated: data.updated || null });
+    if (deliverable) return res.status(200).json({ deliverable, list: items[deliverable] || [] });
+    return res.status(200).json({ items, updated: new Date().toISOString() });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
@@ -86,20 +67,16 @@ export default async function handler(req, res) {
   const did = clean(deliverable, 400);
   if (!did) return res.status(400).json({ error: 'deliverable required' });
 
-  const raw = await readSource();
-  let data;
-  try { data = raw ? JSON.parse(raw) : { items: {} }; } catch (_) { return res.status(500).json({ error: 'checklist unreadable' }); }
-  if (!data.items || typeof data.items !== 'object') data.items = {};
-  if (!Array.isArray(data.items[did])) data.items[did] = [];
-  const list = data.items[did];
+  let items = await loadChecklist(world);
+  if (!Array.isArray(items[did])) items[did] = [];
+  const list = items[did];
 
   if (action === 'add') {
     const text = clean(req.body.text, 280);
     if (!text) return res.status(400).json({ error: 'text required' });
     const id = 'c-' + Date.now().toString(36);
     list.push({ id, text, done: false });
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveChecklist(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true, id });
   }
@@ -109,17 +86,15 @@ export default async function handler(req, res) {
     const it = list.find((x) => x.id === id);
     if (!it) return res.status(404).json({ error: 'item not found' });
     it.done = !it.done;
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveChecklist(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true, done: it.done });
   }
 
   if (action === 'delete') {
     const id = clean(req.body.id, 64);
-    data.items[did] = list.filter((x) => x.id !== id);
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    items[did] = list.filter((x) => x.id !== id);
+    const ok = await saveChecklist(world, items);
     if (!ok) return res.status(500).json({ error: 'write failed' });
     return res.status(200).json({ ok: true });
   }

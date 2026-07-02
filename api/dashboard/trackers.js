@@ -11,60 +11,37 @@
 // A tracker: { id, name, scope, template, columns:[...], rows:[ {<col>:val, __id,
 //   __assignee?, __attachments?:[{name,path}] } ], on, created, updated }
 //
-// Same disk+tunnel persistence pattern as review-comments.js (Vercel has no disk).
-// File shape: { byWorld: { "<world>": [ <tracker> ] }, updated }
+// Persistence: cm_state row per world (kind='dash_trackers', scope_id='all',
+// client_id=<world>, payload={ trackers:[...] }) — corner:state-to-supabase R1.
+// The legacy trackers.json (tunnel/disk) is read once per world to self-migrate.
 
-import fs from 'fs';
-import path from 'path';
 import { verifyTenant, TenantAuthError } from '../_lib/verifyTenant.js';
+import { stateGetWithLegacy, stateSet } from '../_lib/stateStore.js';
 
-const AOM_EA_ENV = process.env.AOM_EA_ROOT;
-const AOM_EA_HARDCODED = '/Users/aom-inhouse/aom-studio-transfer/AOM-EA';
-const AOM_EA_SIBLING = path.resolve(process.cwd(), '..', 'AOM-EA');
-const AOM_EA_ROOT = AOM_EA_ENV || (fs.existsSync(AOM_EA_HARDCODED) ? AOM_EA_HARDCODED : AOM_EA_SIBLING);
+const KIND = 'dash_trackers';
+const LEGACY_REL = 'corner/users/aom/missions/master-loop/deliverables/trackers.json';
 
-const NAME = 'trackers.json';
-const REL = `corner/users/aom/missions/master-loop/deliverables/${NAME}`;
-const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
-
-async function readSource() {
-  try {
-    const url = `${RAG_TUNNEL_URL}/project-file-raw?path=${encodeURIComponent(REL)}`;
-    const r = await fetch(url, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
-    if (r.ok) return await r.text();
-  } catch (_) { /* fall through */ }
-  try {
-    const p = path.join(AOM_EA_ROOT, REL);
-    if (fs.existsSync(p)) return fs.readFileSync(p, 'utf8');
-  } catch (_) { /* ignore */ }
-  return null;
+async function loadTrackers(world) {
+  const payload = await stateGetWithLegacy({
+    kind: KIND,
+    scopeId: 'all',
+    clientId: world,
+    legacyPath: LEGACY_REL,
+    fromLegacy: (file) => (file && file.byWorld && Array.isArray(file.byWorld[world]))
+      ? { trackers: file.byWorld[world] }
+      : null,
+    empty: { trackers: [] },
+  });
+  return Array.isArray(payload.trackers) ? payload.trackers : [];
 }
 
-async function writeSource(content) {
-  try {
-    const r = await fetch(`${RAG_TUNNEL_URL}/command-deck-write`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'aom-vercel-proxy' },
-      body: JSON.stringify({ name: NAME, content }),
-    });
-    if (r.ok) return true;
-  } catch (_) { /* fall through */ }
-  try {
-    fs.writeFileSync(path.join(AOM_EA_ROOT, REL), content, 'utf8');
-    return true;
-  } catch (_) { return false; }
+async function saveTrackers(world, trackers) {
+  return stateSet(KIND, 'all', world, { trackers, updated: new Date().toISOString() });
 }
 
 const clean = (s, n) => String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, n);
 const cleanMultiline = (s, n) => String(s == null ? '' : s).slice(0, n);
 const newId = (pfx) => pfx + '-' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36);
-
-function parseStore(raw) {
-  let data;
-  try { data = raw ? JSON.parse(raw) : { byWorld: {} }; } catch (_) { data = { byWorld: {} }; }
-  if (!data.byWorld || typeof data.byWorld !== 'object') data.byWorld = {};
-  return data;
-}
 
 // sanitize a column list to <=12 short strings
 function cleanColumns(cols) {
@@ -93,8 +70,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const world = clean(req.query.world || 'aom', 60) || 'aom';
-    const data = parseStore(await readSource());
-    return res.status(200).json({ world, trackers: Array.isArray(data.byWorld[world]) ? data.byWorld[world] : [] });
+    return res.status(200).json({ world, trackers: await loadTrackers(world) });
   }
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'GET or POST only' });
@@ -108,15 +84,12 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Auth verification failed' });
   }
 
-  const data = parseStore(await readSource());
-  if (!Array.isArray(data.byWorld[world])) data.byWorld[world] = [];
-  const list = data.byWorld[world];
+  let list = await loadTrackers(world);
   const action = body.action;
   const find = (id) => list.find((t) => t.id === id);
 
   const save = async () => {
-    data.updated = new Date().toISOString();
-    const ok = await writeSource(JSON.stringify(data, null, 2) + '\n');
+    const ok = await saveTrackers(world, list);
     if (!ok) { res.status(500).json({ error: 'write failed' }); return false; }
     return true;
   };
@@ -208,7 +181,7 @@ export default async function handler(req, res) {
   }
 
   if (action === 'delete') {
-    data.byWorld[world] = list.filter((x) => x.id !== id);
+    list = list.filter((x) => x.id !== id);
     if (!(await save())) return;
     return res.status(200).json({ ok: true });
   }
