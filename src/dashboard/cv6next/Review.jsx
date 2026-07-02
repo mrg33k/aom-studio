@@ -6,6 +6,7 @@ import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
+import { useReviewPinUI } from './ReviewPins.jsx';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -44,7 +45,7 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   const { state, data, actions } = useReview(worldId || 'aom', injected);
   const [screen, setScreen] = useState('pick'); // pick | read
   const [pickedId, setPickedId] = useState(null);
-  const { pins, addPin } = usePins(pickedId, worldId || 'aom');
+  const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
 
   const picked = useMemo(() => pickedId ? data.queue.items.find((i) => i.id === pickedId) : null, [pickedId, data.queue.items]);
 
@@ -84,41 +85,16 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   const pickListHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 2 }), []);
   const readHtml = useMemo(() => composeReviewScreen(reviewRaw, { mobile: true, pick: 1 }), []);
 
-  // read-view ref + pin-creation binding. These hooks MUST run on EVERY render (both the
+  // read-view ref + pin interaction. These hooks MUST run on EVERY render (both the
   // 'pick' and 'read' screens), so they live ABOVE the `if (screen === 'pick')` early return.
-  // They used to sit below it, so switching pick→read added two hooks mid-life and tripped
-  // React's Rules of Hooks (error #310) — the component threw and the screen showed the
-  // "hit a snag" boundary the instant you opened a file. (R2)
+  // They used to sit below it, so switching pick→read added hooks mid-life and tripped
+  // React's Rules of Hooks (error #310). (R2)
+  // Pin-comments delegate from this stable wrapper (a listener on the template's inner DOM
+  // dies on TemplateScreen's first innerHTML rebuild) and use the design popover composer.
   const readRef = useRef(null);
-
-  // Bind a click handler to the mobile viewer for pin creation. On the pick screen the read
-  // DOM isn't mounted, so the query finds nothing and the effect no-ops; it re-runs and binds
-  // once we enter the read screen (screen/pickedId in deps).
-  useEffect(() => {
-    if (screen !== 'read') return undefined;
-    const viewer = readRef.current?.querySelector('[data-state="ready"]');
-    if (!viewer) return undefined;
-
-    const handleViewerClick = (e) => {
-      // Tap anywhere on the deliverable (.doc holds the doc / photo / site-shot /
-      // video frame) to drop a pin-comment. Clicking an existing pin opens it instead.
-      const docElem = e.target.closest('.doc');
-      if (!docElem) return;
-      if (e.target.closest('.pin')) return;
-      const rect = docElem.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = (e.clientY - rect.top) / rect.height;
-      if (x < 0 || y < 0 || x > 1 || y > 1) return;
-      // On a video frame, anchor the comment to the current playback time too.
-      const video = docElem.querySelector('video');
-      const t = (video && Number.isFinite(video.currentTime)) ? video.currentTime : null;
-      const text = window.prompt('Add a comment for this spot:');
-      if (text && text.trim()) addPin(x, y, text.trim(), t);
-    };
-
-    viewer.addEventListener('click', handleViewerClick);
-    return () => viewer.removeEventListener('click', handleViewerClick);
-  }, [addPin, screen, pickedId]);
+  const { overlay: pinOverlay, openPinById } = useReviewPinUI({
+    wrapRef: readRef, pins, addPin, deletePin, enabled: screen === 'read',
+  });
 
   const pickListAliases = { 'queue.items': 'item', 'item': 'item' };
   const readAliases = {
@@ -192,12 +168,8 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     openNav: onOpenNav,
     search: () => { /* stub */ },
     openDeliverable: onOpenDeliverable,
-    openPin: (id) => {
-      const pin = pins.find((p) => p.id === id);
-      if (pin) {
-        console.log('[Review mobile] opened pin:', pin.n, pin.text);
-      }
-    },
+    // A pin marker (or the pin-comment bar) opens the comment popover with delete.
+    openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
     requestChanges: (id) => {
@@ -209,8 +181,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   };
 
   return (
-    <div ref={readRef} style={{ width: '100%', height: '100%' }}>
+    <div ref={readRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={readHtml} data={readData} actions={readActions} aliases={readAliases} state={state} style={{ width: '100%', height: '100%' }} />
+      {pinOverlay}
     </div>
   );
 }

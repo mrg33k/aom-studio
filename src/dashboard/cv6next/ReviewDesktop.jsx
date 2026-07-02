@@ -6,7 +6,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
-import { PinLayer } from './PinLayer.jsx';
+import { useReviewPinUI } from './ReviewPins.jsx';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -43,7 +43,13 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
   const { state, data, actions } = useReview(worldId || 'aom', injected);
   const [pickedId, setPickedId] = useState(null);
-  const { pins, addPin } = usePins(pickedId, worldId || 'aom');
+  const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
+
+  // Pin-comment interaction: a delegated click listener on the stable wrapper (survives
+  // TemplateScreen's innerHTML rebuilds — binding to the inner DOM dies on the first data
+  // tick) + the design popover composer/viewer rendered outside the template DOM.
+  const viewerRef = useRef(null);
+  const { overlay: pinOverlay, openPinById } = useReviewPinUI({ wrapRef: viewerRef, pins, addPin, deletePin });
 
   // Catch-up → Review carries a filename (+ its project); resolve it to a real queue
   // item (the queue carries real paths) so we open the exact deliverable the user came
@@ -136,14 +142,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
       actions.openDeliverable(id);
     },
     loadMore: () => actions.loadMore(),
-    openPin: (id) => {
-      // When clicking a pin (in viewer or comments list), scroll/highlight it.
-      // For now, a simple log; Patrik can request modal/edit UI later.
-      const pin = pins.find((p) => p.id === id);
-      if (pin) {
-        console.log('[Review] opened pin:', pin.n, pin.text);
-      }
-    },
+    // A pin marker (or its row in the comments panel) opens the comment popover
+    // over that spot, with delete.
+    openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
     requestChanges: (id) => {
@@ -154,38 +155,10 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     assignAgent: (id) => onAssignDeliverable?.(id),
   };
 
-  // Add a ref to handle click interactions for pin creation
-  const viewerRef = useRef(null);
-
-  // Bind click handler to the viewer region for pin creation
-  useEffect(() => {
-    const viewer = viewerRef.current?.querySelector('[data-state="ready"]');
-    if (!viewer) return;
-
-    const handleViewerClick = (e) => {
-      // Tap anywhere on the deliverable (.doc holds the doc / photo / site-shot /
-      // video frame) to drop a pin-comment. Clicking an existing pin opens it instead.
-      const docElem = e.target.closest('.doc');
-      if (!docElem) return;
-      if (e.target.closest('.pin')) return;
-      const rect = docElem.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = (e.clientY - rect.top) / rect.height;
-      if (x < 0 || y < 0 || x > 1 || y > 1) return;
-      // On a video frame, anchor the comment to the current playback time too.
-      const video = docElem.querySelector('video');
-      const t = (video && Number.isFinite(video.currentTime)) ? video.currentTime : null;
-      const text = window.prompt('Add a comment for this spot:');
-      if (text && text.trim()) addPin(x, y, text.trim(), t);
-    };
-
-    viewer.addEventListener('click', handleViewerClick);
-    return () => viewer.removeEventListener('click', handleViewerClick);
-  }, [addPin]);
-
   return (
-    <div ref={viewerRef} style={{ width: '100%', height: '100%' }}>
+    <div ref={viewerRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
+      {pinOverlay}
     </div>
   );
 }
