@@ -77,9 +77,11 @@ async function buildDeliverableBody(item) {
         : `<img src="${b.url}" alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
     }
     if (type === 'video') {
-      const b = await blobOf();
-      return b.err ? errDiv(b.err)
-        : `<video src="${b.url}" controls style="max-width:100%;border-radius:10px;display:block;"></video>`;
+      // Corner-path videos stream straight off the rag tunnel (Range-capable, CORS *).
+      // The old blob path pulled the WHOLE file through the Vercel raw proxy, which
+      // buffers in the lambda and dies on video-sized payloads — videos never loaded.
+      const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
+      return `<video src="${src}" controls preload="metadata" playsinline style="max-width:100%;border-radius:10px;display:block;background:#000;"></video>`;
     }
     if (type === 'siteshot') {
       const b = await blobOf();

@@ -50,25 +50,38 @@
     <!-- file list -->
     <div style="width:380px;flex:none;border-right:1px solid var(--divider);overflow:hidden;display:flex;flex-direction:column;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;"><span style="color:var(--fg);font-weight:600;font-size:15px;" data-bind="folder.name">Dashboard</span><span style="font-family:var(--font-mono);font-size:11.5px;color:var(--faint);"><span data-bind="folder.fileCount">12</span> files</span></div>
-      <!-- filter chips: ONE per filter; is-on marks the active filter -->
-      <div style="display:flex;gap:8px;padding:0 20px 14px;flex-wrap:wrap;">
-        <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active"><span data-bind="filter.label">All 12</span></button>
+      <!-- mission chips: narrow within the project; ONE per mission folder that has
+           files (empty projects render no row); is-on marks the active narrowing -->
+      <div style="display:flex;gap:8px;padding:0 20px;overflow-x:auto;scrollbar-width:none;flex:none;">
+        <button class="ochip is-on" data-each="missions" data-action="setMission" data-arg="mission.id" data-mod="is-:mission.active" style="flex:none;margin-bottom:10px;"><span data-bind="mission.label">All 12</span></button>
+      </div>
+      <!-- filter chips: ONE per type WITH files (zero-count chips are dropped by the
+           data hook); single line, scrolls sideways instead of wrapping -->
+      <div style="display:flex;gap:8px;padding:0 20px 14px;overflow-x:auto;scrollbar-width:none;flex:none;">
+        <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active" style="flex:none;"><span data-bind="filter.label">All 12</span></button>
       </div>
       <div style="padding:0 12px;flex:1;min-height:0;overflow-y:auto;">
         <!-- ONE row per file; is-open marks the previewed file; is-:file.kind on the glyph -->
         <div class="file" data-each="files" data-action="openFile" data-arg="file.id" data-mod="is-:file.picked"><svg class="fglyph is-doc" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:file.kind"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg><div style="flex:1;min-width:0;"><div class="fn" data-bind="file.name">dashboard-port-plan.md</div><div class="fm"><span data-bind="file.edited">34m</span> · <span data-bind="file.size">8 KB</span></div></div></div>
       </div>
     </div>
-    <!-- preview -->
-    <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;align-items:flex-start;justify-content:center;padding:32px 0;overflow-y:auto;position:relative;" data-state="ready">
-      <div style="position:absolute;top:16px;right:16px;z-index:5;display:flex;align-items:center;gap:8px;">
-        <button class="assign" data-action="openInReview" data-arg="viewFile.id" style="display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Open in Review</button>
-        <button class="assign is-quiet" data-action="assignAgent" data-arg="viewFile.id" style="display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Assign to agent</button>
+    <!-- preview: header bar (file name + actions) over a scrolling body. The body
+         switches shells on preview.mode — text reads on the paper card, video/image
+         render full-width on the dark ground. -->
+    <div style="flex:1;min-width:0;background:#0d0d0f;display:flex;flex-direction:column;overflow:hidden;" data-state="ready">
+      <div style="flex:none;display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--divider);">
+        <span style="flex:1;min-width:0;font-family:var(--font-mono);font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="preview.fileName">dashboard-port-plan.md</span>
+        <button class="assign is-quiet" data-action="assignAgent" data-arg="viewFile.id" style="flex:none;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Assign to agent</button>
+        <button class="assign" data-action="openInReview" data-arg="viewFile.id" style="flex:none;display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>Open in Review</button>
       </div>
-      <div style="width:520px;background:#fbfbfa;border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,.4);padding:44px 48px;color:#1a1a1a;">
-        <div style="font-family:var(--font-mono);font-size:12px;color:#999;margin-bottom:18px;" data-bind="preview.fileName">dashboard-port-plan.md</div>
-        <h1 style="font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0 0 14px;" data-bind="preview.title">Dashboard port plan</h1>
-        <div style="font-size:15px;line-height:1.65;color:#333;" data-html="preview.bodyHtml"><p style="margin:0 0 14px;">Port CV6 to mobile parity: dynamic viewport units, safe-area insets, the side menu, and the swipe-deck Catch Up.</p></div>
+      <div style="flex:1;min-height:0;overflow-y:auto;padding:32px 28px;" data-switch="preview.mode">
+        <div data-case="paper" style="max-width:560px;margin:0 auto;background:#fbfbfa;border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,.4);padding:44px 48px;color:#1a1a1a;">
+          <h1 style="font-size:24px;font-weight:700;letter-spacing:-.02em;margin:0 0 14px;" data-bind="preview.title">Dashboard port plan</h1>
+          <div style="font-size:15px;line-height:1.65;color:#333;" data-html="preview.bodyHtml" data-cv6-keep="organize-preview-paper"><p style="margin:0 0 14px;">Port CV6 to mobile parity: dynamic viewport units, safe-area insets, the side menu, and the swipe-deck Catch Up.</p></div>
+        </div>
+        <div data-case="media" style="max-width:880px;margin:0 auto;">
+          <div data-html="preview.bodyHtml" data-cv6-keep="organize-preview-media"></div>
+        </div>
       </div>
     </div>
   </div>

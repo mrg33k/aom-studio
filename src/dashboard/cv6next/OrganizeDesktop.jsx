@@ -12,7 +12,7 @@ import statesRaw from './templates/states-extra.html?raw';
 
 // data-each item aliases the engine can't derive (tree→node, breadcrumb→crumb,
 // destinations→dest, folders→subfolder); the singularizable ones are kept explicit too.
-const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder' };
+const ORG_ALIASES = { tree: 'node', files: 'file', projects: 'project', breadcrumb: 'crumb', destinations: 'dest', filters: 'filter', folders: 'subfolder', missions: 'mission' };
 
 function composeOrganize(raw, screenName) {
   const doc = new DOMParser().parseFromString(raw, 'text/html');
@@ -30,7 +30,7 @@ function composeOrganize(raw, screenName) {
 const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 
 export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, setFilter, openFile } = useOrganize('aom');
+  const { state, data, selectProject, selectMission, setFilter, openFile } = useOrganize('aom');
   // Switching project resets the open file inside the hook (auto-opens the new
   // project's first file), so the preview always follows the selected project.
   const switchProject = (id) => { selectProject(id); };
@@ -50,10 +50,17 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     openProfile: () => {},
     search: () => {},
     openFile: (id) => openFile(id),
-    // Mission nodes arrive as "project:mission-slug" — extract the project part so we
-    // select the parent project's files rather than trying to switch to a non-existent
-    // project row.  Plain project ids have no colon, so the logic is harmless for them.
-    openTreeNode: (id) => switchProject(String(id || '').includes(':') ? String(id).split(':')[0] : id),
+    // Mission nodes arrive as "project:mission-slug" (nested missions carry more
+    // segments). Select the parent project AND narrow the file list to that mission —
+    // candidates run leaf-first so the deepest matching mission folder wins.
+    openTreeNode: (id) => {
+      const s = String(id || '');
+      if (!s.includes(':')) return switchProject(s);
+      const segs = s.split(':').filter(Boolean);
+      switchProject(segs[0]);
+      selectMission(segs.slice(1).reverse());
+    },
+    setMission: (id) => selectMission(id || '__all'),
     openProject: (id) => switchProject(id),
     openFolder: (id) => switchProject(id),
     openCrumb: (id) => (id === 'root' ? switchProject(null) : switchProject(id)),

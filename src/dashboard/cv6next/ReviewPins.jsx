@@ -98,6 +98,12 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
     const pin = (stateRef.current.pins || []).find((p) => p.id === pinId);
     if (!wrap || !pin) return;
     const docElem = wrap.querySelector('.doc');
+    // A video-frame pin carries its playback time — opening it jumps the video back
+    // to that exact frame, so "at 0:34" comments land on what they're about.
+    if (pin.t != null && Number.isFinite(Number(pin.t))) {
+      const video = docElem?.querySelector('video');
+      if (video) { try { video.pause(); video.currentTime = Number(pin.t); } catch { /* not seekable yet */ } }
+    }
     const wrapRect = wrap.getBoundingClientRect();
     let left = 24; let top = 24;
     if (docElem) {

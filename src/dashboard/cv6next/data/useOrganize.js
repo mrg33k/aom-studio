@@ -9,6 +9,11 @@ import { authFetch } from '../../lib/authFetch';
 
 const TINTS = ['violet', 'accent', 'pink', 'success'];
 
+// Video bytes stream straight off the rag tunnel (Range + CORS *), never through
+// the Vercel raw proxy — that path buffers the whole file and can't carry video.
+// Same client-direct posture as CV3/CV4 attachments (useChatAttachments).
+const TUNNEL_BASE = 'https://rag.aheadofmarket.com';
+
 function tintFor(seed) {
   let h = 0; for (const c of String(seed || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   return TINTS[h % TINTS.length];
@@ -31,6 +36,19 @@ function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+// Prefer the mirror's kind unless it's the 'doc' catch-all — rows written before
+// the watcher knew video/link kinds are stamped 'doc', so the extension wins there.
+function resolveKind(dbKind, name) {
+  return (dbKind && dbKind !== 'doc') ? dbKind : fileKind(name);
+}
+
+// Top-level mission a file belongs to, from its dir path within the project
+// ("missions/website/drafts" -> "website"; root files -> null).
+function missionOf(relPath) {
+  const segs = String(relPath || '').split('/').filter(Boolean);
+  return (segs[0] === 'missions' && segs[1]) ? segs[1] : null;
 }
 
 function fileKind(name) {
@@ -128,7 +146,7 @@ const LOADING_HTML =
 // (images, PDFs, sheets) — a tinted banner + kind glyph so it reads as intentional,
 // never as an error or empty file.
 function nonTextPreview(name, kind) {
-  const label = kind === 'image' ? 'Image file' : kind === 'pdf' ? 'PDF file' : kind === 'sheet' ? 'Spreadsheet' : 'File';
+  const label = kind === 'image' ? 'Image file' : kind === 'pdf' ? 'PDF file' : kind === 'sheet' ? 'Spreadsheet' : kind === 'video' ? 'Video file' : 'File';
   const lower = label.toLowerCase();
   return (
     '<div style="display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:12px 14px;border-radius:8px;'
@@ -179,6 +197,10 @@ export function useOrganize(worldId = 'aom') {
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [selectedId, setSelectedId] = useState(null); // which project's files show
   const [filter, setFilter] = useState('recent');  // recent | links | docs | pdfs | images | video
+  // Mission narrowing within the selected project. Stored as CANDIDATE slugs (a tree
+  // node click hands in every segment of a colon-joined mission path); the first
+  // candidate that exists as a mission folder with files wins, else no narrowing.
+  const [missionSel, setMissionSel] = useState(null); // null | ['__all'] | ['__root'] | [slug, ...]
   const [openedId, setOpenedId] = useState(null);  // which file is open (preview/reader)
   const [contentCache, setContentCache] = useState({}); // id -> { title, bodyHtml, editor, editorInitials }
   const [missionTree, setMissionTree] = useState({}); // projectSlug -> tree nodes array (nested)
@@ -246,10 +268,18 @@ export function useOrganize(worldId = 'aom') {
       const d = await res.json();
       const f = d.file;
       if (!f) return;
-      const kind = f.kind || fileKind(f.name);
+      const kind = resolveKind(f.kind, f.name);
       let bodyHtml;
       let title;
-      if (kind === 'image') {
+      if (kind === 'video') {
+        // Stream from the tunnel (Range-capable) — a blob fetch through the Vercel
+        // proxy would buffer the whole file and die on anything video-sized.
+        const cornerPath = cornerPathOf(f, worldId);
+        bodyHtml = cornerPath
+          ? `<video src="${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}" controls preload="metadata" playsinline style="width:100%;max-height:68vh;display:block;border-radius:10px;background:#000;"></video>`
+          : nonTextPreview(f.name, 'video');
+        title = f.name || 'Untitled';
+      } else if (kind === 'image') {
         // Real image render (blob URL via authFetch) instead of the placeholder.
         bodyHtml = await imageBodyHtml(f, worldId);
         title = f.name || 'Untitled';
@@ -344,8 +374,8 @@ export function useOrganize(worldId = 'aom') {
   // Filters (Patrik 2026-06-30): Recent (all, newest-first) · Links · Docs · Pdfs ·
   // Images · Video. "docs" is the catch-all for anything that isn't one of the typed
   // kinds, so no file is unreachable (sheets/unknowns land here too).
-  const fileMatchesFilter = (kind) => {
-    switch (filter) {
+  const fileMatchesFilter = (kind, eff) => {
+    switch (eff) {
       case 'links':  return kind === 'link';
       case 'pdfs':   return kind === 'pdf';
       case 'images': return kind === 'image';
@@ -360,7 +390,7 @@ export function useOrganize(worldId = 'aom') {
     .sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')))
     .map((f) => {
       const fname = f.name || 'Untitled';
-      const kind = f.kind || fileKind(fname);
+      const kind = resolveKind(f.kind, fname);
       return {
         id: f.id,
         name: fname,
@@ -368,16 +398,52 @@ export function useOrganize(worldId = 'aom') {
         size: formatSize(f.size || 0),
         kind,
         status: 'ready',
+        missionKey: missionOf(f.rel_path),
       };
     });
 
-  const countKind = (k) => allFiles.filter((f) => f.kind === k).length;
+  // Mission narrowing: chips are built FROM the files themselves (top-level
+  // missions/<slug> folders that actually hold files), so picking one never lands
+  // on an empty column. Root-level files get their own bucket when missions exist.
+  const missionCounts = new Map();
+  let rootCount = 0;
+  for (const f of allFiles) {
+    if (f.missionKey) missionCounts.set(f.missionKey, (missionCounts.get(f.missionKey) || 0) + 1);
+    else rootCount += 1;
+  }
+  const activeMission = (() => {
+    for (const cand of (Array.isArray(missionSel) ? missionSel : [])) {
+      if (cand === '__all') return null;
+      if (cand === '__root' && rootCount) return '__root';
+      if (missionCounts.has(cand)) return cand;
+    }
+    return null;
+  })();
+  const missionFiles = activeMission == null
+    ? allFiles
+    : allFiles.filter((f) => (activeMission === '__root' ? !f.missionKey : f.missionKey === activeMission));
+
+  const missionChips = missionCounts.size
+    ? [
+        { id: '__all', label: `All ${allFiles.length}`, active: activeMission == null ? 'on' : 'off' },
+        ...[...missionCounts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([slug, n]) => ({ id: slug, label: `${prettify(slug)} ${n}`, active: activeMission === slug ? 'on' : 'off' })),
+        ...(rootCount ? [{ id: '__root', label: `Root ${rootCount}`, active: activeMission === '__root' ? 'on' : 'off' }] : []),
+      ]
+    : [];
+
+  const countKind = (k) => missionFiles.filter((f) => f.kind === k).length;
   const imageCount = countKind('image');
   const videoCount = countKind('video');
   const pdfCount = countKind('pdf');
   const linkCount = countKind('link');
-  const docCount = allFiles.filter((f) => !['image', 'video', 'pdf', 'link'].includes(f.kind)).length;
-  const fileList = allFiles.filter((f) => fileMatchesFilter(f.kind));
+  const docCount = missionFiles.filter((f) => !['image', 'video', 'pdf', 'link'].includes(f.kind)).length;
+  // If the active type filter has no files in the new mission/project scope, fall
+  // back to Recent instead of showing an inexplicable empty column.
+  const kindCountFor = { links: linkCount, docs: docCount, pdfs: pdfCount, images: imageCount, video: videoCount };
+  const effFilter = (filter !== 'recent' && !kindCountFor[filter]) ? 'recent' : filter;
+  const fileList = missionFiles.filter((f) => fileMatchesFilter(f.kind, effFilter));
 
   // The open file: the explicitly-opened one if it's in this project's list, else the first.
   const openInList = fileList.find((f) => f.id === openedId) || fileList[0] || null;
@@ -386,13 +452,16 @@ export function useOrganize(worldId = 'aom') {
   // for "Open in Review" (Review loads any corner path through its authed viewer).
   const openRawRow = openInList ? (groups.get(openProject.id) || []).find((r) => r.id === openInList.id) : null;
   const openCornerPath = cornerPathOf(openRawRow, worldId);
+  // mode drives the preview shell (data-switch): text-ish files read on the paper
+  // card; video/image render full-width on the dark ground (media).
   const previewObj = openInList
     ? {
         fileName: openInList.name,
         title: cached?.title || openInList.name,
         bodyHtml: cached?.bodyHtml || LOADING_HTML,
+        mode: ['video', 'image'].includes(openInList.kind) ? 'media' : 'paper',
       }
-    : { fileName: '', title: '', bodyHtml: '<p>No file selected</p>' };
+    : { fileName: '', title: '', bodyHtml: '<p>No file selected</p>', mode: 'paper' };
 
   const data = {
     tree: treeNodes,
@@ -400,14 +469,17 @@ export function useOrganize(worldId = 'aom') {
     files: fileList,
     projects: projectList,
     breadcrumb: [{ id: 'root', name: 'Corner' }, openProject].filter((x) => x.id),
+    // Zero-count type chips are dropped entirely — a permanently-dead "Video 0"
+    // button reads as broken. Recent always shows (it's the reset).
     filters: [
-      { id: 'recent', label: `Recent ${allFiles.length}`, active: filter === 'recent' ? 'on' : 'off' },
-      { id: 'links',  label: `Links ${linkCount}`,        active: filter === 'links'  ? 'on' : 'off' },
-      { id: 'docs',   label: `Docs ${docCount}`,          active: filter === 'docs'   ? 'on' : 'off' },
-      { id: 'pdfs',   label: `Pdfs ${pdfCount}`,          active: filter === 'pdfs'   ? 'on' : 'off' },
-      { id: 'images', label: `Images ${imageCount}`,      active: filter === 'images' ? 'on' : 'off' },
-      { id: 'video',  label: `Video ${videoCount}`,       active: filter === 'video'  ? 'on' : 'off' },
-    ],
+      { id: 'recent', label: `Recent ${missionFiles.length}`, active: effFilter === 'recent' ? 'on' : 'off' },
+      { id: 'links',  label: `Links ${linkCount}`,        count: linkCount,  active: effFilter === 'links'  ? 'on' : 'off' },
+      { id: 'docs',   label: `Docs ${docCount}`,          count: docCount,   active: effFilter === 'docs'   ? 'on' : 'off' },
+      { id: 'pdfs',   label: `Pdfs ${pdfCount}`,          count: pdfCount,   active: effFilter === 'pdfs'   ? 'on' : 'off' },
+      { id: 'images', label: `Images ${imageCount}`,      count: imageCount, active: effFilter === 'images' ? 'on' : 'off' },
+      { id: 'video',  label: `Video ${videoCount}`,       count: videoCount, active: effFilter === 'video'  ? 'on' : 'off' },
+    ].filter((c) => c.id === 'recent' || c.count > 0),
+    missions: missionChips,
     preview: previewObj,
     openedId: openInList?.id || null,
     viewFile: openInList
@@ -464,7 +536,17 @@ export function useOrganize(worldId = 'aom') {
   else if (status === 'error') state = 'error';
   else if (!projectList.length) state = 'empty';
 
-  const selectProject = useCallback((id) => { setSelectedId(id); setFilter('recent'); setOpenedId(null); }, []);
+  const selectProject = useCallback((id) => { setSelectedId(id); setFilter('recent'); setMissionSel(null); setOpenedId(null); }, []);
 
-  return { state, data, reload: load, selectProject, setFilter, openFile, activeProjectId };
+  // Narrow to a mission. Accepts one slug or an ordered candidate list (a tree node
+  // click passes every segment of a colon-joined mission path; the first segment
+  // that exists as a mission folder with files wins).
+  const selectMission = useCallback((idOrList) => {
+    const list = Array.isArray(idOrList) ? idOrList : [idOrList];
+    setMissionSel(list.filter(Boolean).length ? list.filter(Boolean) : null);
+    setFilter('recent');
+    setOpenedId(null);
+  }, []);
+
+  return { state, data, reload: load, selectProject, selectMission, setFilter, openFile, activeProjectId };
 }
