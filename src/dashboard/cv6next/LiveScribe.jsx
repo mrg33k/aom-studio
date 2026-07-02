@@ -100,6 +100,9 @@ export default function LiveScribe({ onNav, onOpenNav }) {
     // Held controls (pause / ask-helper) are removed from the template rather than
     // stubbed — no dead taps. The extracted counts render as plain stats.
     openExtracted: () => {},
+    // The one capture button: idle starts the mic, recording stops + saves.
+    // Nothing records without this tap (no surprise microphone).
+    toggleCapture: () => (state === 'recording' ? handleStopAndSave() : controls?.start?.()),
     stopAndSave: handleStopAndSave,
     sendToDashboard: handleSendToDashboard,
   };

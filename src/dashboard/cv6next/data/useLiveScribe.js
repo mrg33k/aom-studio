@@ -263,6 +263,15 @@ export function useLiveScribe(worldId = 'aom') {
       target: 'Meeting',
       targetShort: 'Meeting',
       speakerCount: state === 'recording' ? 1 : 0,
+      // Drives the one capture button: idle shows Start (accent), recording
+      // shows Stop & save (red). Recording only ever starts from a tap.
+      capturing: state === 'recording' ? 'on' : 'off',
+      captureLabel: state === 'recording' ? 'Stop & save' : 'Start capture',
+      statusLine: state === 'recording'
+        ? 'Capturing this meeting'
+        : state === 'error'
+          ? 'Microphone unavailable — allow mic access and try again'
+          : 'Ready to capture. Press Start and speak.',
     },
     transcript: turns.map((turn, idx) => ({
       speaker: 'You',
