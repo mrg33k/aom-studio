@@ -89,7 +89,17 @@ export default async function handler(req, res) {
 
     // ?all=true: fetch ALL messages across all agents (for AOM Team Room aggregate view)
     // No agent on a project/mission query → don't emit "agent=eq.undefined" (which returns nothing).
-    const agentFilter = (all === 'true' || all === '1' || !agent) ? '' : `&agent=eq.${encodeURIComponent(agent)}`
+    // Agent 1:1 threads are room_id-scoped (corner:one-write-path R5c, Patrik's
+    // go 2026-07-01): the 1:1 room shows the 1:1 CONVERSATION, not every row
+    // the agent touched across projects (legacy agent=eq returned 4.3x that
+    // for elon). Legacy arm inside the or() covers identical ground post-
+    // backfill. SEARCH keeps the broad agent=eq scope on purpose — its
+    // contract is "all messages for this agent".
+    const agentFilter = (all === 'true' || all === '1' || !agent)
+      ? ''
+      : (searchQuery || req.query.project || req.query.mission_slug)
+        ? `&agent=eq.${encodeURIComponent(agent)}`
+        : `&or=(room_id.eq.${encodeURIComponent(`${clientId}:agent:${agent}`)},and(agent.eq.${encodeURIComponent(agent)},project.is.null,metadata->>mission_slug.is.null))`
     const searchFilter = searchQuery ? `&text=ilike.*${encodeURIComponent(searchQuery)}*` : ''
     // corner:notifications-catchup R3 — room-scoped filters for the catch-up
     // context fetcher. Same shape any chat surface uses:
