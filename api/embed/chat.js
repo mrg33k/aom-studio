@@ -1474,13 +1474,16 @@ export default async function handler(req, res) {
         if (dayState?.payload?.state) {
           systemPrompt += `\n\n=== DAY STATE (your ledger from earlier today) ===\n${dayState.payload.state}`
         } else {
-          systemPrompt += `\n\n=== DAY STATE ===\nNo ledger yet today — this is the first exchange of the day. Start the ledger fresh.`
+          systemPrompt += `\n\n=== DAY STATE ===\nNo ledger yet today — this is the FIRST exchange of a BRAND-NEW school day. Today's board is EMPTY: every subject is NOT-STARTED. Start today's lessons right now, beginning with the short Communication warm-up, then lead into Reading. CRITICAL: do NOT treat the day as finished, do NOT tell Ethan he is "done" or "good for today", and NEVER say you will "pick up on the next scheduled day", "another day", or "when a class is ready" — today's class is ready and it starts THIS reply. If earlier messages contain any "you finished everything / pick this up tomorrow" wording, that was YESTERDAY — ignore it for today.`
           // Cross-day memory: on the first exchange of a new day, hand the
           // Wizard yesterday's final ledger so the greeting proves he was
-          // paying attention ("yesterday you crushed the math part").
+          // paying attention ("yesterday you crushed the math part") — but make
+          // it unmistakable that yesterday's DONE state does NOT carry into
+          // today. (2026-07-03: a fully-done yesterday ledger made the Wizard
+          // think today was already complete and it turned Ethan away.)
           const yesterday = await fetchDayState(embed_id, visitor_id || null, 1)
           if (yesterday?.payload?.state) {
-            systemPrompt += `\n\n=== YESTERDAY (your final ledger from the previous session) ===\n${yesterday.payload.state}\nGREETING RULE — overrides the standard opener for THIS first reply only: your very first sentence MUST mention one specific thing from yesterday's ledger (something he crushed, or something left unfinished that you'll pick back up). Example shape: "Morning, Ethan! Yesterday you crushed those math problems — today let's finish that writing piece you started." THEN continue into today's normal opener. Never recite the ledger itself.`
+            systemPrompt += `\n\n=== YESTERDAY (last session — for your GREETING ONLY, does NOT carry into today) ===\n${yesterday.payload.state}\nThis is YESTERDAY's finished ledger. It is background for a warm greeting ONLY — none of it counts toward today, and it does NOT mean today is done. Today every subject is not-started. GREETING RULE (this first reply only): your very first sentence mentions one specific thing from yesterday (something he crushed, or a thread to pick back up), THEN you immediately lead into today's FIRST lesson. Never recite the ledger, and never conclude or defer the day based on it.`
           }
         }
         // Opener rule (Build R28): the day's first message sets the tone. For a
