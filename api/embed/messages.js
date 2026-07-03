@@ -24,6 +24,26 @@ function phoenixDate() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Phoenix' })
 }
 
+// Clean a leaked chain-of-thought preamble out of a stored assistant reply.
+// Gemini sometimes wrote its private reasoning as plain text — a "THOUGHT"
+// block + a "---" separator + the real reply — and it got persisted verbatim
+// (fixed on the write path in chat.js on 2026-07-03). This mirrors that strip
+// on the READ path so Ethan's already-stored history renders clean on reload,
+// no data migration needed. A standalone "---" rule is never legitimate output
+// (the Wizard is told never to use markdown), so keep only what follows it.
+function stripReasoningLeak(text) {
+  if (!text) return text
+  let t = String(text).replace(/\r\n/g, '\n')
+  const seps = [...t.matchAll(/^[ \t]*-{3,}[ \t]*$/gm)]
+  if (seps.length) {
+    const last = seps[seps.length - 1]
+    const after = t.slice(last.index + last[0].length).trim()
+    if (after) t = after
+  }
+  t = t.replace(/^\s*THOUGHT\b:?[ \t]*\n?/i, '')
+  return t.trim()
+}
+
 // Count how many subjects are marked done in a day-ledger string.
 // "Reading=done; Writing=in-progress; Math=done; note=..." → 2
 function countDone(stateStr) {
@@ -512,8 +532,9 @@ export default async function handler(req, res) {
         // User rows store "— Web Portal"-suffixed text; show the clean
         // visitor text preserved in metadata instead.
         text:
-          (row.role === 'user' && row.metadata && row.metadata.visitor_text) ||
-          row.text,
+          row.role === 'user'
+            ? (row.metadata && row.metadata.visitor_text) || row.text
+            : stripReasoningLeak(row.text),
         timestamp: row.timestamp,
       })),
     })

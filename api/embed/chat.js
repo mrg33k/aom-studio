@@ -434,6 +434,29 @@ function extractDayState(replyText) {
   return { text: replyText.slice(0, m.index).trim(), state: m[1].replace(/>>\s*$/, '').trim() }
 }
 
+// Strip a leaked chain-of-thought preamble. Under a heavy system prompt + long
+// history, Gemini sometimes writes its PRIVATE reasoning as ordinary reply
+// text: a "THOUGHT" header, its reasoning ("I need to: 1... 2..."), a "---"
+// separator line, then the real spoken reply. The machine-marker strippers
+// miss this (it is plain text, not a <<MARKER>>), and includeThoughts:false
+// only filters Gemini's native thought PARTS — this comes through as answer
+// text. RULES OF THE SCREEN forbid markdown, so a standalone "---" rule is
+// never a legitimate reply — keep only what follows the LAST separator.
+// (Ethan saw the raw reasoning in front of every question, 2026-07-03.)
+function stripReasoningLeak(text) {
+  if (!text) return text
+  let t = String(text).replace(/\r\n/g, '\n')
+  const seps = [...t.matchAll(/^[ \t]*-{3,}[ \t]*$/gm)]
+  if (seps.length) {
+    const last = seps[seps.length - 1]
+    const after = t.slice(last.index + last[0].length).trim()
+    if (after) t = after // never let the strip empty the reply
+  }
+  // Belt: a leftover bare "THOUGHT" header with no separator — drop the label.
+  t = t.replace(/^\s*THOUGHT\b:?[ \t]*\n?/i, '')
+  return t.trim()
+}
+
 // --- Daily assignments (Build R5) -------------------------------------------
 // The Wizard sets short concrete assignments and follows up on the pending
 // ones. Persisted per visitor (not date-keyed — pending carry across days).
@@ -1593,10 +1616,11 @@ export default async function handler(req, res) {
         const missionExtract = extractMissions(storyExtract.text)
         const dayExtract = extractDayState(missionExtract.text)
         const newDayState = dayExtract.state
-        const replyText = dayExtract.text
-          .replace(/<<[A-Z]+:[\s\S]*?>>/g, '') // closed machine markers, anywhere
-          .replace(/<<[A-Z]+:[\s\S]*$/, '')     // safety net: an UNCLOSED marker through end of text (model dropped the >>)
-          .trim()
+        const replyText = stripReasoningLeak(
+          dayExtract.text
+            .replace(/<<[A-Z]+:[\s\S]*?>>/g, '') // closed machine markers, anywhere
+            .replace(/<<[A-Z]+:[\s\S]*$/, '')     // safety net: an UNCLOSED marker through end of text (model dropped the >>)
+        ).trim()
 
         // Merge the new state with prior state deterministically.
         // This prevents the model's free-text ledger from drifting.
