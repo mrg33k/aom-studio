@@ -48,8 +48,9 @@ function composePicker(raw) {
   const screen = screenByLabel(doc, 'Organize · Projects');
   if (!screen) return '';
   // Flat file store has no folders — drop the meaningless "· N folders" from each row.
+  // countLabel is the computed '1 file / N files' string (grammar, loop R12).
   const pmeta = screen.querySelector('.pmeta');
-  if (pmeta) pmeta.innerHTML = '<span data-bind="project.fileCount">0</span> files';
+  if (pmeta) { pmeta.innerHTML = '0 files'; pmeta.setAttribute('data-bind', 'project.countLabel'); }
   // Creating a project from here is not wired yet — disable rather than leave a dead button.
   disableHeld(screen, '[data-action="newProject"]', 'Creating a project from here is coming soon');
   finalizeScreen(screen, screen.querySelector('[data-state="ready"]'));
