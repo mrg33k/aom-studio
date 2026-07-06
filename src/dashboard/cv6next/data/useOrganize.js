@@ -339,11 +339,12 @@ export function useOrganize(worldId = 'aom') {
       fileCount: (groups.get(p.slug) || []).length,
       folderCount: 0, // Phase 2 turns folders on
       tint: tintFor(p.slug),
+      countLabel: `${(groups.get(p.slug) || []).length} file${(groups.get(p.slug) || []).length === 1 ? '' : 's'}`,
     };
   });
   for (const [slug, fs] of groups.entries()) {
     if (slug === 'unfiled' || seenSlugs.has(slug)) continue;
-    projectList.push({ id: slug, name: nameBySlug[slug] || prettify(slug), fileCount: fs.length, folderCount: 0, tint: tintFor(slug) });
+    projectList.push({ id: slug, name: nameBySlug[slug] || prettify(slug), fileCount: fs.length, folderCount: 0, tint: tintFor(slug), countLabel: `${fs.length} file${fs.length === 1 ? '' : 's'}` });
   }
   // Alphabetical by display name (case-insensitive), so the list is scannable instead of
   // arriving in the table's recency order. This order also drives the desktop tree panel.
