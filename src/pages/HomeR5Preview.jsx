@@ -230,6 +230,20 @@ const CSS = `
 .r9 .payoff-tail { font-family:var(--tx); font-size:clamp(1rem,2vw,1.25rem); color:var(--stone); margin-top:2rem; text-transform:none; letter-spacing:0; font-weight:400; line-height:1.7; }
 .r9 .scene-mark { width:clamp(60px,9vw,96px); height:auto; margin:0 auto 2.75rem; display:block; color:var(--paper); }
 
+/* floating gear object (oryzo-style hero object behind type) */
+.r9 .gear {
+  position:relative; width:min(880px,100%); margin:clamp(-4.5rem,-6vw,-2.5rem) auto 0;
+  pointer-events:none; user-select:none;
+}
+.r9 .gear img {
+  width:100%; height:auto; display:block;
+  -webkit-mask-image:radial-gradient(ellipse 66% 62% at 50% 50%, black 52%, transparent 78%);
+  mask-image:radial-gradient(ellipse 66% 62% at 50% 50%, black 52%, transparent 78%);
+}
+@media(max-width:720px){ .r9 .gear { width:120%; margin-left:-10%; } }
+.r9 .beat-obj .statement { position:relative; z-index:1; }
+.r9 .beat-obj .proof { margin-top:clamp(-3rem,-4vw,-1.5rem); position:relative; z-index:1; }
+
 /* proof strips under identity beats */
 .r9 .proof { display:flex; gap:1px; background:var(--line-dark); border:1px solid var(--line-dark); max-width:640px; margin:3rem auto 0; }
 .r9 .proof-cell { position:relative; flex:1; aspect-ratio:16/10; overflow:hidden; background:var(--ink-800); }
@@ -727,14 +741,17 @@ export default function HomeR5Preview() {
         </div>
 
         {/* CH 01 — WHO WE ARE (four beats) */}
-        <Scene ch={1} tone="sc-dark" id="story">
-          <span className="ghost-n" aria-hidden="true">01</span>
+        <Scene ch={1} tone="sc-ink" id="story" className="beat-obj">
           <div className="scene-inner">
             <Rise><span className="beat-eyebrow">So — who are we, exactly?</span></Rise>
-            <Rise delay={0.1}><span className="stamp"><GlyphFilm /></span></Rise>
             <p className="statement">
               <Kinetic sq segments={[{ t: 'Many companies around Phoenix know us as a ', cls: 'dim' }, { t: 'video company' }]} />
             </p>
+            <div className="gear" aria-hidden="true">
+              <Parallax amount={22}>
+                <img src="/gear/ronin-4d.jpg" alt="" loading="lazy" />
+              </Parallax>
+            </div>
             <Rise delay={0.35}>
               <div className="proof">
                 <span className="proof-cell"><img src={poster('698a6296fc23d3d76fa8d992', 480)} alt="Journey to Gary Vee — film still" loading="lazy" /></span>
@@ -746,13 +763,16 @@ export default function HomeR5Preview() {
           </div>
         </Scene>
 
-        <Scene ch={1} tone="sc-ink">
-          <span className="ghost-n" aria-hidden="true">02</span>
+        <Scene ch={1} tone="sc-ink" className="beat-obj">
           <div className="scene-inner">
-            <Rise><span className="stamp"><GlyphWeb /></span></Rise>
             <p className="statement">
               <Kinetic sq segments={[{ t: 'Others know us as a ', cls: 'dim' }, { t: 'web development company' }]} />
             </p>
+            <div className="gear" aria-hidden="true">
+              <Parallax amount={22}>
+                <img src="/gear/laptop.jpg" alt="" loading="lazy" />
+              </Parallax>
+            </div>
             <Rise delay={0.35}>
               <div className="proof">
                 <span className="proof-cell"><img src="/hero-sites/ambition.jpg" alt="Ambition Mechanical — site by AOM" loading="lazy" /></span>
