@@ -152,12 +152,17 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // a preview a message-carrying bump already provided (Steffen R4 send-back: the digest
   // earns its width with the last-message line).
   const bump = (key, entry) => { const prev = recentMap[key]; if (!prev || entry.ts > prev.ts) recentMap[key] = { ...entry, preview: entry.preview || (prev && prev.preview) || '' }; };
+  // A mission whose "parent project" label merely echoes the room's own name (a slug that
+  // resolves to no real project, e.g. outreach -> "Outreach | Outreach") tells the user
+  // nothing — fall back to the honest generic label instead.
+  const missionSub = (pn, nm) => (pn && pn.trim().toLowerCase() !== String(nm || '').trim().toLowerCase()) ? pn : 'Mission';
   for (const it of inboxItems || []) {
     const ts = it.timestamp ? new Date(it.timestamp).getTime() : 0;
     const preview = String(it.text || '').replace(/\s+/g, ' ').trim();
     if (it.missionSlug) {
       const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
-      bump('m:' + it.missionSlug, { key: 'm:' + it.missionSlug, id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: missionLabel(it.missionSlug) || it.missionSlug, sub: pn || 'Mission', ts, preview });
+      const nm = missionLabel(it.missionSlug) || it.missionSlug;
+      bump('m:' + it.missionSlug, { key: 'm:' + it.missionSlug, id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: nm, sub: missionSub(pn, nm), ts, preview });
     } else if (it.project) {
       bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts, preview });
     } else if (it.agent) {
@@ -174,7 +179,8 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   for (const mr of missionRooms || []) {
     if (!mr.last_message_at || !mr.slug) continue;
     const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
-    bump('m:' + mr.slug, { key: 'm:' + mr.slug, id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: missionLabel(mr.slug) || mr.slug, sub: pn || 'Mission', ts: mr.last_message_at, preview: String(mr.last_message_text || '').trim() });
+    const nm = missionLabel(mr.slug) || mr.slug;
+    bump('m:' + mr.slug, { key: 'm:' + mr.slug, id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: String(mr.last_message_text || '').trim() });
   }
   const recent = Object.values(recentMap)
     // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).
