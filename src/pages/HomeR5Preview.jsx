@@ -267,6 +267,24 @@ const CSS = `
 .r9 .stat-l { display:block; font-size:.82rem; color:var(--ink-500); margin-top:.9rem; line-height:1.5; letter-spacing:.04em; text-transform:uppercase; font-weight:600; }
 .r9 .team-note { font-size:1.05rem; color:var(--ink-500); max-width:62ch; line-height:1.8; margin-inline:auto; }
 
+/* ─── BREATHER (light bloom curtain into The Work) ─── */
+.r9 .bloom { position:relative; overflow:hidden; }
+.r9 .bloom-light {
+  position:absolute; left:50%; bottom:-42vh; transform:translateX(-50%);
+  width:130vw; height:90vh; pointer-events:none;
+  background:radial-gradient(ellipse at center, rgba(196,164,106,.34) 0%, rgba(196,164,106,.1) 38%, transparent 68%);
+}
+.r9 .bloom-wm {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  font-family:var(--dp); text-transform:uppercase; font-weight:800; white-space:nowrap;
+  font-size:clamp(3.4rem,16vw,15rem); letter-spacing:-.01em;
+  color:transparent; -webkit-text-stroke:1px rgba(196,164,106,.22);
+  pointer-events:none; user-select:none;
+}
+.r9 .bloom-copy { position:relative; z-index:1; }
+.r9 .bloom-copy .idx { color:var(--stone); }
+.r9 .bloom-head { font-family:var(--dp); text-transform:uppercase; font-weight:800; font-size:clamp(2rem,5vw,3.6rem); color:var(--paper); margin-top:1.2rem; }
+
 /* ─── STORY PANELS ─── */
 .r9 .story { display:grid; grid-template-columns:1.05fr 1fr; gap:clamp(2.5rem,6vw,5.5rem); align-items:center; width:100%; max-width:1200px; margin-inline:auto; text-align:left; }
 .r9 .story.rev .story-media { order:2; }
@@ -859,6 +877,20 @@ export default function HomeR5Preview() {
                 Our team comes from commercial film production, local news, national media, and creative agencies.
                 We've worked across Phoenix, nationally, and internationally — always story-first.
               </p>
+            </Rise>
+          </div>
+        </Scene>
+
+        {/* CH 05 — BREATHER: curtain into the work */}
+        <Scene ch={5} tone="sc-ink" className="bloom">
+          <span className="bloom-wm" aria-hidden="true">Ahead of Market</span>
+          <div className="bloom-light" aria-hidden="true" />
+          <div className="scene-inner bloom-copy">
+            <Rise>
+              <span className="idx">Enough about us — here's what that looks like</span>
+              <div className="bloom-head">
+                <Kinetic sq segments={[{ t: 'Now, the ' }, { t: 'work', cls: 'gold' }]} />
+              </div>
             </Rise>
           </div>
         </Scene>
