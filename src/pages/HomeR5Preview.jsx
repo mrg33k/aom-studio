@@ -1,364 +1,487 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform, useInView, MotionConfig } from 'framer-motion';
 import LazyGumlet from '../components/home/LazyGumlet';
 import BrandMark from '../components/home/BrandMark';
 
-// Mounted at /r5 for review; promote to / when approved. Mission: corner:home-rebrand.
-// R7 — full scroll-story: each chapter is a centered full-height scene with a graphic,
-// revealing on scroll. By the portfolio you should feel you know AOM.
+// Mounted at /r5 for review; promote to / when approved. Mission: aheadofmarket.com:home (R9).
+// "The story is the site" — a cinematic chapter-scroll on the AOM editorial system:
+// obsidian + ivory + one champagne-gold accent, Bricolage UPPERCASE display, square
+// corners, hairline rules, flat surfaces. Copy is Patrik's R5 narrative, verbatim.
 
-const TICKER = ["Skylar","PA'LA","Ambition Mechanical","ISA Energy","Brandon Wiley","Space Rising","Included Health","Intelliplay","Valor to Victory","Kohrs"];
+const TICKER = ["Skylar", "PA'LA", 'Ambition Mechanical', 'ISA Energy', 'Brandon Wiley', 'Space Rising', 'Included Health', 'Intelliplay', 'Valor to Victory', 'Kohrs'];
 
 const STORIES = [
-  { client:'ISA Energy', tag:'Energy · Film', motif:'film',
-    big:'3', bigLabel:'video series — live in investor meetings',
-    headline:`A three-video series, now in every investor meeting`,
-    body:`We launched a three-video series with the ISA team — a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
-    stat:`Helped raise a substantial round.` },
-  { client:'Space Rising', tag:'Tech · Platform', motif:'grid',
-    big:'1,000+', bigLabel:'in one room at Space Congress',
-    headline:`SpaceOS — and 1,000 people in one room`,
-    body:`We built SpaceOS, their platform for the space industry to gather online with shared resources and insider information. Then we ran heavy sprints to get them ready for big moments like Space Congress.`,
-    stat:`Drove a wave of traffic to the new platform.` },
-  { client:'Included Health', tag:'Healthcare · Film', motif:'film',
-    big:'Top-5', bigLabel:'US insurer — films for their Inspire Summit',
-    headline:`Films for one of the largest insurers in the US`,
-    body:`We finished a series of videos for Included Health — one of the largest insurance providers in the country — and were proud to work alongside them at their Inspire Summit.`,
-    stat:`Produced for the Inspire Summit.` },
-  { client:'Ambition Mechanical', tag:'Trades · Web + Ads', motif:'chart',
-    big:'4 / mo', bigLabel:'organic leads from the new site alone',
-    headline:`Four solid leads a month, organically`,
-    body:`We've been running Ambition Mechanical's Google Ads — but the new website we built is already pulling in four solid leads a month on its own, organically, before the ad spend even counts.`,
-    stat:`Before paid spend even counts.` },
+  {
+    client: 'ISA Energy', tag: 'Energy · Film', media: 'slate',
+    big: '3', bigLabel: 'films in one series',
+    slate: { title: 'ISA ENERGY', roll: 'A THREE-FILM SERIES', scene: 'DEMO / VALIDATION / BRAND', take: 'LIVE IN INVESTOR MEETINGS' },
+    headline: 'A three-video series, now in every investor meeting',
+    body: `We launched a three-video series with the ISA team — a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
+    stat: 'Helped raise a substantial round.',
+  },
+  {
+    client: 'Space Rising', tag: 'Tech · Platform', media: 'site', src: '/hero-sites/space-rising.jpg',
+    big: '1,000+', bigLabel: 'in one room at Space Congress',
+    headline: 'SpaceOS — and 1,000 people in one room',
+    body: `We built SpaceOS, their platform for the space industry to gather online with shared resources and insider information. Then we ran heavy sprints to get them ready for big moments like Space Congress.`,
+    stat: 'Drove a wave of traffic to the new platform.',
+  },
+  {
+    client: 'Included Health', tag: 'Healthcare · Film', media: 'slate',
+    big: 'Top-5', bigLabel: 'US insurer — films for their Inspire Summit',
+    slate: { title: 'INCLUDED HEALTH', roll: 'A FILM SERIES', scene: 'FOR A TOP-5 US INSURER', take: 'SCREENED AT INSPIRE SUMMIT' },
+    headline: 'Films for one of the largest insurers in the US',
+    body: `We finished a series of videos for Included Health — one of the largest insurance providers in the country — and were proud to work alongside them at their Inspire Summit.`,
+    stat: 'Produced for the Inspire Summit.',
+  },
+  {
+    client: 'Ambition Mechanical', tag: 'Trades · Web + Ads', media: 'site', src: '/hero-sites/ambition.jpg',
+    big: '4 / mo', bigLabel: 'organic leads from the new site alone',
+    headline: 'Four solid leads a month, organically',
+    body: `We've been running Ambition Mechanical's Google Ads — but the new website we built is already pulling in four solid leads a month on its own, organically, before the ad spend even counts.`,
+    stat: 'Before paid spend even counts.',
+  },
 ];
 
 const PORTFOLIO = [
-  { t:"Lagos White Party",   id:'698a596eaec3d4e420c22a9a', tag:'Event' },
-  { t:"Lagos Recap",         id:'698a5946873071aec5c96163', tag:'Event' },
-  { t:"Nook 10 Year",        id:'698a5a8b873071aec5c99c6f', tag:'Brand' },
-  { t:"PA'LA x HARUMI",      id:'698a5391fc23d3d76fa7306c', tag:'Brand' },
-  { t:"Journey to Gary Vee", id:'698a6296fc23d3d76fa8d992', tag:'Doc'   },
-  { t:"Noble Real Estate",   id:'698a5b86fc23d3d76fa82ece', tag:'Brand' },
-  { t:"Virtu Hospitality",   id:'698a5ef5fc23d3d76fa87ef4', tag:'Brand' },
-  { t:"United Food Bank",    id:'698a5fcdfc23d3d76fa893b8', tag:'Nonprofit' },
-  { t:"Abstrakt",            id:'698a5faffc23d3d76fa8909f', tag:'Brand' },
-  { t:"Intelliplay",         id:'698a5386aec3d4e420c17a69', tag:'Tech'  },
-  { t:"Memorial Towers",     id:'698a584faec3d4e420c20fef', tag:'Real Estate' },
-  { t:"Refined Gardens",     id:'698a57fb873071aec5c94350', tag:'Brand' },
+  { t: 'Lagos White Party', id: '698a596eaec3d4e420c22a9a', tag: 'Event', v: true },
+  { t: 'Lagos Recap', id: '698a5946873071aec5c96163', tag: 'Event', v: true },
+  { t: 'Nook 10 Year', id: '698a5a8b873071aec5c99c6f', tag: 'Brand', v: true },
+  { t: "PA'LA x HARUMI", id: '698a5391fc23d3d76fa7306c', tag: 'Brand', v: true },
+  { t: 'Journey to Gary Vee', id: '698a6296fc23d3d76fa8d992', tag: 'Doc' },
+  { t: 'Noble Real Estate', id: '698a5b86fc23d3d76fa82ece', tag: 'Brand' },
+  { t: 'Virtu Hospitality', id: '698a5ef5fc23d3d76fa87ef4', tag: 'Brand' },
+  { t: 'United Food Bank', id: '698a5fcdfc23d3d76fa893b8', tag: 'Nonprofit' },
+  { t: 'Abstrakt', id: '698a5faffc23d3d76fa8909f', tag: 'Brand' },
+  { t: 'Intelliplay', id: '698a5386aec3d4e420c17a69', tag: 'Tech' },
+  { t: 'Memorial Towers', id: '698a584faec3d4e420c20fef', tag: 'Real Estate' },
+  { t: 'Refined Gardens', id: '698a57fb873071aec5c94350', tag: 'Brand' },
 ];
 
 const VOICES = [
-  { q:'The video was a huge tool in recruiting our first 3 cohorts. Every sponsor meeting we played it. It did the selling for us.', n:'Brandon Clarke', c:'Startup AZ Foundation', m:'3 cohorts recruited' },
-  { q:'Before AOM we posted randomly. Now we have a repeatable system — the content actually brings people in.', n:'Sumit Seth', c:'Naamly SaaS', m:'Repeatable content engine' },
-  { q:'They did not just shoot beautiful footage. They understood who we are and made sure every frame said it.', n:'Gio Osso', c:'Virtu Hospitality Group', m:'Brand story on screen' },
+  { q: 'The video was a huge tool in recruiting our first 3 cohorts. Every sponsor meeting we played it. It did the selling for us.', n: 'Brandon Clarke', c: 'Startup AZ Foundation', m: '3 cohorts recruited' },
+  { q: 'Before AOM we posted randomly. Now we have a repeatable system — the content actually brings people in.', n: 'Sumit Seth', c: 'Naamly SaaS', m: 'Repeatable content engine' },
+  { q: 'They did not just shoot beautiful footage. They understood who we are and made sure every frame said it.', n: 'Gio Osso', c: 'Virtu Hospitality Group', m: 'Brand story on screen' },
 ];
 
+const CHAPTERS = ['The hook', 'Who we are', 'What we do', 'The billboard', 'The team', 'The work', 'Voices', 'The conversation'];
+
+const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee — strongest horizontal doc footage
+
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
+const poster = id => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto`;
+
+// ─── CSS ──────────────────────────────────────────────────────────────────────
+
+const CSS = `
+.r9 {
+  --ink:#0B0B0B; --ink-800:#141412; --ink-700:#26261F; --ink-500:#6E6E66;
+  --paper:#F6F6F4; --paper-alt:#EFEEE9; --line:#DCD9D2; --line-dark:rgba(246,246,244,.14);
+  --stone:#A8A49C; --gold:#C4A46A; --gold-deep:#A8884C;
+  --dp:'Bricolage Grotesque',system-ui,Helvetica,Arial,sans-serif;
+  --tx:'Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;
+  --pad:clamp(1.5rem,5vw,4.5rem);
+  font-family:var(--tx); color:var(--ink); background:var(--ink);
+  font-size:16px; line-height:1.6;
+}
+.r9 *, .r9 *::before, .r9 *::after { box-sizing:border-box; margin:0; padding:0; }
+.r9 a { color:inherit; text-decoration:none; }
+.r9 button { font:inherit; cursor:pointer; border:none; background:none; }
+.r9 img { display:block; max-width:100%; }
+.r9 .gold { color:var(--gold); }
+
+/* the signature: square gold period block */
+.r9 .sq { display:inline-block; width:.13em; height:.13em; background:var(--gold); margin-left:.07em; }
+
+/* display type — always uppercase */
+.r9 .dp { font-family:var(--dp); text-transform:uppercase; letter-spacing:-.01em; font-weight:800; line-height:.98; }
+
+/* boxed label */
+.r9 .boxed {
+  display:inline-block; border:1px solid currentColor; padding:.45em .8em;
+  font-family:var(--tx); font-size:.68rem; font-weight:600;
+  letter-spacing:.18em; text-transform:uppercase;
+}
+
+/* small index label */
+.r9 .idx { font-family:var(--tx); font-size:.68rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--stone); }
+
+/* hairline */
+.r9 .rule { border:0; border-top:1px solid var(--line); }
+.r9 .on-dark .rule { border-top-color:var(--line-dark); }
+
+/* buttons — square, flat */
+.r9 .btn-gold {
+  display:inline-block; background:var(--gold); color:var(--ink); white-space:nowrap;
+  font-family:var(--tx); font-size:.8rem; font-weight:700;
+  letter-spacing:.1em; text-transform:uppercase; padding:1rem 1.75rem;
+  transition:background .18s;
+}
+.r9 .btn-gold:hover { background:var(--gold-deep); }
+.r9 .btn-ghost {
+  display:inline-block; border:1px solid var(--stone); color:var(--paper); white-space:nowrap;
+  font-family:var(--tx); font-size:.8rem; font-weight:600;
+  letter-spacing:.1em; text-transform:uppercase; padding:1rem 1.75rem;
+  transition:border-color .18s, color .18s;
+}
+.r9 .btn-ghost:hover { border-color:var(--paper); }
+.r9 .on-light .btn-ghost { border-color:var(--ink-700); color:var(--ink); }
+.r9 .on-light .btn-ghost:hover { border-color:var(--ink); }
+
+/* ─── NAV (masthead) ─── */
+.r9 .nav {
+  position:fixed; top:0; left:0; right:0; z-index:200;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 var(--pad); height:64px;
+  background:rgba(11,11,11,.86); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line-dark); color:var(--paper);
+}
+.r9 .nav-brand { display:flex; align-items:center; gap:.7rem; }
+.r9 .nav-mark { width:26px; height:26px; color:var(--paper); }
+.r9 .nav-name { font-family:var(--dp); font-size:.85rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; }
+.r9 .nav-links { display:flex; gap:2.25rem; }
+.r9 .nav-links a { font-size:.72rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--stone); transition:color .15s; }
+.r9 .nav-links a:hover { color:var(--paper); }
+.r9 .nav .btn-gold { padding:.7rem 1.25rem; }
+@media(max-width:720px){ .r9 .nav-links { display:none; } .r9 .nav { padding:0 1.25rem; } .r9 .nav .btn-gold { padding:.6rem 1rem; font-size:.68rem; } }
+@media(max-width:480px){ .r9 .nav-name { display:none; } }
+
+/* progress rail */
+.r9 .rail { position:fixed; top:0; left:0; height:2px; background:var(--gold); z-index:300; }
+
+/* chapter HUD */
+.r9 .hud {
+  position:fixed; left:var(--pad); bottom:2rem; z-index:150;
+  display:flex; align-items:center; gap:.75rem; pointer-events:none;
+  mix-blend-mode:difference; color:#fff;
+}
+.r9 .hud-n { font-family:var(--dp); font-size:.8rem; font-weight:800; letter-spacing:.08em; }
+.r9 .hud-bar { width:34px; height:1px; background:#fff; opacity:.5; }
+.r9 .hud-t { font-size:.66rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase; }
+@media(max-width:900px){ .r9 .hud { display:none; } }
+
+/* ─── SCENES ─── */
+.r9 .scene { position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:clamp(6rem,14vh,9rem) var(--pad); }
+.r9 .scene-inner { width:100%; max-width:1200px; margin-inline:auto; text-align:center; }
+.r9 .sc-ink { background:var(--ink); color:var(--paper); }
+.r9 .sc-dark { background:var(--ink-800); color:var(--paper); }
+.r9 .sc-paper { background:var(--paper); color:var(--ink); }
+.r9 .sc-alt { background:var(--paper-alt); color:var(--ink); }
+
+/* ─── HERO ─── */
+.r9 .hero { position:relative; min-height:100svh; display:flex; align-items:flex-end; overflow:hidden; background:var(--ink); color:var(--paper); }
+.r9 .hero-media { position:absolute; inset:0; }
+.r9 .hero-scrim { position:absolute; inset:0; background:rgba(11,11,11,.58); z-index:1; }
+.r9 .hero-inner { position:relative; z-index:2; width:100%; padding:9rem var(--pad) 7rem; }
+.r9 .hero-label { color:var(--stone); margin-bottom:2rem; }
+.r9 .hero-h { font-size:clamp(2.6rem,8.2vw,7.5rem); color:var(--paper); }
+.r9 .hero-h .row { display:block; }
+.r9 .hero-sub { display:flex; align-items:center; gap:1.25rem; margin-top:2.25rem; flex-wrap:wrap; }
+.r9 .hero-tags { font-size:.72rem; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--stone); }
+.r9 .hero-cta { display:flex; gap:1rem; margin-top:2.5rem; flex-wrap:wrap; }
+.r9 .hero-foot {
+  position:absolute; bottom:0; left:0; right:0; z-index:2;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:1.1rem var(--pad); border-top:1px solid var(--line-dark);
+  font-size:.66rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--stone);
+}
+.r9 .hero-foot .blink { animation:r9bob 2.4s ease-in-out infinite; display:inline-block; }
+@keyframes r9bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+
+/* word-stagger kinetic type */
+.r9 .kin { display:inline; }
+.r9 .kin .w { display:inline-block; overflow:hidden; vertical-align:bottom; }
+.r9 .kin .wi { display:inline-block; will-change:transform; }
+
+/* ─── TICKER ─── */
+.r9 .ticker { overflow:hidden; background:var(--ink); border-top:1px solid var(--line-dark); border-bottom:1px solid var(--line-dark); }
+.r9 .ticker-row { display:flex; align-items:center; width:max-content; padding:1rem 0; animation:r9tick 32s linear infinite; white-space:nowrap; }
+.r9 .ticker-item { font-family:var(--dp); font-size:.78rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--stone); padding:0 1.6rem; }
+.r9 .ticker-sq { width:5px; height:5px; background:var(--gold); flex:none; }
+@keyframes r9tick { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* ─── IDENTITY BEATS ─── */
+.r9 .beat-eyebrow { display:block; font-size:.7rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--stone); margin-bottom:2.5rem; }
+.r9 .glyph { width:clamp(52px,8vw,80px); height:clamp(52px,8vw,80px); color:var(--gold); margin:0 auto 2.75rem; display:block; }
+.r9 .statement { font-family:var(--dp); text-transform:uppercase; font-weight:800; letter-spacing:-.01em; line-height:1.04; font-size:clamp(1.9rem,5.6vw,4.2rem); color:var(--paper); max-width:20ch; margin-inline:auto; }
+.r9 .statement .dim { color:var(--stone); }
+.r9 .neither-w { position:relative; display:inline-block; }
+.r9 .neither-line { position:absolute; left:-.06em; right:-.06em; top:52%; height:.06em; background:var(--gold); transform-origin:left center; }
+.r9 .payoff { font-size:clamp(2.3rem,7.4vw,6rem); max-width:16ch; }
+.r9 .payoff-tail { font-family:var(--tx); font-size:clamp(1rem,2vw,1.25rem); color:var(--stone); margin-top:2rem; text-transform:none; letter-spacing:0; font-weight:400; line-height:1.7; }
+.r9 .scene-mark { width:clamp(60px,9vw,96px); height:auto; margin:0 auto 2.75rem; display:block; color:var(--paper); }
+
+/* ─── TWO PARTS (ledger) ─── */
+.r9 .sec-head { font-family:var(--dp); text-transform:uppercase; font-size:clamp(2rem,5.2vw,4rem); font-weight:800; letter-spacing:-.01em; line-height:1.02; margin:1.25rem 0 0; }
+.r9 .ledger { display:grid; grid-template-columns:1fr 1fr; border:1px solid var(--line); border-bottom:none; margin-top:3.5rem; text-align:left; }
+.r9 .ledger-col { padding:clamp(1.75rem,4vw,3rem); border-bottom:1px solid var(--line); }
+.r9 .ledger-col:first-child { border-right:1px solid var(--line); }
+@media(max-width:720px){ .r9 .ledger { grid-template-columns:1fr; } .r9 .ledger-col:first-child { border-right:none; } }
+.r9 .ledger-n { font-family:var(--dp); font-size:.8rem; font-weight:800; letter-spacing:.1em; color:var(--gold-deep); margin-bottom:1.25rem; }
+.r9 .ledger-t { font-family:var(--dp); text-transform:uppercase; font-size:clamp(1.5rem,3vw,2.25rem); font-weight:800; letter-spacing:-.01em; margin-bottom:.4rem; }
+.r9 .ledger-d { font-size:.95rem; color:var(--ink-500); margin-bottom:1.75rem; }
+.r9 .ledger-list { list-style:none; }
+.r9 .ledger-list li { font-size:.95rem; color:var(--ink-700); padding:.8rem 0 .8rem 1.5rem; border-top:1px solid var(--line); position:relative; }
+.r9 .ledger-list li::before { content:''; position:absolute; left:0; top:1.45rem; width:6px; height:6px; background:var(--gold); }
+
+/* ─── BILLBOARD ─── */
+.r9 .bill-q { font-family:var(--dp); text-transform:uppercase; font-size:clamp(2rem,6vw,4.6rem); font-weight:800; letter-spacing:-.01em; line-height:1.04; color:var(--paper); max-width:18ch; margin-inline:auto; }
+.r9 .bill-body { font-size:clamp(1rem,1.9vw,1.2rem); color:var(--stone); line-height:1.8; max-width:58ch; margin:2.5rem auto 0; }
+.r9 .bill-body em { color:var(--gold); font-style:normal; font-weight:600; }
+
+/* ─── TEAM (stats strip) ─── */
+.r9 .stats { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); margin:3.5rem 0 2.5rem; text-align:left; }
+.r9 .stat { padding:clamp(1.75rem,3.5vw,2.75rem); border-right:1px solid var(--line); }
+.r9 .stat:last-child { border-right:none; }
+@media(max-width:720px){ .r9 .stats { grid-template-columns:1fr; } .r9 .stat { border-right:none; border-bottom:1px solid var(--line); } .r9 .stat:last-child { border-bottom:none; } }
+.r9 .stat-n { display:block; font-family:var(--dp); font-size:clamp(3rem,6.5vw,5.25rem); font-weight:800; letter-spacing:-.02em; line-height:1; }
+.r9 .stat-l { display:block; font-size:.82rem; color:var(--ink-500); margin-top:.9rem; line-height:1.5; letter-spacing:.04em; text-transform:uppercase; font-weight:600; }
+.r9 .team-note { font-size:1.05rem; color:var(--ink-500); max-width:62ch; line-height:1.8; margin-inline:auto; }
+
+/* ─── STORY PANELS ─── */
+.r9 .story { display:grid; grid-template-columns:1.05fr 1fr; gap:clamp(2.5rem,6vw,5.5rem); align-items:center; width:100%; max-width:1200px; margin-inline:auto; text-align:left; }
+.r9 .story.rev .story-media { order:2; }
+@media(max-width:880px){ .r9 .story { grid-template-columns:1fr; gap:2.5rem; } .r9 .story.rev .story-media { order:0; } }
+.r9 .story-media { position:relative; }
+.r9 .frame { position:relative; border:1px solid var(--line); background:var(--ink); overflow:hidden; }
+.r9 .frame-bar { display:flex; align-items:center; gap:.45rem; padding:.7rem 1rem; border-bottom:1px solid var(--line-dark); background:var(--ink-800); }
+.r9 .frame-dot { width:7px; height:7px; border:1px solid var(--stone); }
+.r9 .frame-url { margin-left:.6rem; font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--stone); font-weight:600; }
+.r9 .frame-shot { position:relative; aspect-ratio:16/10; overflow:hidden; }
+.r9 .frame-shot img { width:100%; height:100%; object-fit:cover; object-position:center; }
+/* film slate plate */
+.r9 .slate { position:relative; aspect-ratio:4/3; background:var(--ink); border:1px solid var(--line); padding:clamp(1.5rem,3vw,2.25rem); display:flex; flex-direction:column; color:var(--paper); }
+.r9 .slate-row { display:flex; justify-content:space-between; align-items:center; font-size:.62rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--stone); padding:.7rem 0; border-bottom:1px solid var(--line-dark); }
+.r9 .slate-row:first-child { border-top:1px solid var(--line-dark); }
+.r9 .slate-mid { flex:1; display:flex; flex-direction:column; justify-content:center; }
+.r9 .slate-big { font-family:var(--dp); text-transform:uppercase; font-size:clamp(3.4rem,8vw,6.5rem); font-weight:800; letter-spacing:-.02em; line-height:.95; }
+.r9 .slate-big-label { font-size:.8rem; color:var(--stone); margin-top:.9rem; max-width:26ch; line-height:1.55; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
+.r9 .slate-clap { position:absolute; top:0; left:0; right:0; height:10px; background:repeating-linear-gradient(-45deg, var(--gold) 0 14px, var(--ink) 14px 28px); }
+.r9 .story-idx { display:flex; align-items:center; gap:.9rem; margin-bottom:1.5rem; }
+.r9 .story-idx .bar { width:40px; height:1px; background:var(--gold); }
+.r9 .story-client { font-family:var(--dp); text-transform:uppercase; font-size:clamp(1.9rem,4vw,3rem); font-weight:800; letter-spacing:-.01em; line-height:1; margin-bottom:1rem; }
+.r9 .story-head { font-family:var(--tx); font-size:1.05rem; font-weight:700; color:var(--gold-deep); line-height:1.5; margin-bottom:1.1rem; }
+.r9 .story-body { font-size:1.02rem; color:var(--ink-500); line-height:1.85; margin-bottom:1.5rem; }
+.r9 .story-stat { display:inline-block; font-size:.78rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink); border:1px solid var(--line); border-left:4px solid var(--gold); padding:.8rem 1.1rem; }
+
+/* ─── VOICES ─── */
+.r9 .voices { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); margin-top:3.5rem; text-align:left; }
+.r9 .voice { padding:clamp(1.75rem,3vw,2.5rem); border-right:1px solid var(--line); display:flex; flex-direction:column; gap:1.75rem; background:var(--paper); }
+.r9 .voice:last-child { border-right:none; }
+@media(max-width:880px){ .r9 .voices { grid-template-columns:1fr; } .r9 .voice { border-right:none; border-bottom:1px solid var(--line); } .r9 .voice:last-child { border-bottom:none; } }
+.r9 .voice-mark { font-family:var(--dp); font-size:2.5rem; font-weight:800; color:var(--gold); line-height:.6; }
+.r9 .voice-q { font-size:.98rem; color:var(--ink-700); line-height:1.8; flex:1; }
+.r9 .voice-m { font-size:.66rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-deep); margin-bottom:.6rem; }
+.r9 .voice-n b { display:block; font-size:.88rem; font-weight:700; color:var(--ink); }
+.r9 .voice-n span { font-size:.8rem; color:var(--ink-500); }
+
+/* ─── CTA ─── */
+.r9 .cta { position:relative; overflow:hidden; }
+.r9 .cta-wm { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:clamp(200px,42vw,440px); opacity:.05; pointer-events:none; color:var(--paper); }
+.r9 .cta-head { font-family:var(--dp); text-transform:uppercase; font-size:clamp(2.4rem,7vw,5.5rem); font-weight:800; letter-spacing:-.01em; line-height:1; color:var(--paper); margin:1.5rem 0 1.75rem; }
+.r9 .cta-body { font-size:1.05rem; color:var(--stone); line-height:1.8; max-width:46ch; margin:0 auto 2.75rem; }
+.r9 .cta-row { display:flex; gap:1.5rem; align-items:center; justify-content:center; flex-wrap:wrap; }
+.r9 .cta-note { font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--stone); font-weight:600; }
+
+/* ─── PORTFOLIO WALL ─── */
+.r9 .work { padding:clamp(5rem,10vw,9rem) var(--pad); background:var(--paper); }
+.r9 .work-inner { max-width:1280px; margin-inline:auto; }
+.r9 .work-head-row { display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:1rem; }
+.r9 .work-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); margin-top:2.75rem; }
+@media(max-width:1000px){ .r9 .work-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:560px){ .r9 .work-grid { grid-template-columns:1fr; } }
+.r9 .vcard { position:relative; aspect-ratio:16/9; overflow:hidden; cursor:pointer; background:var(--ink-800); }
+.r9 .vcard-v { aspect-ratio:9/16; }
+.r9 .vposter { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform .6s cubic-bezier(.22,1,.36,1); }
+.r9 .vcard:hover .vposter { transform:scale(1.045); }
+.r9 .reels-head { display:flex; align-items:center; gap:1rem; margin:2.75rem 0 1.25rem; }
+.r9 .reels-head .bar { flex:1; height:1px; background:var(--line); }
+.r9 .reels-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); }
+@media(max-width:1000px){ .r9 .reels-grid { grid-template-columns:repeat(2,1fr); } }
+.r9 .vcthumb { position:absolute; inset:0; }
+.r9 .vshade { position:absolute; inset:0; background:rgba(11,11,11,.32); z-index:1; transition:background .25s; }
+.r9 .vcard:hover .vshade { background:rgba(11,11,11,.05); }
+.r9 .vcap { position:absolute; bottom:0; left:0; right:0; padding:.8rem 1rem; z-index:2; display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; background:rgba(11,11,11,.55); }
+.r9 .vcap .nm { font-family:var(--dp); text-transform:uppercase; font-size:.72rem; font-weight:700; letter-spacing:.06em; color:#fff; }
+.r9 .vcap .tg { font-size:.6rem; letter-spacing:.16em; text-transform:uppercase; color:var(--stone); font-weight:600; }
+.r9 .vpl { position:absolute; top:1rem; right:1rem; z-index:2; font-size:.6rem; letter-spacing:.18em; text-transform:uppercase; color:#fff; border:1px solid rgba(255,255,255,.4); padding:.4rem .7rem; opacity:0; transition:opacity .2s; }
+.r9 .vcard:hover .vpl { opacity:1; }
+
+/* ─── FOOTER ─── */
+.r9 .foot { padding:3.5rem var(--pad) 2.5rem; background:var(--ink); color:var(--paper); border-top:1px solid var(--line-dark); }
+.r9 .foot-inner { max-width:1280px; margin-inline:auto; }
+.r9 .foot-top { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:2rem; margin-bottom:2.75rem; }
+.r9 .foot-brand { display:flex; align-items:center; gap:.7rem; color:var(--stone); }
+.r9 .foot-mark { width:24px; height:24px; color:var(--paper); }
+.r9 .foot-links { display:flex; flex-wrap:wrap; gap:1.75rem; }
+.r9 .foot-links a { font-size:.7rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--stone); transition:color .15s; }
+.r9 .foot-links a:hover { color:var(--paper); }
+.r9 .foot-base { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding-top:2rem; border-top:1px solid var(--line-dark); }
+.r9 .foot-sig { font-family:var(--dp); text-transform:uppercase; font-size:.8rem; font-weight:800; letter-spacing:.04em; color:var(--stone); }
+.r9 .foot-copy { font-size:.7rem; color:var(--ink-500); }
+
+/* ─── MODAL ─── */
+.r9 .modal { position:fixed; inset:0; z-index:900; background:rgba(11,11,11,.92); display:flex; align-items:center; justify-content:center; padding:1rem; }
+.r9 .modal-box { width:100%; max-width:960px; background:var(--ink-800); border:1px solid var(--line-dark); }
+.r9 .modal-box.portrait { max-width:min(400px, 92vw); }
+.r9 .modal-head { display:flex; align-items:center; justify-content:space-between; padding:.9rem 1.25rem; border-bottom:1px solid var(--line-dark); }
+.r9 .modal-head span { font-family:var(--dp); text-transform:uppercase; font-size:.78rem; font-weight:700; letter-spacing:.06em; color:var(--paper); }
+.r9 .modal-head button { font-size:1.5rem; line-height:1; color:var(--stone); width:32px; height:32px; display:flex; align-items:center; justify-content:center; transition:color .15s; }
+.r9 .modal-head button:hover { color:var(--paper); }
+.r9 .modal-vid { position:relative; aspect-ratio:16/9; }
+.r9 .modal-box.portrait .modal-vid { aspect-ratio:9/16; max-height:80vh; margin-inline:auto; }
+.r9 .modal-vid iframe { position:absolute; inset:0; width:100%; height:100%; border:none; }
+
+@media(prefers-reduced-motion: reduce){
+  .r9 .ticker-row, .r9 .hero-foot .blink { animation:none; }
+}
+`;
+
+// ─── MOTION PRIMITIVES ────────────────────────────────────────────────────────
+
+const EASE = [0.22, 1, 0.36, 1];
+
+/** Word-by-word kinetic reveal. Pass an array of segments: {t, cls}.
+ *  The in-view trigger lives on the PARENT — the clipped word spans are 0%-visible
+ *  by definition (overflow:hidden + translate), so observing them would deadlock. */
+function Kinetic({ segments, className = '', delay = 0, sq = false, ...rest }) {
+  let wi = 0;
+  const total = segments.reduce((n, seg) => n + seg.t.split(' ').filter(Boolean).length, 0);
+  return (
+    <motion.span
+      className={'kin ' + className}
+      initial="hide"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.3 }}
+      {...rest}
+    >
+      {segments.map((seg, si) =>
+        seg.t.split(' ').map((word, i, arr) => {
+          if (!word) return null;
+          const d = delay + wi++ * 0.05;
+          return (
+            <span className="w" key={si + '-' + i}>
+              <motion.span
+                className={'wi ' + (seg.cls || '')}
+                variants={{ hide: { y: '110%' }, show: { y: 0, transition: { duration: 0.7, ease: EASE, delay: d } } }}
+              >
+                {word}
+                {sq && wi === total ? <span className="sq" /> : null}
+                {i < arr.length - 1 ? '\u00A0' : ''}
+              </motion.span>
+            </span>
+          );
+        })
+      )}
+    </motion.span>
+  );
+}
+
+/** Plain text with the gold square period bonded to the last word (no orphan wrap). */
+function SqText({ text }) {
+  const words = text.split(' ');
+  const last = words.pop();
+  return (
+    <>
+      {words.length ? words.join(' ') + ' ' : ''}
+      <span style={{ whiteSpace: 'nowrap' }}>{last}<span className="sq" /></span>
+    </>
+  );
+}
+
+/** Simple fade/rise reveal */
+function Rise({ children, delay = 0, y = 36, className = '', ...rest }) {
+  return (
+    <motion.div
+      className={className}
+      initial={{ opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.3 }}
+      transition={{ duration: 0.85, ease: EASE, delay }}
+      {...rest}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+/** Count-up number, honors non-numeric metrics by revealing them instead */
+function Counter({ value, className = '' }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, amount: 0.7 });
+  const [txt, setTxt] = useState('0');
+  const m = String(value).match(/^([\d,]+)(.*)$/);
+
+  useEffect(() => {
+    if (!inView) return;
+    if (!m) { setTxt(String(value)); return; }
+    const target = parseInt(m[1].replace(/,/g, ''), 10);
+    const suffix = m[2] || '';
+    const t0 = performance.now(), dur = 1300;
+    let raf;
+    const step = now => {
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      const n = Math.round(target * eased);
+      setTxt(n.toLocaleString('en-US') + suffix);
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [inView]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <span ref={ref} className={className}>{m ? txt : value}</span>;
+}
+
+/** Scroll parallax on a media block */
+function Parallax({ children, amount = 40, className = '' }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const y = useTransform(scrollYProgress, [0, 1], [amount, -amount]);
+  return (
+    <motion.div ref={ref} style={{ y }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
 
 // ─── GLYPHS ───────────────────────────────────────────────────────────────────
 
 const GlyphFilm = () => (
   <svg viewBox="0 0 64 64" className="glyph" aria-hidden="true">
-    <rect x="7" y="14" width="50" height="36" rx="4" fill="none" stroke="currentColor" strokeWidth="2.5"/>
-    <path d="M27 25 L42 32 L27 39 Z" fill="currentColor"/>
+    <rect x="7" y="14" width="50" height="36" fill="none" stroke="currentColor" strokeWidth="2" />
+    <line x1="16" y1="14" x2="16" y2="50" stroke="currentColor" strokeWidth="2" />
+    <line x1="48" y1="14" x2="48" y2="50" stroke="currentColor" strokeWidth="2" />
+    <path d="M28 26 L40 32 L28 38 Z" fill="currentColor" />
   </svg>
 );
 const GlyphWeb = () => (
   <svg viewBox="0 0 64 64" className="glyph" aria-hidden="true">
-    <rect x="7" y="12" width="50" height="40" rx="4" fill="none" stroke="currentColor" strokeWidth="2.5"/>
-    <line x1="7" y1="23" x2="57" y2="23" stroke="currentColor" strokeWidth="2.5"/>
-    <circle cx="14" cy="17.5" r="1.7" fill="currentColor"/><circle cx="21" cy="17.5" r="1.7" fill="currentColor"/>
-    <path d="M24 41 l-7 -6 l7 -6 M40 41 l7 -6 l-7 -6" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>
-  </svg>
-);
-const GlyphNeither = () => (
-  <svg viewBox="0 0 64 64" className="glyph" aria-hidden="true">
-    <circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" strokeWidth="2.5"/>
-    <line x1="16.5" y1="16.5" x2="47.5" y2="47.5" stroke="currentColor" strokeWidth="2.5"/>
+    <rect x="7" y="12" width="50" height="40" fill="none" stroke="currentColor" strokeWidth="2" />
+    <line x1="7" y1="22" x2="57" y2="22" stroke="currentColor" strokeWidth="2" />
+    <rect x="12" y="16" width="3" height="3" fill="currentColor" /><rect x="18" y="16" width="3" height="3" fill="currentColor" />
+    <path d="M24 41 l-7 -6 l7 -6 M40 41 l7 -6 l-7 -6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="miter" />
   </svg>
 );
 const GlyphBillboard = () => (
   <svg viewBox="0 0 64 64" className="glyph" aria-hidden="true">
-    <rect x="7" y="11" width="50" height="29" rx="2.5" fill="none" stroke="currentColor" strokeWidth="2.5"/>
-    <line x1="20" y1="40" x2="20" y2="55" stroke="currentColor" strokeWidth="2.5"/>
-    <line x1="44" y1="40" x2="44" y2="55" stroke="currentColor" strokeWidth="2.5"/>
+    <rect x="7" y="11" width="50" height="29" fill="none" stroke="currentColor" strokeWidth="2" />
+    <line x1="20" y1="40" x2="20" y2="55" stroke="currentColor" strokeWidth="2" />
+    <line x1="44" y1="40" x2="44" y2="55" stroke="currentColor" strokeWidth="2" />
+    <rect x="14" y="18" width="24" height="4" fill="currentColor" />
+    <rect x="14" y="26" width="14" height="4" fill="currentColor" opacity=".5" />
   </svg>
 );
 
-// ─── CSS ──────────────────────────────────────────────────────────────────────
+// ─── SCENE WRAPPER (registers with chapter HUD) ──────────────────────────────
 
-const CSS = `
-/* tokens */
-.r5 {
-  --ink:#0B0B0B; --ink-800:#161614; --ink-700:#2A2A28; --ink-500:#6E6E66;
-  --ink-300:#A8A49C; --paper:#F6F6F4; --paper-alt:#EEEDE8; --line:#DCD9D2;
-  --stone:#B6B2AB; --gold:#C4A46A; --gold-deep:#A8884C;
-  --dp:'Bricolage Grotesque',system-ui,Helvetica,Arial,sans-serif;
-  --tx:'Schibsted Grotesk',system-ui,Helvetica,Arial,sans-serif;
-  --w:min(1200px,calc(100vw - clamp(3rem,8vw,8rem)));
-  font-family:var(--tx); color:var(--ink); background:var(--paper);
-  font-size:16px; line-height:1.6;
-}
-.r5 *, .r5 *::before, .r5 *::after { box-sizing:border-box; margin:0; padding:0; }
-.r5 a { color:inherit; text-decoration:none; }
-.r5 button { font:inherit; cursor:pointer; border:none; background:none; }
-.r5 .wrap { width:var(--w); margin-inline:auto; }
-.r5 .gold { color:var(--gold); }
-.r5 .eyebrow {
-  display:inline-flex; align-items:center; gap:.5em;
-  font-family:var(--tx); font-size:.75rem; font-weight:600;
-  letter-spacing:.12em; text-transform:uppercase; color:var(--ink-500);
-  margin-bottom:1rem;
-}
-.r5 .eyebrow::before { content:''; display:inline-block; width:18px; height:1px; background:var(--gold); }
-.r5 .sec-head {
-  font-family:var(--dp); font-size:clamp(2rem,5vw,3.75rem);
-  font-weight:800; line-height:1.1; letter-spacing:-.025em;
-  color:var(--ink); margin-bottom:3rem;
-}
-
-/* buttons */
-.r5 .btn-gold {
-  display:inline-block; background:var(--gold); color:var(--ink-800);
-  font-family:var(--tx); font-size:.875rem; font-weight:700;
-  letter-spacing:.02em; padding:.75rem 1.5rem; border-radius:4px; transition:background .18s;
-}
-.r5 .btn-gold:hover { background:var(--gold-deep); }
-.r5 .btn-ghost {
-  display:inline-block; border:1.5px solid var(--ink-700); color:var(--ink-700);
-  font-family:var(--tx); font-size:.875rem; font-weight:600;
-  padding:.75rem 1.5rem; border-radius:4px; transition:border-color .18s;
-}
-.r5 .btn-ghost:hover { border-color:var(--ink); }
-.r5 .scene-dark .btn-ghost { border-color:var(--stone); color:var(--paper); }
-.r5 .scene-dark .btn-ghost:hover { border-color:var(--paper); }
-
-/* nav */
-.r5 .nav {
-  position:fixed; top:0; left:0; right:0; z-index:200;
-  display:flex; align-items:center; justify-content:space-between;
-  padding:0 clamp(1.5rem,5vw,4rem); height:60px;
-  background:rgba(246,246,244,.94); backdrop-filter:blur(12px); border-bottom:1px solid var(--line);
-}
-.r5 .nav-brand { display:flex; align-items:center; gap:.625rem; }
-.r5 .nav-mark { width:28px; height:28px; }
-.r5 .nav-name { font-family:var(--dp); font-size:.9rem; font-weight:700; letter-spacing:-.01em; }
-.r5 .nav-links { display:flex; gap:2rem; }
-.r5 .nav-links a { font-size:.875rem; color:var(--ink-500); transition:color .15s; }
-.r5 .nav-links a:hover { color:var(--ink); }
-@media(max-width:680px){ .r5 .nav-links { display:none; } }
-
-/* progress rail */
-.r5 .rail { position:fixed; top:0; left:0; height:2px; background:var(--gold); z-index:300; transition:width .1s linear; }
-
-/* reveal animation */
-.r5 .reveal {
-  opacity:0; transform:translateY(34px);
-  transition:opacity .8s cubic-bezier(.22,1,.36,1), transform .8s cubic-bezier(.22,1,.36,1);
-  will-change:opacity, transform;
-}
-.r5 .reveal.rvin { opacity:1; transform:none; }
-
-/* ─── SCENE SYSTEM ─── */
-.r5 .scene {
-  min-height:100vh; display:flex; flex-direction:column;
-  align-items:center; justify-content:center;
-  padding:clamp(6rem,14vh,9rem) clamp(1.5rem,5vw,4rem);
-  position:relative; text-align:center;
-}
-.r5 .scene-inner { width:var(--w); max-width:880px; margin-inline:auto; }
-.r5 .scene-light { background:var(--paper); }
-.r5 .scene-alt { background:var(--paper-alt); }
-.r5 .scene-dark { background:var(--ink-800); color:var(--paper); }
-.r5 .scene-ink  { background:var(--ink); color:var(--paper); }
-.r5 .scene-dark .eyebrow, .r5 .scene-ink .eyebrow { color:var(--stone); }
-.r5 .scene-dark .sec-head, .r5 .scene-ink .sec-head { color:var(--paper); }
-
-/* big centered statement line */
-.r5 .statement {
-  font-family:var(--dp); font-size:clamp(1.875rem,5.5vw,3.5rem);
-  font-weight:800; line-height:1.18; letter-spacing:-.025em; color:var(--paper);
-  max-width:16ch; margin-inline:auto;
-}
-.r5 .statement strong { color:var(--stone); font-weight:800; }
-.r5 .statement em { font-style:italic; color:var(--paper); }
-.r5 .statement.payoff { font-size:clamp(2.25rem,6.5vw,4.5rem); font-weight:900; max-width:14ch; }
-.r5 .statement.payoff .gold { color:var(--gold); }
-.r5 .scene-eyebrow {
-  display:block; font-size:.72rem; letter-spacing:.16em; text-transform:uppercase;
-  color:var(--stone); margin-bottom:2rem;
-}
-
-/* scene graphic */
-.r5 .glyph { width:clamp(56px,9vw,88px); height:clamp(56px,9vw,88px); color:var(--gold); margin:0 auto 2.5rem; display:block; }
-.r5 .scene-mark { width:clamp(64px,11vw,110px); height:auto; margin:0 auto 2.5rem; display:block; }
-.r5 .scene-step { display:block; font-family:var(--dp); font-size:.8rem; font-weight:700; letter-spacing:.2em; color:var(--gold-deep); margin-bottom:1.25rem; }
-.r5 .scene-dark .scene-step { color:var(--gold); }
-
-/* scroll hint */
-.r5 .hint {
-  position:absolute; bottom:2.25rem; left:50%; transform:translateX(-50%);
-  font-size:.72rem; letter-spacing:.08em; color:var(--stone); white-space:nowrap;
-  animation:hintbob 2.4s ease-in-out infinite;
-}
-@keyframes hintbob { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(7px)} }
-
-/* HOOK */
-.r5 .scene-hook {
-  background:var(--paper);
-  background-image:
-    linear-gradient(var(--line) 1px, transparent 1px),
-    linear-gradient(90deg,var(--line) 1px, transparent 1px);
-  background-size:48px 48px; background-position:center center;
-}
-.r5 .hook-head {
-  font-family:var(--dp); font-size:clamp(2.25rem,7vw,5.5rem);
-  font-weight:900; line-height:1.06; letter-spacing:-.03em; color:var(--ink); margin:1.25rem 0 1.5rem;
-}
-.r5 .hook-sub { font-size:.8125rem; letter-spacing:.14em; text-transform:uppercase; color:var(--stone); margin-bottom:2.5rem; }
-.r5 .hook-cta { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
-
-/* TICKER */
-.r5 .ticker { overflow:hidden; background:var(--ink-800); border-top:1px solid #1d1d1b; }
-.r5 .ticker-row { display:flex; align-items:center; width:max-content; padding:.75rem 0; animation:tickscroll 30s linear infinite; white-space:nowrap; }
-.r5 .ticker-item { font-size:.7rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--stone); padding:0 1.25rem; }
-.r5 .ticker-sep { color:var(--gold); font-size:.6rem; }
-@keyframes tickscroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
-
-/* TWO PARTS scene */
-.r5 .two-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-top:1rem; text-align:left; }
-@media(max-width:720px){ .r5 .two-grid { grid-template-columns:1fr; } }
-.r5 .two-card { background:var(--paper-alt); border:1px solid var(--line); padding:2.5rem; border-radius:6px; }
-.r5 .two-num { font-family:var(--dp); font-size:3.5rem; font-weight:900; color:var(--line); line-height:1; margin-bottom:.75rem; }
-.r5 .two-title { font-family:var(--dp); font-size:1.875rem; font-weight:800; letter-spacing:-.02em; margin-bottom:.5rem; }
-.r5 .two-desc { font-size:1rem; color:var(--ink-500); margin-bottom:1.25rem; }
-.r5 .two-list { list-style:none; display:flex; flex-direction:column; gap:.5rem; }
-.r5 .two-list li { font-size:.9375rem; color:var(--ink-700); padding-left:1.375rem; position:relative; }
-.r5 .two-list li::before { content:'→'; position:absolute; left:0; color:var(--gold); font-size:.8rem; top:.1em; }
-
-/* BILLBOARD scene */
-.r5 .billboard-q {
-  font-family:var(--dp); font-size:clamp(2rem,5.5vw,4rem);
-  font-weight:900; line-height:1.15; letter-spacing:-.025em; color:var(--paper); margin-bottom:2.25rem; max-width:18ch; margin-inline:auto;
-}
-.r5 .billboard-body { font-size:clamp(1rem,2vw,1.2rem); color:var(--stone); line-height:1.75; max-width:60ch; margin-inline:auto; }
-.r5 .billboard-body em { color:var(--gold); font-style:normal; font-weight:600; }
-
-/* WHO / stats scene */
-.r5 .who-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; margin:1rem 0 2.5rem; }
-@media(max-width:720px){ .r5 .who-stats { grid-template-columns:1fr; } }
-.r5 .who-stat { padding:2rem; background:var(--paper); border:1px solid var(--line); border-radius:4px; }
-.r5 .scene-alt .who-stat { background:var(--paper); }
-.r5 .stat-n { display:block; font-family:var(--dp); font-size:clamp(2.5rem,5vw,4rem); font-weight:900; color:var(--ink); letter-spacing:-.03em; line-height:1; margin-bottom:.5rem; }
-.r5 .stat-l { font-size:.875rem; color:var(--ink-500); line-height:1.45; }
-.r5 .who-note { font-size:1.0625rem; color:var(--ink-500); max-width:62ch; line-height:1.75; margin-inline:auto; }
-
-/* STORY scenes (media + copy) */
-.r5 .story-scene {
-  display:grid; grid-template-columns:1.05fr 1fr; gap:clamp(2rem,6vw,5rem);
-  align-items:center; width:var(--w); max-width:1100px; margin-inline:auto; text-align:left;
-}
-.r5 .story-scene.rev .story-media { order:2; }
-@media(max-width:860px){ .r5 .story-scene { grid-template-columns:1fr; gap:2.25rem; } .r5 .story-scene.rev .story-media { order:0; } }
-.r5 .plate {
-  position:relative; aspect-ratio:4/3; border-radius:10px; overflow:hidden;
-  background:linear-gradient(150deg,#1c1c1a 0%,var(--ink) 70%);
-  border:1px solid #26261f; display:flex; flex-direction:column; justify-content:flex-end;
-  padding:clamp(1.5rem,3vw,2.5rem); box-shadow:0 24px 60px -28px rgba(0,0,0,.45);
-}
-.r5 .plate::before {
-  content:''; position:absolute; inset:0; opacity:.5;
-  background-image:radial-gradient(circle at 78% 22%, rgba(196,164,106,.22), transparent 55%);
-}
-.r5 .plate-motif { position:absolute; top:clamp(1.25rem,3vw,2rem); right:clamp(1.25rem,3vw,2rem); width:46px; height:46px; opacity:.5; }
-.r5 .plate-motif .glyph { width:46px; height:46px; margin:0; color:var(--gold); }
-.r5 .plate-tag { position:relative; font-size:.68rem; letter-spacing:.14em; text-transform:uppercase; color:var(--stone); margin-bottom:.65rem; }
-.r5 .plate-big { position:relative; font-family:var(--dp); font-size:clamp(2.75rem,6vw,4.5rem); font-weight:900; letter-spacing:-.03em; line-height:.95; color:var(--paper); }
-.r5 .plate-big-label { position:relative; font-size:.95rem; color:var(--stone); margin-top:.5rem; max-width:24ch; line-height:1.5; }
-.r5 .beat-tag { font-size:.6875rem; letter-spacing:.12em; text-transform:uppercase; color:var(--stone); display:block; margin-bottom:.6rem; }
-.r5 .beat-client { font-family:var(--dp); font-size:clamp(1.75rem,3.5vw,2.5rem); font-weight:800; letter-spacing:-.02em; line-height:1.05; margin-bottom:.75rem; }
-.r5 .beat-head { font-family:var(--dp); font-size:1.0625rem; font-weight:700; color:var(--gold-deep); line-height:1.35; margin-bottom:1rem; }
-.r5 .beat-body { font-size:1.0625rem; color:var(--ink-500); line-height:1.8; margin-bottom:1.25rem; }
-.r5 .beat-stat { display:inline-block; font-size:.875rem; font-weight:600; color:var(--gold-deep); background:rgba(196,164,106,.1); padding:.625rem .875rem; border-radius:3px; border-left:2px solid var(--gold); }
-
-/* VOICES scene */
-.r5 .voices-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1.5rem; margin-top:1rem; text-align:left; }
-@media(max-width:900px){ .r5 .voices-grid { grid-template-columns:1fr; } }
-.r5 .voice-card { background:var(--paper); border:1px solid var(--line); padding:2rem; border-radius:4px; display:flex; flex-direction:column; justify-content:space-between; gap:1.5rem; }
-.r5 .voice-q { font-size:.9375rem; color:var(--ink-700); line-height:1.75; font-style:italic; flex:1; }
-.r5 .voice-stat { font-size:.6875rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--gold-deep); margin-bottom:.5rem; }
-.r5 .voice-who b { display:block; font-size:.875rem; font-weight:700; color:var(--ink); }
-.r5 .voice-who span { font-size:.8125rem; color:var(--ink-500); }
-
-/* CTA scene */
-.r5 .scene-cta { background:var(--ink-800); overflow:hidden; }
-.r5 .cta-wm { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:clamp(180px,38vw,380px); opacity:.04; pointer-events:none; }
-.r5 .cta-inner { position:relative; z-index:1; max-width:620px; margin-inline:auto; }
-.r5 .cta-head { font-family:var(--dp); font-size:clamp(2.25rem,6vw,4.25rem); font-weight:900; line-height:1.1; letter-spacing:-.03em; color:var(--paper); margin:1rem 0 1.5rem; }
-.r5 .cta-body { font-size:1.0625rem; color:var(--stone); line-height:1.75; margin-bottom:2.5rem; }
-.r5 .cta-row { display:flex; gap:1.5rem; align-items:center; justify-content:center; flex-wrap:wrap; }
-.r5 .cta-note { font-size:.8125rem; color:var(--stone); }
-.r5 .scene-cta .eyebrow { color:var(--gold); }
-
-/* PORTFOLIO (closing reel — normal block, not forced full-height) */
-.r5 .ch-work { padding:clamp(5rem,10vw,9rem) 0; background:var(--paper); text-align:center; }
-.r5 .work-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-top:2.5rem; }
-@media(max-width:1000px){ .r5 .work-grid { grid-template-columns:repeat(3,1fr); } }
-@media(max-width:640px) { .r5 .work-grid { grid-template-columns:repeat(2,1fr); } }
-.r5 .vcard { position:relative; aspect-ratio:16/9; overflow:hidden; cursor:pointer; background:var(--ink-800); border-radius:4px; }
-.r5 .vcthumb { position:absolute; inset:0; width:100%; height:100%; }
-.r5 .vshade { position:absolute; inset:0; background:linear-gradient(to top,rgba(0,0,0,.7) 0%,transparent 60%); z-index:1; }
-.r5 .vpl { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); z-index:2; width:40px; height:40px; border-radius:50%; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; font-size:1.125rem; color:#fff; opacity:0; transition:opacity .2s; }
-.r5 .vcard:hover .vpl { opacity:1; }
-.r5 .vcap { position:absolute; bottom:0; left:0; right:0; padding:.75rem; z-index:2; text-align:left; }
-.r5 .vcap .nm { font-size:.8rem; font-weight:600; color:#fff; }
-.r5 .vcap .tg { font-size:.65rem; color:rgba(255,255,255,.55); }
-
-/* FOOTER */
-.r5 .foot { padding:3rem 0; background:var(--ink-800); border-top:1px solid #191917; }
-.r5 .foot-top { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:2rem; margin-bottom:2.5rem; }
-.r5 .foot-brand { display:flex; align-items:center; gap:.625rem; color:var(--stone); font-size:.875rem; }
-.r5 .foot-mark { width:24px; height:24px; }
-.r5 .foot-links { display:flex; flex-wrap:wrap; gap:1.5rem; }
-.r5 .foot-links a { font-size:.8125rem; color:var(--stone); transition:color .15s; }
-.r5 .foot-links a:hover { color:var(--paper); }
-.r5 .foot-base { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; padding-top:2rem; border-top:1px solid #191917; }
-.r5 .foot-sig { font-family:var(--dp); font-size:.875rem; color:var(--stone); }
-.r5 .foot-copy { font-size:.75rem; color:#383836; }
-
-/* MODAL */
-.r5 .modal { position:fixed; inset:0; z-index:900; background:rgba(11,11,11,.88); display:flex; align-items:center; justify-content:center; padding:1rem; }
-.r5 .modal-box { width:100%; max-width:920px; background:var(--ink-800); border-radius:8px; overflow:hidden; }
-.r5 .modal-head { display:flex; align-items:center; justify-content:space-between; padding:.875rem 1.25rem; border-bottom:1px solid #1d1d1b; }
-.r5 .modal-head span { font-size:.875rem; color:var(--stone); }
-.r5 .modal-head button { font-size:1.625rem; line-height:1; color:var(--stone); width:32px; height:32px; display:flex; align-items:center; justify-content:center; transition:color .15s; }
-.r5 .modal-head button:hover { color:var(--paper); }
-.r5 .modal-vid { position:relative; aspect-ratio:16/9; }
-.r5 .modal-vid iframe { position:absolute; inset:0; width:100%; height:100%; border:none; }
-
-@media(prefers-reduced-motion: reduce){
-  .r5 .reveal { opacity:1; transform:none; transition:none; }
-  .r5 .ticker-row, .r5 .hint { animation:none; }
-}
-`;
-
-// ─── REVEAL HELPER ────────────────────────────────────────────────────────────
-
-function Reveal({ children, delay = 0, className = '', as: Tag = 'div', ...rest }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        el.style.transitionDelay = delay + 'ms';
-        el.classList.add('rvin');
-        io.disconnect();
-      }
-    }, { threshold: 0.12, rootMargin: '0px 0px -12% 0px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [delay]);
-  return <Tag ref={ref} className={'reveal ' + className} {...rest}>{children}</Tag>;
+function Scene({ ch, tone = 'sc-ink', className = '', children, id, style }) {
+  const dark = tone === 'sc-ink' || tone === 'sc-dark';
+  return (
+    <section id={id} data-ch={ch} className={`scene ${tone} ${dark ? 'on-dark' : 'on-light'} ${className}`} style={style}>
+      {children}
+    </section>
+  );
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
@@ -366,7 +489,9 @@ function Reveal({ children, delay = 0, className = '', as: Tag = 'div', ...rest 
 export default function HomeR5Preview() {
   const [video, setVideo] = useState(null);
   const [prog, setProg] = useState(0);
+  const [ch, setCh] = useState(0);
 
+  // scroll progress + lenis
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const onScroll = () => {
@@ -395,295 +520,439 @@ export default function HomeR5Preview() {
     };
   }, []);
 
+  // chapter HUD — watch the center band of the viewport
+  useEffect(() => {
+    const els = Array.from(document.querySelectorAll('.r9 [data-ch]'));
+    if (!els.length || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(
+      entries => {
+        entries.forEach(e => { if (e.isIntersecting) setCh(Number(e.target.dataset.ch)); });
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0 }
+    );
+    els.forEach(el => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  // lock body scroll under modal
+  useEffect(() => {
+    document.body.style.overflow = video ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [video]);
+
   return (
-    <div className="r5">
-      <style>{CSS}</style>
-      <div className="rail" style={{ width: prog + '%' }} />
+    <MotionConfig reducedMotion="user">
+      <div className="r9">
+        <style>{CSS}</style>
+        <div className="rail" style={{ width: prog + '%' }} />
 
-      {/* NAV */}
-      <nav className="nav">
-        <div className="nav-brand">
-          <BrandMark kind="mono" className="nav-mark" />
-          <span className="nav-name">Ahead of Market</span>
+        {/* chapter HUD */}
+        <div className="hud" aria-hidden="true">
+          <span className="hud-n">{String(ch).padStart(2, '0')}</span>
+          <span className="hud-bar" />
+          <span className="hud-t">{CHAPTERS[ch]}</span>
         </div>
-        <div className="nav-links">
-          <a href="#work">Work</a>
-          <a href="#contact">Contact</a>
-        </div>
-        <a className="btn-gold" href="#contact">Start a project ↗</a>
-      </nav>
 
-      {/* SCENE 1 — HOOK */}
-      <section className="scene scene-hook">
-        <div className="scene-inner">
-          <span className="eyebrow">Phoenix, AZ · Since 2020</span>
-          <h1 className="hook-head">
-            Hi. We're Ahead Of Market™.<br />
-            <span className="gold">We make companies<br />impossible to ignore.</span>
-          </h1>
-          <p className="hook-sub">Story · Film · Web · Ads</p>
-          <div className="hook-cta">
-            <a className="btn-gold" href="#contact">Start a conversation ↗</a>
-            <a className="btn-ghost" href="#work">See our work</a>
+        {/* NAV */}
+        <nav className="nav">
+          <a className="nav-brand" href="/">
+            <BrandMark kind="mono" className="nav-mark" />
+            <span className="nav-name">Ahead of Market</span>
+          </a>
+          <div className="nav-links">
+            <a href="#story">Story</a>
+            <a href="#work">Work</a>
+            <a href="#contact">Contact</a>
+          </div>
+          <a className="btn-gold" href="#contact">Start a project</a>
+        </nav>
+
+        {/* CH 00 — THE HOOK */}
+        <header className="hero on-dark" data-ch="0">
+          <div className="hero-media">
+            <LazyGumlet id={HERO_REEL} eager filter="grayscale(0.2) contrast(1.08) brightness(.85)" />
+          </div>
+          <div className="hero-scrim" />
+          <div className="hero-inner">
+            <motion.div
+              className="hero-label"
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: EASE, delay: 0.15 }}
+            >
+              <span className="boxed">Phoenix, AZ — Since 2020</span>
+            </motion.div>
+            <h1 className="hero-h dp">
+              <span className="row">
+                <Kinetic delay={0.3} sq segments={[{ t: "Hi. We're Ahead of Market" }]} />
+              </span>
+              <span className="row gold">
+                <Kinetic delay={0.65} segments={[{ t: 'We make companies' }]} />
+              </span>
+              <span className="row gold">
+                <Kinetic delay={0.95} sq segments={[{ t: 'impossible to ignore' }]} />
+              </span>
+            </h1>
+            <motion.div
+              className="hero-sub"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 1.5 }}
+            >
+              <span className="hero-tags">Story · Film · Web · Ads</span>
+            </motion.div>
+            <motion.div
+              className="hero-cta"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: EASE, delay: 1.65 }}
+            >
+              <a className="btn-gold" href="#contact">Start a conversation</a>
+              <a className="btn-ghost" href="#work">See our work</a>
+            </motion.div>
+          </div>
+          <div className="hero-foot">
+            <span>00 — The hook</span>
+            <span className="blink">Scroll to meet us ↓</span>
+          </div>
+        </header>
+
+        {/* TICKER */}
+        <div className="ticker" aria-hidden="true">
+          <div className="ticker-row">
+            {[...TICKER, ...TICKER].map((t, i) => (
+              <React.Fragment key={i}>
+                <span className="ticker-item">{t}</span>
+                <span className="ticker-sq" />
+              </React.Fragment>
+            ))}
           </div>
         </div>
-        <div className="hint">scroll to meet us ↓</div>
-      </section>
 
-      {/* TICKER */}
-      <div className="ticker" aria-hidden="true">
-        <div className="ticker-row">
-          {[...TICKER, ...TICKER].map((t, i) => (
-            <React.Fragment key={i}>
-              <span className="ticker-item">{t}</span>
-              <span className="ticker-sep">/</span>
-            </React.Fragment>
-          ))}
-        </div>
-      </div>
-
-      {/* SCENE 2 — IDENTITY: video company */}
-      <section className="scene scene-dark">
-        <div className="scene-inner">
-          <Reveal><span className="scene-eyebrow">So — who are we, exactly?</span></Reveal>
-          <Reveal delay={120}><GlyphFilm /></Reveal>
-          <Reveal delay={220}>
-            <p className="statement">Many companies around Phoenix know us as a <strong>video company</strong>.</p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* SCENE 3 — IDENTITY: web company */}
-      <section className="scene scene-dark">
-        <div className="scene-inner">
-          <Reveal><GlyphWeb /></Reveal>
-          <Reveal delay={120}>
-            <p className="statement">Others know us as a <strong>web development company</strong>.</p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* SCENE 4 — IDENTITY: neither */}
-      <section className="scene scene-ink">
-        <div className="scene-inner">
-          <Reveal><GlyphNeither /></Reveal>
-          <Reveal delay={120}>
-            <p className="statement">We're actually <em>neither</em> of those things.</p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* SCENE 5 — IDENTITY: the payoff */}
-      <section className="scene scene-dark">
-        <div className="scene-inner">
-          <Reveal><BrandMark kind="mono" className="scene-mark" /></Reveal>
-          <Reveal delay={140}>
-            <p className="statement payoff">We're a <span className="gold">storytelling company</span> — we just happen to make videos and web apps often.</p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* SCENE 6 — TWO PARTS */}
-      <section className="scene scene-light">
-        <div className="scene-inner">
-          <Reveal>
-            <span className="eyebrow">What we actually do</span>
-            <h2 className="sec-head">Everything we make<br />falls into two parts.</h2>
-          </Reveal>
-          <div className="two-grid">
-            <Reveal delay={60} className="two-card">
-              <div className="two-num">01</div>
-              <h3 className="two-title">Marketing</h3>
-              <p className="two-desc">The materials your message stands on.</p>
-              <ul className="two-list">
-                <li>Websites &amp; web applications</li>
-                <li>Brand films &amp; video series</li>
-                <li>Quizzes &amp; interactive tools for prospects</li>
-                <li>Photography &amp; creative assets</li>
-              </ul>
-            </Reveal>
-            <Reveal delay={180} className="two-card">
-              <div className="two-num">02</div>
-              <h3 className="two-title">Promotion</h3>
-              <p className="two-desc">How it gets out into the world.</p>
-              <ul className="two-list">
-                <li>Google &amp; Meta ad campaigns</li>
-                <li>Influencer posts &amp; partnerships</li>
-                <li>Email &amp; text-message campaigns</li>
-                <li>SEO &amp; content distribution</li>
-              </ul>
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
-      {/* SCENE 7 — BILLBOARD */}
-      <section className="scene scene-ink">
-        <div className="scene-inner">
-          <Reveal><GlyphBillboard /></Reveal>
-          <Reveal delay={120}>
-            <p className="billboard-q">"A billboard does no good in your basement."</p>
-          </Reveal>
-          <Reveal delay={220}>
-            <p className="billboard-body">
-              A website or a video is the same — it doesn't help if you don't have a strategy to get it out.
-              That's where we come in. We make the marketing materials, but <em>first</em> we figure out exactly how they'll get distributed most effectively.
+        {/* CH 01 — WHO WE ARE (four beats) */}
+        <Scene ch={1} tone="sc-dark" id="story">
+          <div className="scene-inner">
+            <Rise><span className="beat-eyebrow">So — who are we, exactly?</span></Rise>
+            <Rise delay={0.1}><GlyphFilm /></Rise>
+            <p className="statement">
+              <Kinetic sq segments={[{ t: 'Many companies around Phoenix know us as a ', cls: 'dim' }, { t: 'video company' }]} />
             </p>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* SCENE 8 — WHO WE ARE */}
-      <section className="scene scene-alt">
-        <div className="scene-inner">
-          <Reveal>
-            <span className="eyebrow">Who we are</span>
-            <h2 className="sec-head">A small team<br />that has done a lot.</h2>
-          </Reveal>
-          <div className="who-stats">
-            <Reveal className="who-stat">
-              <span className="stat-n">100+</span>
-              <span className="stat-l">projects shipped since 2020</span>
-            </Reveal>
-            <Reveal delay={100} className="who-stat">
-              <span className="stat-n">3</span>
-              <span className="stat-l">industries — Tech, Construction, Nonprofits</span>
-            </Reveal>
-            <Reveal delay={200} className="who-stat">
-              <span className="stat-n">8+</span>
-              <span className="stat-l">years in commercial film, news &amp; media</span>
-            </Reveal>
           </div>
-          <Reveal delay={120}>
-            <p className="who-note">
-              Our team comes from commercial film production, local news, national media, and creative agencies.
-              We've worked across Phoenix, nationally, and internationally — always story-first.
-            </p>
-          </Reveal>
-        </div>
-      </section>
+        </Scene>
 
-      {/* SCENES 9–12 — STORY BEATS (the work, one scene each) */}
-      {STORIES.map((s, i) => (
-        <section className={'scene ' + (i % 2 ? 'scene-alt' : 'scene-light')} key={s.client}>
-          <div className={'story-scene' + (i % 2 ? ' rev' : '')}>
-            <Reveal className="story-media">
-              <div className="plate">
-                <div className="plate-motif">{s.motif === 'web' ? <GlyphWeb /> : s.motif === 'grid' ? <GlyphBillboard /> : s.motif === 'chart' ? <GlyphBillboard /> : <GlyphFilm />}</div>
-                <span className="plate-tag">{s.tag}</span>
-                <span className="plate-big">{s.big}</span>
-                <span className="plate-big-label">{s.bigLabel}</span>
+        <Scene ch={1} tone="sc-ink">
+          <div className="scene-inner">
+            <Rise><GlyphWeb /></Rise>
+            <p className="statement">
+              <Kinetic sq segments={[{ t: 'Others know us as a ', cls: 'dim' }, { t: 'web development company' }]} />
+            </p>
+          </div>
+        </Scene>
+
+        <Scene ch={1} tone="sc-dark">
+          <div className="scene-inner">
+            <p className="statement">
+              <Kinetic segments={[{ t: "We're actually ", cls: 'dim' }]} />
+              <span className="neither-w">
+                <Kinetic segments={[{ t: 'neither' }]} />
+                <motion.span
+                  className="neither-line"
+                  initial={{ scaleX: 0 }}
+                  whileInView={{ scaleX: 1 }}
+                  viewport={{ once: true, amount: 0.6 }}
+                  transition={{ duration: 0.55, ease: EASE, delay: 0.7 }}
+                />
+              </span>
+              <Kinetic sq segments={[{ t: ' of those things', cls: 'dim' }]} />
+            </p>
+          </div>
+        </Scene>
+
+        <Scene ch={1} tone="sc-ink">
+          <div className="scene-inner">
+            <Rise><BrandMark kind="mono" className="scene-mark" /></Rise>
+            <p className="statement payoff">
+              <Kinetic sq segments={[{ t: "We're a ", cls: 'dim' }, { t: 'storytelling company', cls: 'gold' }]} />
+            </p>
+            <Rise delay={0.9}>
+              <p className="payoff-tail">— we just happen to make videos and web apps often.</p>
+            </Rise>
+          </div>
+        </Scene>
+
+        {/* CH 02 — WHAT WE DO */}
+        <Scene ch={2} tone="sc-paper">
+          <div className="scene-inner">
+            <Rise><span className="boxed">What we actually do</span></Rise>
+            <h2 className="sec-head">
+              <Kinetic sq segments={[{ t: 'Everything we make falls into ' }, { t: 'two parts', cls: 'gold' }]} />
+            </h2>
+            <div className="ledger">
+              <Rise className="ledger-col" delay={0.1}>
+                <div className="ledger-n">01</div>
+                <h3 className="ledger-t">Marketing</h3>
+                <p className="ledger-d">The materials your message stands on.</p>
+                <ul className="ledger-list">
+                  <li>Websites &amp; web applications</li>
+                  <li>Brand films &amp; video series</li>
+                  <li>Quizzes &amp; interactive tools for prospects</li>
+                  <li>Photography &amp; creative assets</li>
+                </ul>
+              </Rise>
+              <Rise className="ledger-col" delay={0.25}>
+                <div className="ledger-n">02</div>
+                <h3 className="ledger-t">Promotion</h3>
+                <p className="ledger-d">How it gets out into the world.</p>
+                <ul className="ledger-list">
+                  <li>Google &amp; Meta ad campaigns</li>
+                  <li>Influencer posts &amp; partnerships</li>
+                  <li>Email &amp; text-message campaigns</li>
+                  <li>SEO &amp; content distribution</li>
+                </ul>
+              </Rise>
+            </div>
+          </div>
+        </Scene>
+
+        {/* CH 03 — THE BILLBOARD */}
+        <Scene ch={3} tone="sc-ink">
+          <div className="scene-inner">
+            <Rise><GlyphBillboard /></Rise>
+            <p className="bill-q">
+              <Kinetic segments={[{ t: '"A billboard does no good in your ' }, { t: 'basement', cls: 'gold' }, { t: '."' }]} />
+            </p>
+            <Rise delay={0.5}>
+              <p className="bill-body">
+                A website or a video is the same — it doesn't help if you don't have a strategy to get it out.
+                That's where we come in. We make the marketing materials, but <em>first</em> we figure out exactly how they'll get distributed most effectively.
+              </p>
+            </Rise>
+          </div>
+        </Scene>
+
+        {/* CH 04 — THE TEAM */}
+        <Scene ch={4} tone="sc-alt">
+          <div className="scene-inner">
+            <Rise><span className="boxed">Who we are</span></Rise>
+            <h2 className="sec-head">
+              <Kinetic sq segments={[{ t: 'A small team that has ' }, { t: 'done a lot', cls: 'gold' }]} />
+            </h2>
+            <div className="stats">
+              <Rise className="stat" delay={0.05}>
+                <span className="stat-n"><Counter value="100+" /></span>
+                <span className="stat-l">Projects shipped since 2020</span>
+              </Rise>
+              <Rise className="stat" delay={0.15}>
+                <span className="stat-n"><Counter value="3" /></span>
+                <span className="stat-l">Industries — Tech, Construction, Nonprofits</span>
+              </Rise>
+              <Rise className="stat" delay={0.25}>
+                <span className="stat-n"><Counter value="8+" /></span>
+                <span className="stat-l">Years in commercial film, news &amp; media</span>
+              </Rise>
+            </div>
+            <Rise delay={0.2}>
+              <p className="team-note">
+                Our team comes from commercial film production, local news, national media, and creative agencies.
+                We've worked across Phoenix, nationally, and internationally — always story-first.
+              </p>
+            </Rise>
+          </div>
+        </Scene>
+
+        {/* CH 05 — THE WORK (four story panels) */}
+        {STORIES.map((s, i) => (
+          <Scene ch={5} tone={i % 2 ? 'sc-alt' : 'sc-paper'} key={s.client}>
+            <div className={'story' + (i % 2 ? ' rev' : '')}>
+              <div className="story-media">
+                <Parallax amount={34}>
+                  <Rise>
+                    {s.media === 'site' ? (
+                      <div className="frame">
+                        <div className="frame-bar">
+                          <span className="frame-dot" /><span className="frame-dot" /><span className="frame-dot" />
+                          <span className="frame-url">{s.client}</span>
+                        </div>
+                        <div className="frame-shot">
+                          <img src={s.src} alt={`${s.client} — website by Ahead of Market`} loading="lazy" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="slate">
+                        <div className="slate-clap" />
+                        <div className="slate-row"><span>Production</span><span>{s.slate.title}</span></div>
+                        <div className="slate-row"><span>Roll</span><span>{s.slate.roll}</span></div>
+                        <div className="slate-mid">
+                          <span className="slate-big"><Counter value={s.big} /></span>
+                          <span className="slate-big-label">{s.bigLabel}</span>
+                        </div>
+                        <div className="slate-row"><span>Scene</span><span>{s.slate.scene}</span></div>
+                        <div className="slate-row"><span>Take</span><span>{s.slate.take}</span></div>
+                      </div>
+                    )}
+                  </Rise>
+                </Parallax>
               </div>
-            </Reveal>
-            <Reveal delay={140} className="story-copy">
-              <span className="beat-tag">{i === 0 ? 'Some recent work · ' : ''}{String(i + 1).padStart(2, '0')} / {String(STORIES.length).padStart(2, '0')}</span>
-              <h3 className="beat-client">{s.client}</h3>
-              <p className="beat-head">{s.headline}</p>
-              <p className="beat-body">{s.body}</p>
-              <span className="beat-stat">{s.stat}</span>
-            </Reveal>
+              <Rise delay={0.15} className="story-copy">
+                <div className="story-idx">
+                  <span className="idx">{i === 0 ? 'Some recent work — ' : ''}{String(i + 1).padStart(2, '0')} / {String(STORIES.length).padStart(2, '0')}</span>
+                  <span className="bar" />
+                  <span className="idx">{s.tag}</span>
+                </div>
+                <h3 className="story-client"><SqText text={s.client} /></h3>
+                <p className="story-head">{s.headline}</p>
+                <p className="story-body">{s.body}</p>
+                <span className="story-stat">{s.stat}</span>
+              </Rise>
+            </div>
+          </Scene>
+        ))}
+
+        {/* CH 06 — VOICES */}
+        <Scene ch={6} tone="sc-paper">
+          <div className="scene-inner">
+            <h2 className="sec-head">
+              <Kinetic sq segments={[{ t: 'What clients ' }, { t: 'say', cls: 'gold' }]} />
+            </h2>
+            <div className="voices">
+              {VOICES.map((v, i) => (
+                <Rise key={v.n} delay={i * 0.12} className="voice">
+                  <span className="voice-mark">"</span>
+                  <p className="voice-q">{v.q}</p>
+                  <div>
+                    <div className="voice-m">{v.m}</div>
+                    <div className="voice-n">
+                      <b>{v.n}</b>
+                      <span>{v.c}</span>
+                    </div>
+                  </div>
+                </Rise>
+              ))}
+            </div>
+          </div>
+        </Scene>
+
+        {/* CH 07 — THE CONVERSATION */}
+        <Scene ch={7} tone="sc-ink" id="contact" className="cta">
+          <BrandMark kind="mono" className="cta-wm" />
+          <div className="scene-inner" style={{ position: 'relative', zIndex: 1 }}>
+            <Rise><span className="boxed" style={{ color: 'var(--gold)' }}>Ready when you are</span></Rise>
+            <h2 className="cta-head">
+              <Kinetic sq segments={[{ t: 'It all starts with a ' }, { t: 'conversation', cls: 'gold' }]} />
+            </h2>
+            <Rise delay={0.4}>
+              <p className="cta-body">
+                By now you know us a little. We'd love to learn about what you're working on — and how we might be able to help.
+              </p>
+              <div className="cta-row">
+                <a className="btn-gold" href="mailto:hello@aheadofmarket.com">Say hello</a>
+                <span className="cta-note">We reply within 24 hours.</span>
+              </div>
+            </Rise>
+          </div>
+        </Scene>
+
+        {/* CLOSING REEL — PORTFOLIO */}
+        <section className="work on-light" id="work" data-ch="7">
+          <div className="work-inner">
+            <Rise>
+              <div className="work-head-row">
+                <div>
+                  <span className="boxed">Our work</span>
+                  <h2 className="sec-head">
+                    100+ projects.<br /><SqText text="Here are a few" />
+                  </h2>
+                </div>
+                <span className="idx">Tap any film to play</span>
+              </div>
+            </Rise>
+            <div className="work-grid">
+              {PORTFOLIO.filter(p => !p.v).map((p, i) => (
+                <motion.div
+                  className="vcard"
+                  key={p.t}
+                  onClick={() => setVideo(p)}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{ duration: 0.6, ease: EASE, delay: (i % 4) * 0.07 }}
+                >
+                  <img className="vposter" src={poster(p.id)} alt={p.t} loading="lazy" />
+                  <div className="vshade" />
+                  <span className="vpl">Play</span>
+                  <div className="vcap">
+                    <span className="nm">{p.t}</span>
+                    <span className="tg">{p.tag}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            <Rise className="reels-head">
+              <span className="idx">Reels — made for the feed</span>
+              <span className="bar" />
+            </Rise>
+            <div className="reels-grid">
+              {PORTFOLIO.filter(p => p.v).map((p, i) => (
+                <motion.div
+                  className="vcard vcard-v"
+                  key={p.t}
+                  onClick={() => setVideo(p)}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{ duration: 0.6, ease: EASE, delay: (i % 4) * 0.07 }}
+                >
+                  <img className="vposter" src={poster(p.id)} alt={p.t} loading="lazy" />
+                  <div className="vshade" />
+                  <span className="vpl">Play</span>
+                  <div className="vcap">
+                    <span className="nm">{p.t}</span>
+                    <span className="tg">{p.tag}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
-      ))}
 
-      {/* SCENE 13 — VOICES */}
-      <section className="scene scene-alt">
-        <div className="scene-inner">
-          <Reveal><h2 className="sec-head">What clients say.</h2></Reveal>
-          <div className="voices-grid">
-            {VOICES.map((v, i) => (
-              <Reveal key={v.n} delay={i * 90} className="voice-card">
-                <p className="voice-q">"{v.q}"</p>
-                <div>
-                  <div className="voice-stat">{v.m}</div>
-                  <div className="voice-who">
-                    <b>{v.n}</b>
-                    <span>{v.c}</span>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SCENE 14 — CTA */}
-      <section className="scene scene-cta" id="contact">
-        <BrandMark kind="mono" className="cta-wm" />
-        <div className="cta-inner">
-          <Reveal>
-            <span className="eyebrow">Ready when you are</span>
-            <h2 className="cta-head">It all starts with<br />a conversation.</h2>
-            <p className="cta-body">
-              By now you know us a little. We'd love to learn about what you're working on — and how we might be able to help.
-            </p>
-            <div className="cta-row">
-              <a className="btn-gold" href="mailto:hello@aheadofmarket.com">Say hello ↗</a>
-              <span className="cta-note">We reply within 24 hours.</span>
-            </div>
-          </Reveal>
-        </div>
-      </section>
-
-      {/* CLOSING REEL — PORTFOLIO */}
-      <section className="ch-work" id="work">
-        <div className="wrap">
-          <Reveal>
-            <span className="eyebrow">Our work</span>
-            <h2 className="sec-head">100+ projects.<br />Here are a few.</h2>
-          </Reveal>
-          <div className="work-grid">
-            {PORTFOLIO.map(p => (
-              <div className="vcard" key={p.t} onClick={() => setVideo(p)}>
-                <LazyGumlet id={p.id} className="vcthumb" />
-                <div className="vshade" />
-                <span className="vpl">▶</span>
-                <div className="vcap">
-                  <div className="nm">{p.t}</div>
-                  <div className="tg">{p.tag}</div>
-                </div>
+        {/* FOOTER */}
+        <footer className="foot on-dark">
+          <div className="foot-inner">
+            <div className="foot-top">
+              <div className="foot-brand">
+                <BrandMark kind="mono" className="foot-mark" />
+                <span className="nav-name">Ahead of Market</span>
               </div>
-            ))}
+              <div className="foot-links">
+                <a href="#story">Story</a>
+                <a href="#work">Work</a>
+                <a href="#contact">Contact</a>
+                <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+                <a href="tel:6023732164">602 373 2164</a>
+              </div>
+            </div>
+            <div className="foot-base">
+              <span className="foot-sig"><SqText text="A storytelling studio" /></span>
+              <span className="foot-copy">© 2026 Ahead of Market. All rights reserved.</span>
+            </div>
           </div>
-        </div>
-      </section>
+        </footer>
 
-      {/* FOOTER */}
-      <footer className="foot">
-        <div className="wrap">
-          <div className="foot-top">
-            <div className="foot-brand">
-              <BrandMark kind="mono" className="foot-mark" />
-              <span>Ahead of Market</span>
-            </div>
-            <div className="foot-links">
-              <a href="#work">Work</a>
-              <a href="#contact">Contact</a>
-              <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
-              <a href="tel:6023732164">602 373 2164</a>
+        {/* VIDEO MODAL */}
+        {video && (
+          <div className="modal" onClick={e => e.target === e.currentTarget && setVideo(null)}>
+            <div className={'modal-box' + (video.v ? ' portrait' : '')}>
+              <div className="modal-head">
+                <span>{video.t}</span>
+                <button onClick={() => setVideo(null)} aria-label="Close">×</button>
+              </div>
+              <div className="modal-vid">
+                <iframe src={embed(video.id)} title={video.t} allow="autoplay; fullscreen; encrypted-media" allowFullScreen />
+              </div>
             </div>
           </div>
-          <div className="foot-base">
-            <span className="foot-sig">A storytelling studio.</span>
-            <span className="foot-copy">© 2026 Ahead of Market. All rights reserved.</span>
-          </div>
-        </div>
-      </footer>
-
-      {/* VIDEO MODAL */}
-      {video && (
-        <div className="modal" onClick={e => e.target === e.currentTarget && setVideo(null)}>
-          <div className="modal-box">
-            <div className="modal-head">
-              <span>{video.t}</span>
-              <button onClick={() => setVideo(null)} aria-label="Close">×</button>
-            </div>
-            <div className="modal-vid">
-              <iframe src={embed(video.id)} title={video.t} allow="autoplay; fullscreen; encrypted-media" allowFullScreen />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </MotionConfig>
   );
 }
