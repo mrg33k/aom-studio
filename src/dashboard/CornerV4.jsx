@@ -126,6 +126,21 @@ export default function CornerV4() {
   const navigate = useNavigate()
   const { projectId: routeProjectId } = useParams()
   const routeLocation = useLocation()
+  // Escape-hatch return pill (corner:corner-ui-cv6 loop R21): landing on ?cv4=1 pins the
+  // whole session to this old surface via sessionStorage with no visible way back. When
+  // the sticky flag is set, float a pill that clears it and returns to the new dashboard.
+  useEffect(() => {
+    let pill = null
+    try {
+      if (typeof document === 'undefined' || sessionStorage.getItem('cv4Dashboard') !== '1') return undefined
+      pill = document.createElement('button')
+      pill.textContent = 'Back to the new dashboard'
+      pill.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:99999;height:36px;padding:0 16px;border-radius:18px;border:1px solid rgba(255,255,255,.18);background:rgba(13,17,23,.85);color:#E8EBEF;font:600 12.5px/1 "Hanken Grotesk",sans-serif;cursor:pointer;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 10px 28px -8px rgba(0,0,0,.6)'
+      pill.onclick = () => { try { sessionStorage.removeItem('cv4Dashboard') } catch (_) {} window.location.href = '/dashboard' }
+      document.body.appendChild(pill)
+    } catch (_) { /* ignore */ }
+    return () => { try { if (pill) pill.remove() } catch (_) {} }
+  }, [])
   const [currentUser, setCurrentUser]   = useState(null)
   const [authReady, setAuthReady]       = useState(false)
   const [worldId, setWorldId]           = useState(null)
