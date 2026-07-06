@@ -21,6 +21,8 @@ export default function LazyGumlet({
   cover = true,
   poster = '#161616',
   portrait = false, // true = source video is 9:16 vertical (Reels/TikTok)
+  bleed = 1.08, // scale-up to hide Gumlet's hairline player chrome
+  offsetY = 0, // px; negative shifts the video up (crops more off the top — hides the title overlay on raw, unfiltered heroes)
 }) {
   const [mounted, setMounted] = useState(eager);
   const ref = useRef(null);
@@ -48,7 +50,6 @@ export default function LazyGumlet({
   // text column's height ended up wider than source → side bars).
   // The BLEED scale on top hides Gumlet's player chrome (a few px of border).
   const sourceAR = portrait ? '9 / 16' : '16 / 9';
-  const BLEED = 1.08; // 8% extra to hide Gumlet's hairline player chrome.
   const coverStyle = cover
     ? {
         position: 'absolute',
@@ -59,7 +60,7 @@ export default function LazyGumlet({
         aspectRatio: sourceAR,
         minWidth: '100%',
         minHeight: '100%',
-        transform: `translate(-50%, -50%) scale(${BLEED})`,
+        transform: `translate(-50%, calc(-50% + ${offsetY}px)) scale(${bleed})`,
         transformOrigin: 'center',
         border: 'none',
         filter,
