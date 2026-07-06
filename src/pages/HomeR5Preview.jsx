@@ -87,6 +87,7 @@ const CSS = `
 .r9 *, .r9 *::before, .r9 *::after { box-sizing:border-box; margin:0; padding:0; }
 .r9 a { color:inherit; text-decoration:none; }
 .r9 button { font:inherit; cursor:pointer; border:none; background:none; }
+.r9 a:focus-visible, .r9 button:focus-visible, .r9 input:focus-visible, .r9 textarea:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
 .r9 img { display:block; max-width:100%; }
 .r9 .gold { color:var(--gold); }
 
@@ -227,6 +228,12 @@ const CSS = `
 .r9 .payoff { font-size:clamp(2.3rem,7.4vw,6rem); max-width:16ch; }
 .r9 .payoff-tail { font-family:var(--tx); font-size:clamp(1rem,2vw,1.25rem); color:var(--stone); margin-top:2rem; text-transform:none; letter-spacing:0; font-weight:400; line-height:1.7; }
 .r9 .scene-mark { width:clamp(60px,9vw,96px); height:auto; margin:0 auto 2.75rem; display:block; color:var(--paper); }
+
+/* proof strips under identity beats */
+.r9 .proof { display:flex; gap:1px; background:var(--line-dark); border:1px solid var(--line-dark); max-width:640px; margin:3rem auto 0; }
+.r9 .proof-cell { position:relative; flex:1; aspect-ratio:16/10; overflow:hidden; background:var(--ink-800); }
+.r9 .proof-cell img { width:100%; height:100%; object-fit:cover; object-position:top; filter:grayscale(.15) contrast(1.05); }
+.r9 .proof-cap { display:block; text-align:center; font-size:.62rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-500); margin-top:1rem; }
 
 /* ─── TWO PARTS (ledger) ─── */
 .r9 .sec-head { font-family:var(--dp); text-transform:uppercase; font-size:clamp(2rem,5.2vw,4rem); font-weight:800; letter-spacing:-.01em; line-height:1.02; margin:1.25rem 0 0; }
@@ -561,6 +568,16 @@ export default function HomeR5Preview() {
       return () => window.removeEventListener('scroll', onScroll);
     }
     let lenis, raf, alive = true;
+    const onAnchor = e => {
+      const a = e.target.closest('a[href^="#"]');
+      if (!a) return;
+      const el = document.querySelector(a.getAttribute('href'));
+      if (!el) return;
+      e.preventDefault();
+      if (lenis) lenis.scrollTo(el, { offset: -64, duration: 1.4 });
+      else el.scrollIntoView({ behavior: 'smooth' });
+    };
+    document.addEventListener('click', onAnchor);
     import('lenis').then(({ default: Lenis }) => {
       if (!alive) return;
       lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
@@ -570,6 +587,7 @@ export default function HomeR5Preview() {
     return () => {
       alive = false;
       window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('click', onAnchor);
       if (raf) cancelAnimationFrame(raf);
       if (lenis) lenis.destroy();
     };
@@ -694,6 +712,14 @@ export default function HomeR5Preview() {
             <p className="statement">
               <Kinetic sq segments={[{ t: 'Many companies around Phoenix know us as a ', cls: 'dim' }, { t: 'video company' }]} />
             </p>
+            <Rise delay={0.35}>
+              <div className="proof">
+                <span className="proof-cell"><img src={poster('698a6296fc23d3d76fa8d992', 480)} alt="Journey to Gary Vee — film still" loading="lazy" /></span>
+                <span className="proof-cell"><img src={poster('698a5ef5fc23d3d76fa87ef4', 480)} alt="Virtu Hospitality — film still" loading="lazy" /></span>
+                <span className="proof-cell"><img src={poster('698a5fcdfc23d3d76fa893b8', 480)} alt="United Food Bank — film still" loading="lazy" /></span>
+              </div>
+              <span className="proof-cap">Frames from our films</span>
+            </Rise>
           </div>
         </Scene>
 
@@ -704,6 +730,14 @@ export default function HomeR5Preview() {
             <p className="statement">
               <Kinetic sq segments={[{ t: 'Others know us as a ', cls: 'dim' }, { t: 'web development company' }]} />
             </p>
+            <Rise delay={0.35}>
+              <div className="proof">
+                <span className="proof-cell"><img src="/hero-sites/ambition.jpg" alt="Ambition Mechanical — site by AOM" loading="lazy" /></span>
+                <span className="proof-cell"><img src="/hero-sites/space-rising.jpg" alt="Space Rising — site by AOM" loading="lazy" /></span>
+                <span className="proof-cell"><img src="/hero-sites/valor.jpg" alt="Valor to Victory — site by AOM" loading="lazy" /></span>
+              </div>
+              <span className="proof-cap">Sites we've built</span>
+            </Rise>
           </div>
         </Scene>
 
