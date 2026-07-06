@@ -87,7 +87,12 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
 
     wrap.addEventListener('click', onClick);
     return () => wrap.removeEventListener('click', onClick);
-  }, [wrapRef]);
+    // `enabled` in deps is load-bearing for MOBILE: Review.jsx mounts on the pick
+    // list, where the read-view wrapper (wrapRef.current) doesn't exist yet — with
+    // [wrapRef] alone this effect ran once against null and never re-attached, so
+    // the mobile read view had NO pin listener. enabled flips with the screen,
+    // re-running the effect once the wrapper is real. Desktop passes a constant.
+  }, [wrapRef, enabled]);
 
   // Open an existing pin's comment (from the marker via data-action="openPin", or from
   // its row in the comments panel). Position over the marker when the doc is on screen,
@@ -237,7 +242,10 @@ export function useReviewPinUI({ wrapRef, pins, addPin, deletePin, enabled = tru
     mo.observe(wrap, { childList: true, subtree: true });
     tick();
     return () => { disposed = true; clearInterval(iv); mo.disconnect(); };
-  }, [wrapRef]);
+    // Same mobile re-attach as the click effect above: without `enabled` this ran
+    // once against a null wrapper on the pick list and the scrub bar (the ONLY
+    // play control — videos have no native controls) never built on mobile.
+  }, [wrapRef, enabled]);
 
   // Popover open/close changes which pin is force-shown — re-apply immediately.
   useEffect(() => { applyVisRef.current(); }, [ui]);
