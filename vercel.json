@@ -49,6 +49,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/versions",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/versions/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/work/:path*",
       "destination": "/index.html"
     },
