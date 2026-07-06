@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useInView, useSpring, useMotionValue, MotionConfig } from 'framer-motion';
 import LazyGumlet from '../components/home/LazyGumlet';
-const ActGear3D = React.lazy(() => import('../components/home/ActGear3D'));
 import BrandMark from '../components/home/BrandMark';
 
 // Mounted at /r5 for review; promote to / when approved. Mission: aheadofmarket.com:home (R9).
@@ -286,6 +285,31 @@ const CSS = `
 .r9 .bill-q { font-family:var(--dp); text-transform:uppercase; font-size:clamp(2rem,6vw,4.6rem); font-weight:800; letter-spacing:-.01em; line-height:1.04; color:var(--paper); max-width:18ch; margin-inline:auto; }
 .r9 .bill-body { font-size:clamp(1rem,1.9vw,1.2rem); color:var(--stone); line-height:1.8; max-width:58ch; margin:2.5rem auto 0; }
 .r9 .bill-body em { color:var(--gold); font-style:normal; font-weight:600; }
+
+/* ─── FILM MARQUEE (full-bleed, two counter-scrolling rows of real frames) ─── */
+.r9 .marquee { position:relative; background:var(--ink); padding:clamp(3rem,6vw,5rem) 0; overflow:hidden; }
+.r9 .marquee-inner { transform:rotate(-1.8deg) scale(1.06); }
+.r9 .mq-row { display:flex; gap:10px; width:max-content; margin-bottom:10px; }
+.r9 .mq-row-a { animation:mqleft 46s linear infinite; }
+.r9 .mq-row-b { animation:mqright 52s linear infinite; }
+@keyframes mqleft { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+@keyframes mqright { from{transform:translateX(-50%)} to{transform:translateX(0)} }
+.r9 .mq-cell { position:relative; width:clamp(200px,22vw,320px); aspect-ratio:16/9; flex:none; overflow:hidden; background:var(--ink-800); }
+.r9 .mq-cell img { width:100%; height:100%; object-fit:cover; filter:grayscale(.12) contrast(1.05); }
+.r9 .mq-cell::after { content:''; position:absolute; inset:0; background:rgba(11,11,11,.18); }
+.r9 .mq-label { position:absolute; top:1.2rem; left:var(--pad); z-index:2; font-size:.62rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--stone); display:inline-flex; align-items:center; gap:.5rem; }
+.r9 .mq-label .csq { width:5px; height:5px; background:var(--gold); }
+@media(prefers-reduced-motion: reduce){ .r9 .mq-row-a, .r9 .mq-row-b { animation:none; } }
+
+/* mini media strips inside the two-parts ledger */
+.r9 .ledger-strip { display:flex; gap:4px; margin-top:1.5rem; }
+.r9 .ledger-strip span { position:relative; flex:1; aspect-ratio:16/10; overflow:hidden; background:var(--ink-800); }
+.r9 .ledger-strip img { width:100%; height:100%; object-fit:cover; object-position:top; }
+
+/* team filmstrip */
+.r9 .team-strip { display:flex; gap:4px; margin:2.25rem 0 0; }
+.r9 .team-strip span { position:relative; flex:1; aspect-ratio:16/9; overflow:hidden; background:var(--ink-800); }
+.r9 .team-strip img { width:100%; height:100%; object-fit:cover; filter:grayscale(.2) contrast(1.05); }
 
 /* ─── TEAM (stats strip) ─── */
 .r9 .stats { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); margin:3.5rem 0 2.5rem; text-align:left; }
@@ -612,18 +636,6 @@ export default function HomeR5Preview() {
   const lapS = useTransform(actP, [0.26, 0.45, 0.62, 0.8], [0.92, 1, 0.46, 0.4]);
   const lapR = useTransform(actP, [0.26, 0.45, 0.62], [7, 2, 5]);
   const stageO = useTransform(actP, [0, 0.005, 0.96, 1], [0, 1, 1, 0]);
-  const [want3d, setWant3d] = useState(false);
-  const [gear3d, setGear3d] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    // 3D experiment stays opt-in (?gear3d=1): the generated meshes read grungier
-    // than the 2D renders, and the default experience ships the best-looking version.
-    const ok = window.matchMedia('(pointer:fine)').matches
-      && window.innerWidth >= 900
-      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      && new URLSearchParams(window.location.search).has('gear3d');
-    if (ok) setWant3d(true);
-  }, []);
   // two-view turn: front fades to back as each object exits its beat
   const roninFrontO = useTransform(actP, [0, 0.18, 0.27], [1, 1, 0]);
   const roninBackO = useTransform(actP, [0.18, 0.27], [0, 1]);
@@ -806,18 +818,13 @@ export default function HomeR5Preview() {
         <div className="act" ref={actRef} id="story">
           <motion.div className="act-stage" aria-hidden="true" style={{ opacity: stageO }}>
             <motion.div className="act-tilt" style={{ rotateX: tiltX, rotateY: tiltY }}>
-              {want3d && (
-                <React.Suspense fallback={null}>
-                  <ActGear3D mv={actP} onReady={() => setGear3d(true)} />
-                </React.Suspense>
-              )}
-              <motion.div className="act-obj" style={{ visibility: gear3d ? 'hidden' : 'visible', opacity: roninO, x: roninX, y: roninY, scale: roninS, rotate: roninR }}>
+              <motion.div className="act-obj" style={{ opacity: roninO, x: roninX, y: roninY, scale: roninS, rotate: roninR }}>
                 <span className="act-views">
                   <motion.img src="/gear/ronin-4d.jpg" alt="" style={{ opacity: roninFrontO }} />
                   <motion.img src="/gear/ronin-4d-b.jpg" alt="" style={{ opacity: roninBackO }} />
                 </span>
               </motion.div>
-              <motion.div className="act-obj" style={{ visibility: gear3d ? 'hidden' : 'visible', opacity: lapO, x: lapX, scale: lapS, rotate: lapR }}>
+              <motion.div className="act-obj" style={{ opacity: lapO, x: lapX, scale: lapS, rotate: lapR }}>
                 <span className="act-views">
                   <motion.img src="/gear/laptop.jpg" alt="" style={{ opacity: lapFrontO }} />
                   <motion.img src="/gear/laptop-b.jpg" alt="" style={{ opacity: lapBackO }} />
@@ -917,6 +924,11 @@ export default function HomeR5Preview() {
                   <li>Quizzes &amp; interactive tools for prospects</li>
                   <li>Photography &amp; creative assets</li>
                 </ul>
+                <div className="ledger-strip" aria-hidden="true">
+                  <span><img src="/hero-sites/ambition.jpg" alt="" /></span>
+                  <span><img src="/hero-sites/space-rising.jpg" alt="" /></span>
+                  <span><img src="/hero-sites/valor.jpg" alt="" /></span>
+                </div>
               </Rise>
               <Rise className="ledger-col" delay={0.25}>
                 <div className="ledger-n">02</div>
@@ -928,6 +940,11 @@ export default function HomeR5Preview() {
                   <li>Email &amp; text-message campaigns</li>
                   <li>SEO &amp; content distribution</li>
                 </ul>
+                <div className="ledger-strip" aria-hidden="true">
+                  <span><img src={poster('698a596eaec3d4e420c22a9a', 480)} alt="" /></span>
+                  <span><img src={poster('698a5391fc23d3d76fa7306c', 480)} alt="" /></span>
+                  <span><img src={poster('698a5a8b873071aec5c99c6f', 480)} alt="" /></span>
+                </div>
               </Rise>
             </div>
           </div>
@@ -949,6 +966,26 @@ export default function HomeR5Preview() {
             </Rise>
           </div>
         </Scene>
+
+        {/* FILM MARQUEE — the work as texture, full bleed */}
+        <section className="marquee on-dark" data-ch="3" aria-label="Frames from recent AOM work">
+          <span className="mq-label"><i className="csq" />Real frames · Real clients</span>
+          <div className="marquee-inner">
+            <div className="mq-row mq-row-a">
+              {[...PORTFOLIO.filter(p => !p.v), ...PORTFOLIO.filter(p => !p.v)].map((p, i) => (
+                <span className="mq-cell" key={'a' + i}><img src={poster(p.id, 480)} alt="" /></span>
+              ))}
+            </div>
+            <div className="mq-row mq-row-b">
+              {(() => {
+                const half = [...PORTFOLIO.filter(p => p.v), ...PORTFOLIO.filter(p => !p.v).slice(4, 8)];
+                return [...half, ...half].map((p, i) => (
+                  <span className="mq-cell" key={'b' + i}><img src={poster(p.id, 480)} alt="" /></span>
+                ));
+              })()}
+            </div>
+          </div>
+        </section>
 
         {/* CH 04 — THE TEAM */}
         <Scene ch={4} tone="sc-alt">
@@ -976,6 +1013,14 @@ export default function HomeR5Preview() {
                 Our team comes from commercial film production, local news, national media, and creative agencies.
                 We've worked across Phoenix, nationally, and internationally — always story-first.
               </p>
+            </Rise>
+            <Rise delay={0.3}>
+              <div className="team-strip" aria-hidden="true">
+                <span><img src={poster('698a6296fc23d3d76fa8d992', 480)} alt="" /></span>
+                <span><img src={poster('698a5ef5fc23d3d76fa87ef4', 480)} alt="" /></span>
+                <span><img src={poster('698a584faec3d4e420c20fef', 480)} alt="" /></span>
+                <span><img src={poster('698a5b86fc23d3d76fa82ece', 480)} alt="" /></span>
+              </div>
             </Rise>
           </div>
         </Scene>
