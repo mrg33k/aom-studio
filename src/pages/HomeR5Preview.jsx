@@ -69,7 +69,7 @@ const CHAPTERS = ['The hook', 'Who we are', 'What we do', 'The billboard', 'The 
 const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee — strongest horizontal doc footage
 
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
-const poster = id => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto`;
+const poster = (id, w = 800) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
 
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 
@@ -189,6 +189,8 @@ const CSS = `
   font-size:.66rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--stone);
 }
 .r9 .hero-foot .blink { animation:r9bob 2.4s ease-in-out infinite; display:inline-block; }
+.r9 .hero-credit { color:var(--stone); }
+@media(max-width:860px){ .r9 .hero-credit { display:none; } }
 @keyframes r9bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
 
 /* word-stagger kinetic type */
@@ -288,7 +290,7 @@ const CSS = `
 .r9 .voice { padding:clamp(1.75rem,3vw,2.5rem); border-right:1px solid var(--line); border-top:3px solid var(--gold); display:flex; flex-direction:column; gap:1.75rem; background:var(--paper); }
 .r9 .voice:last-child { border-right:none; }
 @media(max-width:880px){ .r9 .voices { grid-template-columns:1fr; } .r9 .voice { border-right:none; border-bottom:1px solid var(--line); } .r9 .voice:last-child { border-bottom:none; } }
-.r9 .voice-mark { font-family:var(--dp); font-size:2.5rem; font-weight:800; color:var(--gold); line-height:.6; }
+.r9 .voice-mark { display:block; width:10px; height:10px; background:var(--gold); }
 .r9 .voice-q { font-size:.98rem; color:var(--ink-700); line-height:1.8; flex:1; }
 .r9 .voice-m { font-size:.66rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--gold-deep); margin-bottom:.6rem; }
 .r9 .voice-n b { display:block; font-size:.88rem; font-weight:700; color:var(--ink); }
@@ -345,6 +347,7 @@ const CSS = `
 .r9 .vcap .tg { font-size:.6rem; letter-spacing:.16em; text-transform:uppercase; color:var(--stone); font-weight:600; }
 .r9 .vpl { position:absolute; top:1rem; right:1rem; z-index:2; font-size:.6rem; letter-spacing:.18em; text-transform:uppercase; color:#fff; border:1px solid rgba(255,255,255,.4); padding:.4rem .7rem; opacity:0; transition:opacity .2s; }
 .r9 .vcard:hover .vpl { opacity:1; }
+@media(hover:none){ .r9 .vpl { opacity:1; } }
 
 /* ─── FOOTER ─── */
 .r9 .foot { padding:3.5rem var(--pad) 2.5rem; background:var(--ink); color:var(--paper); border-top:1px solid var(--line-dark); }
@@ -665,6 +668,7 @@ export default function HomeR5Preview() {
           </div>
           <div className="hero-foot">
             <span>00 — The hook</span>
+            <span className="hero-credit">Now playing: Journey to Gary Vee — our documentary work</span>
             <span className="blink">Scroll to meet us ↓</span>
           </div>
         </header>
@@ -878,7 +882,7 @@ export default function HomeR5Preview() {
             <div className="voices">
               {VOICES.map((v, i) => (
                 <Rise key={v.n} delay={i * 0.12} className="voice">
-                  <span className="voice-mark">"</span>
+                  <span className="voice-mark" aria-hidden="true" />
                   <p className="voice-q">{v.q}</p>
                   <div>
                     <div className="voice-m">{v.m}</div>
@@ -964,7 +968,7 @@ export default function HomeR5Preview() {
                   viewport={{ once: true, amount: 0.2 }}
                   transition={{ duration: 0.6, ease: EASE, delay: (i % 4) * 0.07 }}
                 >
-                  <img className="vposter" src={poster(p.id)} alt={p.t} loading="lazy" />
+                  <img className="vposter" src={poster(p.id, 800)} alt={p.t} loading="lazy" />
                   <div className="vshade" />
                   <span className="vpl">Play</span>
                   <div className="vcap">
@@ -989,7 +993,7 @@ export default function HomeR5Preview() {
                   viewport={{ once: true, amount: 0.2 }}
                   transition={{ duration: 0.6, ease: EASE, delay: (i % 4) * 0.07 }}
                 >
-                  <img className="vposter" src={poster(p.id)} alt={p.t} loading="lazy" />
+                  <img className="vposter" src={poster(p.id, 800)} alt={p.t} loading="lazy" />
                   <div className="vshade" />
                   <span className="vpl">Play</span>
                   <div className="vcap">
