@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useInView, MotionConfig } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView, useSpring, useMotionValue, MotionConfig } from 'framer-motion';
 import LazyGumlet from '../components/home/LazyGumlet';
 import BrandMark from '../components/home/BrandMark';
 
@@ -236,7 +236,10 @@ const CSS = `
   position:fixed; top:0; left:0; right:0; height:100vh;
   z-index:1; overflow:hidden; pointer-events:none;
 }
+.r9 .act-tilt { position:absolute; inset:0; transform-style:preserve-3d; perspective:1100px; }
 .r9 .act-obj { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; will-change:transform,opacity; }
+.r9 .act-views { position:relative; display:grid; place-items:center; }
+.r9 .act-views img { grid-area:1/1; }
 .r9 .act-obj img {
   width:min(940px,96vw); height:auto; display:block;
   -webkit-mask-image:radial-gradient(ellipse 66% 62% at 50% 50%, black 52%, transparent 78%);
@@ -608,6 +611,23 @@ export default function HomeR5Preview() {
   const lapS = useTransform(actP, [0.26, 0.45, 0.62, 0.8], [0.92, 1, 0.46, 0.4]);
   const lapR = useTransform(actP, [0.26, 0.45, 0.62], [7, 2, 5]);
   const stageO = useTransform(actP, [0, 0.005, 0.96, 1], [0, 1, 1, 0]);
+  // two-view turn: front fades to back as each object exits its beat
+  const roninFrontO = useTransform(actP, [0, 0.18, 0.27], [1, 1, 0]);
+  const roninBackO = useTransform(actP, [0.18, 0.27], [0, 1]);
+  const lapFrontO = useTransform(actP, [0.26, 0.46, 0.56], [1, 1, 0]);
+  const lapBackO = useTransform(actP, [0.46, 0.56], [0, 1]);
+  // cursor tilt (desktop): stage leans toward the pointer
+  const tiltX = useSpring(useMotionValue(0), { stiffness: 60, damping: 18 });
+  const tiltY = useSpring(useMotionValue(0), { stiffness: 60, damping: 18 });
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia('(pointer:fine)').matches) return;
+    const onMove = e => {
+      tiltY.set(((e.clientX / window.innerWidth) - 0.5) * 10);
+      tiltX.set(((e.clientY / window.innerHeight) - 0.5) * -8);
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const cap1O = useTransform(actP, [0.02, 0.07, 0.2, 0.27], [0, 1, 1, 0]);
   const cap2O = useTransform(actP, [0.3, 0.37, 0.48, 0.55], [0, 1, 1, 0]);
   const cap3O = useTransform(actP, [0.58, 0.64, 0.7, 0.76], [0, 1, 1, 0]);
@@ -772,11 +792,19 @@ export default function HomeR5Preview() {
         {/* CH 01 — WHO WE ARE: one act, the gear lives through it */}
         <div className="act" ref={actRef} id="story">
           <motion.div className="act-stage" aria-hidden="true" style={{ opacity: stageO }}>
-            <motion.div className="act-obj" style={{ opacity: roninO, x: roninX, y: roninY, scale: roninS, rotate: roninR }}>
-              <img src="/gear/ronin-4d.jpg" alt="" />
-            </motion.div>
-            <motion.div className="act-obj" style={{ opacity: lapO, x: lapX, scale: lapS, rotate: lapR }}>
-              <img src="/gear/laptop.jpg" alt="" />
+            <motion.div className="act-tilt" style={{ rotateX: tiltX, rotateY: tiltY }}>
+              <motion.div className="act-obj" style={{ opacity: roninO, x: roninX, y: roninY, scale: roninS, rotate: roninR }}>
+                <span className="act-views">
+                  <motion.img src="/gear/ronin-4d.jpg" alt="" style={{ opacity: roninFrontO }} />
+                  <motion.img src="/gear/ronin-4d-b.jpg" alt="" style={{ opacity: roninBackO }} />
+                </span>
+              </motion.div>
+              <motion.div className="act-obj" style={{ opacity: lapO, x: lapX, scale: lapS, rotate: lapR }}>
+                <span className="act-views">
+                  <motion.img src="/gear/laptop.jpg" alt="" style={{ opacity: lapFrontO }} />
+                  <motion.img src="/gear/laptop-b.jpg" alt="" style={{ opacity: lapBackO }} />
+                </span>
+              </motion.div>
             </motion.div>
             <div className="act-caption">
               <motion.span style={{ opacity: cap1O }}><i className="csq" />The rig we shoot with</motion.span>
