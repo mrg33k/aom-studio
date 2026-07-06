@@ -1,0 +1,106 @@
+const e="Website Review for Outreach",t="website-outreach-review",o="Outreach",n="Jacob",i="2026-03-09",s="Mar 9",c=null,a="Review of AOM website from outreach alignment perspective.",r=[],l=`<h1>Website Review for Outreach -- Jacob</h1>
+<blockquote>
+<p>Reviewed: 2026-03-09
+Source: Alex&#39;s website-v2-direction.md + competitive research + 280+ cold emails of context</p>
+</blockquote>
+<hr>
+<h2>What Works for Outreach</h2>
+<ul>
+<li><p><strong>The pathway gate is a gift.</strong> Three audience lanes means I can deep-link construction prospects directly to their section. Instead of &quot;check out our site&quot; (generic, gets ignored), I can say &quot;check out what we&#39;re doing for contractors&quot; and link to something that speaks their language. That&#39;s the difference between a cold email and a relevant one.</p>
+</li>
+<li><p><strong>&quot;YOUR COMPETITOR&#39;S INSTAGRAM IS THEIR BEST RECRUITER&quot; stays.</strong> That headline does more selling than any email I could write. Linking a prospect directly to that section is a closer. It stings in exactly the right way.</p>
+</li>
+<li><p><strong>Ambition Mechanical as proof card.</strong> Having a live client example with real stats right on the page means I can reference it in emails naturally: &quot;We just launched a full system for a mechanical contractor in Phoenix. Here&#39;s what that looks like.&quot;</p>
+</li>
+<li><p><strong>The competitive research backs the pitch perfectly.</strong> Alex&#39;s finding that most $3k agencies give you Canva templates while AOM gives you cinematic footage is the single strongest differentiator. If the site communicates that visually (real footage vs. stock), it does my job for me.</p>
+</li>
+<li><p><strong>Video hero background.</strong> A showreel loop of real job site footage means the site SHOWS before it TELLS. A contractor clicks the link, sees drone shots of a construction site, and immediately knows this isn&#39;t a template shop. That&#39;s 3 seconds of selling I don&#39;t have to do in the email.</p>
+</li>
+<li><p><strong>FAQ section with &quot;What does a retainer include?&quot;</strong> Perfect for the follow-up email when someone asks &quot;so what exactly do I get?&quot; I can link directly to it instead of writing a wall of text.</p>
+</li>
+<li><p><strong>&quot;Start a Brief&quot; CTA over &quot;Get Started.&quot;</strong> More natural to reference in outreach. &quot;If any of this sounds interesting, start a brief on our site and we&#39;ll put together something specific for you&quot; reads way better than &quot;get started.&quot;</p>
+</li>
+</ul>
+<hr>
+<h2>What&#39;s Missing</h2>
+<h3>1. No dedicated construction landing page (yet)</h3>
+<p>The pathway gate scrolls to a section. That&#39;s fine for organic visitors. But for outreach, I need a standalone URL I can drop in a cold email. <code>aom-inhouse.com/construction</code> hits different than <code>aom-inhouse.com/#construction-section</code>. A scroll-anchor works for v1, but a dedicated page should be Phase 2 priority #1.</p>
+<h3>2. No case study page for Ambition Mechanical</h3>
+<p>The proof card mentions Ambition but there&#39;s no deep dive. When a prospect is 70% convinced, they want to see the full story: what Ambition looked like before, what AOM did, what changed. A before/after case study page with real metrics (follower growth, engagement rate, lead attribution) would be the single most valuable outreach asset on the site. Right now I have to explain it in the email. The site should do that work.</p>
+<h3>3. No recruitment content angle visible on the site</h3>
+<p>Alex&#39;s competitive research nails it: 25% of PCL&#39;s engagement comes from recruitment content. AOM can build recruitment into the retainer. But the site doesn&#39;t mention this anywhere. Construction companies lose as much sleep over finding workers as finding clients. If the site had even one line about &quot;content that recruits AND sells,&quot; I&#39;d reference it in every email.</p>
+<h3>4. No pricing signal anywhere</h3>
+<p>I&#39;m not asking for a pricing page. But there&#39;s zero signal about what working with AOM costs. Contractors are practical people. &quot;What&#39;s this gonna run me?&quot; is the first or second question. Even a range (&quot;retainers start at $3k/month&quot;) or a comparison (&quot;the same production quality as our $9k corporate videos, delivered as a monthly retainer&quot;) somewhere on the site would qualify leads before they hit my inbox. Right now I&#39;m sending emails into the dark on budget fit.</p>
+<h3>5. No &quot;results&quot; framing for the stats</h3>
+<p>The stats section says &quot;63+ projects shipped&quot; and &quot;34+ clients served.&quot; Those are activity metrics, not results. A contractor wants to know: did this work? Did the last guy get more bids? More hires? More followers? Even one outcome metric (Ambition&#39;s follower growth, engagement rate, or a quote from the client) would turn the stats section from &quot;we&#39;ve been busy&quot; to &quot;we deliver results.&quot;</p>
+<h3>6. No video samples visible without clicking into portfolio</h3>
+<p>The portfolio is behind tabs and clicks. For outreach, I need the BEST 15-second clip of construction content visible without any interaction. An auto-playing social clip in the construction section (muted, looping, like the hero treatment but with a real Ambition reel) would show the quality instantly. The prospect shouldn&#39;t have to hunt for proof.</p>
+<hr>
+<h2>Specific Requests for the Build</h2>
+<ol>
+<li><p><strong>Add a <code>/construction</code> URL route</strong> (even if it just scrolls to the construction section for now). I need a clean link for emails. Phase 2: make it a full landing page.</p>
+</li>
+<li><p><strong>Build an Ambition Mechanical case study page.</strong> Doesn&#39;t need to be complex. Before state, what AOM did, the results, a client quote, and 3-4 content samples. This is the #1 asset I need.</p>
+</li>
+<li><p><strong>Add one line about recruitment content</strong> in the construction section&#39;s proof points. Something like: &quot;Content that wins bids AND wins hires.&quot; This mirrors the competitive advantage Alex identified.</p>
+</li>
+<li><p><strong>Embed a looping social clip</strong> (9:16, muted, auto-play) in the construction section. One of the Ambition Reels. Visual proof without requiring any clicks.</p>
+</li>
+<li><p><strong>Add at least one outcome metric to the stats section.</strong> Engagement rate, follower growth, client quote about results. Anything that says &quot;this worked&quot; not just &quot;we did this.&quot;</p>
+</li>
+<li><p><strong>Add a subtle pricing anchor</strong> somewhere. Could be in the FAQ: &quot;What does a retainer cost?&quot; / &quot;Our social retainers start at $3,000/month. Every package includes on-site filming, which most agencies charge separately or skip entirely.&quot; This qualifies leads and reinforces the differentiator in one sentence.</p>
+</li>
+<li><p><strong>Make the &quot;Start a Brief&quot; form pre-fillable via URL params.</strong> If I can send <code>aom-inhouse.com/brief?service=social&amp;industry=construction</code>, the prospect lands on a form that already knows what they&#39;re there for. Reduces friction from email to action.</p>
+</li>
+</ol>
+<hr>
+<h2>How I&#39;d Use the New Site in Emails</h2>
+<h3>Cold email (first touch)</h3>
+<pre><code>Subject: Quick question for [Company Name]
+
+[Name] -- saw the [specific project/job site] you just wrapped up. That kind of work deserves to be seen.
+
+We run the social media system for a mechanical contractor here in Phoenix. Real footage from their job sites, edited like the corporate videos we shoot for $9k clients, posted consistently across Instagram, TikTok, and LinkedIn.
+
+Here&#39;s what that looks like for a contractor:
+[link to /construction or construction section]
+
+If you&#39;re open to it, I&#39;d love to put together a quick plan for [Company Name]. Takes 2 minutes:
+[link to /brief?service=social&amp;industry=construction]
+
+-- Patrik
+</code></pre>
+<h3>Follow-up (hook email, 14-21 days)</h3>
+<pre><code>Subject: Re: Quick question for [Company Name]
+
+[Name] -- didn&#39;t want to just bump my last email, so here&#39;s something more useful.
+
+We just published a breakdown of what we built for Ambition Mechanical: monthly filming, full social content, website, all from one team.
+[link to Ambition case study page]
+
+The short version: most agencies at this price point send you Canva templates. We show up with a drone.
+
+Happy to show you what a month of content would look like for [Company Name] specifically. No commitment, just a plan.
+
+-- Patrik
+</code></pre>
+<h3>Warm lead response (after they show interest)</h3>
+<pre><code>Glad you&#39;re interested. Here&#39;s a quick look at how we work:
+[link to &quot;How We Work&quot; / &quot;Pick What Fits&quot; section]
+
+And here&#39;s the FAQ if you want the details on what&#39;s included:
+[link to FAQ section, specifically &quot;What does a retainer include?&quot;]
+
+Want to hop on a 15-minute call this week? I can walk through what a content month would look like for [Company Name].
+</code></pre>
+<hr>
+<h2>Bottom Line</h2>
+<p>Alex&#39;s direction is strong. The site will go from &quot;tells you AOM exists&quot; to &quot;shows you what AOM does.&quot; That&#39;s the shift I need. The video hero, the pathway gate, the construction section with real proof -- all of that turns my cold emails from &quot;trust me&quot; to &quot;see for yourself.&quot;</p>
+<p>The three things that would move the needle most for outreach, in order:</p>
+<ol>
+<li><strong>Ambition case study page</strong> (proof that converts skeptics)</li>
+<li><strong><code>/construction</code> direct URL</strong> (clean link for emails)</li>
+<li><strong>Pricing signal in FAQ</strong> (qualifies leads before they reply)</li>
+</ol>
+<p>Everything else is gravy. Those three make the site a closing tool, not just a brochure.</p>
+`,h={title:e,slug:t,category:o,agent:n,date:i,dateFormatted:s,updated:null,summary:a,tags:r,content:l};export{n as agent,o as category,l as content,i as date,s as dateFormatted,h as default,t as slug,a as summary,r as tags,e as title,c as updated};

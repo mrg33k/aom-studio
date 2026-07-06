@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background: Night -->
+  <rect width="1200" height="630" fill="#0C0C0C"/>
+
+  <!-- Subtle grid pattern -->
+  <defs>
+    <pattern id="og-grid" patternUnits="userSpaceOnUse" width="60" height="60">
+      <rect x="0" y="0" width="60" height="60" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="630" fill="url(#og-grid)"/>
+
+  <!-- Geometric accent: orange diagonal block (bottom-right) -->
+  <polygon points="800,630 1200,320 1200,630" fill="#E85D26" opacity="0.08"/>
+
+  <!-- Geometric accent: subtle top-left -->
+  <polygon points="0,0 400,0 0,280" fill="rgba(255,255,255,0.02)"/>
+
+  <!-- Orange accent bar -->
+  <rect x="80" y="310" width="120" height="3" fill="#E85D26" rx="1.5"/>
+
+  <!-- AOM wordmark -->
+  <text x="80" y="280" font-family="'Syne', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="140" fill="#F0ECE6" letter-spacing="-4">AOM</text>
+  <text x="373" y="280" font-family="'Syne', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="140" fill="#E85D26">.</text>
+
+  <!-- Tagline line 1 -->
+  <text x="82" y="370" font-family="'Space Grotesk', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" font-weight="500" font-size="34" fill="#F0ECE6" letter-spacing="0.5">We Make Companies</text>
+
+  <!-- Tagline line 2 -->
+  <text x="82" y="415" font-family="'Space Grotesk', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" font-weight="500" font-size="34" fill="#F0ECE6" letter-spacing="0.5">Impossible to Ignore</text>
+
+  <!-- Subline -->
+  <text x="82" y="475" font-family="'Space Grotesk', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" font-weight="400" font-size="20" fill="#8A847C" letter-spacing="0.3">Video  /  Social  /  Web  /  AI Systems</text>
+
+  <!-- URL -->
+  <text x="82" y="570" font-family="'Space Grotesk', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" font-weight="600" font-size="18" fill="#E85D26" letter-spacing="1.5">AHEADOFMARKET.COM</text>
+
+  <!-- Right side: vertical text -->
+  <text x="1140" y="580" font-family="'Syne', 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="14" fill="rgba(255,255,255,0.08)" letter-spacing="4" transform="rotate(-90, 1140, 580)">AHEAD OF MARKET</text>
+
+  <!-- Top edge stripe: orange -->
+  <rect x="0" y="0" width="1200" height="4" fill="#E85D26"/>
+
+  <!-- Bottom edge stripe: orange -->
+  <rect x="0" y="622" width="1200" height="8" fill="#E85D26"/>
+</svg>

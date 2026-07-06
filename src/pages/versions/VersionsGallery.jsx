@@ -42,6 +42,15 @@ const ERAS = [
     ],
   },
   {
+    label: 'Back to the start',
+    items: [
+      { slug: null, href: '/versions-static/may-superside/', shot: '/versions/may-superside.jpg', title: 'The one-day Superside look', note: 'May 7. A Superside-shape migration of the whole site. Lived for a day, then reverted.' },
+      { slug: null, href: '/versions-static/march-redesign/', shot: '/versions/march-redesign.jpg', title: 'The March redesign', note: 'March. Dark Frame and Bold Graphic. The Big 4 chain build, polished through mid-March.' },
+      { slug: null, href: '/versions-static/feb-original/', shot: '/versions/feb-original.jpg', title: 'The February site', note: "February. The first site in this codebase, as it stood before the March redesign." },
+      { slug: null, href: 'https://web.archive.org/web/20260115202642/https://aom-inhouse.com/', shot: '/versions/pre-claude.jpg', title: 'Before all of it', note: 'The old aom-inhouse.com WordPress site, 2021 to January. The archive kept the text but lost the images; this is the old brand.' },
+    ],
+  },
+  {
     label: 'Standing pages',
     items: [
       { slug: null, href: '/r4', shot: '/versions/r4.jpg', title: 'The r4 trio', note: 'Classic, Editorial and Cinema. Three complete homepages, switcher floats top-right on the page.' },
