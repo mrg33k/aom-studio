@@ -884,7 +884,10 @@
    stretched edge-to-edge reads as a blown-up phone app — room names far left, meta far
    right, huge eye travel. Cap and center the content column (loop R3). */
 @media (min-width: 600px) and (max-width: 899px) {
-  [data-cv6][data-screen="home-mobile"] .hbody { max-width: 680px; margin: 0 auto; width: 100%; }
+  [data-cv6][data-screen="home-mobile"] .hbody,
+  [data-cv6][data-screen="command-mobile"] .scrbody,
+  [data-cv6][data-screen="organize-mobile"] .scrbody,
+  [data-cv6][data-screen="organize-mobile"] .hbody { max-width: 680px; margin: 0 auto; width: 100%; }
 }
 
 /* Catch-up card: hide the "Action items" header + list when the item has no action
