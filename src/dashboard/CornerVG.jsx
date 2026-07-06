@@ -448,7 +448,10 @@ export default function CornerVG() {
       badge.id = 'cvg-surface-badge'
       badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#34d399;display:inline-block;margin-right:7px;animation:cvg-dot-pulse 2s ease-in-out infinite;vertical-align:middle"></span><span>GEMINI 3.5 FLASH</span>'
       // CV6-native: calm glass pill (surface + 1px hairline, no loud amber), mono label.
-      badge.style.cssText = 'position:fixed;bottom:14px;right:14px;z-index:99999;' +
+      // Narrow screens: dock bottom-LEFT — bottom-right collides with the menu/avatar
+      // FABs and floats over the room list (loop R3).
+      const dockLeft = window.matchMedia('(max-width: 900px)').matches
+      badge.style.cssText = `position:fixed;bottom:max(14px, env(safe-area-inset-bottom, 0px));${dockLeft ? 'left:14px;' : 'right:14px;'}z-index:99999;` +
         'font:500 10px/1.35 "JetBrains Mono",monospace;letter-spacing:.08em;' +
         'color:#E8EBEF;background:rgba(20,21,24,0.82);' +
         'backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);' +

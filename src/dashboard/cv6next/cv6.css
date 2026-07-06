@@ -880,6 +880,13 @@
    home already dropped its empty column). */
 [data-cv6] .mcatch.is-none { display:none !important; }
 
+/* Tablet portrait (iPad 834 lands below the 900px desktop breakpoint): the phone home
+   stretched edge-to-edge reads as a blown-up phone app — room names far left, meta far
+   right, huge eye travel. Cap and center the content column (loop R3). */
+@media (min-width: 600px) and (max-width: 899px) {
+  [data-cv6][data-screen="home-mobile"] .hbody { max-width: 680px; margin: 0 auto; width: 100%; }
+}
+
 /* Catch-up card: hide the "Action items" header + list when the item has no action
    items (actionState='none'), so the card never shows a naked section header over dead
    space (same hide-empty-surfaces principle as the pin bar above). Shows automatically

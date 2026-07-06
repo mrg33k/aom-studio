@@ -352,7 +352,8 @@ export function DesktopHomeView({
         <div className="col catch">
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14, flex: 'none' }}>
             <span className="eyebrow">Catch up</span>
-            <span style={{ minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{catchTotal}</span>
+            {/* zero is not a call to action — mute the badge when nothing needs you (Steffen R1) */}
+            <span style={{ minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: catchTotal > 0 ? 'var(--accent-weak)' : 'var(--chip)', color: catchTotal > 0 ? 'var(--accent)' : 'var(--faint)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{catchTotal}</span>
             {/* "1 of N · swipe" is sample-deck furniture; the wired column is a scroll list */}
             {catchContent == null && (
               <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>1 of {catchTotal} · <span className="mono">swipe</span></span>

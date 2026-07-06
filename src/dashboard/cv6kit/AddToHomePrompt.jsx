@@ -46,6 +46,14 @@ export const AddToHomePrompt = memo(function AddToHomePrompt({
       return;
     }
 
+    // Desktop gets no install banner: Chrome fires beforeinstallprompt on desktop too,
+    // and the banner was covering the top nav at 1440 (loop R3). Home-screen install
+    // is a touch-device concern — require a coarse pointer or a narrow viewport.
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(max-width: 900px)').matches;
+    if (!isTouchDevice) {
+      return;
+    }
+
     // Check localStorage for previous dismissal
     const isDismissed = localStorage.getItem('cv6-a2hs-dismissed') === 'true';
     if (isDismissed) {
