@@ -225,10 +225,10 @@ const CSS = `
 .r9 .statement { font-family:var(--dp); text-transform:uppercase; font-weight:800; letter-spacing:-.01em; line-height:1.04; font-size:clamp(2rem,6.2vw,4.75rem); color:var(--paper); max-width:20ch; margin-inline:auto; }
 .r9 .statement .dim { color:var(--stone); }
 .r9 .neither-w { position:relative; display:inline-block; }
-.r9 .neither-line { position:absolute; left:-.06em; right:-.06em; top:52%; height:.06em; background:var(--gold); transform-origin:left center; }
+.r9 .neither-line { position:absolute; left:-.06em; right:-.06em; top:52%; height:.085em; background:var(--gold); transform-origin:left center; }
 .r9 .payoff { font-size:clamp(2.5rem,8.2vw,6.75rem); max-width:16ch; }
 .r9 .payoff-tail { font-family:var(--tx); font-size:clamp(1rem,2vw,1.25rem); color:var(--stone); margin-top:2rem; text-transform:none; letter-spacing:0; font-weight:400; line-height:1.7; }
-.r9 .scene-mark { width:clamp(60px,9vw,96px); height:auto; margin:0 auto 2.75rem; display:block; color:var(--paper); }
+.r9 .scene-mark { width:clamp(96px,14vw,160px); height:auto; margin:0 auto 2.75rem; display:block; color:var(--paper); }
 
 /* the ACT: one sticky stage, the gear lives through the whole chapter */
 .r9 .act { position:relative; background:var(--ink); color:var(--paper); }
@@ -236,7 +236,6 @@ const CSS = `
   position:fixed; top:0; left:0; right:0; height:100vh;
   z-index:1; overflow:hidden; pointer-events:none;
 }
-.r9 .act .scene { z-index:2; }
 .r9 .act-obj { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; will-change:transform,opacity; }
 .r9 .act-obj img {
   width:min(940px,96vw); height:auto; display:block;
@@ -250,15 +249,15 @@ const CSS = `
 }
 .r9 .act-caption > span {
   grid-area:1/1; display:inline-flex; align-items:center; gap:.6rem;
-  border:1px solid var(--line-dark); background:rgba(11,11,11,.7); padding:.55rem .95rem;
-  font-size:.62rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--stone);
+  border:1px solid rgba(196,164,106,.5); background:rgba(11,11,11,.78); padding:.65rem 1.1rem;
+  font-size:.68rem; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--paper);
 }
 .r9 .act-caption .csq { width:5px; height:5px; background:var(--gold); flex:none; }
-.r9 .act .scene { position:relative; z-index:1; background:transparent; }
+.r9 .act .scene { position:relative; z-index:2; background:transparent; min-height:118vh; }
 .r9 .act .statement, .r9 .act .proof, .r9 .act .beat-eyebrow { position:relative; z-index:1; }
 
 /* proof strips under identity beats */
-.r9 .proof { display:flex; gap:1px; background:var(--line-dark); border:1px solid var(--line-dark); max-width:640px; margin:3rem auto 0; }
+.r9 .proof { display:flex; gap:1px; background:var(--ink); border:1px solid var(--line-dark); padding:5px; max-width:600px; margin:3rem auto 0; }
 .r9 .proof-cell { position:relative; flex:1; aspect-ratio:16/10; overflow:hidden; background:var(--ink-800); }
 .r9 .proof-cell img { width:100%; height:100%; object-fit:cover; object-position:top; filter:grayscale(.15) contrast(1.05); }
 .r9 .proof-cap { display:block; text-align:center; font-size:.62rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-500); margin-top:1rem; }
@@ -831,7 +830,7 @@ export default function HomeR5Preview() {
                   initial={{ scaleX: 0 }}
                   whileInView={{ scaleX: 1 }}
                   viewport={{ once: true, amount: 0.6 }}
-                  transition={{ duration: 0.55, ease: EASE, delay: 0.7 }}
+                  transition={{ duration: 0.5, ease: EASE, delay: 0.4 }}
                 />
               </span>
               {'\u00A0'}
