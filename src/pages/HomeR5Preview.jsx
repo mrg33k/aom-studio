@@ -257,6 +257,7 @@ const CSS = `
 }
 .r9 .act-caption .csq { width:5px; height:5px; background:var(--gold); flex:none; }
 .r9 .act .scene { position:relative; z-index:2; background:transparent; min-height:118vh; }
+.r9 .act .scene.act-tight { min-height:100vh; }
 .r9 .act .statement, .r9 .act .proof, .r9 .act .beat-eyebrow { position:relative; z-index:1; }
 
 /* proof strips under identity beats */
@@ -871,7 +872,8 @@ export default function HomeR5Preview() {
           </div>
         </Scene>
 
-        <Scene ch={1} tone="sc-dark">
+        <Scene ch={1} tone="sc-dark" className="act-tight">
+          <span className="ghost-n" aria-hidden="true">03</span>
           <div className="scene-inner">
             <p className="statement">
               <Kinetic segments={[{ t: "We're actually", cls: 'dim' }]} />
@@ -892,7 +894,8 @@ export default function HomeR5Preview() {
           </div>
         </Scene>
 
-        <Scene ch={1} tone="sc-ink">
+        <Scene ch={1} tone="sc-ink" className="act-tight">
+          <span className="ghost-n" aria-hidden="true">04</span>
           <div className="scene-inner">
             <Rise><span className="beat-eyebrow">What we actually are</span></Rise>
             <Rise delay={0.1}><BrandMark kind="mono" className="scene-mark" /></Rise>
