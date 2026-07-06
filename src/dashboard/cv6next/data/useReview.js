@@ -86,9 +86,10 @@ async function buildDeliverableBody(item) {
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
       // max-height caps vertical 9:16 drafts: at natural size they filled 1300px+
       // of a ~800px viewport, shoving the scrub bar (the ONLY play control — no
-      // native controls) below the fold. Read as "videos never load." The cap keeps
-      // video + 46px bar on screen; margin:auto centers the letterboxed portrait.
-      return `<video src="${src}" preload="metadata" playsinline style="max-width:100%;max-height:min(62vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video>`;
+      // native controls) below the fold. Read as "videos never load." 52vh (not
+      // 62) so video + caption + title + 46px bar ALSO fit the mobile read window
+      // (~100dvh-250px) without scrolling; margin:auto centers the portrait.
+      return `<video src="${src}" preload="metadata" playsinline style="max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video>`;
     }
     if (type === 'siteshot') {
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;

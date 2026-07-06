@@ -27,6 +27,20 @@ function composeReviewScreen(raw, { mobile = true, pick = 0 } = {}) {
     const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
     sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => screen.appendChild(b.cloneNode(true)));
   }
+  // De-cage the read view's media window. The template sizes the viewer for a TEXT
+  // excerpt: .doc height:392px wrapping a 320px overflow:auto body host. A vertical
+  // 9:16 video (plus the 46px scrub bar, the ONLY play control) rendered below the
+  // fold of BOTH nested cages — mobile showed a clipped frozen frame with no way to
+  // play, which read as "videos don't load." One scroll window (.doc, sized to the
+  // phone screen) instead of two; the body host flows at its natural height.
+  const docEl = screen.querySelector('.doc');
+  if (docEl) {
+    docEl.setAttribute('style', String(docEl.getAttribute('style') || '').replace(/height:\s*392px/, 'height:calc(100dvh - 250px)'));
+  }
+  const bodyHost = screen.querySelector('[data-cv6-keep="review-body"]');
+  if (bodyHost) {
+    bodyHost.setAttribute('style', String(bodyHost.getAttribute('style') || '').replace(/height:\s*320px;\s*overflow:\s*auto;?/, ''));
+  }
   return screen.outerHTML;
 }
 
