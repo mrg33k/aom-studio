@@ -101,7 +101,11 @@ function inlineMd(s) {
 // Render the WHOLE file as readable HTML so the reader actually lets you read it.
 function parseMarkdown(content) {
   if (!content) return { title: '', body: '' };
-  const lines = String(content).split('\n');
+  // Reader hygiene (loop R11): YAML frontmatter and HTML comments are plumbing,
+  // not prose — they rendered as literal text at the top of the paper reader.
+  let src = String(content).replace(/^﻿?---[ \t]*\n[\s\S]*?\n---[ \t]*\n?/, '');
+  src = src.replace(/<!--[\s\S]*?-->/g, '');
+  const lines = src.split('\n');
 
   let title = '';
   for (let i = 0; i < lines.length; i++) {
@@ -467,7 +471,7 @@ export function useOrganize(worldId = 'aom') {
 
   const data = {
     tree: treeNodes,
-    folder: { name: openProject.name, fileCount: fileList.length, folderCount: 0 },
+    folder: { name: openProject.name, fileCount: fileList.length, folderCount: 0, fileCountLabel: `${fileList.length} file${fileList.length === 1 ? '' : 's'}` },
     files: fileList,
     projects: projectList,
     breadcrumb: [{ id: 'root', name: 'Corner' }, openProject].filter((x) => x.id),
