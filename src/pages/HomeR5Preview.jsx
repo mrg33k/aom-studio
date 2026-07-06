@@ -204,8 +204,9 @@ const CSS = `
 /* ─── IDENTITY BEATS ─── */
 .r9 .ghost-n {
   position:absolute; top:50%; left:50%; transform:translate(-50%,-52%);
-  font-family:var(--dp); font-weight:800; font-size:clamp(16rem,44vw,34rem);
-  line-height:1; color:var(--paper); opacity:.028; pointer-events:none; user-select:none;
+  font-family:var(--dp); font-weight:800; font-size:clamp(15rem,40vw,30rem);
+  line-height:1; color:transparent; -webkit-text-stroke:1.5px rgba(246,246,244,.07);
+  pointer-events:none; user-select:none;
 }
 .r9 .stamp {
   width:clamp(76px,10vw,104px); height:clamp(76px,10vw,104px);
@@ -298,6 +299,26 @@ const CSS = `
 .r9 .cta-body { font-size:1.05rem; color:var(--stone); line-height:1.8; max-width:46ch; margin:0 auto 2.75rem; }
 .r9 .cta-row { display:flex; gap:1.5rem; align-items:center; justify-content:center; flex-wrap:wrap; }
 .r9 .cta-note { font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--stone); font-weight:600; }
+
+/* brief form */
+.r9 .brief { display:grid; grid-template-columns:1.15fr .85fr; border:1px solid var(--line-dark); text-align:left; max-width:860px; margin:3rem auto 0; }
+@media(max-width:760px){ .r9 .brief { grid-template-columns:1fr; } }
+.r9 .brief-form { padding:clamp(1.5rem,3vw,2.25rem); border-right:1px solid var(--line-dark); display:flex; flex-direction:column; gap:1.4rem; }
+@media(max-width:760px){ .r9 .brief-form { border-right:none; border-bottom:1px solid var(--line-dark); } }
+.r9 .brief-field { display:flex; flex-direction:column; gap:.45rem; }
+.r9 .brief-field label { font-size:.62rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--stone); }
+.r9 .brief-field input, .r9 .brief-field textarea {
+  background:transparent; border:0; border-bottom:1px solid var(--line-dark);
+  color:var(--paper); font-family:var(--tx); font-size:.95rem; padding:.55rem 0;
+  outline:none; resize:none; border-radius:0;
+}
+.r9 .brief-field input:focus, .r9 .brief-field textarea:focus { border-bottom-color:var(--gold); }
+.r9 .brief-form .btn-gold { align-self:flex-start; margin-top:.35rem; }
+.r9 .brief-side { padding:clamp(1.5rem,3vw,2.25rem); display:flex; flex-direction:column; gap:1.4rem; justify-content:center; }
+.r9 .brief-side .k { font-size:.62rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--stone); display:block; margin-bottom:.3rem; }
+.r9 .brief-side a { color:var(--paper); font-size:.98rem; transition:color .15s; }
+.r9 .brief-side a:hover { color:var(--gold); }
+.r9 .brief-note { font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--stone); font-weight:600; }
 
 /* ─── PORTFOLIO WALL ─── */
 .r9 .work { padding:clamp(5rem,10vw,9rem) var(--pad); background:var(--paper); }
@@ -506,6 +527,14 @@ export default function HomeR5Preview() {
   const [video, setVideo] = useState(null);
   const [prog, setProg] = useState(0);
   const [ch, setCh] = useState(0);
+  const [brief, setBrief] = useState({ name: '', co: '', msg: '' });
+
+  const sendBrief = e => {
+    e.preventDefault();
+    const subject = `New project — ${brief.name}${brief.co ? ' (' + brief.co + ')' : ''}`;
+    const body = `Hi AOM,%0D%0A%0D%0A${encodeURIComponent(brief.msg)}%0D%0A%0D%0A— ${encodeURIComponent(brief.name)}${brief.co ? ', ' + encodeURIComponent(brief.co) : ''}`;
+    window.location.href = `mailto:hello@aheadofmarket.com?subject=${encodeURIComponent(subject)}&body=${body}`;
+  };
 
   // scroll progress + lenis
   useEffect(() => {
@@ -867,10 +896,36 @@ export default function HomeR5Preview() {
               <p className="cta-body">
                 By now you know us a little. We'd love to learn about what you're working on — and how we might be able to help.
               </p>
-              <div className="cta-row">
-                <a className="btn-gold" href="mailto:hello@aheadofmarket.com">Say hello</a>
-                <span className="cta-note">We reply within 24 hours.</span>
-              </div>
+            </Rise>
+            <Rise delay={0.55}>
+              <form className="brief" onSubmit={sendBrief}>
+                <div className="brief-form">
+                  <div className="brief-field">
+                    <label htmlFor="bf-name">Your name</label>
+                    <input id="bf-name" required value={brief.name} onChange={e => setBrief({ ...brief, name: e.target.value })} autoComplete="name" />
+                  </div>
+                  <div className="brief-field">
+                    <label htmlFor="bf-co">Company</label>
+                    <input id="bf-co" value={brief.co} onChange={e => setBrief({ ...brief, co: e.target.value })} autoComplete="organization" />
+                  </div>
+                  <div className="brief-field">
+                    <label htmlFor="bf-msg">What are you making?</label>
+                    <textarea id="bf-msg" rows={3} required value={brief.msg} onChange={e => setBrief({ ...brief, msg: e.target.value })} />
+                  </div>
+                  <button className="btn-gold" type="submit">Start the conversation</button>
+                </div>
+                <div className="brief-side">
+                  <div>
+                    <span className="k">Email</span>
+                    <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
+                  </div>
+                  <div>
+                    <span className="k">Phone</span>
+                    <a href="tel:6023732164">602 373 2164</a>
+                  </div>
+                  <span className="brief-note">We reply within 24 hours.</span>
+                </div>
+              </form>
             </Rise>
           </div>
         </Scene>
