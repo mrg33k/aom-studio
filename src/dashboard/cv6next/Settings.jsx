@@ -7,7 +7,7 @@ import SettingsDesktop from './SettingsDesktop.jsx';
 import SettingsMobile from './SettingsMobile.jsx';
 
 export default function Settings({ onNav, onOpenNav }) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useMediaQuery('(max-width: 899px)') // app-wide tablet rule: below 900 = mobile layout (loop R15);
 
   return isMobile ? (
     <SettingsMobile onNav={onNav} onOpenNav={onOpenNav} />

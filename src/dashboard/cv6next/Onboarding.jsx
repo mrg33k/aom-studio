@@ -7,7 +7,7 @@ import OnboardingDesktop from './OnboardingDesktop.jsx';
 import OnboardingMobile from './OnboardingMobile.jsx';
 
 export default function Onboarding({ onNav, onOpenNav }) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useMediaQuery('(max-width: 899px)') // app-wide tablet rule: below 900 = mobile layout (loop R15);
 
   return isMobile ? (
     <OnboardingMobile onNav={onNav} onOpenNav={onOpenNav} />

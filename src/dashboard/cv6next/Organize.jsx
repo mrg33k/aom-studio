@@ -7,7 +7,7 @@ import OrganizeDesktop from './OrganizeDesktop';
 import OrganizeMobile from './OrganizeMobile';
 
 export default function Organize({ onNav, onOpenNav, onAssignFile }) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useMediaQuery('(max-width: 899px)') // app-wide tablet rule: below 900 = mobile layout (loop R15);
 
   if (isMobile) {
     return <OrganizeMobile onNav={onNav} onOpenNav={onOpenNav} onAssignFile={onAssignFile} />;

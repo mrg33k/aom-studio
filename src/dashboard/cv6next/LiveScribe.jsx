@@ -41,7 +41,7 @@ const HTML_MOBILE = composeLiveScribe(template, 'livescribe-mobile');
 
 export default function LiveScribe({ onNav, onOpenNav }) {
   const { state, data, controls } = useLiveScribe('aom');
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useMediaQuery('(max-width: 899px)') // app-wide tablet rule: below 900 = mobile layout (loop R15);
 
   const handleStopAndSave = async () => {
     if (!controls) return;
