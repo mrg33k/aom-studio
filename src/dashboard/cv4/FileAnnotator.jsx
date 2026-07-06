@@ -60,7 +60,9 @@ export default function FileAnnotator({ node, worldId, kind, url, text }) {
     const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))
     const d = { type: 'point', x, y, text: '' }
     if (kind === 'video' && videoRef.current) d.t = videoRef.current.currentTime
-    setDraft(d); setActiveId(null)
+    // pin position is captured — disarm pin mode NOW so the native playbar returns
+    // immediately (mobile: pin mode left armed stranded the video with no controls)
+    setDraft(d); setActiveId(null); setPinMode(false)
   }
 
   // video helpers
@@ -68,6 +70,13 @@ export default function FileAnnotator({ node, worldId, kind, url, text }) {
   const togglePlay = () => { const v = videoRef.current; if (!v) return; if (v.paused) v.play(); else v.pause() }
   const commentHere = () => { const v = videoRef.current; if (v) { v.pause(); setDraft({ type: 'timeline', t: v.currentTime, text: '' }); setPinMode(false) } }
   const seek = (t) => { const v = videoRef.current; if (v) { v.currentTime = t; v.pause() } }
+  const scrubRef = useRef(false)
+  const scrubTo = (clientX, el) => {
+    const v = videoRef.current; if (!v || !vid.dur) return
+    const r = el.getBoundingClientRect()
+    const f = Math.min(1, Math.max(0, (clientX - r.left) / r.width))
+    v.currentTime = f * vid.dur
+  }
 
   const AMBER = 'var(--cv6-accent-warn, #f59e0b)'
   const pinSty = (n, on) => ({ position: 'absolute', transform: 'translate(-50%,-50%)', width: '24px', height: '24px', borderRadius: '50%', background: on ? 'var(--cv6-accent-primary)' : AMBER, color: '#fff', border: '2px solid #fff', boxShadow: '0 2px 8px rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, cursor: 'pointer', zIndex: 6 })
@@ -108,16 +117,24 @@ export default function FileAnnotator({ node, worldId, kind, url, text }) {
       <div>
         <div ref={surfRef} onClick={pinMode && vid.paused ? placePoint : undefined}
           style={{ position: 'relative', borderRadius: '12px', overflow: 'hidden', background: '#0c1118', cursor: pinMode && vid.paused ? 'crosshair' : 'default', lineHeight: 0 }}>
+          {/* controls stay unless we're actually pinning on a paused frame — hiding them
+              while playing left mobile with no pause/scrub at all */}
           <video ref={videoRef} src={url} onTimeUpdate={onTime} onLoadedMetadata={onTime} onPlay={onTime} onPause={onTime}
-            controls={!pinMode} style={{ width: '100%', display: 'block', borderRadius: '12px', maxHeight: '52vh', background: '#0c1118' }} />
+            controls={!(pinMode && vid.paused)} playsInline style={{ width: '100%', display: 'block', borderRadius: '12px', maxHeight: '52vh', background: '#0c1118' }} />
           {points.map((c, i) => (
             <button key={c.id} data-pin onClick={(e) => { e.stopPropagation(); setActiveId(c.id); if (c.t != null) seek(c.t) }} title={c.text}
               style={{ ...pinSty(i + 1, activeId === c.id), left: (c.x * 100) + '%', top: (c.y * 100) + '%' }}>{i + 1}</button>
           ))}
           {draft && draft.type === 'point' && (<span style={{ position: 'absolute', left: (draft.x * 100) + '%', top: (draft.y * 100) + '%', transform: 'translate(-50%,-50%)', width: '24px', height: '24px', borderRadius: '50%', background: 'var(--cv6-accent-primary)', border: '2px solid #fff', zIndex: 7 }} />)}
         </div>
-        {/* timeline with comment markers */}
-        <div style={{ position: 'relative', height: '22px', display: 'flex', alignItems: 'center', marginTop: '12px' }}>
+        {/* timeline with comment markers — a real scrubber (tap/drag to seek), not just a
+            progress display; on mobile this is the always-available playbar */}
+        <div
+          onPointerDown={(e) => { if (e.target.closest && e.target.closest('[data-pin]')) return; e.currentTarget.setPointerCapture(e.pointerId); scrubRef.current = true; scrubTo(e.clientX, e.currentTarget) }}
+          onPointerMove={(e) => { if (scrubRef.current) scrubTo(e.clientX, e.currentTarget) }}
+          onPointerUp={() => { scrubRef.current = false }}
+          onPointerCancel={() => { scrubRef.current = false }}
+          style={{ position: 'relative', height: '28px', display: 'flex', alignItems: 'center', marginTop: '10px', cursor: 'pointer', touchAction: 'none' }}>
           <div style={{ position: 'absolute', left: 0, right: 0, height: '6px', borderRadius: '3px', background: 'var(--cv6-surface-hover)' }} />
           <div style={{ position: 'absolute', left: 0, height: '6px', borderRadius: '3px', background: 'var(--cv6-accent-primary)', width: pct + '%' }} />
           {timeline.map((c) => (

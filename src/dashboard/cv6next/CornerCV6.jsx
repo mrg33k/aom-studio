@@ -1384,6 +1384,9 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const catchUpRender = {
     ...liveCatchUpView,
     colState: catchColState,
+    // mobile deck header: "N of M · swipe →" only when there IS a next card — one bound
+    // string so the template can never render "0 of 0 · swipe" (Patrik 2026-07-06)
+    swipeLabel: liveCatchUpView.count > 1 ? `${liveCatchUpView.position || 1} of ${liveCatchUpView.count} · swipe →` : '',
     footerState: replyWorking ? 'working'
       : !liveCatchUpView.count ? 'none'
         : trackerStatus === 'adding' ? 'adding'

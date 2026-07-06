@@ -56,7 +56,8 @@ export function MobileHomeExact({ user, agents = [], projectRooms = [], catchup 
   const [menuOpen, setMenuOpen] = useState(false);
   const card = (catchup && catchup[0]) || SAMPLE_HOME_M.catchup[0];
   const count = (catchup && catchup.length) || 0;
-  const projCount = (p) => (Array.isArray(p?.tasks) ? p.tasks.length : (typeof p?.tasks === 'number' ? p.tasks : null));
+  // null (not 0) when there's nothing to count — a column of literal "0"s is noise
+  const projCount = (p) => (Array.isArray(p?.tasks) ? (p.tasks.length || null) : (typeof p?.tasks === 'number' ? (p.tasks || null) : null));
   const rooms = [
     ...agents.map((a) => ({ kind: 'agent', raw: a, name: a.name || a.slug, status: a.status })),
     ...projectRooms.map((p) => ({ kind: 'project', raw: p, name: p.name || p.slug, color: p.color, count: projCount(p) })),
