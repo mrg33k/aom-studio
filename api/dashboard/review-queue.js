@@ -57,6 +57,7 @@ const PROCESS_DOC_NAMES = new Set([
   'readme.md', 'plan.md', 'index.md', 'punchlist.md', 'incoming-tasks.md',
   'claude.md', 'agent.md', 'notes.md', 'todo.md',
   'open-questions.md', 'open_questions.md', 'questions.md',
+  'phonebook.md',
 ]);
 function isProcessDoc(filename) {
   const base = (filename || '').toLowerCase().trim();
@@ -66,6 +67,10 @@ function isProcessDoc(filename) {
   if (/^corner-.*-\d{4}-?\d{2}-?\d{2}/.test(base)) return true;
   // support-ask / triage notes
   if (/^support-ask-/.test(base) || /^triage-/.test(base)) return true;
+  // Working notes (plans/steps/status/queues/logs) are internal even when agents drop
+  // them into deliverables/ — Patrik's CV6 bug: the queue must show finished work only.
+  // Mirrored in AOM-EA scripts/build-review-queue.py (is_process_doc).
+  if (/(^|-)(loop|queue|plan|plans|steps|status|state|log|checklist|backlog|roadmap|todo|todos|punch-?list)\.(md|txt)$/.test(base)) return true;
   return false;
 }
 // Returns the type for a reviewable artifact, or null for data/log/system files
