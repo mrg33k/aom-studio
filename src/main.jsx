@@ -116,6 +116,20 @@ const AcceptInvite = lazy(() => import('./pages/AcceptInvite.jsx'))
 const DashboardWelcome = lazy(() => import('./pages/DashboardWelcome.jsx'))
 const HomeR4Preview = lazy(() => import('./pages/HomeR4Preview.jsx'))
 const HomeR5Preview = lazy(() => import('./pages/HomeR5Preview.jsx'))
+const VersionsGallery = lazy(() => import('./pages/versions/VersionsGallery.jsx'))
+const VSuperside = lazy(() => import('./pages/versions/VSuperside.jsx'))
+const VShowcaseLens = lazy(() => import('./pages/versions/VShowcaseLens.jsx'))
+const VParadigms = lazy(() => import('./pages/versions/VParadigms.jsx'))
+const VBento = lazy(() => import('./pages/versions/VBento.jsx'))
+const VFlim = lazy(() => import('./pages/versions/VFlim.jsx'))
+const VScrollSite = lazy(() => import('./pages/versions/VScrollSite.jsx'))
+const VHorizontal = lazy(() => import('./pages/versions/VHorizontal.jsx'))
+const VScrollStory = lazy(() => import('./pages/versions/VScrollStory.jsx'))
+const VEditorial = lazy(() => import('./pages/versions/VEditorial.jsx'))
+const VGearFloat = lazy(() => import('./pages/versions/VGearFloat.jsx'))
+const VActStage = lazy(() => import('./pages/versions/VActStage.jsx'))
+const VGearTurn = lazy(() => import('./pages/versions/VGearTurn.jsx'))
+const VDensity = lazy(() => import('./pages/versions/VDensity.jsx'))
 const ProjectPage = lazy(() => import('./pages/ProjectPage.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
@@ -303,7 +317,7 @@ function TestModeBanner() {
   const { pathname } = useLocation()
   if (import.meta.env.VITE_DASHBOARD_MODE !== 'test') return null
   // Hide on the public marketing preview pages so they review clean (it never shows on real prod anyway).
-  if (pathname === '/r5' || pathname.startsWith('/work/')) return null
+  if (pathname === '/r5' || pathname === '/r4' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname.startsWith('/work/')) return null
   return (
     <>
       <style>{`
@@ -416,6 +430,20 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/home-v2" element={<V2Home />} />
           <Route path="/r4" element={<HomeR4Preview />} />
           <Route path="/r5" element={<HomeR5Preview />} />
+          <Route path="/versions" element={<VersionsGallery />} />
+          <Route path="/versions/superside" element={<VSuperside />} />
+          <Route path="/versions/showcase-lens" element={<VShowcaseLens />} />
+          <Route path="/versions/paradigms" element={<VParadigms />} />
+          <Route path="/versions/bento" element={<VBento />} />
+          <Route path="/versions/flim" element={<VFlim />} />
+          <Route path="/versions/scroll-site" element={<VScrollSite />} />
+          <Route path="/versions/horizontal" element={<VHorizontal />} />
+          <Route path="/versions/scroll-story" element={<VScrollStory />} />
+          <Route path="/versions/editorial" element={<VEditorial />} />
+          <Route path="/versions/gear-float" element={<VGearFloat />} />
+          <Route path="/versions/act-stage" element={<VActStage />} />
+          <Route path="/versions/gear-turn" element={<VGearTurn />} />
+          <Route path="/versions/density" element={<VDensity />} />
           <Route path="/work/:slug" element={<ProjectPage />} />
           <Route path="/scribe" element={<LiveScribe />} />
           <Route path="/construction" element={<ConstructionRedirect />} />
