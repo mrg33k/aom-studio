@@ -202,10 +202,11 @@ const CSS = `
 /* ─── CHAPTERS (full-viewport cinematic beats) ─── */
 .r15 .beat { position:relative; min-height:100svh; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; background:var(--ink); }
 .r15 .beat-media { position:absolute; inset:0; }
-.r15 .beat-inner { position:relative; z-index:2; padding:7rem var(--pad) 4.5rem; }
+.r15 .beat-grad::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, transparent 46%, rgba(6,6,6,.62) 88%); z-index:1; pointer-events:none; }
+.r15 .beat-inner { position:relative; z-index:2; padding:7rem var(--pad) 5.5rem; }
 .r15 .beat-h { font-size:clamp(2.1rem,5.4vw,4.9rem); max-width:22ch; text-shadow:0 2px 34px rgba(0,0,0,.5); }
 .r15 .beat-chip { margin-bottom:1.4rem; }
-.r15 .beat-side { position:absolute; right:var(--pad); bottom:4.5rem; z-index:2; }
+.r15 .beat-side { position:absolute; right:var(--pad); bottom:5.5rem; z-index:2; }
 @media(max-width:860px){ .r15 .beat-side { display:none; } }
 
 /* centered beats (neither / payoff) */
@@ -433,13 +434,18 @@ function Chars({ lines, delay = 0.2, auto = false, sq = false, className = '' })
   return (
     <span ref={ref} className={className}>
       {lines.map((segs, li) => (
-        <span className="row" key={li}>
+        // authored line breaks hold only when there ARE multiple lines; a
+        // single-line Chars stays inline so composites (the neither strike) flow
+        <span style={lines.length > 1 ? { display: 'block' } : undefined} key={li}>
           {segs.map((seg, si) => {
+            const isLastSeg = li === lines.length - 1 && si === segs.length - 1;
             // words never break — chars animate inside a nowrap word span
             const words = seg.t.split(/(\s+)/);
+            const lastWordIdx = (() => { let k = -1; words.forEach((w, i) => { if (w && !/^\s+$/.test(w)) k = i; }); return k; })();
             return words.map((w, wi) => {
               if (!w) return null;
               if (/^\s+$/.test(w)) { ci++; return ' '; }
+              const bondSq = sq && isLastSeg && wi === lastWordIdx;
               return (
                 <span key={si + '-' + wi} style={{ display: 'inline-block', whiteSpace: 'nowrap' }}>
                   {Array.from(w).map((c, i) => {
@@ -458,16 +464,16 @@ function Chars({ lines, delay = 0.2, auto = false, sq = false, className = '' })
                       </span>
                     );
                   })}
+                  {bondSq ? (
+                    <span
+                      className="sq"
+                      style={{ opacity: on ? 1 : 0, transition: `opacity .5s ease ${(auto ? 0 : delay) + ci * 0.03}s` }}
+                    />
+                  ) : null}
                 </span>
               );
             });
           })}
-          {sq && li === lines.length - 1 ? (
-            <span
-              className="sq"
-              style={{ opacity: on ? 1 : 0, transition: `opacity .5s ease ${(auto ? 0 : delay) + ci * 0.03}s` }}
-            />
-          ) : null}
         </span>
       ))}
     </span>
@@ -677,7 +683,7 @@ export default function HomeR5Preview() {
                     sq
                     lines={[
                       [{ t: 'We make companies' }],
-                      [{ t: 'impossible to ignore.' }],
+                      [{ t: 'impossible to ignore' }],
                     ]}
                   />
                 </h1>
@@ -720,7 +726,7 @@ export default function HomeR5Preview() {
         <div id="story">
           {/* beat 1 — the video company, over our own film footage */}
           <section className="beat" data-ch="1">
-            <div className="beat-media">
+            <div className="beat-media beat-grad">
               <LazyGumlet id={FILM_REEL} filter="none" bleed={1.14} offsetY={-28} />
             </div>
             <div className="beat-inner">
@@ -732,7 +738,7 @@ export default function HomeR5Preview() {
                   sq
                   lines={[
                     [{ t: 'Many companies around Phoenix', cls: 'dim' }],
-                    [{ t: 'know us as a ', cls: 'dim' }, { t: 'video company.' }],
+                    [{ t: 'know us as a ', cls: 'dim' }, { t: 'video company' }],
                   ]}
                 />
               </h2>
@@ -746,7 +752,7 @@ export default function HomeR5Preview() {
 
           {/* beat 2 — the web company, over the sites we built */}
           <section className="beat" data-ch="1">
-            <div className="beat-media collage" aria-hidden="true">
+            <div className="beat-media collage beat-grad" aria-hidden="true">
               <span><img src="/hero-sites/ambition.jpg" alt="" loading="lazy" /></span>
               <span><img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" /></span>
               <span><img src="/hero-sites/valor.jpg" alt="" loading="lazy" /></span>
@@ -757,7 +763,7 @@ export default function HomeR5Preview() {
                   sq
                   lines={[
                     [{ t: 'Others know us as a', cls: 'dim' }],
-                    [{ t: 'web development company.' }],
+                    [{ t: 'web development company' }],
                   ]}
                 />
               </h2>
@@ -801,7 +807,7 @@ export default function HomeR5Preview() {
                 <Chars
                   sq
                   lines={[
-                    [{ t: "We're a ", cls: 'dim' }, { t: 'storytelling company.', cls: 'gold' }],
+                    [{ t: "We're a ", cls: 'dim' }, { t: 'storytelling company', cls: 'gold' }],
                   ]}
                 />
               </h2>
@@ -859,7 +865,7 @@ export default function HomeR5Preview() {
 
         {/* CH 03 — THE BILLBOARD: raw footage under the line */}
         <section className="beat" data-ch="3">
-          <div className="beat-media">
+          <div className="beat-media beat-grad">
             <LazyGumlet id={BILL_REEL} filter="none" bleed={1.14} offsetY={-28} />
           </div>
           <div className="beat-inner">
