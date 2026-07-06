@@ -84,7 +84,11 @@ async function buildDeliverableBody(item) {
       // No native controls: the DS7 scrub bar (ReviewPins useVideoScrub) is the player
       // chrome — timeline with numbered comment markers, play button, mono times.
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
-      return `<video src="${src}" preload="metadata" playsinline style="max-width:100%;border-radius:10px;display:block;background:#000;"></video>`;
+      // max-height caps vertical 9:16 drafts: at natural size they filled 1300px+
+      // of a ~800px viewport, shoving the scrub bar (the ONLY play control — no
+      // native controls) below the fold. Read as "videos never load." The cap keeps
+      // video + 46px bar on screen; margin:auto centers the letterboxed portrait.
+      return `<video src="${src}" preload="metadata" playsinline style="max-width:100%;max-height:min(62vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video>`;
     }
     if (type === 'siteshot') {
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
