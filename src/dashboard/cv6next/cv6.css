@@ -888,6 +888,8 @@
   [data-cv6][data-screen="command-mobile"] .scrbody,
   [data-cv6][data-screen="organize-mobile"] .scrbody,
   [data-cv6][data-screen="organize-mobile"] .hbody { max-width: 680px; margin: 0 auto; width: 100%; }
+  /* pick-a-project rows sit in an unclassed wrapper — cap the rows themselves */
+  [data-cv6][data-screen="organize-mobile"] .prow { max-width: 680px; margin-left: auto; margin-right: auto; }
 }
 
 /* Catch-up card: hide the "Action items" header + list when the item has no action
