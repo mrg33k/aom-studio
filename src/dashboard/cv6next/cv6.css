@@ -932,6 +932,9 @@
 /* Command ledger: a fallback line (last activity / no goal) reads muted so it can't
    impersonate a real goal (loop R8) */
 [data-cv6] .gcell.is-fallback { color: var(--muted); }
+/* Mobile ledger preview: clamp to two lines WITH ellipsis — the old 48-char data
+   slice hard-cut words ("mid-tur", "queu") (loop R13). */
+[data-cv6] .gclamp { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 
 /* Tracker detail: meta rows with no real value do not render (loop R5) */
 [data-cv6] .bmeta.is-none { display:none !important; }
