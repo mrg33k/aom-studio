@@ -13,8 +13,8 @@ const TICKER = ["Skylar", "PA'LA", 'Ambition Mechanical', 'ISA Energy', 'Brandon
 const STORIES = [
   {
     client: 'ISA Energy', tag: 'Energy · Film', media: 'slate',
-    big: '3', bigLabel: 'films in one series',
-    slate: { title: 'ISA ENERGY', roll: 'A THREE-FILM SERIES', scene: 'DEMO / VALIDATION / BRAND', take: 'LIVE IN INVESTOR MEETINGS' },
+    big: '3', bigLabel: 'films — demo, validation, brand',
+    slate: { title: 'ISA ENERGY', roll: 'A THREE-FILM SERIES', scene: '3 ACTS · 9 BEATS · 4 SUBJECTS', take: 'LIVE IN INVESTOR MEETINGS' },
     headline: 'A three-video series, now in every investor meeting',
     body: `We launched a three-video series with the ISA team — a product demo, a validation study where it's stress-tested under scientific conditions, and a brand film about their mission. All three are live on their site and running in investor meetings.`,
     stat: 'Helped raise a substantial round.',
@@ -28,8 +28,8 @@ const STORIES = [
   },
   {
     client: 'Included Health', tag: 'Healthcare · Film', media: 'slate',
-    big: 'Top-5', bigLabel: 'US insurer — films for their Inspire Summit',
-    slate: { title: 'INCLUDED HEALTH', roll: 'A FILM SERIES', scene: 'FOR A TOP-5 US INSURER', take: 'SCREENED AT INSPIRE SUMMIT' },
+    big: 'Top-5', bigLabel: 'US insurer by size',
+    slate: { title: 'INCLUDED HEALTH', roll: 'A FILM SERIES', scene: 'HEALTHCARE · NATIONWIDE', take: 'SCREENED AT INSPIRE SUMMIT' },
     headline: 'Films for one of the largest insurers in the US',
     body: `We finished a series of videos for Included Health — one of the largest insurance providers in the country — and were proud to work alongside them at their Inspire Summit.`,
     stat: 'Produced for the Inspire Summit.',
@@ -745,7 +745,8 @@ export default function HomeR5Preview() {
           <span className="ghost-n" aria-hidden="true">03</span>
           <div className="scene-inner">
             <p className="statement">
-              <Kinetic segments={[{ t: "We're actually ", cls: 'dim' }]} />
+              <Kinetic segments={[{ t: "We're actually", cls: 'dim' }]} />
+              {'\u00A0'}
               <span className="neither-w">
                 <Kinetic segments={[{ t: 'neither' }]} />
                 <motion.span
@@ -756,7 +757,8 @@ export default function HomeR5Preview() {
                   transition={{ duration: 0.55, ease: EASE, delay: 0.7 }}
                 />
               </span>
-              <Kinetic sq segments={[{ t: ' of those things', cls: 'dim' }]} />
+              {'\u00A0'}
+              <Kinetic sq segments={[{ t: 'of those things', cls: 'dim' }]} />
             </p>
           </div>
         </Scene>
