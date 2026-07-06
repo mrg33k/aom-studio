@@ -1898,8 +1898,19 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
     // attachments: an array carrying .count (design binds both data-each + .count);
     // a {count,list} object would throw on .forEach in the engine. See useCommandTracker.
     const atts = []; atts.count = 0;
+    const rawBug = selectedBug || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '' };
+    // Truth fields for the detail panel (loop R5): empty Mission/Opened rows hide instead of
+    // rendering label + blank; the checklist count only exists when there IS a checklist.
+    const cl = rawBug.checklist || [];
+    const clDone = cl.filter((i) => i && (i.done === true || String(i.done) === 'done' || String(i.state) === 'done')).length;
+    const bug = {
+      ...rawBug,
+      missionState: String(rawBug.mission || '').trim() ? 'has' : 'none',
+      openedState: String(rawBug.opened || '').trim() ? 'has' : 'none',
+      checklistLabel: cl.length ? ` · ${clDone} of ${cl.length}` : '',
+    };
     return {
-      bug: selectedBug || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '' },
+      bug,
       activeTracker: data.activeTracker,
       attachments: atts,
     };

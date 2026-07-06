@@ -148,16 +148,20 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   // recency comes from projectRooms.last_message_at (read or unread). Merge by room key, keep
   // the freshest per room, sort desc, top 6. Real data only — no fabricated rows.
   const recentMap = {};
-  const bump = (key, entry) => { if (!recentMap[key] || entry.ts > recentMap[key].ts) recentMap[key] = entry; };
+  // A fresher timestamp-only bump (projectRooms/missionRooms carry no text) must not erase
+  // a preview a message-carrying bump already provided (Steffen R4 send-back: the digest
+  // earns its width with the last-message line).
+  const bump = (key, entry) => { const prev = recentMap[key]; if (!prev || entry.ts > prev.ts) recentMap[key] = { ...entry, preview: entry.preview || (prev && prev.preview) || '' }; };
   for (const it of inboxItems || []) {
     const ts = it.timestamp ? new Date(it.timestamp).getTime() : 0;
+    const preview = String(it.text || '').replace(/\s+/g, ' ').trim();
     if (it.missionSlug) {
       const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
-      bump('m:' + it.missionSlug, { key: 'm:' + it.missionSlug, id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: missionLabel(it.missionSlug) || it.missionSlug, sub: pn || 'Mission', ts });
+      bump('m:' + it.missionSlug, { key: 'm:' + it.missionSlug, id: it.missionSlug, kind: 'mission', missionSlug: it.missionSlug, project: it.project || '', name: missionLabel(it.missionSlug) || it.missionSlug, sub: pn || 'Mission', ts, preview });
     } else if (it.project) {
-      bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts });
+      bump('p:' + it.project, { key: 'p:' + it.project, id: it.project, kind: 'project', project: it.project, name: projectNameBySlug[it.project] || cap(it.project), sub: 'Project chat', ts, preview });
     } else if (it.agent) {
-      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: titleForAgent(it.agent), sub: 'Direct chat', ts });
+      bump('a:' + it.agent, { key: 'a:' + it.agent, id: it.agent, kind: 'agent', agent: it.agent, name: titleForAgent(it.agent), sub: 'Direct chat', ts, preview });
     }
   }
   for (const p of projectRooms || []) {
