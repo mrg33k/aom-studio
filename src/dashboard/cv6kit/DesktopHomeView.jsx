@@ -39,8 +39,10 @@ const css = `
 .cv6dh .rooms { flex:1; min-width:0; display:flex; flex-direction:column; }
 .cv6dh .convo { width:412px; flex:none; border-left:1px solid var(--divider); display:flex; flex-direction:column; padding:0; min-height:0; }
 /* Empty wired catch-up drops its column entirely (Patrik: same as /dashboard); the
-   conversation pane flexes to use the space. */
+   conversation pane flexes to use the space. Rooms caps so its rows don't stretch
+   sparse across half the viewport (same fix class as the iPad-portrait cap). */
 .cv6dh.nocatch .convo { width:auto; flex:1; min-width:0; }
+.cv6dh.nocatch .rooms { max-width:640px; }
 .cv6dh .card { background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:var(--shadow-card,0 1px 2px rgba(0,0,0,.2)); }
 .cv6dh .glyph { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }
 .cv6dh .tag-pill { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; flex:none; }
