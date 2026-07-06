@@ -163,6 +163,8 @@ const CSS = `
 /* ─── SCENES ─── */
 .r9 .scene { position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:clamp(6rem,14vh,9rem) var(--pad); }
 .r9 .scene-inner { width:100%; max-width:1200px; margin-inline:auto; text-align:center; }
+.r9 .sc-paper .scene-inner, .r9 .sc-alt .scene-inner { text-align:left; }
+.r9 .sc-paper .team-note, .r9 .sc-alt .team-note { margin-inline:0; }
 .r9 .sc-ink { background:var(--ink); color:var(--paper); }
 .r9 .sc-dark { background:var(--ink-800); color:var(--paper); }
 .r9 .sc-paper { background:var(--paper); color:var(--ink); }
@@ -214,7 +216,7 @@ const CSS = `
   display:flex; align-items:center; justify-content:center;
 }
 .r9 .stamp .glyph { margin:0; width:56%; height:56%; }
-.r9 .beat-eyebrow { display:block; font-size:.7rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--stone); margin-bottom:2.5rem; }
+.r9 .beat-eyebrow { display:inline-block; border:1px solid var(--line-dark); padding:.45em .8em; font-size:.68rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--stone); margin-bottom:2.5rem; }
 .r9 .glyph { width:clamp(52px,8vw,80px); height:clamp(52px,8vw,80px); color:var(--gold); margin:0 auto 2.75rem; display:block; }
 .r9 .statement { font-family:var(--dp); text-transform:uppercase; font-weight:800; letter-spacing:-.01em; line-height:1.04; font-size:clamp(1.9rem,5.6vw,4.2rem); color:var(--paper); max-width:20ch; margin-inline:auto; }
 .r9 .statement .dim { color:var(--stone); }
@@ -347,6 +349,7 @@ const CSS = `
 /* ─── FOOTER ─── */
 .r9 .foot { padding:3.5rem var(--pad) 2.5rem; background:var(--ink); color:var(--paper); border-top:1px solid var(--line-dark); }
 .r9 .foot-inner { max-width:1280px; margin-inline:auto; }
+.r9 .foot-wm { font-size:clamp(1.7rem,8.4vw,7rem); color:transparent; -webkit-text-stroke:1px rgba(246,246,244,.16); white-space:nowrap; margin-bottom:3rem; }
 .r9 .foot-top { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:2rem; margin-bottom:2.75rem; }
 .r9 .foot-brand { display:flex; align-items:center; gap:.7rem; color:var(--stone); }
 .r9 .foot-mark { width:24px; height:24px; color:var(--paper); }
@@ -528,6 +531,10 @@ export default function HomeR5Preview() {
   const [prog, setProg] = useState(0);
   const [ch, setCh] = useState(0);
   const [brief, setBrief] = useState({ name: '', co: '', msg: '' });
+  const heroRef = useRef(null);
+  const { scrollYProgress: heroProg } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const heroY = useTransform(heroProg, [0, 1], ['0%', '18%']);
+  const heroScale = useTransform(heroProg, [0, 1], [1, 1.08]);
 
   const sendBrief = e => {
     e.preventDefault();
@@ -613,10 +620,10 @@ export default function HomeR5Preview() {
         </nav>
 
         {/* CH 00 — THE HOOK */}
-        <header className="hero on-dark" data-ch="0">
-          <div className="hero-media">
+        <header className="hero on-dark" data-ch="0" ref={heroRef}>
+          <motion.div className="hero-media" style={{ y: heroY, scale: heroScale }}>
             <LazyGumlet id={HERO_REEL} eager filter="grayscale(0.2) contrast(1.08) brightness(.85)" />
-          </div>
+          </motion.div>
           <div className="hero-scrim" />
           <div className="hero-inner">
             <motion.div
@@ -767,7 +774,8 @@ export default function HomeR5Preview() {
         {/* CH 03 — THE BILLBOARD */}
         <Scene ch={3} tone="sc-ink">
           <div className="scene-inner">
-            <Rise><span className="stamp"><GlyphBillboard /></span></Rise>
+            <Rise><span className="beat-eyebrow">The billboard test</span></Rise>
+            <Rise delay={0.1}><span className="stamp"><GlyphBillboard /></span></Rise>
             <p className="bill-q">
               <Kinetic segments={[{ t: '"A billboard does no good in your ' }, { t: 'basement', cls: 'gold' }, { t: '."' }]} />
             </p>
@@ -863,6 +871,7 @@ export default function HomeR5Preview() {
         {/* CH 06 — VOICES */}
         <Scene ch={6} tone="sc-paper">
           <div className="scene-inner">
+            <Rise><span className="boxed">Voices</span></Rise>
             <h2 className="sec-head">
               <Kinetic sq segments={[{ t: 'What clients ' }, { t: 'say', cls: 'gold' }]} />
             </h2>
@@ -996,6 +1005,9 @@ export default function HomeR5Preview() {
         {/* FOOTER */}
         <footer className="foot on-dark">
           <div className="foot-inner">
+            <Rise>
+              <div className="foot-wm dp" aria-hidden="true">Ahead of Market<span className="sq" /></div>
+            </Rise>
             <div className="foot-top">
               <div className="foot-brand">
                 <BrandMark kind="mono" className="foot-mark" />
