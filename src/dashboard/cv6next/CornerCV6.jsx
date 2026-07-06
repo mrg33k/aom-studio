@@ -1860,6 +1860,21 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
 }
 
 // ── Tracker (mobile): the real CV6 bug list ──
+// Truth fields for the bug detail panels (desktop rail + mobile sheet), loop R5: empty
+// Mission/Opened rows hide instead of rendering label + blank; the checklist count
+// fragment exists only when there IS a checklist. Fields are ALWAYS present so the
+// template sample text can never leak through a missing bind.
+const withBugTruth = (b) => {
+  const cl = (b && b.checklist) || [];
+  const done = cl.filter((i) => i && (i.done === true || String(i.done) === 'done' || String(i.state) === 'done')).length;
+  return {
+    ...b,
+    missionState: String((b && b.mission) || '').trim() ? 'has' : 'none',
+    openedState: String((b && b.opened) || '').trim() ? 'has' : 'none',
+    checklistLabel: cl.length ? ` · ${done} of ${cl.length}` : '',
+  };
+};
+
 const TRACKER_ALIASES = {
   bugs: 'bug', 'bug.checklist': 'item', 'agent.checklist': 'item',
   attachments: 'attachment', 'featuredBug.attachments': 'attachment',
@@ -1899,18 +1914,8 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
     // a {count,list} object would throw on .forEach in the engine. See useCommandTracker.
     const atts = []; atts.count = 0;
     const rawBug = selectedBug || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '' };
-    // Truth fields for the detail panel (loop R5): empty Mission/Opened rows hide instead of
-    // rendering label + blank; the checklist count only exists when there IS a checklist.
-    const cl = rawBug.checklist || [];
-    const clDone = cl.filter((i) => i && (i.done === true || String(i.done) === 'done' || String(i.state) === 'done')).length;
-    const bug = {
-      ...rawBug,
-      missionState: String(rawBug.mission || '').trim() ? 'has' : 'none',
-      openedState: String(rawBug.opened || '').trim() ? 'has' : 'none',
-      checklistLabel: cl.length ? ` · ${clDone} of ${cl.length}` : '',
-    };
     return {
-      bug,
+      bug: withBugTruth(rawBug),
       activeTracker: data.activeTracker,
       attachments: atts,
     };
@@ -2031,7 +2036,7 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
   // Desktop: the real 3-region layout (switcher rail + bug table + bug detail), same data.
   if (isDesktop) {
     const dbug = selectedBug || (data.bugs || [])[0] || { id: '', title: '', statusLabel: '', priorityLabel: '', assignee: '', assigneeInitials: '·', assigneeTint: 'violet', mission: '', opened: '', description: '', doneCount: '', stepCount: '', checklist: [] };
-    const ddata = { ...data, bug: dbug };
+    const ddata = { ...data, bug: withBugTruth(dbug) };
     const dActions = {
       nav: (t) => onNav(t === 'back' ? 'home' : t), openCommandK: () => {}, openProfile: () => onOpenNav?.(),
       openTracker: (id) => switchTracker(id),
