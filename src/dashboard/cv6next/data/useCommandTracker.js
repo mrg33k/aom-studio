@@ -134,8 +134,10 @@ function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {}, goalR
         title: focusGoal?.goal || `${sessions.length} agent session${sessions.length > 1 ? 's' : ''} active`,
         driverLine: `${titleForAgent(lead.agent)} · ${firstLine(lead.task_text) || 'working'}` }
     : { id: active[0]?.slug || '', roomName: active[0]?.name || 'No active session', tint: 'violet', status: 'ready', statusLabel: '',
-        title: focusGoal?.goal || (active.length ? 'No agent sessions running right now' : 'Nothing active right now'),
-        driverLine: focusGoal?.status ? `Loop · ${focusGoal.status}` : '' };
+        // The panel header says CURRENT GOAL — the title speaks goal-language; session
+        // status lives on the sub-line where status belongs (loop R16).
+        title: focusGoal?.goal || 'No goal set for this room yet',
+        driverLine: focusGoal?.status ? `Loop · ${focusGoal.status}` : (active.length ? 'No agent sessions running right now' : 'Nothing active right now') };
   goal.stepCount = checklist.length ? `${doneCount}/${checklist.length}` : '0';
   goal.queueNote = openQuestions ? `${openQuestions} open question${openQuestions > 1 ? 's' : ''} for you` : 'queue clear';
   goal.checklist = checklist;

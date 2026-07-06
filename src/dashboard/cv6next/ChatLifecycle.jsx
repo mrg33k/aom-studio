@@ -417,11 +417,10 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
             </div>
           ) : (
             <>
+              {/* No divider above folded days — the DayCard header already carries the same
+                  date label; the pair read as a duplicate header (loop R16). */}
               {older.map((g, i) => (
-                <React.Fragment key={g.key + i}>
-                  <div className="daydiv"><span>{g.label.toUpperCase()}</span></div>
-                  <DayCard group={g} onOpenFile={openFile} goal={threadGoal} onReview={reviewHandoff} onSend={onSend} />
-                </React.Fragment>
+                <DayCard key={g.key + i} group={g} onOpenFile={openFile} goal={threadGoal} onReview={reviewHandoff} onSend={onSend} />
               ))}
               {latest && (
                 <>
