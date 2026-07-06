@@ -125,7 +125,9 @@ export function MobileHomeExact({ user, agents = [], projectRooms = [], catchup 
         </>)}
 
         <div className="roomshdr"><span className="eyebrow">All rooms</span><span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--accent)' }}>See all</span></div>
-        <div className="rooms">
+        {/* scroll-end padding so the floating FABs + surface badge never sit over the
+            last rows — the list ended flush at the viewport bottom (loop R3 verify) */}
+        <div className="rooms" style={{ paddingBottom: 96 }}>
           {rooms.map((r, i) => {
             const last = i === rooms.length - 1;
             const style = last ? { borderBottom: 'none' } : undefined;
