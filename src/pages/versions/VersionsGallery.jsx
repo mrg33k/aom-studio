@@ -97,9 +97,9 @@ const CSS = `
 .vgal .card:hover { transform:translateY(-3px); }
 .vgal .card > * { position:relative; z-index:1; }
 .vgal .thumb { aspect-ratio:16/10; overflow:hidden; border-radius:16px 16px 0 0; background:#0D0D0C; position:relative; }
-.vgal .thumb img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; transition:transform .5s cubic-bezier(.22,1,.36,1); }
+.vgal .thumb img { width:100%; height:100%; object-fit:cover; object-position:top; display:block; transition:transform .5s cubic-bezier(.22,1,.36,1); position:relative; z-index:2; }
 .vgal .card:hover .thumb img { transform:scale(1.04); }
-.vgal .thumb .ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; font-weight:500; }
+.vgal .thumb .ph { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:.68rem; letter-spacing:.18em; text-transform:uppercase; font-weight:500; z-index:1; }
 .vgal .badge { position:absolute; top:.8rem; left:.8rem; z-index:2; display:inline-flex; align-items:center; gap:.45rem; background:rgba(6,6,6,.72); border:1px solid rgba(196,164,106,.5); border-radius:8px; padding:.35rem .65rem; font-size:.6rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--gold); }
 .vgal .badge i { width:5px; height:5px; background:var(--gold); border-radius:50%; }
 .vgal .body { padding:1.1rem 1.25rem 1.25rem; display:flex; flex-direction:column; gap:.4rem; flex:1; }
