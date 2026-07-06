@@ -359,7 +359,7 @@
    IS the toggle button; the done check uses the success token; the chevron rotates on open. */
 [data-cv6] .wdcard { border:1px solid var(--hair); border-radius:14px; background:var(--surface); overflow:hidden; }
 [data-cv6] .wdcard-h { display:flex; align-items:center; gap:10px; width:100%; padding:11px 13px; background:transparent; border:none; cursor:pointer; font-family:var(--font-sans); text-align:left; }
-[data-cv6] .wdcard-h:hover { background:var(--surface-2); }
+[data-cv6] .wdcard-h:hover, [data-cv6] .wdcard-h:active { background:var(--surface-2); }
 [data-cv6] .wdcard-ico { width:22px; height:22px; border-radius:7px; display:flex; align-items:center; justify-content:center; flex:none; background:var(--success-weak); color:var(--success); }
 [data-cv6] .wdcard-t { flex:1; min-width:0; font-size:13px; font-weight:600; color:var(--fg); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 [data-cv6] .wdcard-n { font-size:11.5px; font-weight:600; color:var(--muted); flex:none; }
@@ -695,7 +695,7 @@
 [data-cv6] .astat.is-working .sd { width:11px; height:11px; border:1.6px solid var(--accent); border-top-color:transparent; background:none; border-radius:50%; animation:spin 1.05s linear infinite; }
 /* interaction state — every list row + card: rest / hover / selected */
 [data-cv6] .staterow { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:11px; cursor:pointer; transition:background .12s ease; }
-[data-cv6] .staterow:hover { background:var(--surface-2); }
+[data-cv6] .staterow:hover, [data-cv6] .staterow:active { background:var(--surface-2); }
 [data-cv6] .staterow.is-selected { background:var(--accent-weak); box-shadow:0 0 0 2px var(--accent) inset; }
 
 /* ============================================================
@@ -929,6 +929,10 @@
 [data-cv6] .restcol .restrow .rsub { font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 [data-cv6] .rest-hint { font-size:12px; color:var(--faint); text-align:center; margin-top:16px; }
 
+/* Command ledger: a fallback line (last activity / no goal) reads muted so it can't
+   impersonate a real goal (loop R8) */
+[data-cv6] .gcell.is-fallback { color: var(--muted); }
+
 /* Tracker detail: meta rows with no real value do not render (loop R5) */
 [data-cv6] .bmeta.is-none { display:none !important; }
 /* col3 quick reply room: the "no messages yet" hint shows only when the thread is empty. */
@@ -945,7 +949,7 @@
 [data-cv6] .cuarrow { width:26px; height:26px; display:flex; align-items:center; justify-content:center;
   border-radius:8px; border:1px solid var(--hair); background:var(--surface-2); color:var(--fg);
   cursor:pointer; flex:none; transition:background .12s ease, border-color .12s ease; }
-[data-cv6] .cuarrow:hover { background:var(--surface-3, var(--surface-2)); border-color:var(--accent); color:var(--accent); }
+[data-cv6] .cuarrow:hover, [data-cv6] .cuarrow:active { background:var(--surface-3, var(--surface-2)); border-color:var(--accent); color:var(--accent); }
 [data-cv6] .custack { position:relative; }
 [data-cv6] .custack > .card { position:relative; z-index:3; }
 /* Full card-size backings offset DOWN (and a touch right) so their bottom edges step out
@@ -984,7 +988,7 @@
 [data-cv6][data-screen="home-desktop"] .misslist .missrow .projcaret.is-none { display:none; }
 /* Fix 1 (R-ROOMTREE-2): Caret hit zone -- 28x28px target, caret-only hover highlight */
 [data-cv6] .caretbtn { display:flex; align-items:center; justify-content:center; flex:none; width:28px; height:28px; border-radius:4px; cursor:pointer; }
-[data-cv6] .caretbtn:hover { background:rgba(255,255,255,.10); }
+[data-cv6] .caretbtn:hover, [data-cv6] .caretbtn:active { background:rgba(255,255,255,.10); }
 [data-cv6] .caretbtn:has(.projcaret.is-none) { visibility:hidden; }
 [data-cv6] .caretbtn:has(.chev.is-none) { visibility:hidden; }
 [data-cv6][data-screen^="organize"] .trow.is-d1 .caretbtn { visibility:hidden; }
@@ -1097,3 +1101,7 @@
 [data-cv6][data-screen^="review"] .doc.is-video h1,
 [data-cv6][data-screen^="review"] .doc.is-siteshot h1,
 [data-cv6][data-screen^="review"] .doc.is-sitelive h1 { color:#e6e8ea !important; font-size:16px !important; margin:0 0 12px !important; }
+
+/* Touch feedback (loop R8, parity audit): rows whose only pressed-state was :hover
+   now light up on :active so taps feel acknowledged on iPhone/iPad. */
+[data-cv6] .restrow:active, [data-cv6] .room:active, [data-cv6] .grow:active { background: var(--surface-hover, var(--surface-2)); }

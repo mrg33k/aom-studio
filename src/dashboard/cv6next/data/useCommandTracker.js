@@ -104,11 +104,18 @@ function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {}, goalR
     const live = last.agent && liveAgents.has(String(last.agent).toLowerCase());
     const status = live ? 'live' : 'ready';
     const line = firstLine(last.text).slice(0, 90);
+    // "CURRENT GOAL" must show a goal, not the room's last chat line dressed up as one
+    // (loop R8). Real goal from the goal ledger when the room has one; otherwise an
+    // honest muted fallback the CSS de-emphasizes (is-fallback).
+    const grEntry = goalRooms[p.slug] || (Object.entries(goalRooms).find(([k]) => bareKey(k) === p.slug) || [])[1];
+    const realGoal = firstLine(String((grEntry && grEntry.goal) || '')).slice(0, 90);
+    const goalText = realGoal || (line ? `Last activity — ${line}` : 'No goal set');
     return {
       id: p.slug, name: p.name || titleCase(p.slug), tint: tintFor(p.name || p.slug),
-      goal: line, setBy, age: relTime(p.last_message_at),
+      goal: goalText, goalKind: realGoal ? 'goal' : 'fallback',
+      setBy, age: relTime(p.last_message_at),
       status, statusLabel: status.toUpperCase(),
-      goalShort: line.slice(0, 48),
+      goalShort: goalText.slice(0, 48),
     };
   });
   const liveCount = rooms.filter((r) => r.status === 'live').length;
@@ -143,8 +150,10 @@ function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {}, goalR
     .map(([key, r]) => {
       const name = titleCase(bareKey(key).replace(/^agent:/, ''));
       const on = r.autopilot !== false; // absent/true = loop default ON (matches master-loop-tick)
+      // Sub-label must agree with the toggle (loop R8): an off row saying "active"
+      // (the goal-store status) read as a contradiction next to its off switch.
       return {
-        id: key, name, role: `Master loop · ${r.status || 'tracked'}`,
+        id: key, name, role: on ? `Master loop · ${r.status || 'tracked'}` : 'Master loop · off',
         initials: name.slice(0, 2).toUpperCase(), tint: tintFor(name), on: on ? 'on' : 'off',
       };
     });
