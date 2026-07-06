@@ -237,6 +237,7 @@ const CSS = `
 }
 .r9 .gear img {
   width:100%; height:auto; display:block;
+  animation:gearfloat 7s ease-in-out infinite alternate;
   -webkit-mask-image:radial-gradient(ellipse 66% 62% at 50% 50%, black 52%, transparent 78%);
   mask-image:radial-gradient(ellipse 66% 62% at 50% 50%, black 52%, transparent 78%);
 }
@@ -419,8 +420,12 @@ const CSS = `
 .r9 .modal-box.portrait .modal-vid { aspect-ratio:9/16; max-height:80vh; margin-inline:auto; }
 .r9 .modal-vid iframe { position:absolute; inset:0; width:100%; height:100%; border:none; }
 
+@keyframes gearfloat {
+  from { transform:translateY(-7px) rotate(-.25deg); }
+  to   { transform:translateY(9px) rotate(.25deg); }
+}
 @media(prefers-reduced-motion: reduce){
-  .r9 .ticker-row, .r9 .hero-foot .blink { animation:none; }
+  .r9 .ticker-row, .r9 .hero-foot .blink, .r9 .gear img { animation:none; }
 }
 `;
 
