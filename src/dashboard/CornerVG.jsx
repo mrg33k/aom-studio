@@ -615,7 +615,7 @@ export default function CornerVG() {
 
   // useDataPipe provides agents, inboxItems, projectRooms (from agent_status),
   // and filters personal/non-personal tasks by the viewer's slug.
-  const { agents, inboxItems, projectRooms, personalTodos, refetch: refetchData } = useDataPipe(null, worldId, currentUserSlug)
+  const { agents, inboxItems, projectRooms, personalTodos, lastUpdated: dataPipeUpdatedAt, refetch: refetchData } = useDataPipe(null, worldId, currentUserSlug)
 
   // Default-view setting: 'home' (default) OR { kind:'agent'|'project', slug:'...' }.
   // Lets the user override what loads first when opening the dashboard.
@@ -3366,6 +3366,7 @@ export default function CornerVG() {
                 onCatchupOpen={handleCatchupOpenRoom}
                 onNav={handleCv6Nav}
                 theme={theme}
+                roomsLoading={!dataPipeUpdatedAt && (projectRooms || []).length === 0}
               />
               )
             ) : selectedAgent?.slug === 'elon' && deckTab === 'deck' ? (

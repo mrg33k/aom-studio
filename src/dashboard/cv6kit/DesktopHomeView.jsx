@@ -298,6 +298,7 @@ export function DesktopHomeView({
   projectTotal = 84,
   roomTotal = 95,
   catchTotal = 5,
+  roomsLoading = false,  // first data fetch still in flight — show honest loading, not "0"
   activeTool = 'home',
   onNav,
   onSelectRoom,
@@ -352,7 +353,10 @@ export function DesktopHomeView({
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14, flex: 'none' }}>
             <span className="eyebrow">Catch up</span>
             <span style={{ minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{catchTotal}</span>
-            <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>1 of {catchTotal} · <span className="mono">swipe</span></span>
+            {/* "1 of N · swipe" is sample-deck furniture; the wired column is a scroll list */}
+            {catchContent == null && (
+              <span style={{ marginLeft: 'auto', fontSize: 11.5, color: 'var(--muted)' }}>1 of {catchTotal} · <span className="mono">swipe</span></span>
+            )}
           </div>
           <div className="scrollcap" style={{ flex: 1 }}>
             {catchContent != null ? catchContent : (<>
@@ -401,7 +405,7 @@ export function DesktopHomeView({
         {/* ALL ROOMS */}
         <div className="col rooms">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flex: 'none' }}>
-            <span className="eyebrow">All rooms</span><span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{roomTotal}</span>
+            <span className="eyebrow">All rooms</span><span className="mono" style={{ fontSize: 10.5, color: 'var(--faint)' }}>{roomsLoading ? '···' : roomTotal}</span>
             <button onClick={onNewRoom} style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, height: 28, padding: '0 11px', borderRadius: 14, border: 'none', background: 'var(--accent)', color: 'var(--bone)', fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>{sw('<path d="M12 5v14M5 12h14"/>', 'currentColor', 14, 'none', 2.4)}New</button>
           </div>
           <div style={{ flex: 'none', display: 'flex', alignItems: 'center', gap: 8, height: 38, marginBottom: 14, padding: '0 12px', borderRadius: 11, background: 'var(--surface-2)', border: '1px solid var(--hair)' }}>
@@ -415,11 +419,22 @@ export function DesktopHomeView({
                   <span className="dot" style={{ background: ag.dot, boxShadow: ag.glow ? 'var(--glow-online,0 0 8px rgba(52,211,153,.6))' : 'none' }} />
                   <span className="rn" style={{ fontWeight: selected === ag.name ? 600 : 500 }}>{ag.name}</span>
                   {ag.note && <span className={ag.noteAccent ? '' : 'mono'} style={{ fontSize: ag.noteAccent ? 11 : 10.5, color: ag.noteAccent ? 'var(--accent)' : 'var(--faint)', fontWeight: ag.noteAccent ? 600 : 400 }}>{ag.note}</span>}
-                  {selected === ag.name && <span className="kbd" style={{ marginLeft: 8 }}>right</span>}
+                  {selected === ag.name && <span className="kbd" style={{ marginLeft: 8 }} title="Press → to open">→</span>}
                 </div>
               ))}
             </div>
-            <div className="subhdr">Projects · {projectTotal}</div>
+            <div className="subhdr">Projects · {roomsLoading && projects.length === 0 ? '···' : projectTotal}</div>
+            {roomsLoading && projects.length === 0 && (
+              <div aria-label="Loading rooms">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <div key={i} className="room" style={{ pointerEvents: 'none' }}>
+                    <span style={{ flex: 'none', width: 18, height: 14, borderRadius: 4, background: 'var(--chip)', opacity: 0.55 }} />
+                    <span style={{ height: 10, borderRadius: 5, background: 'var(--chip)', opacity: 0.55, width: `${62 - i * 9}%` }} />
+                  </div>
+                ))}
+                <div style={{ padding: '10px 2px', fontSize: 11.5, color: 'var(--faint)' }}>Loading your rooms…</div>
+              </div>
+            )}
             {projects.map((p) => (
               <div key={p.name} className={`room${selected === p.name ? ' sel' : ''}`} onClick={() => pick(p.name)}>
                 {sw('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/>', p.color, 18)}

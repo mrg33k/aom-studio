@@ -46,6 +46,7 @@ export function DesktopHomeWired({
   onCatchupOpen,
   onNav,
   theme = 'glass',
+  roomsLoading = false,
 }) {
   const dvAgents = useMemo(() => (agents || []).map((a) => ({
     name: a.name || a.slug, raw: a, dot: dotColor(a.status), glow: String(a.status).toLowerCase() === 'online', note: statusNote(a.status), noteAccent: false,
@@ -100,6 +101,7 @@ export function DesktopHomeWired({
       agentTotal={agents.length}
       projectTotal={projectRooms.length}
       roomTotal={agents.length + projectRooms.length}
+      roomsLoading={roomsLoading}
       catchTotal={catchup.length}
       activeTool="home"
       onNav={onNav}
