@@ -204,7 +204,7 @@ const CSS = `
 .r15 .beat-media { position:absolute; inset:0; }
 .r15 .beat-grad::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg, transparent 46%, rgba(6,6,6,.62) 88%); z-index:1; pointer-events:none; }
 .r15 .beat-inner { position:relative; z-index:2; padding:7rem var(--pad) 5.5rem; }
-.r15 .beat-h { font-size:clamp(2.1rem,5.4vw,4.9rem); max-width:22ch; text-shadow:0 2px 34px rgba(0,0,0,.5); }
+.r15 .beat-h { font-size:clamp(2rem,5vw,4.6rem); max-width:28ch; text-shadow:0 2px 34px rgba(0,0,0,.5); }
 .r15 .beat-chip { margin-bottom:1.4rem; }
 .r15 .beat-side { position:absolute; right:var(--pad); bottom:5.5rem; z-index:2; }
 @media(max-width:860px){ .r15 .beat-side { display:none; } }
@@ -915,7 +915,7 @@ export default function HomeR5Preview() {
         <section className="sec" data-ch="4">
           <div className="sec-inner">
             <Fade><span className="lb">Who we are</span></Fade>
-            <h2 className="sec-h">
+            <h2 className="sec-h" style={{ maxWidth: 'none' }}>
               <Chars sq lines={[[{ t: 'A small team that has ' }, { t: 'done a lot', cls: 'gold' }]]} />
             </h2>
             <div className="stats">
