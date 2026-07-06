@@ -451,21 +451,28 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
         {
           const projRecency = {}
           const missionRecency = {}
+          // Preview text rides with recency (Home resting digest, loop R5): the room's last
+          // message, whitespace-collapsed. Structured payloads (raw JSON) never preview.
+          const previewOf = (m) => {
+            const t = String(m.text || '').replace(/\s+/g, ' ').trim()
+            if (!t || t.startsWith('{') || t.startsWith('[')) return ''
+            return t.slice(0, 160)
+          }
           for (const m of (data.messages || [])) {
             if (!m.timestamp) continue
             const t = new Date(m.timestamp).getTime()
             if (Number.isNaN(t)) continue
-            if (m.project && (!projRecency[m.project] || t > projRecency[m.project])) projRecency[m.project] = t
+            if (m.project && (!projRecency[m.project] || t > projRecency[m.project].t)) projRecency[m.project] = { t, text: previewOf(m) }
             const ms = m.metadata && m.metadata.mission_slug
             if (ms) {
-              if (!missionRecency[ms] || t > missionRecency[ms].ts) missionRecency[ms] = { ts: t, project: m.project || '' }
+              if (!missionRecency[ms] || t > missionRecency[ms].ts) missionRecency[ms] = { ts: t, project: m.project || '', text: previewOf(m) }
             }
           }
-          for (const p of merged) p.last_message_at = projRecency[p.slug] || 0
+          for (const p of merged) { const r = projRecency[p.slug]; p.last_message_at = r ? r.t : 0; p.last_message_text = r ? r.text : '' }
           merged.sort((a, b) => (b.last_message_at - a.last_message_at) || (a.name || '').localeCompare(b.name || ''))
           // Expose mission recency so useHome can populate Recently Active without
           // waiting for an inbox ping. Stored as { slug, project, last_message_at }.
-          const missionList = Object.entries(missionRecency).map(([slug, v]) => ({ slug, project: v.project, last_message_at: v.ts }))
+          const missionList = Object.entries(missionRecency).map(([slug, v]) => ({ slug, project: v.project, last_message_at: v.ts, last_message_text: v.text || '' }))
           setMissionRooms(missionList)
         }
         if (merged.length > 0) {

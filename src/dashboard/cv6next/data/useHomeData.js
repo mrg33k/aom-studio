@@ -166,7 +166,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   }
   for (const p of projectRooms || []) {
     if (!p.last_message_at || !p.slug) continue;
-    bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at });
+    bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at, preview: String(p.last_message_text || '').trim() });
   }
   // Activity-based mission recency: any mission with recent messages surfaces in
   // Recently Active even if it hasn't sent an inbox ping. Same bump path as projects;
@@ -174,7 +174,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   for (const mr of missionRooms || []) {
     if (!mr.last_message_at || !mr.slug) continue;
     const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
-    bump('m:' + mr.slug, { key: 'm:' + mr.slug, id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: missionLabel(mr.slug) || mr.slug, sub: pn || 'Mission', ts: mr.last_message_at });
+    bump('m:' + mr.slug, { key: 'm:' + mr.slug, id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: missionLabel(mr.slug) || mr.slug, sub: pn || 'Mission', ts: mr.last_message_at, preview: String(mr.last_message_text || '').trim() });
   }
   const recent = Object.values(recentMap)
     // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).
