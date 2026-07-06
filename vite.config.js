@@ -2700,7 +2700,10 @@ export default defineConfig({
           if (id.includes('/framer-motion/')) return 'vendor-framer'
           if (id.includes('/@supabase/')) return 'vendor-supabase'
           if (id.includes('/react-router')) return 'vendor-router'
-          if (id.includes('/react-dom/') || id.match(/\/react\/(?!.*node_modules)/)) return 'vendor-react'
+          if (id.includes('/react-dom/') || id.includes('/scheduler/') || id.match(/\/react\/(?!.*node_modules)/)) return 'vendor-react'
+          // 3D stack rides the lazy ActGear3D chunk — forcing it into shared
+          // vendor chunks creates circular-init (TDZ) crashes at page load.
+          if (id.includes('/three') || id.includes('/@react-three/') || id.includes('/react-reconciler/') || id.includes('/its-fine/') || id.includes('/zustand/') || id.includes('/@mediapipe/') || id.includes('/troika-') || id.includes('/suspend-react/')) return undefined
           if (id.includes('/d3-force/')) return 'vendor-d3'
           if (id.includes('/html-to-image/')) return 'vendor-html2img'
           if (id.includes('/marked/')) return 'vendor-marked'

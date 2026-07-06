@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useScroll, useTransform, useInView, useSpring, useMotionValue, MotionConfig } from 'framer-motion';
 import LazyGumlet from '../components/home/LazyGumlet';
+const ActGear3D = React.lazy(() => import('../components/home/ActGear3D'));
 import BrandMark from '../components/home/BrandMark';
 
 // Mounted at /r5 for review; promote to / when approved. Mission: aheadofmarket.com:home (R9).
@@ -611,6 +612,18 @@ export default function HomeR5Preview() {
   const lapS = useTransform(actP, [0.26, 0.45, 0.62, 0.8], [0.92, 1, 0.46, 0.4]);
   const lapR = useTransform(actP, [0.26, 0.45, 0.62], [7, 2, 5]);
   const stageO = useTransform(actP, [0, 0.005, 0.96, 1], [0, 1, 1, 0]);
+  const [want3d, setWant3d] = useState(false);
+  const [gear3d, setGear3d] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    // 3D experiment stays opt-in (?gear3d=1): the generated meshes read grungier
+    // than the 2D renders, and the default experience ships the best-looking version.
+    const ok = window.matchMedia('(pointer:fine)').matches
+      && window.innerWidth >= 900
+      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      && new URLSearchParams(window.location.search).has('gear3d');
+    if (ok) setWant3d(true);
+  }, []);
   // two-view turn: front fades to back as each object exits its beat
   const roninFrontO = useTransform(actP, [0, 0.18, 0.27], [1, 1, 0]);
   const roninBackO = useTransform(actP, [0.18, 0.27], [0, 1]);
@@ -793,13 +806,18 @@ export default function HomeR5Preview() {
         <div className="act" ref={actRef} id="story">
           <motion.div className="act-stage" aria-hidden="true" style={{ opacity: stageO }}>
             <motion.div className="act-tilt" style={{ rotateX: tiltX, rotateY: tiltY }}>
-              <motion.div className="act-obj" style={{ opacity: roninO, x: roninX, y: roninY, scale: roninS, rotate: roninR }}>
+              {want3d && (
+                <React.Suspense fallback={null}>
+                  <ActGear3D mv={actP} onReady={() => setGear3d(true)} />
+                </React.Suspense>
+              )}
+              <motion.div className="act-obj" style={{ visibility: gear3d ? 'hidden' : 'visible', opacity: roninO, x: roninX, y: roninY, scale: roninS, rotate: roninR }}>
                 <span className="act-views">
                   <motion.img src="/gear/ronin-4d.jpg" alt="" style={{ opacity: roninFrontO }} />
                   <motion.img src="/gear/ronin-4d-b.jpg" alt="" style={{ opacity: roninBackO }} />
                 </span>
               </motion.div>
-              <motion.div className="act-obj" style={{ opacity: lapO, x: lapX, scale: lapS, rotate: lapR }}>
+              <motion.div className="act-obj" style={{ visibility: gear3d ? 'hidden' : 'visible', opacity: lapO, x: lapX, scale: lapS, rotate: lapR }}>
                 <span className="act-views">
                   <motion.img src="/gear/laptop.jpg" alt="" style={{ opacity: lapFrontO }} />
                   <motion.img src="/gear/laptop-b.jpg" alt="" style={{ opacity: lapBackO }} />
