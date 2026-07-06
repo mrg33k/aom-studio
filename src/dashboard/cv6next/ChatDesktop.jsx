@@ -813,7 +813,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                         ].map((mi) => (
                           <button key={mi.label} onClick={mi.onClick} style={{ display: 'flex', alignItems: 'center', height: 36, padding: '0 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--fg)', fontSize: 13, fontWeight: 500, fontFamily: 'var(--font-sans)', textAlign: 'left', cursor: 'pointer' }}
                             onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>{mi.label}</button>
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                            onTouchStart={(e) => { e.currentTarget.style.background = 'var(--surface-2)'; }}
+                            onTouchEnd={(e) => { e.currentTarget.style.background = 'transparent'; }}>{mi.label}</button>
                         ))}
                       </div>
                     </>

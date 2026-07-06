@@ -134,6 +134,14 @@ function AgentPickerPopover({
                     e.target.style.background = 'var(--surface)';
                     e.target.style.borderColor = 'var(--hair)';
                   }}
+                  onTouchStart={(e) => {
+                    e.currentTarget.style.background = 'var(--accent-weak)';
+                    e.currentTarget.style.borderColor = 'var(--accent)';
+                  }}
+                  onTouchEnd={(e) => {
+                    e.currentTarget.style.background = 'var(--surface)';
+                    e.currentTarget.style.borderColor = 'var(--hair)';
+                  }}
                 >
                   <span
                     style={{

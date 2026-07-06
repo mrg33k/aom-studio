@@ -3535,6 +3535,8 @@ export default function CornerVG() {
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.10)' }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'none' }}
+                  onTouchStart={e => { e.currentTarget.style.background = 'rgba(16,185,129,0.10)' }}
+                  onTouchEnd={e => { e.currentTarget.style.background = 'none' }}
                 >
                   <span style={{
                     fontSize: 13, fontWeight: 600, color: C.accent2,
