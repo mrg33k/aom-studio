@@ -70,12 +70,15 @@ export function MobileHomeExact({ user, agents = [], projectRooms = [], catchup 
       <div className="body full">
         <div className="brandrow"><CornerMark /></div>
 
+        {/* Empty catch-up = no section at all (Patrik 2026-07-06). Previously this fell
+            back to the SAMPLE card (fake data) under a '1 of 5' label when count was 0. */}
+        {count > 0 && (<>
         <div className="secrow">
           <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <span className="eyebrow">Catch up</span>
             <span style={{ minWidth: 20, height: 20, padding: '0 6px', borderRadius: 10, background: 'var(--accent-weak)', color: 'var(--accent)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{count}</span>
           </span>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)' }}>1 of {count || 5} · swipe →</span>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--faint)' }}>1 of {count} · swipe →</span>
         </div>
 
         {/* Catch Up card — inline styles copied verbatim from the design, content bound to real data */}
@@ -118,6 +121,7 @@ export function MobileHomeExact({ user, agents = [], projectRooms = [], catchup 
             </div>
           </div>
         </div>
+        </>)}
 
         <div className="roomshdr"><span className="eyebrow">All rooms</span><span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--accent)' }}>See all</span></div>
         <div className="rooms">
