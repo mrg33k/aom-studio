@@ -38,6 +38,9 @@ const css = `
 .cv6dh .catch { width:392px; flex:none; border-right:1px solid var(--divider); overflow:hidden; display:flex; flex-direction:column; }
 .cv6dh .rooms { flex:1; min-width:0; display:flex; flex-direction:column; }
 .cv6dh .convo { width:412px; flex:none; border-left:1px solid var(--divider); display:flex; flex-direction:column; padding:0; min-height:0; }
+/* Empty wired catch-up drops its column entirely (Patrik: same as /dashboard); the
+   conversation pane flexes to use the space. */
+.cv6dh.nocatch .convo { width:auto; flex:1; min-width:0; }
 .cv6dh .card { background:var(--surface); border:1px solid var(--hair); border-radius:16px; box-shadow:var(--shadow-card,0 1px 2px rgba(0,0,0,.2)); }
 .cv6dh .glyph { width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; }
 .cv6dh .tag-pill { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:6px; flex:none; }
@@ -311,9 +314,12 @@ export function DesktopHomeView({
   const [selected, setSelected] = useState(agentNames[0] || 'Elon');
   const isAgent = agentNames.indexOf(selected) >= 0;
   const pick = (name) => { setSelected(name); if (onSelectRoom) onSelectRoom(name); };
+  // Wired (catchContent provided) + empty = no Catch Up column at all (Patrik 2026-07-06;
+  // /dashboard already drops its column). The design-sample mode (catchContent null) keeps it.
+  const hideCatch = catchContent != null && catchTotal === 0;
 
   return (
-    <div className="cv6dh" data-cv6kit data-theme={theme}>
+    <div className={`cv6dh${hideCatch ? ' nocatch' : ''}`} data-cv6kit data-theme={theme}>
       <style dangerouslySetInnerHTML={{ __html: css }} />
       {/* APP BAR */}
       <div className="topbar">
@@ -348,7 +354,8 @@ export function DesktopHomeView({
 
       {/* COLUMNS */}
       <div className="cols">
-        {/* CATCH UP */}
+        {/* CATCH UP — dropped entirely when wired and empty */}
+        {!hideCatch && (
         <div className="col catch">
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 14, flex: 'none' }}>
             <span className="eyebrow">Catch up</span>
@@ -402,6 +409,7 @@ export function DesktopHomeView({
             </>)}
           </div>
         </div>
+        )}
 
         {/* ALL ROOMS */}
         <div className="col rooms">
