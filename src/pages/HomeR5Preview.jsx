@@ -176,6 +176,7 @@ const CSS = `
 .r9 .hero-label { color:var(--stone); margin-bottom:2rem; }
 .r9 .hero-h { font-size:clamp(2.6rem,8.2vw,7.5rem); color:var(--paper); }
 .r9 .hero-h .row { display:block; }
+.r9 .hero-h .row-kick { font-size:.42em; margin-bottom:.35em; }
 .r9 .hero-sub { display:flex; align-items:center; gap:1.25rem; margin-top:2.25rem; flex-wrap:wrap; }
 .r9 .hero-tags { font-size:.72rem; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--stone); }
 .r9 .hero-cta { display:flex; gap:1rem; margin-top:2.5rem; flex-wrap:wrap; }
@@ -201,6 +202,17 @@ const CSS = `
 @keyframes r9tick { from{transform:translateX(0)} to{transform:translateX(-50%)} }
 
 /* ─── IDENTITY BEATS ─── */
+.r9 .ghost-n {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-52%);
+  font-family:var(--dp); font-weight:800; font-size:clamp(16rem,44vw,34rem);
+  line-height:1; color:var(--paper); opacity:.028; pointer-events:none; user-select:none;
+}
+.r9 .stamp {
+  width:clamp(76px,10vw,104px); height:clamp(76px,10vw,104px);
+  border:1px solid var(--line-dark); margin:0 auto 2.75rem;
+  display:flex; align-items:center; justify-content:center;
+}
+.r9 .stamp .glyph { margin:0; width:56%; height:56%; }
 .r9 .beat-eyebrow { display:block; font-size:.7rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--stone); margin-bottom:2.5rem; }
 .r9 .glyph { width:clamp(52px,8vw,80px); height:clamp(52px,8vw,80px); color:var(--gold); margin:0 auto 2.75rem; display:block; }
 .r9 .statement { font-family:var(--dp); text-transform:uppercase; font-weight:800; letter-spacing:-.01em; line-height:1.04; font-size:clamp(1.9rem,5.6vw,4.2rem); color:var(--paper); max-width:20ch; margin-inline:auto; }
@@ -231,7 +243,8 @@ const CSS = `
 
 /* ─── TEAM (stats strip) ─── */
 .r9 .stats { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); margin:3.5rem 0 2.5rem; text-align:left; }
-.r9 .stat { padding:clamp(1.75rem,3.5vw,2.75rem); border-right:1px solid var(--line); }
+.r9 .stat { position:relative; padding:clamp(1.75rem,3.5vw,2.75rem); border-right:1px solid var(--line); }
+.r9 .stat::before { content:attr(data-i); position:absolute; top:1rem; right:1.25rem; font-family:var(--dp); font-size:.72rem; font-weight:800; letter-spacing:.1em; color:var(--gold-deep); }
 .r9 .stat:last-child { border-right:none; }
 @media(max-width:720px){ .r9 .stats { grid-template-columns:1fr; } .r9 .stat { border-right:none; border-bottom:1px solid var(--line); } .r9 .stat:last-child { border-bottom:none; } }
 .r9 .stat-n { display:block; font-family:var(--dp); font-size:clamp(3rem,6.5vw,5.25rem); font-weight:800; letter-spacing:-.02em; line-height:1; }
@@ -254,9 +267,12 @@ const CSS = `
 .r9 .slate-row { display:flex; justify-content:space-between; align-items:center; font-size:.62rem; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--stone); padding:.7rem 0; border-bottom:1px solid var(--line-dark); }
 .r9 .slate-row:first-child { border-top:1px solid var(--line-dark); }
 .r9 .slate-mid { flex:1; display:flex; flex-direction:column; justify-content:center; }
-.r9 .slate-big { font-family:var(--dp); text-transform:uppercase; font-size:clamp(3.4rem,8vw,6.5rem); font-weight:800; letter-spacing:-.02em; line-height:.95; }
+.r9 .slate-big { font-family:var(--dp); text-transform:uppercase; font-size:clamp(2rem,4.2vw,3.4rem); font-weight:800; letter-spacing:-.01em; line-height:1; }
 .r9 .slate-big-label { font-size:.8rem; color:var(--stone); margin-top:.9rem; max-width:26ch; line-height:1.55; letter-spacing:.06em; text-transform:uppercase; font-weight:600; }
 .r9 .slate-clap { position:absolute; top:0; left:0; right:0; height:10px; background:repeating-linear-gradient(-45deg, var(--gold) 0 14px, var(--ink) 14px 28px); }
+.r9 .story-metric { display:flex; align-items:baseline; gap:1rem; margin-bottom:1.75rem; padding-bottom:1.5rem; border-bottom:1px solid var(--line); }
+.r9 .story-metric-n { font-family:var(--dp); font-size:clamp(2.75rem,5vw,4rem); font-weight:800; letter-spacing:-.02em; line-height:1; color:var(--gold-deep); }
+.r9 .story-metric-l { font-size:.72rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-500); max-width:22ch; line-height:1.5; }
 .r9 .story-idx { display:flex; align-items:center; gap:.9rem; margin-bottom:1.5rem; }
 .r9 .story-idx .bar { width:40px; height:1px; background:var(--gold); }
 .r9 .story-client { font-family:var(--dp); text-transform:uppercase; font-size:clamp(1.9rem,4vw,3rem); font-weight:800; letter-spacing:-.01em; line-height:1; margin-bottom:1rem; }
@@ -266,7 +282,7 @@ const CSS = `
 
 /* ─── VOICES ─── */
 .r9 .voices { display:grid; grid-template-columns:repeat(3,1fr); border:1px solid var(--line); margin-top:3.5rem; text-align:left; }
-.r9 .voice { padding:clamp(1.75rem,3vw,2.5rem); border-right:1px solid var(--line); display:flex; flex-direction:column; gap:1.75rem; background:var(--paper); }
+.r9 .voice { padding:clamp(1.75rem,3vw,2.5rem); border-right:1px solid var(--line); border-top:3px solid var(--gold); display:flex; flex-direction:column; gap:1.75rem; background:var(--paper); }
 .r9 .voice:last-child { border-right:none; }
 @media(max-width:880px){ .r9 .voices { grid-template-columns:1fr; } .r9 .voice { border-right:none; border-bottom:1px solid var(--line); } .r9 .voice:last-child { border-bottom:none; } }
 .r9 .voice-mark { font-family:var(--dp); font-size:2.5rem; font-weight:800; color:var(--gold); line-height:.6; }
@@ -583,7 +599,7 @@ export default function HomeR5Preview() {
               <span className="boxed">Phoenix, AZ — Since 2020</span>
             </motion.div>
             <h1 className="hero-h dp">
-              <span className="row">
+              <span className="row row-kick">
                 <Kinetic delay={0.3} sq segments={[{ t: "Hi. We're Ahead of Market" }]} />
               </span>
               <span className="row gold">
@@ -631,9 +647,10 @@ export default function HomeR5Preview() {
 
         {/* CH 01 — WHO WE ARE (four beats) */}
         <Scene ch={1} tone="sc-dark" id="story">
+          <span className="ghost-n" aria-hidden="true">01</span>
           <div className="scene-inner">
             <Rise><span className="beat-eyebrow">So — who are we, exactly?</span></Rise>
-            <Rise delay={0.1}><GlyphFilm /></Rise>
+            <Rise delay={0.1}><span className="stamp"><GlyphFilm /></span></Rise>
             <p className="statement">
               <Kinetic sq segments={[{ t: 'Many companies around Phoenix know us as a ', cls: 'dim' }, { t: 'video company' }]} />
             </p>
@@ -641,8 +658,9 @@ export default function HomeR5Preview() {
         </Scene>
 
         <Scene ch={1} tone="sc-ink">
+          <span className="ghost-n" aria-hidden="true">02</span>
           <div className="scene-inner">
-            <Rise><GlyphWeb /></Rise>
+            <Rise><span className="stamp"><GlyphWeb /></span></Rise>
             <p className="statement">
               <Kinetic sq segments={[{ t: 'Others know us as a ', cls: 'dim' }, { t: 'web development company' }]} />
             </p>
@@ -650,6 +668,7 @@ export default function HomeR5Preview() {
         </Scene>
 
         <Scene ch={1} tone="sc-dark">
+          <span className="ghost-n" aria-hidden="true">03</span>
           <div className="scene-inner">
             <p className="statement">
               <Kinetic segments={[{ t: "We're actually ", cls: 'dim' }]} />
@@ -669,8 +688,10 @@ export default function HomeR5Preview() {
         </Scene>
 
         <Scene ch={1} tone="sc-ink">
+          <span className="ghost-n" aria-hidden="true">04</span>
           <div className="scene-inner">
-            <Rise><BrandMark kind="mono" className="scene-mark" /></Rise>
+            <Rise><span className="beat-eyebrow">What we actually are</span></Rise>
+            <Rise delay={0.1}><BrandMark kind="mono" className="scene-mark" /></Rise>
             <p className="statement payoff">
               <Kinetic sq segments={[{ t: "We're a ", cls: 'dim' }, { t: 'storytelling company', cls: 'gold' }]} />
             </p>
@@ -717,7 +738,7 @@ export default function HomeR5Preview() {
         {/* CH 03 — THE BILLBOARD */}
         <Scene ch={3} tone="sc-ink">
           <div className="scene-inner">
-            <Rise><GlyphBillboard /></Rise>
+            <Rise><span className="stamp"><GlyphBillboard /></span></Rise>
             <p className="bill-q">
               <Kinetic segments={[{ t: '"A billboard does no good in your ' }, { t: 'basement', cls: 'gold' }, { t: '."' }]} />
             </p>
@@ -738,15 +759,15 @@ export default function HomeR5Preview() {
               <Kinetic sq segments={[{ t: 'A small team that has ' }, { t: 'done a lot', cls: 'gold' }]} />
             </h2>
             <div className="stats">
-              <Rise className="stat" delay={0.05}>
+              <Rise className="stat" data-i="01" delay={0.05}>
                 <span className="stat-n"><Counter value="100+" /></span>
                 <span className="stat-l">Projects shipped since 2020</span>
               </Rise>
-              <Rise className="stat" delay={0.15}>
+              <Rise className="stat" data-i="02" delay={0.15}>
                 <span className="stat-n"><Counter value="3" /></span>
                 <span className="stat-l">Industries — Tech, Construction, Nonprofits</span>
               </Rise>
-              <Rise className="stat" delay={0.25}>
+              <Rise className="stat" data-i="03" delay={0.25}>
                 <span className="stat-n"><Counter value="8+" /></span>
                 <span className="stat-l">Years in commercial film, news &amp; media</span>
               </Rise>
@@ -781,10 +802,8 @@ export default function HomeR5Preview() {
                       <div className="slate">
                         <div className="slate-clap" />
                         <div className="slate-row"><span>Production</span><span>{s.slate.title}</span></div>
-                        <div className="slate-row"><span>Roll</span><span>{s.slate.roll}</span></div>
                         <div className="slate-mid">
-                          <span className="slate-big"><Counter value={s.big} /></span>
-                          <span className="slate-big-label">{s.bigLabel}</span>
+                          <span className="slate-big">{s.slate.roll}<span className="sq" /></span>
                         </div>
                         <div className="slate-row"><span>Scene</span><span>{s.slate.scene}</span></div>
                         <div className="slate-row"><span>Take</span><span>{s.slate.take}</span></div>
@@ -794,6 +813,10 @@ export default function HomeR5Preview() {
                 </Parallax>
               </div>
               <Rise delay={0.15} className="story-copy">
+                <div className="story-metric">
+                  <span className="story-metric-n"><Counter value={s.big} /></span>
+                  <span className="story-metric-l">{s.bigLabel}</span>
+                </div>
                 <div className="story-idx">
                   <span className="idx">{i === 0 ? 'Some recent work — ' : ''}{String(i + 1).padStart(2, '0')} / {String(STORIES.length).padStart(2, '0')}</span>
                   <span className="bar" />
