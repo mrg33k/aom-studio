@@ -3,7 +3,7 @@
 // { state, data } ready for the support-inbox fill-in template. No fake data:
 // when nothing has loaded we report loading/empty/error honestly.
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
 
 const NOREPLY = /(no-?reply|do-?not-?reply|mailer-daemon|postmaster|bounce[@+]|notifications?@|newsletter@|marketing@|mailchimp|sendgrid|klaviyo|hubspot|salesforce)/i;
@@ -57,6 +57,13 @@ export function useSupportInbox(worldId = 'aom') {
   const [mailboxes, setMailboxes] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
 
+  // `load` must be STABLE. It used to depend on `wishes`/`mailboxes` (to decide the
+  // error state), so every successful fetch produced new arrays -> recreated `load` ->
+  // re-ran the polling effect -> fetched again, an endless refetch loop. That loop is
+  // what made the header counts twitch and rebuilt list DOM under the user constantly.
+  // Track "have we ever loaded" in a ref instead, poll every 30s, and never let a
+  // failed poll wipe data we already have (keep last data until fresh data arrives).
+  const hasDataRef = useRef(false);
   const load = useCallback(async () => {
     let ok = false;
     try {
@@ -74,8 +81,9 @@ export function useSupportInbox(worldId = 'aom') {
         if (d2.ok) { setMailboxes(d2.mailboxes || []); ok = true; }
       } catch { /* keep last */ }
     } else { setMailboxes([]); ok = true; }
-    setStatus((prev) => (ok ? 'loaded' : (wishes || mailboxes ? prev : 'error')));
-  }, [isAom, wishes, mailboxes]);
+    if (ok) hasDataRef.current = true;
+    setStatus((prev) => (ok || hasDataRef.current ? 'loaded' : (prev === 'loading' ? 'error' : prev)));
+  }, [isAom]);
 
   useEffect(() => { load(); const t = setInterval(load, 30000); return () => clearInterval(t); }, [load]);
 
@@ -108,12 +116,18 @@ export function useSupportInbox(worldId = 'aom') {
     if (w.status === 'resolved') watching.push(item);
     else needsYou.push(item);
   }
+  const seenIds = new Set();
   for (const box of mailboxes || []) {
     const rows = [...(box.needs || []).map((it) => ['need', it]), ...(box.replied || []).map((it) => ['done', it])];
     for (const [kind, it] of rows) {
       const from = (it.email || it.from || '').toLowerCase();
       if (NOREPLY.test(from)) continue;
-      const id = `email-${it.threadId || it.email}`;
+      // Stable AND unique: two mailboxes (or a missing threadId) must never yield the
+      // same row id — duplicate ids made several rows match the selected id at once
+      // (every one rendered highlighted) and gave React duplicate keys.
+      let id = `email-${box.email || 'box'}-${it.threadId || it.email || 'row'}`;
+      while (seenIds.has(id)) id += '+';
+      seenIds.add(id);
       const subject = it.subject || '(no subject)';
       const snippet = `${it.from || it.email || ''} · ${firstLine(it.lastInbound?.snippet || it.snippet)}`;
       const time = relTime(it.lastReply?.date || it.lastInbound?.date || it.date);

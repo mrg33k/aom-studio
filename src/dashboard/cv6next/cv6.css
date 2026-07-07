@@ -545,6 +545,10 @@
 [data-cv6][data-screen^="support"] .ifilter.is-on { border:none; background:var(--accent-weak); color:var(--accent); }
 [data-cv6][data-screen^="support"] .schip { display:inline-flex; align-items:center; gap:5px; height:32px; padding:0 13px; border-radius:16px; border:1px solid var(--hair); background:var(--surface-2); color:var(--fg); font-size:12px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
 [data-cv6][data-screen^="support"] .schip.is-primary { border:none; background:var(--accent); color:#fff; }
+/* thread (mobile): honest-state modifiers — a note line that only renders when there is
+   something to say, and the reply button's held look (raw scan rows: assign first). */
+[data-cv6][data-screen^="support"] .sthr-note.is-none { display:none !important; }
+[data-cv6][data-screen^="support"] .sthr-reply.is-held { opacity:.55; }
 
 /* ---- Live Scribe tool (transcript · meeting helper · extracted · record dock) ---- */
 @keyframes scWave { 0%,100%{transform:scaleY(.4);} 50%{transform:scaleY(1);} }
