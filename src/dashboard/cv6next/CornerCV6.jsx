@@ -1881,7 +1881,9 @@ const COMMAND_ALIASES = {
 function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
   // The stepped-into row (drives the desktop detail panel + mobile inline expand).
   const [selectedKey, setSelectedKey] = useState('');
-  const { state, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion, handNextStep } = useCommand(worldId, selectedKey);
+  // Status filter (wd40 R4b): '' | 'working' | 'blocked' — the header chips toggle it.
+  const [statusFilter, setStatusFilter] = useState('');
+  const { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep } = useCommand(worldId, selectedKey, statusFilter);
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
@@ -1915,6 +1917,10 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
       // store; checking a Proposed step claims it); Add appends a user-sourced step to the
       // same store the room's agent reads. The add input is uncontrolled — read at tap time.
       toggleStep: (act) => stepToggle?.(act),
+      deleteStep: (act) => stepDelete?.(act),
+      // Header chips filter the ledger by status; same chip again clears.
+      filterWorking: () => setStatusFilter((f) => (f === 'working' ? '' : 'working')),
+      filterBlocked: () => setStatusFilter((f) => (f === 'blocked' ? '' : 'blocked')),
       addStep: (roomKey, e) => {
         const wrap = e?.currentTarget?.closest('[data-cv6-addstep]');
         const inp = wrap?.querySelector('input');
@@ -1949,7 +1955,7 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
       // A dock card is a live agent session — tapping it opens that agent's room.
       openJob: (id) => openRoomById('agent:' + String(id || '')),
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion, handNextStep]);
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
