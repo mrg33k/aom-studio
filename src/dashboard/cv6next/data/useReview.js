@@ -278,6 +278,13 @@ export function useReview(worldId = 'aom', injected = null) {
   // (25+ inflight requests observed in prod). Refs give stable reads without triggering re-creates.
   const queueRef = useRef(null);
   const queueServerTotalRef = useRef(0);
+  // WD40-R5c: ref tracks openDelId so load/loadMore can read the current selection
+  // without openDelId appearing in their useCallback deps (which triggered a server
+  // refetch on every item click — same cascade pattern as the queue dep above).
+  // Assigned directly in the render body (not useEffect) so it is always current
+  // when a callback fires synchronously after a render.
+  const openDelIdRef = useRef(null);
+  openDelIdRef.current = openDelId;
   // Queue scope (the same left-rail selection Organize uses): pick a project, then a
   // mission within it. null = all projects / every mission in the selected project;
   // '__root' = files sitting at the project root with no mission folder.
@@ -346,7 +353,7 @@ export function useReview(worldId = 'aom', injected = null) {
       const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${fetchLimit}&offset=0`);
       if (r?.ok) {
         const d = await r.json();
-        const items = (d.items || []).map((it) => mapQueueItem(it, openDelId));
+        const items = (d.items || []).map((it) => mapQueueItem(it, openDelIdRef.current));
         const next = { items, readyCount: items.length };
         queueRef.current = next;
         setQueue(next);
@@ -359,7 +366,10 @@ export function useReview(worldId = 'aom', injected = null) {
       console.error('[Review load]', e);
     }
     setStatus((prev) => (ok ? 'loaded' : (queueRef.current ? prev : 'error')));
-  }, [worldId, openDelId]);
+  // openDelId removed from deps — read via openDelIdRef; the open marker is
+  // re-stamped in the render-time filtered chain so selection highlighting is
+  // correct without any server refetch.
+  }, [worldId]);
 
   // WD40-R5: "Load older items" — true server-side fetch of the next PAGE_SIZE items,
   // appended to the in-memory list. hasMore is now driven by queueServerTotal vs the
@@ -373,7 +383,7 @@ export function useReview(worldId = 'aom', injected = null) {
       const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${PAGE_SIZE}&offset=${offset}`);
       if (r?.ok) {
         const d = await r.json();
-        const newItems = (d.items || []).map((it) => mapQueueItem(it, openDelId));
+        const newItems = (d.items || []).map((it) => mapQueueItem(it, openDelIdRef.current));
         if (newItems.length > 0) {
           const merged = [...(queueRef.current?.items || []), ...newItems];
           const next = { items: merged, readyCount: merged.length };
@@ -387,7 +397,7 @@ export function useReview(worldId = 'aom', injected = null) {
     } catch (e) {
       console.error('[Review loadMore]', e);
     }
-  }, [worldId, openDelId]);
+  }, [worldId]); // openDelId removed — read via openDelIdRef
 
   useEffect(() => {
     // Injected files (from a chat "Review all") ARE the queue — show exactly those,
@@ -595,9 +605,13 @@ export function useReview(worldId = 'aom', injected = null) {
 
   // The list = scope + chip filter over all fetched items, newest first. All matching
   // items are rendered — pagination is now server-side via loadMore, not a client window.
+  // WD40-R5c: re-stamp open:'on'/'off' from live openDelId state so the selected card
+  // highlights correctly even when load() ran before the selection was set (load/loadMore
+  // now use openDelIdRef instead of openDelId, so they no longer refetch on every click).
   const filtered = (typeFilter ? scoped.filter((i) => groupOf(i.type) === typeFilter) : scoped)
     .slice()
-    .sort(byNewest);
+    .sort(byNewest)
+    .map((it) => ({ ...it, open: it.id === openDelId ? 'on' : 'off' }));
   const waitingTotal = allItems.length;
 
   const data = {
