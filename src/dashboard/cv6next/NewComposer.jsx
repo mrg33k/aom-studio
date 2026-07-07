@@ -55,8 +55,8 @@ const NEW_COMPOSER_HTML = `
       <span class="ib" data-action="closeComposer" style="width:32px;height:32px;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></span>
     </div>
     <div style="display:flex;gap:7px;padding:14px 22px 2px;flex:none;">
-      <button class="cmp-tab" data-mod="is-:composer.tabMission" data-action="setComposerMode" data-arg="mission"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></svg>Start a mission</button>
-      <button class="cmp-tab" data-mod="is-:composer.tabProject" data-action="setComposerMode" data-arg="project"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>New project</button>
+      <button class="cmp-tab" data-mod="is-:composer.tabMission" data-action="setComposerMode" data-target="mission"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></svg>Start a mission</button>
+      <button class="cmp-tab" data-mod="is-:composer.tabProject" data-action="setComposerMode" data-target="project"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg>New project</button>
     </div>
     <div data-switch="composer.mode" style="padding:16px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:18px;">
       <div data-case="mission" style="display:flex;flex-direction:column;gap:18px;">
@@ -77,8 +77,8 @@ const NEW_COMPOSER_HTML = `
           </div>
         </div>
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
-          <div class="cmp-field" style="flex:1;min-width:150px;"><div class="cmp-flab">Priority</div><div class="cmp-seg cmp-pri"><button data-mod="is-:composer.priSel.low" data-action="setComposerPriority" data-arg="low">Low</button><button data-mod="is-:composer.priSel.med" data-action="setComposerPriority" data-arg="med">Med</button><button data-mod="is-:composer.priSel.high" data-action="setComposerPriority" data-arg="high">High</button></div></div>
-          <div class="cmp-field" style="flex:1;min-width:150px;"><div class="cmp-flab">When</div><div class="cmp-seg cmp-when"><button data-mod="is-:composer.whenSel.now" data-action="setComposerWhen" data-arg="now">Now</button><button data-mod="is-:composer.whenSel.week" data-action="setComposerWhen" data-arg="this-week">This week</button></div></div>
+          <div class="cmp-field" style="flex:1;min-width:150px;"><div class="cmp-flab">Priority</div><div class="cmp-seg cmp-pri"><button data-mod="is-:composer.priSel.low" data-action="setComposerPriority" data-target="low">Low</button><button data-mod="is-:composer.priSel.med" data-action="setComposerPriority" data-target="med">Med</button><button data-mod="is-:composer.priSel.high" data-action="setComposerPriority" data-target="high">High</button></div></div>
+          <div class="cmp-field" style="flex:1;min-width:150px;"><div class="cmp-flab">When</div><div class="cmp-seg cmp-when"><button data-mod="is-:composer.whenSel.now" data-action="setComposerWhen" data-target="now">Now</button><button data-mod="is-:composer.whenSel.week" data-action="setComposerWhen" data-target="this-week">This week</button></div></div>
         </div>
       </div>
       <div data-case="project" style="display:flex;flex-direction:column;gap:18px;">
