@@ -520,6 +520,10 @@
 [data-cv6][data-screen^="organize"] .fm { font-family:var(--font-mono); font-size:11px; color:var(--faint); margin-top:1px; }
 [data-cv6][data-screen^="organize"] .ochip { height:30px; padding:0 13px; border-radius:15px; border:1px solid var(--hair); background:transparent; color:var(--muted); font-size:12.5px; font-weight:600; font-family:var(--font-sans); cursor:pointer; }
 [data-cv6][data-screen^="organize"] .ochip.is-on { border:none; background:var(--accent); color:#fff; }
+/* Mission chip row: right-edge fade signals horizontal scroll without a visible scrollbar */
+[data-cv6][data-screen^="organize"] .ochip-row-fade { mask-image:linear-gradient(to right, black 78%, transparent 100%); -webkit-mask-image:linear-gradient(to right, black 78%, transparent 100%); }
+/* Filter chip row: lighter active state — secondary axis (type filter) vs primary (mission scope) */
+[data-cv6][data-screen^="organize"] .ochip-filter-row .ochip.is-on { background:var(--accent-weak); color:var(--accent); border:1px solid var(--accent); }
 [data-cv6][data-screen^="organize"] .obar { display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; color:var(--muted); font-family:var(--font-sans); font-size:10px; font-weight:600; cursor:pointer; }
 [data-cv6][data-screen^="organize"] .selrow { display:flex; align-items:center; gap:12px; padding:0 14px; height:58px; border-bottom:1px solid var(--divider); cursor:pointer; }
 [data-cv6][data-screen^="organize"] .selrow.is-on { background:var(--accent-weak); }
