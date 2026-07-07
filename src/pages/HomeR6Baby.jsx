@@ -66,6 +66,9 @@ const CSS = `
 /* the signature: square gold period, bonded to the last word */
 .r17 .sq { display:inline-block; width:.13em; height:.13em; background:var(--gold); margin-left:.07em; }
 
+/* scroll progress hairline (the R15 rail, carried forward) */
+.r17 .rail { position:fixed; top:0; left:0; height:2px; background:var(--gold); z-index:230; width:0; }
+
 /* ─── fixed corner chrome ─── */
 .r17 .chrome { position:fixed; left:0; right:0; z-index:220; display:flex; justify-content:space-between; align-items:center; padding:0 var(--pad); pointer-events:none; }
 .r17 .chrome.top { top:1.1rem; }
@@ -222,7 +225,8 @@ const CSS = `
   .r17 .parts-col.l { top:0; height:50%; justify-content:flex-start; padding:calc(3.4rem + 2svh) var(--pad) 0; }
   .r17 .parts-col.r { top:50%; height:50%; justify-content:flex-end; padding:0 var(--pad) calc(3.4rem + 2svh); }
   .r17 .slide-parts .title { font-size:clamp(2.2rem,8vw,4.5rem); }
-  .r17 .ghost-mark { color:rgba(196,164,106,.12); }
+  .r17 .ghost-mark { color:rgba(196,164,106,.16); }
+  .r17 .parts-list li { color:rgba(246,246,244,.88); font-size:.95rem; }
 }
 
 /* work mosaic */
@@ -360,6 +364,7 @@ export default function HomeR6Baby() {
   const maskL = useRef(null);
   const goldL = useRef(null);
   const chromeL = useRef(null);
+  const railRef = useRef(null);
   // shared hero transform state: scroll owns scale, pointer owns drift; both
   // write the same composed transform so neither clobbers the other
   const hero = useRef({ s: 1, x: 0, y: 0, tx: 0, ty: 0 });
@@ -402,6 +407,10 @@ export default function HomeR6Baby() {
         goldL.current.style.visibility = z >= 1 ? 'hidden' : 'visible';
       }
       if (chromeL.current) chromeL.current.style.opacity = String(1 - clamp01(z / 0.25));
+      if (railRef.current) {
+        const max = box.scrollHeight - H;
+        railRef.current.style.width = `${max > 0 ? (box.scrollTop / max) * 100 : 0}%`;
+      }
       // counter-scroll, offset by the runway
       const ph = colL.current.parentElement.clientHeight;
       const p = Math.max(0, y - RUNWAY_VH);
@@ -471,6 +480,9 @@ export default function HomeR6Baby() {
           </div>
         </div>
       </div>
+
+      {/* scroll progress rail */}
+      <div className="rail" ref={railRef} aria-hidden="true" />
 
       {/* fixed corner chrome */}
       <div className="chrome top">
