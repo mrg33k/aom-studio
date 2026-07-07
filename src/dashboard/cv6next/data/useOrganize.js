@@ -172,10 +172,13 @@ function nonTextPreview(name, kind) {
 
 // Full corner path for a mirror row: corner/users/<world>/projects/<slug>/<rel>/<name>.
 // rel_path is the dir within the project (no filename), '' at the project root.
+// Tenant-level missions are mirrored under the pseudo-project 'missions' with
+// rel_path leading with the mission slug — those live at corner/users/<world>/missions/.
 function cornerPathOf(row, worldId) {
   if (!row || !row.project || !row.name) return '';
   const rel = row.rel_path ? `${row.rel_path}/` : '';
-  return `corner/users/${worldId}/projects/${row.project}/${rel}${row.name}`;
+  const root = row.project === 'missions' ? 'missions' : `projects/${row.project}`;
+  return `corner/users/${worldId}/${root}/${rel}${row.name}`;
 }
 
 // Image preview: actually SHOW the image, streaming straight off the rag tunnel like
@@ -448,7 +451,11 @@ export function useOrganize(worldId = 'aom') {
         size: formatSize(f.size || 0),
         kind,
         status: 'ready',
-        missionKey: missionOf(f.rel_path),
+        // In the 'missions' pseudo-project (tenant-level missions), the first
+        // rel_path segment IS the mission slug; elsewhere it's missions/<slug>/.
+        missionKey: openProject.id === 'missions'
+          ? (String(f.rel_path || '').split('/').filter(Boolean)[0] || null)
+          : missionOf(f.rel_path),
       };
     });
 
