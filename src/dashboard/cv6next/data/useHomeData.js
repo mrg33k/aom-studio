@@ -92,7 +92,11 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
       status, statusText: statusText(status), initials: initials(a.title),
     };
   });
-  const projects = (projectRooms || []).map((p) => ({
+  const projects = [...(projectRooms || [])].sort((a, b) => {
+    const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+    const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+    return tb - ta;
+  }).map((p) => ({
     id: p.id || p.slug, slug: p.slug, name: p.name || p.slug || 'Project',
     // no real item-count source on this list (tasks not loaded here) -> blank, not a fake 0.
     tint: tintFor(p.name || p.id), count: (p.tasks?.length || p.taskCount || '') || '',
