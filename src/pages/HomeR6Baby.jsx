@@ -50,6 +50,7 @@ const CSS = `
   --line:rgba(255,255,255,.14); --gold:#C4A46A; --gold-deep:#A8884C;
   --fx:'Inter',system-ui,Helvetica,Arial,sans-serif;
   --fd:'Inter Tight','Inter',system-ui,Helvetica,Arial,sans-serif;
+  --fbrut:'Space Grotesk',system-ui,Helvetica,Arial,sans-serif;
   --pad:clamp(1.25rem,4vw,3.5rem);
   position:fixed; inset:0; overflow-y:auto; overflow-x:hidden;
   scroll-snap-type:y mandatory; scroll-behavior:smooth;
@@ -98,7 +99,7 @@ const CSS = `
 .r17 .hz-menu-t { font-family:var(--fd); font-weight:800; text-transform:uppercase; font-size:clamp(1.5rem,3.4vw,2.4rem); line-height:1.05; letter-spacing:-.01em; color:var(--paper); transition:color .15s; }
 .r17 .hz-menu-row:hover .hz-menu-t { color:var(--gold); }
 .r17 .hz-menu-row.big .hz-menu-t { font-size:clamp(1.9rem,4.4vw,3rem); }
-.r17 .hz-menu-sub { font-size:.82rem; color:var(--mut); margin-top:.2rem; }
+.r17 .hz-menu-sub { font-size:.82rem; color:var(--mut); margin-top:.2rem; font-family:var(--fbrut); font-weight:500; }
 
 /* two-parts service links */
 .r17 .parts-link { color:inherit; transition:color .15s; }
@@ -172,6 +173,7 @@ const CSS = `
   bottom:calc(clamp(4.5rem,10vh,7rem) + env(safe-area-inset-bottom));
   width:min(34rem,84vw); text-align:center;
   font-size:clamp(.85rem,1.15vw,1rem); color:var(--mut); line-height:1.65;
+  font-family:var(--fbrut); font-weight:500; letter-spacing:-.01em;
 }
 .r17 .hz-cue {
   position:absolute; left:50%; bottom:calc(clamp(2rem,5vh,3.4rem) + env(safe-area-inset-bottom));
@@ -185,6 +187,11 @@ const CSS = `
 }
 @media (prefers-reduced-motion:reduce){ .r17 .hz-cue { animation:none; opacity:.6; transform:translateX(-50%); } }
 
+/* branded sparkle star reveals on mouse move (hero side areas only) */
+.r17 .sparkle { position:absolute; z-index:2; width:clamp(2rem,3vw,3.5rem); height:clamp(2rem,3vw,3.5rem); color:var(--gold); opacity:0; transition:opacity .4s ease; pointer-events:none; display:flex; align-items:center; justify-content:center; }
+.r17 .sparkle svg { width:100%; height:100%; display:block; }
+@media (prefers-reduced-motion:reduce){ .r17 .sparkle { display:none; } }
+
 /* ─── slides: type only, transparent over the backdrop ─── */
 .r17 .slide {
   position:relative; height:100svh; scroll-snap-align:start; scroll-snap-stop:always;
@@ -196,8 +203,8 @@ const CSS = `
 .r17 .stack { position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 var(--pad); max-width:100%; }
 .r17 .stack::before { content:''; position:absolute; inset:0; z-index:-1; background:radial-gradient(ellipse at center, rgba(4,4,4,.55), transparent 70%); pointer-events:none; }
 .r17 .tags { display:flex; flex-direction:column; gap:.28rem; margin-bottom:1.1rem; }
-.r17 .tags span { font-size:.68rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 14px rgba(0,0,0,.9); }
-.r17 .tags .idx { font-size:.95rem; font-weight:700; letter-spacing:.3em; margin-bottom:.3rem; }
+.r17 .tags span { font-size:.68rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 14px rgba(0,0,0,.9); font-family:var(--fbrut); }
+.r17 .tags .idx { font-size:.95rem; font-weight:700; letter-spacing:.3em; margin-bottom:.3rem; font-family:var(--fd); }
 .r17 #contact .tags > span:first-child { font-size:.95rem; font-weight:700; }
 .r17 .title {
   font-family:var(--fd); font-weight:800; text-transform:uppercase;
@@ -206,8 +213,8 @@ const CSS = `
 }
 .r17 .title .row { display:block; }
 .r17 .title .gold { color:var(--gold); }
-.r17 .sub { margin-top:1.3rem; font-size:clamp(.95rem,1.5vw,1.12rem); color:var(--paper); opacity:.9; max-width:52ch; text-shadow:0 1px 16px rgba(0,0,0,.7); }
-.r17 .stat { margin-top:.55rem; font-size:.8rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 12px rgba(0,0,0,.7); }
+.r17 .sub { margin-top:1.3rem; font-size:clamp(.95rem,1.5vw,1.12rem); color:var(--paper); opacity:.9; max-width:52ch; text-shadow:0 1px 16px rgba(0,0,0,.7); font-family:var(--fbrut); font-weight:500; letter-spacing:-.01em; }
+.r17 .stat { margin-top:.55rem; font-size:.8rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 12px rgba(0,0,0,.7); font-family:var(--fbrut); }
 .r17 .view { margin-top:1.5rem; display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); transition:color .15s; }
 .r17 .view:hover { color:var(--paper); }
 .r17 .btn-gold {
@@ -238,9 +245,9 @@ const CSS = `
 }
 
 /* two parts lists */
-.r17 .parts-head { font-size:.72rem; font-weight:700; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; }
+.r17 .parts-head { font-size:.72rem; font-weight:600; letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; font-family:var(--fbrut); }
 .r17 .parts-list { list-style:none; display:flex; flex-direction:column; gap:.85rem; }
-.r17 .parts-list li { font-size:clamp(.85rem,1.3vw,1.02rem); color:var(--mut); line-height:1.65; border-top:1px solid rgba(255,255,255,.12); padding-top:.75rem; }
+.r17 .parts-list li { font-size:clamp(.85rem,1.3vw,1.02rem); color:var(--mut); line-height:1.65; border-top:1px solid rgba(255,255,255,.12); padding-top:.75rem; font-family:var(--fbrut); font-weight:500; }
 .r17 .parts-list li:first-child { border-top:none; padding-top:0; }
 .r17 .parts-col { position:absolute; z-index:3; top:0; height:100%; width:50%; display:flex; flex-direction:column; justify-content:flex-end; padding:0 var(--pad) 16svh; }
 .r17 .parts-col.l { left:0; align-items:flex-start; text-align:left; }
@@ -420,13 +427,17 @@ export default function HomeR6Baby() {
   const goldL = useRef(null);
   const chromeL = useRef(null);
   const railRef = useRef(null);
-  // shared hero transform state: scroll owns scale, pointer owns drift; both
-  // write the same composed transform so neither clobbers the other
-  const hero = useRef({ s: 1, x: 0, y: 0, tx: 0, ty: 0 });
+  const sparkleRefs = useRef([]);
+  const sparkleState = useRef({ activeSparkles: new Set() });
+  // shared hero transform state: scroll owns scale + drift, pointer owns mouse drift;
+  // all fold into one composed transform so neither clobbers the other
+  const hero = useRef({ s: 1, x: 0, y: 0, tx: 0, ty: 0, drift: 0 });
 
   const writeWm = useCallback(() => {
     const h = hero.current;
-    const t = `translate3d(${h.x.toFixed(2)}px, ${h.y.toFixed(2)}px, 0) scale(${h.s})`;
+    // Drift is scroll-driven (z) + pointer-driven (x). Both fold into one composed transform.
+    const driftX = h.x + h.drift;
+    const t = `translate3d(${driftX.toFixed(2)}px, ${h.y.toFixed(2)}px, 0) scale(${h.s})`;
     if (wmA.current && wmB.current) wmA.current.style.transform = wmB.current.style.transform = t;
   }, []);
 
@@ -449,9 +460,11 @@ export default function HomeR6Baby() {
       const H = box.clientHeight;
       if (!H) return;
       const y = box.scrollTop / H;
-      // hero zoom
+      // hero zoom + sideways drift: as z progresses (0→1), logo drifts outward/off to the side
       const z = clamp01((y - HOLD) / ZOOM);
       hero.current.s = 1 + ease(z) * 34;
+      // drift: 0 at z=0, ±80px at z=1. Alternates left/right by viewport width.
+      hero.current.drift = (window.innerWidth / 2 > window.innerHeight ? -80 : 80) * ease(z);
       writeWm();
       if (maskL.current) {
         maskL.current.style.opacity = String(1 - clamp01((z - 0.78) / 0.22));
@@ -502,6 +515,34 @@ export default function HomeR6Baby() {
     raf = requestAnimationFrame(tick);
     return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); };
   }, [writeWm]);
+
+  // Sparkle stars reveal on mouse move in hero side areas (fine pointers, large screens only)
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const ok = window.matchMedia('(pointer:fine)').matches
+      && window.matchMedia('(min-width:861px)').matches
+      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!ok) return;
+    const stage = document.querySelector('.r17 .hz-stage');
+    if (!stage) return;
+    const onMouseMove = e => {
+      const rect = stage.getBoundingClientRect();
+      if (rect.top > window.innerHeight || rect.bottom < 0) return; // stage not visible
+      const relX = e.clientX - rect.left;
+      const isLeftSide = relX < rect.width * 0.25;
+      const isRightSide = relX > rect.width * 0.75;
+      const nextActive = new Set();
+      sparkleRefs.current.forEach((ref, i) => {
+        if (!ref) return;
+        const shouldShow = (i % 2 === 0 && isLeftSide) || (i % 2 === 1 && isRightSide);
+        if (shouldShow) nextActive.add(i);
+        ref.style.opacity = shouldShow ? '1' : '0';
+      });
+      sparkleState.current.activeSparkles = nextActive;
+    };
+    stage.addEventListener('mousemove', onMouseMove, { passive: true });
+    return () => stage.removeEventListener('mousemove', onMouseMove);
+  }, []);
 
   // Deep links (#story/#work/#contact): the reel mounts after the browser's
   // native anchor pass, so jump to the hash target ourselves. Instant, not
@@ -603,6 +644,27 @@ export default function HomeR6Baby() {
           <div className="hz-gold" ref={goldL} aria-hidden="true">
             <div className="wm" ref={wmB}><BrandMark kind="mono" /><span className="dot" /></div>
           </div>
+          {/* Branded sparkle stars fade in/out on mouse move in side areas */}
+          {[...Array(4)].map((_, i) => {
+            const isRight = i % 2 === 1;
+            const top = 20 + (i % 2) * 45;
+            return (
+              <div
+                key={i}
+                ref={el => { if (el) sparkleRefs.current[i] = el; }}
+                className="sparkle"
+                style={{
+                  [isRight ? 'right' : 'left']: 'clamp(1rem, 5vw, 3rem)',
+                  top: `${top}%`,
+                }}
+                aria-hidden="true"
+              >
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M50,3 Q54.5,45.5 97,50 Q54.5,54.5 50,97 Q45.5,54.5 3,50 Q45.5,45.5 50,3 Z" fill="currentColor" />
+                </svg>
+              </div>
+            );
+          })}
           <div className="hz-chrome" ref={chromeL}>
             <p className="hz-intro">Hi. We're Ahead of Market — a storytelling company from <span style={{ whiteSpace: 'nowrap' }}>Phoenix, AZ.</span></p>
             <span className="hz-cue" />
