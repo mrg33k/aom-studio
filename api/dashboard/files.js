@@ -485,6 +485,28 @@ export default async function handler(req, res) {
           if (offset >= HARD_CAP) truncated = true
         }
       } catch { /* return whatever we have */ }
+
+      // corner:corner-ui-cv6 wd40 DEF-4: hide mirror rows from ARCHIVED
+      // projects. Organize rebuilds its tree from these rows (orphan groups
+      // resurrect any slug with files, prettified from the slug), so an
+      // archived project ghosted back in an hour after archiving. Rows are
+      // not deleted — unarchive brings the files straight back.
+      try {
+        const ar = await fetch(
+          `${SUPABASE_URL}/rest/v1/projects?is_active=eq.false&select=slug`,
+          { headers: dbHeaders() },
+        )
+        if (ar.ok) {
+          const rows = await ar.json()
+          const archived = new Set((rows || []).map(p => p?.slug).filter(Boolean))
+          if (archived.size) {
+            for (let i = files.length - 1; i >= 0; i--) {
+              if (archived.has(files[i].project)) files.splice(i, 1)
+            }
+          }
+        }
+      } catch { /* over-show on failure; never hide live files by accident */ }
+
       return res.status(200).json({ files, truncated })
     }
 
