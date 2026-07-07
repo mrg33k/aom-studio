@@ -54,8 +54,12 @@ export default function LiveScribe({ onNav, onOpenNav }) {
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
     openNav: () => onOpenNav?.(),
-    openCommandK: () => {},
-    search: () => {},
+    // Header controls do what they do on every other screen (closure sweep
+    // 2026-07-06: the profile bubble was DEAD here — census scribe-1440 #11 —
+    // and search/cmdK were unwired no-ops; all open the nav overlay like Command).
+    openCommandK: () => onOpenNav?.(),
+    search: () => onOpenNav?.(),
+    openProfile: () => onOpenNav?.(),
     // The one capture button: idle starts the mic, recording stops + saves.
     // Nothing records without this tap (no surprise microphone).
     toggleCapture: () => (recording ? controls.stop() : controls.start()),
