@@ -23,11 +23,19 @@ marked.setOptions({ breaks: true, gfm: true, renderer })
 const IMAGE_URL_RE = /\.(png|jpg|jpeg|gif|webp|svg)(\?[^\s]*)?$/i
 
 function preprocessBareUrls(text) {
-  // Convert bare URLs not already inside markdown link/image syntax into GFM autolinks or images
-  // Negative lookbehind: skip if preceded by ( or [ (already in markdown syntax)
-  return text.replace(/(?<![(\[!])(https?:\/\/[^\s<>"')\]]+)/g, (url) => {
-    if (IMAGE_URL_RE.test(url)) return `![](${url})`
-    return `<${url}>`
+  // Convert bare URLs not already inside markdown link/image syntax into clickable markdown links or images
+  // Negative lookbehind: skip if preceded by ( [ ! (already in markdown syntax)
+  // This creates explicit markdown links [url](url) so they reliably convert to <a> tags via marked
+  return text.replace(/(?<![(\[!])(https?:\/\/[^\s<>"')\]]+)/g, (match) => {
+    let url = match
+    // Clean up trailing punctuation that shouldn't be part of the URL
+    url = url.replace(/[.,;:!?\)]+$/, '')
+    if (IMAGE_URL_RE.test(url)) {
+      return `![](${url})`
+    }
+    // Return markdown link format: [url](url)
+    // The custom renderer will add target="_blank" rel="noopener noreferrer"
+    return `[${url}](${url})`
   })
 }
 
