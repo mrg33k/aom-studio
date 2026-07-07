@@ -5,7 +5,7 @@
 //
 // Drop-in rule: every page mounts this one nav. If a screen hand-rolls its own
 // tool list, it's wrong -- point it back here.
-import React from 'react';
+import React, { useEffect } from 'react';
 
 // --- the ONE ordered tool list both forms render -------------------------------
 // `route` is the view-machine target onPick receives. `wired` is whether that
@@ -116,6 +116,15 @@ export function DesktopNav({ current, onPick, onOpenCommandK, onOpenProfile, use
 
 // --- MOBILE: the drawer --------------------------------------------------------
 export function MobileNav({ open, current, onPick, onClose, badges = {}, theme, onTheme }) {
+  // Escape closes the drawer — standard modal behaviour, and it keeps the full-screen
+  // scrim from lingering over the rest of the UI (a lingering scrim silently swallows
+  // the next tap on anything underneath).
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
   if (!open) return null;
   return (
     <div className="navscrim" onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 60 }}>

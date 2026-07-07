@@ -188,6 +188,16 @@ function applyBindings(el, scopes, ctx) {
       // keyboard selection rides a data attribute, not an is-* class, so a row can carry
       // BOTH its depth-indent (is-d1/is-d2) and the selected highlight at the same time.
       if (verb === 'knav') { el.setAttribute('data-knav', val); continue; }
+      // acur: mark the ACTIVE one of a segmented control (a filter chip, a tab) with
+      // aria-current so assistive tech — and the QA census — read the already-selected
+      // item as an intentional no-op rather than a dead control. Truthy value ('on',
+      // 'true') sets it; the off/false peers drop the attribute. Same contract the
+      // desktop React tabs already carry via aria-current.
+      if (verb === 'acur') {
+        if (val && val !== 'off' && val !== 'false' && val !== 'no' && val !== '0') el.setAttribute('aria-current', 'true');
+        else el.removeAttribute('aria-current');
+        continue;
+      }
       // swap to the design's documented is-<value> class; drop any prior is-*.
       const classes = (el.getAttribute('class') || '').split(/\s+/).filter((c) => c && !c.startsWith('is-'));
       classes.push(`is-${val}`);
