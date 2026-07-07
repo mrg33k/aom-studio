@@ -13,6 +13,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
+import NewComposer from './NewComposer.jsx';
 import template from './templates/organize.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -51,8 +52,8 @@ function composePicker(raw) {
   // countLabel is the computed '1 file / N files' string (grammar, loop R12).
   const pmeta = screen.querySelector('.pmeta');
   if (pmeta) { pmeta.innerHTML = '0 files'; pmeta.setAttribute('data-bind', 'project.countLabel'); }
-  // Creating a project from here is not wired yet — disable rather than leave a dead button.
-  disableHeld(screen, '[data-action="newProject"]', 'Creating a project from here is coming soon');
+  // "New project" is live: the button's data-action="newProject" opens the shared
+  // NewComposer flow (same overlay the Home "New" button uses).
   finalizeScreen(screen, screen.querySelector('[data-state="ready"]'));
   return screen.outerHTML;
 }
@@ -127,9 +128,13 @@ const BROWSE_HTML = composeBrowse(template);
 const VIEW_HTML = composeView(template);
 
 export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
-  const { state, data, selectProject, selectMission, setFilter, setQuery, setSort, reload, openFile } = useOrganize('aom');
+  const worldId = 'aom';
+  const { state, data, selectProject, selectMission, setFilter, setQuery, setSort, reload, openFile, projects } = useOrganize(worldId);
   const [projectId, setProjectId] = useState(null); // null = show the picker (no forced project)
   const [pickedFileId, setPickedFileId] = useState(null);
+  // "New project" → the shared NewComposer overlay (same flow as Home's "New"), opened
+  // on the project tab. On create, reload with bust so the new project shows now.
+  const [showNew, setShowNew] = useState(false);
 
   // Type-to-find: delegated input event (engine wires clicks only); kept DOM node
   // holds the text, cleared here when the project changes (hook resets its query).
@@ -186,6 +191,7 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
       onNav?.('review', rf ? { files: [rf], project: data.viewFile.projectSlug || '' } : null);
     },
     assignAgent: (fileId) => onAssignFile?.(fileId || pickedFileId),
+    newProject: () => setShowNew(true),
     // Held-c (no file-storage backend yet): inert, never faked.
     retry: () => reload?.(),
     openFolder: () => {}, commentFile: () => {}, moveFile: () => {},
@@ -197,8 +203,12 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
   const screenState = projectId ? state : (state === 'loading' || state === 'error' || state === 'empty' ? state : 'ready');
 
   return (
-    <div ref={wrapRef} onInput={onSearchInput} style={{ width: '100%', height: '100%' }}>
+    <div ref={wrapRef} onInput={onSearchInput} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={html} data={bindData} actions={actions} state={screenState} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
+      {showNew ? (
+        <NewComposer worldId={worldId} projects={projects || []} agents={[]} initialMode="project"
+          onClose={() => setShowNew(false)} onCreated={() => reload?.({ bust: true })} />
+      ) : null}
     </div>
   );
 }
