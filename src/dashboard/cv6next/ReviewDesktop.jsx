@@ -190,10 +190,20 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
 
   // Keep the selected tree node in view: with the full registry listed, a project
   // low in the alphabet lands outside the tree's scroll window the moment it is
-  // clicked (TemplateScreen rebuilds the DOM, resetting scroll). Runs per data tick.
+  // clicked. ONCE per selection change (scroll-arch R1): this used to run on EVERY
+  // render, so any unrelated re-render (e.g. clicking a queue item, or a data tick)
+  // re-pinned the tree to the selected node and yanked it out from under the user's
+  // own tree scroll — the same scroll-hijack the engine now prevents everywhere else.
+  // A ref guard scrolls only when the selection actually moves. Same pattern as the
+  // Home knav one-shot (commit 79702fd7).
+  const lastTreeSelRef = useRef('');
   useEffect(() => {
     const sel = viewerRef.current?.querySelector('.trow.is-d0on, .trow.is-d1on');
-    sel?.scrollIntoView({ block: 'nearest' });
+    if (!sel) { lastTreeSelRef.current = ''; return; }
+    const key = sel.getAttribute('data-cv6-arg') || sel.textContent || '';
+    if (key === lastTreeSelRef.current) return; // already parked here — don't fight the user's scroll
+    lastTreeSelRef.current = key;
+    sel.scrollIntoView({ block: 'nearest' });
   });
 
   // WD40-R4: build history items to append below the queue list when a project is
