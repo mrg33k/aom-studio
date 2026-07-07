@@ -712,7 +712,9 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
 
   const pickAgent = (a) => setPicked({ id: a.id, name: a.name, initials: a.initials, status: a.status, statusText: a.statusLabel });
   const pickProject = (p) => setPicked({ id: p.id, name: p.name, initials: (p.name || '?').slice(0, 2).toUpperCase(), isProject: true, status: p.status, statusText: 'project chat' });
-  const pickMission = (p, m) => { const nm = missionLabelClean(m.name || m.slug); setPicked({ id: m.slug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: String(m.slug || '').includes(':') ? m.slug : `${p.slug}:${m.slug}`, projectSlug: p.slug, status: missionDot(m.status), statusText: p.name }); };
+  // DEF-14 guard: m.slug may be JS undefined when a mission object is partially constructed.
+  // String(undefined) = "undefined" which is truthy and passes guards — explicitly reject it.
+  const pickMission = (p, m) => { const safeSlug = (m.slug != null && String(m.slug).trim() !== 'undefined' && String(m.slug).trim() !== '') ? m.slug : null; const nm = missionLabelClean(m.name || safeSlug); setPicked({ id: safeSlug, name: nm, initials: (nm || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: safeSlug && String(safeSlug).includes(':') ? safeSlug : (safeSlug ? `${p.slug}:${safeSlug}` : null), projectSlug: p.slug, status: missionDot(m.status), statusText: p.name }); };
 
   // Real missions per project (same endpoint the mobile project screen uses). Each project
   // row fans open to these; clicking one opens that mission's own thread.

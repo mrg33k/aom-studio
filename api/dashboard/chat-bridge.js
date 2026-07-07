@@ -351,7 +351,8 @@ export default async function handler(req, res) {
           project: body.project || '',
           // R3 corner:mission-rooms — forward mission scope so bridge.py
           // can load mission CONTEXT/VISION/BUILD into the SDK system prompt.
-          ...(body.mission ? (() => { const canon = canonicalizeMissionSlug(String(body.mission).trim(), MISSION_SLUG_LOOKUP); return { mission: canon, metadata: { mission_slug: canon } } })() : {}),
+          // DEF-14 guard: reject the string "undefined" — it is a JS serialization of a missing value.
+          ...(body.mission && String(body.mission).trim() !== 'undefined' && String(body.mission).trim() !== 'null' ? (() => { const canon = canonicalizeMissionSlug(String(body.mission).trim(), MISSION_SLUG_LOOKUP); return { mission: canon, metadata: { mission_slug: canon } } })() : {}),
           user_name: body.user_name || 'Patrik',
           user_id: body.user_id || '',
           thread_id: body.thread_id || body.client_id || '',

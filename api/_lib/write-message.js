@@ -84,10 +84,15 @@ export async function writeMessageRow({
     null
 
   // --- 2. Mission canonicalization (both `mission` and metadata.mission_slug) ---
+  // Guard: the JS string "undefined" is a serialization of a missing value — treat it as null.
+  // Without this guard a partial mission object (slug missing) serializes to mission="undefined",
+  // which was the root cause of the folder/room slug collision (DEF-14, 2026-07-06).
+  const _missGuard = (v) => (v && String(v).trim() !== 'undefined' && String(v).trim() !== 'null')
+    ? String(v).trim() : null
   const incomingMeta = (metadata && typeof metadata === 'object') ? metadata : null
   const rawMission =
-    (mission && String(mission).trim()) ||
-    (incomingMeta && incomingMeta.mission_slug && String(incomingMeta.mission_slug).trim()) ||
+    _missGuard(mission) ||
+    (incomingMeta && _missGuard(incomingMeta.mission_slug)) ||
     null
   const canonicalMission = rawMission
     ? canonicalizeMissionSlug(rawMission, MISSION_SLUG_LOOKUP)
