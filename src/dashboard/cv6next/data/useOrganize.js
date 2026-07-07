@@ -55,6 +55,7 @@ function fileKind(name) {
   const ext = (name || '').toLowerCase().split('.').pop();
   if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'heic', 'bmp'].includes(ext)) return 'image';
   if (['mp4', 'mov', 'webm', 'm4v', 'mkv', 'avi'].includes(ext)) return 'video';
+  if (['wav', 'mp3', 'aac', 'm4a', 'ogg', 'flac', 'aiff', 'opus'].includes(ext)) return 'audio';
   if (ext === 'pdf') return 'pdf';
   if (['url', 'webloc'].includes(ext)) return 'link';
   if (['csv', 'xlsx', 'xls'].includes(ext)) return 'sheet';
@@ -150,7 +151,7 @@ const LOADING_HTML =
 // (images, PDFs, sheets) — a tinted banner + kind glyph so it reads as intentional,
 // never as an error or empty file.
 function nonTextPreview(name, kind) {
-  const label = kind === 'image' ? 'Image file' : kind === 'pdf' ? 'PDF file' : kind === 'sheet' ? 'Spreadsheet' : kind === 'video' ? 'Video file' : 'File';
+  const label = kind === 'image' ? 'Image file' : kind === 'pdf' ? 'PDF file' : kind === 'sheet' ? 'Spreadsheet' : kind === 'video' ? 'Video file' : kind === 'audio' ? 'Audio file' : 'File';
   const lower = label.toLowerCase();
   return (
     '<div style="display:flex;align-items:center;gap:10px;margin:0 0 16px;padding:12px 14px;border-radius:8px;'
@@ -187,7 +188,7 @@ export function useOrganize(worldId = 'aom') {
   const [files, setFiles] = useState(null);        // metadata rows (no content)
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [selectedId, setSelectedId] = useState(null); // which project's files show
-  const [filter, setFilter] = useState('recent');  // recent | links | docs | pdfs | images | video
+  const [filter, setFilter] = useState('recent');  // recent | links | docs | pdfs | images | video | audio
   // Mission narrowing within the selected project. Stored as CANDIDATE slugs (a tree
   // node click hands in every segment of a colon-joined mission path); the first
   // candidate that exists as a mission folder with files wins, else no narrowing.
@@ -297,6 +298,13 @@ export function useOrganize(worldId = 'aom') {
           ? `<video src="${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}" controls preload="metadata" playsinline style="width:100%;max-height:68vh;display:block;border-radius:10px;background:#000;"></video>`
           : nonTextPreview(f.name, 'video');
         title = f.name || 'Untitled';
+      } else if (kind === 'audio') {
+        // Stream audio off the tunnel — same Range-capable path as video.
+        const cornerPath = cornerPathOf(f, worldId);
+        bodyHtml = cornerPath
+          ? `<audio src="${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}" controls preload="metadata" style="width:100%;display:block;margin:12px 0;border-radius:8px;"></audio>`
+          : nonTextPreview(f.name, 'audio');
+        title = f.name || 'Untitled';
       } else if (kind === 'image') {
         // Real image render, streaming off the tunnel (see imageBodyHtml).
         bodyHtml = imageBodyHtml(f, worldId);
@@ -399,7 +407,8 @@ export function useOrganize(worldId = 'aom') {
       case 'pdfs':   return kind === 'pdf';
       case 'images': return kind === 'image';
       case 'video':  return kind === 'video';
-      case 'docs':   return !['image', 'video', 'pdf', 'link'].includes(kind);
+      case 'audio':  return kind === 'audio';
+      case 'docs':   return !['image', 'video', 'audio', 'pdf', 'link'].includes(kind);
       case 'recent':
       default:       return true;
     }
@@ -458,12 +467,13 @@ export function useOrganize(worldId = 'aom') {
   const countKind = (k) => missionFiles.filter((f) => f.kind === k).length;
   const imageCount = countKind('image');
   const videoCount = countKind('video');
+  const audioCount = countKind('audio');
   const pdfCount = countKind('pdf');
   const linkCount = countKind('link');
-  const docCount = missionFiles.filter((f) => !['image', 'video', 'pdf', 'link'].includes(f.kind)).length;
+  const docCount = missionFiles.filter((f) => !['image', 'video', 'audio', 'pdf', 'link'].includes(f.kind)).length;
   // If the active type filter has no files in the new mission/project scope, fall
   // back to Recent instead of showing an inexplicable empty column.
-  const kindCountFor = { links: linkCount, docs: docCount, pdfs: pdfCount, images: imageCount, video: videoCount };
+  const kindCountFor = { links: linkCount, docs: docCount, pdfs: pdfCount, images: imageCount, video: videoCount, audio: audioCount };
   const effFilter = (filter !== 'recent' && !kindCountFor[filter]) ? 'recent' : filter;
   const q = query.trim().toLowerCase();
   const fileList = missionFiles
@@ -503,6 +513,7 @@ export function useOrganize(worldId = 'aom') {
       { id: 'pdfs',   label: `Pdfs ${pdfCount}`,          count: pdfCount,   active: effFilter === 'pdfs'   ? 'on' : 'off' },
       { id: 'images', label: `Images ${imageCount}`,      count: imageCount, active: effFilter === 'images' ? 'on' : 'off' },
       { id: 'video',  label: `Video ${videoCount}`,       count: videoCount, active: effFilter === 'video'  ? 'on' : 'off' },
+      { id: 'audio',  label: `Audio ${audioCount}`,       count: audioCount, active: effFilter === 'audio'  ? 'on' : 'off' },
     ].filter((c) => c.id === 'recent' || c.count > 0),
     missions: missionChips,
     sorts: [
