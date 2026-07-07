@@ -57,6 +57,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/about/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/hear",
       "destination": "/hear/index.html"
     },

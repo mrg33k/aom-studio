@@ -140,6 +140,9 @@ const ServiceDocumentary = lazy(() => import('./pages/ServiceDocumentary.jsx'))
 const WorkConstruction = lazy(() => import('./pages/WorkConstruction.jsx'))
 const WorkTechSaas = lazy(() => import('./pages/WorkTechSaas.jsx'))
 const WorkNonprofit = lazy(() => import('./pages/WorkNonprofit.jsx'))
+const AboutOurStory = lazy(() => import('./pages/AboutOurStory.jsx'))
+const AboutHowWeWork = lazy(() => import('./pages/AboutHowWeWork.jsx'))
+const AboutStandards = lazy(() => import('./pages/AboutStandards.jsx'))
 const ProjectPage = lazy(() => import('./pages/ProjectPage.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
@@ -327,7 +330,7 @@ function TestModeBanner() {
   const { pathname } = useLocation()
   if (import.meta.env.VITE_DASHBOARD_MODE !== 'test') return null
   // Hide on the public marketing preview pages so they review clean (it never shows on real prod anyway).
-  if (pathname === '/r5' || pathname === '/r6' || pathname === '/taste' || pathname === '/r4' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname.startsWith('/work/') || pathname.startsWith('/services/')) return null
+  if (pathname === '/r5' || pathname === '/r6' || pathname === '/taste' || pathname === '/r4' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname.startsWith('/work/') || pathname.startsWith('/services/') || pathname.startsWith('/about/')) return null
   return (
     <>
       <style>{`
@@ -448,6 +451,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/work/construction" element={<WorkConstruction />} />
           <Route path="/work/tech-saas" element={<WorkTechSaas />} />
           <Route path="/work/nonprofit" element={<WorkNonprofit />} />
+          <Route path="/about/our-story" element={<AboutOurStory />} />
+          <Route path="/about/how-we-work" element={<AboutHowWeWork />} />
+          <Route path="/about/standards" element={<AboutStandards />} />
           <Route path="/taste" element={<HomeR6Taste />} />
           <Route path="/versions" element={<VersionsGallery />} />
           <Route path="/versions/superside" element={<VSuperside />} />

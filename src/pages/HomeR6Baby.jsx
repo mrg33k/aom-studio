@@ -389,6 +389,12 @@ const WORK_FILTERS = [
   { t: 'Nonprofit', href: '/work/nonprofit' },
 ];
 
+const ABOUT = [
+  { t: 'Our story', href: '/about/our-story' },
+  { t: 'How we work', href: '/about/how-we-work' },
+  { t: 'Standards', href: '/about/standards' },
+];
+
 export default function HomeR6Baby() {
   const [video, setVideo] = useState(null);
   const [menu, setMenu] = useState(() => {
@@ -557,6 +563,12 @@ export default function HomeR6Baby() {
           {WORK_FILTERS.map(w => (
             <a key={w.href} className="hz-menu-row" href={w.href}>
               <span className="hz-menu-t">{w.t}</span>
+            </a>
+          ))}
+          <div className="hz-menu-kick">Company</div>
+          {ABOUT.map(a => (
+            <a key={a.href} className="hz-menu-row" href={a.href}>
+              <span className="hz-menu-t">{a.t}</span>
             </a>
           ))}
           <div className="hz-menu-kick">More</div>
