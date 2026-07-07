@@ -429,6 +429,12 @@
 [data-cv6][data-screen^="command"] .wtog-knob { position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--faint); transition:left .15s,background .15s; }
 [data-cv6][data-screen^="command"] .wtog.is-on { background:var(--accent); border-color:transparent; }
 [data-cv6][data-screen^="command"] .wtog.is-on .wtog-knob { left:18px; background:#fff; }
+/* Goal ledger rebuild (corner:corner-ui-cv6 2026-07-06): IDLE status chip + the
+   per-row "Open room" action that only shows when a row is stepped into. */
+[data-cv6] .astat.is-idle { color:var(--muted); background:var(--chip); }
+[data-cv6] .astat.is-idle .sd { background:var(--faint); }
+[data-cv6][data-screen^="command"] .rowopen { display:none; }
+[data-cv6][data-screen^="command"] .rowopen.is-expanded { display:flex; align-items:center; }
 
 /* ---- Tracker tool screen (switcher · bug table · detail · mobile A/B/C) ---- */
 [data-cv6][data-screen^="tracker"] code { font-family:var(--font-mono); background:var(--chip); padding:1px 6px; border-radius:5px; font-size:.85em; color:var(--fg); }[data-cv6][data-screen^="tracker"] .trk { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; }[data-cv6][data-screen^="tracker"] .thead { display:flex; align-items:center; height:34px; border-bottom:1px solid var(--hair); font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); }[data-cv6][data-screen^="tracker"] .trow { display:flex; align-items:center; height:60px; border-bottom:1px solid var(--divider); }[data-cv6][data-screen^="tracker"] .bid { font-family:var(--font-mono); font-size:11px; color:var(--faint); margin-top:2px; }[data-cv6][data-screen^="tracker"] .chip { font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:13px; }[data-cv6][data-screen^="tracker"] .ava { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:700; }[data-cv6][data-screen^="tracker"] .pdot { width:7px; height:7px; border-radius:50%; }

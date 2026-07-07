@@ -84,7 +84,7 @@
           </div>
           <div style="flex:1;min-width:0;">
             <div style="font-size:13px;font-weight:600;color:var(--fg);">Meeting helper</div>
-            <div style="font-size:11px;color:var(--muted);">Listening live · ask me anything</div>
+            <div style="font-size:11px;color:var(--muted);">Follows the capture automatically</div>
           </div>
         </div>
         <div style="font-size:12.5px;line-height:1.5;color:var(--fg);background:var(--surface);border:1px solid var(--hair);border-radius:10px;padding:9px 11px;margin-bottom:9px;" data-bind="helper.answerHtml">The helper is ready.</div>
@@ -116,9 +116,10 @@
           No decisions yet.
         </div>
       </div>
-      <!-- Send button -->
-      <button style="width:100%;height:46px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="sendToDashboard" title="Save session and copy to clipboard">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Send to <span data-bind="session.targetShort">—</span>
+      <!-- Send: saves the session + copies the markdown summary; the status line in the
+           header reports exactly what happened (no silent success). -->
+      <button style="width:100%;height:46px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="sendToDashboard" title="Save the session and copy the summary (transcript, actions, decisions) to your clipboard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>Save &amp; copy summary
       </button>
     </div>
   </div>
@@ -127,10 +128,16 @@
 
 <!-- Mobile screen (Recording) -->
 <div data-cv6 data-screen="livescribe-mobile" style="width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;">
+  <style>
+    /* Mobile capture toggle: idle = start (accent), recording = stop (red). Lives inside
+       the screen div — composeLiveScribe ships only the screen's outerHTML. */
+    [data-screen="livescribe-mobile"] .mcap { background:var(--accent); }
+    [data-screen="livescribe-mobile"] .mcap.is-on { background:#F87171; }
+  </style>
   <!-- Header with back, title, search, nav menu -->
   <div class="mhdr">
     <div class="mback" data-action="nav" data-target="back"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
-    <div class="mhtitle"><div class="mttl">Live Scribe</div><div class="msub" data-bind="session.target">Corner · Dashboard</div></div>
+    <div class="mhtitle"><div class="mttl">Live Scribe</div><div class="msub" data-bind="session.statusLine">Ready to capture</div></div>
     <div class="mhactions"><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div><div class="ib" style="width:36px;height:36px;border-radius:10px;" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div></div>
   </div>
   <!-- Recording status bar with timer, waveform, speaker count -->
@@ -171,19 +178,21 @@
       Waiting for the meeting to start. When you speak, your transcript will appear here.
     </div>
   </div>
-  <!-- Extracted so far button (held-c) -->
-  <button style="position:absolute;left:12px;right:12px;bottom:86px;z-index:5;display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:13px;border:1px solid var(--accent-weak);background:linear-gradient(180deg,var(--accent-weak),var(--surface));box-shadow:0 10px 26px -10px rgba(0,0,0,.5);cursor:not-allowed;opacity:.5;" title="not wired yet" disabled>
+  <!-- Extracted so far: the counts are real (live extraction); the drill-down view
+       does not exist yet, so the row is honestly disabled with the reason. -->
+  <button style="position:absolute;left:12px;right:12px;bottom:86px;z-index:5;display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:13px;border:1px solid var(--accent-weak);background:linear-gradient(180deg,var(--accent-weak),var(--surface));box-shadow:0 10px 26px -10px rgba(0,0,0,.5);cursor:not-allowed;opacity:.5;" title="Live counts — the detail view isn't built yet" disabled>
     <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 3l1.7 5.1 5.3 1.9-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9Z"/></svg><span style="flex:1;text-align:left;font-size:12.5px;font-weight:600;color:var(--fg);">Extracted so far</span><span style="display:flex;gap:6px;"><span style="font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-weak);padding:3px 8px;border-radius:9px;"><span data-bind="extracted.actionCount">0</span> actions</span><span style="font-size:11px;font-weight:600;color:var(--success);background:var(--success-weak);padding:3px 8px;border-radius:9px;"><span data-bind="extracted.decisionCount">0</span> decisions</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>
   </button>
-  <!-- Control bar with pause, stop, ask helper (all held-c) -->
+  <!-- Control bar: pause is honestly disabled (no pause backend); the capture toggle and
+       Send (save + copy summary) are WIRED to the real backend. -->
   <div style="position:absolute;left:0;right:0;bottom:0;height:80px;background:var(--ground);border-top:1px solid var(--divider);display:flex;align-items:center;justify-content:center;gap:16px;padding:0 18px;">
-    <button style="width:46px;height:46px;border-radius:50%;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:not-allowed;opacity:.5;" title="not wired yet" disabled>
+    <button style="width:46px;height:46px;border-radius:50%;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:not-allowed;opacity:.5;" title="Pause isn't built yet — stop &amp; save instead" disabled>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
     </button>
-    <button style="flex:1;max-width:200px;height:50px;border-radius:14px;border:none;background:#F87171;color:#fff;font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:not-allowed;opacity:.5;" title="not wired yet" disabled>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3"/></svg>Stop &amp; save
+    <button class="mcap" data-mod="is-:session.capturing" data-action="toggleCapture" style="flex:1;max-width:200px;height:50px;border-radius:14px;border:none;color:#fff;font-size:14.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" title="Start capturing; press again to stop and save">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3"/></svg><span data-bind="session.captureLabel">Start capture</span>
     </button>
-    <button style="width:46px;height:46px;border-radius:50%;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:not-allowed;opacity:.5;" title="not wired yet" disabled>
+    <button data-action="sendToDashboard" style="width:46px;height:46px;border-radius:50%;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;" title="Save the session and copy the summary to your clipboard">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
     </button>
   </div>
