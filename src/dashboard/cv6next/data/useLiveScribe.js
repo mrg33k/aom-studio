@@ -18,6 +18,22 @@
 //      queue fix both: stop awaits outstanding transcriptions before resolving.
 //   4. Confidence was a hardcoded '95%' — fabricated; Gemini returns none. Removed.
 //
+// Fixed 2026-07-06 (mobile "spoke but no words appeared" — Patrik's real-mic test):
+//   5. Capture used mediaRecorder.start(15000) — a TIMESLICE. Two fatal flaws that
+//      broke the whole record→transcribe chain (worst on mobile, latent on desktop):
+//        (a) Only the FIRST timeslice blob carries the container header; chunks 2+
+//            are headerless continuation fragments. Each chunk is POSTed individually
+//            to v2-transcribe-audio as a standalone file, so Gemini can decode chunk 1
+//            and silently fails every chunk after — desktop only ever got the first 15s.
+//        (b) iOS Safari has no webm (records audio/mp4, whose moov atom is written only
+//            at finalize) and does not reliably fire ondataavailable on a timeslice
+//            mid-recording — so on mobile a spoken word produces an undecodable fragment
+//            or nothing at all, and no transcript ever appears.
+//      Now each ~15s window is recorded by its OWN MediaRecorder (start → stop after
+//      SEGMENT_MS → restart), so every uploaded chunk is a COMPLETE, self-contained,
+//      decodable file with its own header — correct on desktop, Android, and iOS Safari.
+//      Mime is picked from what the platform can actually record (webm→mp4 fallback).
+//
 // Returns { state, data, controls: { start, stop, sendSummary } }.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -39,6 +55,19 @@ async function blobToBase64(blob) {
     binary += String.fromCharCode.apply(null, buf.subarray(i, i + STEP));
   }
   return btoa(binary);
+}
+
+// Length of one capture segment. Each segment is recorded by its own MediaRecorder so
+// the delivered blob is a finalized, standalone file (see fix #5) — NOT a timeslice.
+const SEGMENT_MS = 15000;
+
+// Pick an audio container/codec the current platform can actually record. iOS Safari
+// has no webm and falls back to audio/mp4; Android/desktop take webm/opus. Empty string
+// lets the UA choose its own default (still a complete file per segment).
+function pickAudioMime() {
+  if (!(typeof window !== 'undefined' && window.MediaRecorder && MediaRecorder.isTypeSupported)) return '';
+  const prefs = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/mpeg', 'audio/aac', 'audio/ogg'];
+  return prefs.find((t) => MediaRecorder.isTypeSupported(t)) || '';
 }
 
 export function useLiveScribe(worldId = 'aom') {
@@ -63,6 +92,10 @@ export function useLiveScribe(worldId = 'aom') {
   const actionItemsRef = useRef([]);
   const decisionsRef = useRef([]);
   const pendingRef = useRef([]); // in-flight chunk transcriptions
+  const recordingActiveRef = useRef(false); // true for the whole capture, across segment restarts
+  const startingRef = useRef(false);        // guards a double-tap during the getUserMedia await
+  const mimeTypeRef = useRef('');           // chosen recorder mime (webm on most, mp4 on iOS Safari)
+  const segmentTimerRef = useRef(null);     // ends the current ~15s segment
 
   const pushTurn = (turn) => {
     turnsRef.current = [...turnsRef.current, turn];
@@ -99,8 +132,80 @@ export function useLiveScribe(worldId = 'aom') {
     }
   }, [worldId]);
 
+  // Transcribe ONE finished segment blob (a complete, standalone file) and push a turn.
+  const transcribeSegment = useCallback((blob, mime) => {
+    if (!blob || !blob.size) return;
+    chunkCountRef.current += 1;
+    const chunkNo = chunkCountRef.current;
+    const at = formatTime(elapsedRef.current);
+    const work = (async () => {
+      try {
+        const base64 = await blobToBase64(blob);
+        const res = await authFetch('/api/dashboard/v2-transcribe-audio', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio_base64: base64, mime_type: mime || 'audio/webm' }),
+        });
+        if (res && res.ok) {
+          const { text } = await res.json();
+          if (text && text.trim()) {
+            pushTurn({ at, text: text.trim() });
+            transcriptRef.current += `${transcriptRef.current ? '\n' : ''}${text.trim()}`;
+            if (chunkNo % 3 === 0) await extractNow();
+          }
+        }
+      } catch (err) {
+        console.error('[useLiveScribe] transcribe error:', err);
+      }
+    })();
+    pendingRef.current.push(work);
+  }, [extractNow]);
+
+  // Record ONE segment: a fresh MediaRecorder, NO timeslice, stopped after SEGMENT_MS so
+  // its single ondataavailable blob is a finalized, decodable file. onstop chains the next
+  // segment while the capture is still active — a headerless-fragment-free loop that works
+  // on iOS Safari (which finalizes mp4 on stop) as well as desktop/Android.
+  const startSegment = useCallback(() => {
+    const stream = streamRef.current;
+    if (!stream || !recordingActiveRef.current) return;
+    let rec;
+    try {
+      const mt = mimeTypeRef.current;
+      rec = mt ? new MediaRecorder(stream, { mimeType: mt }) : new MediaRecorder(stream);
+    } catch (err) {
+      console.error('[useLiveScribe] MediaRecorder init failed:', err);
+      recordingActiveRef.current = false;
+      setPhase('error');
+      setNotice('Could not start recording on this device — the browser blocked audio capture.');
+      setErrorName('MediaRecorderUnsupported');
+      return;
+    }
+    mediaRecorderRef.current = rec;
+    rec.ondataavailable = (event) => {
+      transcribeSegment(event.data, rec.mimeType || mimeTypeRef.current || 'audio/webm');
+    };
+    rec.onstop = () => {
+      // Chain the next segment unless the capture was ended (stopRecording clears the flag).
+      if (recordingActiveRef.current) startSegment();
+    };
+    try {
+      rec.start(); // no timeslice → one complete blob delivered on stop()
+    } catch (err) {
+      console.error('[useLiveScribe] recorder start failed:', err);
+      recordingActiveRef.current = false;
+      setPhase('error');
+      setNotice('Could not start recording on this device — the browser blocked audio capture.');
+      setErrorName('RecorderStartFailed');
+      return;
+    }
+    segmentTimerRef.current = setTimeout(() => {
+      const r = mediaRecorderRef.current;
+      if (r && r.state !== 'inactive') { try { r.stop(); } catch { /* already stopping */ } }
+    }, SEGMENT_MS);
+  }, [transcribeSegment]);
+
   const startRecording = useCallback(async () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') return;
+    if (recordingActiveRef.current || startingRef.current) return;
+    startingRef.current = true;
     try {
       setNotice('');
       setErrorName('');
@@ -109,11 +214,7 @@ export function useLiveScribe(worldId = 'aom') {
       streamRef.current = stream;
       sessionIdRef.current = 'sess-' + Date.now().toString(36);
       sessionStartedRef.current = new Date().toISOString();
-
-      const mimeType = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm'))
-        ? 'audio/webm' : '';
-      const mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
+      mimeTypeRef.current = pickAudioMime();
 
       chunkCountRef.current = 0;
       elapsedRef.current = 0;
@@ -129,38 +230,12 @@ export function useLiveScribe(worldId = 'aom') {
         setElapsed(elapsedRef.current);
       }, 1000);
 
-      // Every 15s chunk: transcribe; every 3rd chunk, extract items/decisions.
-      mediaRecorder.ondataavailable = (event) => {
-        if (!event.data || !event.data.size) return;
-        chunkCountRef.current += 1;
-        const chunkNo = chunkCountRef.current;
-        const at = formatTime(elapsedRef.current);
-        const work = (async () => {
-          try {
-            const base64 = await blobToBase64(event.data);
-            const res = await authFetch('/api/dashboard/v2-transcribe-audio', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ audio_base64: base64, mime_type: mediaRecorder.mimeType || 'audio/webm' }),
-            });
-            if (res && res.ok) {
-              const { text } = await res.json();
-              if (text && text.trim()) {
-                pushTurn({ at, text: text.trim() });
-                transcriptRef.current += `${transcriptRef.current ? '\n' : ''}${text.trim()}`;
-                if (chunkNo % 3 === 0) await extractNow();
-              }
-            }
-          } catch (err) {
-            console.error('[useLiveScribe] transcribe error:', err);
-          }
-        })();
-        pendingRef.current.push(work);
-      };
-
-      mediaRecorder.start(15000);
+      recordingActiveRef.current = true;
       setPhase('recording');
+      startSegment(); // begin the first segment (chains itself every SEGMENT_MS)
     } catch (err) {
       console.error('[useLiveScribe] recording error:', err);
+      recordingActiveRef.current = false;
       setPhase('error');
       // The copy names the ACTUAL cause (Finder DEF-10: "check your connection" on a
       // NotFoundError sends the user to fix the wrong thing). getUserMedia error names:
@@ -175,8 +250,10 @@ export function useLiveScribe(worldId = 'aom') {
               : 'Could not start the microphone.'
       );
       setErrorName(name || 'unknown');
+    } finally {
+      startingRef.current = false;
     }
-  }, [worldId, extractNow]);
+  }, [startSegment]);
 
   const saveSession = useCallback(async () => {
     if (!sessionIdRef.current || !turnsRef.current.length) return false;
@@ -206,12 +283,17 @@ export function useLiveScribe(worldId = 'aom') {
   // and save the session. The transcript STAYS on screen (state → ready).
   const stopRecording = useCallback(async () => {
     const mediaRecorder = mediaRecorderRef.current;
-    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+    if (!recordingActiveRef.current && (!mediaRecorder || mediaRecorder.state === 'inactive')) return;
+    // Clear the active flag FIRST so the current segment's onstop does NOT chain a new one.
+    recordingActiveRef.current = false;
+    if (segmentTimerRef.current) { clearTimeout(segmentTimerRef.current); segmentTimerRef.current = null; }
     setNotice('Wrapping up — transcribing the last piece…');
-    await new Promise((resolve) => {
-      mediaRecorder.onstop = resolve;
-      mediaRecorder.stop();
-    });
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      await new Promise((resolve) => {
+        mediaRecorder.onstop = resolve; // ondataavailable fires before this; flag already false
+        try { mediaRecorder.stop(); } catch { resolve(); }
+      });
+    }
     clearInterval(timerRef.current);
     streamRef.current?.getTracks().forEach((t) => t.stop());
     // ondataavailable fires before onstop, but its async transcription may still
@@ -260,6 +342,8 @@ export function useLiveScribe(worldId = 'aom') {
 
   // Cleanup on unmount: stop the mic; nothing keeps recording in the background.
   useEffect(() => () => {
+    recordingActiveRef.current = false; // stop the segment chain
+    if (segmentTimerRef.current) clearTimeout(segmentTimerRef.current);
     if (timerRef.current) clearInterval(timerRef.current);
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       try { mediaRecorderRef.current.stop(); } catch { /* already stopped */ }
@@ -317,6 +401,12 @@ export function useLiveScribe(worldId = 'aom') {
       owner: ai.owner || '—',
     })),
     decisions: decisions.map((d) => ({ text: d.text })),
+    // Per-list empty placeholders (rendered via data-each: one row when the list is
+    // empty, zero when populated). Driving them off the LIST — not the whole-screen
+    // state — keeps "No action items yet." visible during recording and after a mic
+    // error alike, instead of leaving a bare header (Finder: placeholder vanished on error).
+    actionsEmpty: actionItems.length ? [] : [{}],
+    decisionsEmpty: decisions.length ? [] : [{}],
     extracted: {
       actionCount: actionItems.length,
       decisionCount: decisions.length,
