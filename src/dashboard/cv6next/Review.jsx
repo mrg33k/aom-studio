@@ -87,7 +87,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     if (!targetName) return;
     const key = `${targetName}|${target?.project || ''}`;
     if (targetAppliedRef.current === key) return;
-    const items = data.queue.items;
+    // Match against the FULL queue (itemsAll), not the windowed display list — the
+    // target may sit past the first page.
+    const items = data.queue.itemsAll || data.queue.items;
     if (!items.length) return; // queue still loading — retry when it lands
     const base = (p) => String(p || '').split('/').pop();
     const match = items.find((i) => base(i.id) === targetName && (!target?.project || i.whoRaw === target.project))
@@ -138,6 +140,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
       setTypeFilter: (id) => actions.setTypeFilter(id),
       openDeliverable: onOpenDeliverable,
       loadMore: () => actions.loadMore(),
+      // Empty state's "Browse waiting" (shared states fragment fires emptyAction):
+      // jump to the full waiting set. Was unwired — a dead click.
+      emptyAction: () => actions.browseWaiting(),
     };
     return (
       <div ref={pickWrapRef} style={{ width: '100%', height: '100%' }}>
@@ -187,6 +192,13 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     openNav: onOpenNav,
     search: () => { /* stub */ },
     openDeliverable: onOpenDeliverable,
+    // "Browse waiting" from the read view's empty branch: back to the pick list,
+    // scoped to the full waiting set.
+    emptyAction: () => {
+      setScreen('pick');
+      setPickedId(null);
+      actions.browseWaiting();
+    },
     // A pin marker (or the pin-comment bar) opens the comment popover with delete.
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },

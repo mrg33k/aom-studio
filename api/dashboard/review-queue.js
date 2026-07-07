@@ -71,7 +71,44 @@ function isProcessDoc(filename) {
   // them into deliverables/ — Patrik's CV6 bug: the queue must show finished work only.
   // Mirrored in AOM-EA scripts/build-review-queue.py (is_process_doc).
   if (/(^|-)(loop|queue|plan|plans|steps|status|state|log|checklist|backlog|roadmap|todo|todos|punch-?list)\.(md|txt)$/.test(base)) return true;
+  // Build internals that read as "code"/"copy" deliverables but are mission tooling:
+  // ffmpeg concat lists / filelists, and build/generate scripts. Nobody "reviews" a
+  // concat list. (API-side first; data-side builder should mirror.)
+  if (/^(filelist|file-list)\.txt$/.test(base) || /(^|[-_])concat\.txt$/.test(base)) return true;
+  if (/^(build|make|gen|generate)-.*\.(py|js|mjs|cjs|ts|sh)$/.test(base)) return true;
   return false;
+}
+
+// ── Review R3 exclusions (mirrors AOM-EA scripts/build-review-queue.py) ─────
+// Agent QA artifacts + app runtime data are NOT deliverables. The cron builder
+// now excludes them at the source; these mirrors keep the FALLBACK paths (tunnel
+// walk, disk walk) — and even a stale or polluted cache — from re-polluting the
+// UI. (2026-07-06 incident: r17-*.jpeg loop screenshots served as
+// "aheadofmarket.com deliverables" and filled the whole first page.)
+const QA_DIR_NAMES = ['screenshots', 'screenshot', 'shots', 'qa', 'qa-shots', 'verify', 'verification', 'probes'];
+const APP_INTERNAL_DIR_NAMES = ['app', 'thumbs', 'proxies', 'cache', 'tmp', 'temp'];
+const EXCLUDED_DIR_NAMES = new Set([...QA_DIR_NAMES, ...APP_INTERNAL_DIR_NAMES]);
+const QA_FILE_RES = [
+  /^r\d+[-_].*\.(png|jpe?g|webp|gif|avif)$/i,  // loop-round screenshots: r17-local-case2.jpeg
+  /(^|[-_])shot[-_.]/i,                        // shot-*, *-shot-*, hero-shot.png
+  /(^|[-_])verify[-_.]/i,                      // verify-*, *-verify.*
+  /^agent-shot/i,                              // explicit agent-shot outputs
+  /(^|[-_])probe[-_.]/i,                       // probe artifacts
+];
+function isQaArtifact(name) {
+  const b = String(name || '').toLowerCase().trim();
+  return QA_FILE_RES.some((rx) => rx.test(b));
+}
+// True when any DIRECTORY segment of the item's corner-relative path is a QA /
+// app-internal staging dir (case-insensitive, any depth — Screenshots/2026-07-06/…).
+function inExcludedDir(relPath) {
+  const segs = String(relPath || '').split('/');
+  segs.pop(); // the filename itself is judged by isQaArtifact/isProcessDoc
+  return segs.some((s) => EXCLUDED_DIR_NAMES.has(s.toLowerCase()));
+}
+// One gate for every serve path: cache rows, tunnel-walk rows, disk-walk rows.
+function isReviewable(name, relPath) {
+  return !isQaArtifact(name) && !isProcessDoc(name) && !inExcludedDir(relPath);
 }
 // Returns the type for a reviewable artifact, or null for data/log/system files
 // (.json, .jsonl, .log, .lock, etc.) and process/canon docs which a person does
@@ -171,6 +208,7 @@ async function walkProjectViaTunnel(slug) {
     const pushFrom = (files, mission) => {
       for (const f of files || []) {
         if (!f || EXCLUDE_KINDS.has(f.kind)) continue;
+        if (!isReviewable(f.name, f.path)) continue; // QA artifacts / staging dirs are not deliverables
         const type = detectType(f.name);
         if (!type) continue;        // skip data/log/system files (.json, .jsonl, .log…)
         const ts = f.last_modified ? new Date(f.last_modified).getTime() : 0;
@@ -208,9 +246,13 @@ function collectViaDisk(world) {
     try { entries = fs.readdirSync(dirAbs, { withFileTypes: true }); } catch { return acc; }
     for (const ent of entries) {
       if (ent.name.startsWith('.')) continue;
+      // Never descend into QA staging / app-internal dirs (Screenshots/, qa/,
+      // thumbs/, cache/…) — their contents are not deliverables.
+      if (ent.isDirectory() && EXCLUDED_DIR_NAMES.has(ent.name.toLowerCase())) continue;
       const abs = path.join(dirAbs, ent.name);
       if (ent.isDirectory()) { acc.push(...walk(abs, depth + 1)); continue; }
       if (!ent.isFile()) continue;
+      if (isQaArtifact(ent.name)) continue; // stray verification shots outside the dirs above
       try { const st = fs.statSync(abs); acc.push({ name: ent.name, path: abs, mtime: st.mtime }); } catch { /* ignore */ }
     }
     return acc;
@@ -223,7 +265,9 @@ function collectViaDisk(world) {
     let missions; try { missions = fs.readdirSync(delivAbs); } catch { missions = []; }
     for (const missionSlug of missions) {
       if (missionSlug.startsWith('.')) continue;
-      for (const sub of ['deliverables', 'screenshots', 'visuals', 'exports']) {
+      // 'screenshots' removed: it was ALL agent verification shots (Review R3) —
+      // walking it re-polluted the queue whenever the cache missed.
+      for (const sub of ['deliverables', 'visuals', 'exports']) {
         const d = path.join(delivAbs, missionSlug, sub);
         if (!fs.existsSync(d)) continue;
         for (const f of walk(d)) {
@@ -271,9 +315,14 @@ export default async function handler(req, res) {
   // FAST PATH: serve the pre-built cache (a local cron walks disk and writes it).
   // This is what keeps the Review tool from hanging — the live tunnel walk of every
   // project (~10s each, 55 of them) can never finish on the request path. The cron
-  // already sorts newest-first with no age window, so we page it directly.
+  // already sorts newest-first with no age window. Re-apply the exclusion gate on
+  // the way out: a stale or polluted cache (the r17-*.jpeg incident) must never
+  // reach the UI even before the cron rebuilds it.
   const cached = await readQueueCache(world);
-  if (cached && cached.length) return page(cached, 'cache');
+  if (cached && cached.length) {
+    const clean = cached.filter((it) => it && isReviewable(it.name, it.path));
+    if (clean.length) return page(clean, 'cache');
+  }
 
   // FALLBACK (no cache yet, or a non-aom world): aggregate through the RAG tunnel,
   // but BOUNDED — capped concurrency + per-walk timeout + overall deadline — so it

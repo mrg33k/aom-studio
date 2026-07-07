@@ -227,6 +227,13 @@ export function reviewItemsFromFiles(files, project = '') {
 }
 
 const PAGE_SIZE = 40; // rows per page; "Load older items" grows the window by this much
+// Review R-TRUTH: fetch the WHOLE queue (the server caps the set at 500 metadata rows,
+// ~100KB) instead of one 40-row page. Every count on screen — type chips, tree
+// project/mission counts, "N deliverables waiting" — used to be computed from the
+// first page only, so a queue whose newest 40 files were all screenshots showed
+// "All 40 / Image 40", no Video chip, and every OTHER project as "all caught up"
+// even when its work sat just past the window. Counts must be true whatever the data.
+const FULL_LIMIT = 500; // mirrors HARD_CAP in api/dashboard/review-queue.js
 
 export function useReview(worldId = 'aom', injected = null) {
   const hasInjected = Array.isArray(injected) && injected.length > 0;
@@ -234,10 +241,9 @@ export function useReview(worldId = 'aom', injected = null) {
   const [openDelId, setOpenDelId] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [bodies, setBodies] = useState({}); // path -> rendered innerHTML ('' while loading)
-  // Review R2: how many items we currently show. "Load older items" grows this; the 30s
-  // poll refetches the same count (offset 0) so a refresh never drops loaded pages.
+  // Review R2/R-TRUTH: how many rows the LIST displays (pure client-side window over
+  // the fully-fetched set). "Load older items" grows it; scope/filter changes reset it.
   const [shown, setShown] = useState(PAGE_SIZE);
-  const [hasMore, setHasMore] = useState(false);
   // Queue scope (the same left-rail selection Organize uses): pick a project, then a
   // mission within it. null = all projects / every mission in the selected project;
   // '__root' = files sitting at the project root with no mission folder.
@@ -277,10 +283,9 @@ export function useReview(worldId = 'aom', injected = null) {
   const load = useCallback(async () => {
     let ok = false;
     try {
-      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${shown}&offset=0`);
+      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${FULL_LIMIT}&offset=0`);
       if (r?.ok) {
         const d = await r.json();
-        setHasMore(!!d.hasMore);
         const items = (d.items || []).map((it) => {
           // review-queue.js returns: { name, path, project, mission, kind, type:{key,label,color}, last_modified }
           // type is an OBJECT, not a string — extract the key for template matching
@@ -327,9 +332,10 @@ export function useReview(worldId = 'aom', injected = null) {
       console.error('[Review load]', e);
     }
     setStatus((prev) => (ok ? 'loaded' : (queue ? prev : 'error')));
-  }, [worldId, queue, openDelId, shown]);
+  }, [worldId, queue, openDelId]);
 
-  // "Load older items" — grow the window by one page; the load effect refetches.
+  // "Load older items" — grow the display window by one page (the full set is
+  // already in memory; no refetch).
   const loadMore = useCallback(() => setShown((n) => n + PAGE_SIZE), []);
 
   useEffect(() => {
@@ -516,33 +522,46 @@ export function useReview(worldId = 'aom', injected = null) {
     }
   }
 
-  // Files scoped by the tree selection, then the type chips (Doc / Web / Image / Video).
-  const TYPE_GROUP = { doc: 'doc', copy: 'doc', code: 'doc', sitelive: 'web', siteshot: 'web', image: 'image', photo: 'image', video: 'video' };
+  // Files scoped by the tree selection, then the type chips. Chips are generated
+  // from the media types ACTUALLY present in the scoped set, each with its own
+  // true count over the FULL set (not the page window). Copy and Code stand on
+  // their own — folding them into "Doc" hid what the queue really held.
+  const TYPE_GROUP = { doc: 'doc', copy: 'copy', code: 'code', sitelive: 'web', siteshot: 'web', image: 'image', photo: 'image', video: 'video' };
   const groupOf = (t) => TYPE_GROUP[t] || 'doc';
   const scoped = allItems
     .filter((i) => !activeProj || i.whoRaw === activeProj)
     .filter((i) => !activeMission || (activeMission === '__root' ? !i.missionRaw : missionMatches(i.missionRaw, activeMission)));
-  const chipCounts = { doc: 0, web: 0, image: 0, video: 0 };
+  const CHIP_ORDER = ['image', 'video', 'doc', 'copy', 'code', 'web'];
+  const chipCounts = { image: 0, video: 0, doc: 0, copy: 0, code: 0, web: 0 };
   for (const i of scoped) chipCounts[groupOf(i.type)] += 1;
-  const CHIP_LABELS = { doc: 'Doc', web: 'Web', image: 'Image', video: 'Video' };
+  const CHIP_LABELS = { image: 'Image', video: 'Video', doc: 'Doc', copy: 'Copy', code: 'Code', web: 'Web' };
   const filters = [
     { id: 'all', label: `All ${scoped.length}`, active: !typeFilter ? 'on' : 'off' },
-    ...['doc', 'web', 'image', 'video']
+    ...CHIP_ORDER
       .filter((k) => chipCounts[k] > 0)
       .map((k) => ({ id: k, label: `${CHIP_LABELS[k]} ${chipCounts[k]}`, active: typeFilter === k ? 'on' : 'off' })),
   ];
 
+  // The list = scope + chip filter over the FULL set, newest first, windowed by
+  // `shown` for display. Counts above were computed over the full set, so the chips
+  // and tree stay true no matter which page of rows is on screen.
+  const filtered = (typeFilter ? scoped.filter((i) => groupOf(i.type) === typeFilter) : scoped)
+    .slice()
+    .sort(byNewest);
+  const waitingTotal = allItems.length;
+
   const data = {
     queue: {
       readyCount: queue?.readyCount || 0,
-      items: (typeFilter ? scoped.filter((i) => groupOf(i.type) === typeFilter) : scoped)
-        .slice()
-        .sort(byNewest),
+      items: filtered.slice(0, shown),
+      // The FULL unscoped set (not rendered by any template) so hosts can resolve a
+      // catch-up / chat target anywhere in the queue, not just the visible window.
+      itemsAll: allItems,
       tree,
       filters,
       // 'yes' / 'no' so the template's data-switch shows the "Load older items" button only
-      // when older items exist (and not while the injected-files queue hides it).
-      hasMore: (!hasInjected && hasMore) ? 'yes' : 'no',
+      // when older rows exist past the display window (and never for an injected-files queue).
+      hasMore: (!hasInjected && filtered.length > shown) ? 'yes' : 'no',
     },
     deliverable: (() => {
       const open = (queue?.items || []).find((i) => i.id === openDelId);
@@ -567,7 +586,22 @@ export function useReview(worldId = 'aom', injected = null) {
         hasNotes: 'no',
       };
     })(),
-    empty: { title: "You're all caught up", body: 'Nothing needs your review right now. New deliverables the agent flags will land here.', actionLabel: 'Browse waiting' },
+    // Empty-truth: an empty VIEW is not an empty QUEUE. When the selected room /
+    // filter has nothing but deliverables are waiting elsewhere, say so and make
+    // "Browse waiting" carry the real count (the button jumps to the full waiting
+    // set — emptyAction → browseWaiting). Only a genuinely empty queue reads
+    // "all caught up".
+    empty: waitingTotal > 0
+      ? {
+        title: 'Nothing here yet',
+        body: `This room has no deliverables waiting review. ${waitingTotal} ${waitingTotal === 1 ? 'is' : 'are'} waiting across your other rooms.`,
+        actionLabel: `Browse waiting (${waitingTotal})`,
+      }
+      : {
+        title: "You're all caught up",
+        body: 'Nothing needs your review right now. New deliverables the agent flags will land here.',
+        actionLabel: 'Check again',
+      },
     // The shared loading fragment covers the viewer BOTH while the queue gathers and
     // while an opened file's body is in flight — one standard loading look (states.html),
     // never the raw template with placeholder copy.
@@ -612,11 +646,24 @@ export function useReview(worldId = 'aom', injected = null) {
         else if (s.startsWith('p:')) { setProjSel(s.slice(2)); setMissionSel(null); }
         else if (s.startsWith('m:')) setMissionSel(s.slice(2));
         setTypeFilter(null);
+        setShown(PAGE_SIZE); // a new scope starts on page one of ITS OWN set
         setOpenDelId(null);
       },
       setTypeFilter: (id) => {
-        setTypeFilter(['doc', 'web', 'image', 'video'].includes(id) ? id : null);
+        setTypeFilter(['image', 'video', 'doc', 'copy', 'code', 'web'].includes(id) ? id : null);
+        setShown(PAGE_SIZE);
         setOpenDelId(null);
+      },
+      // The empty state's button. Scoped-empty → jump to the full waiting set (clear
+      // room + chip filters, back to page one). Truly empty → a real re-check of the
+      // queue. Either way the click DOES something visible; it was a dead stub.
+      browseWaiting: () => {
+        setProjSel(null);
+        setMissionSel(null);
+        setTypeFilter(null);
+        setShown(PAGE_SIZE);
+        setOpenDelId(null);
+        load();
       },
     },
   };

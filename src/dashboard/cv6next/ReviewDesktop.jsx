@@ -106,7 +106,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     if (injected && injected.length) return injected[0].id;
     if (!targetName) return null;
     const base = (p) => String(p || '').split('/').pop();
-    const items = data.queue.items;
+    // Match against the FULL queue (itemsAll), not the windowed display list — the
+    // target may sit past the first page.
+    const items = data.queue.itemsAll || data.queue.items;
     const m = items.find((i) => base(i.id) === targetName && (!target?.project || i.whoRaw === target.project))
       || items.find((i) => base(i.id) === targetName);
     return m ? m.id : null;
@@ -206,6 +208,11 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
       actions.openDeliverable(id);
     },
     loadMore: () => actions.loadMore(),
+    // Empty state's "Browse waiting" (shared states fragment fires emptyAction):
+    // clear the room + chip scope back to the full waiting set. Was unwired — a
+    // dead click. Clearing pickedId lets the auto-open effect land on the first
+    // deliverable of the restored set.
+    emptyAction: () => { actions.browseWaiting(); setPickedId(null); },
     // A pin marker (or its row in the comments panel) opens the comment popover
     // over that spot, with delete.
     openPin: (id) => openPinById(id),
