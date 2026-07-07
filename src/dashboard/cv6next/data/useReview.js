@@ -131,6 +131,67 @@ async function buildDeliverableBody(item) {
   }
 }
 
+// The list-row thumbnail for a visual deliverable. Uses the SAME working source as
+// the open item's big preview (the RAG tunnel — /project-file-raw streams the raw
+// bytes, CORS *, the blob-through-Vercel proxy 404'd assets/ and died on big files).
+// Only genuinely visual types get a thumbnail; everything else keeps its type glyph.
+// `hasThumb` ('yes'|'no') drives the template's data-switch between <img> and glyph.
+function thumbFor(path, type) {
+  const visual = type === 'image' || type === 'photo' || type === 'siteshot';
+  if (!visual || !path) return { thumb: '', hasThumb: 'no' };
+  const isAbs = /^https?:\/\//i.test(path);
+  const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${encodeURIComponent(path)}`;
+  return { thumb: src, hasThumb: 'yes' };
+}
+
+// Collapse a run of sequential same-project frames (render-0118 … render-0139) into
+// ONE representative row so a single shoot can't bury the whole queue (FINDING 6).
+// A frame is "<stem><digits><ext>"; frames sharing project + mission + stem + ext
+// are one burst. MIN_GROUP keeps genuine pairs/triples as their own rows — only a
+// real flood collapses. The group row opens the newest frame; its title carries the
+// numeric range + frame count so the collapse is honest and legible.
+const SEQ_RE = /^(.*?)(\d{2,})(\.[a-z0-9]+)$/i;
+const MIN_GROUP = 4;
+function groupSequences(items) {
+  const buckets = new Map();
+  const order = []; // one slot per solo item or per bucket, at first-seen position
+  for (const it of items) {
+    const groupable = it.type === 'image' || it.type === 'photo';
+    const m = groupable ? String(it.title || '').match(SEQ_RE) : null;
+    if (!m) { order.push({ solo: it }); continue; }
+    const [, stem, num, ext] = m;
+    const key = `${it.whoRaw}|${it.missionRaw}|${stem.toLowerCase()}|${ext.toLowerCase()}`;
+    if (!buckets.has(key)) {
+      const b = { key, members: [], stem, ext };
+      buckets.set(key, b);
+      order.push({ bucket: b });
+    }
+    buckets.get(key).members.push({ it, num: parseInt(num, 10), numRaw: num });
+  }
+  const out = [];
+  const emitted = new Set();
+  for (const slot of order) {
+    if (slot.solo) { out.push(slot.solo); continue; }
+    const b = slot.bucket;
+    if (emitted.has(b.key)) continue;
+    emitted.add(b.key);
+    if (b.members.length < MIN_GROUP) { for (const mm of b.members) out.push(mm.it); continue; }
+    const rep = b.members[0].it; // members are newest-first → newest frame represents
+    const nums = b.members.map((x) => x.num);
+    const pad = b.members[0].numRaw.length;
+    const fmt = (n) => String(n).padStart(pad, '0');
+    out.push({
+      ...rep,
+      isGroup: true,
+      groupIds: b.members.map((x) => x.it.id),
+      title: `${b.stem}${fmt(Math.min(...nums))}–${fmt(Math.max(...nums))} · ${b.members.length} frames`,
+      count: b.members.length,
+      countState: 'some',
+    });
+  }
+  return out;
+}
+
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return '·';
@@ -218,6 +279,7 @@ export function reviewItemsFromFiles(files, project = '') {
         id: path, title: name,
         who: project || '', whoRaw: project || '', whoInitials: initials(project || name), whoTint: tintFor(project || name),
         type: key, typeLabel: typeLabel(key), typeGlyph: typeGlyph(key),
+        ...thumbFor(path, key),
         count: 0, countState: 'zero', status: 'ready', statusLabel: 'READY', time: '', missionLabel: '', missionRaw: '',
         location: project || '', queueState: 'ready', file: typeLabel(key),
         bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
@@ -245,6 +307,7 @@ function mapQueueItem(it, openId) {
     type: typeKey,
     typeLabel: typeLabel(typeKey),
     typeGlyph: typeGlyph(typeKey),
+    ...thumbFor(it.id || it.path, typeKey),
     count: 0,
     countState: 'zero',
     status: 'ready',
@@ -608,9 +671,12 @@ export function useReview(worldId = 'aom', injected = null) {
   // WD40-R5c: re-stamp open:'on'/'off' from live openDelId state so the selected card
   // highlights correctly even when load() ran before the selection was set (load/loadMore
   // now use openDelIdRef instead of openDelId, so they no longer refetch on every click).
-  const filtered = (typeFilter ? scoped.filter((i) => groupOf(i.type) === typeFilter) : scoped)
+  // Sort newest-first, THEN collapse sequential frame bursts (FINDING 6), THEN stamp
+  // the open highlight — so the group's representative row lights up when it's picked.
+  const sortedScoped = (typeFilter ? scoped.filter((i) => groupOf(i.type) === typeFilter) : scoped)
     .slice()
-    .sort(byNewest)
+    .sort(byNewest);
+  const filtered = groupSequences(sortedScoped)
     .map((it) => ({ ...it, open: it.id === openDelId ? 'on' : 'off' }));
   const waitingTotal = allItems.length;
 
