@@ -145,7 +145,7 @@ const hasOpenQuestion = (r) => {
 
 function shapeCommand({
   sessions = [], projectRooms = [], lastByRoom = {}, goalRooms = {},
-  boardRows = [], stepsByRoom = {}, selectedKey = '',
+  boardRows = [], stepsByRoom = {}, selectedKey = '', handed = {},
 }) {
   const now = Date.now();
 
@@ -354,6 +354,13 @@ function shapeCommand({
     : 'No steps on this plan yet.');
   // The answer card only exists when the room is actually waiting on the user.
   goal.questionState = goal.question ? 'expanded' : 'collapsed';
+  // Hand-off control (wd40 R3): only when the plan actually has a next unchecked
+  // step to hand over — and the step is named on the button so the tap is literal.
+  const nextStep = goal.checklist.find((c) => c.state !== 'done');
+  goal.nextStepText = nextStep ? nextStep.label : '';
+  goal.handState = (goal.addKey && nextStep) ? 'expanded' : 'collapsed';
+  // True statement only: shows after this session actually sent the step.
+  goal.handNote = (goal.id && handed[goal.id]) ? 'Sent into the room — the agent picks it up from chat.' : '';
 
   return {
     ledger: { roomCount: rows.length, liveCount: workingCount, workingCount, blockedCount, rooms: rows, others: rows },
@@ -575,6 +582,36 @@ export function useCommand(worldIdArg, selectedKey = '') {
     }
   }, [worldId]);
 
+  // Shape a supabase-messages payload for a ledger room key — the same shapes the
+  // Chat composer sends (agent thread / mission thread / project chat).
+  const roomSendPayload = (world, key, projectSlug, body) => (key.startsWith('agent:')
+    ? { client_id: world, agent: key.slice(6), text: body, role: 'user', source: 'corner-dashboard' }
+    : projectSlug
+      ? { client_id: world, agent: 'corner', project: projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: key } }
+      : { client_id: world, agent: 'corner', project: key, text: body, role: 'user', source: 'corner-dashboard' });
+
+  // ── Hand the next unchecked step to the room's agent (wd40 R3) ── one tap
+  // dispatches the plan's first not-done step into the room's conversation through
+  // the real send path. `handed` records the send so the UI can say so honestly
+  // and a double-tap inside 60s is ignored.
+  const [handed, setHanded] = useState({});
+  const handNextStep = useCallback(async ({ key, projectSlug = '', stepText = '' } = {}) => {
+    const t = String(stepText || '').replace(/\s+/g, ' ').trim();
+    if (!worldId || !key || !t) return;
+    const last = handed[key] || 0;
+    if (Date.now() - last < 60000) return; // already handed moments ago
+    setHanded((h) => ({ ...h, [key]: Date.now() }));
+    const body = `Please take the next step on this room's plan and report back when it's done: "${t.slice(0, 240)}"`;
+    try {
+      await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(roomSendPayload(worldId, key, projectSlug, body)),
+      });
+    } catch {
+      setHanded((h) => { const n = { ...h }; delete n[key]; return n; }); // send failed — allow retry
+    }
+  }, [worldId, handed]);
+
   // ── Answer a blocked room right on the ledger (wd40 R2) ── two real writes:
   // 1) the answer goes INTO the room's conversation via the same supabase-messages
   //    send path the Chat composer uses, so the room's agent actually receives it;
@@ -599,11 +636,7 @@ export function useCommand(worldIdArg, selectedKey = '') {
     });
     const q = String(question || '').replace(/\s+/g, ' ').trim().slice(0, 140);
     const body = q ? `Answering your question ("${q}"): ${t}` : t;
-    const payload = key.startsWith('agent:')
-      ? { client_id: worldId, agent: key.slice(6), text: body, role: 'user', source: 'corner-dashboard' }
-      : projectSlug
-        ? { client_id: worldId, agent: 'corner', project: projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: key } }
-        : { client_id: worldId, agent: 'corner', project: key, text: body, role: 'user', source: 'corner-dashboard' };
+    const payload = roomSendPayload(worldId, key, projectSlug, body);
     try {
       await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
@@ -618,11 +651,11 @@ export function useCommand(worldIdArg, selectedKey = '') {
   }, [worldId, goalRooms]);
 
   const data = useMemo(
-    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey }),
-    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey],
+    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed }),
+    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed],
   );
   const state = worldId ? 'ready' : 'loading';
-  return { state, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion };
+  return { state, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion, handNextStep };
 }
 
 // ── Tracker: the real CV6 bug tracker ──
