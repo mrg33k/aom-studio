@@ -2277,6 +2277,9 @@ function initialViewFromUrl() {
     const v = new URLSearchParams(window.location.search).get('view');
     if (!v) return 'home';
     if (v === 'chat' || v === 'chatlist') return 'chatlist';
+    // corner:corner-ui-cv6 BUG1-fix — 'scribe' and 'live-scribe' are the natural deep-link
+    // spellings agents/users write; map them to the internal 'livescribe' view key.
+    if (v === 'scribe' || v === 'live-scribe') return 'livescribe';
     if (['home', 'support', 'organize', 'command', 'tracker', 'review', 'settings', 'onboarding', 'livescribe'].includes(v)) return v;
   } catch { /* no window */ }
   return 'home';
