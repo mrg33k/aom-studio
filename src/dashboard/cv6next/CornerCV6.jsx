@@ -1897,7 +1897,9 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
   const [selectedKey, setSelectedKey] = useState('');
   // Status filter (wd40 R4b): '' | 'working' | 'blocked' — the header chips toggle it.
   const [statusFilter, setStatusFilter] = useState('');
-  const { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep } = useCommand(worldId, selectedKey, statusFilter);
+  // Set-goal row visibility (wd40 R5) — Edit toggles it; changing rooms closes it.
+  const [goalEdit, setGoalEdit] = useState(false);
+  const { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep, setRoomGoal } = useCommand(worldId, selectedKey, statusFilter, goalEdit);
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
@@ -1922,8 +1924,21 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
     return {
       nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
       openCommandK: () => onOpenNav?.(), openProfile: () => onOpenNav?.(),
-      // Step in: select/expand the row (second tap steps back out).
-      openGoal: (id) => setSelectedKey((cur) => (cur === String(id) ? '' : String(id))),
+      // Step in: select/expand the row (second tap steps back out). Changing rooms
+      // closes an open set-goal row so it never carries across rooms.
+      openGoal: (id) => { setGoalEdit(false); setSelectedKey((cur) => (cur === String(id) ? '' : String(id))); },
+      // State the room's goal yourself (wd40 R5): Edit toggles the input row; Save
+      // writes a Patrik-stated goal (edit_goal) that no loop sweep can overwrite.
+      toggleGoalEdit: () => setGoalEdit((v) => !v),
+      saveGoal: (id, e) => {
+        const wrap = e?.currentTarget?.closest('[data-cv6-goaledit]');
+        const inp = wrap?.querySelector('input');
+        const text = inp?.value?.trim();
+        if (!text || !id) return;
+        setRoomGoal?.(String(id), text);
+        if (inp) inp.value = '';
+        setGoalEdit(false);
+      },
       openRoom: (id) => openRoomById(id),
       // Per-row master-loop toggle — real (room-autopilot; master-loop-tick honors it).
       toggleRoomLoop: (key) => toggleWatcher?.(key),
@@ -1969,7 +1984,7 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
       // A dock card is a live agent session — tapping it opens that agent's room.
       openJob: (id) => openRoomById('agent:' + String(id || '')),
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep]);
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep, setRoomGoal]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }

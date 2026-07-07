@@ -138,6 +138,15 @@ function roomNameFor(key, projectNames = {}, tags = {}) {
   return { name: titleCase(k), tag: tags[k] || '' };
 }
 
+// Where a goal came from, in Patrik's words — honest provenance shown next to the
+// set-goal control (an inferred goal is an invitation to correct it). wd40 R5.
+const GOAL_SOURCE_NOTE = {
+  patrik: 'You set this goal',
+  board: "Set by the room's agent",
+  canon: "From the room's charter",
+  inferred: 'Inferred from recent chat',
+};
+
 const hasOpenQuestion = (r) => {
   const q = String((r && r.open_question) || '').trim();
   return Boolean(q) && q.toLowerCase() !== 'none' && q.toLowerCase() !== 'null';
@@ -146,6 +155,7 @@ const hasOpenQuestion = (r) => {
 function shapeCommand({
   sessions = [], projectRooms = [], lastByRoom = {}, goalRooms = {},
   boardRows = [], stepsByRoom = {}, selectedKey = '', handed = {}, filter = '',
+  editingGoal = false,
 }) {
   const now = Date.now();
 
@@ -250,8 +260,18 @@ function shapeCommand({
     if (hasOpenQuestion(gr)) status = 'blocked';
     else if (session || (lastActivity && (now - lastActivity) <= WORKING_WINDOW_MS)) status = 'working';
 
-    // GOAL NOW: state board first (source of truth), then the loop's goal memory.
-    const realGoal = oneLineGoal((board && board.goal) || gr.goal || '');
+    // GOAL NOW (wd40 R5 — "actual goals, not just last activity"): a goal Patrik
+    // STATED always wins; then the state board (agent-stamped); then the loop's
+    // memory, which since R5 carries source 'canon' (mined from the room's
+    // VISION/CONTEXT charter by goal-notetaker canon-sync) or 'inferred' (chat).
+    const grGoal = oneLineGoal(gr.goal || '');
+    const boardGoal = oneLineGoal((board && board.goal) || '');
+    const grStated = Boolean(grGoal) && (gr.source === 'patrik' || gr.goal_source === 'patrik');
+    let realGoal = '';
+    let goalSource = '';
+    if (grStated) { realGoal = grGoal; goalSource = 'patrik'; }
+    else if (boardGoal) { realGoal = boardGoal; goalSource = 'board'; }
+    else if (grGoal) { realGoal = grGoal; goalSource = gr.source === 'canon' ? 'canon' : 'inferred'; }
 
     // LIVE NOW: the live session's task line, else the board's latest state line,
     // else the room's latest chat line. Honest dash when nothing is live.
@@ -272,6 +292,7 @@ function shapeCommand({
       stepStoreKey: storeKey,
       projectSlug: projSlugByKey[key] || '',
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
+      goalSource,
       liveNow, age: lastActivity ? relTime(lastActivity) : '—', lastActivity,
       status, statusLabel: status.toUpperCase(),
       loop: loopOn ? 'on' : 'off',
@@ -303,6 +324,7 @@ function shapeCommand({
       id: 'agent:' + agent, key: 'agent:' + agent, name, tag: 'Terminal', tint: tintFor(name),
       stepStoreKey: 'agent:' + agent,
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
+      goalSource: realGoal ? 'board' : '',
       liveNow: cleanCell(firstLine(s.task_text)).slice(0, 110) || 'Active session',
       age: 'now', lastActivity: now,
       status: 'working', statusLabel: 'WORKING',
@@ -354,6 +376,12 @@ function shapeCommand({
         title: 'No goal set for this room yet', driverLine: 'Nothing active right now',
         checklist: [], queueNote: 'queue clear',
       };
+  // Goal provenance + the set-goal control (wd40 R5). The note says where the
+  // goal came from; the control writes a Patrik-stated goal through edit_goal
+  // (protected from every future sweep). Control only when there is a real room.
+  goal.sourceNote = focus ? (GOAL_SOURCE_NOTE[focus.goalSource] || '') : '';
+  goal.editLabel = focus && focus.goalKind === 'goal' ? 'Edit' : 'Set goal';
+  goal.editState = (editingGoal && goal.addKey) ? 'expanded' : 'collapsed';
   const doneCount = goal.checklist.filter((c) => c.state === 'done').length;
   goal.stepCount = goal.checklist.length ? `${doneCount}/${goal.checklist.length}` : '0';
   // The add row only shows when there is a real room to add to (no dead control while
@@ -385,7 +413,7 @@ function shapeCommand({
   };
 }
 
-export function useCommand(worldIdArg, selectedKey = '', filter = '') {
+export function useCommand(worldIdArg, selectedKey = '', filter = '', editingGoal = false) {
   const [currentUser, setCurrentUser] = useState(null);
   const [worldId, setWorldId] = useState(worldIdArg || null);
   const [sessions, setSessions] = useState([]);
@@ -686,12 +714,38 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '') {
     } catch { /* poll reconciles */ }
   }, [worldId, goalRooms]);
 
+  // ── Set the room's goal from the ledger (wd40 R5 — Patrik states the actual
+  // goal). Writes through command-deck-action edit_goal: room-goals.json gets
+  // goal + source 'patrik', which the goal-notetaker NEVER overwrites (sweep and
+  // canon-sync both respect it). Optimistic; the 60s goal poll reconciles.
+  const setRoomGoal = useCallback(async (key, text) => {
+    const t = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 280);
+    if (!worldId || !key || !t) return;
+    let storeKey = key;
+    if (!goalRooms[storeKey]) {
+      for (const k of Object.keys(goalRooms)) {
+        if (normalizeRoomKey(k) === key) { storeKey = k; break; }
+      }
+    }
+    setGoalRooms((g) => {
+      const out = { ...g, [storeKey]: { ...(g[storeKey] || {}), goal: t, source: 'patrik', goal_source: 'patrik' } };
+      goalRoomsSig.current = JSON.stringify(out);
+      return out;
+    });
+    try {
+      await authFetch('/api/dashboard/command-deck-action', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world: worldId, action: 'edit_goal', room: storeKey, goal: t }),
+      });
+    } catch { /* poll reconciles to server truth */ }
+  }, [worldId, goalRooms]);
+
   const data = useMemo(
-    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed, filter }),
-    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed, filter],
+    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed, filter, editingGoal }),
+    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed, filter, editingGoal],
   );
   const state = worldId ? 'ready' : 'loading';
-  return { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep };
+  return { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep, setRoomGoal };
 }
 
 // ── Tracker: the real CV6 bug tracker ──

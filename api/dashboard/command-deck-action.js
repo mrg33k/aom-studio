@@ -383,8 +383,14 @@ async function editGoal(room, goal, res) {
     goals.rooms[room] = {
       ...goals.rooms[room],
       goal: clean,
+      // BOTH spellings: goal_source is the CommandDeck-era field, but the
+      // goal-notetaker's never-overwrite guard reads `source` — without it the
+      // next 20-min sweep clobbered Patrik's stated goal (fixed 2026-07-06,
+      // wd40-ledger R5, alongside the daemon-side guard now reading both).
+      source: 'patrik',
       goal_source: 'patrik',
       goal_edited_at: now,
+      last_reviewed: now,
       last_touched: now, // editing the goal counts as activity so the row re-sorts
     };
     const ok = await writeDeliverable('room-goals.json', JSON.stringify(goals, null, 2) + '\n');

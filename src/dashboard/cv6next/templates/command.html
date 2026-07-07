@@ -59,8 +59,17 @@
     <!-- goal detail -->
     <div style="width:400px;flex:none;border-left:1px solid var(--divider);padding:22px;overflow:hidden;display:flex;flex-direction:column;" data-state="ready">
       <div style="flex:none;display:flex;align-items:center;gap:8px;margin-bottom:14px;"><span class="pdot is-violet" data-mod="is-:goal.tint"></span><span style="font-size:16px;font-weight:600;color:var(--fg);flex:1;" data-bind="goal.roomName">Space Rising</span><span class="astat is-live" data-mod="is-:goal.status"><span class="sd"></span><span data-bind="goal.statusLabel">LIVE</span></span></div>
-      <div class="eyebrow" style="flex:none;margin-bottom:8px;">Current goal</div>
-      <div style="flex:none;font-size:17px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:16px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
+      <div style="flex:none;display:flex;align-items:center;margin-bottom:8px;"><span class="eyebrow" style="flex:1;">Current goal</span><span class="rowopen" data-mod="is-:goal.addState" data-action="toggleGoalEdit" title="State this room's goal yourself — a goal you set is never overwritten" style="font-size:11.5px;font-weight:600;color:var(--accent);cursor:pointer;" data-bind="goal.editLabel">Edit</span></div>
+      <div style="flex:none;font-size:17px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:5px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
+      <!-- Where the goal came from (wd40 R5): you / the room's agent / the room's
+           charter / chat inference — an inferred goal is an invitation to correct it. -->
+      <div style="flex:none;font-size:11px;color:var(--faint);margin-bottom:13px;" data-bind="goal.sourceNote">From the room's charter</div>
+      <!-- Set the goal in place (wd40 R5): writes a Patrik-stated goal (edit_goal);
+           the loop's sweeps never overwrite it. Rendered only while editing. -->
+      <div class="rowopen" data-mod="is-:goal.editState" data-cv6-goaledit style="flex:none;gap:8px;margin-bottom:14px;">
+        <input placeholder="State this room's goal…" style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+        <button data-action="saveGoal" data-arg="goal.id" title="Save as this room's goal" style="height:38px;padding:0 15px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Save</button>
+      </div>
       <div style="flex:none;background:var(--surface-2);border-radius:11px;padding:12px 14px;margin-bottom:20px;display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--success);" data-bind="goal.driverLine"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 7 10 12 5 17"/><line x1="13" y1="17" x2="19" y2="17"/></svg>Elon · patching resolver</div>
       <!-- WAITING ON YOU — the room's open question, answerable in place (wd40 R2). Answer
            sends into the room's conversation (chat send path) AND unblocks the row. -->
@@ -124,7 +133,13 @@
       <!-- focused goal card: the top ledger row's goal + its plan; tap opens the room -->
       <div style="background:var(--surface);border:1px solid var(--hair);border-radius:16px;padding:16px;margin-bottom:12px;" data-action="openRoom" data-arg="goal.id">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><span class="pdot is-violet" data-mod="is-:goal.tint"></span><span style="font-size:15px;font-weight:600;color:var(--fg);flex:1;" data-bind="goal.roomName">Space Rising</span><span class="astat is-live" data-mod="is-:goal.status"><span class="sd"></span><span data-bind="goal.statusLabel">LIVE</span></span></div>
-        <div style="font-size:15.5px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:10px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
+        <div style="font-size:15.5px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:4px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
+        <!-- Goal provenance + set-goal (wd40 R5); noop keeps taps off the card's openRoom -->
+        <div data-action="noop" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;"><span style="flex:1;font-size:10.5px;color:var(--faint);" data-bind="goal.sourceNote">From the room's charter</span><span class="rowopen" data-mod="is-:goal.addState" data-action="toggleGoalEdit" title="State this room's goal yourself — a goal you set is never overwritten" style="font-size:11px;font-weight:600;color:var(--accent);cursor:pointer;" data-bind="goal.editLabel">Edit</span></div>
+        <div class="rowopen" data-mod="is-:goal.editState" data-cv6-goaledit data-action="noop" style="gap:8px;margin-bottom:12px;">
+          <input placeholder="State this room's goal…" style="flex:1;min-width:0;height:36px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+          <button data-action="saveGoal" data-arg="goal.id" title="Save as this room's goal" style="height:36px;padding:0 13px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Save</button>
+        </div>
         <!-- WAITING ON YOU — answerable in place (noop keeps taps off the card's openRoom) -->
         <div class="rowopen" data-mod="is-:goal.questionState" data-cv6-answer data-action="noop" style="flex-direction:column;align-items:stretch;gap:9px;background:var(--warn-weak,rgba(251,191,36,.16));border:1px solid var(--warn);border-radius:11px;padding:11px 13px;margin-bottom:12px;">
           <div style="font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--warn);">WAITING ON YOU</div>
