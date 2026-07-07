@@ -67,8 +67,8 @@
           <div data-state="loading" style="color:var(--muted);font-size:13.5px;padding:20px;">
             Connecting to the meeting…
           </div>
-          <div data-state="error" style="color:var(--warn);font-size:13.5px;padding:20px;">
-            Recording not available. Check your connection.
+          <div data-state="error" style="color:var(--warn);font-size:13.5px;padding:20px;" data-bind="errorNote">
+            Recording not available.
           </div>
         </div>
       </div>
@@ -200,8 +200,8 @@
   <div data-state="loading" style="color:var(--muted);font-size:13.5px;padding:20px;text-align:center;">
     Connecting to the meeting…
   </div>
-  <div data-state="error" style="color:var(--warn);font-size:13.5px;padding:20px;text-align:center;">
-    Recording not available. Check your connection.
+  <div data-state="error" style="color:var(--warn);font-size:13.5px;padding:20px;text-align:center;" data-bind="errorNote">
+    Recording not available.
   </div>
 </div>
 </body>

@@ -31,9 +31,14 @@ function composeLiveScribe(raw, screenName) {
   // Strip any baked topbar (the shell provides the shared nav)
   screen.querySelector('.topbar')?.remove();
   screen.setAttribute('style', 'width:100%;height:100%');
-  // Inject shared loading/error states (the template carries its own empty states inline)
+  // Inject the shared loading skeleton only. The shared ERROR card is NOT appended:
+  // scribe's only error source is the microphone, the template carries its own
+  // truthful inline error branch, and the shared card's unbound sample copy ("We
+  // couldn't reach the board · net::ERR_TIMED_OUT") told users their network was
+  // down when their mic was missing (Finder DEF-11) — with dead Retry/offline
+  // buttons on top.
   const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
-  sd.querySelectorAll('[data-state="loading"], [data-state="error"]').forEach(
+  sd.querySelectorAll('[data-state="loading"]').forEach(
     (b) => screen.appendChild(b.cloneNode(true))
   );
   return screen.outerHTML;
