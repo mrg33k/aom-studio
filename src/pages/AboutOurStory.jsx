@@ -145,7 +145,7 @@ export default function AboutOurStory() {
     const originalTitle = document.title;
     const originalMeta = document.querySelector('meta[name="description"]');
 
-    document.title = 'Ten Years. 100+ Projects. Real Companies.';
+    document.title = 'Since 2020. 100+ Projects. Real Companies.';
 
     if (!originalMeta) {
       const meta = document.createElement('meta');
@@ -177,7 +177,7 @@ export default function AboutOurStory() {
       {/* Hero */}
       <section className="section hero">
         <h1>
-          Ten Years. 100+ Projects<i className="sq" />
+          Since 2020. 100+ Projects<i className="sq" />
         </h1>
         <p className="tagline">
           We've been making work for companies since 2020. Not the talk about it. The actual work. Web platforms. Brand films. Documentaries. Social content. Things that ship.
