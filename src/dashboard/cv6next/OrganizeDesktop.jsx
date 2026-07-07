@@ -4,10 +4,11 @@
 // screen node from the design fragment, inject the shared loading/error/empty states,
 // and bind real data + actions behind it (no redraw).
 
-import { useMemo, useRef, useEffect, useCallback } from 'react';
+import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, findMissionNode } from './TreeContextMenu.jsx';
+import NewComposer from './NewComposer.jsx';
 import { authFetch } from '../lib/authFetch';
 import template from './templates/organize.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -24,6 +25,12 @@ function composeOrganize(raw, screenName) {
   // top bar (otherwise the page shows two stacked nav rows).
   screen.querySelector('.topbar')?.remove();
   screen.setAttribute('style', 'width:100%;height:100%');
+  // The design's desktop tree column ships without a create affordance — add the same
+  // dashed "New project" button the mobile picker has (opens the shared NewComposer flow).
+  const treeCol = screen.querySelector('div[style*="width:280px"]');
+  if (treeCol) {
+    treeCol.insertAdjacentHTML('beforeend', '<button data-action="newProject" style="flex:none;margin-top:12px;width:100%;height:40px;border-radius:11px;border:1px dashed var(--hair);background:transparent;color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New project</button>');
+  }
   const sd = new DOMParser().parseFromString(statesRaw, 'text/html');
   sd.querySelectorAll('[data-state="loading"], [data-state="error"], [data-state="empty"]').forEach((b) => screen.appendChild(b.cloneNode(true)));
   return screen.outerHTML;
@@ -34,6 +41,9 @@ const DESKTOP_HTML = composeOrganize(template, 'organize-desktop');
 export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
   const worldId = 'aom';
   const { state, data, reload, selectProject, selectMission, setFilter, setQuery, setSort, openFile, activeProjectId, projects, missionTree } = useOrganize(worldId);
+  // "New project" (tree column footer) -> the shared NewComposer overlay (same flow as
+  // Home's "New"), opened on the project tab. On create, reload with bust so it shows now.
+  const [showNew, setShowNew] = useState(false);
 
   // The search input is an uncontrolled kept DOM node (see template); the engine only
   // wires clicks, so the input event is delegated from this React wrapper. Debounced a
@@ -133,16 +143,21 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
       onNav?.('review', rf ? { files: [rf], project: data.viewFile.projectSlug || '' } : null);
     },
     assignAgent: (fileId) => onAssignFile?.(fileId),
+    newProject: () => setShowNew(true),
     // Held-c (the file store is flat — no folder tree): inert, never faked.
-    addFile: () => {}, newFolder: () => {}, newProject: () => {}, commentFile: () => {},
+    addFile: () => {}, newFolder: () => {}, commentFile: () => {},
     moveFile: () => {}, moveSelection: () => {}, confirmMove: () => {}, cancelMove: () => {},
     pickDestination: () => {}, deleteSelection: () => {}, renameSelection: () => {}, shareSelection: () => {},
   };
 
   return (
-    <div ref={wrapRef} onInput={onSearchInput} style={{ width: '100%', height: '100%' }}>
+    <div ref={wrapRef} onInput={onSearchInput} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={DESKTOP_HTML} data={bindData} actions={actions} state={state} aliases={ORG_ALIASES} style={{ width: '100%', height: '100%' }} />
       {ctxOverlay}
+      {showNew ? (
+        <NewComposer worldId={worldId} projects={projects || []} agents={[]} initialMode="project"
+          onClose={() => setShowNew(false)} onCreated={() => reload({ bust: true })} />
+      ) : null}
     </div>
   );
 }
