@@ -79,8 +79,11 @@ const CSS = `
 .r17 .chrome .mid { position:absolute; left:50%; transform:translateX(-50%); }
 .r17 .chrome .brand { color:var(--paper); }
 .r17 .chrome .brand .sq { width:.5em; height:.5em; margin-left:.45em; vertical-align:baseline; }
-.r17 .chrome-link { pointer-events:auto; font-size:.72rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; text-shadow:0 1px 14px rgba(0,0,0,.75); color:var(--paper); transition:color .15s; padding:0; }
+.r17 .chrome-link { pointer-events:auto; font-size:.72rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; text-shadow:0 1px 14px rgba(0,0,0,.75); color:var(--paper); transition:color .15s; padding:0; display:inline-flex; align-items:center; gap:.55rem; }
 .r17 .chrome-link:hover { color:var(--gold); }
+.r17 .mburg { display:inline-flex; flex-direction:column; justify-content:center; gap:4px; width:18px; }
+.r17 .mburg i { display:block; height:1.5px; width:100%; background:currentColor; transition:transform .2s, background .15s; }
+.r17 .chrome-link:hover .mburg i:first-child { transform:translateX(2px); }
 
 /* ─── WORK overlay: the full site map ─── */
 .r17 .hz-menu { position:fixed; inset:0; z-index:400; background:rgba(6,6,6,.985); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); opacity:0; visibility:hidden; transition:opacity .3s ease, visibility .3s ease; display:flex; align-items:center; justify-content:center; padding:clamp(1.5rem,6vh,5rem) var(--pad); }
@@ -538,7 +541,10 @@ export default function HomeR6Baby() {
 
       {/* fixed corner chrome — WORK opens the full site map */}
       <div className="chrome top">
-        <button className="chrome-link" onClick={() => setMenu(true)}>Work</button>
+        <button className="chrome-link" onClick={() => setMenu(true)} aria-label="Open menu">
+          <span className="mburg" aria-hidden="true"><i /><i /></span>
+          Menu
+        </button>
         <a className="mid" href="#story" onClick={e => { e.preventDefault(); jump('story'); }}>Story</a>
         <a href="#contact" onClick={e => { e.preventDefault(); jump('contact'); }}>Contact us</a>
       </div>
