@@ -1855,7 +1855,7 @@ const COMMAND_ALIASES = {
 function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
   // The stepped-into row (drives the desktop detail panel + mobile inline expand).
   const [selectedKey, setSelectedKey] = useState('');
-  const { state, data, toggleWatcher, stepToggle, stepAdd } = useCommand(worldId, selectedKey);
+  const { state, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion } = useCommand(worldId, selectedKey);
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
@@ -1897,11 +1897,23 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
         stepAdd?.(roomKey, text);
         if (inp) inp.value = '';
       },
-      // Absorbs taps on the add-step row so they don't bubble to the card's open action.
+      // Answer the room's open question in place (wd40 R2): the answer goes into the
+      // room's conversation (chat send path) and the row unblocks (clear_question).
+      answerQuestion: (id, e) => {
+        const wrap = e?.currentTarget?.closest('[data-cv6-answer]');
+        const inp = wrap?.querySelector('input');
+        const text = inp?.value?.trim();
+        if (!text || !id) return;
+        const rooms = data?.ledger?.rooms || [];
+        const r = rooms.find((x) => String(x.key) === String(id));
+        answerRoomQuestion?.({ key: String(id), projectSlug: r?.projectSlug || '', question: r?.openQuestion || '' }, text);
+        if (inp) inp.value = '';
+      },
+      // Absorbs taps on the add-step/answer rows so they don't bubble to the card's open action.
       noop: () => {},
       openJob: () => {}, manageActivity: () => {},
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd]);
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }
