@@ -7,6 +7,7 @@ import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useReviewPinUI } from './ReviewPins.jsx';
+import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, findMissionNode } from './TreeContextMenu.jsx';
 import { authFetch } from '../lib/authFetch';
 import reviewRaw from './templates/review.html?raw';
@@ -53,6 +54,26 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   const { state, data, actions, scope, projectsRaw, missionTreeRaw, refreshTree } = useReview(worldId || 'aom', injected);
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
+  // "Changes" overlay (R-ASSIGN part D): the bullet list of every comment with its
+  // timecode, with Send-back-to-agent routing through the assign path.
+  const [changesOpen, setChangesOpen] = useState(false);
+  useEffect(() => { setChangesOpen(false); }, [pickedId]);
+  const pickedItem = useMemo(() => (data.queue.items || []).find((i) => i.id === pickedId) || null, [data.queue.items, pickedId]);
+  // Everything the assign overlay needs to make the dispatch meaningful: the real
+  // file name, the project it belongs to, and the full comment list as notes.
+  const assignExtra = useCallback(() => ({
+    artifactTitle: pickedItem?.title || String(pickedId || '').split('/').pop() || '',
+    project: pickedItem?.whoRaw || '',
+    details: pins.length ? `Requested changes:\n${compileChanges(pins)}` : '',
+  }), [pickedItem, pickedId, pins]);
+  const sendBackToAgent = useCallback(() => {
+    const compiled = compileChanges(pins);
+    // Record the decision on the deliverable (real write since R-ASSIGN fixed the
+    // endpoint's schema), then open the agent picker with the list attached.
+    if (pickedId && compiled) actions.requestChanges(pickedId, compiled);
+    setChangesOpen(false);
+    onAssignDeliverable?.(pickedId, assignExtra());
+  }, [pins, pickedId, actions, onAssignDeliverable, assignExtra]);
 
   // Pin-comment interaction: a delegated click listener on the stable wrapper (survives
   // TemplateScreen's innerHTML rebuilds — binding to the inner DOM dies on the first data
@@ -211,12 +232,15 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
+    // With pinned comments the Changes overlay IS the request: every note with its
+    // timecode, and Send-back-to-agent. Without comments, fall back to the prompt.
     requestChanges: (id) => {
+      if (pins.length) { setChangesOpen(true); return; }
       const notes = prompt('What changes are needed?');
       if (notes) actions.requestChanges(id, notes);
     },
     sendChecklist: (id) => actions.sendChecklist(id),
-    assignAgent: (id) => onAssignDeliverable?.(id),
+    assignAgent: (id) => onAssignDeliverable?.(id, assignExtra()),
   };
 
   return (
@@ -224,6 +248,14 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
       <TemplateScreen html={desktopHtml} data={desktopData} actions={desktopActions} aliases={aliases} state={state} style={{ width: '100%', height: '100%' }} />
       {pinOverlay}
       {ctxOverlay}
+      {changesOpen && (
+        <ReviewChangesOverlay
+          pins={pins}
+          title={pickedItem?.title || ''}
+          onSendBack={sendBackToAgent}
+          onClose={() => setChangesOpen(false)}
+        />
+      )}
     </div>
   );
 }
