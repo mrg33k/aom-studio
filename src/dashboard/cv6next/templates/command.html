@@ -76,7 +76,7 @@
       <!-- Queue note on its OWN row (Steffen gate R1: inline on the header line it overlapped
            the step count when the text wrapped). Free to wrap here without colliding. -->
       <div class="stat" style="flex:none;max-width:100%;box-sizing:border-box;color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));margin-bottom:12px;"><svg style="flex:none;" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span data-bind="goal.queueNote">1 in master-loop queue</span></div>
-      <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:14px;overflow-y:auto;flex:1;min-height:0;">
+      <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:14px;overflow-y:auto;flex:0 1 auto;min-height:0;">
         <!-- ONE row per checklist step; is-:step.state → done | queued | active; the tag is the
              step's source (You / Agent / Proposed) or Done/Running. Empty = honest empty note.
              ACTIONABLE (wd40 R1): tap a row = mark done / not done for real (room-goal-steps
@@ -89,8 +89,10 @@
       <div class="rowopen" data-mod="is-:goal.handState" style="flex:none;flex-direction:column;align-items:stretch;gap:7px;margin-bottom:14px;">
         <button data-action="handNextStep" data-arg="goal.id" title="Send the next unchecked step into the room so its agent starts on it" style="width:100%;height:38px;border-radius:10px;border:1px solid var(--accent);background:var(--accent-weak);color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;box-sizing:border-box;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Hand next step to the agent</button>
         <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;" data-bind="goal.nextStepText"></div>
-        <div style="font-size:11.5px;color:var(--success);text-align:center;" data-bind="goal.handNote"></div>
       </div>
+      <!-- After the send the button BECOMES the result (Steffen R3 defect 2): a
+           non-tappable success pill replaces it, so nothing invites a second send. -->
+      <div class="rowopen" data-mod="is-:goal.handedState" style="flex:none;align-items:center;justify-content:center;gap:7px;height:38px;border-radius:10px;background:var(--success-weak);color:var(--success);font-size:12.5px;font-weight:600;margin-bottom:14px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Sent — the agent picks it up from chat</div>
       <!-- Add a step to this room's plan — writes to the same store the room's agent reads -->
       <div class="rowopen" data-mod="is-:goal.addState" data-cv6-addstep style="gap:8px;margin-bottom:14px;">
         <input placeholder="Add a step to this plan…" style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
@@ -141,8 +143,8 @@
         <!-- Hand the next unchecked step to the room's agent (noop guards the card tap) -->
         <div class="rowopen" data-mod="is-:goal.handState" data-action="noop" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px;">
           <button data-action="handNextStep" data-arg="goal.id" title="Send the next unchecked step into the room so its agent starts on it" style="width:100%;height:36px;border-radius:10px;border:1px solid var(--accent);background:var(--accent-weak);color:var(--accent);font-size:12px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;box-sizing:border-box;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Hand next step to the agent</button>
-          <div style="font-size:11px;color:var(--success);text-align:center;" data-bind="goal.handNote"></div>
         </div>
+        <div class="rowopen" data-mod="is-:goal.handedState" data-action="noop" style="align-items:center;justify-content:center;gap:6px;height:36px;border-radius:10px;background:var(--success-weak);color:var(--success);font-size:12px;font-weight:600;margin-top:12px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Sent — the agent picks it up from chat</div>
         <!-- Add a step (noop stops the tap from bubbling to the card's openRoom) -->
         <div class="rowopen" data-mod="is-:goal.addState" data-cv6-addstep data-action="noop" style="gap:8px;margin-top:10px;">
           <input placeholder="Add a step to this plan…" style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
