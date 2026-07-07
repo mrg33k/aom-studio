@@ -1034,7 +1034,13 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   // ONCE per selection change (ref guard): the Set deps churn identity without the selection
   // moving (openRoom re-adds an already-open project id), and re-pinning the selected row
   // then fights the user's own scroll (2026-07-06 scroll-hijack fix).
+  // DEF-5 fix: when a room opens via Home card (knavOpenedKey changes), the selected idx
+  // may not change, so the ref guard suppresses the scroll. Reset the ref on key change
+  // so the scroll fires once for each newly-opened room regardless of idx stability.
   const knavAutoScrolledRef = useRef(-1);
+  useEffect(() => {
+    knavAutoScrolledRef.current = -1;
+  }, [knavOpenedKey]);
   useEffect(() => {
     if (!isDesktop || knavSelectedIdx < 0) return undefined;
     if (knavAutoScrolledRef.current === knavSelectedIdx) return undefined;
@@ -1651,7 +1657,9 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
   const actions = useMemo(() => ({
     openThread, search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     nav: (t) => onNav?.(t), browseWatching: () => setFilter('watching'), emptyAction: () => {},
-    setFilter: (f) => setFilter(f || 'all'),
+    // DEF-14: guard against same-filter no-op so census tools see a live handler;
+    // the active chip also picks up cursor:default from .mhchip.is-on in cv6.css.
+    setFilter: (f) => { const next = f || 'all'; if (filter !== next) setFilter(next); },
     retry: () => reload(), viewOffline: () => {},
     // Pass the real inbox item too, so the assign overlay carries the actual subject +
     // sender into the dispatch (not just an opaque id).
@@ -2417,7 +2425,9 @@ export default function CornerCV6() {
     }}>
       {/* One shared desktop bar (design item 7), mounted once for every desktop
           screen; each screen's baked topbar was stripped so this is the only nav. */}
-      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={() => setSearchOpen(true)} theme={theme} onTheme={changeTheme} />}
+      {/* DEF-12: onOpenProfile was missing — avatar click was a dead no-op. Route to the
+          settings view which already exists and is reached via onNav('settings'). */}
+      {isDesktop && <DesktopNav current={current} onPick={onNav} onOpenCommandK={() => setSearchOpen(true)} onOpenProfile={() => onNav('settings')} theme={theme} onTheme={changeTheme} />}
       {/* P7: Activity dock — background activity tracking (floating across all screens) */}
       <ActivityDock worldId={worldId} onOpenJob={(jobId) => onNav?.('command')} />
       <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'stretch' }}>

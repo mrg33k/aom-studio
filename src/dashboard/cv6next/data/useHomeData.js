@@ -253,7 +253,10 @@ export function useHome() {
   // render, so TemplateScreen reset the whole DOM on each data tick — rebuilding the room
   // list under the user's finger and making taps miss (the "can't open a chat" bug).
   const shaped = useMemo(() => shapeHome({ agents, projectRooms, inboxItems, missionRooms }), [agents, projectRooms, inboxItems, missionRooms]);
-  const loading = !worldId || (!agents && !projectRooms && !inboxItems);
+  // DEF-2: !agents is false when agents=[] (empty array is truthy), causing the loading
+  // guard to exit too early and render an empty screen. Use null-check instead: useDataPipe
+  // returns null until the first fetch resolves, then [] or a real array.
+  const loading = !worldId || (agents == null && projectRooms == null && inboxItems == null);
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 
@@ -311,7 +314,8 @@ export function useChatList() {
   const currentUserSlug = useCurrentUserSlug(currentUser, worldId);
   const { agents, projectRooms, inboxItems } = useDataPipe(null, worldId, currentUserSlug);
   const shaped = useMemo(() => shapeChatList({ agents, projectRooms, inboxItems }), [agents, projectRooms, inboxItems]);
-  const loading = !worldId || (!agents && !projectRooms && !inboxItems);
+  // Same DEF-2 null-check fix applied to the chat-list hook.
+  const loading = !worldId || (agents == null && projectRooms == null && inboxItems == null);
   return { state: loading ? 'loading' : shaped.state, data: shaped.data, worldId };
 }
 

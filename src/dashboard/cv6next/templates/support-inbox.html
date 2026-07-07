@@ -45,8 +45,9 @@
         <div class="msub"><span data-bind="counts.needYou">3</span> need you · <span data-bind="counts.watching">9</span> watching</div>
       </div>
       <div class="mhactions">
-        <div class="ib" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
-        <div class="ib" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
+        <!-- DEF-6: was bare div — added role+aria-label for assistive tech -->
+        <div class="ib" role="button" aria-label="Search" data-action="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></div>
+        <div class="ib" role="button" aria-label="Menu" data-action="openNav"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></div>
       </div>
     </div>
     <!-- filter chips: All keeps the approved both-sections view as default; Needs you / Watching narrow to one real section. (Drafts held: no drafts inbox source yet.) -->
