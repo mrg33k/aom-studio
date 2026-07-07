@@ -97,6 +97,8 @@ export default async function handler(req, res) {
     if (req.body.title != null) bug.title = clean(req.body.title, 160);
     if (req.body.expected != null) bug.expected = clean(req.body.expected, 240);
     if (req.body.severity != null) bug.severity = clean(req.body.severity, 12);
+    // Assign-to-agent stamps the bug's owner (R-ASSIGN 2026-07-06; add already took owner, update didn't).
+    if (req.body.owner != null) bug.owner = clean(req.body.owner, 24);
     if (req.body.priority != null) { const pr = parseInt(req.body.priority, 10); if (pr >= 1 && pr <= 5) bug.priority = pr; }
     const ok = await saveBugs(world, bugs);
     if (!ok) return res.status(500).json({ error: 'write failed' });

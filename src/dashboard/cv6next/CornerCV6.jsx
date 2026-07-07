@@ -33,6 +33,7 @@ import { useHome, useProjectMissions, shapeProjectState, createMissionInProject,
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { useRoomThread, useGoalThread } from './data/useRoomThread.js';
 import { useWorldId, useCommand, useTrackerBugs } from './data/useCommandTracker.js';
+import { titleForAgent } from './data/agentTitles.js';
 import { useDemoBlocksFeed } from './data/useDemoBlocks.js';
 import homeDesktopRaw from './templates/home-desktop.html?raw';
 import homeMobileRaw from './templates/home-mobile.html?raw';
@@ -1739,8 +1740,13 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
     nav: (t) => onNav?.(t), browseWatching: () => setFilter('watching'), emptyAction: () => {},
     setFilter: (f) => setFilter(f || 'all'),
     retry: () => reload(), viewOffline: () => {},
-    assignAgent: (emailId) => onAssignEmail?.(emailId),
-  }), [onNav, onOpenNav, reload, onAssignEmail]);
+    // Pass the real inbox item too, so the assign overlay carries the actual subject +
+    // sender into the dispatch (not just an opaque id).
+    assignAgent: (emailId) => {
+      const item = [...(data.needsYou || []), ...(data.watching || [])].find((e) => String(e.id) === String(emailId)) || null;
+      onAssignEmail?.(emailId, item);
+    },
+  }), [onNav, onOpenNav, reload, onAssignEmail, data.needsYou, data.watching]);
 
   // Opened-thread view: find the tapped ask and render its real email. Back returns to the list.
   const openedEmail = useMemo(() => {
@@ -1924,6 +1930,17 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
     const bug = (data.bugs || []).find((b) => String(b.id) === String(id));
     if (bug) { setSelectedBug(bug); setSheet('detail'); }
   };
+  // Assign-to-agent on a bug: hand the overlay the real bug title + description, and a
+  // persistence hook that stamps the picked agent (as its role title, never a persona
+  // name) onto the bug row's owner — so the assignment shows in the Assignee column.
+  const assignBug = (bugId) => {
+    const bug = (data.bugs || []).find((b) => String(b.id) === String(bugId)) || selectedBug;
+    onAssignBug?.(bugId, {
+      artifactTitle: bug?.title || '',
+      details: bug?.description ? `Expected: ${bug.description}` : '',
+      onAssigned: (agent) => updateBug({ id: bugId, owner: titleForAgent(agent) }),
+    });
+  };
   // Snapshot the form data (real agents + active tracker name) when the "+" opens, so the
   // uncontrolled form stays stable while open and a data tick never wipes what's typed.
   const openNewBug = () => {
@@ -1946,14 +1963,14 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
     nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
     openSwitcher: () => setSheet('switch'),
     openBug: (id) => openBug(id),
-    newBug: () => openNewBug(), assignAgent: (bugId) => onAssignBug?.(bugId), pauseAgent: () => {},
+    newBug: () => openNewBug(), assignAgent: (bugId) => assignBug(bugId), pauseAgent: () => {},
     openAttachment: () => {}, retry: () => {},
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [onNav, onOpenNav, data.bugs, data.assignableAgents, data.activeTracker, canCreate, onAssignBug]);
 
   const detailActions = useMemo(() => ({
     nav: () => setSheet(null),
-    assignAgent: (bugId) => onAssignBug?.(bugId), openAttachment: () => {},
+    assignAgent: (bugId) => assignBug(bugId), openAttachment: () => {},
     changeStatus: (status, e) => {
       const el = e?.currentTarget;
       // The engine resolves data-arg as a DATA PATH, so the literal "Open"/"Done"
@@ -2042,7 +2059,7 @@ function Tracker({ worldId, onNav, onOpenNav, onAssignBug }) {
       openTracker: (id) => switchTracker(id),
       openBug: (id) => { const b = (data.bugs || []).find((x) => String(x.id) === String(id)); if (b) setSelectedBug(b); },
       newBug: () => openNewBug(),
-      assignAgent: (bugId) => onAssignBug?.(bugId),
+      assignAgent: (bugId) => assignBug(bugId),
       // status change is real (cv6-bugs update, persisted). per-bug checklist has no
       // honest store yet -> inert (not faked).
       changeStatus: (status, e) => {
@@ -2298,14 +2315,14 @@ export default function CornerCV6() {
     viewKey = `chatdesktop:${openedRoom?.room?.id || 'list'}`;
   }
   else if (openedRoom) { body = <Chat room={openedRoom.room} worldId={openedRoom.worldId} onNav={onNav} onOpenNav={onOpenNav} />; viewKey = `chat:${openedRoom.room?.id}`; }
-  else if (view === 'support') { body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={(emailId) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent' })} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={(emailId) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent' })} />; viewKey = 'support'; }
-  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onAssignFile={(fileId) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent' })} />; viewKey = 'organize'; }
+  else if (view === 'support') { const onAssignEmail = (emailId, item) => setAssignConfig({ type: 'email', id: emailId, title: 'Assign email to agent', artifactTitle: item?.subject || '', details: item ? `From ${item.sender || 'someone'}${item.address ? ` <${item.address}>` : ''}${item.snippet ? ` — ${item.snippet}` : ''}` : '' }); body = isDesktop ? <SupportDesktop onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} /> : <SupportInbox onNav={onNav} onOpenNav={onOpenNav} onAssignEmail={onAssignEmail} />; viewKey = 'support'; }
+  else if (view === 'organize') { body = <Organize onNav={onNav} onOpenNav={onOpenNav} onAssignFile={(fileId) => setAssignConfig({ type: 'file', id: fileId, title: 'Assign file to agent', artifactTitle: String(fileId || '').split('/').pop() || '' })} />; viewKey = 'organize'; }
   else if (view === 'settings') { body = <Settings onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'settings'; }
   else if (view === 'onboarding') { body = <Onboarding onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'onboarding'; }
   else if (view === 'livescribe') { body = <LiveScribe onNav={onNav} onOpenNav={onOpenNav} />; viewKey = 'livescribe'; }
   else if (view === 'command') { body = <Command worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onOpenRoom={onOpenRoom} />; viewKey = 'command'; }
-  else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent' })} />; viewKey = 'tracker'; }
-  else if (view === 'review') { body = isDesktop ? <ReviewDesktop worldId={worldId} target={reviewTarget} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} /> : <Review worldId={worldId} target={reviewTarget} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={(delivId) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent' })} />; viewKey = 'review'; }
+  else if (view === 'tracker') { body = <Tracker worldId={worldId} onNav={onNav} onOpenNav={onOpenNav} onAssignBug={(bugId, extra) => setAssignConfig({ type: 'bug', id: bugId, title: 'Assign bug to agent', ...(extra || {}) })} />; viewKey = 'tracker'; }
+  else if (view === 'review') { const onAssignDeliverable = (delivId, extra) => setAssignConfig({ type: 'deliverable', id: delivId, title: 'Assign deliverable to agent', artifactTitle: String(delivId || '').split('/').pop() || '', ...(extra || {}) }); body = isDesktop ? <ReviewDesktop worldId={worldId} target={reviewTarget} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={onAssignDeliverable} /> : <Review worldId={worldId} target={reviewTarget} onNav={onNav} onOpenNav={onOpenNav} onAssignDeliverable={onAssignDeliverable} />; viewKey = 'review'; }
   else if (view === 'chatlist') { body = <ChatList onNav={onNav} onOpenRoom={onOpenRoom} onOpenProject={onOpenProject} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} />; viewKey = 'chatlist'; }
   else { body = <Home onNav={onNav} onOpenRoom={onOpenRoom} onOpenNav={onOpenNav} onCommandK={() => setSearchOpen(true)} pendingProjectId={pendingProjectId} onProjectConsumed={() => setPendingProjectId(null)} />; viewKey = 'home'; }
 
@@ -2333,12 +2350,20 @@ export default function CornerCV6() {
           onOpenRoom={(room, wid) => { setSearchOpen(false); onOpenRoom(room, wid); }}
         />
       )}
-      {/* AssignButton overlay — opened by artifact surfaces (review, tracker, support, organize). */}
+      {/* AssignButton overlay — opened by artifact surfaces (review, tracker, support, organize).
+          artifactTitle is the REAL artifact name the surface passed (email subject, bug title,
+          file name); assignConfig.title is only the overlay heading fallback. details carries
+          extra context (e.g. the Review changes list) into the dispatch; onAssigned lets a
+          surface persist its own field (e.g. Tracker stamps the bug's owner). */}
       {assignConfig && (
         <AssignButton
           artifactType={assignConfig.type}
           artifactId={assignConfig.id}
-          artifactTitle={assignConfig.title}
+          artifactTitle={assignConfig.artifactTitle || assignConfig.title}
+          details={assignConfig.details || ''}
+          projectSlug={assignConfig.project || ''}
+          worldId={worldId}
+          onAssigned={assignConfig.onAssigned || null}
           autoOpen
           onClose={() => setAssignConfig(null)}
           onSuccess={() => setAssignConfig(null)}

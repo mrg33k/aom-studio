@@ -70,19 +70,29 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Emit the decision as a message to the dashboard so it appears in chat/notifications.
-    // Use a structured format so the dashboard can route and present it properly.
+    // Emit the decision as a message so it appears in chat/notifications.
+    // FIXED 2026-07-06 (R-ASSIGN): the original insert used `type`/`content` columns
+    // that do not exist in the messages table, so EVERY decision 500'd and nothing was
+    // recorded. Insert the real schema (the columns the chat composer writes). The
+    // project slug is derived from the deliverable path (…/projects/<slug>/…) so the
+    // decision lands in that project's room thread.
+    const pathMatch = did.match(/projects\/([a-z0-9][a-z0-9-_.]*)\//i);
+    const projectSlug = clean(req.body.project, 80) || (pathMatch ? pathMatch[1] : null);
     const { error } = await supabase.from('messages').insert({
-      type: messageType,
-      content: message,
+      client_id: clean(world || 'aom', 60) || 'aom',
+      agent: clean(req.body.agent, 80) || 'corner',
+      project: projectSlug,
+      text: message,
+      role: 'system',
+      source: 'review-decision',
       metadata: {
+        message_type: messageType,
         deliverable_id: did,
         action: act,
         notes: act === 'request-changes' ? clean(notes, 1000) : null,
         checklist: act === 'send-checklist' ? clean(checklist, 2000) : null,
         decided_at: new Date().toISOString(),
       },
-      created_at: new Date().toISOString(),
     });
 
     if (error) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { titleForAgent } from '../cv6next/data/agentTitles.js';
+import { titleForAgent, AGENT_TITLES } from '../cv6next/data/agentTitles.js';
+import { authFetch } from '../lib/authFetch';
 
 /**
  * P6 — AssignButton
@@ -23,11 +24,15 @@ import { titleForAgent } from '../cv6next/data/agentTitles.js';
  * Agent picker:
  *   - Fetches real agents from the live data stream (via useDataPipe or local agents list if provided).
  *   - Shows each agent as { slug, title: titleForAgent(slug), status }.
- *   - On click, shows a CONFIRM step (held-c demo state) or real dispatch if wired.
- *   - HELD-C DEFAULT: confirm step is disabled + labelled "Dispatching to an agent turns on
- *     when the assign backend is live". This prevents silent no-op or real autonomous dispatch.
- *   - REAL DISPATCH (if env var or prop opts in): POST to api/dashboard/create-project-task
- *     with { text: <title>, artifactType, artifactId, projectSlug, agentId }.
+ *   - On click, shows a CONFIRM step, then REAL dispatch:
+ *       1. POST /api/dashboard/agent-status  { agent, text, status:'todo', client_id, project }
+ *          -> a real tasks-table row on the agent's list (persisted assignment state).
+ *       2. POST /api/dashboard/supabase-messages { agent, text, role:'user', source }
+ *          -> the ask lands in the agent's room thread, where the bridge picks it up.
+ *     (Was HELD-C until 2026-07-06: it logged to console and simulated success; and the
+ *     agent list came from /active-agents, whose backing table active_processes does not
+ *     exist -- the picker was empty everywhere. Now the roster loads from the same
+ *     supabase-status source Home's agent rooms use.)
  *
  * Picker UI:
  *   - Bottom sheet on mobile (390px).
@@ -404,8 +409,8 @@ function ConfirmDialog({
               lineHeight: 1.5,
             }}
           >
-            <strong>Held-c:</strong> Dispatching to an agent turns on when the assign backend is live.
-            This confirms the design but does not yet queue real autonomous work.
+            This adds it to {titleForAgent(agent)}&rsquo;s task list and drops the ask in their room,
+            so they pick it up from there.
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
@@ -509,8 +514,8 @@ function ConfirmDialog({
             lineHeight: 1.5,
           }}
         >
-          <strong>Held-c:</strong> Dispatching to an agent turns on when the assign backend is live.
-          This confirms the design but does not yet queue real autonomous work.
+          This adds it to {titleForAgent(agent)}&rsquo;s task list and drops the ask in their room,
+          so they pick it up from there.
         </div>
 
         <div style={{ display: 'flex', gap: 10, flexDirection: 'column' }}>
@@ -555,11 +560,13 @@ function ConfirmDialog({
 }
 
 export function AssignButton({
-  artifactType = 'email', // 'email' | 'file' | 'doc' | 'bug' | 'transcript'
+  artifactType = 'email', // 'email' | 'file' | 'doc' | 'bug' | 'deliverable' | 'transcript'
   artifactId = '',
   artifactTitle = '',
   title = '', // alias accepted from the overlay caller
   projectSlug = '',
+  worldId = 'aom',
+  details = '', // extra context carried into the dispatch (e.g. the changes list)
   isQuiet = false,
   icon = !isQuiet,
   agents = [], // If provided, use these instead of fetching
@@ -567,6 +574,7 @@ export function AssignButton({
   onClose = () => {},
   onSuccess = () => {},
   onError = () => {},
+  onAssigned = null, // optional per-surface persistence hook, called with the picked agent
   disabled = false,
 }) {
   const label = artifactTitle || title || '(untitled)';
@@ -576,28 +584,46 @@ export function AssignButton({
   const [isDispatching, setIsDispatching] = useState(false);
   const [agentList, setAgentList] = useState(agents);
 
-  // Fetch agents whenever the picker is open and none were passed in. A hard
-  // timeout means the list can never get stuck on "Loading agents…" if the
-  // endpoint hangs — it degrades to the honest "No agents available" state.
+  // Fetch agents whenever the picker is open and none were passed in. Source is
+  // /api/dashboard/supabase-status (the agent_status roster) — the SAME source that
+  // renders Home's agent rooms, so if Home shows agents, this picker shows agents.
+  // (The old source, /active-agents, read the active_processes table, which does not
+  // exist in production — the list was permanently empty.) A hard timeout means the
+  // list can never get stuck on "Loading agents…" if the endpoint hangs — it degrades
+  // to the honest "No agents available" state.
   useEffect(() => {
     if (agents.length > 0 || showPicker === false) return undefined;
 
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 8000);
     setIsLoading(true);
-    fetch('/api/dashboard/active-agents?client=aom', { signal: ctrl.signal })
+    authFetch(`/api/dashboard/supabase-status?client=${encodeURIComponent(worldId || 'aom')}`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
       .then((data) => {
-        const active = (data.active || []).map((a) => ({ slug: a.agent, status: 'live' }));
-        setAgentList(active);
+        const roster = Array.isArray(data.agents) ? data.agents : [];
+        // Curate to the titled working roster (same doctrine as Home: agents render as
+        // role titles). Unknown slugs only show when a world has NO titled agents at
+        // all (external worlds with their own roster).
+        const order = Object.keys(AGENT_TITLES);
+        const titled = roster.filter((a) => AGENT_TITLES[String(a.slug || '').toLowerCase()]);
+        const list = (titled.length ? titled : roster)
+          .map((a) => ({
+            slug: a.slug,
+            status: String(a.status || '').toLowerCase() === 'working' ? 'live' : 'ready',
+          }))
+          .sort((x, y) => {
+            const ix = order.indexOf(x.slug); const iy = order.indexOf(y.slug);
+            return (ix === -1 ? 99 : ix) - (iy === -1 ? 99 : iy);
+          });
+        setAgentList(list);
       })
       .catch((err) => {
-        console.error('[AssignButton] failed to fetch active agents:', err);
+        console.error('[AssignButton] failed to fetch agent roster:', err);
         setAgentList([]);
       })
       .finally(() => { clearTimeout(timer); setIsLoading(false); });
     return () => { clearTimeout(timer); ctrl.abort(); };
-  }, [showPicker, agents]);
+  }, [showPicker, agents, worldId]);
 
   // Closing the picker without a pick dismisses the whole overlay.
   const closePicker = () => { setShowPicker(false); onClose(); };
@@ -615,30 +641,67 @@ export function AssignButton({
 
     setIsDispatching(true);
 
+    const slug = selectedAgent.slug;
+    const KIND = { email: 'email', file: 'file', doc: 'document', bug: 'bug', deliverable: 'deliverable', transcript: 'transcript' };
+    const kind = KIND[artifactType] || 'item';
+    const world = worldId || 'aom';
+    // What the agent reads. Human-first line, then the notes, then the machine ref
+    // so the agent can locate the exact artifact.
+    const body = [
+      `Assigned to you from the dashboard: ${kind} "${label}".`,
+      details ? `\nNotes:\n${details}` : '',
+      artifactId ? `\n(ref: ${artifactType}:${artifactId})` : '',
+    ].filter(Boolean).join('\n');
+
     try {
-      // // HELD-C: TODO(cv6: POST to /api/dashboard/create-project-task with
-      // { text: <title>, artifactType, artifactId, projectSlug, agentId }.
-      // For now, we log and simulate success.
-      console.log('[P6 AssignButton] HELD-C — would dispatch:', {
-        text: artifactTitle,
-        artifactType,
-        artifactId,
-        projectSlug,
-        agentId: selectedAgent.slug,
+      // 1) Persist the assignment as a real tasks-table row on the agent's list.
+      const taskResp = await authFetch('/api/dashboard/agent-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: slug,
+          text: body,
+          project: projectSlug || null,
+          status: 'todo',
+          client_id: world,
+        }),
       });
 
-      // Simulate API success
-      await new Promise((r) => setTimeout(r, 800));
+      // 2) Drop the ask in the agent's room thread (the same write path the chat
+      // composer uses), so the assignment reaches a live agent, not just a table.
+      const msgResp = await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent: slug,
+          text: body,
+          role: 'user',
+          source: 'corner-dashboard',
+          client_id: world,
+        }),
+      });
 
-      onSuccess({
+      if (!taskResp?.ok && !msgResp?.ok) {
+        throw new Error(`assign dispatch failed (task ${taskResp?.status || '?'} / message ${msgResp?.status || '?'})`);
+      }
+
+      // 3) Per-surface persistence (e.g. Tracker stamps the bug's assignee).
+      if (typeof onAssigned === 'function') {
+        try { await onAssigned(selectedAgent); } catch (e) { console.error('[AssignButton] onAssigned hook failed:', e); }
+      }
+
+      let task = null;
+      try { task = (await taskResp.json())?.task || null; } catch { /* non-JSON */ }
+      onSuccess(task || {
         id: `task-${Date.now()}`,
-        title: `Assign: ${artifactTitle}`,
-        status: 'queued',
-        agent: selectedAgent.slug,
+        title: `Assign: ${label}`,
+        status: 'todo',
+        agent: slug,
       });
 
       setSelectedAgent(null);
     } catch (err) {
+      console.error('[AssignButton] dispatch failed:', err);
       onError(err);
     } finally {
       setIsDispatching(false);

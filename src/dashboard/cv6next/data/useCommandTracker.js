@@ -478,24 +478,40 @@ export function useTrackerBugs(worldId) {
     } catch { return null; }
   };
 
-  // Change a CV6 bug's status for real (Open / In progress / Done) and persist it.
-  // Optimistic: flip the local row immediately so the control responds, then POST
-  // the real update and resync. CV6 board only (Space Rising is read-only).
+  // Change a CV6 bug's status (Open / In progress / Done) and/or its owner
+  // (assign-to-agent, R-ASSIGN) for real and persist it. Optimistic: flip the local
+  // row immediately so the control responds, then POST the real update and resync.
+  // CV6 board only (Space Rising is read-only).
   const STATUS_LABELS = { Open: 'Open', 'In progress': 'In progress', Done: 'Done' };
-  const updateBug = async ({ id, status }) => {
+  const updateBug = async ({ id, status, owner }) => {
     if (!id || !showingCv6) return null;
-    const label = STATUS_LABELS[status]; if (!label) return null;
-    const st = bugStatus(label);
-    setBugs((prev) => prev.map((b) => (b.id === id
-      ? { ...b, status: st, statusLabel: label,
-          isOpen: st === 'open' ? 'on' : 'off',
-          isProgress: st === 'progress' ? 'on' : 'off',
-          isDone: st === 'done' ? 'on' : 'off' }
-      : b)));
+    const label = status != null ? STATUS_LABELS[status] : null;
+    if (status != null && !label) return null;
+    if (label == null && owner == null) return null;
+    setBugs((prev) => prev.map((b) => {
+      if (b.id !== id) return b;
+      const next = { ...b };
+      if (label) {
+        const st = bugStatus(label);
+        next.status = st; next.statusLabel = label;
+        next.isOpen = st === 'open' ? 'on' : 'off';
+        next.isProgress = st === 'progress' ? 'on' : 'off';
+        next.isDone = st === 'done' ? 'on' : 'off';
+      }
+      if (owner != null) {
+        next.assignee = owner;
+        next.assigneeInitials = owner ? initials(owner) : '·';
+        next.assigneeTint = tintFor(owner || id);
+      }
+      return next;
+    }));
     try {
+      const body = { action: 'update', world: worldId, id };
+      if (label) body.status = label;
+      if (owner != null) body.owner = owner;
       await authFetch('/api/dashboard/cv6-bugs', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'update', world: worldId, id, status: label }),
+        body: JSON.stringify(body),
       });
       setReloadKey((n) => n + 1);
       return true;
