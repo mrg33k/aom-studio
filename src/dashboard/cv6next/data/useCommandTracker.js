@@ -343,7 +343,12 @@ function shapeCommand({
       };
   const doneCount = goal.checklist.filter((c) => c.state === 'done').length;
   goal.stepCount = goal.checklist.length ? `${doneCount}/${goal.checklist.length}` : '0';
-  goal.emptyNote = goal.checklist.length ? '' : 'No steps on this plan yet. Add the first one below.';
+  // The add row only shows when there is a real room to add to (no dead control while
+  // the ledger is still empty/loading) — rides the kit's rowopen show/hide pattern.
+  goal.addState = goal.addKey ? 'expanded' : 'collapsed';
+  goal.emptyNote = goal.checklist.length ? '' : (goal.addKey
+    ? 'No steps on this plan yet. Add the first one below.'
+    : 'No steps on this plan yet.');
 
   return {
     ledger: { roomCount: rows.length, liveCount: workingCount, workingCount, blockedCount, rooms: rows, others: rows },
