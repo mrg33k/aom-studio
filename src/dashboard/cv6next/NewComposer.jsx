@@ -16,14 +16,15 @@ import { useMemo, useRef, useState } from 'react';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { createMissionInProject, createProjectFromHome } from './data/useHomeData.js';
 
-// Agents have id=slug and name=role-title (e.g. id:'bobby', name:'Web'). Combine into
-// "Persona (Role)" so the Assign-To list reads clearly as a named agent, not a bare type-key.
+// Agents show as TITLES (roles), never persona names — hard doctrine 2026-06-23
+// (agentTitles.js: "a name never leaks ANYWHERE"). The Assign-To list shows the role
+// title exactly as Home's roster does; a generic fallback only when the title is
+// missing so no row is ever blank.
 function composerAgentLabel(a) {
   const slug = String(a.id || '');
   const title = String(a.name || '');
   if (!slug || slug === '__auto') return title || 'Auto';
-  const persona = slug.charAt(0).toUpperCase() + slug.slice(1);
-  return title && title.toLowerCase() !== slug.toLowerCase() ? `${persona} (${title})` : persona;
+  return title || 'Agent';
 }
 
 const NEW_COMPOSER_ALIASES = { 'composer.projects': 'proj', 'composer.agents': 'ag' };
