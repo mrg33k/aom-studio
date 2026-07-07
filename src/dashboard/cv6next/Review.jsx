@@ -7,6 +7,7 @@ import { useReview, reviewItemsFromFiles } from './data/useReview.js';
 import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useReviewPinUI } from './ReviewPins.jsx';
+import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
 
@@ -62,6 +63,16 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
   const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
 
   const picked = useMemo(() => pickedId ? data.queue.items.find((i) => i.id === pickedId) : null, [pickedId, data.queue.items]);
+
+  // "Changes" overlay (R-ASSIGN part D): every comment with its timecode + Send back
+  // to agent, routed through the assign path with the full list attached.
+  const [changesOpen, setChangesOpen] = useState(false);
+  useEffect(() => { setChangesOpen(false); }, [pickedId]);
+  const assignExtra = useCallback((pinsNow) => ({
+    artifactTitle: picked?.title || String(pickedId || '').split('/').pop() || '',
+    project: picked?.whoRaw || '',
+    details: pinsNow.length ? `Requested changes:\n${compileChanges(pinsNow)}` : '',
+  }), [picked, pickedId]);
 
   const onOpenDeliverable = useCallback((id) => {
     setPickedId(id);
@@ -191,18 +202,34 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
+    // With pinned comments the Changes overlay IS the request: every note with its
+    // timecode, and Send-back-to-agent. Without comments, fall back to the prompt.
     requestChanges: (id) => {
+      if (pins.length) { setChangesOpen(true); return; }
       const notes = prompt('What changes are needed?');
       if (notes) actions.requestChanges(id, notes);
     },
     sendChecklist: (id) => actions.sendChecklist(id),
-    assignAgent: (id) => onAssignDeliverable?.(id),
+    assignAgent: (id) => onAssignDeliverable?.(id, assignExtra(pins)),
   };
 
   return (
     <div ref={readRef} style={{ position: 'relative', width: '100%', height: '100%' }}>
       <TemplateScreen html={readHtml} data={readData} actions={readActions} aliases={readAliases} state={state} style={{ width: '100%', height: '100%' }} />
       {pinOverlay}
+      {changesOpen && (
+        <ReviewChangesOverlay
+          pins={pins}
+          title={picked?.title || ''}
+          onSendBack={() => {
+            const compiled = compileChanges(pins);
+            if (pickedId && compiled) actions.requestChanges(pickedId, compiled);
+            setChangesOpen(false);
+            onAssignDeliverable?.(pickedId, assignExtra(pins));
+          }}
+          onClose={() => setChangesOpen(false)}
+        />
+      )}
     </div>
   );
 }
