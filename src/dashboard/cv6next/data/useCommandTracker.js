@@ -256,9 +256,23 @@ function shapeCommand({
     const lastActivity = times.length ? Math.max(...times) : 0;
 
     // STATUS: blocked (waiting on you) > working (live session or fresh activity) > idle.
+    // C2 closure (2026-07-06): a BLOCKED claim must have a REAL, still-open question
+    // behind it — the ledger's state and the room's reality must agree. A stored
+    // open_question goes stale two ways while the row keeps claiming blocked:
+    //   1. an agent is LIVE on the room — an actively running agent is not waiting on
+    //      you, so the room reads "ready"/working and a blocked badge contradicts it;
+    //   2. the room has SPOKEN since the question was asked — a chat line newer than
+    //      the question means the room already moved past it (the exact C2 mismatch:
+    //      Command said BLOCKED + waiting-on-you, the opened room showed a ready agent,
+    //      empty of any pending question). Only an untended, still-current question blocks.
+    const liveSession = Boolean(session);
+    const freshActivity = Boolean(lastActivity && (now - lastActivity) <= WORKING_WINDOW_MS);
+    const questionAsked = gr.last_reviewed ? new Date(gr.last_reviewed).getTime() : 0;
+    const spokenSinceQuestion = Boolean(last && last.t && questionAsked && last.t > questionAsked);
+    const questionLive = hasOpenQuestion(gr) && !liveSession && !spokenSinceQuestion;
     let status = 'idle';
-    if (hasOpenQuestion(gr)) status = 'blocked';
-    else if (session || (lastActivity && (now - lastActivity) <= WORKING_WINDOW_MS)) status = 'working';
+    if (questionLive) status = 'blocked';
+    else if (liveSession || freshActivity) status = 'working';
 
     // GOAL NOW (wd40 R5 — "actual goals, not just last activity"): a goal Patrik
     // STATED always wins; then the state board (agent-stamped); then the loop's
@@ -311,7 +325,10 @@ function shapeCommand({
       openLabel: expanded ? 'Open room' : '',
       expandedState: expanded ? 'expanded' : 'collapsed',
       rowState: expanded ? 'open' : 'row',
-      openQuestion: hasOpenQuestion(gr) ? cleanCell(firstLine(gr.open_question)) : '',
+      // Gated on questionLive (not just presence): the WAITING-ON-YOU answer card and
+      // the BLOCKED badge come from the SAME predicate, so a blocked row always has a
+      // reachable question and a superseded/answered one never shows (C2 closure).
+      openQuestion: questionLive ? cleanCell(firstLine(gr.open_question)) : '',
     };
   };
 
