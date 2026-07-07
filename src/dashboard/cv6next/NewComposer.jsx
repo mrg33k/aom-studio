@@ -93,7 +93,8 @@ const NEW_COMPOSER_HTML = `
       </div>
     </div>
     <div style="padding:4px 22px 20px;display:flex;align-items:center;gap:11px;flex:none;border-top:1px solid var(--divider);padding-top:16px;">
-      <span style="flex:1;font-size:11.5px;color:var(--faint);line-height:1.4;">The more you give it, the better the room starts.</span>
+      <span class="cmp-hint" style="flex:1;font-size:11.5px;color:var(--faint);line-height:1.4;">The more you give it, the better the room starts.</span>
+      <span class="cmp-err" role="alert" style="display:none;flex:1;font-size:11.5px;color:#e5484d;line-height:1.4;font-weight:600;"></span>
       <button data-action="closeComposer" style="height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:14px;font-weight:600;font-family:var(--font-sans);cursor:pointer;">Cancel</button>
       <button data-action="submitComposer" style="height:44px;padding:0 20px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;gap:8px;cursor:pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span data-bind="composer.ctaLabel">Start mission</span></button>
     </div>
@@ -113,6 +114,7 @@ export default function NewComposer({ worldId, projects, agents, initialMode = '
   const startMode = initialMode === 'project' ? 'project' : 'mission';
   const [mode, setMode] = useState(startMode);
   const formRef = useRef(null);
+  const busyRef = useRef(false); // guards double-submit; drives the button's busy look
   const selRef = useRef({
     mode: startMode,
     projectId: (projects && projects[0] && (projects[0].slug || projects[0].id)) || '',
@@ -163,28 +165,55 @@ export default function NewComposer({ worldId, projects, agents, initialMode = '
       formRef.current?.querySelectorAll('.cmp-when button').forEach((b) => b.classList.remove('is-on'));
       e?.currentTarget?.classList.add('is-on');
     },
-    submitComposer: () => {
+    // Submit AWAITS the real backend and only closes on a confirmed create. On failure
+    // it surfaces an honest inline error and keeps the sheet open with the typed text
+    // intact — never close-and-pretend. Errors/busy are written straight to the DOM (no
+    // setState) so the uncontrolled goal/name boxes are never wiped mid-flight.
+    submitComposer: async () => {
       const root = formRef.current;
       const sel = selRef.current;
+      if (busyRef.current) return; // a create is already in flight
+      const showErr = (msg) => {
+        const e = root?.querySelector('.cmp-err');
+        const h = root?.querySelector('.cmp-hint');
+        if (e) { e.textContent = msg; e.style.display = 'block'; }
+        if (h) h.style.display = 'none';
+      };
+      const clearErr = () => {
+        const e = root?.querySelector('.cmp-err');
+        if (e) { e.textContent = ''; e.style.display = 'none'; }
+      };
+      const setBusy = (on) => {
+        busyRef.current = on;
+        const btn = root?.querySelector('[data-action="submitComposer"]');
+        if (btn) { btn.style.opacity = on ? '.6' : ''; btn.style.pointerEvents = on ? 'none' : ''; }
+      };
+      clearErr();
+
       if (sel.mode === 'project') {
         const name = root?.querySelector('[data-bind="draft.name"]')?.value?.trim() || '';
         const about = root?.querySelector('[data-bind="draft.about"]')?.value?.trim() || '';
-        if (!name) return; // a project needs a name
-        createProjectFromHome({ worldId, name, about });
-        onClose?.();
-        onCreated?.('project');
+        if (!name) { showErr('Give the project a name first.'); return; }
+        setBusy(true);
+        const res = await createProjectFromHome({ worldId, name, about });
+        if (res && res.ok) { onClose?.(); onCreated?.('project'); return; }
+        setBusy(false);
+        showErr('Could not create the project. Please try again.');
         return;
       }
+
       const goal = root?.querySelector('[data-bind="draft.goal"]')?.value?.trim() || '';
-      if (!goal) return; // a mission needs a goal (its first line becomes the title)
+      if (!goal) { showErr('Tell the room what to get done first.'); return; }
       const projectSlug = sel.projectId;
-      if (!projectSlug) return; // a mission must live in a project
+      if (!projectSlug) { showErr('Pick a project for this mission.'); return; }
       const title = goal.split('\n')[0].slice(0, 80);
       const priLabel = { low: 'Low', med: 'Medium', high: 'High' }[sel.priority] || '';
       const whenLabel = { now: 'Now', 'this-week': 'This week' }[sel.when] || '';
-      createMissionInProject({ worldId, projectSlug, title, goal, agentName: sel.agentName || '', priority: priLabel, when: whenLabel });
-      onClose?.();
-      onCreated?.('mission');
+      setBusy(true);
+      const res = await createMissionInProject({ worldId, projectSlug, title, goal, agentName: sel.agentName || '', priority: priLabel, when: whenLabel });
+      if (res && res.ok) { onClose?.(); onCreated?.('mission'); return; }
+      setBusy(false);
+      showErr('Could not start the mission. Please try again.');
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [worldId, onClose, onCreated]);
