@@ -62,6 +62,24 @@
         <div class="cstat" data-mod="is-:catchUp.footerState" style="border-top:1px solid var(--divider);padding:14px;font-size:12.5px;font-weight:600;color:var(--fg);"><span class="cstat-spin" data-mod="is-:catchUp.footerState"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg></span><span class="cstat-check" data-mod="is-:catchUp.footerState"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span data-bind="catchUp.statusText">Adding to tracker…</span></div>
       </div>
     </div>
+    <!-- Pick up where you left off (mobile): the desktop resting-state digest, lifted
+         above All rooms per Patrik 2026-07-07. Same `recent` rows + openRecent action the
+         desktop convo column and the old buried "Recently active" strip used (that strip is
+         now removed so recents don't render twice). Hidden entirely when there's nothing recent. -->
+    <div class="mresume" data-mod="is-:recent.has">
+      <div class="roomshdr"><span class="eyebrow">Pick up where you left off</span></div>
+      <div class="mresumelist">
+        <div class="mresumerow" data-each="recent" data-action="openRecent" data-arg="rec.key">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="flex:none;margin-top:4px;color:var(--faint);"><circle cx="12" cy="12" r="10"/><path d="m12 6 0 6 4 2"/></svg>
+          <div class="mresumebody">
+            <div class="mresumetop"><span class="rn" data-bind="rec.name">Deal Bank</span><span class="rsub" data-bind="rec.sub">Space Rising</span></div>
+            <span class="rprev" data-bind="rec.preview">Shipped the fix; the deploy is live and verified.</span>
+          </div>
+          <span class="mono mresumeage" data-bind="rec.age">2h</span>
+          <svg class="mresumechev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+        </div>
+      </div>
+    </div>
     <div class="roomshdr"><span class="eyebrow">All rooms</span><span style="display:flex;align-items:center;gap:14px;"><span style="font-size:12.5px;font-weight:600;color:var(--accent);" data-action="nav" data-target="rooms">See all</span><button style="display:flex;align-items:center;gap:5px;height:28px;padding:0 11px;border-radius:14px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;" data-action="newRoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>New</button></span></div>
     <div class="rooms">
       <!-- Agents accordion: one header row that expands its roster in place -->
@@ -73,11 +91,8 @@
       </div>
       <!-- ONE row per curated agent (titles), shown only while the accordion is open -->
       <div class="room agentrow" data-each="agents" data-action="openRoom" data-arg="room.id"><span class="sdot is-live" data-mod="is-:room.status"></span><span class="rn" data-bind="room.name">Web</span></div>
-      <!-- Recently active (mobile): newest rooms first, above projects -->
-      <div class="recentsec" data-mod="is-:recent.has">
-        <div class="roomshdr" style="margin-top:6px;"><span class="eyebrow">Recently active</span></div>
-        <div class="room recentrow" data-each="recent" data-action="openRecent" data-arg="rec.key"><span class="sdot is-ready" data-mod="is-:rec.status" style="flex:none;"></span><span class="rn" data-bind="rec.name">Deal Bank</span><span style="font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="rec.sub">Space Rising</span><span class="mono" style="margin-left:auto;font-size:10.5px;color:var(--faint);flex:none;" data-bind="rec.age">2h</span></div>
-      </div>
+      <!-- Recent rooms now live in the "Pick up where you left off" section above All rooms
+           (Patrik 2026-07-07); the old buried strip was removed to avoid a double render. -->
       <!-- ONE template row per project -->
       <div class="room" style="border-bottom:none;" data-each="projects" data-action="openRoom" data-arg="room.id"><svg class="folder is-violet" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;" data-mod="is-:room.tint"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg><span class="rn" style="font-weight:500;" data-bind="room.name">Space Rising</span><span style="font-size:12px;color:var(--muted);" data-bind="room.count">28</span></div>
       <!-- Show the rest of the rooms (hidden when none remain) -->
