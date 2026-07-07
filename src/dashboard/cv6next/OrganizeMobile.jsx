@@ -10,7 +10,7 @@
 // data-state="ready" and drop the shared loading/empty/error blocks into the same
 // flex slot so they REPLACE the body instead of overlaying it (O1).
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import NewComposer from './NewComposer.jsx';
@@ -165,6 +165,23 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
     folders: [], // Phase 2: subfolder navigation
     viewFile: pickedFileId ? (data?.viewFile || null) : null,
   };
+
+  // Census closure (mirror of desktop): the default-active sort/filter chips are
+  // already selected — mark them aria-current + cursor:default so a re-click reads as
+  // an intentional no-op, not a dead control. Runs after TemplateScreen re-binds.
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    wrap.querySelectorAll('[data-action="setSort"],[data-action="setFilter"]').forEach((btn) => {
+      if (btn.classList.contains('is-on')) {
+        btn.setAttribute('aria-current', 'true');
+        btn.style.cursor = 'default';
+      } else {
+        btn.removeAttribute('aria-current');
+        btn.style.cursor = '';
+      }
+    });
+  }, [bindData, projectId, pickedFileId]);
 
   // Context-aware back: file view → list, list → picker, picker → home.
   const handleBack = () => {

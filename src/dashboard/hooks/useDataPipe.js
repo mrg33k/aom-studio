@@ -797,6 +797,15 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
       console.log('[Corner Realtime] supabase client is null -- no Realtime subscriptions')
     }
 
+    // O3 (corner-ui-cv6 census): a same-tab signal for structural registry changes
+    // (project/mission rename/move/create/archive from Organize). The `projects` table
+    // realtime channel above only fires when that table is in Supabase's realtime
+    // publication — which isn't guaranteed — so a rename could sit stale on the sidebar
+    // + composer picker until the 60s poll. This listener refetches immediately when
+    // Organize broadcasts, so the new name propagates to every surface at once.
+    const onExternalRefresh = () => { fetchAll() }
+    if (typeof window !== 'undefined') window.addEventListener('cv6:data-refresh', onExternalRefresh)
+
     return () => {
       clearInterval(timer)
       if (realtimeDebounce) clearTimeout(realtimeDebounce)
@@ -804,6 +813,7 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
       if (tasksChannel) supabase.removeChannel(tasksChannel)
       if (messagesChannel) supabase.removeChannel(messagesChannel)
       if (projectsChannel) supabase.removeChannel(projectsChannel)
+      if (typeof window !== 'undefined') window.removeEventListener('cv6:data-refresh', onExternalRefresh)
     }
   }, [worldId, fetchAll])
 

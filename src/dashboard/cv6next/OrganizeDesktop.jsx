@@ -4,7 +4,7 @@
 // screen node from the design fragment, inject the shared loading/error/empty states,
 // and bind real data + actions behind it (no redraw).
 
-import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
+import { useMemo, useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
@@ -94,14 +94,26 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
       canMove: !path || path.startsWith('corner/users/'),
     };
   }, [missionTree, projectName]);
+  // O3 (census): a project/mission rename lands in the projects table and in
+  // Organize's own tree (reload bust), but the chat sidebar room list and the
+  // composer's project picker read a DIFFERENT pipe (useDataPipe → useHome), which
+  // only refetches on a 60s poll or a `projects` realtime event that isn't reliably
+  // published. Fire a same-tab signal so that pipe refetches NOW — the new name shows
+  // on all three surfaces without a manual reload. Harmless if realtime also fires
+  // (fetchAll is idempotent + signature-deduped). Every structural mutation
+  // (rename/move/create/archive) touches the registry those surfaces render, so all
+  // four broadcast.
+  const broadcastRegistryChange = useCallback(() => {
+    try { window.dispatchEvent(new CustomEvent('cv6:data-refresh')); } catch { /* SSR / no window — non-fatal */ }
+  }, []);
   const { overlay: ctxOverlay } = useTreeContextMenu({
     wrapRef,
     resolveHit,
     listProjects: () => (projects || []).map((p) => ({ slug: p.slug, name: p.name })),
-    onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); await reload({ bust: true }); },
-    onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); await reload({ bust: true }); },
-    onCreate: async (target, name) => { await createNode(authFetch, target, name, worldId); await reload({ bust: true }); },
-    onArchive: async (target) => { await archiveNode(authFetch, target, worldId); await reload({ bust: true }); },
+    onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
+    onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
+    onCreate: async (target, name) => { await createNode(authFetch, target, name, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
+    onArchive: async (target) => { await archiveNode(authFetch, target, worldId); await reload({ bust: true }); broadcastRegistryChange(); },
   });
 
   // Mark the open row from the hook's openedId so the highlighted row and the
@@ -111,6 +123,25 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
     const files = (data.files || []).map((x) => ({ ...x, picked: x.id === effectiveId ? 'open' : 'closed' }));
     return { ...data, files };
   }, [data]);
+
+  // O3-adjacent census closure: the default-active sort ("Newest") and filter
+  // ("Recent") chips are ALREADY selected — re-clicking them is a no-op by design,
+  // not a dead control. Stamp the active chip with aria-current + cursor:default so it
+  // reads (and audits) as intentional. Runs AFTER TemplateScreen re-binds the DOM
+  // (child layout effects fire before this parent one), so `is-on` is already applied.
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    wrap.querySelectorAll('[data-action="setSort"],[data-action="setFilter"]').forEach((btn) => {
+      if (btn.classList.contains('is-on')) {
+        btn.setAttribute('aria-current', 'true');
+        btn.style.cursor = 'default';
+      } else {
+        btn.removeAttribute('aria-current');
+        btn.style.cursor = '';
+      }
+    });
+  }, [bindData]);
 
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
