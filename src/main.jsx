@@ -137,6 +137,9 @@ const ServiceBrandFilm = lazy(() => import('./pages/ServiceBrandFilm.jsx'))
 const ServiceWebBuild = lazy(() => import('./pages/ServiceWebBuild.jsx'))
 const ServiceStrategy = lazy(() => import('./pages/ServiceStrategy.jsx'))
 const ServiceDocumentary = lazy(() => import('./pages/ServiceDocumentary.jsx'))
+const WorkConstruction = lazy(() => import('./pages/WorkConstruction.jsx'))
+const WorkTechSaas = lazy(() => import('./pages/WorkTechSaas.jsx'))
+const WorkNonprofit = lazy(() => import('./pages/WorkNonprofit.jsx'))
 const ProjectPage = lazy(() => import('./pages/ProjectPage.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
@@ -442,6 +445,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/services/web-build" element={<ServiceWebBuild />} />
           <Route path="/services/strategy" element={<ServiceStrategy />} />
           <Route path="/services/documentary" element={<ServiceDocumentary />} />
+          <Route path="/work/construction" element={<WorkConstruction />} />
+          <Route path="/work/tech-saas" element={<WorkTechSaas />} />
+          <Route path="/work/nonprofit" element={<WorkNonprofit />} />
           <Route path="/taste" element={<HomeR6Taste />} />
           <Route path="/versions" element={<VersionsGallery />} />
           <Route path="/versions/superside" element={<VSuperside />} />
