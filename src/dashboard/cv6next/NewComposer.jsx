@@ -16,6 +16,16 @@ import { useMemo, useRef, useState } from 'react';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { createMissionInProject, createProjectFromHome } from './data/useHomeData.js';
 
+// Agents have id=slug and name=role-title (e.g. id:'bobby', name:'Web'). Combine into
+// "Persona (Role)" so the Assign-To list reads clearly as a named agent, not a bare type-key.
+function composerAgentLabel(a) {
+  const slug = String(a.id || '');
+  const title = String(a.name || '');
+  if (!slug || slug === '__auto') return title || 'Auto';
+  const persona = slug.charAt(0).toUpperCase() + slug.slice(1);
+  return title && title.toLowerCase() !== slug.toLowerCase() ? `${persona} (${title})` : persona;
+}
+
 const NEW_COMPOSER_ALIASES = { 'composer.projects': 'proj', 'composer.agents': 'ag' };
 const NEW_COMPOSER_HTML = `
 <div data-cv6 data-theme="dark" style="position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
@@ -56,7 +66,7 @@ const NEW_COMPOSER_HTML = `
         <div class="cmp-field">
           <div class="cmp-flab">Project</div>
           <div class="cmp-list">
-            <div class="cmp-row cmp-projrow" data-each="composer.projects" data-mod="is-:proj.picked" data-action="pickComposerProject" data-arg="proj.slug"><span style="width:20px;height:20px;border-radius:6px;background:rgba(139,124,246,.16);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--violet-400)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="proj.name">Project</span><span class="cmp-chk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+            <div class="cmp-row cmp-projrow" data-each="composer.projects" data-mod="is-:proj.picked" data-action="pickComposerProject" data-arg="proj.slug"><span style="width:20px;height:20px;border-radius:6px;background:var(--accent-weak);display:flex;align-items:center;justify-content:center;flex:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" data-bind="proj.name">Project</span><span class="cmp-chk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
           </div>
         </div>
         <div class="cmp-field">
@@ -97,7 +107,7 @@ export default function NewComposer({ worldId, projects, agents, initialMode = '
   // overlay and wipe a half-typed goal (same guarantee the Home inline version gave).
   const [snap] = useState(() => ({
     projects: (projects || []).map((p) => ({ id: p.id ?? p.slug, slug: p.slug || p.id, name: p.name })),
-    agents: (agents || []).map((a) => ({ id: a.id, name: a.name })),
+    agents: (agents || []).map((a) => ({ id: a.id, name: composerAgentLabel(a) })),
   }));
   const startMode = initialMode === 'project' ? 'project' : 'mission';
   const [mode, setMode] = useState(startMode);

@@ -17,6 +17,13 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { useSupportInbox } from './data/useSupportInbox.js';
 import { authFetch } from '../lib/authFetch';
 
+// Strips angle-bracket URL syntax (<https://...>) that agent-produced markdown emits.
+// Shared helper: used here for the desktop React render and exported for the mobile
+// template data path in CornerCV6.jsx (both surfaces, one truth).
+export function normalizeLinks(str) {
+  return String(str || '').replace(/<(https?:\/\/[^>\s]+)>/g, '$1');
+}
+
 const SUPPORT_TRACKER_NAME = 'Support follow-ups';
 
 function Star({ size = 14 }) {
@@ -228,13 +235,13 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                         {summary.map((pt, i) => (
                           <div key={i} style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)', flex: 'none', marginTop: 7 }} />
-                            <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{pt}</div>
+                            <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{normalizeLinks(pt)}</div>
                           </div>
                         ))}
                         {recommendation.map((pt, i) => (
                           <div key={`r${i}`} style={{ display: 'flex', gap: 11, alignItems: 'flex-start' }}>
                             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--warn)', flex: 'none', marginTop: 7 }} />
-                            <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{pt}</div>
+                            <div style={{ fontSize: 13.5, lineHeight: 1.5, color: 'var(--fg)' }}>{normalizeLinks(pt)}</div>
                           </div>
                         ))}
                         {summary.length === 0 && recommendation.length === 0 && suggestState === 'loading' && (

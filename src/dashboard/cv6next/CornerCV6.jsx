@@ -22,7 +22,7 @@ import Review from './Review.jsx';
 import ReviewDesktop from './ReviewDesktop.jsx';
 import ChatLifecycle from './ChatLifecycle.jsx';
 import ChatDesktop, { FilesShelf, fileKind, libKindLabel, shelfItems } from './ChatDesktop.jsx';
-import SupportDesktop from './SupportDesktop.jsx';
+import SupportDesktop, { normalizeLinks } from './SupportDesktop.jsx';
 import Organize from './Organize.jsx';
 import Settings from './Settings.jsx';
 import Onboarding from './Onboarding.jsx';
@@ -1695,7 +1695,7 @@ function SupportInbox({ onNav, onOpenNav, onAssignEmail }) {
         body: (tail && head) ? (showEarlier ? `${head}\n\n${tail}` : head) : full,
         earlierState: (tail && head) ? 'has' : 'none',
         earlierLabel: showEarlier ? 'Hide' : 'Show',
-        summary: bullets.map((text) => ({ text })),
+        summary: bullets.map((text) => ({ text: normalizeLinks(text) })),
         summaryNote,
         summaryNoteState: summaryNote ? 'has' : 'none',
         replyNote,
