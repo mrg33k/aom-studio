@@ -82,7 +82,7 @@ const CSS = `
    stacked in REVERSE and rides down, so pairs still meet at every snap. ─── */
 .r17 .bk { position:fixed; inset:0; z-index:0; pointer-events:none; }
 .r17 .bk-win { position:absolute; overflow:hidden; }
-.r17 .bk-win.l { left:0; top:0; width:50%; height:100%; }
+.r17 .bk-win.l { left:0; top:0; width:50%; height:100%; border-right:1px solid var(--line); }
 .r17 .bk-win.r { right:0; top:0; width:50%; height:100%; }
 .r17 .bk-col { position:absolute; left:0; top:0; width:100%; will-change:transform; }
 .r17 .bk-col.r { transform:translateY(calc(-13 * 100svh)); }
@@ -90,7 +90,7 @@ const CSS = `
 .r17 .bk-panel::after { content:''; position:absolute; inset:0; background:rgba(4,4,4,.44); z-index:2; }
 .r17 .bk-panel > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
 @media(max-width:860px){
-  .r17 .bk-win.l { width:100%; height:50%; }
+  .r17 .bk-win.l { width:100%; height:50%; border-right:none; border-bottom:1px solid var(--line); }
   .r17 .bk-win.r { left:0; right:auto; top:50%; width:100%; height:50%; }
   .r17 .bk-col.r { transform:translateY(calc(-13 * 50svh)); }
   .r17 .bk-panel { height:50svh; }
@@ -126,7 +126,8 @@ const CSS = `
 }
 .r17 .hz-gold { position:absolute; inset:0; z-index:4; pointer-events:none; display:flex; align-items:center; justify-content:center; }
 .r17 .hz .wm { display:flex; align-items:flex-end; white-space:nowrap; transform-origin:55% 30%; will-change:transform; color:#fff; }
-.r17 .hz .wm svg { display:block; height:min(58vh,60vw); width:auto; }
+.r17 .hz .wm svg { display:block; height:min(68vh,72vw); width:auto; }
+@media(max-width:860px){ .r17 .hz .wm svg { height:min(40vh,74vw); } }
 .r17 .hz-gold .wm { color:#F6F6F4; }
 .r17 .hz-gold .wm svg { opacity:.09; }
 .r17 .hz .wm .dot { display:inline-block; width:clamp(1.4rem,4vw,3.4rem); height:clamp(1.4rem,4vw,3.4rem); margin-left:clamp(.8rem,2vw,1.8rem); background:#fff; }
@@ -161,6 +162,7 @@ const CSS = `
 .r17 .stack { position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 var(--pad); max-width:100%; }
 .r17 .tags { display:flex; flex-direction:column; gap:.28rem; margin-bottom:1.1rem; }
 .r17 .tags span { font-size:.68rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 12px rgba(0,0,0,.7); }
+.r17 .tags .idx { font-size:.95rem; font-weight:700; letter-spacing:.3em; margin-bottom:.3rem; }
 .r17 .title {
   font-family:var(--fd); font-weight:800; text-transform:uppercase;
   font-size:clamp(2.7rem,9.2vw,9.2rem); line-height:.9; letter-spacing:-.02em;
@@ -523,7 +525,7 @@ export default function HomeR6Baby() {
       {/* 05 — CASE: ISA Energy */}
       <Slide>
         <div className="stack">
-          <div className="tags rv"><span>01 / 04</span><span>Energy · Film</span><span>A demo, a validation study, a brand film</span></div>
+          <div className="tags rv"><span className="idx">01 / 04</span><span>Energy · Film</span><span>A demo, a validation study, a brand film</span></div>
           <h2 className="title">
             <span className="row rv d1">ISA</span>
             <span className="row rv d2">Energy<i className="sq" /></span>
@@ -536,7 +538,7 @@ export default function HomeR6Baby() {
       {/* 06 — CASE: Space Rising */}
       <Slide>
         <div className="stack">
-          <div className="tags rv"><span>02 / 04</span><span>Tech · Platform</span><span>SpaceOS — built and launched</span></div>
+          <div className="tags rv"><span className="idx">02 / 04</span><span>Tech · Platform</span><span>SpaceOS — built and launched</span></div>
           <h2 className="title">
             <span className="row rv d1">Space</span>
             <span className="row rv d2">Rising<i className="sq" /></span>
@@ -549,7 +551,7 @@ export default function HomeR6Baby() {
       {/* 07 — CASE: Included Health */}
       <Slide>
         <div className="stack">
-          <div className="tags rv"><span>03 / 04</span><span>Healthcare · Film</span><span>A film series, screened nationwide</span></div>
+          <div className="tags rv"><span className="idx">03 / 04</span><span>Healthcare · Film</span><span>A film series, screened nationwide</span></div>
           <h2 className="title">
             <span className="row rv d1">Included</span>
             <span className="row rv d2">Health<i className="sq" /></span>
@@ -562,7 +564,7 @@ export default function HomeR6Baby() {
       {/* 08 — CASE: Ambition Mechanical */}
       <Slide>
         <div className="stack">
-          <div className="tags rv"><span>04 / 04</span><span>Trades · Web + Ads</span><span>The new site pulls its own weight</span></div>
+          <div className="tags rv"><span className="idx">04 / 04</span><span>Trades · Web + Ads</span><span>The new site pulls its own weight</span></div>
           <h2 className="title">
             <span className="row rv d1">Ambition</span>
             <span className="row rv d2">Mechanical<i className="sq" /></span>
