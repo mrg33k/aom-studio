@@ -36,6 +36,22 @@ function composeDesktopReview(raw) {
       after = c;
     });
   }
+  // WD40-R4: inject styles for the "Past decisions" section in the queue list.
+  // Section-header items get is-section; past-decision items get is-past.
+  // Approved badge = green tint; returned badge = amber tint. Both use the
+  // existing .qcount slot (the template already renders it with data-bind).
+  const style = doc.createElement('style');
+  style.textContent = [
+    '[data-cv6] .qitem.is-section{background:transparent!important;cursor:default;border-radius:0;padding:12px 14px 3px;}',
+    '[data-cv6] .qitem.is-section .qglyph{display:none;}',
+    '[data-cv6] .qitem.is-section .qcount{display:none;}',
+    '[data-cv6] .qitem.is-section .qmeta{display:none;}',
+    '[data-cv6] .qitem.is-section .qtitle{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}',
+    '[data-cv6] .qitem.is-past{opacity:.7;}',
+    '[data-cv6] .qcount.is-approved{background:rgba(52,211,153,.14);color:#34d399;font-size:10px;font-weight:700;letter-spacing:0;}',
+    '[data-cv6] .qcount.is-returned{background:rgba(251,191,36,.14);color:#fbbf24;font-size:10px;font-weight:700;letter-spacing:0;}',
+  ].join('');
+  screen.insertBefore(style, screen.firstChild);
   return screen.outerHTML;
 }
 
@@ -51,14 +67,21 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // Fall back to resolving that filename against the real queue, same as Catch-up.
   const targetName = target?.name
     || ((!injected?.length && target?.files?.length) ? (target.files.find((f) => f?.name)?.name || null) : null);
-  const { state, data, actions, scope, projectsRaw, missionTreeRaw, refreshTree } = useReview(worldId || 'aom', injected);
+  const { state, data, actions, scope, projectsRaw, missionTreeRaw, history, refreshTree } = useReview(worldId || 'aom', injected);
   const [pickedId, setPickedId] = useState(null);
   const { pins, addPin, deletePin } = usePins(pickedId, worldId || 'aom');
   // "Changes" overlay (R-ASSIGN part D): the bullet list of every comment with its
   // timecode, with Send-back-to-agent routing through the assign path.
   const [changesOpen, setChangesOpen] = useState(false);
   useEffect(() => { setChangesOpen(false); }, [pickedId]);
-  const pickedItem = useMemo(() => (data.queue.items || []).find((i) => i.id === pickedId) || null, [data.queue.items, pickedId]);
+  // WD40-R4: also search historyRows so clicking a past-decision row can re-open its viewer.
+  // historyRows is defined below, but we defer the combined search via a lazy ref populated in the historyRows memo.
+  const historyRowsRef = useRef([]);
+  const pickedItem = useMemo(() => {
+    return (data.queue.items || []).find((i) => i.id === pickedId)
+      || historyRowsRef.current.find((i) => i.id === pickedId)
+      || null;
+  }, [data.queue.items, pickedId]);
   // Everything the assign overlay needs to make the dispatch meaningful: the real
   // file name, the project it belongs to, and the full comment list as notes.
   // WD40-R3: assignExtra now accepts optional typed notes from the Changes overlay
@@ -172,17 +195,56 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     sel?.scrollIntoView({ block: 'nearest' });
   });
 
+  // WD40-R4: build history items to append below the queue list when a project is
+  // selected and has past decisions. Section header + one item per decision, oldest
+  // to newest so most-recent is closest to the live queue (scroll-natural order).
+  // Items use queueState:'past'+'section' for CSS class injection via data-mod.
+  const historyRows = useMemo(() => {
+    if (!history || !history.length) return [];
+    const header = {
+      id: '__section__history',
+      title: `Past decisions (${history.length})`,
+      type: 'section', typeLabel: '', typeGlyph: '',
+      who: '', whoInitials: '', whoTint: 'green',
+      count: '', countState: 'zero',
+      time: '', ts: '', location: '', missionLabel: '', missionRaw: '',
+      status: '', statusLabel: '',
+      queueState: 'section',
+      file: '', bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
+    };
+    const rows = history.map((h) => ({
+      id: h.deliverable_id || h.id,
+      title: h.title,
+      type: 'doc', typeLabel: '', typeGlyph: '',
+      who: h.project || '', whoInitials: (h.project || '').slice(0, 2).toUpperCase() || '·',
+      whoTint: 'green',
+      count: h.action === 'approve' ? '✓' : '↩',
+      countState: h.action === 'approve' ? 'approved' : 'returned',
+      time: '', ts: h.decided_at || '', location: h.project || '',
+      missionLabel: '', missionRaw: '',
+      status: '', statusLabel: '',
+      queueState: 'past',
+      file: '', bodyHtml: '', open: 'off', pins: [], comments: [], openCount: 0,
+    }));
+    const result = [header, ...rows];
+    historyRowsRef.current = result; // sync ref so pickedItem can find past-decision rows
+    return result;
+  }, [history]);
+
   const desktopData = {
     ...data,
     queue: {
       ...data.queue,
-      items: data.queue.items.map((i) => ({
-        ...i,
-        open: i.id === pickedId ? 'on' : 'off',
-        who: i.who || 'Unknown',
-        whoInitials: i.whoInitials || '·',
-        whoTint: i.whoTint || 'green',
-      })),
+      items: [
+        ...data.queue.items.map((i) => ({
+          ...i,
+          open: i.id === pickedId ? 'on' : 'off',
+          who: i.who || 'Unknown',
+          whoInitials: i.whoInitials || '·',
+          whoTint: i.whoTint || 'green',
+        })),
+        ...historyRows,
+      ],
     },
     // Use the hook's merged deliverable (it carries the fetched bodyHtml for the
     // open item). The old override re-derived from queue.items, whose bodyHtml is
@@ -233,6 +295,8 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     selectQueueNode: (id) => { actions.selectQueueNode(id); setPickedId(null); },
     setTypeFilter: (id) => { actions.setTypeFilter(id); setPickedId(null); },
     openDeliverable: (id) => {
+      // WD40-R4: section headers are not deliverables — clicking one is a no-op.
+      if (!id || String(id).startsWith('__section__')) return;
       setPickedId(id);
       actions.openDeliverable(id);
     },
@@ -258,7 +322,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   // j / ArrowDown = next · k / ArrowUp = prev · a = approve + auto-advance.
   kbNavRef.current = {
     pickedId,
-    items: desktopData.queue.items,
+    // WD40-R4: history items (is-section / is-past) are decoration — j/k/a navigates
+    // only through live queue items. Filter by queueState 'ready' (the only navigable state).
+    items: desktopData.queue.items.filter((i) => i.queueState === 'ready' || (!i.queueState && i.id && !String(i.id).startsWith('__section__'))),
     advance: (id) => { setPickedId(id); actions.openDeliverable(id); },
     approve: (id) => actions.approve(id),
     changesOpen,

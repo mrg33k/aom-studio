@@ -256,6 +256,25 @@ export function useReview(worldId = 'aom', injected = null) {
   const [projects, setProjects] = useState(null);
   const [missionTree, setMissionTree] = useState({});
 
+  // WD40-R4: past decisions for the selected project, shown in the queue panel as a
+  // dimmed "Past decisions (N)" section. Only fetched when a project is in scope —
+  // showing all-world history when browsing the full queue adds no value and noise.
+  const [history, setHistory] = useState([]);
+  useEffect(() => {
+    if (!projSel) { setHistory([]); return; }
+    let dead = false;
+    (async () => {
+      try {
+        const r = await authFetch(`/api/dashboard/review-history?world=${encodeURIComponent(worldId || 'aom')}&project=${encodeURIComponent(projSel)}&limit=30`, { credentials: 'include' });
+        if (!dead && r?.ok) {
+          const d = await r.json();
+          setHistory(Array.isArray(d.items) ? d.items : []);
+        }
+      } catch (e) { console.error('[Review history]', e); }
+    })();
+    return () => { dead = true; };
+  }, [projSel, worldId]);
+
   // treeReload bumps after a rename/move from the context menu; >0 also busts
   // the missions-tree lambda's 30s registry cache so the change shows now.
   const [treeReload, setTreeReload] = useState(0);
@@ -636,6 +655,7 @@ export function useReview(worldId = 'aom', injected = null) {
     scope: { project: activeProj, mission: activeMission },
     projectsRaw: projects || [],
     missionTreeRaw: missionTree,
+    history,       // WD40-R4: past decisions for the active project scope
     refreshTree: () => setTreeReload((k) => k + 1),
     actions: {
       openDeliverable: (id) => setOpenDelId(id),
