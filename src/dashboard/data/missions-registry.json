@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-02T02:51:16.580Z",
+  "generated_at": "2026-07-07T04:07:27.895Z",
   "missions": [
     {
       "slug": "corner:business-ops",
@@ -1346,6 +1346,20 @@
       "path": "corner/missions/review/missions/review-panel"
     },
     {
+      "slug": "corner:state-board",
+      "raw_slug": "state-board",
+      "folder_name": "state-board",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "corner",
+      "workstream": null,
+      "name": "State Board",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/missions/state-board"
+    },
+    {
       "slug": "corner:state-to-supabase",
       "raw_slug": "state-to-supabase",
       "folder_name": "state-to-supabase",
@@ -2676,6 +2690,20 @@
       "path": "corner/users/aom/projects/conrad-foundation/missions/mission-water"
     },
     {
+      "slug": "content-engine:pipeline-v1",
+      "raw_slug": "pipeline-v1",
+      "folder_name": "pipeline-v1",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "content-engine",
+      "workstream": null,
+      "name": "Pipeline V1",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/content-engine/missions/pipeline-v1"
+    },
+    {
       "slug": "higher-orbits:documentary-scope",
       "raw_slug": "documentary-scope",
       "folder_name": "documentary-scope",
@@ -2912,6 +2940,20 @@
       "is_done": false,
       "last_updated": null,
       "path": "corner/users/aom/projects/kohrs/missions/broll-indexing"
+    },
+    {
+      "slug": "kohrs:cg-kitchen",
+      "raw_slug": "cg-kitchen",
+      "folder_name": "cg-kitchen",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "kohrs",
+      "workstream": null,
+      "name": "Cg Kitchen",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/kohrs/missions/cg-kitchen"
     },
     {
       "slug": "kohrs:social-content-pipeline",
@@ -3292,6 +3334,20 @@
       "path": "corner/users/aom/projects/space-rising/missions/open-design-eval"
     },
     {
+      "slug": "space-rising:os-v3",
+      "raw_slug": "os-v3",
+      "folder_name": "os-v3",
+      "parent_raw_slug": null,
+      "depth": 0,
+      "project_slug": "space-rising",
+      "workstream": null,
+      "name": "Os V3",
+      "status": "in-progress",
+      "is_done": false,
+      "last_updated": null,
+      "path": "corner/users/aom/projects/space-rising/missions/os-v3"
+    },
+    {
       "slug": "space-rising:podcast-pipeline",
       "raw_slug": "podcast-pipeline",
       "folder_name": "podcast-pipeline",
@@ -3314,8 +3370,8 @@
       "project_slug": "space-rising",
       "workstream": "website",
       "name": "Reports Page",
-      "status": "NEW",
-      "is_done": false,
+      "status": "SHIPPED",
+      "is_done": true,
       "last_updated": null,
       "path": "corner/users/aom/projects/space-rising/missions/reports-page"
     },
@@ -3435,8 +3491,8 @@
   "project_rollup": [
     {
       "slug": "corner",
-      "total": 107,
-      "in_flight": 107,
+      "total": 108,
+      "in_flight": 108,
       "done": 0
     },
     {
@@ -3506,6 +3562,12 @@
       "done": 0
     },
     {
+      "slug": "content-engine",
+      "total": 1,
+      "in_flight": 1,
+      "done": 0
+    },
+    {
       "slug": "higher-orbits",
       "total": 2,
       "in_flight": 2,
@@ -3543,8 +3605,8 @@
     },
     {
       "slug": "kohrs",
-      "total": 3,
-      "in_flight": 3,
+      "total": 4,
+      "in_flight": 4,
       "done": 0
     },
     {
@@ -3567,9 +3629,9 @@
     },
     {
       "slug": "space-rising",
-      "total": 29,
+      "total": 30,
       "in_flight": 29,
-      "done": 0
+      "done": 1
     },
     {
       "slug": "sourcing",
