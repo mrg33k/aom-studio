@@ -164,7 +164,9 @@ function fileGlyph(kind) {
     : 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z M14 2v6h6';
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>;
 }
-export function FilesShelf({ items, onReview }) {
+// truncation (optional, WD40 FILE-CON R3): { shown, total, onLoadAll, loading } — when the
+// server capped huge folders, say so honestly ("Showing X of Y") and offer to load the rest.
+export function FilesShelf({ items, onReview, truncation }) {
   const [pill, setPill] = useState('all');
   const counts = useMemo(() => ({
     all: items.length, recent: Math.min(items.length, 12),
@@ -177,8 +179,19 @@ export function FilesShelf({ items, onReview }) {
   const CAP = 60; // a busy project has hundreds of files; render the newest CAP, note the rest.
   const shown = filtered.slice(0, CAP);
   const overflow = filtered.length - shown.length;
+  const trunc = truncation && truncation.total > truncation.shown ? truncation : null;
   return (
     <>
+      {trunc ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, padding: '8px 10px', borderRadius: 9, background: 'var(--surface-2)', border: '1px solid var(--hair)' }}>
+          <span className="mono" style={{ flex: 1, fontSize: 10.5, color: 'var(--muted)' }}>
+            Showing {trunc.shown.toLocaleString()} of {trunc.total.toLocaleString()} project files — some folders are very large.
+          </span>
+          <button onClick={() => trunc.onLoadAll?.()} disabled={!!trunc.loading} style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', background: 'var(--accent-weak)', border: 'none', padding: '5px 10px', borderRadius: 8, cursor: trunc.loading ? 'default' : 'pointer', opacity: trunc.loading ? 0.6 : 1, flex: 'none' }}>
+            {trunc.loading ? 'Loading…' : 'Load all'}
+          </button>
+        </div>
+      ) : null}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
         {FILE_PILLS.map((p) => {
           const on = pill === p.k; const n = counts[p.k];
@@ -620,10 +633,18 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
   // the chat. Agent rooms have no project library, so they keep the conversation's files+links.
   const libProjectSlug = selected?.isMission ? selected.projectSlug : (selected?.isProject ? selected.id : null);
   const [roomFiles, setRoomFiles] = useState([]);
+  // WD40 FILE-CON R3: the server caps huge folders (default 500/dir) and now says so via
+  // truncated_dirs. Track the hidden count for the honest banner; libFull refetches with a
+  // raised dir_limit when the user asks for everything.
+  const [libHidden, setLibHidden] = useState(0);
+  const [libFull, setLibFull] = useState(false);
+  const [libLoading, setLibLoading] = useState(false);
+  useEffect(() => { setLibFull(false); }, [libProjectSlug]);
   useEffect(() => {
-    if (!libProjectSlug) { setRoomFiles([]); return undefined; }
+    if (!libProjectSlug) { setRoomFiles([]); setLibHidden(0); return undefined; }
     let alive = true;
-    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(libProjectSlug)}`)
+    setLibLoading(true);
+    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(libProjectSlug)}${libFull ? '&dir_limit=10000' : ''}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!alive || !d) return;
@@ -631,10 +652,12 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         for (const f of (d.files || [])) flat.push(f);
         for (const m of (d.missions || [])) for (const f of (m.files || [])) flat.push(f);
         setRoomFiles(flat);
+        setLibHidden((d.truncated_dirs || []).reduce((n, s) => n + Math.max(0, (s.total || 0) - (s.shown || 0)), 0));
       })
-      .catch(() => { if (alive) setRoomFiles([]); });
+      .catch(() => { if (alive) { setRoomFiles([]); setLibHidden(0); } })
+      .finally(() => { if (alive) setLibLoading(false); });
     return () => { alive = false; };
-  }, [libProjectSlug]);
+  }, [libProjectSlug, libFull]);
   // Shelf = the room's library files (project/mission rooms) + links from the conversation;
   // agent rooms fall back to whatever files/links the conversation itself carries.
   const shelf = useMemo(() => {
@@ -783,7 +806,8 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   ))}
                 </div>
                 {drawerView === 'files' ? (
-                  <FilesShelf items={shelf} onReview={(it) => onReviewFile?.(it, reviewProject)} />
+                  <FilesShelf items={shelf} onReview={(it) => onReviewFile?.(it, reviewProject)}
+                    truncation={libHidden > 0 ? { shown: roomFiles.length, total: roomFiles.length + libHidden, loading: libLoading, onLoadAll: () => setLibFull(true) } : null} />
                 ) : (
                 <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}

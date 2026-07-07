@@ -81,7 +81,8 @@ const DELIVERABLE_DIRS = new Set([
 ]);
 
 const MAX_WALK_DEPTH = 3;       // bound recursion inside deliverable folders
-const MAX_FILES_PER_DIR = 500;  // safety: skip absurdly large auto-output dirs
+const MAX_FILES_PER_DIR = 500;  // default per-dir cap (overridable via ?dir_limit=)
+const MAX_DIR_LIMIT = 10000;    // hard ceiling for ?dir_limit=
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -103,17 +104,26 @@ function relPath(absPath) {
 
 // Walk a deliverable subfolder recursively up to MAX_WALK_DEPTH and push every
 // non-hidden file we find. Used for deliverables/, screenshots/, etc.
-function walkDeliverableDir(rootAbs, dirAbs, depth, dirRelInsideHome, files) {
+// WD40 FILE-CON R3 (2026-07-07): hidden entries are filtered BEFORE the per-dir
+// cap, and hitting the cap is never silent — a {dir, shown, total} entry lands
+// in `stats` so the response can carry truncated/truncated_dirs. `dirLimit`
+// (from ?dir_limit=, clamped) raises the cap on demand so callers can reach
+// the rest. Mirrors scripts/rag-server.py _r79f15_walk_subdir (the prod path).
+function walkDeliverableDir(rootAbs, dirAbs, depth, dirRelInsideHome, files, stats, dirLimit) {
   if (depth > MAX_WALK_DEPTH) return;
   let entries;
   try { entries = fs.readdirSync(dirAbs, { withFileTypes: true }); } catch { return; }
-  if (entries.length > MAX_FILES_PER_DIR) entries = entries.slice(0, MAX_FILES_PER_DIR);
+  entries = entries.filter((e) => !isHidden(e.name)).sort((a, b) => a.name.localeCompare(b.name));
+  const limit = dirLimit || MAX_FILES_PER_DIR;
+  if (entries.length > limit) {
+    if (stats) stats.push({ dir: dirRelInsideHome || '.', shown: limit, total: entries.length });
+    entries = entries.slice(0, limit);
+  }
   for (const ent of entries) {
-    if (isHidden(ent.name)) continue;
     const abs = path.join(dirAbs, ent.name);
     const subRel = dirRelInsideHome ? `${dirRelInsideHome}/${ent.name}` : ent.name;
     if (ent.isDirectory()) {
-      walkDeliverableDir(rootAbs, abs, depth + 1, subRel, files);
+      walkDeliverableDir(rootAbs, abs, depth + 1, subRel, files, stats, dirLimit);
       continue;
     }
     if (!ent.isFile()) continue;
@@ -130,7 +140,8 @@ function walkDeliverableDir(rootAbs, dirAbs, depth, dirRelInsideHome, files) {
 }
 
 // Collect files from a single directory (project or mission root).
-function collectFiles(dirAbsPath) {
+// stats/dirLimit: see walkDeliverableDir (WD40 FILE-CON R3).
+function collectFiles(dirAbsPath, stats, dirLimit) {
   const files = [];
 
   // 1. Canon + tape entries (in order; skip if the file does not exist).
@@ -200,14 +211,14 @@ function collectFiles(dirAbsPath) {
     if (ent.name === 'research') continue;
     if (ent.name === 'missions') continue;
     const subAbs = path.join(dirAbsPath, ent.name);
-    walkDeliverableDir(dirAbsPath, subAbs, 1, ent.name, files);
+    walkDeliverableDir(dirAbsPath, subAbs, 1, ent.name, files, stats, dirLimit);
   }
 
   return files;
 }
 
 // Collect missions for a project directory.
-function collectMissions(projectAbsPath) {
+function collectMissions(projectAbsPath, stats, dirLimit) {
   const missionsDir = path.join(projectAbsPath, 'missions');
   if (!fs.existsSync(missionsDir)) return [];
   let entries;
@@ -219,7 +230,9 @@ function collectMissions(projectAbsPath) {
     try {
       if (!fs.statSync(abs).isDirectory()) continue;
     } catch { continue; }
-    const files = collectFiles(abs);
+    const mStats = [];
+    const files = collectFiles(abs, mStats, dirLimit);
+    if (stats) for (const s of mStats) stats.push({ ...s, dir: `missions/${name}/${s.dir}` });
     missions.push({ slug: name, files });
   }
   missions.sort((a, b) => a.slug.localeCompare(b.slug));
@@ -268,6 +281,14 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'invalid slug' });
   }
 
+  // WD40 FILE-CON R3: optional per-dir cap override so callers can reach files
+  // past the default 500/dir cap. Clamped to a hard ceiling; invalid = ignored.
+  let dirLimit = null;
+  const rawLimit = String(req.query.dir_limit || '').trim();
+  if (rawLimit && /^\d+$/.test(rawLimit)) {
+    dirLimit = Math.max(1, Math.min(parseInt(rawLimit, 10), MAX_DIR_LIMIT));
+  }
+
   // Resolve world from DB.
   const world = await resolveProjectWorld(slug);
   if (!world) {
@@ -295,12 +316,15 @@ export default async function handler(req, res) {
   const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
   try {
-    const ragUrl = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`;
+    const ragUrl = `${RAG_TUNNEL_URL}/project-files-walk?slug=${encodeURIComponent(slug)}`
+      + (dirLimit ? `&dir_limit=${dirLimit}` : '');
     const ragRes = await fetch(ragUrl, { headers: { 'User-Agent': 'aom-vercel-proxy' } });
     if (ragRes.ok) {
       const body = await ragRes.json();
       // The rag-server payload doesn't include `world` (it's derived from the
       // tenant gate above). Stitch it in so consumers don't have to look it up.
+      // The rag-server also carries truncated/truncated_dirs (FILE-CON R3);
+      // the spread forwards them untouched.
       return res.status(200).json({ ...body, world });
     }
     // Fall through to local-disk fallback when tunnel is unreachable.
@@ -311,9 +335,13 @@ export default async function handler(req, res) {
   // Local-disk fallback (vercel dev, or rag tunnel down).
   const projectDir = path.join(AOM_EA_ROOT, 'corner', 'users', world, 'projects', slug);
   if (!fs.existsSync(projectDir)) {
-    return res.status(200).json({ project: slug, world, files: [], missions: [] });
+    return res.status(200).json({ project: slug, world, files: [], missions: [], truncated: false, truncated_dirs: [] });
   }
-  const files    = collectFiles(projectDir);
-  const missions = collectMissions(projectDir);
-  return res.status(200).json({ project: slug, world, files, missions });
+  const truncatedDirs = [];
+  const files    = collectFiles(projectDir, truncatedDirs, dirLimit);
+  const missions = collectMissions(projectDir, truncatedDirs, dirLimit);
+  return res.status(200).json({
+    project: slug, world, files, missions,
+    truncated: truncatedDirs.length > 0, truncated_dirs: truncatedDirs,
+  });
 }

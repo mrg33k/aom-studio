@@ -441,10 +441,17 @@ function CatchUpModal({ card, worldId, idx, total, onPrev, onNext, onClose, onGo
 function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
   const libProjectSlug = room?.isMission ? room.projectSlug : (room?.isProject ? room.id : null);
   const [roomFiles, setRoomFiles] = useState([]);
+  // WD40 FILE-CON R3: mirror ChatDesktop — honest truncation banner + on-demand full load
+  // when the server capped huge folders (truncated_dirs in the project-files response).
+  const [libHidden, setLibHidden] = useState(0);
+  const [libFull, setLibFull] = useState(false);
+  const [libLoading, setLibLoading] = useState(false);
+  useEffect(() => { setLibFull(false); }, [libProjectSlug]);
   useEffect(() => {
-    if (!libProjectSlug) { setRoomFiles([]); return undefined; }
+    if (!libProjectSlug) { setRoomFiles([]); setLibHidden(0); return undefined; }
     let alive = true;
-    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(libProjectSlug)}`)
+    setLibLoading(true);
+    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(libProjectSlug)}${libFull ? '&dir_limit=10000' : ''}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (!alive || !d) return;
@@ -452,10 +459,12 @@ function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
         for (const f of (d.files || [])) flat.push(f);
         for (const m of (d.missions || [])) for (const f of (m.files || [])) flat.push(f);
         setRoomFiles(flat);
+        setLibHidden((d.truncated_dirs || []).reduce((n, s) => n + Math.max(0, (s.total || 0) - (s.shown || 0)), 0));
       })
-      .catch(() => { if (alive) setRoomFiles([]); });
+      .catch(() => { if (alive) { setRoomFiles([]); setLibHidden(0); } })
+      .finally(() => { if (alive) setLibLoading(false); });
     return () => { alive = false; };
-  }, [libProjectSlug]);
+  }, [libProjectSlug, libFull]);
   // Shelf = the room's library files (project/mission rooms) + links from the conversation;
   // agent rooms fall back to whatever files/links the conversation itself carries. Mirrors the
   // full Chat tool's shelf build (ChatDesktop) so the two read identically.
@@ -485,7 +494,8 @@ function HomeFilesPanel({ host, room, messages, onClose, onReview }) {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '16px 18px 20px' }}>
-        <FilesShelf items={shelf} onReview={onReview} />
+        <FilesShelf items={shelf} onReview={onReview}
+          truncation={libHidden > 0 ? { shown: roomFiles.length, total: roomFiles.length + libHidden, loading: libLoading, onLoadAll: () => setLibFull(true) } : null} />
       </div>
     </div>,
     host,
