@@ -25,7 +25,7 @@ function Star({ size = 14 }) {
 
 function InboxRow({ it, open, onClick }) {
   return (
-    <div onClick={onClick} className={open ? 'ask is-open' : 'ask'} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: 14, borderRadius: 10, background: open ? 'var(--accent-weak)' : 'transparent', cursor: 'pointer', marginBottom: 2 }}>
+    <div onClick={open ? undefined : onClick} className={open ? 'ask is-open' : 'ask'} style={{ display: 'flex', alignItems: 'center', gap: 13, padding: 14, borderRadius: 10, background: open ? 'var(--accent-weak)' : 'transparent', cursor: open ? 'default' : 'pointer', marginBottom: 2 }}>
       <div className={`ava is-${it.avatarTint || 'violet'}`} style={{ width: 38, height: 38, fontSize: 12, flex: 'none' }}>{it.initials || '·'}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14.5, fontWeight: 600, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.subject}</div>
@@ -183,7 +183,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
             </div>
             <div style={{ display: 'flex', gap: 7 }}>
               {[['open', 'Open'], ['waiting', 'Waiting']].map(([k, label]) => (
-                <button key={k} onClick={() => { setTab(k); setPicked(null); }} style={{ height: 32, padding: '0 13px', borderRadius: 16, border: tab === k ? 'none' : '1px solid var(--hair)', background: tab === k ? 'var(--accent-weak)' : 'transparent', color: tab === k ? 'var(--accent)' : 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>{label}</button>
+                <button key={k} onClick={tab !== k ? () => { setTab(k); setPicked(null); } : undefined} aria-current={tab === k ? 'true' : undefined} style={{ height: 32, padding: '0 13px', borderRadius: 16, border: tab === k ? 'none' : '1px solid var(--hair)', background: tab === k ? 'var(--accent-weak)' : 'transparent', color: tab === k ? 'var(--accent)' : 'var(--muted)', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', cursor: tab === k ? 'default' : 'pointer' }}>{label}</button>
               ))}
             </div>
           </div>
@@ -268,14 +268,14 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                         const tail = cut >= 0 ? full.slice(cut).trim() : '';
                         return (
                           <>
-                            {head || full}
-                            {tail && !showEarlier && (
+                            {(tail && head) ? head : full}
+                            {(tail && head) && !showEarlier && (
                               <button onClick={() => setShowEarlier(true)} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 36, padding: '0 14px', marginTop: 16, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                                 <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--muted)' }}>Earlier in this thread</span>
                                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>Show</span>
                               </button>
                             )}
-                            {tail && showEarlier && <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--divider)', color: 'var(--muted)', fontSize: 13 }}>{tail}</div>}
+                            {(tail && head) && showEarlier && <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--divider)', color: 'var(--muted)', fontSize: 13 }}>{tail}</div>}
                           </>
                         );
                       })()}
@@ -292,7 +292,7 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                     <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--accent)', marginRight: 2 }}>Suggested</span>
                     {options.length === 0 && suggestState === 'loading' && <span style={{ fontSize: 12, color: 'var(--muted)' }}>drafting…</span>}
                     {options.length === 0 && (suggestState === 'error' || suggestState === 'ready') && <span style={{ fontSize: 12, color: 'var(--muted)' }}>No suggestions came back — write your reply below.</span>}
-                    {options.map((o, i) => (
+                    {options.filter(o => o.text).map((o, i) => (
                       <button key={i} onClick={() => setComposer(o.text)} style={chipStyle(i === 0)}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                         {o.label || 'Draft reply'}
