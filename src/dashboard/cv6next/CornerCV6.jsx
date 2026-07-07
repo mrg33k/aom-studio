@@ -1930,7 +1930,22 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
       openGoal: (id) => { setGoalEdit(false); setSelectedKey((cur) => (cur === String(id) ? '' : String(id))); },
       // State the room's goal yourself (wd40 R5): Edit toggles the input row; Save
       // writes a Patrik-stated goal (edit_goal) that no loop sweep can overwrite.
-      toggleGoalEdit: () => setGoalEdit((v) => !v),
+      // Steffen R5 D-1: on open, PRE-POPULATE with the current goal (full stored
+      // text, not the display cap) and focus — Edit edits, it doesn't make you retype.
+      toggleGoalEdit: (_arg, e) => {
+        const root = e?.currentTarget?.closest('[data-cv6]') || document;
+        const prefill = data?.goal?.editPrefill || '';
+        setGoalEdit((v) => {
+          const opening = !v;
+          if (opening) {
+            requestAnimationFrame(() => {
+              const inp = root.querySelector('[data-cv6-goaledit] input');
+              if (inp) { inp.value = prefill; inp.focus(); }
+            });
+          }
+          return opening;
+        });
+      },
       saveGoal: (id, e) => {
         const wrap = e?.currentTarget?.closest('[data-cv6-goaledit]');
         const inp = wrap?.querySelector('input');

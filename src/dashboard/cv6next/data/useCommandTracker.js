@@ -272,6 +272,11 @@ function shapeCommand({
     if (grStated) { realGoal = grGoal; goalSource = 'patrik'; }
     else if (boardGoal) { realGoal = boardGoal; goalSource = 'board'; }
     else if (grGoal) { realGoal = grGoal; goalSource = gr.source === 'canon' ? 'canon' : 'inferred'; }
+    // Full (un-ellipsized) winning goal — pre-fills the Edit input so "Edit"
+    // edits the real text instead of a 120-char display cap (Steffen R5 D-1).
+    const goalFull = realGoal
+      ? cleanCell(firstLine(grStated ? gr.goal : (boardGoal ? board.goal : gr.goal)))
+      : '';
 
     // LIVE NOW: the live session's task line, else the board's latest state line,
     // else the room's latest chat line. Honest dash when nothing is live.
@@ -292,7 +297,7 @@ function shapeCommand({
       stepStoreKey: storeKey,
       projectSlug: projSlugByKey[key] || '',
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
-      goalSource,
+      goalSource, goalFull,
       liveNow, age: lastActivity ? relTime(lastActivity) : '—', lastActivity,
       status, statusLabel: status.toUpperCase(),
       loop: loopOn ? 'on' : 'off',
@@ -325,6 +330,7 @@ function shapeCommand({
       stepStoreKey: 'agent:' + agent,
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
       goalSource: realGoal ? 'board' : '',
+      goalFull: realGoal ? cleanCell(firstLine((board && board.goal) || '')) : '',
       liveNow: cleanCell(firstLine(s.task_text)).slice(0, 110) || 'Active session',
       age: 'now', lastActivity: now,
       status: 'working', statusLabel: 'WORKING',
@@ -382,6 +388,7 @@ function shapeCommand({
   goal.sourceNote = focus ? (GOAL_SOURCE_NOTE[focus.goalSource] || '') : '';
   goal.editLabel = focus && focus.goalKind === 'goal' ? 'Edit' : 'Set goal';
   goal.editState = (editingGoal && goal.addKey) ? 'expanded' : 'collapsed';
+  goal.editPrefill = focus ? (focus.goalFull || '') : '';
   const doneCount = goal.checklist.filter((c) => c.state === 'done').length;
   goal.stepCount = goal.checklist.length ? `${doneCount}/${goal.checklist.length}` : '0';
   // The add row only shows when there is a real room to add to (no dead control while
