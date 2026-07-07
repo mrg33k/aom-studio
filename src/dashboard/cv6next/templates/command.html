@@ -72,7 +72,10 @@
           <button data-action="answerQuestion" data-arg="goal.id" title="Send this answer into the room and unblock it" style="height:36px;padding:0 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Answer</button>
         </div>
       </div>
-      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;"><span class="eyebrow" style="display:inline-flex;align-items:center;gap:7px;">Checklist · <span data-bind="goal.stepCount">4</span> steps</span><span class="stat" style="color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span data-bind="goal.queueNote">1 in master-loop queue</span></span></div>
+      <div style="flex:none;display:flex;align-items:center;margin-bottom:10px;"><span class="eyebrow" style="display:inline-flex;align-items:center;gap:7px;">Checklist · <span data-bind="goal.stepCount">4</span> steps</span></div>
+      <!-- Queue note on its OWN row (Steffen gate R1: inline on the header line it overlapped
+           the step count when the text wrapped). Free to wrap here without colliding. -->
+      <div class="stat" style="flex:none;max-width:100%;box-sizing:border-box;color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));margin-bottom:12px;"><svg style="flex:none;" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span data-bind="goal.queueNote">1 in master-loop queue</span></div>
       <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:14px;overflow-y:auto;flex:1;min-height:0;">
         <!-- ONE row per checklist step; is-:step.state → done | queued | active; the tag is the
              step's source (You / Agent / Proposed) or Done/Running. Empty = honest empty note.
