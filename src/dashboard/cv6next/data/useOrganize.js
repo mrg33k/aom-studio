@@ -146,14 +146,37 @@ function parseMarkdown(content) {
   }
   flushPara(); flushList();
 
-  return { title: title || 'Untitled', body: html.join('') };
+  // O2 (census): no 'Untitled' fallback here — the caller falls through to the real
+  // filename (`parsed.title || f.name`), so a JSON/data file titles as itself, never "Untitled".
+  return { title, body: html.join('') };
 }
 
-// Loading shimmer while a file's content lazy-loads (kinetic, on-brand — not bare text).
+// Structured-data files (json/yaml/csv/...) are code, not prose — render them monospace
+// on the paper instead of pushing them through the markdown parser (O2 census defect:
+// JSON previews titled "Untitled" and read as broken paragraphs).
+const DATA_EXT = /\.(json|jsonl|ndjson|yaml|yml|toml|csv|tsv|xml|ini|env|lock)$/i;
+function dataFilePreview(content) {
+  const text = String(content);
+  const shown = text.length > 20000 ? `${text.slice(0, 20000)}\n… (truncated)` : text;
+  return `<pre style="margin:0;font-family:var(--font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#2a2a2a;">${escapeHtml(shown)}</pre>`;
+}
+
+// Loading state while a file's content lazy-loads. Centered and sized to hold the pane,
+// readable on BOTH grounds (paper card and the dark media ground) — the census caught
+// the preview sitting black for seconds with no affordance (O2).
 const LOADING_HTML =
-  '<div style="display:flex;align-items:center;gap:9px;color:var(--muted,#888);">'
-  + '<svg class="aspin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
-  + '<span style="font-size:13px;">Loading file…</span></div>';
+  '<div style="display:flex;align-items:center;justify-content:center;gap:10px;min-height:180px;color:#9a9a9a;">'
+  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
+  + '<span style="font-size:13px;font-weight:500;">Loading file…</span></div>';
+
+// Media (video/image) still shows a black box after fetch while bytes stream off the
+// tunnel — put a spinner UNDER the media and let the element hide it when real pixels
+// arrive (onloadeddata / onload), mirroring the img onerror swap pattern.
+const MEDIA_WAIT_HTML =
+  '<div data-media-wait style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;color:#9a9a9a;pointer-events:none;">'
+  + '<svg class="aspin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.6"/></svg>'
+  + '<span style="font-size:13px;font-weight:500;">Loading media…</span></div>';
+const HIDE_WAIT = "var w=this.parentElement&&this.parentElement.querySelector('[data-media-wait]');if(w)w.style.display='none';";
 
 // Honest, VISUALLY MARKED placeholder for files whose bytes we don't mirror
 // (images, PDFs, sheets) — a tinted banner + kind glyph so it reads as intentional,
@@ -191,7 +214,10 @@ function imageBodyHtml(f, worldId) {
   if (!cornerPath) return nonTextPreview(f.name, 'image');
   const src = `${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}`;
   const fallback = nonTextPreview(f.name, 'image').replace(/"/g, '&quot;');
-  return `<img src="${src}" alt="${escapeHtml(f.name || 'Image')}" loading="lazy" onerror="this.outerHTML=this.dataset.fb" data-fb="${fallback}" style="max-width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--hair);background:var(--surface-2);" />`;
+  // Spinner sits under the image until real pixels arrive (O2: no more silent black pane).
+  return `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}`
+    + `<img src="${src}" alt="${escapeHtml(f.name || 'Image')}" loading="lazy" onload="${HIDE_WAIT}" onerror="${HIDE_WAIT}this.outerHTML=this.dataset.fb" data-fb="${fallback}" style="position:relative;max-width:100%;height:auto;display:block;border-radius:10px;border:1px solid var(--hair);" />`
+    + '</div>';
 }
 
 export function useOrganize(worldId = 'aom') {
@@ -316,8 +342,10 @@ export function useOrganize(worldId = 'aom') {
         // Stream from the tunnel (Range-capable) — a blob fetch through the Vercel
         // proxy would buffer the whole file and die on anything video-sized.
         const cornerPath = cornerPathOf(f, worldId);
+        // Spinner behind the player until first frame data arrives (O2: the bare black
+        // <video> box read as a dead pane for the 5-8s the tunnel takes to answer).
         bodyHtml = cornerPath
-          ? `<video src="${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}" controls preload="metadata" playsinline style="width:100%;max-height:68vh;display:block;border-radius:10px;background:#000;"></video>`
+          ? `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}" controls preload="metadata" playsinline onloadeddata="${HIDE_WAIT}this.style.background='#000';" onerror="${HIDE_WAIT}" style="position:relative;width:100%;max-height:68vh;display:block;border-radius:10px;background:transparent;"></video></div>`
           : nonTextPreview(f.name, 'video');
         title = f.name || 'Untitled';
       } else if (kind === 'audio') {
@@ -330,6 +358,10 @@ export function useOrganize(worldId = 'aom') {
       } else if (kind === 'image') {
         // Real image render, streaming off the tunnel (see imageBodyHtml).
         bodyHtml = imageBodyHtml(f, worldId);
+        title = f.name || 'Untitled';
+      } else if (f.content && DATA_EXT.test(f.name || '')) {
+        // Structured-data files: monospace verbatim, titled by their real filename (O2).
+        bodyHtml = dataFilePreview(f.content);
         title = f.name || 'Untitled';
       } else if (f.content) {
         const parsed = parseMarkdown(f.content);
