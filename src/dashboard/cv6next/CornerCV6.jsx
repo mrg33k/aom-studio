@@ -262,8 +262,25 @@ function groupChatMessages(list) {
 }
 
 function Cv6QuickThread({ target, messages, blocks, goal, onReview, onSend, awaiting, liveSteps, room }) {
-  if (!target) return null;
+  // FIX G: scroll-to-bottom on load and new messages; guard against yanking the user
+  // back when they've scrolled up (>100px from the bottom). Hooks must come before the
+  // early return so React's rules-of-hooks are satisfied.
+  const stickRef = useRef(true);
+  useEffect(() => {
+    if (!target) return;
+    const onScroll = () => {
+      stickRef.current = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
+    };
+    target.addEventListener('scroll', onScroll, { passive: true });
+    return () => target.removeEventListener('scroll', onScroll);
+  }, [target]);
   const list = Array.isArray(messages) ? messages : [];
+  useEffect(() => {
+    if (!target || !stickRef.current) return;
+    target.scrollTop = target.scrollHeight;
+  }, [list.length, target]);
+
+  if (!target) return null;
   const groups = groupChatMessages(list);
   // Live step loader: while the agent is actively working this turn, useRoomThread exposes
   // the in-flight goal-thread blocks (same source the full Chat tool reads). Show the loader
@@ -1417,10 +1434,11 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
   const selectedKey = (knavSelectedIdx >= 0 && knavSelectedIdx < navNodes.length) ? navNodes[knavSelectedIdx].key : null;
 
   // tag rows from the selected node's key
-  const recentWithNav = recentList.map((r) => ({ ...r, knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off' }));
+  // FIX B-mod: inject roomOpen so the template can add .is-open to the active rail row.
+  const recentWithNav = recentList.map((r) => ({ ...r, knavSel: selectedKey === `rec:${r.key}` ? 'sel' : 'off', roomOpen: knavOpenedKey === `rec:${r.key}` ? 'open' : 'off' }));
   recentWithNav.count = recentList.count != null ? recentList.count : recentWithNav.length;
   recentWithNav.has = recentWithNav.length ? 'has' : 'none';
-  const agentsWithNav = agentsList.map((a) => ({ ...a, knavSel: selectedKey === `a:${a.id}` ? 'sel' : 'off' }));
+  const agentsWithNav = agentsList.map((a) => ({ ...a, knavSel: selectedKey === `a:${a.id}` ? 'sel' : 'off', roomOpen: knavOpenedKey === `a:${a.id}` ? 'open' : 'off' }));
   const projectsWithNav = projShownNodes.map((pn) => ({
     ...pn.p,
     knavSel: selectedKey === `p:${pn.p.id}` ? 'sel' : 'off',
