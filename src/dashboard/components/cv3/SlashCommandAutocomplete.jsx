@@ -60,7 +60,7 @@ function scoreSkill(skill, q) {
 
 // surface = 'project' (project + mission chats) or '1on1' (agent direct chats).
 // Skills can declare a `scopes` array to restrict where they appear.
-export default function SlashCommandAutocomplete({ value, setValue, inputRef, caret, onModalCommand, surface = 'project' }) {
+export default function SlashCommandAutocomplete({ value, setValue, inputRef, caret, onModalCommand, surface = 'project', panelStyle }) {
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState(0)
   const listRef = useRef(null)
@@ -193,6 +193,9 @@ export default function SlashCommandAutocomplete({ value, setValue, inputRef, ca
         overflowY: 'auto',
         padding: 6,
         zIndex: 40,
+        // Host-surface override (CV6 passes its glass panel tokens) — the CV4/CV3
+        // look is untouched when the prop is absent.
+        ...(panelStyle || {}),
       }}
     >
       {matches.map((skill, idx) => {

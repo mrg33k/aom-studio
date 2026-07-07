@@ -83,7 +83,7 @@ function CommandsMenu({ open, setOpen, onOpenFiles, onOpenIntegrations }) {
         {isRecording ? I.stop : I.sparkles}
       </button>
       {open ? (
-        <div data-testid="cv6-commands-menu-popover" style={{ position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, minWidth: 252, background: 'var(--surface)', border: '1px solid var(--hair)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.55)', padding: 6, zIndex: 45, fontFamily: 'var(--font-sans)' }}>
+        <div data-testid="cv6-commands-menu-popover" style={{ position: 'absolute', bottom: 'calc(100% + 10px)', left: 0, minWidth: 252, background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)', padding: 6, zIndex: 45, fontFamily: 'var(--font-sans)' }}>
           {view === 'root' ? (
             <>
               <div className="eyebrow" style={{ padding: '7px 10px 6px' }}>Commands</div>
@@ -180,7 +180,8 @@ export default function Cv6InputBar({ onOpenFiles }) {
         <CommandsMenu open={commandsOpen} setOpen={setCommandsOpen} onOpenFiles={onOpenFiles} onOpenIntegrations={() => setIntegrationsOpen(true)} />
         <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
           <SlashCommandAutocomplete value={input} setValue={setInput} inputRef={inputRef} caret={caret}
-            onModalCommand={(name) => { if (name === '/integrations') setIntegrationsOpen(true); }} surface="1on1" />
+            onModalCommand={(name) => { if (name === '/integrations') setIntegrationsOpen(true); }} surface="1on1"
+            panelStyle={{ background: 'rgba(13,17,23,.92)', backdropFilter: 'blur(16px) saturate(1.2)', WebkitBackdropFilter: 'blur(16px) saturate(1.2)', border: '1px solid rgba(255,255,255,.14)', borderRadius: 14, boxShadow: '0 18px 44px -12px rgba(0,0,0,.65)' }} />
           <div style={{ display: 'flex', alignItems: 'center', height: 42, borderRadius: 12, background: 'var(--surface-2)', border: `1px solid ${selectedImageTool ? 'var(--accent)' : chatInputFocused ? 'var(--accent)' : 'var(--hair)'}`, boxShadow: chatInputFocused ? '0 0 0 3px var(--accent-weak)' : 'none', transition: 'border-color .2s, box-shadow .2s', padding: '0 2px 0 14px' }}>
             <input
               ref={inputRef}
