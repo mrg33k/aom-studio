@@ -25,14 +25,17 @@ import { authFetch } from '../lib/authFetch';
  *   - Fetches real agents from the live data stream (via useDataPipe or local agents list if provided).
  *   - Shows each agent as { slug, title: titleForAgent(slug), status }.
  *   - On click, shows a CONFIRM step, then REAL dispatch:
- *       1. POST /api/dashboard/agent-status  { agent, text, status:'todo', client_id, project }
- *          -> a real tasks-table row on the agent's list (persisted assignment state).
- *       2. POST /api/dashboard/supabase-messages { agent, text, role:'user', source }
- *          -> the ask lands in the agent's room thread, where the bridge picks it up.
+ *       POST /api/dashboard/supabase-messages { agent, text, role:'user', source }
+ *       -> the ask lands in the agent's room thread (the same write path the chat
+ *          composer uses); the bridge picks it up and the agent works it. Persisted
+ *          forever in the messages table. Per-surface state (e.g. a bug's owner)
+ *          persists through the onAssigned hook.
  *     (Was HELD-C until 2026-07-06: it logged to console and simulated success; and the
  *     agent list came from /active-agents, whose backing table active_processes does not
  *     exist -- the picker was empty everywhere. Now the roster loads from the same
- *     supabase-status source Home's agent rooms use.)
+ *     supabase-status source Home's agent rooms use. A tasks-table write was probed and
+ *     rejected: the live tasks_status_check forbids 'todo', and repo-less 'queued' rows
+ *     get auto-failed by task-runner.sh -- the room message IS the real dispatch path.)
  *
  * Picker UI:
  *   - Bottom sheet on mobile (390px).
@@ -409,7 +412,7 @@ function ConfirmDialog({
               lineHeight: 1.5,
             }}
           >
-            This adds it to {titleForAgent(agent)}&rsquo;s task list and drops the ask in their room,
+            This drops the ask in {titleForAgent(agent)}&rsquo;s room with the full context,
             so they pick it up from there.
           </div>
 
@@ -514,7 +517,7 @@ function ConfirmDialog({
             lineHeight: 1.5,
           }}
         >
-          This adds it to {titleForAgent(agent)}&rsquo;s task list and drops the ask in their room,
+          This drops the ask in {titleForAgent(agent)}&rsquo;s room with the full context,
           so they pick it up from there.
         </div>
 
@@ -654,21 +657,9 @@ export function AssignButton({
     ].filter(Boolean).join('\n');
 
     try {
-      // 1) Persist the assignment as a real tasks-table row on the agent's list.
-      const taskResp = await authFetch('/api/dashboard/agent-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agent: slug,
-          text: body,
-          project: projectSlug || null,
-          status: 'todo',
-          client_id: world,
-        }),
-      });
-
-      // 2) Drop the ask in the agent's room thread (the same write path the chat
-      // composer uses), so the assignment reaches a live agent, not just a table.
+      // Drop the ask in the agent's room thread — the same write path the chat
+      // composer uses. The bridge picks it up, the agent works it, and the row is
+      // the platform's eternal record of the assignment.
       const msgResp = await authFetch('/api/dashboard/supabase-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -678,24 +669,27 @@ export function AssignButton({
           role: 'user',
           source: 'corner-dashboard',
           client_id: world,
+          metadata: {
+            assign: { type: artifactType, id: artifactId, project: projectSlug || null },
+          },
         }),
       });
 
-      if (!taskResp?.ok && !msgResp?.ok) {
-        throw new Error(`assign dispatch failed (task ${taskResp?.status || '?'} / message ${msgResp?.status || '?'})`);
+      if (!msgResp?.ok) {
+        throw new Error(`assign dispatch failed (message ${msgResp?.status || '?'})`);
       }
 
-      // 3) Per-surface persistence (e.g. Tracker stamps the bug's assignee).
+      // Per-surface persistence (e.g. Tracker stamps the bug's assignee).
       if (typeof onAssigned === 'function') {
         try { await onAssigned(selectedAgent); } catch (e) { console.error('[AssignButton] onAssigned hook failed:', e); }
       }
 
-      let task = null;
-      try { task = (await taskResp.json())?.task || null; } catch { /* non-JSON */ }
-      onSuccess(task || {
-        id: `task-${Date.now()}`,
+      let msg = null;
+      try { msg = (await msgResp.json())?.message || null; } catch { /* non-JSON */ }
+      onSuccess({
+        id: msg?.id || `assign-${Date.now()}`,
         title: `Assign: ${label}`,
-        status: 'todo',
+        status: 'sent',
         agent: slug,
       });
 
