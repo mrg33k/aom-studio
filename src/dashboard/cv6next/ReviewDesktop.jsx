@@ -61,18 +61,24 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
   const pickedItem = useMemo(() => (data.queue.items || []).find((i) => i.id === pickedId) || null, [data.queue.items, pickedId]);
   // Everything the assign overlay needs to make the dispatch meaningful: the real
   // file name, the project it belongs to, and the full comment list as notes.
-  const assignExtra = useCallback(() => ({
+  // WD40-R3: assignExtra now accepts optional typed notes from the Changes overlay
+  // textarea so both pins and typed text travel through the same dispatch path.
+  const assignExtra = useCallback((extraNotes = '') => ({
     artifactTitle: pickedItem?.title || String(pickedId || '').split('/').pop() || '',
     project: pickedItem?.whoRaw || '',
-    details: pins.length ? `Requested changes:\n${compileChanges(pins)}` : '',
+    details: (() => {
+      const compiled = compileChanges(pins, extraNotes);
+      return compiled ? `Requested changes:\n${compiled}` : '';
+    })(),
   }), [pickedItem, pickedId, pins]);
-  const sendBackToAgent = useCallback(() => {
-    const compiled = compileChanges(pins);
+  // WD40-R3: sendBackToAgent receives the typed notes string from the overlay textarea.
+  const sendBackToAgent = useCallback((extraNotes = '') => {
+    const compiled = compileChanges(pins, extraNotes);
     // Record the decision on the deliverable (real write since R-ASSIGN fixed the
     // endpoint's schema), then open the agent picker with the list attached.
     if (pickedId && compiled) actions.requestChanges(pickedId, compiled);
     setChangesOpen(false);
-    onAssignDeliverable?.(pickedId, assignExtra());
+    onAssignDeliverable?.(pickedId, assignExtra(extraNotes));
   }, [pins, pickedId, actions, onAssignDeliverable, assignExtra]);
 
   // Pin-comment interaction: a delegated click listener on the stable wrapper (survives
@@ -241,13 +247,9 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
-    // With pinned comments the Changes overlay IS the request: every note with its
-    // timecode, and Send-back-to-agent. Without comments, fall back to the prompt.
-    requestChanges: (id) => {
-      if (pins.length) { setChangesOpen(true); return; }
-      const notes = prompt('What changes are needed?');
-      if (notes) actions.requestChanges(id, notes);
-    },
+    // WD40-R3: always open the Changes overlay — the prompt() fallback is gone.
+    // The overlay has a textarea for typed notes so feedback flows without pins.
+    requestChanges: () => { setChangesOpen(true); },
     sendChecklist: (id) => actions.sendChecklist(id),
     assignAgent: (id) => onAssignDeliverable?.(id, assignExtra()),
   };

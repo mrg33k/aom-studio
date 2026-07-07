@@ -214,13 +214,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
     openPin: (id) => openPinById(id),
     openComments: () => { /* stub */ },
     approve: (id) => actions.approve(id),
-    // With pinned comments the Changes overlay IS the request: every note with its
-    // timecode, and Send-back-to-agent. Without comments, fall back to the prompt.
-    requestChanges: (id) => {
-      if (pins.length) { setChangesOpen(true); return; }
-      const notes = prompt('What changes are needed?');
-      if (notes) actions.requestChanges(id, notes);
-    },
+    // WD40-R3: always open the Changes overlay — the prompt() fallback is gone.
+    // The overlay has a textarea for typed notes so feedback flows without pins.
+    requestChanges: () => { setChangesOpen(true); },
     sendChecklist: (id) => actions.sendChecklist(id),
     assignAgent: (id) => onAssignDeliverable?.(id, assignExtra(pins)),
   };
@@ -233,8 +229,9 @@ export default function Review({ worldId, onNav, onOpenNav, onAssignDeliverable,
         <ReviewChangesOverlay
           pins={pins}
           title={picked?.title || ''}
-          onSendBack={() => {
-            const compiled = compileChanges(pins);
+          onSendBack={(extraNotes = '') => {
+            // WD40-R3: merge pin comments + typed notes into one dispatch message.
+            const compiled = compileChanges(pins, extraNotes);
             if (pickedId && compiled) actions.requestChanges(pickedId, compiled);
             setChangesOpen(false);
             onAssignDeliverable?.(pickedId, assignExtra(pins));
