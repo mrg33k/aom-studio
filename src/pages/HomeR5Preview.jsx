@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import LazyGumlet from '../components/home/LazyGumlet';
 import BrandMark from '../components/home/BrandMark';
 
-// Mounted at /r5 for review; promote to / when approved. Mission: aheadofmarket.com:home (R17).
+// Mounted at /r5 for review; promote to / when approved. Mission: aheadofmarket.com:home (R18).
 // "The reel" — Patrik's Glitch&Grit-structure rebuild (target: glitchandgrit.com): the whole
-// homepage is a full-viewport, scroll-snapped case reel. Split-screen media halves per slide,
-// giant compressed uppercase display type overlapping both halves, tiny service tags above,
-// a stat/link line below, fixed corner chrome. Rendered unmistakably AOM: obsidian/ivory with
-// champagne-gold as the only accent, gold square period bonded to every headline, the corner
-// chrome spells AHEAD / OF / MARKET, and every media panel is a frame of our real client work.
-// R15's cinematic-glass page is frozen at /versions/cinematic-glass. Copy is Patrik's
-// narrative from R15, verbatim — the copy IS the story.
+// homepage is a full-viewport, scroll-snapped case reel. R18 adds the target's signature
+// counter-scroll: the media halves live in a fixed backdrop of two columns, the left column
+// translating up with scroll while the right column (stacked in reverse) translates down, so
+// each slide's pair sweeps in from opposite directions and still lands paired at every snap
+// point. Slides carry only the type; slides without media read as the sides sweeping to black.
+// Rendered unmistakably AOM: obsidian/ivory with champagne-gold as the only accent, gold square
+// period bonded to every headline, corner chrome spells AHEAD / OF / MARKET, every media panel
+// is a frame of our real client work. R15 is frozen at /versions/cinematic-glass. Copy is
+// Patrik's narrative from R15, verbatim — the copy IS the story.
 
 const PORTFOLIO = [
   { t: 'Lagos White Party', id: '698a596eaec3d4e420c22a9a', tag: 'Event' },
@@ -27,6 +29,9 @@ const HERO_REEL = '698a6296fc23d3d76fa8d992'; // Journey to Gary Vee — stronge
 const FILM_REEL = '698a5ef5fc23d3d76fa87ef4'; // Virtu Hospitality
 const BILL_REEL = '698a5fcdfc23d3d76fa893b8'; // United Food Bank — under the billboard line
 const PALA_REEL = '698a5391fc23d3d76fa7306c'; // PA'LA x HARUMI
+const NOOK_REEL = '698a5a8b873071aec5c99c6f'; // Nook 10 Year — clean frame for small screens
+
+const N_SLIDES = 14;
 
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
 const poster = (id, w = 1200) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
@@ -67,26 +72,32 @@ const CSS = `
 .r17 .chrome .brand { color:var(--paper); }
 .r17 .chrome .brand .sq { width:.5em; height:.5em; margin-left:.45em; vertical-align:baseline; }
 
-/* ─── slide anatomy ─── */
-.r17 .slide {
-  position:relative; height:100svh; scroll-snap-align:start; scroll-snap-stop:always;
-  overflow:hidden; background:var(--ink);
-  display:flex; align-items:center; justify-content:center;
+/* ─── counter-scroll backdrop: two clipped windows, each holding a column of
+   viewport-height panels. Left column rides up with scroll; right column is
+   stacked in REVERSE and rides down, so pairs still meet at every snap. ─── */
+.r17 .bk { position:fixed; inset:0; z-index:0; pointer-events:none; }
+.r17 .bk-win { position:absolute; overflow:hidden; }
+.r17 .bk-win.l { left:0; top:0; width:50%; height:100%; }
+.r17 .bk-win.r { right:0; top:0; width:50%; height:100%; }
+.r17 .bk-col { position:absolute; left:0; top:0; width:100%; will-change:transform; }
+.r17 .bk-col.r { transform:translateY(calc(-13 * 100svh)); }
+.r17 .bk-panel { position:relative; width:100%; height:100svh; overflow:hidden; background:var(--ink); }
+.r17 .bk-panel::after { content:''; position:absolute; inset:0; background:rgba(4,4,4,.44); z-index:2; }
+.r17 .bk-panel > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+@media(max-width:860px){
+  .r17 .bk-win.l { width:100%; height:50%; }
+  .r17 .bk-win.r { left:0; right:auto; top:50%; width:100%; height:50%; }
+  .r17 .bk-col.r { transform:translateY(calc(-13 * 50svh)); }
+  .r17 .bk-panel { height:50svh; }
 }
-.r17 .halves { position:absolute; inset:0; display:flex; }
-.r17 .half { position:relative; width:50%; height:100%; overflow:hidden; background:var(--ink-2); }
-.r17 .half::after { content:''; position:absolute; inset:0; background:rgba(4,4,4,.44); z-index:2; }
-.r17 .half > img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transform:scale(1.09); transition:transform 1.8s cubic-bezier(.16,1,.3,1); }
-.r17 .slide.in .half > img { transform:scale(1); }
-@media(max-width:860px){ .r17 .halves { flex-direction:column; } .r17 .half { width:100%; height:50%; } }
 
 /* hero live reels: poster paints first, iframe loads over it; poster-only on
    small screens (Gumlet chrome shows at half-height) */
-.r17 .half .pstr { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
-.r17 .half .vid { position:absolute; inset:0; z-index:1; }
-@media(max-width:860px){ .r17 .half .vid { display:none; } }
+.r17 .bk-panel .pstr { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.r17 .bk-panel .vid { position:absolute; inset:0; z-index:1; }
+@media(max-width:860px){ .r17 .bk-panel .vid { display:none; } }
 
-/* ghost-type texture panel (solid half, outlined repeating line) */
+/* ghost-type texture panel (solid panel, outlined repeating line) */
 .r17 .ghostpanel { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; gap:.4em; overflow:hidden; }
 .r17 .ghostpanel span {
   font-family:var(--fd); font-weight:800; text-transform:uppercase; white-space:nowrap;
@@ -96,6 +107,13 @@ const CSS = `
 .r17 .ghostpanel span:nth-child(odd) { transform:translateX(-4%); }
 .r17 .ghostpanel span:nth-child(even) { transform:translateX(4%); }
 .r17 .ghostpanel span.solid { color:rgba(196,164,106,.5); -webkit-text-stroke:0; }
+
+/* ─── slides: type only, transparent over the backdrop ─── */
+.r17 .slide {
+  position:relative; height:100svh; scroll-snap-align:start; scroll-snap-stop:always;
+  overflow:hidden; background:transparent; z-index:1;
+  display:flex; align-items:center; justify-content:center;
+}
 
 /* center stack */
 .r17 .stack { position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 var(--pad); max-width:100%; }
@@ -186,7 +204,7 @@ const CSS = `
 
 @media (prefers-reduced-motion: reduce) {
   .r17 { scroll-behavior:auto; }
-  .r17 .rv, .r17 .half > img, .r17 .strike i, .r17 .tile img { transition:none !important; transform:none !important; opacity:1 !important; }
+  .r17 .rv, .r17 .strike i, .r17 .tile img { transition:none !important; transform:none !important; opacity:1 !important; }
 }
 `;
 
@@ -224,17 +242,81 @@ function Slide({ id, className = '', first = false, children }) {
   );
 }
 
+// One media panel per slide per side; null = black (the side sweeps to dark).
+const LEFT_PANELS = [
+  <>
+    <div className="vid"><LazyGumlet id={HERO_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
+    <img className="pstr" src={poster(HERO_REEL)} alt="" />
+  </>,
+  <img src={poster(PALA_REEL)} alt="" loading="lazy" />,
+  <img src="/hero-sites/ambition.jpg" alt="" loading="lazy" />,
+  null,
+  null,
+  <GhostPanel text="Three films" />,
+  <img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" />,
+  <GhostPanel text="Top-5 insurer" />,
+  <img src="/hero-sites/ambition.jpg" alt="" loading="lazy" />,
+  null,
+  <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
+  null,
+  null,
+  null,
+];
+
+const RIGHT_PANELS = [
+  <>
+    <div className="vid"><LazyGumlet id={FILM_REEL} eager filter="none" bleed={1.14} offsetY={-28} poster="transparent" /></div>
+    {/* Virtu's first frame is its title card — use the Nook frame as the small-screen poster */}
+    <img className="pstr" src={poster(NOOK_REEL)} alt="" />
+  </>,
+  <img src={poster(BILL_REEL)} alt="" loading="lazy" />,
+  <img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" />,
+  null,
+  null,
+  <GhostPanel text="Investor ready" solidRow={2} />,
+  <GhostPanel text="1,000 in a room" />,
+  <GhostPanel text="Inspire Summit" solidRow={2} />,
+  <GhostPanel text="4 leads / mo" />,
+  null,
+  <img src={poster(HERO_REEL)} alt="" loading="lazy" />,
+  null,
+  null,
+  null,
+];
+
 // ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function HomeR5Preview() {
   const [video, setVideo] = useState(null);
   const close = useCallback(() => setVideo(null), []);
+  const boxRef = useRef(null);
+  const colL = useRef(null);
+  const colR = useRef(null);
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') close(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [close]);
+
+  // The counter-scroll: direct transform writes on scroll (no React state).
+  // Panel height equals the clip window height (100svh desktop, 50svh mobile),
+  // while the snap step is always the container height.
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box || !colL.current || !colR.current) return;
+    const apply = () => {
+      const H = box.clientHeight;
+      const ph = colL.current.parentElement.clientHeight;
+      const p = H ? box.scrollTop / H : 0;
+      colL.current.style.transform = `translate3d(0, ${-p * ph}px, 0)`;
+      colR.current.style.transform = `translate3d(0, ${(p - (N_SLIDES - 1)) * ph}px, 0)`;
+    };
+    apply();
+    box.addEventListener('scroll', apply, { passive: true });
+    window.addEventListener('resize', apply);
+    return () => { box.removeEventListener('scroll', apply); window.removeEventListener('resize', apply); };
+  }, []);
 
   // Deep links (#story/#work/#contact): the reel mounts after the browser's
   // native anchor pass, so jump to the hash target ourselves. Instant, not
@@ -245,15 +327,29 @@ export default function HomeR5Preview() {
     if (!h) return;
     const t = setTimeout(() => {
       const el = document.getElementById(h);
-      const box = el?.closest('.r17');
+      const box = boxRef.current;
       if (el && box) box.scrollTo({ top: el.offsetTop, behavior: 'instant' });
     }, 80);
     return () => clearTimeout(t);
   }, []);
 
   return (
-    <div className="r17">
+    <div className="r17" ref={boxRef}>
       <style>{CSS}</style>
+
+      {/* counter-scroll backdrop: right column stacked in reverse, rides down */}
+      <div className="bk" aria-hidden="true">
+        <div className="bk-win l">
+          <div className="bk-col l" ref={colL}>
+            {LEFT_PANELS.map((p, i) => <div key={i} className="bk-panel">{p}</div>)}
+          </div>
+        </div>
+        <div className="bk-win r">
+          <div className="bk-col r" ref={colR}>
+            {[...RIGHT_PANELS].reverse().map((p, i) => <div key={i} className="bk-panel">{p}</div>)}
+          </div>
+        </div>
+      </div>
 
       {/* fixed corner chrome */}
       <div className="chrome top">
@@ -269,17 +365,6 @@ export default function HomeR5Preview() {
 
       {/* 00 — HERO: two live reels, the claim */}
       <Slide first>
-        <div className="halves">
-          <div className="half">
-            <div className="vid"><LazyGumlet id={HERO_REEL} eager filter="none" bleed={1.14} offsetY={-28} /></div>
-            <img className="pstr" src={poster(HERO_REEL)} alt="" />
-          </div>
-          <div className="half">
-            <div className="vid"><LazyGumlet id={FILM_REEL} eager filter="none" bleed={1.14} offsetY={-28} /></div>
-            {/* Virtu's first frame is its title card — use the Nook frame as the small-screen poster */}
-            <img className="pstr" src={poster('698a5a8b873071aec5c99c6f')} alt="" />
-          </div>
-        </div>
         <div className="stack">
           <div className="tags rv">
             <span>Story &amp; Film</span>
@@ -299,10 +384,6 @@ export default function HomeR5Preview() {
 
       {/* 01 — STORY BEAT: the video company */}
       <Slide id="story">
-        <div className="halves">
-          <div className="half"><img src={poster(PALA_REEL)} alt="" loading="lazy" /></div>
-          <div className="half"><img src={poster(BILL_REEL)} alt="" loading="lazy" /></div>
-        </div>
         <div className="stack">
           <div className="tags rv"><span>So — who are we, exactly?</span><span>Many companies around Phoenix know us as</span></div>
           <h2 className="title">
@@ -315,10 +396,6 @@ export default function HomeR5Preview() {
 
       {/* 02 — STORY BEAT: the web company */}
       <Slide>
-        <div className="halves">
-          <div className="half"><img src="/hero-sites/ambition.jpg" alt="" loading="lazy" /></div>
-          <div className="half"><img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" /></div>
-        </div>
         <div className="stack">
           <div className="tags rv"><span>Others know us as</span></div>
           <h2 className="title">
@@ -356,10 +433,6 @@ export default function HomeR5Preview() {
 
       {/* 05 — CASE: ISA Energy */}
       <Slide>
-        <div className="halves">
-          <div className="half"><GhostPanel text="Three films" /></div>
-          <div className="half"><GhostPanel text="Investor ready" solidRow={2} /></div>
-        </div>
         <div className="stack">
           <div className="tags rv"><span>Energy · Film</span><span>A demo, a validation study, a brand film</span></div>
           <h2 className="title">
@@ -373,10 +446,6 @@ export default function HomeR5Preview() {
 
       {/* 06 — CASE: Space Rising */}
       <Slide>
-        <div className="halves">
-          <div className="half"><img src="/hero-sites/space-rising.jpg" alt="" loading="lazy" /></div>
-          <div className="half"><GhostPanel text="1,000 in a room" /></div>
-        </div>
         <div className="stack">
           <div className="tags rv"><span>Tech · Platform</span><span>SpaceOS — built and launched</span></div>
           <h2 className="title">
@@ -390,10 +459,6 @@ export default function HomeR5Preview() {
 
       {/* 07 — CASE: Included Health */}
       <Slide>
-        <div className="halves">
-          <div className="half"><GhostPanel text="Top-5 insurer" /></div>
-          <div className="half"><GhostPanel text="Inspire Summit" solidRow={2} /></div>
-        </div>
         <div className="stack">
           <div className="tags rv"><span>Healthcare · Film</span><span>A film series, screened nationwide</span></div>
           <h2 className="title">
@@ -407,10 +472,6 @@ export default function HomeR5Preview() {
 
       {/* 08 — CASE: Ambition Mechanical */}
       <Slide>
-        <div className="halves">
-          <div className="half"><img src="/hero-sites/ambition.jpg" alt="" loading="lazy" /></div>
-          <div className="half"><GhostPanel text="4 leads / mo" /></div>
-        </div>
         <div className="stack">
           <div className="tags rv"><span>Trades · Web + Ads</span><span>The new site pulls its own weight</span></div>
           <h2 className="title">
@@ -424,9 +485,6 @@ export default function HomeR5Preview() {
 
       {/* 09 — TWO PARTS */}
       <Slide className="slide-parts">
-        <div className="halves">
-          <div className="half" /><div className="half" />
-        </div>
         <div className="parts-col l rv">
           <div className="parts-head">Marketing — the materials your message stands on</div>
           <ul className="parts-list">
@@ -456,10 +514,6 @@ export default function HomeR5Preview() {
 
       {/* 10 — THE BILLBOARD TEST */}
       <Slide>
-        <div className="halves">
-          <div className="half"><img src={poster(BILL_REEL)} alt="" loading="lazy" /></div>
-          <div className="half"><img src={poster(HERO_REEL)} alt="" loading="lazy" /></div>
-        </div>
         <div className="stack">
           <div className="tags rv"><span>The billboard test</span></div>
           <h2 className="title">
