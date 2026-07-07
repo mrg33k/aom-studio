@@ -7,6 +7,7 @@ import { marked } from 'marked';
 import { authFetch } from '../../lib/authFetch';
 import { supabase } from '../../lib/supabase';
 import { titleForAgent } from './agentTitles';
+import { mediaAttrs } from './mediaFallback';
 
 marked.setOptions({ gfm: true, breaks: false });
 
@@ -75,7 +76,7 @@ async function buildDeliverableBody(item) {
       // Streams off the tunnel like video — the blob-through-proxy path 404'd
       // assets/ files and dies on big screenshots (lambda response cap).
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;
-      return `<img src="${src}" alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
+      return `<img src="${src}" ${mediaAttrs(src, 'image')} alt="${escapeHtml(item.title)}" style="max-width:100%;height:auto;display:block;border-radius:10px;" />`;
     }
     if (type === 'video') {
       // Corner-path videos stream straight off the rag tunnel (Range-capable, CORS *).
@@ -89,7 +90,7 @@ async function buildDeliverableBody(item) {
       // native controls) below the fold. Read as "videos never load." 52vh (not
       // 62) so video + caption + title + 46px bar ALSO fit the mobile read window
       // (~100dvh-250px) without scrolling; margin:auto centers the portrait.
-      return `<video src="${src}" preload="metadata" playsinline style="max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video>`;
+      return `<video src="${src}" ${mediaAttrs(src, 'video')} preload="metadata" playsinline style="max-width:100%;max-height:min(52vh,860px);width:auto;margin:0 auto;border-radius:10px;display:block;background:#000;"></video>`;
     }
     if (type === 'siteshot') {
       const src = isAbs ? path : `https://rag.aheadofmarket.com/project-file-raw?path=${enc}`;

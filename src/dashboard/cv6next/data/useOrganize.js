@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { authFetch } from '../../lib/authFetch';
+import { mediaAttrs } from './mediaFallback';
 
 const TINTS = ['violet', 'accent', 'pink', 'success'];
 
@@ -342,17 +343,20 @@ export function useOrganize(worldId = 'aom') {
         // Stream from the tunnel (Range-capable) — a blob fetch through the Vercel
         // proxy would buffer the whole file and die on anything video-sized.
         const cornerPath = cornerPathOf(f, worldId);
+        const vsrc = cornerPath ? `${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}` : '';
         // Spinner behind the player until first frame data arrives (O2: the bare black
         // <video> box read as a dead pane for the 5-8s the tunnel takes to answer).
+        // On error, mediaAttrs swaps in a "Couldn't load / Retry" card (no more dead box).
         bodyHtml = cornerPath
-          ? `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}" controls preload="metadata" playsinline onloadeddata="${HIDE_WAIT}this.style.background='#000';" onerror="${HIDE_WAIT}" style="position:relative;width:100%;max-height:68vh;display:block;border-radius:10px;background:transparent;"></video></div>`
+          ? `<div style="position:relative;min-height:180px;">${MEDIA_WAIT_HTML}<video src="${vsrc}" ${mediaAttrs(vsrc, 'video')} controls preload="metadata" playsinline onloadeddata="${HIDE_WAIT}this.style.background='#000';" style="position:relative;width:100%;max-height:68vh;display:block;border-radius:10px;background:transparent;"></video></div>`
           : nonTextPreview(f.name, 'video');
         title = f.name || 'Untitled';
       } else if (kind === 'audio') {
         // Stream audio off the tunnel — same Range-capable path as video.
         const cornerPath = cornerPathOf(f, worldId);
+        const asrc = cornerPath ? `${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}` : '';
         bodyHtml = cornerPath
-          ? `<audio src="${TUNNEL_BASE}/project-file-raw?path=${encodeURIComponent(cornerPath)}" controls preload="metadata" style="width:100%;display:block;margin:12px 0;border-radius:8px;"></audio>`
+          ? `<audio src="${asrc}" ${mediaAttrs(asrc, 'audio')} controls preload="metadata" style="width:100%;display:block;margin:12px 0;border-radius:8px;"></audio>`
           : nonTextPreview(f.name, 'audio');
         title = f.name || 'Untitled';
       } else if (kind === 'image') {
