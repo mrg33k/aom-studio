@@ -25,18 +25,18 @@ function initials(name) {
 }
 
 // agent status (online|working|running|blocked|needs_you|away|idle) -> contract enum
+// FIX D-sharp: three-state vocabulary — active (green), blocked (amber), idle (gray).
+// Collapses the old live/working split into a single green "active" state with no animation.
 function agentStatus(s) {
   const v = String(s || '').toLowerCase();
-  if (v === 'online' || v === 'live') return 'live';
-  if (v === 'working' || v === 'running') return 'working';
+  if (v === 'online' || v === 'live' || v === 'working' || v === 'running' || v === 'active') return 'active';
   if (v === 'blocked' || v === 'needs_you' || v === 'needs you') return 'blocked';
-  return 'ready';
+  return 'idle';
 }
-function statusText(status, unread) {
-  if (status === 'live') return unread ? `${unread} new` : 'online';
-  if (status === 'working') return 'working';
-  if (status === 'blocked') return 'needs you';
-  return 'ready';
+function statusText(status) {
+  if (status === 'active') return 'working';
+  if (status === 'blocked') return 'blocked';
+  return 'idle';
 }
 // project color (hex or css var) -> one of the 6 design tints, stable per name
 function tintFor(seed) {
@@ -60,6 +60,16 @@ function detectAttachment(text) {
   const m = String(text || '').match(/(?:attached file|attachment)\s*[:\-]?\s*([^\s|,]+\.[a-z0-9]{2,5})/i);
   return m ? { id: m[1], name: m[1], size: '' } : null;
 }
+// FIX F: Convert "Attached file: path/to/name.md" → "Shared a file: name.md".
+// Strips the full path so only the filename appears. Falls through unchanged for
+// normal text messages that happen to mention a filename inline.
+function normalizePreview(text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  const m = t.match(/^(?:attached file|attachment)\s*[:\-]?\s*([^\s|,]+\.[a-z0-9]{2,5})/i);
+  if (!m) return t;
+  const filename = m[1].replace(/^.*[/\\]/, '');
+  return `Shared a file: ${filename}`;
+}
 function relTime(ts) {
   if (!ts) return '';
   const ms = Date.now() - new Date(ts).getTime();
@@ -79,7 +89,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     const status = agentStatus(a.status);
     return {
       id: a.slug, name: a.title,
-      status, statusText: statusText(status, a.unread), initials: initials(a.title),
+      status, statusText: statusText(status), initials: initials(a.title),
     };
   });
   const projects = (projectRooms || []).map((p) => ({
@@ -158,7 +168,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   const missionSub = (pn, nm) => (pn && pn.trim().toLowerCase() !== String(nm || '').trim().toLowerCase()) ? pn : 'Mission';
   for (const it of inboxItems || []) {
     const ts = it.timestamp ? new Date(it.timestamp).getTime() : 0;
-    const preview = String(it.text || '').replace(/\s+/g, ' ').trim();
+    const preview = normalizePreview(it.text);
     if (it.missionSlug) {
       const pn = it.project ? (projectNameBySlug[it.project] || cap(it.project)) : '';
       const nm = missionLabel(it.missionSlug) || it.missionSlug;
@@ -171,7 +181,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
   }
   for (const p of projectRooms || []) {
     if (!p.last_message_at || !p.slug) continue;
-    bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at, preview: String(p.last_message_text || '').trim() });
+    bump('p:' + p.slug, { key: 'p:' + p.slug, id: p.slug, kind: 'project', project: p.slug, name: p.name || cap(p.slug), sub: 'Project chat', ts: p.last_message_at, preview: normalizePreview(p.last_message_text) });
   }
   // Activity-based mission recency: any mission with recent messages surfaces in
   // Recently Active even if it hasn't sent an inbox ping. Same bump path as projects;
@@ -180,7 +190,7 @@ export function shapeHome({ agents = [], projectRooms = [], inboxItems = [], mis
     if (!mr.last_message_at || !mr.slug) continue;
     const pn = mr.project ? (projectNameBySlug[mr.project] || cap(mr.project)) : '';
     const nm = missionLabel(mr.slug) || mr.slug;
-    bump('m:' + mr.slug, { key: 'm:' + mr.slug, id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: String(mr.last_message_text || '').trim() });
+    bump('m:' + mr.slug, { key: 'm:' + mr.slug, id: mr.slug, kind: 'mission', missionSlug: mr.slug, project: mr.project || '', name: nm, sub: missionSub(pn, nm), ts: mr.last_message_at, preview: normalizePreview(mr.last_message_text) });
   }
   const recent = Object.values(recentMap)
     // Drop rows with no real name (a nameless room/mission leaks in as "Undefined" — ugly).
