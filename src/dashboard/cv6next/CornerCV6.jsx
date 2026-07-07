@@ -1066,23 +1066,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
     return () => cancelAnimationFrame(id);
   }, [knavSelectedIdx, isDesktop, expandedHomeProjects, expandedHomeNodes]);
 
-  // The rooms list stays where the user scrolled it. The home template re-binds on every
-  // realtime tick once a room is open (the col3 thread's convo/goal data rides in the data
-  // signature), and TemplateScreen's innerHTML reset recreates .scrollcap at scrollTop 0 —
-  // every tick yanked the list back. Record the latest scroll (user or auto — programmatic
-  // scrolls fire the same event) and re-apply it to the fresh node after each re-bind.
-  // Restoring never fights the user: the saved value IS wherever they last put it.
-  useEffect(() => {
-    if (!isDesktop) return undefined;
-    const getEl = () => document.querySelector('[data-screen="home-desktop"] .scrollcap');
-    let saved = -1;
-    const onScroll = (e) => { const el = getEl(); if (el && e.target === el) saved = el.scrollTop; };
-    document.addEventListener('scroll', onScroll, true);
-    const restore = () => { const el = getEl(); if (el && saved >= 0 && Math.abs(el.scrollTop - saved) > 1) el.scrollTop = saved; };
-    const obs = new MutationObserver(() => requestAnimationFrame(restore));
-    obs.observe(document.body, { childList: true, subtree: true });
-    return () => { document.removeEventListener('scroll', onScroll, true); obs.disconnect(); };
-  }, [isDesktop]);
+  // (Home .scrollcap scroll-preservation one-off retired 2026-07-06 scroll-arch R1: the
+  // generic scroll-stability engine in TemplateScreen now preserves EVERY scrolled
+  // descendant across rebinds — .scrollcap included — so the per-screen MutationObserver
+  // hack is redundant. See src/dashboard/cv6kit/TemplateScreen.jsx.)
 
   const openNewMission = () => {
     if (!openedProject) return;
