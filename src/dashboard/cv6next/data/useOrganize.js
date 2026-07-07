@@ -100,7 +100,7 @@ function inlineMd(s) {
   return escapeHtml(s)
     .replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*]+?)\*(?!\*)/g, '$1<em>$2</em>')
-    .replace(/`([^`]+?)`/g, '<code style="font-family:var(--font-mono);font-size:.92em;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:5px;">$1</code>')
+    .replace(/`([^`]+?)`/g, '<code style="font-family:var(--font-mono);font-size:.92em;background:rgba(127,127,127,.18);padding:1px 5px;border-radius:5px;">$1</code>')
     .replace(/\[([^\]]+?)\]\(([^)]+?)\)/g, (m, text, href) => {
       const safe = safeHref(href);
       return safe ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">${text}</a>` : text;
@@ -158,7 +158,7 @@ const DATA_EXT = /\.(json|jsonl|ndjson|yaml|yml|toml|csv|tsv|xml|ini|env|lock)$/
 function dataFilePreview(content) {
   const text = String(content);
   const shown = text.length > 20000 ? `${text.slice(0, 20000)}\n… (truncated)` : text;
-  return `<pre style="margin:0;font-family:var(--font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:#2a2a2a;">${escapeHtml(shown)}</pre>`;
+  return `<pre style="margin:0;font-family:var(--font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word;color:var(--fg);">${escapeHtml(shown)}</pre>`;
 }
 
 // Loading state while a file's content lazy-loads. Centered and sized to hold the pane,
@@ -189,7 +189,7 @@ function nonTextPreview(name, kind) {
     + 'background:var(--accent-weak);border-left:3px solid var(--accent);">'
     + '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>'
     + `<span style="font-size:13px;font-weight:600;color:var(--fg);">${label}</span></div>`
-    + `<p style="margin:0;color:#888;">This ${lower} can't preview inline yet. Open it in Review to work with it.</p>`
+    + `<p style="margin:0;color:var(--muted);">This ${lower} can't preview inline yet. Open it in Review to work with it.</p>`
   );
 }
 
