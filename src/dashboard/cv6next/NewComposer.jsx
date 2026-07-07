@@ -12,7 +12,7 @@
 // never wiped mid-edit by a re-bind; the project/agent lists are frozen at open so a
 // realtime data tick can't rebuild the overlay under the user's thumbs.
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { createMissionInProject, createProjectFromHome } from './data/useHomeData.js';
 
@@ -119,6 +119,17 @@ export default function NewComposer({ worldId, projects, agents, initialMode = '
     agentId: '__auto', agentName: '', priority: 'med', when: 'now',
   });
 
+  // DEF-7: autofocus the first text field each time the composer opens or mode changes.
+  // TemplateScreen renders via innerHTML so React autoFocus doesn't reach inside it;
+  // do it imperatively after the paint settles.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      const el = formRef.current?.querySelector('.cmp-inp');
+      if (el) { try { el.focus(); } catch (_) { /* noop */ } }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [mode]);
+
   // Field picks (project/agent/priority/when) are written to selRef AND toggled on the
   // DOM directly — no setState — so the uncontrolled goal/name/about boxes are never
   // wiped mid-edit by a re-bind. Only the mode toggle (which swaps the whole field set
@@ -197,7 +208,11 @@ export default function NewComposer({ worldId, projects, agents, initialMode = '
   };
 
   return (
-    <div ref={formRef} style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
+    // DEF-8: Escape closes the composer (keyboard-attached tablet / desktop-width phone).
+    // The outer div captures keydown before any input element can swallow it; Escape
+    // never conflicts with normal text entry.
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div ref={formRef} style={{ position: 'absolute', inset: 0, zIndex: 40 }} onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); onClose?.(); } }}>
       <TemplateScreen html={NEW_COMPOSER_HTML} data={data} actions={actions} state="ready"
         aliases={NEW_COMPOSER_ALIASES} style={{ width: '100%', height: '100%' }} />
     </div>

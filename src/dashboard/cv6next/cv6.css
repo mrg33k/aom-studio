@@ -823,7 +823,8 @@
 [data-cv6] .mhchip { display:inline-flex; align-items:center; gap:6px; height:32px; padding:0 13px; border-radius:16px; border:1px solid var(--hair); background:var(--surface); color:var(--muted); font-size:12.5px; font-weight:600; font-family:var(--font-sans); white-space:nowrap; cursor:pointer; flex:none; }
 [data-cv6] .mhchip.on { background:var(--accent); border-color:transparent; color:#fff; }
 /* data-mod emits is-<value>; mirror .on as .is-on so chips can be driven from data (is-on/is-off). */
-[data-cv6] .mhchip.is-on { background:var(--accent); border-color:transparent; color:#fff; }
+/* DEF-14: active chip is non-interactive — cursor:default, no pointer affordance. */
+[data-cv6] .mhchip.is-on { background:var(--accent); border-color:transparent; color:#fff; cursor:default; }
 [data-cv6] .mhchip .ct { font-family:var(--font-mono); font-size:10.5px; opacity:.8; }
 /* section header hidden when its filtered list is empty (chat-list filter chips). */
 [data-cv6] .sec.is-hidden { display:none; }
