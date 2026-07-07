@@ -294,9 +294,16 @@ function shapeCommand({
 
     // LIVE NOW: the live session's task line, else the board's latest state line,
     // else the room's latest chat line. Honest dash when nothing is live.
+    // Skip the board's "Goal set: <goal>" seed line — goal-notetaker stamps it as the
+    // state_line when it first creates a board row, so it just echoes GOAL NOW and reads
+    // as wasted duplication across the ledger (design panel: Critic 1 + 3). Falling
+    // through to the real latest chat line (or an honest dash) keeps the two columns
+    // distinct without restructuring the ledger.
+    const boardState = board && board.state_line ? String(board.state_line) : '';
+    const boardStateEchoesGoal = /^\s*goal set:/i.test(boardState);
     const liveNow = cleanCell(firstLine(
       (session && session.task_text)
-      || (board && board.state_line)
+      || (boardStateEchoesGoal ? '' : boardState)
       || (last && last.text) || ''
     )).slice(0, 110) || '—';
 
