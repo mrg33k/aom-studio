@@ -68,12 +68,12 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
   display:flex;align-items:flex-end;white-space:nowrap;
   transform-origin:32% 52%;will-change:transform;color:#fff;
 }
-.wm svg{display:block;height:clamp(13rem,44vh,29rem);width:auto}
+.wm svg{display:block;height:min(68vh,44vw);width:auto}
 /* faint ivory floor so the glyph never sinks into a dark footage frame */
-#goldLayer .wm svg{color:#F6F6F4;opacity:.07}
+#goldLayer .wm svg{color:#F6F6F4;opacity:.09}
 .wm .dot{
-  display:inline-block;width:clamp(1.1rem,3vw,2.4rem);height:clamp(1.1rem,3vw,2.4rem);
-  margin-left:clamp(.6rem,1.6vw,1.4rem);background:#fff;
+  display:inline-block;width:clamp(1.4rem,4vw,3.4rem);height:clamp(1.4rem,4vw,3.4rem);
+  margin-left:clamp(.8rem,2vw,1.8rem);background:#fff;
 }
 #goldLayer .wm .dot{background:var(--gold)}
 
@@ -186,7 +186,7 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 }
 
 @media (max-width:640px){
-  .wm svg{height:min(30vh,52vw)}
+  .wm svg{height:min(40vh,74vw)}
   #heroIntro{bottom:calc(6.5rem + env(safe-area-inset-bottom));font-size:.82rem}
   #heroChrome .br{display:none}
   #outroFoot{flex-direction:column;gap:.4rem;align-items:center;text-align:center}
