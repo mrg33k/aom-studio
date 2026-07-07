@@ -51,6 +51,7 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 .vid{
   position:absolute;inset:0;width:100%;height:100%;
   object-fit:cover;opacity:0;background:var(--ink);
+  filter:contrast(1.08) saturate(1.12) brightness(1.07);
 }
 .vid.on{opacity:1}
 
@@ -70,7 +71,8 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
   transform-origin:38% 46%;will-change:transform;
 }
 .wm .t{color:#fff}
-#goldLayer .wm .t{color:transparent}
+/* crisp letterform edge so the mark reads sharp even on a dim footage frame */
+#goldLayer .wm .t{color:transparent;-webkit-text-stroke:1px rgba(246,246,244,.32)}
 .wm .dot{
   display:inline-block;width:.14em;height:.14em;margin-left:.05em;
   background:#fff;
@@ -88,9 +90,18 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
   width:min(34rem,84vw);text-align:center;
   font-size:clamp(.85rem,1.15vw,1rem);font-weight:400;color:var(--stone);line-height:1.65;
 }
-#scrollHint{
-  position:absolute;left:50%;top:clamp(1.1rem,3vw,2.5rem);transform:translateX(-50%);
+#scrollCue{
+  position:absolute;left:50%;
+  bottom:calc(clamp(2rem,5vh,3.4rem) + env(safe-area-inset-bottom));
+  width:1px;height:30px;background:var(--gold);transform-origin:top;
+  animation:cue 2.2s cubic-bezier(.6,0,.3,1) infinite;
 }
+@keyframes cue{
+  0%{transform:translateX(-50%) scaleY(0);opacity:0}
+  35%{transform:translateX(-50%) scaleY(1);opacity:1}
+  70%,100%{transform:translateX(-50%) scaleY(1) translateY(14px);opacity:0}
+}
+@media (prefers-reduced-motion:reduce){#scrollCue{animation:none;opacity:.6;transform:translateX(-50%)}}
 
 /* case UI */
 #caseUI{position:absolute;inset:0;z-index:6;opacity:0;pointer-events:none;transition:opacity .5s ease}
@@ -158,7 +169,7 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 #outro .huge{
   font-family:'Bricolage Grotesque',sans-serif;font-weight:800;text-transform:uppercase;
   font-size:clamp(2.4rem,9vw,7.5rem);line-height:1;letter-spacing:-.015em;text-align:center;
-  color:transparent;-webkit-text-stroke:1px rgba(246,246,244,.45);
+  color:transparent;-webkit-text-stroke:1px rgba(246,246,244,.58);
   transition:color .35s ease;
 }
 #outro .huge:hover{color:var(--paper);-webkit-text-stroke:1px transparent}
@@ -176,7 +187,7 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 }
 
 @media (max-width:640px){
-  .wm{font-size:24vw}
+  .wm{font-size:27vw}
   #heroIntro{bottom:calc(6.5rem + env(safe-area-inset-bottom));font-size:.82rem}
   #heroChrome .br{display:none}
   #outroFoot{flex-direction:column;gap:.4rem;align-items:center;text-align:center}
@@ -216,6 +227,7 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
     <div class="corner br label">We make companies<br>impossible to ignore</div>
     <p id="heroIntro">Video, web, and brand work for companies that want attention.
     Everything playing through the letters is our real client footage. Scroll.</p>
+    <div id="scrollCue"></div>
   </div>
 
   <div id="caseUI">

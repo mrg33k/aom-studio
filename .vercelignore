@@ -5,6 +5,7 @@ api/local/
 
 # Local-only dev tooling — keeps the CLI deploy bundle small.
 .claude/
+.aom-worktrees/
 .git/
 **/node_modules/
 dist/
