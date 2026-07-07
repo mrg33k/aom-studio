@@ -223,10 +223,10 @@ export default function ServiceBrandFilm() {
     if (!originalMeta) {
       const meta = document.createElement('meta');
       meta.name = 'description';
-      meta.content = 'We make 60-90 second brand films that sell. Produced in 14 days from brief to final cut.';
+      meta.content = 'We make 60-90 second brand films that sell. Produced in about two weeks from brief to final cut.';
       document.head.appendChild(meta);
     } else {
-      originalMeta.content = 'We make 60-90 second brand films that sell. Produced in 14 days from brief to final cut.';
+      originalMeta.content = 'We make 60-90 second brand films that sell. Produced in about two weeks from brief to final cut.';
     }
 
     return () => {
@@ -253,7 +253,7 @@ export default function ServiceBrandFilm() {
           Brand Films<br />for Growing<br />Companies<i className="sq" />
         </h1>
         <p className="tagline">
-          A brand film is not a commercial. It's the story of why you exist. Build authority. Attract your right customers. Land it in 14 days.
+          A brand film is not a commercial. It's the story of why you exist. Build authority. Attract your right customers. Most land in about two weeks.
         </p>
         <a href="mailto:hello@aheadofmarket.com" className="cta-btn">
           Start a conversation
@@ -267,7 +267,7 @@ export default function ServiceBrandFilm() {
           <li>One tight story told in 60-90 seconds (what you do, who you serve, why it matters)</li>
           <li>Professionally produced (real locations, real crew, real color grading, no stock footage)</li>
           <li>Delivered final-cut and ready to deploy across web, social, and email</li>
-          <li>Locked in at 14 days from the time you send us the brief</li>
+          <li>Most land in about two weeks from a locked brief</li>
         </ul>
         <p style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--mut)', fontSize: 'clamp(.95rem,1.2vw,1.05rem)' }}>
           This is not a sizzle reel or a montage. We write a narrative.
@@ -377,7 +377,7 @@ export default function ServiceBrandFilm() {
             <p className="faq-a">Locations are better. We want your actual business in the frame, that authenticity is what sells. If your location is not great visually, we'll tell you. If it is, we'll use it.</p>
           </li>
           <li className="faq-item">
-            <h3 className="faq-q">What happens after the 14 days?</h3>
+            <h3 className="faq-q">What happens after delivery?</h3>
             <p className="faq-a">You own the footage and the final file. If you want minor tweaks after delivery, we do one round of notes for free. Anything beyond that is a new project.</p>
           </li>
           <li className="faq-item">
