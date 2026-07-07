@@ -145,7 +145,7 @@ const hasOpenQuestion = (r) => {
 
 function shapeCommand({
   sessions = [], projectRooms = [], lastByRoom = {}, goalRooms = {},
-  boardRows = [], stepsByRoom = {}, selectedKey = '', handed = {},
+  boardRows = [], stepsByRoom = {}, selectedKey = '', handed = {}, filter = '',
 }) {
   const now = Date.now();
 
@@ -318,9 +318,19 @@ function shapeCommand({
   const workingCount = rows.filter((r) => r.status === 'working').length;
   const blockedCount = rows.filter((r) => r.status === 'blocked').length;
 
+  // The header count chips are FILTERS (wd40 R4b). Counts always speak for the
+  // whole ledger; only the visible rows narrow. Active filter is named in the
+  // sub line and the chip label carries a clear affordance.
+  const visible = filter ? rows.filter((r) => r.status === filter) : rows;
+  const subLine = filter
+    ? `Showing ${visible.length} ${filter} · tap the chip to show all`
+    : `${rows.length} rooms · ${workingCount} working`;
+  const workingChip = (filter === 'working' ? '✕ ' : '') + `${workingCount} working`;
+  const blockedChip = (filter === 'blocked' ? '✕ ' : '') + `${blockedCount} blocked`;
+
   // Detail panel (desktop) / featured card (mobile): the selected row, else the
   // top row of the ledger. All fields are the room's real truth.
-  const focus = (selectedKey && rows.find((r) => r.key === selectedKey)) || rows[0] || null;
+  const focus = (selectedKey && rows.find((r) => r.key === selectedKey)) || visible[0] || rows[0] || null;
   const openQuestions = rows.filter((r) => r.openQuestion).length;
   const goal = focus
     ? {
@@ -363,13 +373,17 @@ function shapeCommand({
   goal.handNote = (goal.id && handed[goal.id]) ? 'Sent into the room — the agent picks it up from chat.' : '';
 
   return {
-    ledger: { roomCount: rows.length, liveCount: workingCount, workingCount, blockedCount, rooms: rows, others: rows },
+    ledger: {
+      roomCount: rows.length, liveCount: workingCount, workingCount, blockedCount,
+      subLine, workingChip, blockedChip,
+      rooms: visible, others: visible,
+    },
     activity: { count: jobs.length, jobs },
     goal,
   };
 }
 
-export function useCommand(worldIdArg, selectedKey = '') {
+export function useCommand(worldIdArg, selectedKey = '', filter = '') {
   const [currentUser, setCurrentUser] = useState(null);
   const [worldId, setWorldId] = useState(worldIdArg || null);
   const [sessions, setSessions] = useState([]);
@@ -563,6 +577,27 @@ export function useCommand(worldIdArg, selectedKey = '') {
     }
   }, [worldId, stepsByRoom]);
 
+  // Remove a step from the plan for real (room-goal-steps delete — also how an
+  // agent proposal is dismissed). Optimistic; forced refetch reconciles.
+  const stepDelete = useCallback(async (act) => {
+    const [room, id] = String(act || '').split('|');
+    if (!worldId || !room || !id) return;
+    setStepsByRoom((prev) => {
+      const cur = prev[room] || [];
+      const out = { ...prev, [room]: cur.filter((x) => x.id !== id) };
+      stepsSig.current = JSON.stringify(out);
+      return out;
+    });
+    try {
+      await authFetch('/api/dashboard/room-goal-steps', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', world: worldId, room, id }),
+      });
+    } finally {
+      stepsSig.current = ''; setStepsReload((n) => n + 1);
+    }
+  }, [worldId]);
+
   const stepAdd = useCallback(async (room, text) => {
     const t = String(text || '').replace(/\s+/g, ' ').trim();
     if (!worldId || !room || !t) return;
@@ -651,11 +686,11 @@ export function useCommand(worldIdArg, selectedKey = '') {
   }, [worldId, goalRooms]);
 
   const data = useMemo(
-    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed }),
-    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed],
+    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed, filter }),
+    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey, handed, filter],
   );
   const state = worldId ? 'ready' : 'loading';
-  return { state, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion, handNextStep };
+  return { state, data, toggleWatcher, stepToggle, stepAdd, stepDelete, answerRoomQuestion, handNextStep };
 }
 
 // ── Tracker: the real CV6 bug tracker ──
