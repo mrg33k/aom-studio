@@ -35,7 +35,7 @@ function NavTile({ item, active, onNav }) {
 
 function RoomRow({ row, open, onClick }) {
   return (
-    <div className="room" onClick={onClick} style={{ cursor: 'pointer', background: open ? 'var(--accent-weak)' : undefined }}>
+    <div className="room" role="button" aria-current={open ? 'true' : undefined} onClick={onClick} style={{ cursor: open ? 'default' : 'pointer', background: open ? 'var(--accent-weak)' : undefined }}>
       <span className={`sdot is-${row.status || 'ready'}`} style={{ flex: 'none' }} />
       <span className="rn" style={{ fontWeight: open ? 600 : 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.name}</span>
       {row.statusLabel ? <span style={{ fontSize: 10.5, color: open ? 'var(--accent)' : 'var(--faint)', fontWeight: 600 }}>{row.statusLabel.toLowerCase()}</span> : null}
@@ -406,7 +406,9 @@ function MsgExtras({ m, onSend }) {
           not a separate panel outside the thread (Patrik 2026-06-30). */}
       {!m.isUser && m.chips?.length ? (
         <div style={{ marginTop: 8, width: '100%' }}>
-          <ActionChips actions={m.chips} primaryFirst={false} />
+          {/* Tapping a suggestion sends it as your reply — wire onSend (was a
+              dead no-op before) so the proposed quick-replies actually fire. */}
+          <ActionChips actions={m.chips} primaryFirst={false} onAction={onSend} actionVerb="Send reply" />
         </div>
       ) : null}
     </>
@@ -813,7 +815,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                 {/* Goals | Files toggle — choose what this column shows. */}
                 <div style={{ display: 'flex', gap: 4, padding: 3, background: 'var(--surface-2)', border: '1px solid var(--hair)', borderRadius: 11, marginBottom: 16 }}>
                   {[['goals', 'Goals'], ['files', 'Files']].map(([k, label]) => (
-                    <button key={k} onClick={() => setDrawerView(k)} style={{ flex: 1, height: 30, borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', background: drawerView === k ? 'var(--accent)' : 'transparent', color: drawerView === k ? '#fff' : 'var(--muted)' }}>{label}</button>
+                    <button key={k} role="tab" aria-selected={drawerView === k ? 'true' : 'false'} onClick={() => setDrawerView(k)} style={{ flex: 1, height: 30, borderRadius: 8, border: 'none', cursor: drawerView === k ? 'default' : 'pointer', fontSize: 12.5, fontWeight: 600, fontFamily: 'var(--font-sans)', background: drawerView === k ? 'var(--accent)' : 'transparent', color: drawerView === k ? '#fff' : 'var(--muted)' }}>{label}</button>
                   ))}
                 </div>
                 {drawerView === 'files' ? (

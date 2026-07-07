@@ -15,7 +15,7 @@ import { ReviewCtx } from './ChatGoalThread.jsx';
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 
 // Tappable action chips shared by email/summary/media blocks.
-export function ActionChips({ actions, primaryFirst = true, onAction }) {
+export function ActionChips({ actions, primaryFirst = true, onAction, actionVerb }) {
   const list = Array.isArray(actions) ? actions.filter(Boolean) : [];
   if (!list.length) return null;
   return (
@@ -26,6 +26,10 @@ export function ActionChips({ actions, primaryFirst = true, onAction }) {
           <button
             key={i}
             className={`chip-btn ${primaryFirst && i === 0 ? 'is-primary' : ''}`}
+            // When the chip performs a real action (e.g. sending a reply) the
+            // accessible name names that action, so it reads as the mutating
+            // control it is rather than a bare label.
+            aria-label={actionVerb ? `${actionVerb}: ${label}` : undefined}
             onClick={() => onAction?.(label)}
           >
             {label}
