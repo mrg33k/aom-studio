@@ -58,6 +58,8 @@ const PROCESS_DOC_NAMES = new Set([
   'claude.md', 'agent.md', 'notes.md', 'todo.md',
   'open-questions.md', 'open_questions.md', 'questions.md',
   'phonebook.md',
+  // agent tooling / internal session artifacts (Review R4, 2026-07-06)
+  'tuning.md', 'wizard-progress.md', 'slop_candidates.txt', 'aud_list.txt',
 ]);
 function isProcessDoc(filename) {
   const base = (filename || '').toLowerCase().trim();
@@ -76,6 +78,25 @@ function isProcessDoc(filename) {
   // concat list. (API-side first; data-side builder should mirror.)
   if (/^(filelist|file-list)\.txt$/.test(base) || /(^|[-_])concat\.txt$/.test(base)) return true;
   if (/^(build|make|gen|generate)-.*\.(py|js|mjs|cjs|ts|sh)$/.test(base)) return true;
+  // Review R4 (2026-07-06): additional internal-doc patterns from queue audit.
+  // live-note-snapshot-* — temp session snapshots
+  if (/^live-note-snapshot[-_]/.test(base)) return true;
+  // *.skill.md — agent tooling definitions
+  if (/\.skill\.md$/.test(base)) return true;
+  // *-control-guide.md — system control guides (WIZARD-CONTROL-GUIDE.md)
+  if (/-control-guide\.(md|txt)$/.test(base)) return true;
+  // enable-*.md — ops instruction files (ENABLE-DAILY-ROLL.md)
+  if (/^enable-/.test(base)) return true;
+  // *-outline.md / *_outline.txt — outline working drafts
+  if (/(^|[-_])outline\.(md|txt)$/.test(base)) return true;
+  // design-notes.md, *-notes.md — internal design/session notes
+  if (/(^|[-_])notes\.(md|txt)$/.test(base)) return true;
+  // tracker-*.md — internal round/agent trackers
+  if (/^tracker[-_]/.test(base)) return true;
+  // critique-*.md — internal design critique docs
+  if (/^critique[-_]/.test(base)) return true;
+  // replace/analyze/move/etc. helper scripts — not client deliverables
+  if (/(^|[-_])(replace|analyze|analyse|move|rebucket|transcribe|identify|classify|equalize)[-.].*\.(py|js|mjs|cjs|ts|sh)$/.test(base)) return true;
   return false;
 }
 
@@ -86,7 +107,11 @@ function isProcessDoc(filename) {
 // UI. (2026-07-06 incident: r17-*.jpeg loop screenshots served as
 // "aheadofmarket.com deliverables" and filled the whole first page.)
 const QA_DIR_NAMES = ['screenshots', 'screenshot', 'shots', 'qa', 'qa-shots', 'verify', 'verification', 'probes'];
-const APP_INTERNAL_DIR_NAMES = ['app', 'thumbs', 'proxies', 'cache', 'tmp', 'temp'];
+const APP_INTERNAL_DIR_NAMES = [
+  'app', 'thumbs', 'proxies', 'cache', 'tmp', 'temp',
+  'footage-reorg', // analysis/helper scripts — not deliverables (Review R4)
+  'critiques',     // internal design critique docs (Review R4)
+];
 const EXCLUDED_DIR_NAMES = new Set([...QA_DIR_NAMES, ...APP_INTERNAL_DIR_NAMES]);
 const QA_FILE_RES = [
   /^r\d+[-_].*\.(png|jpe?g|webp|gif|avif)$/i,  // loop-round screenshots: r17-local-case2.jpeg
@@ -94,6 +119,7 @@ const QA_FILE_RES = [
   /(^|[-_])verify[-_.]/i,                      // verify-*, *-verify.*
   /^agent-shot/i,                              // explicit agent-shot outputs
   /(^|[-_])probe[-_.]/i,                       // probe artifacts
+  /^\d+_snapshot\.(png|jpe?g|webp)$/i,         // NNN_snapshot.png meeting-frame captures (Review R4)
 ];
 function isQaArtifact(name) {
   const b = String(name || '').toLowerCase().trim();
@@ -101,10 +127,14 @@ function isQaArtifact(name) {
 }
 // True when any DIRECTORY segment of the item's corner-relative path is a QA /
 // app-internal staging dir (case-insensitive, any depth — Screenshots/2026-07-06/…).
+// Also catches dir-name prefixes: 'ab-test-*', 'ab_test-*' (A/B test dirs, Review R4).
 function inExcludedDir(relPath) {
   const segs = String(relPath || '').split('/');
   segs.pop(); // the filename itself is judged by isQaArtifact/isProcessDoc
-  return segs.some((s) => EXCLUDED_DIR_NAMES.has(s.toLowerCase()));
+  return segs.some((s) => {
+    const sl = s.toLowerCase();
+    return EXCLUDED_DIR_NAMES.has(sl) || sl.startsWith('ab-test') || sl.startsWith('ab_test');
+  });
 }
 // One gate for every serve path: cache rows, tunnel-walk rows, disk-walk rows.
 function isReviewable(name, relPath) {
@@ -248,7 +278,9 @@ function collectViaDisk(world) {
       if (ent.name.startsWith('.')) continue;
       // Never descend into QA staging / app-internal dirs (Screenshots/, qa/,
       // thumbs/, cache/…) — their contents are not deliverables.
-      if (ent.isDirectory() && EXCLUDED_DIR_NAMES.has(ent.name.toLowerCase())) continue;
+      // Also skip ab-test* dirs (Review R4).
+      const entLower = ent.name.toLowerCase();
+      if (ent.isDirectory() && (EXCLUDED_DIR_NAMES.has(entLower) || entLower.startsWith('ab-test') || entLower.startsWith('ab_test'))) continue;
       const abs = path.join(dirAbs, ent.name);
       if (ent.isDirectory()) { acc.push(...walk(abs, depth + 1)); continue; }
       if (!ent.isFile()) continue;
