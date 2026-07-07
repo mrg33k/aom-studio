@@ -49,6 +49,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/hear",
+      "destination": "/hear/index.html"
+    },
+    {
       "source": "/taste",
       "destination": "/index.html"
     },

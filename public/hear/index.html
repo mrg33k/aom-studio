@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>AOM — We Make Companies Impossible to Ignore</title>
+<meta name="description" content="Ahead of Market. Video, web, and brand work for companies that want attention. Phoenix, Arizona.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Schibsted+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   AOM x hear-pattern concept — R17 (home mission)
+   Obsidian void. Real client footage plays through the wordmark.
+   One accent: champagne gold. Square corners, hairline rules.
+   ============================================================ */
+:root{
+  --ink:#0B0B0B; --ink-800:#161615;
+  --paper:#F6F6F4; --stone:#B6B2AB;
+  --gold:#C4A46A; --gold-deep:#A8884C;
+  --line:rgba(246,246,244,.18);
+  --label:.62rem;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--ink)}
+html.lenis{height:auto}
+.lenis.lenis-smooth{scroll-behavior:auto}
+body{
+  background:var(--ink); color:var(--paper);
+  font-family:'Schibsted Grotesk',sans-serif;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
+
+.label{
+  font-size:var(--label); font-weight:500; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--stone);
+}
+.label--paper{color:var(--paper)}
+.label--gold{color:var(--gold)}
+
+/* ---- scroll runway (real height; everything visual is fixed) ---- */
+#runway{position:relative;width:100%}
+
+/* ---- fixed stage ---- */
+#stage{position:fixed;inset:0;overflow:hidden;background:var(--ink)}
+
+/* video stack */
+.vid{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;opacity:0;background:var(--ink);
+}
+.vid.on{opacity:1}
+
+/* wordmark mask layer — black sheet, white text multiplies away */
+#maskLayer{
+  position:absolute;inset:0;z-index:3;background:#000;
+  mix-blend-mode:multiply;display:flex;align-items:center;justify-content:center;
+}
+#goldLayer{
+  position:absolute;inset:0;z-index:4;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+}
+.wm{
+  display:flex;align-items:baseline;white-space:nowrap;
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
+  font-size:clamp(4.5rem,21vw,19rem);line-height:1;letter-spacing:-.02em;
+  transform-origin:38% 46%;will-change:transform;
+}
+.wm .t{color:#fff}
+#goldLayer .wm .t{color:transparent}
+.wm .dot{
+  display:inline-block;width:.14em;height:.14em;margin-left:.05em;
+  background:#fff;
+}
+#goldLayer .wm .dot{background:var(--gold)}
+
+/* hero chrome (fades out on zoom) */
+#heroChrome{position:absolute;inset:0;z-index:5;pointer-events:none}
+#heroChrome .corner{position:absolute;line-height:1.7}
+#heroChrome .bl{left:clamp(1.1rem,3vw,2.5rem);bottom:calc(clamp(1.1rem,3vw,2.5rem) + env(safe-area-inset-bottom))}
+#heroChrome .br{right:clamp(1.1rem,3vw,2.5rem);bottom:calc(clamp(1.1rem,3vw,2.5rem) + env(safe-area-inset-bottom));text-align:right}
+#heroIntro{
+  position:absolute;left:50%;transform:translateX(-50%);
+  bottom:calc(clamp(4.5rem,10vh,7rem) + env(safe-area-inset-bottom));
+  width:min(34rem,84vw);text-align:center;
+  font-size:clamp(.85rem,1.15vw,1rem);font-weight:400;color:var(--stone);line-height:1.65;
+}
+#scrollHint{
+  position:absolute;left:50%;top:clamp(1.1rem,3vw,2.5rem);transform:translateX(-50%);
+}
+
+/* case UI */
+#caseUI{position:absolute;inset:0;z-index:6;opacity:0;pointer-events:none;transition:opacity .5s ease}
+#caseUI.on{opacity:1}
+#caseUI .shade{
+  position:absolute;inset:auto 0 0 0;height:38vh;
+  background:linear-gradient(to top,rgba(11,11,11,.72),rgba(11,11,11,0));
+}
+.caseMeta{
+  position:absolute;left:clamp(1.1rem,3vw,2.5rem);
+  bottom:calc(clamp(1.4rem,4vh,3rem) + env(safe-area-inset-bottom));
+  right:clamp(1.1rem,3vw,2.5rem);
+}
+.caseTop{display:flex;align-items:baseline;gap:1.1rem;margin-bottom:.7rem}
+#caseIndex{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:.8rem;color:var(--gold);letter-spacing:.08em}
+.titleClip{overflow:hidden}
+#caseTitle{
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;text-transform:uppercase;
+  font-size:clamp(2.1rem,7vw,6rem);line-height:.98;letter-spacing:-.015em;
+  transform:translateY(110%);will-change:transform;
+}
+#caseTitle .end{display:inline-block;width:.13em;height:.13em;background:var(--gold);margin-left:.06em}
+#caseRule{height:1px;background:var(--line);margin-top:1.2rem;position:relative}
+#caseRule i{position:absolute;left:0;top:0;bottom:0;background:var(--gold);width:0%}
+
+/* persistent chrome */
+#topbar{
+  position:fixed;z-index:20;top:0;left:0;right:0;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:clamp(1.1rem,3vw,2rem) clamp(1.1rem,3vw,2.5rem);
+}
+#topbar .home{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1rem;letter-spacing:.02em}
+#topbar .home i{display:inline-block;width:.18em;height:.18em;background:var(--gold);margin-left:.12em}
+#menuBtn,#soundBtn{letter-spacing:.22em;text-transform:uppercase;font-size:var(--label);font-weight:500;padding:.4rem 0}
+#soundBtn{position:fixed;z-index:20;right:clamp(1.1rem,3vw,2.5rem);bottom:calc(clamp(1.1rem,3vw,2.5rem) + env(safe-area-inset-bottom));display:none}
+#soundBtn.show{display:block}
+#soundBtn .dot{display:inline-block;width:.45em;height:.45em;background:var(--gold);margin-right:.5em;vertical-align:middle}
+#soundBtn.off .dot{background:var(--stone)}
+
+/* menu overlay */
+#menu{
+  position:fixed;inset:0;z-index:40;background:var(--ink);
+  display:flex;flex-direction:column;justify-content:center;
+  padding:0 clamp(1.5rem,7vw,7rem);
+  opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s;
+}
+#menu.open{opacity:1;visibility:visible}
+#menu a.big{
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;text-transform:uppercase;
+  font-size:clamp(2.6rem,9vw,7rem);line-height:1.06;letter-spacing:-.015em;
+  border-bottom:1px solid var(--line);padding:1.2rem 0;display:flex;align-items:baseline;gap:1.4rem;
+}
+#menu a.big small{font-family:'Schibsted Grotesk',sans-serif;font-size:var(--label);font-weight:500;letter-spacing:.22em;color:var(--stone)}
+#menu a.big:hover{color:var(--gold)}
+#menuClose{position:absolute;top:clamp(1.1rem,3vw,2rem);right:clamp(1.1rem,3vw,2.5rem);letter-spacing:.22em;text-transform:uppercase;font-size:var(--label)}
+#menuFoot{position:absolute;left:clamp(1.5rem,7vw,7rem);bottom:clamp(1.4rem,4vh,3rem)}
+
+/* outro */
+#outro{
+  position:absolute;inset:0;z-index:8;background:var(--ink);
+  display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3.2rem;
+  opacity:0;visibility:hidden;transition:opacity .5s ease,visibility .5s;
+}
+#outro.on{opacity:1;visibility:visible}
+#outro .huge{
+  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;text-transform:uppercase;
+  font-size:clamp(2.4rem,9vw,7.5rem);line-height:1;letter-spacing:-.015em;text-align:center;
+  color:transparent;-webkit-text-stroke:1px rgba(246,246,244,.45);
+  transition:color .35s ease;
+}
+#outro .huge:hover{color:var(--paper);-webkit-text-stroke:1px transparent}
+#outro .cta{
+  display:inline-block;background:var(--gold);color:var(--ink);
+  font-weight:700;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;
+  padding:1.05rem 2.2rem;
+}
+#outro .cta:hover{background:var(--gold-deep)}
+#outroFoot{
+  position:absolute;left:0;right:0;
+  bottom:calc(clamp(1.2rem,3vh,2.2rem) + env(safe-area-inset-bottom));
+  display:flex;justify-content:space-between;
+  padding:0 clamp(1.1rem,3vw,2.5rem);
+}
+
+@media (max-width:640px){
+  .wm{font-size:24vw}
+  #heroIntro{bottom:calc(6.5rem + env(safe-area-inset-bottom));font-size:.82rem}
+  #heroChrome .br{display:none}
+  #outroFoot{flex-direction:column;gap:.4rem;align-items:center;text-align:center}
+}
+@media (prefers-reduced-motion:reduce){
+  #maskLayer .wm,#goldLayer .wm,#caseTitle{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- persistent chrome -->
+<header id="topbar">
+  <a class="home" href="https://www.aheadofmarket.com/" aria-label="Ahead of Market home">AOM<i></i></a>
+  <button id="menuBtn" aria-label="Open menu">Menu</button>
+</header>
+<button id="soundBtn" class="off" aria-label="Toggle sound"><span class="dot"></span><span id="soundLbl">Sound off</span></button>
+
+<!-- menu -->
+<nav id="menu" aria-hidden="true">
+  <button id="menuClose">Close</button>
+  <a class="big" href="https://www.aheadofmarket.com/#work">Work <small>The full portfolio</small></a>
+  <a class="big" href="https://www.aheadofmarket.com/brands">Brands <small>Guideline systems</small></a>
+  <a class="big" href="https://www.aheadofmarket.com/book">Book an audit <small>Start the conversation</small></a>
+  <div id="menuFoot" class="label">Phoenix, Arizona &nbsp;·&nbsp; aheadofmarket.com</div>
+</nav>
+
+<!-- fixed stage -->
+<div id="stage" aria-hidden="true">
+  <div id="vids"></div>
+
+  <div id="maskLayer"><div class="wm" id="wmA"><span class="t">AOM</span><span class="dot"></span></div></div>
+  <div id="goldLayer"><div class="wm" id="wmB"><span class="t">AOM</span><span class="dot"></span></div></div>
+
+  <div id="heroChrome">
+    <div class="corner bl label">Phoenix, Arizona<br>Ahead of Market</div>
+    <div class="corner br label">We make companies<br>impossible to ignore</div>
+    <p id="heroIntro">Video, web, and brand work for companies that want attention.
+    Everything playing through the letters is our real client footage. Scroll.</p>
+  </div>
+
+  <div id="caseUI">
+    <div class="shade"></div>
+    <div class="caseMeta">
+      <div class="caseTop">
+        <span id="caseIndex">01 / 10</span>
+        <span id="caseTag" class="label label--paper">Documentary</span>
+      </div>
+      <div class="titleClip"><h2 id="caseTitle">Journey to Gary Vee<span class="end"></span></h2></div>
+      <div id="caseRule"><i></i></div>
+    </div>
+  </div>
+
+  <div id="outro">
+    <a class="huge" href="https://www.aheadofmarket.com/#work">See the rest<br>of the work</a>
+    <a class="cta" href="https://www.aheadofmarket.com/book">Start a project</a>
+    <div id="outroFoot">
+      <span class="label">AOM © 2026 — Phoenix, Arizona</span>
+      <span class="label"><a href="https://www.aheadofmarket.com/">aheadofmarket.com</a></span>
+    </div>
+  </div>
+</div>
+
+<div id="runway"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.15/dist/hls.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script type="module">
+/* ---- real client footage (Gumlet, same assets as the live homepage) ---- */
+const COLL = '697678222b8b17fbb707acef';
+/* horizontal edits only — the vertical Reels-format assets crop badly full-bleed */
+const CASES = [
+  { t:'Journey to Gary Vee', tag:'Documentary',  id:'698a6296fc23d3d76fa8d992' },
+  { t:'Virtu Hospitality',   tag:'Hospitality',  id:'698a5ef5fc23d3d76fa87ef4' },
+  { t:'United Food Bank',    tag:'Nonprofit',    id:'698a5fcdfc23d3d76fa893b8' },
+  { t:'Refined Gardens',     tag:'Brand',        id:'698a57fb873071aec5c94350' },
+  { t:'Intelliplay',         tag:'Tech',         id:'698a5386aec3d4e420c17a69' },
+  { t:'Abstrakt',            tag:'Brand',        id:'698a5faffc23d3d76fa8909f' },
+  { t:'Memorial Towers',     tag:'Real Estate',  id:'698a584faec3d4e420c20fef' },
+];
+const hlsUrl = id => `https://video.gumlet.io/${COLL}/${id}/main.m3u8`;
+const poster = (id,w=1600) => `https://video.gumlet.io/${COLL}/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
+
+/* ---- build video stack ---- */
+const vidsBox = document.getElementById('vids');
+const players = CASES.map((c,i)=>{
+  const v = document.createElement('video');
+  v.className='vid'; v.muted=true; v.loop=true; v.playsInline=true;
+  v.preload='none'; v.poster=poster(c.id);
+  v.setAttribute('playsinline','');
+  vidsBox.appendChild(v);
+  return { el:v, hls:null, attached:false, id:c.id };
+});
+function attach(i){
+  const p = players[i]; if(!p || p.attached) return;
+  p.attached = true;
+  const src = hlsUrl(p.id);
+  if (window.Hls && Hls.isSupported()) {
+    p.hls = new Hls({maxBufferLength:12, capLevelToPlayerSize:true});
+    p.hls.loadSource(src); p.hls.attachMedia(p.el);
+  } else { p.el.src = src; }
+  /* client videos open on baked-in title cards — start past them and wrap loops there */
+  p.el.addEventListener('loadeddata', () => {
+    p.start = Math.min(8, (p.el.duration || 30) * 0.3);
+    if (p.el.currentTime < p.start) p.el.currentTime = p.start;
+    if (players[activeCase] === p) p.el.play().catch(()=>{});
+  }, {once:true});
+  p.el.addEventListener('timeupdate', () => {
+    if (p.start && p.el.currentTime < p.start - 0.5) p.el.currentTime = p.start;
+  });
+}
+function detachFar(active){
+  players.forEach((p,i)=>{
+    if (Math.abs(i-active)>1 && p.attached && p.hls){ p.hls.destroy(); p.hls=null; p.attached=false; p.el.removeAttribute('src'); }
+  });
+}
+
+/* ---- layout: runway segments ---- */
+const N = CASES.length;
+const HOLD=0.6, ZOOM=1.8, CASE=1.0, OUTRO=1.1;           /* in viewport-heights */
+const TOTAL = HOLD + ZOOM + N*CASE + OUTRO;
+const runway = document.getElementById('runway');
+function sizeRunway(){ runway.style.height = (TOTAL*100+100) + 'vh'; }
+sizeRunway(); addEventListener('resize', sizeRunway);
+
+/* ---- smooth scroll ---- */
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let lenis=null;
+if (!reduced && window.Lenis){ lenis = new Lenis({lerp:.09}); const raf=t=>{lenis.raf(t);requestAnimationFrame(raf)}; requestAnimationFrame(raf); }
+
+/* ---- refs ---- */
+const wmA=document.getElementById('wmA'), wmB=document.getElementById('wmB');
+const maskLayer=document.getElementById('maskLayer'), goldLayer=document.getElementById('goldLayer');
+const heroChrome=document.getElementById('heroChrome');
+const caseUI=document.getElementById('caseUI');
+const caseIndex=document.getElementById('caseIndex'), caseTag=document.getElementById('caseTag');
+const caseTitle=document.getElementById('caseTitle'), caseRuleFill=document.querySelector('#caseRule i');
+const outro=document.getElementById('outro');
+const soundBtn=document.getElementById('soundBtn'), soundLbl=document.getElementById('soundLbl');
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t*t*(3-2*t);
+
+let activeCase=-1, soundOn=false, titleShown=false;
+
+function setCase(i){
+  if (i===activeCase) return;
+  activeCase=i;
+  const c=CASES[i];
+  caseIndex.textContent = String(i+1).padStart(2,'0')+' / '+String(N).padStart(2,'0');
+  caseTag.textContent = c.tag;
+  caseTitle.innerHTML = c.t + '<span class="end"></span>';
+  caseTitle.style.transition='none'; caseTitle.style.transform='translateY(110%)';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    caseTitle.style.transition='transform .7s cubic-bezier(.2,.7,.2,1)';
+    caseTitle.style.transform='translateY(0)';
+  }));
+  attach(i); attach(i+1); detachFar(i);
+  players.forEach((p,j)=>{
+    if (j===i){ p.el.play().catch(()=>{}); p.el.muted=!soundOn; }
+    else { p.el.pause(); p.el.muted=true; }
+  });
+}
+
+soundBtn.addEventListener('click',()=>{
+  soundOn=!soundOn;
+  soundBtn.classList.toggle('off',!soundOn);
+  soundLbl.textContent = soundOn?'Sound on':'Sound off';
+  if (activeCase>=0){ players[activeCase].el.muted=!soundOn; }
+});
+
+/* ---- menu ---- */
+const menu=document.getElementById('menu');
+document.getElementById('menuBtn').addEventListener('click',()=>{menu.classList.add('open');menu.setAttribute('aria-hidden','false')});
+document.getElementById('menuClose').addEventListener('click',()=>{menu.classList.remove('open');menu.setAttribute('aria-hidden','true')});
+
+/* ---- the scroll program ---- */
+function frame(){
+  const vh = innerHeight;
+  const y = (lenis? lenis.scroll : scrollY) / vh;   /* position in viewport-heights */
+
+  /* phase 1: hold + zoom the wordmark until footage is full-bleed */
+  if (y < HOLD + ZOOM){
+    const z = clamp((y-HOLD)/ZOOM, 0, 1);
+    const s = 1 + ease(z)*34;
+    wmA.style.transform = wmB.style.transform = `scale(${s})`;
+    const fade = clamp((z-.78)/.22,0,1);
+    maskLayer.style.opacity = String(1-fade);
+    goldLayer.style.opacity = String(1-clamp(z/.5,0,1));
+    heroChrome.style.opacity = String(1-clamp(z/.25,0,1));
+    maskLayer.style.visibility = goldLayer.style.visibility = 'visible';
+    caseUI.classList.toggle('on', z>.92);
+    caseUI.style.pointerEvents='none';
+    outro.classList.remove('on');
+    soundBtn.classList.toggle('show', z>.92);
+    if (activeCase!==0 && z>.05) setCase(0);
+    if (z<=.05 && activeCase===0){ /* keep hero playing case 0 */ }
+    caseRuleFill.style.width='0%';
+  }
+  /* phase 2: the case run */
+  else if (y < HOLD + ZOOM + N*CASE){
+    maskLayer.style.visibility=goldLayer.style.visibility='hidden';
+    heroChrome.style.opacity='0';
+    caseUI.classList.add('on');
+    outro.classList.remove('on');
+    soundBtn.classList.add('show');
+    const cp = (y - HOLD - ZOOM)/CASE;
+    const i = clamp(Math.floor(cp),0,N-1);
+    setCase(i);
+    /* crossfade near boundaries */
+    const f = cp - i;
+    players.forEach((p,j)=>{
+      let o=0;
+      if (j===i) o = (f>.85 && i<N-1)? 1-(f-.85)/.15 : 1;
+      else if (j===i+1 && f>.85) o = (f-.85)/.15;
+      else if (j===i-1 && f<.15) o = 0;
+      p.el.style.opacity=o;
+      p.el.classList.toggle('on', o>0);
+    });
+    caseRuleFill.style.width = ((cp/N)*100).toFixed(2)+'%';
+  }
+  /* phase 3: outro */
+  else {
+    maskLayer.style.visibility=goldLayer.style.visibility='hidden';
+    caseUI.classList.remove('on');
+    soundBtn.classList.remove('show');
+    outro.classList.add('on');
+    players.forEach(p=>{ p.el.pause(); });
+  }
+  requestAnimationFrame(frame);
+}
+
+/* hero: case 0 footage through the letters from the start */
+attach(0);
+players[0].el.style.opacity=1; players[0].el.classList.add('on');
+players[0].el.play().catch(()=>{});
+activeCase=0;
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
