@@ -24,18 +24,36 @@ const IMAGE_URL_RE = /\.(png|jpg|jpeg|gif|webp|svg)(\?[^\s]*)?$/i
 
 function preprocessBareUrls(text) {
   // Convert bare URLs not already inside markdown link/image syntax into clickable markdown links or images
-  // Negative lookbehind: skip if preceded by ( [ ! (already in markdown syntax)
-  // This creates explicit markdown links [url](url) so they reliably convert to <a> tags via marked
-  return text.replace(/(?<![(\[!])(https?:\/\/[^\s<>"')\]]+)/g, (match) => {
-    let url = match
-    // Clean up trailing punctuation that shouldn't be part of the URL
-    url = url.replace(/[.,;:!?\)]+$/, '')
-    if (IMAGE_URL_RE.test(url)) {
-      return `![](${url})`
+  // Matches http:// or https:// URLs followed by valid URL characters (including balanced parens).
+  // Stops at whitespace, common sentence-ending punctuation, or unbalanced closing parens/brackets.
+  return text.replace(/(^|[\s<>"])(https?:\/\/[^\s<>"'[\]]+)/g, (fullMatch, prefix, url) => {
+    // Strip trailing punctuation that shouldn't be part of the URL.
+    // Include common sentence punctuation: . , ; : ! ?
+    // Also strip unbalanced closing parens/brackets.
+    let cleanUrl = url.replace(/([.,;:!?])+$/g, '')
+
+    // Handle balanced parens: if URL ends with ), only strip it if there's no matching (
+    if (cleanUrl.endsWith(')')) {
+      const openCount = (cleanUrl.match(/\(/g) || []).length
+      const closeCount = (cleanUrl.match(/\)/g) || []).length
+      if (closeCount > openCount) {
+        // Too many closing parens - strip the trailing ones
+        cleanUrl = cleanUrl.replace(/\)+$/g, (match) => {
+          let toStrip = match.length
+          while (toStrip > 0 && closeCount - toStrip <= openCount) {
+            toStrip--
+          }
+          return match.slice(0, toStrip)
+        })
+      }
+    }
+
+    if (IMAGE_URL_RE.test(cleanUrl)) {
+      return `${prefix}![](${cleanUrl})`
     }
     // Return markdown link format: [url](url)
     // The custom renderer will add target="_blank" rel="noopener noreferrer"
-    return `[${url}](${url})`
+    return `${prefix}[${cleanUrl}](${cleanUrl})`
   })
 }
 
