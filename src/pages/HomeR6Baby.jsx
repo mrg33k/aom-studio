@@ -117,7 +117,10 @@ const CSS = `
 
 /* ─── hear hero: runway + sticky stage, monogram as the window into footage ─── */
 .r17 .hz { position:relative; height:${RUNWAY_VH * 100}svh; scroll-snap-align:start; z-index:2; }
-.r17 .hz-stage { position:sticky; top:0; height:100svh; overflow:hidden; background:var(--ink); }
+/* isolation + own compositor layer: multiply must blend against THIS stage only —
+   without it Chrome can drop the blend mid-scroll in a sticky ancestor and the
+   mark flashes solid (Patrik's scroll-back-to-top bug) */
+.r17 .hz-stage { position:sticky; top:0; height:100svh; overflow:hidden; background:var(--ink); isolation:isolate; transform:translateZ(0); }
 .r17 .hz-video { position:absolute; inset:0; }
 .r17 .hz-video .pstr { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
 .r17 .hz-video .vid { position:absolute; inset:0; z-index:1; }
@@ -125,6 +128,7 @@ const CSS = `
 .r17 .hz-mask {
   position:absolute; inset:0; z-index:3; background:#000; mix-blend-mode:multiply;
   display:flex; align-items:center; justify-content:center;
+  will-change:opacity;
 }
 .r17 .hz-gold { position:absolute; inset:0; z-index:4; pointer-events:none; display:flex; align-items:center; justify-content:center; }
 .r17 .hz .wm { display:flex; align-items:flex-end; white-space:nowrap; transform-origin:55% 30%; will-change:transform; color:#fff; }
@@ -356,6 +360,15 @@ export default function HomeR6Baby() {
   const maskL = useRef(null);
   const goldL = useRef(null);
   const chromeL = useRef(null);
+  // shared hero transform state: scroll owns scale, pointer owns drift; both
+  // write the same composed transform so neither clobbers the other
+  const hero = useRef({ s: 1, x: 0, y: 0, tx: 0, ty: 0 });
+
+  const writeWm = useCallback(() => {
+    const h = hero.current;
+    const t = `translate3d(${h.x.toFixed(2)}px, ${h.y.toFixed(2)}px, 0) scale(${h.s})`;
+    if (wmA.current && wmB.current) wmA.current.style.transform = wmB.current.style.transform = t;
+  }, []);
 
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') close(); };
@@ -378,10 +391,8 @@ export default function HomeR6Baby() {
       const y = box.scrollTop / H;
       // hero zoom
       const z = clamp01((y - HOLD) / ZOOM);
-      const s = 1 + ease(z) * 34;
-      if (wmA.current && wmB.current) {
-        wmA.current.style.transform = wmB.current.style.transform = `scale(${s})`;
-      }
+      hero.current.s = 1 + ease(z) * 34;
+      writeWm();
       if (maskL.current) {
         maskL.current.style.opacity = String(1 - clamp01((z - 0.78) / 0.22));
         maskL.current.style.visibility = z >= 1 ? 'hidden' : 'visible';
@@ -401,7 +412,32 @@ export default function HomeR6Baby() {
     box.addEventListener('scroll', apply, { passive: true });
     window.addEventListener('resize', apply);
     return () => { box.removeEventListener('scroll', apply); window.removeEventListener('resize', apply); };
-  }, []);
+  }, [writeWm]);
+
+  // The monogram follows the mouse (Patrik: "this would bring it to life").
+  // Fine pointers on large screens only; lerped drift, off under reduced motion.
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const ok = window.matchMedia('(pointer:fine)').matches
+      && window.matchMedia('(min-width:861px)').matches
+      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!ok) return;
+    const h = hero.current;
+    const onMove = e => {
+      h.tx = (e.clientX / window.innerWidth - 0.5) * 44;
+      h.ty = (e.clientY / window.innerHeight - 0.5) * 30;
+    };
+    let raf;
+    const tick = () => {
+      h.x += (h.tx - h.x) * 0.06;
+      h.y += (h.ty - h.y) * 0.06;
+      if (Math.abs(h.tx - h.x) > 0.01 || Math.abs(h.ty - h.y) > 0.01) writeWm();
+      raf = requestAnimationFrame(tick);
+    };
+    window.addEventListener('mousemove', onMove, { passive: true });
+    raf = requestAnimationFrame(tick);
+    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf); };
+  }, [writeWm]);
 
   // Deep links (#story/#work/#contact): the reel mounts after the browser's
   // native anchor pass, so jump to the hash target ourselves. Instant, not
