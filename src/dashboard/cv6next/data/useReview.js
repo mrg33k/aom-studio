@@ -273,6 +273,11 @@ export function useReview(worldId = 'aom', injected = null) {
   // WD40-R5: total item count reported by the server (may be larger than queue.items.length
   // when more pages exist). Drives hasMore and the "N of M" header display.
   const [queueServerTotal, setQueueServerTotal] = useState(0);
+  // WD40-R5b: refs so load/loadMore read current values without appearing in useCallback deps.
+  // Having `queue` in load's deps creates a cascade: load→setQueue→new load ref→useEffect→load…
+  // (25+ inflight requests observed in prod). Refs give stable reads without triggering re-creates.
+  const queueRef = useRef(null);
+  const queueServerTotalRef = useRef(0);
   // Queue scope (the same left-rail selection Organize uses): pick a project, then a
   // mission within it. null = all projects / every mission in the selected project;
   // '__root' = files sitting at the project root with no mission folder.
@@ -332,46 +337,57 @@ export function useReview(worldId = 'aom', injected = null) {
     let ok = false;
     // WD40-R5: on a realtime/timer refresh, fetch enough to cover what is already on screen
     // so the list doesn't collapse back to PAGE_SIZE when a single new item arrives.
-    const currentCount = queue?.items?.length || 0;
+    // WD40-R5b: read via queueRef (not queue state) so queue is NOT in deps — having queue
+    // in deps caused a cascade: successful load → setQueue → new load ref → useEffect fires
+    // → load() again → 25+ concurrent requests observed.
+    const currentCount = queueRef.current?.items?.length || 0;
     const fetchLimit = Math.max(PAGE_SIZE, currentCount);
     try {
       const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${fetchLimit}&offset=0`);
       if (r?.ok) {
         const d = await r.json();
         const items = (d.items || []).map((it) => mapQueueItem(it, openDelId));
-        setQueue({ items, readyCount: items.length });
-        setQueueServerTotal(d.total || items.length);
+        const next = { items, readyCount: items.length };
+        queueRef.current = next;
+        setQueue(next);
+        const total = d.total || items.length;
+        queueServerTotalRef.current = total;
+        setQueueServerTotal(total);
         ok = true;
       }
     } catch (e) {
       console.error('[Review load]', e);
     }
-    setStatus((prev) => (ok ? 'loaded' : (queue ? prev : 'error')));
-  }, [worldId, queue, openDelId]);
+    setStatus((prev) => (ok ? 'loaded' : (queueRef.current ? prev : 'error')));
+  }, [worldId, openDelId]);
 
   // WD40-R5: "Load older items" — true server-side fetch of the next PAGE_SIZE items,
   // appended to the in-memory list. hasMore is now driven by queueServerTotal vs the
   // fetched count, so items beyond the old 500-item hard cap become reachable.
+  // WD40-R5b: reads via refs (not state) so queue/queueServerTotal are NOT in deps,
+  // preventing stale-closure guard kicks from triggering spurious load() calls.
   const loadMore = useCallback(async () => {
-    const offset = queue?.items?.length || 0;
-    if (offset >= queueServerTotal) return; // nothing more on the server
+    const offset = queueRef.current?.items?.length || 0;
+    if (offset >= queueServerTotalRef.current) return; // nothing more on the server
     try {
       const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${PAGE_SIZE}&offset=${offset}`);
       if (r?.ok) {
         const d = await r.json();
         const newItems = (d.items || []).map((it) => mapQueueItem(it, openDelId));
         if (newItems.length > 0) {
-          setQueue((prev) => ({
-            items: [...(prev?.items || []), ...newItems],
-            readyCount: (prev?.items?.length || 0) + newItems.length,
-          }));
-          setQueueServerTotal(d.total || queueServerTotal);
+          const merged = [...(queueRef.current?.items || []), ...newItems];
+          const next = { items: merged, readyCount: merged.length };
+          queueRef.current = next;
+          setQueue(next);
+          const newTotal = d.total || queueServerTotalRef.current;
+          queueServerTotalRef.current = newTotal;
+          setQueueServerTotal(newTotal);
         }
       }
     } catch (e) {
       console.error('[Review loadMore]', e);
     }
-  }, [worldId, queue, openDelId, queueServerTotal]);
+  }, [worldId, openDelId]);
 
   useEffect(() => {
     // Injected files (from a chat "Review all") ARE the queue — show exactly those,
