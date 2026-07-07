@@ -10,7 +10,7 @@
 // data-state="ready" and drop the shared loading/empty/error blocks into the same
 // flex slot so they REPLACE the body instead of overlaying it (O1).
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import NewComposer from './NewComposer.jsx';
@@ -168,19 +168,23 @@ export default function OrganizeMobile({ onNav, onOpenNav, onAssignFile }) {
 
   // Census closure (mirror of desktop): the default-active sort/filter chips are
   // already selected — mark them aria-current + cursor:default so a re-click reads as
-  // an intentional no-op, not a dead control. Runs after TemplateScreen re-binds.
-  useLayoutEffect(() => {
+  // an intentional no-op, not a dead control. A MutationObserver re-applies it through
+  // TemplateScreen's innerHTML wipes + churn remounts so the marker is always present.
+  useEffect(() => {
     const wrap = wrapRef.current;
-    if (!wrap) return;
-    wrap.querySelectorAll('[data-action="setSort"],[data-action="setFilter"]').forEach((btn) => {
-      if (btn.classList.contains('is-on')) {
-        btn.setAttribute('aria-current', 'true');
-        btn.style.cursor = 'default';
-      } else {
-        btn.removeAttribute('aria-current');
-        btn.style.cursor = '';
-      }
-    });
+    if (!wrap) return undefined;
+    const sync = () => {
+      wrap.querySelectorAll('[data-action="setSort"],[data-action="setFilter"]').forEach((btn) => {
+        const on = btn.classList.contains('is-on');
+        const has = btn.getAttribute('aria-current') === 'true';
+        if (on && !has) { btn.setAttribute('aria-current', 'true'); btn.style.cursor = 'default'; }
+        else if (!on && has) { btn.removeAttribute('aria-current'); btn.style.cursor = ''; }
+      });
+    };
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(wrap, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
   }, [bindData, projectId, pickedFileId]);
 
   // Context-aware back: file view → list, list → picker, picker → home.

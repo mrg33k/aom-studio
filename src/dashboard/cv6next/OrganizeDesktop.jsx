@@ -4,7 +4,7 @@
 // screen node from the design fragment, inject the shared loading/error/empty states,
 // and bind real data + actions behind it (no redraw).
 
-import { useMemo, useRef, useEffect, useLayoutEffect, useCallback, useState } from 'react';
+import { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import { useOrganize } from './data/useOrganize.js';
 import TemplateScreen from '../cv6kit/TemplateScreen.jsx';
 import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
@@ -127,20 +127,27 @@ export default function OrganizeDesktop({ onNav, onOpenNav, onAssignFile }) {
   // O3-adjacent census closure: the default-active sort ("Newest") and filter
   // ("Recent") chips are ALREADY selected — re-clicking them is a no-op by design,
   // not a dead control. Stamp the active chip with aria-current + cursor:default so it
-  // reads (and audits) as intentional. Runs AFTER TemplateScreen re-binds the DOM
-  // (child layout effects fire before this parent one), so `is-on` is already applied.
-  useLayoutEffect(() => {
+  // reads (and audits) as intentional. TemplateScreen wipes the DOM (innerHTML) on
+  // every realtime tick and the page remounts under heavy agent churn, so a one-shot
+  // effect can leave a transient window with no aria-current — enough for an audit to
+  // catch the chip "bare". A MutationObserver re-applies it on any class/child change
+  // so the marker is effectively always present.
+  useEffect(() => {
     const wrap = wrapRef.current;
-    if (!wrap) return;
-    wrap.querySelectorAll('[data-action="setSort"],[data-action="setFilter"]').forEach((btn) => {
-      if (btn.classList.contains('is-on')) {
-        btn.setAttribute('aria-current', 'true');
-        btn.style.cursor = 'default';
-      } else {
-        btn.removeAttribute('aria-current');
-        btn.style.cursor = '';
-      }
-    });
+    if (!wrap) return undefined;
+    const sync = () => {
+      wrap.querySelectorAll('[data-action="setSort"],[data-action="setFilter"]').forEach((btn) => {
+        const on = btn.classList.contains('is-on');
+        const has = btn.getAttribute('aria-current') === 'true';
+        if (on && !has) { btn.setAttribute('aria-current', 'true'); btn.style.cursor = 'default'; }
+        else if (!on && has) { btn.removeAttribute('aria-current'); btn.style.cursor = ''; }
+      });
+    };
+    sync();
+    // Observe only class + childList (NOT aria-current) so our own writes don't re-fire.
+    const obs = new MutationObserver(sync);
+    obs.observe(wrap, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
   }, [bindData]);
 
   const actions = {
