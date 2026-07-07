@@ -1014,14 +1014,38 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
 
   // Keep the keyboard-selected row visible: when selection moves (incl. into a freshly
   // expanded sub-folder), scroll it into the rooms list so arrow nav never walks off-screen.
+  // ONCE per selection change (ref guard): the Set deps churn identity without the selection
+  // moving (openRoom re-adds an already-open project id), and re-pinning the selected row
+  // then fights the user's own scroll (2026-07-06 scroll-hijack fix).
+  const knavAutoScrolledRef = useRef(-1);
   useEffect(() => {
     if (!isDesktop || knavSelectedIdx < 0) return undefined;
+    if (knavAutoScrolledRef.current === knavSelectedIdx) return undefined;
+    knavAutoScrolledRef.current = knavSelectedIdx;
     const id = requestAnimationFrame(() => {
       const el = document.querySelector('[data-screen="home-desktop"] .scrollcap [data-knav="sel"]');
       if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
     });
     return () => cancelAnimationFrame(id);
   }, [knavSelectedIdx, isDesktop, expandedHomeProjects, expandedHomeNodes]);
+
+  // The rooms list stays where the user scrolled it. The home template re-binds on every
+  // realtime tick once a room is open (the col3 thread's convo/goal data rides in the data
+  // signature), and TemplateScreen's innerHTML reset recreates .scrollcap at scrollTop 0 —
+  // every tick yanked the list back. Record the latest scroll (user or auto — programmatic
+  // scrolls fire the same event) and re-apply it to the fresh node after each re-bind.
+  // Restoring never fights the user: the saved value IS wherever they last put it.
+  useEffect(() => {
+    if (!isDesktop) return undefined;
+    const getEl = () => document.querySelector('[data-screen="home-desktop"] .scrollcap');
+    let saved = -1;
+    const onScroll = (e) => { const el = getEl(); if (el && e.target === el) saved = el.scrollTop; };
+    document.addEventListener('scroll', onScroll, true);
+    const restore = () => { const el = getEl(); if (el && saved >= 0 && Math.abs(el.scrollTop - saved) > 1) el.scrollTop = saved; };
+    const obs = new MutationObserver(() => requestAnimationFrame(restore));
+    obs.observe(document.body, { childList: true, subtree: true });
+    return () => { document.removeEventListener('scroll', onScroll, true); obs.disconnect(); };
+  }, [isDesktop]);
 
   const openNewMission = () => {
     if (!openedProject) return;
