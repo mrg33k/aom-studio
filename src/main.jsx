@@ -447,6 +447,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/versions/act-stage" element={<VActStage />} />
           <Route path="/versions/gear-turn" element={<VGearTurn />} />
           <Route path="/versions/density" element={<VDensity />} />
+          <Route path="/versions/cinematic-glass" element={<VCinematicGlass />} />
           <Route path="/work/:slug" element={<ProjectPage />} />
           <Route path="/scribe" element={<LiveScribe />} />
           <Route path="/construction" element={<ConstructionRedirect />} />

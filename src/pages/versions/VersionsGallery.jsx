@@ -10,7 +10,8 @@ const ERAS = [
   {
     label: 'Tonight',
     items: [
-      { slug: null, href: '/r5', shot: '/versions/r15.jpg', live: true, title: 'Cinematic glass', note: 'Raw client footage full-bleed, liquid glass, gold square period. The R15 rethink.' },
+      { slug: null, href: '/r5', shot: '/versions/r17.jpg', live: true, title: 'The reel', note: 'Full-viewport split-screen case reel, giant uppercase type, gold square period. The R17 Glitch&Grit-structure rebuild.' },
+      { slug: 'cinematic-glass', shot: '/versions/r15.jpg', title: 'Cinematic glass', note: 'Raw client footage full-bleed, liquid glass, gold square period. The R15 rethink.' },
     ],
   },
   {
