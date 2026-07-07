@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import ServiceFooter from './ServiceFooter';
 
 // Service page: Documentary & Long-Form Video
 // Mission: aheadofmarket.com:home (R20.6 — fourth service page, same design system)
@@ -396,9 +397,7 @@ export default function ServiceDocumentary() {
       </section>
 
       {/* Footer */}
-      <footer className="footer">
-        © 2026 Ahead of Market. All rights reserved.
-      </footer>
+      <ServiceFooter current="/services/documentary" />
     </div>
   );
 }

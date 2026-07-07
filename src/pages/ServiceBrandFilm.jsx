@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import ServiceFooter from './ServiceFooter';
 
 // Service page: Brand Films
 // Mission: aheadofmarket.com:home (R2 — first service page child of /r6 design system)
@@ -279,13 +280,13 @@ export default function ServiceBrandFilm() {
           {/* Proof 1: Ambition Mechanical */}
           <div className="proof-block">
             <div className="proof-img">
-              <img src={poster('698a6296fc23d3d76fa8d992')} alt="Ambition Mechanical Services — HVAC crew on location" loading="lazy" />
+              <img src={poster('698a6296fc23d3d76fa8d992')} alt="Ambition Mechanical — HVAC crew on location" loading="lazy" />
             </div>
             <div className="proof-text">
               <div className="proof-label">HVAC Turnaround</div>
               <h3 className="proof-title">Ambition Mechanical</h3>
               <p>
-                Ambition Mechanical Services needed to stand out in a crowded Phoenix market. They ship HVAC units fast, but nobody knew that.
+                Ambition Mechanical needed to stand out in a crowded Phoenix market. They ship HVAC units fast, but nobody knew that.
               </p>
               <p>
                 We filmed their crew during an emergency hospital install, the stakes were real, the work was clean. The resulting 2-minute film became their most effective sales tool. That film now anchors their website, drives qualified leads, and got them permission to price premium.
@@ -400,9 +401,7 @@ export default function ServiceBrandFilm() {
       </section>
 
       {/* Footer */}
-      <footer className="footer">
-        © 2026 Ahead of Market. All rights reserved.
-      </footer>
+      <ServiceFooter current="/services/brand-film" />
     </div>
   );
 }

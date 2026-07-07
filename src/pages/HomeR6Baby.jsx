@@ -79,6 +79,28 @@ const CSS = `
 .r17 .chrome .mid { position:absolute; left:50%; transform:translateX(-50%); }
 .r17 .chrome .brand { color:var(--paper); }
 .r17 .chrome .brand .sq { width:.5em; height:.5em; margin-left:.45em; vertical-align:baseline; }
+.r17 .chrome-link { pointer-events:auto; font-size:.72rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; text-shadow:0 1px 14px rgba(0,0,0,.75); color:var(--paper); transition:color .15s; padding:0; }
+.r17 .chrome-link:hover { color:var(--gold); }
+
+/* ─── WORK overlay: the full site map ─── */
+.r17 .hz-menu { position:fixed; inset:0; z-index:400; background:rgba(6,6,6,.985); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); opacity:0; visibility:hidden; transition:opacity .3s ease, visibility .3s ease; display:flex; align-items:center; justify-content:center; padding:clamp(1.5rem,6vh,5rem) var(--pad); }
+.r17 .hz-menu.open { opacity:1; visibility:visible; }
+.r17 .hz-menu-inner { width:min(720px,100%); max-height:100%; overflow-y:auto; }
+.r17 .hz-menu-x { position:absolute; top:1.25rem; right:var(--pad); font-size:.72rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--paper); transition:color .15s; }
+.r17 .hz-menu-x:hover { color:var(--gold); }
+.r17 .hz-menu-kick { font-size:.66rem; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin:1.6rem 0 .5rem; }
+.r17 .hz-menu-kick:first-child { margin-top:0; }
+.r17 .hz-menu-row { display:flex; flex-direction:column; align-items:flex-start; text-align:left; width:100%; padding:.7rem 0; border-top:1px solid rgba(255,255,255,.1); transition:padding-left .25s cubic-bezier(.16,1,.3,1); }
+.r17 .hz-menu-row:hover { padding-left:.6rem; }
+.r17 .hz-menu-t { font-family:var(--fd); font-weight:800; text-transform:uppercase; font-size:clamp(1.5rem,3.4vw,2.4rem); line-height:1.05; letter-spacing:-.01em; color:var(--paper); transition:color .15s; }
+.r17 .hz-menu-row:hover .hz-menu-t { color:var(--gold); }
+.r17 .hz-menu-row.big .hz-menu-t { font-size:clamp(1.9rem,4.4vw,3rem); }
+.r17 .hz-menu-sub { font-size:.82rem; color:var(--mut); margin-top:.2rem; }
+
+/* two-parts service links */
+.r17 .parts-link { color:inherit; transition:color .15s; }
+.r17 .parts-link:hover { color:var(--gold); }
+.r17 .parts-link .arw { font-size:.8em; opacity:.7; }
 
 /* ─── counter-scroll backdrop: two clipped windows, each holding a column of
    viewport-height panels. Left column rides up with scroll; right column is
@@ -353,9 +375,27 @@ const RIGHT_PANELS = [
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 
+// the site map surfaced through the WORK overlay — the R4 nav "brought to life"
+const SERVICES = [
+  { t: 'Brand film', href: '/services/brand-film', sub: 'Video series that make companies impossible to ignore' },
+  { t: 'Website design & build', href: '/services/web-build', sub: 'Sites and platforms, built or rebuilt fast' },
+  { t: 'Strategy & story', href: '/services/strategy', sub: 'One clear position, deployable everywhere' },
+  { t: 'Documentary', href: '/services/documentary', sub: 'Long-form we commit months to' },
+];
+
 export default function HomeR6Baby() {
   const [video, setVideo] = useState(null);
+  const [menu, setMenu] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('menu') === '1'; }
+    catch { return false; }
+  });
   const close = useCallback(() => setVideo(null), []);
+  const jump = useCallback((id) => {
+    setMenu(false);
+    const el = document.getElementById(id);
+    const box = boxRef.current;
+    if (el && box) box.scrollTo({ top: el.offsetTop, behavior: 'instant' });
+  }, []);
   const boxRef = useRef(null);
   const colL = useRef(null);
   const colR = useRef(null);
@@ -376,7 +416,7 @@ export default function HomeR6Baby() {
   }, []);
 
   useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape') close(); };
+    const onKey = e => { if (e.key === 'Escape') { close(); setMenu(false); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [close]);
@@ -484,11 +524,33 @@ export default function HomeR6Baby() {
       {/* scroll progress rail */}
       <div className="rail" ref={railRef} aria-hidden="true" />
 
-      {/* fixed corner chrome */}
+      {/* fixed corner chrome — WORK opens the full site map */}
       <div className="chrome top">
-        <a href="#work">Work</a>
-        <a className="mid" href="#story">Story</a>
-        <a href="#contact">Contact us</a>
+        <button className="chrome-link" onClick={() => setMenu(true)}>Work</button>
+        <a className="mid" href="#story" onClick={e => { e.preventDefault(); jump('story'); }}>Story</a>
+        <a href="#contact" onClick={e => { e.preventDefault(); jump('contact'); }}>Contact us</a>
+      </div>
+
+      {/* the WORK overlay — the R4 nav brought to life */}
+      <div className={`hz-menu ${menu ? 'open' : ''}`} onClick={() => setMenu(false)}>
+        <div className="hz-menu-inner" onClick={e => e.stopPropagation()}>
+          <button className="hz-menu-x" onClick={() => setMenu(false)} aria-label="Close">Close ✕</button>
+          <div className="hz-menu-kick">The work</div>
+          <button className="hz-menu-row big" onClick={() => jump('work')}>
+            <span className="hz-menu-t">See the work<i className="sq" /></span>
+            <span className="hz-menu-sub">100+ projects shipped since 2020</span>
+          </button>
+          <div className="hz-menu-kick">What we make</div>
+          {SERVICES.map(s => (
+            <a key={s.href} className="hz-menu-row" href={s.href}>
+              <span className="hz-menu-t">{s.t}</span>
+              <span className="hz-menu-sub">{s.sub}</span>
+            </a>
+          ))}
+          <div className="hz-menu-kick">More</div>
+          <button className="hz-menu-row" onClick={() => jump('story')}><span className="hz-menu-t">Our story</span></button>
+          <button className="hz-menu-row" onClick={() => jump('contact')}><span className="hz-menu-t">Start a conversation</span></button>
+        </div>
       </div>
       <div className="chrome bot" aria-hidden="true">
         <span className="brand">Ahead</span>
@@ -642,8 +704,8 @@ export default function HomeR6Baby() {
         <div className="parts-col l rv">
           <div className="parts-head">Marketing — the materials your message stands on</div>
           <ul className="parts-list">
-            <li>Websites &amp; web applications</li>
-            <li>Brand films &amp; video series</li>
+            <li><a className="parts-link" href="/services/web-build">Websites &amp; web applications <span className="arw">↗</span></a></li>
+            <li><a className="parts-link" href="/services/brand-film">Brand films &amp; video series <span className="arw">↗</span></a></li>
             <li>Quizzes &amp; interactive tools for prospects</li>
             <li>Photography &amp; creative assets</li>
           </ul>

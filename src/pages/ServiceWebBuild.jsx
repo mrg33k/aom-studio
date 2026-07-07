@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import BrandMark from '../components/home/BrandMark';
+import ServiceFooter from './ServiceFooter';
 
 // Service page: Website Design & Build
 // Mission: aheadofmarket.com:home (R4 — second service page, same design system as brand-film)
@@ -405,9 +406,7 @@ export default function ServiceWebBuild() {
       </section>
 
       {/* Footer */}
-      <footer className="footer">
-        © 2026 Ahead of Market. All rights reserved.
-      </footer>
+      <ServiceFooter current="/services/web-build" />
     </div>
   );
 }
