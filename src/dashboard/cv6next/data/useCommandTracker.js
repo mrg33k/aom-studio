@@ -75,14 +75,16 @@ const WORKING_WINDOW_MS = 30 * 60 * 1000; // activity in the last 30m = working
 
 // Map a step list to the template's checklist rows, source-tagged (spec: done vs
 // not-done, who put it on the plan). One active row max, only when truly live.
-function checklistFromSteps(steps, live) {
+// Each row carries `act` = "<storeKey>|<stepId>" so a tap on the rendered row can
+// write back to the exact stored entry it came from (wd40 R1: actionable checklist).
+function checklistFromSteps(steps, live, storeKey) {
   let activeAssigned = false;
   return (steps || []).map((s) => {
     let state = 'queued';
     let tag = s.source === 'agent' ? (s.proposed ? 'Proposed' : 'Agent') : 'You';
     if (s.done) { state = 'done'; tag = 'Done'; }
     else if (live && !activeAssigned) { state = 'active'; tag = 'Running'; activeAssigned = true; }
-    return { label: s.text || '', tag, state };
+    return { id: s.id || '', label: s.text || '', tag, state, act: `${storeKey || ''}|${s.id || ''}` };
   });
 }
 
@@ -217,7 +219,15 @@ function shapeCommand({
   };
 
   const findLast = (key) => lastByRoom[key] || lastByRoom[bareKey(key)] || lastByRoom[projectOf(key)] || null;
-  const stepsFor = (key) => stepsByRoom[key] || stepsByRoom[bareKey(key)] || [];
+  // Resolve WHERE a room's steps actually live (canonical key vs legacy bare slug) so
+  // checklist writes land on the same stored list the display read from — adding under
+  // the canonical key while a legacy list exists would mask it, not extend it.
+  const stepsEntryFor = (key) => {
+    if (Array.isArray(stepsByRoom[key])) return { list: stepsByRoom[key], storeKey: key };
+    const bk = bareKey(key);
+    if (Array.isArray(stepsByRoom[bk])) return { list: stepsByRoom[bk], storeKey: bk };
+    return { list: [], storeKey: key };
+  };
 
   const buildRow = (key) => {
     const gr = normGoals[key] || {};
@@ -251,14 +261,15 @@ function shapeCommand({
       || (last && last.text) || ''
     )).slice(0, 110) || '—';
 
-    const steps = stepsFor(key);
+    const { list: steps, storeKey } = stepsEntryFor(key);
     const expanded = selectedKey && selectedKey === key;
-    const checklist = checklistFromSteps(steps, status === 'working');
+    const checklist = checklistFromSteps(steps, status === 'working', storeKey);
     const doneCount = checklist.filter((c) => c.state === 'done').length;
     const loopOn = gr.autopilot !== false; // absent/true = loop default ON (matches master-loop-tick)
 
     return {
       id: key, key, name, tag, tint: tintFor(name),
+      stepStoreKey: storeKey,
       projectSlug: projSlugByKey[key] || '',
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
       liveNow, age: lastActivity ? relTime(lastActivity) : '—', lastActivity,
@@ -290,6 +301,7 @@ function shapeCommand({
     const realGoal = oneLineGoal((board && board.goal) || '');
     rows.push({
       id: 'agent:' + agent, key: 'agent:' + agent, name, tag: 'Terminal', tint: tintFor(name),
+      stepStoreKey: 'agent:' + agent,
       goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
       liveNow: cleanCell(firstLine(s.task_text)).slice(0, 110) || 'Active session',
       age: 'now', lastActivity: now,
@@ -313,6 +325,7 @@ function shapeCommand({
   const goal = focus
     ? {
         id: focus.key, roomName: focus.name, tint: focus.tint,
+        addKey: focus.stepStoreKey || focus.key,
         status: focus.status, statusLabel: focus.statusLabel,
         title: focus.goalKind === 'goal' ? focus.goal : 'No goal set for this room yet',
         driverLine: focus.liveNow !== '—' ? focus.liveNow
@@ -324,12 +337,13 @@ function shapeCommand({
       }
     : {
         id: '', roomName: 'No rooms yet', tint: 'violet', status: 'idle', statusLabel: '',
+        addKey: '',
         title: 'No goal set for this room yet', driverLine: 'Nothing active right now',
         checklist: [], queueNote: 'queue clear',
       };
   const doneCount = goal.checklist.filter((c) => c.state === 'done').length;
   goal.stepCount = goal.checklist.length ? `${doneCount}/${goal.checklist.length}` : '0';
-  goal.emptyNote = goal.checklist.length ? '' : 'No steps on this plan yet. Add them in the room and they show up here.';
+  goal.emptyNote = goal.checklist.length ? '' : 'No steps on this plan yet. Add the first one below.';
 
   return {
     ledger: { roomCount: rows.length, liveCount: workingCount, workingCount, blockedCount, rooms: rows, others: rows },
@@ -457,7 +471,10 @@ export function useCommand(worldIdArg, selectedKey = '') {
 
   // Every room's plan checklist in one read (the same store the Chat goal thread
   // and plan-propose.py use) — powers the step-in / expanded checklist per row.
+  // stepsReload forces an immediate refetch right after a checklist write, so the
+  // optimistic flip reconciles to server truth in seconds, not at the next 30s tick.
   const [stepsByRoom, setStepsByRoom] = useState({});
+  const [stepsReload, setStepsReload] = useState(0);
   const stepsSig = useRef('');
   useEffect(() => {
     if (!worldId) return undefined;
@@ -474,7 +491,7 @@ export function useCommand(worldIdArg, selectedKey = '') {
     load();
     const id = setInterval(load, 30000);
     return () => { alive = false; clearInterval(id); };
-  }, [worldId]);
+  }, [worldId, stepsReload]);
 
   // Arm/disarm the master loop for a room (the per-row toggle). Optimistic; the
   // 60s goal poll reconciles to the file the daemon actually reads. The row key is
@@ -499,12 +516,61 @@ export function useCommand(worldIdArg, selectedKey = '') {
     } catch { /* poll reconciles */ }
   }, [worldId, goalRooms]);
 
+  // ── Actionable checklist (wd40 R1) ── writes ride the SAME store the little man
+  // (goal-notetaker) and plan-propose.py write: /api/dashboard/room-goal-steps.
+  // `act` = "<storeKey>|<stepId>" as stamped by checklistFromSteps, so the write hits
+  // the exact stored list the row was rendered from. Optimistic flip, then a forced
+  // refetch reconciles to server truth.
+  const stepToggle = useCallback(async (act) => {
+    const [room, id] = String(act || '').split('|');
+    if (!worldId || !room || !id) return;
+    const wasProposed = Boolean((stepsByRoom[room] || []).find((s) => s.id === id)?.proposed);
+    setStepsByRoom((prev) => {
+      const cur = prev[room] || [];
+      const next = cur.map((s) => (s.id === id ? { ...s, done: !s.done, proposed: false } : s));
+      const out = { ...prev, [room]: next };
+      stepsSig.current = JSON.stringify(out);
+      return out;
+    });
+    try {
+      const post = (body) => authFetch('/api/dashboard/room-goal-steps', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world: worldId, room, id, ...body }),
+      });
+      // Checking off an agent SUGGESTION claims it first (the trust rule: a proposal
+      // the user touched is theirs), then flips done for real.
+      if (wasProposed) await post({ action: 'accept' });
+      await post({ action: 'toggle' });
+    } finally {
+      stepsSig.current = ''; setStepsReload((n) => n + 1);
+    }
+  }, [worldId, stepsByRoom]);
+
+  const stepAdd = useCallback(async (room, text) => {
+    const t = String(text || '').replace(/\s+/g, ' ').trim();
+    if (!worldId || !room || !t) return;
+    setStepsByRoom((prev) => {
+      const cur = prev[room] || [];
+      const out = { ...prev, [room]: [...cur, { id: 'tmp-' + Date.now().toString(36), text: t, done: false, source: 'user', proposed: false }] };
+      stepsSig.current = JSON.stringify(out);
+      return out;
+    });
+    try {
+      await authFetch('/api/dashboard/room-goal-steps', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'add', world: worldId, room, text: t }),
+      });
+    } finally {
+      stepsSig.current = ''; setStepsReload((n) => n + 1);
+    }
+  }, [worldId]);
+
   const data = useMemo(
     () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey }),
     [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey],
   );
   const state = worldId ? 'ready' : 'loading';
-  return { state, data, toggleWatcher };
+  return { state, data, toggleWatcher, stepToggle, stepAdd };
 }
 
 // ── Tracker: the real CV6 bug tracker ──

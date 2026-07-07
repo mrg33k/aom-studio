@@ -63,11 +63,18 @@
       <div style="font-size:17px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:16px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
       <div style="background:var(--surface-2);border-radius:11px;padding:12px 14px;margin-bottom:20px;display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12px;color:var(--success);" data-bind="goal.driverLine"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5 7 10 12 5 17"/><line x1="13" y1="17" x2="19" y2="17"/></svg>Elon · patching resolver</div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;"><span class="eyebrow" style="display:inline-flex;align-items:center;gap:7px;">Checklist · <span data-bind="goal.stepCount">4</span> steps</span><span class="stat" style="color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg><span data-bind="goal.queueNote">1 in master-loop queue</span></span></div>
-      <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:18px;overflow-y:auto;max-height:calc(100% - 300px);">
+      <div style="display:flex;flex-direction:column;gap:13px;margin-bottom:14px;overflow-y:auto;max-height:calc(100% - 348px);">
         <!-- ONE row per checklist step; is-:step.state → done | queued | active; the tag is the
-             step's source (You / Agent / Proposed) or Done/Running. Empty = honest empty note. -->
-        <div class="cstep is-done" style="display:flex;align-items:center;gap:11px;" data-each="goal.checklist" data-mod="is-:step.state"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag">Verified</span></div>
+             step's source (You / Agent / Proposed) or Done/Running. Empty = honest empty note.
+             ACTIONABLE (wd40 R1): tap a row = mark done / not done for real (room-goal-steps
+             store; tapping a Proposed step also claims it). -->
+        <div class="cstep is-done" style="display:flex;align-items:center;gap:11px;cursor:pointer;" data-each="goal.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag">Verified</span></div>
         <div style="font-size:12px;color:var(--faint);" data-bind="goal.emptyNote"></div>
+      </div>
+      <!-- Add a step to this room's plan — writes to the same store the room's agent reads -->
+      <div data-cv6-addstep style="display:flex;gap:8px;margin-bottom:14px;">
+        <input placeholder="Add a step to this plan…" style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+        <button data-action="addStep" data-arg="goal.addKey" title="Add this step to the room's plan" style="height:38px;padding:0 15px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Add</button>
       </div>
       <button style="width:100%;height:42px;border-radius:11px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:13px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;" data-action="openRoom" data-arg="goal.id" title="Open this room's conversation">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5a7.5 7.5 0 0 1-10.5 6.8L5 19.5l1.2-4A7.5 7.5 0 1 1 20 11.5Z"/></svg>Open room
@@ -98,9 +105,14 @@
         <div style="font-size:15.5px;line-height:1.4;font-weight:600;color:var(--fg);margin-bottom:10px;" data-bind="goal.title">Lock Interactive/community framing before the Apr 29 print.</div>
         
         <div style="display:flex;flex-direction:column;gap:11px;">
-          <!-- ONE row per checklist step -->
-          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;" data-each="goal.checklist" data-mod="is-:step.state"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag"></span></div>
+          <!-- ONE row per checklist step — tap = done / not done for real -->
+          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-each="goal.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag"></span></div>
           <div style="font-size:11.5px;color:var(--faint);" data-bind="goal.emptyNote"></div>
+        </div>
+        <!-- Add a step (noop stops the tap from bubbling to the card's openRoom) -->
+        <div data-cv6-addstep data-action="noop" style="display:flex;gap:8px;margin-top:12px;">
+          <input placeholder="Add a step to this plan…" style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+          <button data-action="addStep" data-arg="goal.addKey" title="Add this step to the room's plan" style="height:38px;padding:0 15px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Add</button>
         </div>
       </div>
       <!-- ONE card per ledger room/terminal. Tap = step in (expands the room's plan
@@ -109,11 +121,18 @@
         <div style="display:flex;align-items:center;gap:10px;min-width:0;"><span class="pdot is-pink" data-mod="is-:room.tint" style="flex:none;"></span><div style="flex:1;min-width:0;"><div style="font-size:14px;font-weight:600;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.name">Included Health</div><div style="font-size:10.5px;color:var(--faint);" data-bind="room.tag"></div></div><span style="font-size:11px;color:var(--muted);flex:none;" data-bind="room.age">2h</span><span class="astat is-blocked" data-mod="is-:room.status" style="flex:none;"><span class="sd"></span><span data-bind="room.statusLabel">BLOCKED</span></span><span class="wtog" data-mod="is-:room.loop" data-action="toggleRoomLoop" data-arg="room.key" title="Master loop on/off for this room" style="flex:none;"><span class="wtog-knob"></span></span></div>
         <div class="gclamp gcell" data-mod="is-:room.goalKind" style="font-size:13px;color:var(--fg);" data-bind="room.goal">Batch02 culture deck</div>
         <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" data-bind="room.liveNow">—</div>
-        <!-- Level 2: the room's plan, inline when this row is stepped into (collapsed rows bind zero steps) -->
+        <!-- Level 2: the room's plan, inline when this row is stepped into (collapsed rows bind
+             zero steps). Steps are ACTIONABLE: tap = done / not done for real. -->
         <div style="display:flex;flex-direction:column;gap:10px;">
-          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;" data-each="room.checklist" data-mod="is-:step.state"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13px;" data-bind="step.label">Step</span><span class="cstep-tag" data-bind="step.tag"></span></div>
+          <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-each="room.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13px;" data-bind="step.label">Step</span><span class="cstep-tag" data-bind="step.tag"></span></div>
         </div>
         <div style="font-size:11.5px;color:var(--faint);" data-bind="room.stepNote"></div>
+        <!-- Add a step — only when stepped in (rowopen shows on is-expanded); noop stops the
+             tap from bubbling to the card's openGoal (which would collapse the row) -->
+        <div class="rowopen" data-mod="is-:room.expandedState" data-cv6-addstep data-action="noop" style="gap:8px;">
+          <input placeholder="Add a step to this plan…" style="flex:1;min-width:0;height:36px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
+          <button data-action="addStep" data-arg="room.stepStoreKey" title="Add this step to the room's plan" style="height:36px;padding:0 14px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Add</button>
+        </div>
         <button style="align-self:flex-start;height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--hair);background:var(--surface-2);color:var(--fg);font-size:12px;font-weight:600;font-family:var(--font-sans);gap:6px;cursor:pointer;" class="rowopen" data-mod="is-:room.expandedState" data-action="openRoom" data-arg="room.id">Open room</button>
       </div>
     </div>
