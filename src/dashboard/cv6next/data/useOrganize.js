@@ -460,7 +460,7 @@ export function useOrganize(worldId = 'aom') {
         ...[...missionCounts.entries()]
           .sort((a, b) => b[1] - a[1])
           .map(([slug, n]) => ({ id: slug, label: `${prettify(slug)} ${n}`, active: activeMission === slug ? 'on' : 'off' })),
-        ...(rootCount ? [{ id: '__root', label: `Root ${rootCount}`, active: activeMission === '__root' ? 'on' : 'off' }] : []),
+        ...(rootCount ? [{ id: '__root', label: `Other ${rootCount}`, active: activeMission === '__root' ? 'on' : 'off' }] : []),
       ]
     : [];
 
