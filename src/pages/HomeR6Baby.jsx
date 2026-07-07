@@ -46,7 +46,7 @@ const poster = (id, w = 1200) => `https://video.gumlet.io/697678222b8b17fbb707ac
 const CSS = `
 .r17 {
   --ink:#060606; --ink-2:#0B0B0A; --paper:#F6F6F4;
-  --mut:rgba(246,246,244,.66); --dim:rgba(246,246,244,.44);
+  --mut:rgba(246,246,244,.8); --dim:rgba(246,246,244,.55);
   --line:rgba(255,255,255,.14); --gold:#C4A46A; --gold-deep:#A8884C;
   --fx:'Inter',system-ui,Helvetica,Arial,sans-serif;
   --fd:'Inter Tight','Inter',system-ui,Helvetica,Arial,sans-serif;
@@ -94,6 +94,8 @@ const CSS = `
   .r17 .bk-win.r { left:0; right:auto; top:50%; width:100%; height:50%; }
   .r17 .bk-col.r { transform:translateY(calc(-13 * 50svh)); }
   .r17 .bk-panel { height:50svh; }
+  .r17 .bk-panel::after { background:rgba(4,4,4,.55); }
+  .r17 .tags { gap:.4rem; }
 }
 
 /* hero live reels: poster paints first, iframe loads over it; poster-only on
@@ -160,18 +162,20 @@ const CSS = `
 
 /* center stack */
 .r17 .stack { position:relative; z-index:3; display:flex; flex-direction:column; align-items:center; text-align:center; padding:0 var(--pad); max-width:100%; }
+.r17 .stack::before { content:''; position:absolute; inset:0; z-index:-1; background:radial-gradient(ellipse at center, rgba(4,4,4,.55), transparent 70%); pointer-events:none; }
 .r17 .tags { display:flex; flex-direction:column; gap:.28rem; margin-bottom:1.1rem; }
-.r17 .tags span { font-size:.68rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 12px rgba(0,0,0,.7); }
+.r17 .tags span { font-size:.68rem; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 14px rgba(0,0,0,.9); }
 .r17 .tags .idx { font-size:.95rem; font-weight:700; letter-spacing:.3em; margin-bottom:.3rem; }
+.r17 #contact .tags > span:first-child { font-size:.95rem; font-weight:700; }
 .r17 .title {
   font-family:var(--fd); font-weight:800; text-transform:uppercase;
-  font-size:clamp(2.7rem,9.2vw,9.2rem); line-height:.9; letter-spacing:-.02em;
+  font-size:clamp(3.1rem,9.2vw,9.2rem); line-height:.9; letter-spacing:-.02em;
   text-shadow:0 3px 44px rgba(0,0,0,.55);
 }
 .r17 .title .row { display:block; }
 .r17 .title .gold { color:var(--gold); }
 .r17 .sub { margin-top:1.3rem; font-size:clamp(.95rem,1.5vw,1.12rem); color:var(--paper); opacity:.9; max-width:52ch; text-shadow:0 1px 16px rgba(0,0,0,.7); }
-.r17 .stat { margin-top:.55rem; font-size:.72rem; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 12px rgba(0,0,0,.7); }
+.r17 .stat { margin-top:.55rem; font-size:.8rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--gold); text-shadow:0 1px 12px rgba(0,0,0,.7); }
 .r17 .view { margin-top:1.5rem; display:inline-block; font-size:.74rem; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:var(--gold); transition:color .15s; }
 .r17 .view:hover { color:var(--paper); }
 .r17 .btn-gold {
@@ -188,7 +192,7 @@ const CSS = `
 
 /* neither strike */
 .r17 .strike { position:relative; display:inline-block; }
-.r17 .strike i { position:absolute; left:-.05em; right:-.05em; top:52%; height:.075em; background:var(--gold); transform:scaleX(0); transform-origin:left center; transition:transform .6s cubic-bezier(.16,1,.3,1) .7s; }
+.r17 .strike i { position:absolute; left:-.05em; right:-.05em; top:52%; height:.09em; background:var(--gold); transform:scaleX(0); transform-origin:left center; transition:transform .6s cubic-bezier(.16,1,.3,1) .7s; }
 .r17 .slide.in .strike i { transform:scaleX(1); }
 
 /* ghost monogram / wordmark backdrops */
@@ -198,13 +202,14 @@ const CSS = `
   position:absolute; z-index:1; left:50%; top:50%; transform:translate(-50%,-50%);
   font-family:var(--fd); font-weight:800; text-transform:uppercase; white-space:nowrap;
   font-size:clamp(6rem,22vw,22rem); line-height:1; letter-spacing:-.02em;
-  color:transparent; -webkit-text-stroke:1.5px rgba(246,246,244,.1); pointer-events:none;
+  color:transparent; -webkit-text-stroke:1.5px rgba(246,246,244,.14); pointer-events:none;
 }
 
 /* two parts lists */
 .r17 .parts-head { font-size:.72rem; font-weight:700; letter-spacing:.24em; text-transform:uppercase; color:var(--gold); margin-bottom:1rem; }
-.r17 .parts-list { list-style:none; display:flex; flex-direction:column; gap:.5rem; }
-.r17 .parts-list li { font-size:clamp(.85rem,1.3vw,1.02rem); color:var(--mut); }
+.r17 .parts-list { list-style:none; display:flex; flex-direction:column; gap:.85rem; }
+.r17 .parts-list li { font-size:clamp(.85rem,1.3vw,1.02rem); color:var(--mut); line-height:1.65; border-top:1px solid rgba(255,255,255,.12); padding-top:.75rem; }
+.r17 .parts-list li:first-child { border-top:none; padding-top:0; }
 .r17 .parts-col { position:absolute; z-index:3; top:0; height:100%; width:50%; display:flex; flex-direction:column; justify-content:flex-end; padding:0 var(--pad) 16svh; }
 .r17 .parts-col.l { left:0; align-items:flex-start; text-align:left; }
 .r17 .parts-col.r { right:0; align-items:flex-end; text-align:right; }
@@ -213,6 +218,7 @@ const CSS = `
   .r17 .parts-col.l { top:0; height:50%; justify-content:flex-start; padding:calc(3.4rem + 2svh) var(--pad) 0; }
   .r17 .parts-col.r { top:50%; height:50%; justify-content:flex-end; padding:0 var(--pad) calc(3.4rem + 2svh); }
   .r17 .slide-parts .title { font-size:clamp(2.2rem,8vw,4.5rem); }
+  .r17 .ghost-mark { color:rgba(196,164,106,.12); }
 }
 
 /* work mosaic */
@@ -222,6 +228,9 @@ const CSS = `
 .r17 .tile:hover img { opacity:.95; transform:scale(1.01); }
 .r17 .tile .tl { position:absolute; left:.9rem; bottom:.8rem; z-index:2; font-size:.62rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--paper); text-shadow:0 1px 10px rgba(0,0,0,.8); opacity:0; transition:opacity .3s; }
 .r17 .tile:hover .tl { opacity:1; }
+.r17 .tile .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; font-size:2.4rem; color:var(--paper); text-shadow:0 2px 12px rgba(0,0,0,.8); opacity:0; transition:opacity .3s; }
+.r17 .tile:hover .play { opacity:1; }
+@media(max-width:860px){ .r17 .tile .play { opacity:.6; } }
 .r17 .mosaic-stack { pointer-events:none; }
 .r17 .mosaic-stack .view { pointer-events:auto; }
 @media(max-width:860px){ .r17 .mosaic { grid-template-columns:1fr 1fr; grid-template-rows:repeat(4,1fr); } }
@@ -245,6 +254,12 @@ const CSS = `
 .r17 .modal-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 .r17 .modal-x { position:absolute; top:-2.6rem; right:0; font-size:.78rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--paper); }
 .r17 .modal-x:hover { color:var(--gold); }
+
+/* section rhythm hairlines */
+.r17 .slide-parts { border-top:1px solid rgba(196,164,106,.12); }
+.r17 #work { border-top:1px solid rgba(196,164,106,.12); }
+.r17 .slide:nth-of-type(13) { border-top:1px solid rgba(196,164,106,.12); }
+.r17 #contact { border-top:1px solid rgba(196,164,106,.12); }
 
 @media (prefers-reduced-motion: reduce) {
   .r17 { scroll-behavior:auto; }
@@ -600,6 +615,7 @@ export default function HomeR6Baby() {
             <span className="row rv d1">Two</span>
             <span className="row rv d2">parts<i className="sq" /></span>
           </h2>
+          <p className="sub rv d3">Marketing gets your story told. Promotion gets it seen.</p>
         </div>
       </Slide>
 
@@ -622,6 +638,7 @@ export default function HomeR6Baby() {
           {PORTFOLIO.map(v => (
             <button key={v.id} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
               <img src={poster(v.id, 800)} alt="" loading="lazy" />
+              <span className="play">▶</span>
               <span className="tl">{v.t}</span>
             </button>
           ))}
