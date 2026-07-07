@@ -480,6 +480,13 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           if (sig !== projectRoomsSigRef.current) { projectRoomsSigRef.current = sig; setSupabaseProjectRooms(merged) }
         }
 
+        // corner:corner-ui-cv6 wd40 DEF-4: the set of project rooms that still
+        // exist. supabase-status.js now excludes archived projects from both
+        // sources, so anything absent here is archived (or deleted) — its old
+        // messages must not keep spawning catch-up cards. Guarded on a
+        // non-empty merge so a transient empty payload never blanks catch-up.
+        const activeProjectSlugs = merged.length > 0 ? new Set(merged.map(p => p.slug)) : null
+
         // Map tasks to completed feed (only fully approved/completed, not pending-approval 'done')
         {
           const completed = []
@@ -536,6 +543,10 @@ export function useDataPipe(parsePunchList, worldId, currentUserSlug = null) {
           const seenRooms = new Set() // one card per room max
           for (const msg of [...data.messages].reverse()) { // newest first
             if (msg.role !== 'assistant' || !msg.agent) continue
+            // wd40 DEF-4: skip messages from archived project rooms (mission
+            // messages carry the project too, so archived missions go with it).
+            // 1:1 agent threads have no project field and are unaffected.
+            if (activeProjectSlugs && msg.project && !activeProjectSlugs.has(msg.project)) continue
             const k = roomKey(msg)
             if (!k || seenRooms.has(k)) continue
             const lastSeen = roomLastSeen[k]

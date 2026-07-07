@@ -15,7 +15,7 @@ import MessageAttachments from './MessageAttachments.jsx';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
 import { authFetch } from '../lib/authFetch';
 import { AssignButton } from '../cv6kit/AssignButton.jsx';
-import { useTreeContextMenu, renameNode, moveNode, createNode, findMissionNode } from './TreeContextMenu.jsx';
+import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import ActivityDock from './ActivityDock.jsx';
 import { GoalThreadBody, SendCtx, ReviewCtx, AgentBlocks, WorkingTurn } from './ChatGoalThread.jsx';
 import Review from './Review.jsx';
@@ -558,6 +558,10 @@ function Home({ onNav, onOpenRoom, onOpenNav, onCommandK, pendingProjectId, onPr
       if (target.kind === 'mission' && target.treeId) setExpandedHomeNodes((prev) => new Set(prev).add(target.treeId));
       setMissionReload((k) => k + 1);
     },
+    // wd40 DEF-3: archive from the Home tree too — same confirm dialog as
+    // Organize. The room list itself refreshes on the next data-pipe tick
+    // (supabase-status.js drops archived rooms server-side).
+    onArchive: async (target) => { await archiveNode(authFetch, target, worldId); setMissionReload((k) => k + 1); },
   });
   // Latest data for the context-menu resolver (refs, so the delegated listener
   // never needs re-binding — same pattern as curCardRef).

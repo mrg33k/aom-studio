@@ -104,6 +104,16 @@ function FolderPlusIcon() {
     </svg>
   );
 }
+function ArchiveIcon() {
+  // Lidded box: reads as "put away", clearly distinct from the folder glyphs.
+  return (
+    <svg style={S.rowIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="5" rx="1" />
+      <path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9" />
+      <path d="M10 13h4" />
+    </svg>
+  );
+}
 
 function MenuRow({ icon, label, sub, onPick, disabled }) {
   const [hover, setHover] = useState(false);
@@ -136,7 +146,9 @@ function MenuRow({ icon, label, sub, onPick, disabled }) {
 // onMove         — async (target, destProjectSlug) => throws on failure
 // onCreate       — async (target, name) => throws on failure ("New subfolder";
 //                  omit to hide the item)
-export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename, onMove, onCreate }) {
+// onArchive      — async (target) => throws on failure ("Archive project",
+//                  projects only, confirm dialog first; omit to hide the item)
+export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename, onMove, onCreate, onArchive }) {
   const [menu, setMenu] = useState(null);      // { x, y, target }
   const [mode, setMode] = useState('menu');    // 'menu' | 'move'
   const [rename, setRename] = useState(null);  // { kind: 'rename'|'create', target, value }
@@ -241,6 +253,26 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
     if (target) setRename({ kind: 'create', target, value: '' });
   }, [menu, close]);
 
+  // Archive rides the same dialog state machine as rename/create — the
+  // portal + scrim + busy/error plumbing is identical; only the body differs.
+  const startArchive = useCallback(() => {
+    const target = menu?.target;
+    close();
+    if (target) setRename({ kind: 'archive', target, value: '' });
+  }, [menu, close]);
+
+  const submitArchive = useCallback(async () => {
+    if (!rename || rename.kind !== 'archive' || busy) return;
+    setBusy(true); setError('');
+    try {
+      await onArchive(rename.target);
+      closeAll();
+    } catch (e) {
+      setBusy(false);
+      setError(e?.message || 'Could not archive the project — try again.');
+    }
+  }, [rename, busy, onArchive, closeAll]);
+
   const submitRename = useCallback(async () => {
     if (!rename || busy) return;
     const next = String(inputRef.current?.value ?? rename.value ?? '').trim();
@@ -297,6 +329,9 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
                 {menu.target.kind === 'mission' && (
                   <MenuRow icon={<MoveIcon />} label="Move to project…" onPick={() => setMode('move')} disabled={!menu.target.canMove} />
                 )}
+                {onArchive && menu.target.kind === 'project' ? (
+                  <MenuRow icon={<ArchiveIcon />} label="Archive project" onPick={startArchive} />
+                ) : null}
               </>
             )}
             {mode === 'move' && (
@@ -312,7 +347,30 @@ export function useTreeContextMenu({ wrapRef, resolveHit, listProjects, onRename
             {error ? <div style={S.err}>{error}</div> : null}
           </div>
         )}
-        {rename && (
+        {rename && rename.kind === 'archive' && (
+          <>
+            <div style={S.scrim} onClick={busy ? undefined : closeAll} />
+            <div style={S.dialog}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>Archive {rename.target.name}?</div>
+              <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.5, color: 'var(--muted)' }}>
+                The project leaves your rooms, tree and pickers. Nothing is deleted —
+                its files and chat history stay put, and it can be restored later.
+              </div>
+              {error ? <div style={S.err}>{error}</div> : null}
+              <div style={S.btnRow}>
+                <button style={S.btn} onClick={closeAll} disabled={busy}>Cancel</button>
+                <button
+                  style={{ ...S.btn, ...S.btnPrimary, background: 'var(--warn, #fbbf24)', color: '#1a1408', opacity: busy ? 0.6 : 1 }}
+                  onClick={submitArchive}
+                  disabled={busy}
+                >
+                  {busy ? 'Archiving…' : 'Archive project'}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+        {rename && rename.kind !== 'archive' && (
           <>
             <div style={S.scrim} onClick={busy ? undefined : closeAll} />
             <div style={S.dialog}>
@@ -370,6 +428,21 @@ export async function renameNode(authFetch, target, newName, worldId) {
     }),
   });
   if (!r?.ok) throw new Error('The mission could not be renamed.');
+}
+
+// Archive = reversible visibility flip, never a delete: projects.is_active
+// goes false (+ archived_at stamped) and the endpoint hides the matching
+// agent_status room row. Restore: same PATCH with is_active: true.
+export async function archiveNode(authFetch, target, worldId) {
+  const r = await authFetch('/api/dashboard/project-update', {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ slug: target.projectSlug, is_active: false, client_id: worldId }),
+  });
+  if (!r?.ok) {
+    let msg = 'The project could not be archived.';
+    try { const j = await r.json(); if (j?.error) msg = j.error; } catch { /* keep default */ }
+    throw new Error(msg);
+  }
 }
 
 export async function moveNode(authFetch, target, destProjectSlug, worldId) {

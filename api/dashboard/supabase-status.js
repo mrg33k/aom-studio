@@ -62,7 +62,7 @@ export default async function handler(req, res) {
   const _timed = async (label, p) => { const s = Date.now(); const r = await p; _timings[label] = Date.now() - s; return r; };
   const _tAll = Date.now();
   try {
-    const [agents, messages, activeTasks, recentDone, projectDefs, rawEvents, tasksV2Active, tasksV2Done] = await Promise.all([
+    const [agents, messages, activeTasks, recentDone, projectDefs, rawEvents, tasksV2Active, tasksV2Done, archivedProjects] = await Promise.all([
       _timed('agent_status', supabaseGet('agent_status', `order=slug${clientFilter}`)),
       _timed('messages', supabaseGet('messages', `order=timestamp.desc&limit=100${clientFilter}`)),
       // Legacy active tasks ONLY. Allowlist (not denylist) so v2 terminal
@@ -82,6 +82,13 @@ export default async function handler(req, res) {
       _timed('tasksV2_active', supabaseGet('tasks', `status=in.(queued,classifying,planning,building,running,qa)&order=priority.desc,sort_order.asc,created_at.asc&limit=100${clientFilter}`).catch(() => [])),
       // V2 done/failed tasks for completed section
       _timed('tasksV2_done', supabaseGet('tasks', `status=in.(done,failed)&order=completed_at.desc&limit=50${clientFilter}`).catch(() => [])),
+      // corner:corner-ui-cv6 wd40 DEF-4: archived project slugs (tiny query).
+      // The room list / pickers are built from agent_status type='project'
+      // rows below; those rows have no is_active column, so an archived
+      // project (projects.is_active=false) whose agent_status row wasn't
+      // flipped to hidden would still render with a live dot. This set
+      // closes that gap server-side for every consumer of this endpoint.
+      _timed('projects_archived', supabaseGet('projects', `is_active=eq.false&select=slug${clientFilter}`).catch(() => [])),
     ]);
     _timings._total = Date.now() - _tAll;
     _timings._verifyTenant = _vtMs;
@@ -153,7 +160,10 @@ export default async function handler(req, res) {
     // so they never reach the client.
     const visibleAgents = agents.filter(a => !a.hidden);
     const agentList = visibleAgents.filter(a => a.type === 'agent');
-    const projectList = visibleAgents.filter(a => a.type === 'project');
+    // wd40 DEF-4: drop agent_status project rooms whose projects row is
+    // archived — projects.is_active is the canonical lifecycle flag.
+    const archivedSlugs = new Set((archivedProjects || []).map(p => p.slug).filter(Boolean));
+    const projectList = visibleAgents.filter(a => a.type === 'project' && !archivedSlugs.has(a.slug));
 
     // Build status format matching what useDataPipe expects.
     // agent_status table is the SOLE source of truth for agent status.

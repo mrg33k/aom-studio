@@ -5,6 +5,13 @@
 //
 // PATCH { slug, name }
 //   → updates projects.name for the row matching slug + the JWT user's world.
+// PATCH { slug, is_active: false }  (corner:corner-ui-cv6 wd40 DEF-3)
+//   → archives the project: projects.is_active=false + archived_at=now, AND
+//     agent_status.hidden=true for the matching type='project' row (that row
+//     is what feeds the Home room list / pickers via supabase-status.js).
+//     Fully reversible: PATCH { slug, is_active: true } restores both sides
+//     (archived_at back to null, hidden back to false). Disk content is
+//     never touched — archive is a visibility flag, not a delete.
 // DELETE { slug, confirm: "DELETE" }
 //   → deletes the projects row (cascade by Supabase FK rules). Requires the
 //     literal string "DELETE" in `confirm` to prevent single-click destruction.
@@ -46,16 +53,29 @@ export default async function handler(req, res) {
   const updatedBy = tenant?.userId || null
 
   if (req.method === 'PATCH') {
-    const { slug, name } = req.body || {}
-    if (!slug || !name) return res.status(400).json({ error: 'slug + name required' })
-    const trimmedName = String(name).trim()
-    if (!trimmedName) return res.status(400).json({ error: 'name cannot be blank' })
+    const { slug, name, is_active } = req.body || {}
+    if (!slug) return res.status(400).json({ error: 'slug required' })
+
+    const patch = {}
+    if (name !== undefined) {
+      const trimmedName = String(name).trim()
+      if (!trimmedName) return res.status(400).json({ error: 'name cannot be blank' })
+      patch.name = trimmedName
+    }
+    if (is_active !== undefined) {
+      if (typeof is_active !== 'boolean') return res.status(400).json({ error: 'is_active must be a boolean' })
+      patch.is_active = is_active
+      // Real archive timestamp so "when was this archived" is answerable;
+      // cleared on unarchive so the row reads active again everywhere.
+      patch.archived_at = is_active ? null : new Date().toISOString()
+    }
+    if (!Object.keys(patch).length) return res.status(400).json({ error: 'name or is_active required' })
 
     const url = `${SUPABASE_URL}/rest/v1/projects?slug=eq.${encodeURIComponent(slug)}&client_id=eq.${encodeURIComponent(clientId)}`
     const r = await fetch(url, {
       method: 'PATCH',
       headers: sbHeaders(),
-      body: JSON.stringify({ name: trimmedName }),
+      body: JSON.stringify(patch),
     })
     if (!r.ok) {
       const t = await r.text()
@@ -63,6 +83,24 @@ export default async function handler(req, res) {
     }
     const rows = await r.json()
     if (!rows?.length) return res.status(404).json({ error: 'project not found' })
+
+    // Archive/unarchive must also flip the project's agent_status row —
+    // supabase-status.js builds the Home room list, live dots and pickers
+    // from agent_status (type='project'), where the visibility flag is
+    // `hidden` (migration 028). Without this the archived room keeps showing
+    // with a live dot an hour later (wd40 DEF-4). Best-effort: a project
+    // without an agent_status row is fine (fromDefs already respects is_active).
+    if (is_active !== undefined) {
+      try {
+        const asUrl = `${SUPABASE_URL}/rest/v1/agent_status?slug=eq.${encodeURIComponent(slug)}&type=eq.project&client_id=eq.${encodeURIComponent(clientId)}`
+        await fetch(asUrl, {
+          method: 'PATCH',
+          headers: sbHeaders({ Prefer: 'return=minimal' }),
+          body: JSON.stringify({ hidden: !is_active, updated_at: new Date().toISOString() }),
+        })
+      } catch { /* non-fatal: projects.is_active is the canonical flag */ }
+    }
+
     return res.status(200).json({ ok: true, project: rows[0], updated_by: updatedBy })
   }
 

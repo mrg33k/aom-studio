@@ -123,6 +123,23 @@ export default async function handler(req, res) {
     }
   } catch { /* keep sharedSlugs empty on failure */ }
 
+  // corner:corner-ui-cv6 wd40 DEF-4: archived projects (is_active=false) must
+  // vanish from the tree too. Shared projects are already gated above, but the
+  // own-world path seeds every registry/dynamic/event project unfiltered —
+  // an archived project with a disk home (or lingering agent_status/event
+  // rows) would keep rendering. Collected here, excluded after the merge.
+  let archivedProjectSlugs = new Set()
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/projects?is_active=eq.false&select=slug`,
+      { headers: supabaseHeaders() },
+    )
+    if (r.ok) {
+      const rows = await r.json()
+      archivedProjectSlugs = new Set((rows || []).map(x => x?.slug).filter(Boolean))
+    }
+  } catch { /* on failure archived rooms over-show; safer than hiding live ones */ }
+
   const clientIds = [clientId, ...sharedSlugs.map(s => `shared:${s}`)]
   // Mirror the Path A widen from useTasks.js so aom viewers see Ben tasks.
   if (clientId === 'aom') clientIds.push('ben')
@@ -403,6 +420,11 @@ export default async function handler(req, res) {
       proj.unfiled_tasks.push(taskEntry)
     }
   }
+
+  // wd40 DEF-4: strip archived projects after every merge source has run
+  // (registry, agent_status, mission_created events, tasks) so none of them
+  // can resurrect an archived room.
+  for (const slug of archivedProjectSlugs) projectMap.delete(slug)
 
   const projects = []
   for (const proj of projectMap.values()) {

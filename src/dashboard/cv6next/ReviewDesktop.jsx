@@ -8,7 +8,7 @@ import { usePins } from './data/usePins.js';
 import { TemplateScreen } from '../cv6kit/TemplateScreen.jsx';
 import { useReviewPinUI } from './ReviewPins.jsx';
 import { ReviewChangesOverlay, compileChanges } from './ReviewChanges.jsx';
-import { useTreeContextMenu, renameNode, moveNode, createNode, findMissionNode } from './TreeContextMenu.jsx';
+import { useTreeContextMenu, renameNode, moveNode, createNode, archiveNode, findMissionNode } from './TreeContextMenu.jsx';
 import { authFetch } from '../lib/authFetch';
 import reviewRaw from './templates/review.html?raw';
 import statesRaw from './templates/states-extra.html?raw';
@@ -148,6 +148,7 @@ export default function ReviewDesktop({ worldId, onNav, onOpenNav, onAssignDeliv
     onRename: async (target, name) => { await renameNode(authFetch, target, name, worldId || 'aom'); refreshTree(); },
     onMove: async (target, dest) => { await moveNode(authFetch, target, dest, worldId || 'aom'); refreshTree(); },
     onCreate: async (target, name) => { await createNode(authFetch, target, name, worldId || 'aom'); refreshTree(); },
+    onArchive: async (target) => { await archiveNode(authFetch, target, worldId || 'aom'); refreshTree(); },
   });
 
   // Catch-up → Review carries a filename (+ its project); resolve it to a real queue
