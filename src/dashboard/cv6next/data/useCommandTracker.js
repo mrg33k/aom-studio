@@ -11,7 +11,7 @@ import { authFetch } from '../../lib/authFetch';
 import { getClientId, setClientIdFromUser } from '../../lib/clientConfig';
 import { useCurrentUserSlug } from '../../hooks/useCurrentUserSlug';
 import { useDataPipe } from '../../hooks/useDataPipe';
-import { titleForAgent } from './agentTitles.js';
+import { titleForAgent, AGENT_TITLES } from './agentTitles.js';
 
 function initials(name) {
   const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -53,26 +53,33 @@ export function useWorldId() {
   return worldId;
 }
 
-// ── Command: real live agent sessions (activity dock) + rooms active in 24h (ledger) ──
-// For the aom world the dock is NOT empty: it shows every live Claude agent session
-// (active_processes, heartbeat < 90s) and the ledger lists every room that had a message
-// in the last 24h, with the room's latest line + who. No fake data; goal/watchers have no
-// honest structured source yet, so they bind to honest placeholders, not invented steps.
+// ── Command: the goal ledger (corner:corner-ui-cv6, rebuilt 2026-07-06) ──
+// Patrik's spec (2026-06-17 + refined 2026-07-06): each row = a room/terminal with
+// GOAL NOW (the actual goal sentence), STATUS (working / blocked / idle), LIVE NOW
+// (the live activity line), last activity, and the per-row Master Loop toggle.
+// Step in (select/expand a row) → the room's CHECKLIST, done vs not-done,
+// source-tagged (you vs agent).
+//
+// Truth sources (merged, board wins):
+//   1. state board  — Supabase board_latest, one row per entity (goal + latest
+//      state line, hook-stamped). Decision 2026-07-05, corner:state-board.
+//   2. room-goals   — the master loop's per-room goal memory (room-goals.json via
+//      /api/dashboard/room-goals; same file the /cvg CommandTracker reads).
+//   3. room-goal-steps — the per-room plan checklist (same store the Chat goal
+//      thread reads/writes; plan-propose.py writes it).
+//   4. active-agents — live Claude sessions (heartbeat-backed) for LIVE NOW/WORKING.
+//   5. supabase-status messages — each room's latest line + last-activity time.
+// A room with no goal anywhere shows an honest "No goal set" — never a fake.
 const DAY_MS = 24 * 60 * 60 * 1000;
+const WORKING_WINDOW_MS = 30 * 60 * 1000; // activity in the last 30m = working
 
-// The goal-detail loop view is REAL now (corner:corner-ui-cv6:command, 2026-07-01):
-// the checklist is the focused room's room-goal-steps (the same per-room plan the
-// Chat goal thread reads/writes) and the watchers rail is the master loop's
-// per-room autopilot state from room-goals — the toggle arms/disarms the loop for
-// that room via room-autopilot (master-loop-tick.py honors it). No SAMPLE data.
-
-// Map a step list to the template's checklist rows. One active row max, and only
-// when an agent is actually live (same guardrail as the Chat goal thread).
+// Map a step list to the template's checklist rows, source-tagged (spec: done vs
+// not-done, who put it on the plan). One active row max, only when truly live.
 function checklistFromSteps(steps, live) {
   let activeAssigned = false;
   return (steps || []).map((s) => {
     let state = 'queued';
-    let tag = s.proposed ? 'Proposed' : 'Queued';
+    let tag = s.source === 'agent' ? (s.proposed ? 'Proposed' : 'Agent') : 'You';
     if (s.done) { state = 'done'; tag = 'Done'; }
     else if (live && !activeAssigned) { state = 'active'; tag = 'Running'; activeAssigned = true; }
     return { label: s.text || '', tag, state };
@@ -80,96 +87,258 @@ function checklistFromSteps(steps, live) {
 }
 
 const bareKey = (s) => String(s || '').split(':').pop().trim() || String(s || '');
+const projectOf = (s) => (String(s || '').includes(':') ? String(s).split(':')[0] : '');
 
-function shapeCommand({ sessions = [], projectRooms = [], lastByRoom = {}, goalRooms = {}, focusSteps = [], focusKey = '' }) {
+// Canonical roomKey convention (note-taker backend, 2026-07-06): bare slug for
+// project/mission rooms (last path segment; ':general' collapses to the project
+// slug), 'agent:<slug>' for agent rooms. room-goals.json still carries legacy
+// 'project:mission' keys from the old sweep — normalize them so one room is one row.
+function normalizeRoomKey(key) {
+  const k = String(key || '').trim();
+  if (!k) return '';
+  if (k.startsWith('agent:')) return k;
+  if (!k.includes(':')) return AGENT_TITLES[k] ? 'agent:' + k : k;
+  const parts = k.split(':');
+  const last = parts[parts.length - 1];
+  if (last === 'general') return parts[parts.length - 2] || last;
+  return last;
+}
+
+// Never surface absolute paths / URL blobs in a ledger cell (rule 4 — the same
+// guard the /cvg CommandTracker uses).
+function cleanCell(s) {
+  if (typeof s !== 'string') return '';
+  return s
+    .replace(/(?:[A-Za-z]:)?[\\/](?:Users|home)[\\/][^\s]+/gi, '')
+    .replace(/https?:\/\/\S+/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// GOAL NOW is a one-liner: first sentence, capped — real text, just shortened.
+function oneLineGoal(s) {
+  const clean = cleanCell(firstLine(s));
+  if (!clean) return '';
+  const m = clean.match(/^.*?[.!?](?=\s|$)/);
+  let first = (m ? m[0] : clean).trim();
+  if (first.length > 120) first = first.slice(0, 117).trimEnd() + '…';
+  return first.charAt(0).toUpperCase() + first.slice(1);
+}
+
+// Display name for a canonical ledger key: 'agent:elon' → its dashboard TITLE
+// (agents never show persona names); a bare room slug → the project's real name
+// when we know it, else title-cased. `tags` carries the parent project for
+// mission rooms (recovered from legacy 'project:mission' keys when present).
+function roomNameFor(key, projectNames = {}, tags = {}) {
+  const k = String(key || '');
+  if (k.startsWith('agent:')) return { name: titleForAgent(k.slice(6)), tag: 'Agent' };
+  if (projectNames[k]) return { name: projectNames[k], tag: '' };
+  return { name: titleCase(k), tag: tags[k] || '' };
+}
+
+const hasOpenQuestion = (r) => {
+  const q = String((r && r.open_question) || '').trim();
+  return Boolean(q) && q.toLowerCase() !== 'none' && q.toLowerCase() !== 'null';
+};
+
+function shapeCommand({
+  sessions = [], projectRooms = [], lastByRoom = {}, goalRooms = {},
+  boardRows = [], stepsByRoom = {}, selectedKey = '',
+}) {
+  const now = Date.now();
+
   // Activity dock = live agent sessions. Each is one running Claude session.
   const jobs = (sessions || []).map((s) => {
     const name = titleForAgent(s.agent);
     return {
       id: s.agent, kind: 'agent', title: name, shortTitle: name,
-      sub: firstLine(s.task_text) || 'Active session', badge: 'LIVE',
+      sub: cleanCell(firstLine(s.task_text)) || 'Active session', badge: 'LIVE',
     };
   });
 
-  // Ledger = rooms active in the last 24h (project/mission rooms with a recent message).
-  const now = Date.now();
-  const liveAgents = new Set((sessions || []).map((s) => String(s.agent || '').toLowerCase()));
-  const active = (projectRooms || [])
-    .filter((p) => p.last_message_at && (now - p.last_message_at) <= DAY_MS)
-    .sort((a, b) => b.last_message_at - a.last_message_at);
+  // State board rows indexed by their canonical roomKey.
+  const boardByKey = {};
+  for (const b of boardRows || []) {
+    if (!b || !b.entity) continue;
+    const nk = normalizeRoomKey(b.entity);
+    if (!boardByKey[nk] || String(b.updated_at || '') > String(boardByKey[nk].updated_at || '')) boardByKey[nk] = b;
+  }
 
-  const rooms = active.map((p) => {
-    const last = lastByRoom[p.slug] || {};
-    const setBy = last.agent ? titleForAgent(last.agent) : '';
-    const live = last.agent && liveAgents.has(String(last.agent).toLowerCase());
-    const status = live ? 'live' : 'ready';
-    const line = firstLine(last.text).slice(0, 90);
-    // "CURRENT GOAL" must show a goal, not the room's last chat line dressed up as one
-    // (loop R8). Real goal from the goal ledger when the room has one; otherwise an
-    // honest muted fallback the CSS de-emphasizes (is-fallback).
-    const grEntry = goalRooms[p.slug] || (Object.entries(goalRooms).find(([k]) => bareKey(k) === p.slug) || [])[1];
-    const realGoal = firstLine(String((grEntry && grEntry.goal) || '')).slice(0, 90);
-    const goalText = realGoal || (line ? `Last activity — ${line}` : 'No goal set');
+  const projectNames = {};
+  for (const p of projectRooms || []) projectNames[p.slug] = p.name || titleCase(p.slug);
+
+  // Goal memory normalized onto the canonical roomKey convention. Legacy
+  // 'project:mission' keys fold into their bare slug; when both exist the
+  // canonical (bare) entry wins, then the freshest review. The legacy key also
+  // donates the parent-project tag for display.
+  const normGoals = {};
+  const canonSource = {}; // canonical key → was the winning entry stored under the canonical key?
+  const tags = {};
+  const projSlugByKey = {}; // canonical mission key → parent project slug (from legacy keys)
+  for (const [k, v] of Object.entries(goalRooms || {})) {
+    if (!v || typeof v !== 'object') continue;
+    const nk = normalizeRoomKey(k);
+    if (!nk) continue;
+    if (k.includes(':') && !k.startsWith('agent:') && bareKey(k) !== 'general') {
+      const proj = projectOf(k);
+      if (proj && !tags[nk]) { tags[nk] = projectNames[proj] || titleCase(proj); projSlugByKey[nk] = proj; }
+    }
+    const isCanon = k === nk;
+    const cur = normGoals[nk];
+    if (!cur
+      || (isCanon && !canonSource[nk])
+      || (isCanon === Boolean(canonSource[nk]) && String(v.last_reviewed || '') > String(cur.last_reviewed || ''))) {
+      normGoals[nk] = v; canonSource[nk] = isCanon;
+    }
+  }
+
+  // Row universe: every room the goal memory or the state board knows, plus
+  // projects active in the last 24h, plus live terminal sessions.
+  const keys = new Set(Object.keys(normGoals));
+  for (const nk of Object.keys(boardByKey)) keys.add(nk);
+  const activeProjects = (projectRooms || [])
+    .filter((p) => p.last_message_at && (now - p.last_message_at) <= DAY_MS);
+  for (const p of activeProjects) keys.add(normalizeRoomKey(p.slug));
+  keys.delete('');
+
+  const sessionByAgent = {};
+  for (const s of sessions || []) sessionByAgent[String(s.agent || '').toLowerCase()] = s;
+  const usedSessions = new Set();
+
+  const findSession = (key) => {
+    const bk = bareKey(key).toLowerCase();
+    const direct = sessionByAgent[key.toLowerCase()] || sessionByAgent[bk];
+    if (direct) return direct;
+    // Mission rooms: a session whose live task text names the mission slug.
+    for (const s of sessions || []) {
+      if (bk.length > 3 && String(s.task_text || '').toLowerCase().includes(bk)) return s;
+    }
+    return null;
+  };
+
+  const findLast = (key) => lastByRoom[key] || lastByRoom[bareKey(key)] || lastByRoom[projectOf(key)] || null;
+  const stepsFor = (key) => stepsByRoom[key] || stepsByRoom[bareKey(key)] || [];
+
+  const buildRow = (key) => {
+    const gr = normGoals[key] || {};
+    const board = boardByKey[key] || null;
+    const session = findSession(key);
+    if (session) usedSessions.add(String(session.agent || '').toLowerCase());
+    const last = findLast(key);
+    const { name, tag } = roomNameFor(key, projectNames, tags);
+
+    // Last activity = the freshest of message / board stamp / loop review.
+    const times = [
+      last && last.t,
+      board && board.updated_at ? new Date(board.updated_at).getTime() : 0,
+      gr.last_reviewed ? new Date(gr.last_reviewed).getTime() : 0,
+    ].filter((t) => t && !Number.isNaN(t));
+    const lastActivity = times.length ? Math.max(...times) : 0;
+
+    // STATUS: blocked (waiting on you) > working (live session or fresh activity) > idle.
+    let status = 'idle';
+    if (hasOpenQuestion(gr)) status = 'blocked';
+    else if (session || (lastActivity && (now - lastActivity) <= WORKING_WINDOW_MS)) status = 'working';
+
+    // GOAL NOW: state board first (source of truth), then the loop's goal memory.
+    const realGoal = oneLineGoal((board && board.goal) || gr.goal || '');
+
+    // LIVE NOW: the live session's task line, else the board's latest state line,
+    // else the room's latest chat line. Honest dash when nothing is live.
+    const liveNow = cleanCell(firstLine(
+      (session && session.task_text)
+      || (board && board.state_line)
+      || (last && last.text) || ''
+    )).slice(0, 110) || '—';
+
+    const steps = stepsFor(key);
+    const expanded = selectedKey && selectedKey === key;
+    const checklist = checklistFromSteps(steps, status === 'working');
+    const doneCount = checklist.filter((c) => c.state === 'done').length;
+    const loopOn = gr.autopilot !== false; // absent/true = loop default ON (matches master-loop-tick)
+
     return {
-      id: p.slug, name: p.name || titleCase(p.slug), tint: tintFor(p.name || p.slug),
-      goal: goalText, goalKind: realGoal ? 'goal' : 'fallback',
-      setBy, age: relTime(p.last_message_at),
+      id: key, key, name, tag, tint: tintFor(name),
+      projectSlug: projSlugByKey[key] || '',
+      goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
+      liveNow, age: lastActivity ? relTime(lastActivity) : '—', lastActivity,
       status, statusLabel: status.toUpperCase(),
-      goalShort: goalText.slice(0, 48),
+      loop: loopOn ? 'on' : 'off',
+      // Level 2 (step in): the room's plan. Mobile renders it inline when expanded;
+      // desktop shows it in the detail panel via `goal` below.
+      checklist: expanded ? checklist : [],
+      fullChecklist: checklist,
+      stepNote: expanded
+        ? (checklist.length ? `${doneCount} of ${checklist.length} done` : 'No steps on this plan yet')
+        : '',
+      openLabel: expanded ? 'Open room' : '',
+      expandedState: expanded ? 'expanded' : 'collapsed',
+      rowState: expanded ? 'open' : 'row',
+      openQuestion: hasOpenQuestion(gr) ? cleanCell(firstLine(gr.open_question)) : '',
     };
-  });
-  const liveCount = rooms.filter((r) => r.status === 'live').length;
+  };
 
-  // Focused goal: the loop's real goal for the focused room (lead agent session,
-  // else the most recently active room), with its real step checklist.
-  const lead = sessions[0];
-  const focusGoal = goalRooms[focusKey] || goalRooms[bareKey(focusKey)] || null;
-  const live = Boolean(lead);
-  const checklist = checklistFromSteps(focusSteps, live);
-  const doneCount = checklist.filter((c) => c.state === 'done').length;
-  const openQuestions = Object.values(goalRooms).filter((r) => r && r.open_question).length;
+  const rows = Array.from(keys).map(buildRow);
 
-  const goal = lead
-    ? { id: lead.agent, roomName: titleForAgent(lead.agent), tint: 'violet', status: 'live', statusLabel: 'LIVE',
-        title: focusGoal?.goal || `${sessions.length} agent session${sessions.length > 1 ? 's' : ''} active`,
-        driverLine: `${titleForAgent(lead.agent)} · ${firstLine(lead.task_text) || 'working'}` }
-    : { id: active[0]?.slug || '', roomName: active[0]?.name || 'No active session', tint: 'violet', status: 'ready', statusLabel: '',
-        // The panel header says CURRENT GOAL — the title speaks goal-language; session
-        // status lives on the sub-line where status belongs (loop R16).
-        title: focusGoal?.goal || 'No goal set for this room yet',
-        driverLine: focusGoal?.status ? `Loop · ${focusGoal.status}` : (active.length ? 'No agent sessions running right now' : 'Nothing active right now') };
-  goal.stepCount = checklist.length ? `${doneCount}/${checklist.length}` : '0';
-  goal.queueNote = openQuestions ? `${openQuestions} open question${openQuestions > 1 ? 's' : ''} for you` : 'queue clear';
-  goal.checklist = checklist;
-
-  // Watchers = the master loop's per-room autopilot state. Toggling is wired to
-  // room-autopilot (real: master-loop-tick.py reads the flag). Rooms the loop
-  // tracks appear here; 'on' means the loop keeps pushing that room by itself.
-  const watcherRows = Object.entries(goalRooms)
-    .filter(([, r]) => r && (r.goal || r.status))
-    .sort(([, a], [, b]) => String(b.last_reviewed || '').localeCompare(String(a.last_reviewed || '')))
-    .slice(0, 6)
-    .map(([key, r]) => {
-      const name = titleCase(bareKey(key).replace(/^agent:/, ''));
-      const on = r.autopilot !== false; // absent/true = loop default ON (matches master-loop-tick)
-      // Sub-label must agree with the toggle (loop R8): an off row saying "active"
-      // (the goal-store status) read as a contradiction next to its off switch.
-      return {
-        id: key, name, role: on ? `Master loop · ${r.status || 'tracked'}` : 'Master loop · off',
-        initials: name.slice(0, 2).toUpperCase(), tint: tintFor(name), on: on ? 'on' : 'off',
-      };
+  // Terminals with a live session that matched no room get their own row (spec:
+  // active terminal sessions appear alongside rooms).
+  for (const s of sessions || []) {
+    const agent = String(s.agent || '').toLowerCase();
+    if (!agent || usedSessions.has(agent)) continue;
+    const name = titleForAgent(agent);
+    const board = boardByKey['agent:' + agent] || null;
+    const realGoal = oneLineGoal((board && board.goal) || '');
+    rows.push({
+      id: 'agent:' + agent, key: 'agent:' + agent, name, tag: 'Terminal', tint: tintFor(name),
+      goal: realGoal || 'No goal set', goalKind: realGoal ? 'goal' : 'fallback',
+      liveNow: cleanCell(firstLine(s.task_text)).slice(0, 110) || 'Active session',
+      age: 'now', lastActivity: now,
+      status: 'working', statusLabel: 'WORKING',
+      loop: 'off', checklist: [], fullChecklist: [], stepNote: '', openLabel: '',
+      expandedState: 'collapsed', rowState: 'row', openQuestion: '',
     });
-  watcherRows.activeCount = watcherRows.filter((w) => w.on === 'on').length;
+  }
+
+  // Blocked first (waiting on you), then working, then idle; fresh first within each.
+  const RANK = { blocked: 0, working: 1, idle: 2 };
+  rows.sort((a, b) => (RANK[a.status] - RANK[b.status]) || (b.lastActivity - a.lastActivity));
+
+  const workingCount = rows.filter((r) => r.status === 'working').length;
+  const blockedCount = rows.filter((r) => r.status === 'blocked').length;
+
+  // Detail panel (desktop) / featured card (mobile): the selected row, else the
+  // top row of the ledger. All fields are the room's real truth.
+  const focus = (selectedKey && rows.find((r) => r.key === selectedKey)) || rows[0] || null;
+  const openQuestions = rows.filter((r) => r.openQuestion).length;
+  const goal = focus
+    ? {
+        id: focus.key, roomName: focus.name, tint: focus.tint,
+        status: focus.status, statusLabel: focus.statusLabel,
+        title: focus.goalKind === 'goal' ? focus.goal : 'No goal set for this room yet',
+        driverLine: focus.liveNow !== '—' ? focus.liveNow
+          : (focus.status === 'working' ? 'Working now' : 'Nothing live right now'),
+        checklist: focus.fullChecklist,
+        queueNote: focus.openQuestion
+          ? `Waiting on you: ${focus.openQuestion.slice(0, 60)}`
+          : (openQuestions ? `${openQuestions} open question${openQuestions > 1 ? 's' : ''} for you` : 'queue clear'),
+      }
+    : {
+        id: '', roomName: 'No rooms yet', tint: 'violet', status: 'idle', statusLabel: '',
+        title: 'No goal set for this room yet', driverLine: 'Nothing active right now',
+        checklist: [], queueNote: 'queue clear',
+      };
+  const doneCount = goal.checklist.filter((c) => c.state === 'done').length;
+  goal.stepCount = goal.checklist.length ? `${doneCount}/${goal.checklist.length}` : '0';
+  goal.emptyNote = goal.checklist.length ? '' : 'No steps on this plan yet. Add them in the room and they show up here.';
 
   return {
-    ledger: { roomCount: rooms.length, liveCount, blockedCount: 0, rooms, others: rooms },
+    ledger: { roomCount: rows.length, liveCount: workingCount, workingCount, blockedCount, rooms: rows, others: rows },
     activity: { count: jobs.length, jobs },
     goal,
-    watchers: watcherRows,
   };
 }
 
-export function useCommand(worldIdArg) {
+export function useCommand(worldIdArg, selectedKey = '') {
   const [currentUser, setCurrentUser] = useState(null);
   const [worldId, setWorldId] = useState(worldIdArg || null);
   const [sessions, setSessions] = useState([]);
@@ -265,41 +434,74 @@ export function useCommand(worldIdArg) {
     return () => { alive = false; clearInterval(id); };
   }, [worldId]);
 
-  // The focused room's real step checklist (same store the Chat goal thread uses).
-  const focusKey = sessions[0] ? `agent:${sessions[0].agent}` : (projectRooms || [])
-    .filter((p) => p.last_message_at)
-    .sort((a, b) => b.last_message_at - a.last_message_at)[0]?.slug || '';
-  const [focusSteps, setFocusSteps] = useState([]);
+  // The state board (Supabase board_latest, corner:state-board) — goal + latest
+  // state line per entity. Source of truth for GOAL NOW when a row has one.
+  const [boardRows, setBoardRows] = useState([]);
+  const boardSig = useRef('');
   useEffect(() => {
-    if (!worldId || !focusKey) { setFocusSteps([]); return undefined; }
+    if (!worldId) return undefined;
     let alive = true;
-    const load = () => authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}&room=${encodeURIComponent(focusKey)}`)
+    const load = () => authFetch('/api/dashboard/state-board?world=' + encodeURIComponent(worldId))
       .then((r) => (r && r.ok ? r.json() : null))
-      .then((d) => { if (alive && d) setFocusSteps(Array.isArray(d.list) ? d.list : []); })
+      .then((d) => {
+        if (!alive || !d || !Array.isArray(d.rows)) return;
+        const sig = JSON.stringify(d.rows);
+        if (sig === boardSig.current) return;
+        boardSig.current = sig; setBoardRows(d.rows);
+      })
       .catch(() => {});
     load();
-    const id = setInterval(load, 15000);
+    const id = setInterval(load, 60000);
     return () => { alive = false; clearInterval(id); };
-  }, [worldId, focusKey]);
+  }, [worldId]);
 
-  // Arm/disarm the master loop for a room (the watchers toggle). Optimistic; the
-  // 60s goal poll reconciles to the file the daemon actually reads.
+  // Every room's plan checklist in one read (the same store the Chat goal thread
+  // and plan-propose.py use) — powers the step-in / expanded checklist per row.
+  const [stepsByRoom, setStepsByRoom] = useState({});
+  const stepsSig = useRef('');
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let alive = true;
+    const load = () => authFetch(`/api/dashboard/room-goal-steps?world=${encodeURIComponent(worldId)}`)
+      .then((r) => (r && r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d || typeof d.items !== 'object' || !d.items) return;
+        const sig = JSON.stringify(d.items);
+        if (sig === stepsSig.current) return;
+        stepsSig.current = sig; setStepsByRoom(d.items);
+      })
+      .catch(() => {});
+    load();
+    const id = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(id); };
+  }, [worldId]);
+
+  // Arm/disarm the master loop for a room (the per-row toggle). Optimistic; the
+  // 60s goal poll reconciles to the file the daemon actually reads. The row key is
+  // canonical — resolve which stored key (canonical or legacy project:mission)
+  // actually holds this room's record so the write lands on the real entry.
   const toggleWatcher = useCallback(async (key) => {
     if (!worldId || !key) return;
-    const cur = goalRooms[key] || goalRooms[String(key).split(':').pop()] || {};
-    const next = cur.autopilot === false;
-    setGoalRooms((g) => ({ ...g, [key]: { ...(g[key] || {}), autopilot: next } }));
+    let storeKey = key;
+    let cur = goalRooms[key];
+    if (!cur) {
+      for (const [k, v] of Object.entries(goalRooms)) {
+        if (normalizeRoomKey(k) === key) { storeKey = k; cur = v; break; }
+      }
+    }
+    const next = (cur || {}).autopilot === false;
+    setGoalRooms((g) => ({ ...g, [storeKey]: { ...(g[storeKey] || {}), autopilot: next } }));
     try {
       await authFetch('/api/dashboard/room-autopilot', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ world: worldId, slug: key, on: next }),
+        body: JSON.stringify({ world: worldId, slug: storeKey, on: next }),
       });
     } catch { /* poll reconciles */ }
   }, [worldId, goalRooms]);
 
   const data = useMemo(
-    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, focusSteps, focusKey }),
-    [sessions, projectRooms, lastByRoom, goalRooms, focusSteps, focusKey],
+    () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey }),
+    [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey],
   );
   const state = worldId ? 'ready' : 'loading';
   return { state, data, toggleWatcher };

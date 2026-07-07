@@ -1819,31 +1819,49 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
   );
 }
 
-// ── Command (mobile): real activity dock (running jobs); goal ledger honest ──
+// ── Command: the goal ledger (rebuilt to spec, corner:corner-ui-cv6 2026-07-06) ──
+// Each row = a room/terminal: GOAL NOW · STATUS (working/blocked/idle) · LIVE NOW ·
+// last activity · per-row master-loop toggle. Tapping a row steps into it: desktop
+// focuses the detail panel (goal + plan checklist), mobile expands the checklist
+// inline. "Open room" (explicit) opens the room's conversation.
 const COMMAND_ALIASES = {
   'activity.jobs': 'job', 'goal.checklist': 'step',
-  'ledger.others': 'room', 'ledger.rooms': 'room', watchers: 'watcher',
+  'ledger.others': 'room', 'ledger.rooms': 'room', 'room.checklist': 'step',
 };
 function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
-  const { state, data, toggleWatcher } = useCommand(worldId);
+  // The stepped-into row (drives the desktop detail panel + mobile inline expand).
+  const [selectedKey, setSelectedKey] = useState('');
+  const { state, data, toggleWatcher } = useCommand(worldId, selectedKey);
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
-    // Tapping a ledger row opens that room's conversation (room.id = the project slug).
+    // Open the room's conversation with the right handle shape: agent rooms open
+    // the agent thread, mission rooms (parent project known) open the mission
+    // thread, everything else opens as a project chat on the bare slug.
     const openRoomById = (id) => {
       const rooms = data?.ledger?.rooms || [];
       const r = rooms.find((x) => String(x.id) === String(id));
-      if (!r && !id) return;
-      onOpenRoom?.({ id: r?.id || id, name: r?.name || 'Room', isProject: true, status: r?.status || 'ready' }, worldId);
+      const key = String(r?.id || id || '');
+      if (!key) return;
+      const name = r?.name || 'Room';
+      if (key.startsWith('agent:')) {
+        const slug = key.slice(6);
+        onOpenRoom?.({ id: slug, slug, name, initials: (name || '?').slice(0, 2).toUpperCase(), status: 'ready' }, worldId);
+      } else if (r?.projectSlug) {
+        onOpenRoom?.({ id: key, name, initials: (name || '?').slice(0, 2).toUpperCase(), isMission: true, missionSlug: `${r.projectSlug}:${key}`, projectSlug: r.projectSlug, status: 'ready' }, worldId);
+      } else {
+        onOpenRoom?.({ id: key, name, initials: (name || '?').slice(0, 2).toUpperCase(), isProject: true, status: r?.status || 'ready' }, worldId);
+      }
     };
     return {
       nav: (t) => onNav(t === 'back' ? 'home' : t), search: () => onOpenNav?.(), openNav: () => onOpenNav?.(),
       openCommandK: () => onOpenNav?.(), openProfile: () => onOpenNav?.(),
-      // Ledger rows open their room's chat. The watcher toggle arms/disarms the
-      // master loop for that room (room-autopilot — the daemon honors the flag).
-      // Re-task/add-watcher still have no mechanism -> inert, not faked.
-      openGoal: (id) => openRoomById(id), openJob: () => {}, toggleWatcher: (id) => toggleWatcher?.(id), addWatcher: () => {},
-      manageActivity: () => {}, retaskGoal: () => {},
+      // Step in: select/expand the row (second tap steps back out).
+      openGoal: (id) => setSelectedKey((cur) => (cur === String(id) ? '' : String(id))),
+      openRoom: (id) => openRoomById(id),
+      // Per-row master-loop toggle — real (room-autopilot; master-loop-tick honors it).
+      toggleRoomLoop: (key) => toggleWatcher?.(key),
+      openJob: () => {}, manageActivity: () => {},
     };
   }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}

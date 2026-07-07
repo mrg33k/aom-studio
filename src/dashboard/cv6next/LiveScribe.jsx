@@ -1,10 +1,13 @@
 // cv6next — Live Scribe tool (the 8th tool: meeting capture).
 // Structure grafted from design-system-2026-06-24/ui_kits/tools/livescribe.html, mounted via
-// TemplateScreen with useLiveScribe. HELD-C: there is no transcription / diarization backend,
-// so recording, the live transcript, the helper, and auto-extract are all honest empty/disabled
-// states — never faked. The header (timer, waveform) + two-panel layout render so the design
-// reads; the Stop / Ask helper / Send controls are disabled with "not wired yet" tooltips.
-// When a real backend lands, useLiveScribe flips state to 'ready' and binds live turns.
+// TemplateScreen with useLiveScribe. The backend is REAL: 15s audio chunks transcribe via
+// Gemini (v2-transcribe-audio), action items/decisions extract via livescribe-sessions, and
+// stopped sessions save to the same store. Wired controls (desktop + mobile): the capture
+// toggle (start / stop & save) and Send (save + copy the markdown summary). Controls with
+// no backend (pause, ask-the-helper, extracted-drilldown) stay honestly disabled with a
+// reason — never clickable-dead (no-fake-UI rule).
+// Fixed 2026-07-06: recording produced no visible transcript (state-branch mismatch +
+// a base64 stack overflow killed every chunk) — see useLiveScribe.js for the details.
 
 import { useMediaQuery } from '../cv6kit/useMediaQuery.js';
 import { useLiveScribe } from './data/useLiveScribe.js';
@@ -40,71 +43,20 @@ const HTML_DESKTOP = composeLiveScribe(template, 'livescribe-desktop');
 const HTML_MOBILE = composeLiveScribe(template, 'livescribe-mobile');
 
 export default function LiveScribe({ onNav, onOpenNav }) {
-  const { state, data, controls } = useLiveScribe('aom');
-  const isMobile = useMediaQuery('(max-width: 899px)') // app-wide tablet rule: below 900 = mobile layout (loop R15);
-
-  const handleStopAndSave = async () => {
-    if (!controls) return;
-    await controls.stop();
-    await controls.saveSession();
-  };
-
-  const handleSendToDashboard = async () => {
-    // Save session first
-    const saved = await controls.saveSession();
-    if (!saved) return;
-
-    // Generate markdown summary
-    const actionItemsText = data.actionItems?.length
-      ? data.actionItems.map(ai => `- [ ] ${ai.text}${ai.owner ? ` (@${ai.owner})` : ''}`).join('\n')
-      : '';
-    const decisionsText = data.decisions?.length
-      ? data.decisions.map(d => `- ✓ ${d.text}`).join('\n')
-      : '';
-
-    const summary = [
-      '## Meeting Summary',
-      '',
-      `Recorded: ${data.session?.target}`,
-      `Duration: ${data.session?.elapsed}`,
-      '',
-    ];
-    if (actionItemsText) {
-      summary.push('### Action Items');
-      summary.push(actionItemsText);
-      summary.push('');
-    }
-    if (decisionsText) {
-      summary.push('### Decisions');
-      summary.push(decisionsText);
-      summary.push('');
-    }
-
-    const markdown = summary.join('\n');
-
-    // Copy to clipboard
-    try {
-      await navigator.clipboard.writeText(markdown);
-      console.log('Session summary copied to clipboard');
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-    }
-  };
+  const { state, recording, data, controls } = useLiveScribe('aom');
+  const isMobile = useMediaQuery('(max-width: 899px)'); // app-wide tablet rule: below 900 = mobile layout (loop R15)
 
   const actions = {
     nav: (t) => (t === 'back' ? onNav?.('home') : onNav?.(t)),
     openNav: () => onOpenNav?.(),
     openCommandK: () => {},
     search: () => {},
-    // Real wiring to hook controls
-    // Held controls (pause / ask-helper) are removed from the template rather than
-    // stubbed — no dead taps. The extracted counts render as plain stats.
-    openExtracted: () => {},
     // The one capture button: idle starts the mic, recording stops + saves.
     // Nothing records without this tap (no surprise microphone).
-    toggleCapture: () => (state === 'recording' ? handleStopAndSave() : controls?.start?.()),
-    stopAndSave: handleStopAndSave,
-    sendToDashboard: handleSendToDashboard,
+    toggleCapture: () => (recording ? controls.stop() : controls.start()),
+    // Save the session and copy the markdown summary (transcript + actions +
+    // decisions) to the clipboard. The status line reports what happened.
+    sendToDashboard: () => controls.sendSummary(),
   };
 
   const html = isMobile ? HTML_MOBILE : HTML_DESKTOP;
