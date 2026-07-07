@@ -552,16 +552,22 @@ export function useReview(worldId = 'aom', injected = null) {
 
   const data = {
     queue: {
-      readyCount: queue?.readyCount || 0,
-      items: filtered.slice(0, shown),
+      // WD40-R2: readyCount reflects the current scope (project/mission selection), not the
+      // global total, so the "N deliverables waiting" header stays honest when a project is picked.
+      readyCount: scoped.length,
+      // WD40-R2: when a type chip is active, render ALL matching items (no page window).
+      // The full set is already in memory (FULL_LIMIT=500); 107 filtered videos is cheap.
+      // Pagination only makes sense on the raw unfiltered view (up to 500 rows).
+      items: typeFilter ? filtered : filtered.slice(0, shown),
       // The FULL unscoped set (not rendered by any template) so hosts can resolve a
       // catch-up / chat target anywhere in the queue, not just the visible window.
       itemsAll: allItems,
       tree,
       filters,
       // 'yes' / 'no' so the template's data-switch shows the "Load older items" button only
-      // when older rows exist past the display window (and never for an injected-files queue).
-      hasMore: (!hasInjected && filtered.length > shown) ? 'yes' : 'no',
+      // when older rows exist past the display window (and never for an injected-files queue
+      // or a type-filtered view, since those already render the full matching set).
+      hasMore: (!hasInjected && !typeFilter && filtered.length > shown) ? 'yes' : 'no',
     },
     deliverable: (() => {
       const open = (queue?.items || []).find((i) => i.id === openDelId);
