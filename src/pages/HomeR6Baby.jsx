@@ -41,6 +41,108 @@ const RUNWAY_VH = HOLD + ZOOM + 1; // 2.6
 const embed = id => `https://play.gumlet.io/embed/${id}?autoplay=true&preload=false&loop=false&background=false&disable_player_controls=false`;
 const poster = (id, w = 1200) => `https://video.gumlet.io/697678222b8b17fbb707acef/${id}/thumbnail-1-0.png?format=auto&w=${w}`;
 
+// ─── BRIEF MODAL STATE & LOGIC ────────────────────────────────────────────
+
+function BriefModal({ open, onClose }) {
+  const [step, setStep] = useState(0); // 0=name, 1=email, 2=making, 3=goal, 4=review
+  const [formData, setFormData] = useState({ name: '', email: '', making: '', goal: '', budget: '' });
+  const makingOptions = ['Brand film', 'Website', 'Strategy', 'Documentary', 'Not sure'];
+
+  const updateForm = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const next = () => {
+    if (step < 3) setStep(step + 1);
+  };
+
+  const submit = () => {
+    const body = `Name: ${formData.name}\nEmail: ${formData.email}\nWhat are you making: ${formData.making}\nGoal: ${formData.goal}\nBudget/Timeline: ${formData.budget || '(not specified)'}`;
+    window.location.href = `mailto:hello@aheadofmarket.com?subject=Brief from ${encodeURIComponent(formData.name)}&body=${encodeURIComponent(body)}`;
+    onClose();
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="brief-modal" onClick={onClose} role="dialog" aria-label="Creative brief">
+      <div className="brief-modal-inner" onClick={e => e.stopPropagation()}>
+        <button className="brief-modal-x" onClick={onClose} aria-label="Close">✕</button>
+
+        {step === 0 && (
+          <div className="brief-step">
+            <h3>What's your name?</h3>
+            <input
+              type="text"
+              placeholder="Your name"
+              value={formData.name}
+              onChange={e => updateForm('name', e.target.value)}
+              autoFocus
+            />
+            <button onClick={next} className="brief-next" disabled={!formData.name.trim()}>Next</button>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div className="brief-step">
+            <h3>And your email?</h3>
+            <input
+              type="email"
+              placeholder="you@company.com"
+              value={formData.email}
+              onChange={e => updateForm('email', e.target.value)}
+              autoFocus
+            />
+            <button onClick={next} className="brief-next" disabled={!formData.email.trim()}>Next</button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="brief-step">
+            <h3>What are you making?</h3>
+            <div className="brief-chips">
+              {makingOptions.map(opt => (
+                <button
+                  key={opt}
+                  className={`brief-chip ${formData.making === opt ? 'active' : ''}`}
+                  onClick={() => {
+                    updateForm('making', opt);
+                    setTimeout(next, 100);
+                  }}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="brief-step">
+            <h3>What's the goal?</h3>
+            <textarea
+              placeholder="One line about what success looks like for you"
+              value={formData.goal}
+              onChange={e => updateForm('goal', e.target.value)}
+              autoFocus
+              rows="2"
+            />
+            <div className="brief-optional">
+              <input
+                type="text"
+                placeholder="Budget / timeline (optional)"
+                value={formData.budget}
+                onChange={e => updateForm('budget', e.target.value)}
+              />
+            </div>
+            <button onClick={submit} className="brief-next brief-submit" disabled={!formData.goal.trim()}>Send</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── CSS ──────────────────────────────────────────────────────────────────────
 
 const CSS = `
@@ -261,19 +363,33 @@ const CSS = `
   .r17 .parts-list li { color:rgba(246,246,244,.88); font-size:.95rem; }
 }
 
-/* work mosaic */
-.r17 .mosaic { position:absolute; inset:0; display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:1fr 1fr; }
-.r17 .tile { position:relative; overflow:hidden; background:var(--ink-2); border:none; padding:0; }
+/* work mosaic — endless dual-row scroll */
+.r17 .mosaic { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
+.r17 .mosaic-row { display:flex; gap:1rem; padding:1rem; height:50%; overflow:hidden; }
+.r17 .mosaic-row.top { flex-direction:row; animation:mosaic-scroll-left 40s linear infinite; }
+.r17 .mosaic-row.bottom { flex-direction:row; animation:mosaic-scroll-right 40s linear infinite; }
+.r17 .mosaic-row:hover { animation-play-state:paused; }
+@keyframes mosaic-scroll-left {
+  0% { transform:translateX(0); }
+  100% { transform:translateX(calc(-50% - 0.5rem)); }
+}
+@keyframes mosaic-scroll-right {
+  0% { transform:translateX(calc(-50% - 0.5rem)); }
+  100% { transform:translateX(0); }
+}
+.r17 .tile { position:relative; overflow:hidden; background:var(--ink-2); border:none; padding:0; flex-shrink:0; width:clamp(200px,25vw,400px); aspect-ratio:16/9; cursor:pointer; }
 .r17 .tile img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.55; transform:scale(1.04); transition:opacity .4s, transform .6s cubic-bezier(.16,1,.3,1); }
 .r17 .tile:hover img { opacity:.95; transform:scale(1.01); }
 .r17 .tile .tl { position:absolute; left:.9rem; bottom:.8rem; z-index:2; font-size:.62rem; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--paper); text-shadow:0 1px 10px rgba(0,0,0,.8); opacity:0; transition:opacity .3s; }
 .r17 .tile:hover .tl { opacity:1; }
 .r17 .tile .play { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:3; font-size:2.4rem; color:var(--paper); text-shadow:0 2px 12px rgba(0,0,0,.8); opacity:0; transition:opacity .3s; }
 .r17 .tile:hover .play { opacity:1; }
-@media(max-width:860px){ .r17 .tile .play { opacity:.6; } }
+@media(max-width:860px){
+  .r17 .mosaic-row { gap:0.75rem; padding:0.75rem; height:50%; }
+  .r17 .tile { width:clamp(140px,40vw,280px); }
+}
 .r17 .mosaic-stack { pointer-events:none; }
 .r17 .mosaic-stack .view { pointer-events:auto; }
-@media(max-width:860px){ .r17 .mosaic { grid-template-columns:1fr 1fr; grid-template-rows:repeat(4,1fr); } }
 
 /* voices */
 .r17 .v-att { margin-top:1.4rem; display:flex; gap:2.2rem; flex-wrap:wrap; justify-content:center; }
@@ -294,6 +410,31 @@ const CSS = `
 .r17 .modal-frame iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 .r17 .modal-x { position:absolute; top:-2.6rem; right:0; font-size:.78rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--paper); }
 .r17 .modal-x:hover { color:var(--gold); }
+
+/* brief modal — premium guided contact form */
+.r17 .brief-modal { position:fixed; inset:0; z-index:410; background:rgba(0,0,0,.85); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); display:flex; align-items:center; justify-content:center; padding:clamp(1rem,3vw,2rem); animation:fadeIn .3s ease; }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+.r17 .brief-modal-inner { position:relative; width:min(420px,100%); background:var(--ink); border:1px solid rgba(196,164,106,.14); border-radius:12px; padding:clamp(2rem,4vw,3rem); max-height:90vh; overflow-y:auto; box-shadow:0 20px 80px rgba(0,0,0,.6); }
+.r17 .brief-modal-x { position:absolute; top:1.2rem; right:1.2rem; font-size:.8rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--paper); background:none; border:none; cursor:pointer; transition:color .15s; padding:0; }
+.r17 .brief-modal-x:hover { color:var(--gold); }
+.r17 .brief-step h3 { font-family:var(--fd); font-size:clamp(1.4rem,3vw,1.8rem); font-weight:800; text-transform:uppercase; color:var(--paper); margin-bottom:1.6rem; line-height:1.1; letter-spacing:-.01em; }
+.r17 .brief-step input, .r17 .brief-step textarea { width:100%; padding:.85rem 1rem; background:var(--ink-2); border:1px solid rgba(196,164,106,.24); border-radius:8px; font-family:var(--fbrut); font-size:.95rem; color:var(--paper); transition:border-color .2s; }
+.r17 .brief-step input::placeholder, .r17 .brief-step textarea::placeholder { color:rgba(246,246,244,.5); }
+.r17 .brief-step input:focus, .r17 .brief-step textarea:focus { outline:none; border-color:var(--gold); background:var(--ink); }
+.r17 .brief-optional { margin-top:1rem; }
+.r17 .brief-chips { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; margin-bottom:0; }
+.r17 .brief-chip { padding:.7rem 1rem; background:var(--ink-2); border:1px solid rgba(196,164,106,.24); border-radius:8px; color:var(--paper); font-family:var(--fbrut); font-size:.9rem; font-weight:500; cursor:pointer; transition:all .2s; text-align:center; }
+.r17 .brief-chip:hover { border-color:var(--gold); color:var(--gold); }
+.r17 .brief-chip.active { background:var(--gold); color:var(--ink); border-color:var(--gold); }
+.r17 .brief-next { margin-top:1.8rem; width:100%; padding:.75rem 1.2rem; background:var(--gold); color:var(--ink); border:none; border-radius:8px; font-family:var(--fbrut); font-size:.95rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; transition:all .2s; }
+.r17 .brief-next:hover:not(:disabled) { background:var(--gold-deep); }
+.r17 .brief-next:disabled { opacity:.5; cursor:not-allowed; }
+.r17 .brief-submit { background:var(--gold); }
+@media(max-width:640px){
+  .r17 .brief-modal-inner { width:100%; padding:1.6rem 1.2rem; }
+  .r17 .brief-step h3 { font-size:1.4rem; margin-bottom:1.2rem; }
+  .r17 .brief-chips { grid-template-columns:1fr; }
+}
 
 /* section rhythm hairlines */
 .r17 .slide-parts { border-top:1px solid rgba(196,164,106,.12); }
@@ -411,6 +552,9 @@ export default function HomeR6Baby() {
     try { return new URLSearchParams(window.location.search).get('menu') === '1'; }
     catch { return false; }
   });
+  const [briefModalOpen, setBriefModalOpen] = useState(false);
+  const [filmCyclePosterIndex, setFilmCyclePosterIndex] = useState(0);
+
   const close = useCallback(() => setVideo(null), []);
   const jump = useCallback((id) => {
     setMenu(false);
@@ -544,6 +688,37 @@ export default function HomeR6Baby() {
     return () => stage.removeEventListener('mousemove', onMouseMove);
   }, []);
 
+  // Film cycle for the "a video company" section — cycle through portfolio posters when in view
+  useEffect(() => {
+    const storySlide = document.getElementById('story');
+    if (!storySlide || typeof IntersectionObserver === 'undefined') return;
+    let raf;
+    const obs = new IntersectionObserver(
+      es => {
+        const isInView = es[0]?.isIntersecting;
+        if (isInView) {
+          // Start cycling
+          let idx = 0;
+          const cycle = () => {
+            setFilmCyclePosterIndex(idx % PORTFOLIO.length);
+            idx++;
+            raf = setTimeout(() => cycle(), 700);
+          };
+          raf = setTimeout(() => cycle(), 700);
+        } else {
+          // Stop cycling
+          if (typeof raf !== 'undefined') clearTimeout(raf);
+        }
+      },
+      { threshold: 0.3 }
+    );
+    obs.observe(storySlide);
+    return () => {
+      obs.disconnect();
+      if (typeof raf !== 'undefined') clearTimeout(raf);
+    };
+  }, []);
+
   // Deep links (#story/#work/#contact): the reel mounts after the browser's
   // native anchor pass, so jump to the hash target ourselves. Instant, not
   // smooth — the container's scroll-behavior:smooth rides rAF, which is frozen
@@ -587,7 +762,7 @@ export default function HomeR6Baby() {
           Menu
         </button>
         <a className="mid" href="#story" onClick={e => { e.preventDefault(); jump('story'); }}>Story</a>
-        <a href="#contact" onClick={e => { e.preventDefault(); jump('contact'); }}>Contact us</a>
+        <button className="chrome-link" onClick={() => setBriefModalOpen(true)} style={{ fontSize: 'inherit', fontWeight: 'inherit', letterSpacing: 'inherit', textTransform: 'inherit', textShadow: 'inherit' }}>Contact us</button>
       </div>
 
       {/* the WORK overlay — the R4 nav brought to life */}
@@ -620,7 +795,7 @@ export default function HomeR6Baby() {
           ))}
           <div className="hz-menu-kick">More</div>
           <button className="hz-menu-row" onClick={() => jump('story')}><span className="hz-menu-t">Our story</span></button>
-          <button className="hz-menu-row" onClick={() => jump('contact')}><span className="hz-menu-t">Start a conversation</span></button>
+          <button className="hz-menu-row" onClick={() => { setMenu(false); setBriefModalOpen(true); }}><span className="hz-menu-t">Start a conversation</span></button>
         </div>
       </div>
       <div className="chrome bot" aria-hidden="true">
@@ -690,8 +865,22 @@ export default function HomeR6Baby() {
         </div>
       </Slide>
 
-      {/* 01 — STORY BEAT: the video company */}
+      {/* 01 — STORY BEAT: the video company — backdrop cycles through portfolio posters */}
       <Slide id="story">
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `url('${poster(PORTFOLIO[filmCyclePosterIndex].id, 1200)}')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.08,
+            pointerEvents: 'none',
+            transition: 'background-image .5s ease-in-out',
+            zIndex: 0
+          }}
+          aria-hidden="true"
+        />
         <div className="stack">
           <div className="tags rv"><span>So — who are we, exactly?</span><span>Many companies around Phoenix know us as</span></div>
           <h2 className="title">
@@ -834,16 +1023,29 @@ export default function HomeR6Baby() {
         </div>
       </Slide>
 
-      {/* 11 — THE WORK: mosaic */}
+      {/* 11 — THE WORK: endless dual-row scroll */}
       <Slide id="work">
         <div className="mosaic">
-          {PORTFOLIO.map(v => (
-            <button key={v.id} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
-              <img src={poster(v.id, 800)} alt="" loading="lazy" />
-              <span className="play">▶</span>
-              <span className="tl">{v.t}</span>
-            </button>
-          ))}
+          {/* Top row: scrolls left */}
+          <div className="mosaic-row top">
+            {[...PORTFOLIO, ...PORTFOLIO].map((v, i) => (
+              <button key={`top-${i}`} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
+                <img src={poster(v.id, 400)} alt="" loading="lazy" />
+                <span className="play">▶</span>
+                <span className="tl">{v.t}</span>
+              </button>
+            ))}
+          </div>
+          {/* Bottom row: scrolls right */}
+          <div className="mosaic-row bottom">
+            {[...PORTFOLIO, ...PORTFOLIO].map((v, i) => (
+              <button key={`bot-${i}`} className="tile" onClick={() => setVideo(v)} aria-label={`Play ${v.t}`}>
+                <img src={poster(v.id, 400)} alt="" loading="lazy" />
+                <span className="play">▶</span>
+                <span className="tl">{v.t}</span>
+              </button>
+            ))}
+          </div>
         </div>
         <div className="stack mosaic-stack">
           <div className="tags rv"><span>100+ projects shipped since 2020</span><span>Tap any film to play</span></div>
@@ -882,7 +1084,7 @@ export default function HomeR6Baby() {
             <span className="row rv d2">when</span>
             <span className="row rv d3">you are<i className="sq" /></span>
           </h2>
-          <a className="btn-gold rv d4" href="mailto:hello@aheadofmarket.com">Start a conversation</a>
+          <button className="btn-gold rv d4" onClick={() => setBriefModalOpen(true)} style={{ border: 'none', cursor: 'pointer' }}>Start a conversation</button>
           <div className="fine rv d4">
             <a href="mailto:hello@aheadofmarket.com">hello@aheadofmarket.com</a>
             <a href="tel:+16023732164">602 373 2164</a>
@@ -901,6 +1103,9 @@ export default function HomeR6Baby() {
           </div>
         </div>
       )}
+
+      {/* brief modal */}
+      <BriefModal open={briefModalOpen} onClose={() => setBriefModalOpen(false)} />
     </div>
   );
 }
