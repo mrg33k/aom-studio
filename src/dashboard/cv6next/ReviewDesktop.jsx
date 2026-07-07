@@ -42,7 +42,7 @@ function composeDesktopReview(raw) {
   // existing .qcount slot (the template already renders it with data-bind).
   const style = doc.createElement('style');
   style.textContent = [
-    '[data-cv6] .qitem.is-section{background:transparent!important;cursor:default;border-radius:0;padding:12px 14px 3px;}',
+    '[data-cv6] .qitem.is-section{background:transparent!important;cursor:default;pointer-events:none;border-radius:0;padding:12px 14px 8px;border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;}',
     '[data-cv6] .qitem.is-section .qglyph{display:none;}',
     '[data-cv6] .qitem.is-section .qcount{display:none;}',
     '[data-cv6] .qitem.is-section .qmeta{display:none;}',
