@@ -1948,7 +1948,7 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
         const r = rooms.find((x) => String(x.key) === String(id));
         const next = (r?.fullChecklist || []).find((c) => c.state !== 'done');
         if (!r || !next) return;
-        handNextStep?.({ key: String(id), projectSlug: r.projectSlug || '', stepText: next.label });
+        handNextStep?.({ key: String(id), projectSlug: r.projectSlug || '', stepText: next.label, act: next.act });
       },
       // Absorbs taps on the add-step/answer rows so they don't bubble to the card's open action.
       noop: () => {},

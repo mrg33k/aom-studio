@@ -364,13 +364,15 @@ function shapeCommand({
     : 'No steps on this plan yet.');
   // The answer card only exists when the room is actually waiting on the user.
   goal.questionState = goal.question ? 'expanded' : 'collapsed';
-  // Hand-off control (wd40 R3): only when the plan actually has a next unchecked
-  // step to hand over — and the step is named on the button so the tap is literal.
+  // Hand-off control (wd40 R3, reshaped R4c per Steffen): only when the plan has a
+  // next unchecked step. After a send THE BUTTON BECOMES THE RESULT — it hides and
+  // a success pill takes its place, keyed to the exact step that was sent (a NEW
+  // next step brings the button back).
   const nextStep = goal.checklist.find((c) => c.state !== 'done');
   goal.nextStepText = nextStep ? nextStep.label : '';
-  goal.handState = (goal.addKey && nextStep) ? 'expanded' : 'collapsed';
-  // True statement only: shows after this session actually sent the step.
-  goal.handNote = (goal.id && handed[goal.id]) ? 'Sent into the room — the agent picks it up from chat.' : '';
+  const handedCurrent = Boolean(nextStep && goal.id && handed[goal.id] && handed[goal.id].act === nextStep.act);
+  goal.handState = (goal.addKey && nextStep && !handedCurrent) ? 'expanded' : 'collapsed';
+  goal.handedState = handedCurrent ? 'expanded' : 'collapsed';
 
   return {
     ledger: {
@@ -630,12 +632,11 @@ export function useCommand(worldIdArg, selectedKey = '', filter = '') {
   // the real send path. `handed` records the send so the UI can say so honestly
   // and a double-tap inside 60s is ignored.
   const [handed, setHanded] = useState({});
-  const handNextStep = useCallback(async ({ key, projectSlug = '', stepText = '' } = {}) => {
+  const handNextStep = useCallback(async ({ key, projectSlug = '', stepText = '', act = '' } = {}) => {
     const t = String(stepText || '').replace(/\s+/g, ' ').trim();
     if (!worldId || !key || !t) return;
-    const last = handed[key] || 0;
-    if (Date.now() - last < 60000) return; // already handed moments ago
-    setHanded((h) => ({ ...h, [key]: Date.now() }));
+    if (handed[key] && handed[key].act === act) return; // this exact step already sent
+    setHanded((h) => ({ ...h, [key]: { act, ts: Date.now() } }));
     const body = `Please take the next step on this room's plan and report back when it's done: "${t.slice(0, 240)}"`;
     try {
       await authFetch('/api/dashboard/supabase-messages', {
