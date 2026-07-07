@@ -19,6 +19,14 @@ function tintFor(seed) {
   return TINTS[h % TINTS.length];
 }
 
+// sessionStorage helpers for DEF-02 (state survives tool navigation).
+function ssRead(key) {
+  try { return JSON.parse(sessionStorage.getItem(key) || '{}'); } catch { return {}; }
+}
+function ssWrite(key, val) {
+  try { sessionStorage.setItem(key, JSON.stringify(val)); } catch { /* quota full — non-fatal */ }
+}
+
 function relTime(d) {
   if (!d) return '';
   const ms = Date.now() - new Date(d).getTime();
@@ -184,25 +192,36 @@ function imageBodyHtml(f, worldId) {
 }
 
 export function useOrganize(worldId = 'aom') {
+  const SS_KEY = `org_state_${worldId}`;
   const [projects, setProjects] = useState(null);
   const [files, setFiles] = useState(null);        // metadata rows (no content)
   const [status, setStatus] = useState('loading'); // loading | loaded | error
-  const [selectedId, setSelectedId] = useState(null); // which project's files show
-  const [filter, setFilter] = useState('recent');  // recent | links | docs | pdfs | images | video | audio
+  // DEF-02: restore project/filter/mission after tool navigation via sessionStorage.
+  const [selectedId, setSelectedId] = useState(() => ssRead(SS_KEY).selectedId ?? null);
+  const [filter, setFilter] = useState(() => ssRead(SS_KEY).filter ?? 'recent');
   // Mission narrowing within the selected project. Stored as CANDIDATE slugs (a tree
   // node click hands in every segment of a colon-joined mission path); the first
   // candidate that exists as a mission folder with files wins, else no narrowing.
-  const [missionSel, setMissionSel] = useState(null); // null | ['__all'] | ['__root'] | [slug, ...]
+  const [missionSel, setMissionSel] = useState(() => { // null | ['__all'] | ['__root'] | [slug, ...]
+    const v = ssRead(SS_KEY).missionSel;
+    return Array.isArray(v) ? v : null;
+  });
   // Type-to-find within the current project scope. Persists across mission/type chip
   // flips (refining, not restarting); resets when the project changes. The input is an
   // uncontrolled kept DOM node — the component clears it on project switch to match.
   const [query, setQuery] = useState('');
   // Sort is a VIEW preference (newest | az), not scope — it survives project switches.
-  const [sort, setSort] = useState('newest');
+  const [sort, setSort] = useState(() => ssRead(SS_KEY).sort ?? 'newest');
   const [openedId, setOpenedId] = useState(null);  // which file is open (preview/reader)
   const [contentCache, setContentCache] = useState({}); // id -> { title, bodyHtml, editor, editorInitials }
   const [missionTree, setMissionTree] = useState({}); // projectSlug -> tree nodes array (nested)
   const inFlight = useRef(new Set()); // file ids whose content fetch is in progress (dedup)
+
+  // DEF-02: persist view state so navigating to another tool and back restores context.
+  useEffect(() => {
+    ssWrite(SS_KEY, { selectedId, filter, missionSel, sort });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, filter, missionSel, sort]);
 
   const load = useCallback(async (opts) => {
     // The disk mirror is the source of truth: every file in every project,
