@@ -132,6 +132,7 @@ const VActStage = lazy(() => import('./pages/versions/VActStage.jsx'))
 const VGearTurn = lazy(() => import('./pages/versions/VGearTurn.jsx'))
 const VDensity = lazy(() => import('./pages/versions/VDensity.jsx'))
 const VCinematicGlass = lazy(() => import('./pages/versions/VCinematicGlass.jsx'))
+const HomeR6Baby = lazy(() => import('./pages/HomeR6Baby.jsx'))
 const ProjectPage = lazy(() => import('./pages/ProjectPage.jsx'))
 const DashboardSettingsInvites = lazy(() => import('./pages/DashboardSettingsInvites.jsx'))
 const FinanceTracker = lazy(() => import('./pages/FinanceTracker.jsx'))
@@ -319,7 +320,7 @@ function TestModeBanner() {
   const { pathname } = useLocation()
   if (import.meta.env.VITE_DASHBOARD_MODE !== 'test') return null
   // Hide on the public marketing preview pages so they review clean (it never shows on real prod anyway).
-  if (pathname === '/r5' || pathname === '/taste' || pathname === '/r4' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname.startsWith('/work/')) return null
+  if (pathname === '/r5' || pathname === '/r6' || pathname === '/taste' || pathname === '/r4' || pathname === '/home-v2' || pathname.startsWith('/versions') || pathname.startsWith('/work/')) return null
   return (
     <>
       <style>{`
@@ -432,6 +433,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/home-v2" element={<V2Home />} />
           <Route path="/r4" element={<HomeR4Preview />} />
           <Route path="/r5" element={<HomeR5Preview />} />
+          <Route path="/r6" element={<HomeR6Baby />} />
           <Route path="/taste" element={<HomeR6Taste />} />
           <Route path="/versions" element={<VersionsGallery />} />
           <Route path="/versions/superside" element={<VSuperside />} />
