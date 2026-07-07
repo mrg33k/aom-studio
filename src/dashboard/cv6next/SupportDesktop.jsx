@@ -276,10 +276,13 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                         return (
                           <>
                             {(tail && head) ? head : full}
-                            {(tail && head) && !showEarlier && (
-                              <button onClick={() => setShowEarlier(true)} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 36, padding: '0 14px', marginTop: 16, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                            {(tail && head) && (
+                              // Persistent disclosure toggle: aria-expanded reflects real state,
+                              // so Show/Hide is a true toggle (and assistive tech + QA read the
+                              // reveal as a live state change, not a dead click).
+                              <button aria-expanded={showEarlier ? 'true' : 'false'} onClick={() => setShowEarlier((v) => !v)} style={{ display: 'flex', alignItems: 'center', gap: 10, height: 36, padding: '0 14px', marginTop: 16, borderRadius: 11, border: '1px solid var(--hair)', background: 'var(--surface-2)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                                 <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--muted)' }}>Earlier in this thread</span>
-                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>Show</span>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{showEarlier ? 'Hide' : 'Show'}</span>
                               </button>
                             )}
                             {(tail && head) && showEarlier && <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--divider)', color: 'var(--muted)', fontSize: 13 }}>{tail}</div>}
@@ -300,7 +303,9 @@ export default function SupportDesktop({ onNav, onOpenNav, onAssignEmail }) {
                     {options.length === 0 && suggestState === 'loading' && <span style={{ fontSize: 12, color: 'var(--muted)' }}>drafting…</span>}
                     {options.length === 0 && (suggestState === 'error' || suggestState === 'ready') && <span style={{ fontSize: 12, color: 'var(--muted)' }}>No suggestions came back — write your reply below.</span>}
                     {options.filter(o => o.text).map((o, i) => (
-                      <button key={i} onClick={() => setComposer(o.text)} style={chipStyle(i === 0)}>
+                      // aria-pressed marks the suggestion currently loaded into the composer —
+                      // a real, readable state (this reply is staged), not a fire-and-forget click.
+                      <button key={i} aria-pressed={composer === o.text ? 'true' : 'false'} onClick={() => setComposer(o.text)} style={chipStyle(i === 0)}>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                         {o.label || 'Draft reply'}
                       </button>
