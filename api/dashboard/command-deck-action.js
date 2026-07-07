@@ -118,7 +118,7 @@ export default async function handler(req, res) {
   const callKey = callId || lineMatch;
 
   // ── Validate action ────────────────────────────────────────────────────────
-  if (!action || !['mark_call_done', 'answer_question', 'keeper_decision', 'set_room_status', 'dismiss', 'edit_goal', 'touch_room'].includes(action)) {
+  if (!action || !['mark_call_done', 'answer_question', 'clear_question', 'keeper_decision', 'set_room_status', 'dismiss', 'edit_goal', 'touch_room'].includes(action)) {
     return res.status(400).json({ error: 'Invalid action' });
   }
 
@@ -129,6 +129,12 @@ export default async function handler(req, res) {
       return await markCallDone(callKey, answer, res);
     } else if (action === 'answer_question') {
       return await answerQuestion(room, answer, res);
+    } else if (action === 'clear_question') {
+      // The goal-ledger answer card (wd40 R2): Patrik answered the room's open
+      // question IN the room (via the chat send path), so clear the question and
+      // record the answer WITHOUT touching the goal — unlike answer_question,
+      // whose CommandDeck-era semantics overwrite the goal with the answer.
+      return await clearQuestion(room, answer, res);
     } else if (action === 'keeper_decision') {
       return await keeperDecision(proposalId, answer, res);
     } else if (action === 'set_room_status') {
@@ -292,6 +298,37 @@ async function keeperDecision(proposalId, answer, res) {
 // Flips a room's status (and bumps last_reviewed) so the loop reads the steer on
 // its next tick. Used by the room-status card's decide chips. An optional `note`
 // is recorded as last_answer so the loop has the plain-words reason.
+// Clear a room's open question after the answer was delivered into the room
+// (goal-ledger answer card). Non-destructive: goal / status / source stay intact;
+// only open_question clears, with the answer recorded for the loop's next tick.
+async function clearQuestion(room, answer, res) {
+  if (!room || typeof room !== 'string') {
+    return res.status(400).json({ error: 'room required' });
+  }
+  try {
+    let goalsContent = await readDeliverable('room-goals.json');
+    if (goalsContent == null) {
+      return res.status(404).json({ error: 'room-goals.json not found' });
+    }
+    const goals = JSON.parse(goalsContent);
+    if (!goals.rooms || !goals.rooms[room]) {
+      return res.status(404).json({ error: `Room "${room}" not found in room-goals.json` });
+    }
+    goals.rooms[room] = {
+      ...goals.rooms[room],
+      open_question: null,
+      last_reviewed: new Date().toISOString(),
+      ...(answer && typeof answer === 'string' && answer.trim() ? { last_answer: answer.trim() } : {}),
+    };
+    const ok = await writeDeliverable('room-goals.json', JSON.stringify(goals, null, 2) + '\n');
+    if (!ok) return res.status(500).json({ error: 'Failed to write room-goals.json' });
+    return res.status(200).json({ success: true, action: 'clear_question', room });
+  } catch (err) {
+    console.error('[clearQuestion] Error:', err);
+    throw err;
+  }
+}
+
 async function setRoomStatus(room, status, note, res) {
   if (!room || typeof room !== 'string') {
     return res.status(400).json({ error: 'room required' });

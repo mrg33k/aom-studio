@@ -331,13 +331,16 @@ function shapeCommand({
         driverLine: focus.liveNow !== '—' ? focus.liveNow
           : (focus.status === 'working' ? 'Working now' : 'Nothing live right now'),
         checklist: focus.fullChecklist,
+        // The full open question renders as an ANSWERABLE card (wd40 R2) — the
+        // header chip just points at it instead of repeating a truncated copy.
+        question: focus.openQuestion || '',
         queueNote: focus.openQuestion
-          ? `Waiting on you: ${focus.openQuestion.slice(0, 60)}`
+          ? 'Needs your answer below'
           : (openQuestions ? `${openQuestions} open question${openQuestions > 1 ? 's' : ''} for you` : 'queue clear'),
       }
     : {
         id: '', roomName: 'No rooms yet', tint: 'violet', status: 'idle', statusLabel: '',
-        addKey: '',
+        addKey: '', question: '',
         title: 'No goal set for this room yet', driverLine: 'Nothing active right now',
         checklist: [], queueNote: 'queue clear',
       };
@@ -349,6 +352,8 @@ function shapeCommand({
   goal.emptyNote = goal.checklist.length ? '' : (goal.addKey
     ? 'No steps on this plan yet. Add the first one below.'
     : 'No steps on this plan yet.');
+  // The answer card only exists when the room is actually waiting on the user.
+  goal.questionState = goal.question ? 'expanded' : 'collapsed';
 
   return {
     ledger: { roomCount: rows.length, liveCount: workingCount, workingCount, blockedCount, rooms: rows, others: rows },
@@ -570,12 +575,54 @@ export function useCommand(worldIdArg, selectedKey = '') {
     }
   }, [worldId]);
 
+  // ── Answer a blocked room right on the ledger (wd40 R2) ── two real writes:
+  // 1) the answer goes INTO the room's conversation via the same supabase-messages
+  //    send path the Chat composer uses, so the room's agent actually receives it;
+  // 2) the loop's goal memory clears its open_question (command-deck-action
+  //    clear_question — non-destructive, unlike the CommandDeck-era answer_question).
+  // Optimistic: the row unblocks immediately; the 60s goal poll reconciles.
+  const answerRoomQuestion = useCallback(async ({ key, projectSlug = '', question = '' } = {}, text) => {
+    const t = String(text || '').trim();
+    if (!worldId || !key || !t) return;
+    // Resolve which stored key (canonical or legacy project:mission) holds this
+    // room's goal record, same as toggleWatcher.
+    let storeKey = key;
+    if (!goalRooms[storeKey]) {
+      for (const k of Object.keys(goalRooms)) {
+        if (normalizeRoomKey(k) === key) { storeKey = k; break; }
+      }
+    }
+    setGoalRooms((g) => {
+      const out = { ...g, [storeKey]: { ...(g[storeKey] || {}), open_question: null, last_answer: t } };
+      goalRoomsSig.current = JSON.stringify(out);
+      return out;
+    });
+    const q = String(question || '').replace(/\s+/g, ' ').trim().slice(0, 140);
+    const body = q ? `Answering your question ("${q}"): ${t}` : t;
+    const payload = key.startsWith('agent:')
+      ? { client_id: worldId, agent: key.slice(6), text: body, role: 'user', source: 'corner-dashboard' }
+      : projectSlug
+        ? { client_id: worldId, agent: 'corner', project: projectSlug, text: body, role: 'user', source: 'corner-dashboard', metadata: { mission_slug: key } }
+        : { client_id: worldId, agent: 'corner', project: key, text: body, role: 'user', source: 'corner-dashboard' };
+    try {
+      await authFetch('/api/dashboard/supabase-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+    } catch { /* delivery failed; the un-cleared server question resurfaces on the next poll */ }
+    try {
+      await authFetch('/api/dashboard/command-deck-action', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ world: worldId, action: 'clear_question', room: storeKey, answer: t }),
+      });
+    } catch { /* poll reconciles */ }
+  }, [worldId, goalRooms]);
+
   const data = useMemo(
     () => shapeCommand({ sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey }),
     [sessions, projectRooms, lastByRoom, goalRooms, boardRows, stepsByRoom, selectedKey],
   );
   const state = worldId ? 'ready' : 'loading';
-  return { state, data, toggleWatcher, stepToggle, stepAdd };
+  return { state, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion };
 }
 
 // ── Tracker: the real CV6 bug tracker ──
