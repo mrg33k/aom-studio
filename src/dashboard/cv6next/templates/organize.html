@@ -60,13 +60,14 @@
       </div>
       <!-- mission chips: narrow within the project; ONE per mission folder that has
            files (empty projects render no row); is-on marks the active narrowing;
-           single row that scrolls horizontally — many missions stay on one line -->
-      <div style="display:flex;gap:8px;padding:0 20px;overflow-x:auto;scrollbar-width:none;flex:none;">
+           single row that scrolls horizontally — ochip-row-fade signals more chips beyond the edge -->
+      <div class="ochip-row-fade" style="display:flex;gap:8px;padding:0 20px;overflow-x:auto;scrollbar-width:none;flex:none;">
         <button class="ochip is-on" data-each="missions" data-action="setMission" data-arg="mission.id" data-mod="is-:mission.active" style="flex:none;margin-bottom:10px;"><span data-bind="mission.label">All 12</span></button>
       </div>
       <!-- filter chips: ONE per type WITH files (zero-count chips are dropped by the
-           data hook); wraps so all chips stay visible regardless of how many types are present -->
-      <div style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 14px;flex:none;">
+           data hook); wraps so all chips stay visible regardless of how many types are present;
+           ochip-filter-row gives a lighter active state vs mission chips (secondary axis) -->
+      <div class="ochip-filter-row" style="display:flex;flex-wrap:wrap;gap:8px;padding:0 20px 14px;flex:none;">
         <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active" style="flex:none;"><span data-bind="filter.label">All 12</span></button>
       </div>
       <div style="padding:0 12px;flex:1;min-height:0;overflow-y:auto;">
@@ -111,12 +112,12 @@
       <input data-org-search data-cv6-keep="org-search-mobile" type="text" placeholder="Find a file…" style="flex:1;min-width:0;height:40px;box-sizing:border-box;background:var(--surface);border:1px solid var(--hair);border-radius:12px;padding:0 13px;color:var(--fg);font-size:14px;font-family:var(--font-sans);outline:none;">
       <button class="ochip is-on" data-each="sorts" data-action="setSort" data-arg="sort.id" data-mod="is-:sort.active" style="flex:none;padding:0 11px;"><span data-bind="sort.label">Newest</span></button>
     </div>
-    <!-- mission chips: same narrowing as desktop; single row that scrolls horizontally -->
-    <div style="display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;">
+    <!-- mission chips: same narrowing as desktop; single row that scrolls horizontally; ochip-row-fade signals more chips beyond the edge -->
+    <div class="ochip-row-fade" style="display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;">
       <button class="ochip is-on" data-each="missions" data-action="setMission" data-arg="mission.id" data-mod="is-:mission.active" style="flex:none;margin-bottom:10px;"><span data-bind="mission.label">All 12</span></button>
     </div>
-    <!-- filter chips -->
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:14px;">
+    <!-- filter chips: ochip-filter-row lighter active state (secondary axis) -->
+    <div class="ochip-filter-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-bottom:14px;">
       <!-- ONE chip per filter; is-on marks the active filter -->
       <button class="ochip is-on" data-each="filters" data-action="setFilter" data-arg="filter.id" data-mod="is-:filter.active" style="flex:none;"><span data-bind="filter.label">All 12</span></button>
       <span style="margin-left:auto;font-size:12.5px;font-weight:600;color:var(--accent);" data-action="toggleSelectMode">Done</span>
