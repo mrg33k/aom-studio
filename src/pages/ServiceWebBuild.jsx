@@ -261,7 +261,7 @@ export default function ServiceWebBuild() {
       <section className="section">
         <h2 className="offer-header">A website from AOM is</h2>
         <ul className="offer-list">
-          <li>Fully designed and developed (not a template, not AI-generated)</li>
+          <li>Fully designed and developed for your business (never a template)</li>
           <li>Built for conversion (clear calls-to-action, trust signals, zero clutter)</li>
           <li>Fast delivery (7 days for a homepage rebuild, timeline negotiable for larger scope)</li>
           <li>Live on production with real monitoring and support included</li>
