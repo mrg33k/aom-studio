@@ -65,17 +65,14 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
   display:flex;align-items:center;justify-content:center;
 }
 .wm{
-  display:flex;align-items:baseline;white-space:nowrap;
-  font-family:'Bricolage Grotesque',sans-serif;font-weight:800;
-  font-size:clamp(4.5rem,21vw,19rem);line-height:1;letter-spacing:-.02em;
-  transform-origin:38% 46%;will-change:transform;
+  display:flex;align-items:flex-end;white-space:nowrap;
+  transform-origin:32% 52%;will-change:transform;color:#fff;
 }
-.wm .t{color:#fff}
-/* crisp letterform edge so the mark reads sharp even on a dim footage frame */
-#goldLayer .wm .t{color:transparent;-webkit-text-stroke:1px rgba(246,246,244,.32)}
+.wm svg{display:block;height:clamp(13rem,44vh,29rem);width:auto}
+#goldLayer .wm svg{visibility:hidden}
 .wm .dot{
-  display:inline-block;width:.14em;height:.14em;margin-left:.05em;
-  background:#fff;
+  display:inline-block;width:clamp(1.1rem,3vw,2.4rem);height:clamp(1.1rem,3vw,2.4rem);
+  margin-left:clamp(.6rem,1.6vw,1.4rem);background:#fff;
 }
 #goldLayer .wm .dot{background:var(--gold)}
 
@@ -188,7 +185,7 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 }
 
 @media (max-width:640px){
-  .wm{font-size:27vw}
+  .wm svg{height:min(30vh,52vw)}
   #heroIntro{bottom:calc(6.5rem + env(safe-area-inset-bottom));font-size:.82rem}
   #heroChrome .br{display:none}
   #outroFoot{flex-direction:column;gap:.4rem;align-items:center;text-align:center}
@@ -231,14 +228,15 @@ button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
 <div id="stage" aria-hidden="true">
   <div id="vids"></div>
 
-  <div id="maskLayer"><div class="wm" id="wmA"><span class="t">AOM</span><span class="dot"></span></div></div>
-  <div id="goldLayer"><div class="wm" id="wmB"><span class="t">AOM</span><span class="dot"></span></div></div>
+  <!-- the center mark is the official monogram; both copies reuse the topbar SVG's mask def -->
+  <div id="maskLayer"><div class="wm" id="wmA"><svg viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" fill="currentColor" aria-hidden="true"><rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect></svg><span class="dot"></span></div></div>
+  <div id="goldLayer"><div class="wm" id="wmB"><svg viewBox="345.8 311.2 742 634.9" preserveAspectRatio="xMidYMid meet" fill="currentColor" aria-hidden="true"><rect x="0" y="0" width="1448" height="1328" fill="currentColor" mask="url(#m_aom_monogram_svg)"></rect></svg><span class="dot"></span></div></div>
 
   <div id="heroChrome">
     <div class="corner bl label">Phoenix, Arizona<br>Ahead of Market</div>
     <div class="corner br label">We make companies<br>impossible to ignore</div>
     <p id="heroIntro">Video, web, and brand work for companies that want attention.
-    Everything playing through the letters is our real client footage. Scroll.</p>
+    Everything playing through the mark is our real client footage. Scroll.</p>
     <div id="scrollCue"></div>
   </div>
 
