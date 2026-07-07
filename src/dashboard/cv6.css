@@ -105,6 +105,70 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   LIGHT theme override — [data-app-theme="light"]
+   CornerCV6.jsx hardcodes data-theme="dark" on the root div and uses
+   data-app-theme for the real theme switcher. This block overrides the
+   dark tokens above via equal specificity + later source order when the
+   user selects light. Also bridges cv6kit vars (--ground / --surface /
+   --fg …) so CornerCV6's inline `background: var(--ground, #05080b)`
+   and every kit component resolve to light values.
+   ───────────────────────────────────────────────────────────────── */
+[data-cv6][data-app-theme="light"] {
+  /* cv6.css semantic tokens — reset to light values */
+  --cv6-ground: #f5f5f5;
+  --cv6-surface: #ffffff;
+  --cv6-surface2: #f0f0f2;
+  --cv6-surface-hover: #f8f8f8;
+  --cv6-divider: rgba(0, 0, 0, 0.10);
+  --cv6-hair: rgba(0, 0, 0, 0.08);
+  --cv6-hover: rgba(0, 0, 0, 0.04);
+
+  --cv6-text-primary: #1a1a1a;
+  --cv6-text-secondary: #666666;
+  --cv6-text-tertiary: #999999;
+
+  --cv6-accent-primary: #0066ff;
+  --cv6-accent-primary-hover: #0052cc;
+  --cv6-accent-primary-active: #003d99;
+  --cv6-accent-weak: rgba(0, 102, 255, 0.10);
+  --cv6-accent-success: #10b981;
+  --cv6-accent-success-weak: rgba(16, 185, 129, 0.16);
+  --cv6-accent-warn: #f59e0b;
+  --cv6-accent-warn-weak: rgba(245, 158, 11, 0.16);
+  --cv6-accent-error: #ef4444;
+  --cv6-accent-error-weak: rgba(239, 68, 68, 0.16);
+  --cv6-accent-primary-rgb: 0, 102, 255;
+  --cv6-accent-error-rgb: 239, 68, 68;
+
+  --cv6-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.12);
+  --cv6-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.16);
+  --cv6-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.14);
+
+  /* cv6kit token bridge — so var(--ground) / var(--surface) / var(--fg)
+     in CornerCV6's inline styles and kit components resolve correctly
+     (themes.css [data-theme="light"] never fires because data-theme is
+     hardcoded to "dark" on the CornerCV6 root). */
+  --ground: #F6F6F7;
+  --surface: #FFFFFF;
+  --surface-2: #F0F0F2;
+  --fg: #18181B;
+  --muted: #6a6a72;
+  --faint: #a0a0a8;
+  --divider: rgba(0, 0, 0, 0.07);
+  --hair: rgba(0, 0, 0, 0.08);
+  --chip: rgba(0, 0, 0, 0.04);
+  --accent: #0066FF;
+  --accent-weak: rgba(0, 102, 255, 0.10);
+  --warn: #B45309;
+  --warn-weak: rgba(180, 83, 9, 0.16);
+  --success: #10B981;
+  --success-weak: rgba(16, 185, 129, 0.12);
+  --avatar: linear-gradient(135deg, #0066FF, #003D99);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.12);
+  --glow-online: rgba(16, 185, 129, 0.5);
+}
+
+/* ─────────────────────────────────────────────────────────────────
    GLASS theme (3rd mode) — Apple "Liquid Glass" over a cycling Corner
    backdrop (GlassBackdrop.jsx). Tokens go translucent so the imagery
    refracts through every surface; the actual frost (backdrop-filter)
