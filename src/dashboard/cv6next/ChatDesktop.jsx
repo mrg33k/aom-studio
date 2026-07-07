@@ -235,6 +235,55 @@ export function FilesShelf({ items, onReview, truncation }) {
   );
 }
 
+// ── useRoomLibrary — one source of truth for "the files in this room" ─────────
+// The room's REAL file library (project-files: canon, deliverables, research,
+// per-mission) merged with the conversation's links; agent rooms (no project
+// library) fall back to the conversation's files + links. WD40 FILE-CON R3
+// truncation honesty rides along: `truncation` is null unless the server capped
+// huge folders, and onLoadAll refetches with a raised dir_limit.
+// Shared by the desktop Files drawer AND the mobile chat files sheet.
+export function useRoomLibrary(projectSlug, messages) {
+  const [roomFiles, setRoomFiles] = useState([]);
+  const [libHidden, setLibHidden] = useState(0);
+  const [libFull, setLibFull] = useState(false);
+  const [libLoading, setLibLoading] = useState(false);
+  useEffect(() => { setLibFull(false); }, [projectSlug]);
+  useEffect(() => {
+    if (!projectSlug) { setRoomFiles([]); setLibHidden(0); return undefined; }
+    let alive = true;
+    setLibLoading(true);
+    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(projectSlug)}${libFull ? '&dir_limit=10000' : ''}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive || !d) return;
+        const flat = [];
+        for (const f of (d.files || [])) flat.push(f);
+        for (const m of (d.missions || [])) for (const f of (m.files || [])) flat.push(f);
+        setRoomFiles(flat);
+        setLibHidden((d.truncated_dirs || []).reduce((n, x) => n + Math.max(0, (x.total || 0) - (x.shown || 0)), 0));
+      })
+      .catch(() => { if (alive) { setRoomFiles([]); setLibHidden(0); } })
+      .finally(() => { if (alive) setLibLoading(false); });
+    return () => { alive = false; };
+  }, [projectSlug, libFull]);
+  const shelf = useMemo(() => {
+    const convo = shelfItems(messages);
+    if (!projectSlug) return convo;
+    const lib = roomFiles.map((f) => ({
+      type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
+      ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
+    }));
+    const links = convo.filter((i) => i.type === 'link');
+    const merged = [...lib, ...links];
+    merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
+    return merged;
+  }, [messages, roomFiles, projectSlug]);
+  const truncation = useMemo(() => (libHidden > 0
+    ? { shown: roomFiles.length, total: roomFiles.length + libHidden, loading: libLoading, onLoadAll: () => setLibFull(true) }
+    : null), [libHidden, roomFiles.length, libLoading]);
+  return { shelf, truncation };
+}
+
 // A project in the rail is a folder that fans open to its missions. The row itself opens the
 // project's general chat; the chevron toggles the mission list; a mission row opens that
 // mission's own thread on the right. Mirrors the mobile project screen, here as a tree.
@@ -628,50 +677,10 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
       setControlBusy(false);
     }
   };
-  // The room's REAL file library (project-files: canon, deliverables, research, per-mission),
-  // so the Files panel is never empty for a project/mission room — not just what got posted in
-  // the chat. Agent rooms have no project library, so they keep the conversation's files+links.
+  // The room's REAL file library + the conversation's files/links (extracted to
+  // useRoomLibrary so the mobile chat's files sheet shows the exact same shelf).
   const libProjectSlug = selected?.isMission ? selected.projectSlug : (selected?.isProject ? selected.id : null);
-  const [roomFiles, setRoomFiles] = useState([]);
-  // WD40 FILE-CON R3: the server caps huge folders (default 500/dir) and now says so via
-  // truncated_dirs. Track the hidden count for the honest banner; libFull refetches with a
-  // raised dir_limit when the user asks for everything.
-  const [libHidden, setLibHidden] = useState(0);
-  const [libFull, setLibFull] = useState(false);
-  const [libLoading, setLibLoading] = useState(false);
-  useEffect(() => { setLibFull(false); }, [libProjectSlug]);
-  useEffect(() => {
-    if (!libProjectSlug) { setRoomFiles([]); setLibHidden(0); return undefined; }
-    let alive = true;
-    setLibLoading(true);
-    authFetch(`/api/dashboard/project-files?slug=${encodeURIComponent(libProjectSlug)}${libFull ? '&dir_limit=10000' : ''}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive || !d) return;
-        const flat = [];
-        for (const f of (d.files || [])) flat.push(f);
-        for (const m of (d.missions || [])) for (const f of (m.files || [])) flat.push(f);
-        setRoomFiles(flat);
-        setLibHidden((d.truncated_dirs || []).reduce((n, s) => n + Math.max(0, (s.total || 0) - (s.shown || 0)), 0));
-      })
-      .catch(() => { if (alive) { setRoomFiles([]); setLibHidden(0); } })
-      .finally(() => { if (alive) setLibLoading(false); });
-    return () => { alive = false; };
-  }, [libProjectSlug, libFull]);
-  // Shelf = the room's library files (project/mission rooms) + links from the conversation;
-  // agent rooms fall back to whatever files/links the conversation itself carries.
-  const shelf = useMemo(() => {
-    const convo = shelfItems(messages);
-    if (!libProjectSlug) return convo;
-    const lib = roomFiles.map((f) => ({
-      type: 'file', kind: fileKind(f.name), name: f.name, url: f.path, path: f.path,
-      ts: f.last_modified || null, who: '', size: 0, libKind: libKindLabel(f.kind),
-    }));
-    const links = convo.filter((i) => i.type === 'link');
-    const merged = [...lib, ...links];
-    merged.sort((a, b) => (new Date(b.ts || 0).getTime() || 0) - (new Date(a.ts || 0).getTime() || 0));
-    return merged;
-  }, [messages, roomFiles, libProjectSlug]);
+  const { shelf, truncation: libTruncation } = useRoomLibrary(libProjectSlug, messages);
   // Host node the rich CV4 composer (ThreadInputBar: command menu / voice / image
   // gen) portals into. Cv6FullComposer is mounted ONCE at the end of the tree and
   // kept alive; it only paints when a room is open + this host exists, so a thread
@@ -806,8 +815,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
                   ))}
                 </div>
                 {drawerView === 'files' ? (
-                  <FilesShelf items={shelf} onReview={(it) => onReviewFile?.(it, reviewProject)}
-                    truncation={libHidden > 0 ? { shown: roomFiles.length, total: roomFiles.length + libHidden, loading: libLoading, onLoadAll: () => setLibFull(true) } : null} />
+                  <FilesShelf items={shelf} onReview={(it) => onReviewFile?.(it, reviewProject)} truncation={libTruncation} />
                 ) : (
                 <>
                 {/* 1. Who/what is selected. A project room has no single agent, so label it as the room, not "Agent on this goal". */}
@@ -901,6 +909,7 @@ export default function ChatDesktop({ worldId, initialRoom, onNav, onOpenNav, on
         worldId={worldId}
         agents={agents}
         quickSend={send}
+        onOpenFiles={() => setDrawerView('files')}
       />
     </ReviewCtx.Provider>
     </SendCtx.Provider>

@@ -12,6 +12,8 @@ import { GoalThreadBody, SendCtx, ReviewCtx, liveStepsToBlocks } from './ChatGoa
 import { Result } from './BlockRenderer.jsx';
 import { useDictation } from './data/useDictation.js';
 import ChatMessageRenderer from '../components/ChatMessageRenderer.jsx';
+import Cv6FullComposer from './Cv6FullComposer.jsx';
+import { FilesShelf, useRoomLibrary } from './ChatDesktop.jsx';
 
 // Mobile-header avatar tint + live ring keyed to the room's agent status
 // (drop-7 redesign: avatar feels present, ring pulses when live/working).
@@ -280,9 +282,45 @@ function DayCard({ group, onOpenFile, goal, onReview, onSend }) {
   );
 }
 
-export default function ChatLifecycle({ room, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
+// ── Files in this room, from chat (Patrik #1, chat-surface WD40 R1) ──────────
+// A CV6 bottom sheet over the conversation: the SAME shelf the desktop Files
+// drawer shows (real project/mission library + the conversation's files and
+// links, with the honest truncation banner), reachable from the chat header and
+// from the composer's command menu. Mounted only while open, so the library
+// fetch happens on first open, not on every room visit.
+function RoomFilesSheet({ projectSlug, messages, onClose, onReview }) {
+  const { shelf, truncation } = useRoomLibrary(projectSlug, messages);
+  return (
+    <div style={{ position: 'absolute', inset: 0, zIndex: 40 }}>
+      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.55)' }} />
+      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'var(--ground)', borderTopLeftRadius: 22, borderTopRightRadius: 22, borderTop: '1px solid var(--hair)', boxShadow: '0 -22px 54px -22px rgba(0,0,0,.65)', maxHeight: '78%', display: 'flex', flexDirection: 'column', padding: '8px 16px max(22px, env(safe-area-inset-bottom, 0px))' }}>
+        <div style={{ width: 38, height: 4, borderRadius: 3, background: 'var(--divider)', margin: '6px auto 12px', flex: 'none' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flex: 'none' }}>
+          <span style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-.01em', color: 'var(--fg)' }}>Files in this room</span>
+          <div className="ib" role="button" onClick={onClose} style={{ width: 32, height: 32, borderRadius: 9, cursor: 'pointer' }}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg>
+          </div>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <FilesShelf items={shelf} onReview={onReview} truncation={truncation} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ChatLifecycle({ room, fullRoom, worldId, messages, status, onBack, onOpenNav, onSend, goal, onOpenReview, liveSteps, awaiting: awaitingProp }) {
   const [draft, setDraft] = useState('');
   const dictate = useDictation((text) => setDraft((d) => (d ? d.replace(/\s*$/, '') + ' ' : '') + text));
+  // Files-from-chat + the rich composer bridge (chat-surface WD40 R1). The rich
+  // CV4-functionality/CV6-look composer needs the room's full identity (project /
+  // mission / agent scope) + world; without them we keep the plain bar.
+  const [filesSheetOpen, setFilesSheetOpen] = useState(false);
+  const [mComposerHost, setMComposerHost] = useState(null);
+  const richComposer = !!(fullRoom && worldId);
+  const libProjectSlug = fullRoom?.isMission ? fullRoom.projectSlug : (fullRoom?.isProject ? fullRoom.id : null);
+  const roomKeyForSheet = fullRoom?.id || room?.name;
+  useEffect(() => { setFilesSheetOpen(false); }, [roomKeyForSheet]);
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
   const [showJump, setShowJump] = useState(false);
@@ -397,6 +435,7 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
           <div className="msub">{room.statusText || 'conversation'}</div>
         </div>
         <div className="mhactions">
+          <div className="ib" role="button" title="Files in this room" data-testid="chat-files-button" style={{ width: 36, height: 36, borderRadius: 10, cursor: 'pointer' }} onClick={() => setFilesSheetOpen(true)}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" /></svg></div>
           <div className="ib" style={{ width: 36, height: 36, borderRadius: 10 }} onClick={onOpenNav}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M3 6h18M3 12h18M3 18h18" /></svg></div>
         </div>
       </div>
@@ -459,6 +498,15 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
         </button>
       )}
 
+      {richComposer ? (
+        <>
+          {/* The rich composer (CV4 functionality, CV6 look: attach, command menu,
+              slash commands, image gen, voice) portals into this host. */}
+          <div className="mcomposer" ref={setMComposerHost} />
+          <Cv6FullComposer target={mComposerHost} room={fullRoom} worldId={worldId} agents={[]}
+            quickSend={onSend} onOpenFiles={() => setFilesSheetOpen(true)} />
+        </>
+      ) : (
       <div className="mcomposer">
         {dictate.supported && (
           <button onClick={dictate.toggle} aria-label={dictate.listening ? 'Stop dictation' : 'Speak your message'}
@@ -478,6 +526,13 @@ export default function ChatLifecycle({ room, messages, status, onBack, onOpenNa
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z" /></svg>
         </button>
       </div>
+      )}
+
+      {filesSheetOpen && (
+        <RoomFilesSheet projectSlug={libProjectSlug} messages={messages}
+          onClose={() => setFilesSheetOpen(false)}
+          onReview={(it) => { setFilesSheetOpen(false); onOpenReview?.(it ? [it] : null); }} />
+      )}
 
       {collection && <FileCollectionViewer files={collection.files} startIndex={collection.index} onClose={() => setCollection(null)} onReview={reviewHandoff} />}
     </div>

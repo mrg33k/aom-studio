@@ -1875,6 +1875,7 @@ function Chat({ room, worldId, onNav, onOpenNav }) {
   return (
     <ChatLifecycle
       room={{ name: isDemo ? 'DEMO: Block Showcase' : room.name, initials: room.initials || '·', statusText: isDemo ? 'demo' : room.statusText || '', status: room.status || 'ready' }}
+      fullRoom={isDemo ? null : room} worldId={worldId}
       messages={messages} status={status} goal={liveThread ? goal : null} liveSteps={liveSteps}
       awaiting={isDemo ? false : rt.awaiting}
       onBack={() => onNav('back')} onOpenNav={() => onOpenNav?.()} onSend={(t) => send?.(t)}

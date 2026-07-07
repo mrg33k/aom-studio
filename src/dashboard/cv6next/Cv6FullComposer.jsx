@@ -32,8 +32,8 @@ import {
 import useChatAttachments from '../components/cv3/chat/useChatAttachments.js';
 import useChatRecording from '../components/cv3/chat/useChatRecording.js';
 import useChatSettings from '../components/cv3/chat/useChatSettings.js';
-import ThreadInputBar from '../components/cv3/thread/ThreadInputBar.jsx';
 import VoiceModeBar from '../components/cv3/thread/VoiceModeBar.jsx';
+import Cv6InputBar from './Cv6InputBar.jsx';
 import VoiceChat from '../components/VoiceChat.jsx';
 
 // Map a CV6 quick-room object -> the { selectedAgent, selectedProject } shape the
@@ -55,12 +55,14 @@ function mapRoom(room, agents) {
   }
   const match = Array.isArray(agents) ? agents.find((a) => a.slug === room.id || a.id === room.id) : null;
   return {
-    selectedAgent: match || { id: room.id, slug: room.id, name: room.name || room.id, color: '#3B82F6' },
+    // Ensure a slug even when the CV6 room row doesn't carry one (agent-scoped
+    // features key off selectedAgent.slug).
+    selectedAgent: match ? { ...match, slug: match.slug || room.id } : { id: room.id, slug: room.id, name: room.name || room.id, color: '#3B82F6' },
     selectedProject: null,
   };
 }
 
-function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [] }) {
+function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agents = [], onOpenFiles }) {
   // CornerCV6 is NOT mounted under the CV4 Corner context providers (it uses
   // useHome/useDataPipe standalone), so we can't read useCornerAuth/Data here —
   // worldId + agents come in as props and the user comes straight from supabase.
@@ -205,7 +207,7 @@ function Cv6FullComposerInner({ target, room, worldId, quickSend, onClose, agent
               <ChatComposerProvider value={composerValue}>
                 <ChatSettingsProvider value={settingsValue}>
                   <ChatContextMenuProvider value={ctxMenuValue}>
-                    {isVoiceActive ? <VoiceModeBar /> : <ThreadInputBar />}
+                    {isVoiceActive ? <VoiceModeBar /> : <Cv6InputBar onOpenFiles={onOpenFiles} />}
                     {isVoiceActive && (
                       <div style={{ display: 'none' }}>
                         <VoiceChat
