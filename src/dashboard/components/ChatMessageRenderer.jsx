@@ -24,36 +24,59 @@ const IMAGE_URL_RE = /\.(png|jpg|jpeg|gif|webp|svg)(\?[^\s]*)?$/i
 
 function preprocessBareUrls(text) {
   // Convert bare URLs not already inside markdown link/image syntax into clickable markdown links or images
-  // Matches http:// or https:// URLs followed by valid URL characters (including balanced parens).
-  // Stops at whitespace, common sentence-ending punctuation, or unbalanced closing parens/brackets.
+  // Matches http:// or https:// URLs. Stops at whitespace, quotes, or brackets.
   return text.replace(/(^|[\s<>"])(https?:\/\/[^\s<>"'[\]]+)/g, (fullMatch, prefix, url) => {
-    // Strip trailing punctuation that shouldn't be part of the URL.
-    // Include common sentence punctuation: . , ; : ! ?
-    // Also strip unbalanced closing parens/brackets.
-    let cleanUrl = url.replace(/([.,;:!?])+$/g, '')
+    let cleanUrl = url
+    let trailingPunct = ''
 
-    // Handle balanced parens: if URL ends with ), only strip it if there's no matching (
+    // Strip trailing sentence punctuation (.,;:!?) and capture it
+    const punctMatch = cleanUrl.match(/([.,;:!?])+$/)
+    if (punctMatch) {
+      trailingPunct = punctMatch[0]
+      cleanUrl = cleanUrl.slice(0, -punctMatch[0].length)
+    }
+
+    // Handle trailing ) - keep only if balanced with opening (
     if (cleanUrl.endsWith(')')) {
       const openCount = (cleanUrl.match(/\(/g) || []).length
       const closeCount = (cleanUrl.match(/\)/g) || []).length
       if (closeCount > openCount) {
-        // Too many closing parens - strip the trailing ones
-        cleanUrl = cleanUrl.replace(/\)+$/g, (match) => {
-          let toStrip = match.length
+        // Too many closing parens - strip the excess and add to trailing
+        const match = cleanUrl.match(/\)+$/)
+        if (match) {
+          let toStrip = match[0].length
           while (toStrip > 0 && closeCount - toStrip <= openCount) {
             toStrip--
           }
-          return match.slice(0, toStrip)
-        })
+          trailingPunct = match[0].slice(match[0].length - toStrip) + trailingPunct
+          cleanUrl = cleanUrl.slice(0, -toStrip)
+        }
+      }
+    }
+
+    // Handle trailing ] - keep only if balanced with opening [
+    if (cleanUrl.endsWith(']')) {
+      const openCount = (cleanUrl.match(/\[/g) || []).length
+      const closeCount = (cleanUrl.match(/\]/g) || []).length
+      if (closeCount > openCount) {
+        const match = cleanUrl.match(/\]+$/)
+        if (match) {
+          let toStrip = match[0].length
+          while (toStrip > 0 && closeCount - toStrip <= openCount) {
+            toStrip--
+          }
+          trailingPunct = match[0].slice(match[0].length - toStrip) + trailingPunct
+          cleanUrl = cleanUrl.slice(0, -toStrip)
+        }
       }
     }
 
     if (IMAGE_URL_RE.test(cleanUrl)) {
-      return `${prefix}![](${cleanUrl})`
+      return `${prefix}![](${cleanUrl})${trailingPunct}`
     }
     // Return markdown link format: [url](url)
     // The custom renderer will add target="_blank" rel="noopener noreferrer"
-    return `${prefix}[${cleanUrl}](${cleanUrl})`
+    return `${prefix}[${cleanUrl}](${cleanUrl})${trailingPunct}`
   })
 }
 
