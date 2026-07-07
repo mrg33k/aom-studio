@@ -1855,7 +1855,7 @@ const COMMAND_ALIASES = {
 function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
   // The stepped-into row (drives the desktop detail panel + mobile inline expand).
   const [selectedKey, setSelectedKey] = useState('');
-  const { state, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion } = useCommand(worldId, selectedKey);
+  const { state, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion, handNextStep } = useCommand(worldId, selectedKey);
   const isDesktop = useIsDesktop();
   const html = useMemo(() => composeScreen(commandRaw, { mobile: !isDesktop, pick: isDesktop ? 0 : 1, sharedNav: isDesktop }), [isDesktop]);
   const actions = useMemo(() => {
@@ -1909,11 +1909,21 @@ function Command({ worldId, onNav, onOpenNav, onOpenRoom }) {
         answerRoomQuestion?.({ key: String(id), projectSlug: r?.projectSlug || '', question: r?.openQuestion || '' }, text);
         if (inp) inp.value = '';
       },
+      // Hand the plan's next unchecked step to the room's agent (wd40 R3): one tap
+      // sends it into the room's conversation through the real send path.
+      handNextStep: (id) => {
+        const rooms = data?.ledger?.rooms || [];
+        const r = rooms.find((x) => String(x.key) === String(id));
+        const next = (r?.fullChecklist || []).find((c) => c.state !== 'done');
+        if (!r || !next) return;
+        handNextStep?.({ key: String(id), projectSlug: r.projectSlug || '', stepText: next.label });
+      },
       // Absorbs taps on the add-step/answer rows so they don't bubble to the card's open action.
       noop: () => {},
-      openJob: () => {}, manageActivity: () => {},
+      // A dock card is a live agent session — tapping it opens that agent's room.
+      openJob: (id) => openRoomById('agent:' + String(id || '')),
     };
-  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion]);
+  }, [onNav, onOpenNav, onOpenRoom, worldId, data, toggleWatcher, stepToggle, stepAdd, answerRoomQuestion, handNextStep]);
   return <TemplateScreen html={html} data={data} actions={actions} state={state}
     aliases={COMMAND_ALIASES} style={{ width: '100%', height: '100%' }} />;
 }

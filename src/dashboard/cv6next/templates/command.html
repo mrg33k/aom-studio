@@ -42,7 +42,7 @@
     <div style="flex:1;min-width:0;border-right:1px solid var(--divider);overflow:hidden;display:flex;flex-direction:column;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;"><div><div style="font-size:20px;font-weight:700;letter-spacing:-.01em;color:var(--fg);">Goal ledger</div><div style="font-size:12.5px;color:var(--muted);margin-top:3px;"><span data-bind="ledger.roomCount">6</span> rooms · <span data-bind="ledger.workingCount">3</span> working</div></div><div style="display:flex;gap:7px;"><span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--success);background:var(--success-weak);padding:5px 11px;border-radius:14px;"><span style="width:7px;height:7px;border-radius:50%;background:var(--success);animation:livePulse 1.8s infinite;"></span><span data-bind="ledger.workingCount">3</span> working</span><span style="font-size:12px;font-weight:600;color:var(--warn);background:var(--warn-weak,rgba(251,191,36,.16));padding:5px 11px;border-radius:14px;"><span data-bind="ledger.blockedCount">1</span> blocked</span></div></div>
       <div style="padding:18px 24px 6px;">
-        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span class="eyebrow">Background activity</span><span class="mono" style="font-size:11px;color:var(--faint);"><span data-bind="activity.count">4</span> running</span><span style="margin-left:auto;font-size:12px;font-weight:600;color:var(--accent);" data-action="manageActivity">Manage</span></div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;"><span class="eyebrow">Background activity</span><span class="mono" style="font-size:11px;color:var(--faint);"><span data-bind="activity.count">4</span> running</span></div>
         <div class="actrail">
           <!-- ONE dock card per running job; is-:job.kind drives the icon tile + badge -->
           <div class="actdock" style="width:288px;flex:none;" data-each="activity.jobs" data-action="openJob" data-arg="job.id"><span class="ad-ico is-rec" data-mod="is-:job.kind"><span class="rec" style="width:10px;height:10px;border-radius:50%;background:var(--error);animation:recPulse 1.4s infinite;flex:none;"></span></span><div class="ad-body"><div class="ad-title" data-bind="job.title">Live Scribe · recording</div><div class="ad-sub" data-bind="job.sub">Corner · Dashboard · 08:42</div></div><span class="ad-badge is-rec" data-mod="is-:job.kind" data-bind="job.badge">REC</span></div>
@@ -83,6 +83,13 @@
              store; tapping a Proposed step also claims it). -->
         <div class="cstep is-done" style="display:flex;align-items:center;gap:11px;cursor:pointer;" data-each="goal.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag">Verified</span></div>
         <div style="font-size:12px;color:var(--faint);" data-bind="goal.emptyNote"></div>
+      </div>
+      <!-- Hand the next unchecked step to the room's agent (wd40 R3) — one tap sends it
+           into the room's conversation; only shows when the plan has a next step -->
+      <div class="rowopen" data-mod="is-:goal.handState" style="flex:none;flex-direction:column;align-items:stretch;gap:7px;margin-bottom:14px;">
+        <button data-action="handNextStep" data-arg="goal.id" title="Send the next unchecked step into the room so its agent starts on it" style="width:100%;height:38px;border-radius:10px;border:1px solid var(--accent);background:var(--accent-weak);color:var(--accent);font-size:12.5px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;box-sizing:border-box;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Hand next step to the agent</button>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;" data-bind="goal.nextStepText"></div>
+        <div style="font-size:11.5px;color:var(--success);text-align:center;" data-bind="goal.handNote"></div>
       </div>
       <!-- Add a step to this room's plan — writes to the same store the room's agent reads -->
       <div class="rowopen" data-mod="is-:goal.addState" data-cv6-addstep style="gap:8px;margin-bottom:14px;">
@@ -131,8 +138,13 @@
           <div class="cstep is-done" style="display:flex;align-items:center;gap:10px;cursor:pointer;" data-each="goal.checklist" data-mod="is-:step.state" data-action="toggleStep" data-arg="step.act" title="Tap to mark done / not done"><span class="cstep-mark"></span><span class="cstep-label" style="flex:1;font-size:13.5px;" data-bind="step.label">Pull repo &amp; scan task-runner</span><span class="cstep-tag" data-bind="step.tag"></span></div>
           <div style="font-size:11.5px;color:var(--faint);" data-bind="goal.emptyNote"></div>
         </div>
+        <!-- Hand the next unchecked step to the room's agent (noop guards the card tap) -->
+        <div class="rowopen" data-mod="is-:goal.handState" data-action="noop" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px;">
+          <button data-action="handNextStep" data-arg="goal.id" title="Send the next unchecked step into the room so its agent starts on it" style="width:100%;height:36px;border-radius:10px;border:1px solid var(--accent);background:var(--accent-weak);color:var(--accent);font-size:12px;font-weight:600;font-family:var(--font-sans);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;box-sizing:border-box;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>Hand next step to the agent</button>
+          <div style="font-size:11px;color:var(--success);text-align:center;" data-bind="goal.handNote"></div>
+        </div>
         <!-- Add a step (noop stops the tap from bubbling to the card's openRoom) -->
-        <div class="rowopen" data-mod="is-:goal.addState" data-cv6-addstep data-action="noop" style="gap:8px;margin-top:12px;">
+        <div class="rowopen" data-mod="is-:goal.addState" data-cv6-addstep data-action="noop" style="gap:8px;margin-top:10px;">
           <input placeholder="Add a step to this plan…" style="flex:1;min-width:0;height:38px;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--hair);border-radius:10px;padding:0 12px;color:var(--fg);font-size:13px;font-family:var(--font-sans);outline:none;">
           <button data-action="addStep" data-arg="goal.addKey" title="Add this step to the room's plan" style="height:38px;padding:0 15px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;font-family:var(--font-sans);cursor:pointer;flex:none;">Add</button>
         </div>
