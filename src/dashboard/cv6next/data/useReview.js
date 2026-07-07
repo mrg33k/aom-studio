@@ -226,14 +226,43 @@ export function reviewItemsFromFiles(files, project = '') {
     .filter(Boolean);
 }
 
-const PAGE_SIZE = 40; // rows per page; "Load older items" grows the window by this much
-// Review R-TRUTH: fetch the WHOLE queue (the server caps the set at 500 metadata rows,
-// ~100KB) instead of one 40-row page. Every count on screen — type chips, tree
-// project/mission counts, "N deliverables waiting" — used to be computed from the
-// first page only, so a queue whose newest 40 files were all screenshots showed
-// "All 40 / Image 40", no Video chip, and every OTHER project as "all caught up"
-// even when its work sat just past the window. Counts must be true whatever the data.
-const FULL_LIMIT = 500; // mirrors HARD_CAP in api/dashboard/review-queue.js
+// WD40-R5: server-side paging — fetch 40 items per page. "Load older items" now
+// fetches the next server page instead of just expanding a client-side window over
+// a hard-capped 500-item set. The header shows "N of M" when more pages remain.
+const PAGE_SIZE = 40; // items fetched per server page (initial load + each loadMore)
+
+// Map one raw queue item (from the API) to the shape the templates expect.
+// Extracted so load() and loadMore() share identical mapping logic.
+function mapQueueItem(it, openId) {
+  const typeKey = (it.type && typeof it.type === 'object') ? it.type.key : (it.type || 'doc');
+  return {
+    id: it.id || it.path,
+    title: it.name || 'Untitled',
+    who: titleForAgent(it.project || ''),
+    whoRaw: it.project || '',
+    whoInitials: initials(it.project || ''),
+    whoTint: tintFor(it.project || ''),
+    type: typeKey,
+    typeLabel: typeLabel(typeKey),
+    typeGlyph: typeGlyph(typeKey),
+    count: 0,
+    countState: 'zero',
+    status: 'ready',
+    statusLabel: 'READY',
+    time: relTime(it.last_modified),
+    ts: it.last_modified || '',
+    location: it.mission ? `${it.project} / ${it.mission}` : it.project,
+    missionLabel: it.mission ? `/ ${it.mission}` : '',
+    missionRaw: it.mission || '',
+    queueState: 'ready',
+    file: `${typeLabel(typeKey)} · ${relTime(it.last_modified)}`,
+    bodyHtml: '',
+    open: it.id === openId ? 'on' : 'off',
+    pins: [],
+    comments: [],
+    openCount: 0,
+  };
+}
 
 export function useReview(worldId = 'aom', injected = null) {
   const hasInjected = Array.isArray(injected) && injected.length > 0;
@@ -241,9 +270,9 @@ export function useReview(worldId = 'aom', injected = null) {
   const [openDelId, setOpenDelId] = useState(null);
   const [status, setStatus] = useState('loading'); // loading | loaded | error
   const [bodies, setBodies] = useState({}); // path -> rendered innerHTML ('' while loading)
-  // Review R2/R-TRUTH: how many rows the LIST displays (pure client-side window over
-  // the fully-fetched set). "Load older items" grows it; scope/filter changes reset it.
-  const [shown, setShown] = useState(PAGE_SIZE);
+  // WD40-R5: total item count reported by the server (may be larger than queue.items.length
+  // when more pages exist). Drives hasMore and the "N of M" header display.
+  const [queueServerTotal, setQueueServerTotal] = useState(0);
   // Queue scope (the same left-rail selection Organize uses): pick a project, then a
   // mission within it. null = all projects / every mission in the selected project;
   // '__root' = files sitting at the project root with no mission folder.
@@ -301,50 +330,17 @@ export function useReview(worldId = 'aom', injected = null) {
 
   const load = useCallback(async () => {
     let ok = false;
+    // WD40-R5: on a realtime/timer refresh, fetch enough to cover what is already on screen
+    // so the list doesn't collapse back to PAGE_SIZE when a single new item arrives.
+    const currentCount = queue?.items?.length || 0;
+    const fetchLimit = Math.max(PAGE_SIZE, currentCount);
     try {
-      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${FULL_LIMIT}&offset=0`);
+      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${fetchLimit}&offset=0`);
       if (r?.ok) {
         const d = await r.json();
-        const items = (d.items || []).map((it) => {
-          // review-queue.js returns: { name, path, project, mission, kind, type:{key,label,color}, last_modified }
-          // type is an OBJECT, not a string — extract the key for template matching
-          const typeKey = (it.type && typeof it.type === 'object') ? it.type.key : (it.type || 'doc');
-          return {
-            id: it.id || it.path,
-            title: it.name || 'Untitled',
-            who: titleForAgent(it.project || ''), // use project as agent hint for now; deliverables don't have from field
-            whoRaw: it.project || '',
-            whoInitials: initials(it.project || ''),
-            whoTint: tintFor(it.project || ''),
-            type: typeKey,
-            typeLabel: typeLabel(typeKey),
-            typeGlyph: typeGlyph(typeKey),
-            count: 0, // no comments yet from queue endpoint
-            countState: 'zero', // .qcount.is-zero — dim the badge instead of a bright accent 0
-            status: 'ready', // queue only returns ready items; live ones handled separately
-            statusLabel: 'READY',
-            time: relTime(it.last_modified),
-            ts: it.last_modified || '', // raw timestamp so the queue can sort by recency
-            location: it.mission ? `${it.project} / ${it.mission}` : it.project,
-            // Mobile row meta already shows the project (who) — this carries ONLY the
-            // mission tail ("/ reports-page"), empty when the file sits at project root,
-            // so the line never reads "Space-rising · space-rising / ...".
-            missionLabel: it.mission ? `/ ${it.mission}` : '',
-            missionRaw: it.mission || '', // raw slug the project → mission tree scopes by
-            queueState: 'ready',
-            // The viewer caption used to read "name · 0 KB" — a fabricated size (the queue
-            // endpoint never carries file bytes in production; it walks a tunnel that returns
-            // no size). Show REAL metadata we already have instead of a fake number: the type
-            // and how long ago it landed (e.g. "Image · 9h"). The filename is the title below.
-            file: `${typeLabel(typeKey)} · ${relTime(it.last_modified)}`,
-            bodyHtml: '',
-            open: it.id === openDelId ? 'on' : 'off',
-            pins: [],
-            comments: [],
-            openCount: 0,
-          };
-        });
+        const items = (d.items || []).map((it) => mapQueueItem(it, openDelId));
         setQueue({ items, readyCount: items.length });
+        setQueueServerTotal(d.total || items.length);
         ok = true;
       }
     } catch (e) {
@@ -353,9 +349,29 @@ export function useReview(worldId = 'aom', injected = null) {
     setStatus((prev) => (ok ? 'loaded' : (queue ? prev : 'error')));
   }, [worldId, queue, openDelId]);
 
-  // "Load older items" — grow the display window by one page (the full set is
-  // already in memory; no refetch).
-  const loadMore = useCallback(() => setShown((n) => n + PAGE_SIZE), []);
+  // WD40-R5: "Load older items" — true server-side fetch of the next PAGE_SIZE items,
+  // appended to the in-memory list. hasMore is now driven by queueServerTotal vs the
+  // fetched count, so items beyond the old 500-item hard cap become reachable.
+  const loadMore = useCallback(async () => {
+    const offset = queue?.items?.length || 0;
+    if (offset >= queueServerTotal) return; // nothing more on the server
+    try {
+      const r = await authFetch(`/api/dashboard/review-queue?world=${encodeURIComponent(worldId || 'aom')}&limit=${PAGE_SIZE}&offset=${offset}`);
+      if (r?.ok) {
+        const d = await r.json();
+        const newItems = (d.items || []).map((it) => mapQueueItem(it, openDelId));
+        if (newItems.length > 0) {
+          setQueue((prev) => ({
+            items: [...(prev?.items || []), ...newItems],
+            readyCount: (prev?.items?.length || 0) + newItems.length,
+          }));
+          setQueueServerTotal(d.total || queueServerTotal);
+        }
+      }
+    } catch (e) {
+      console.error('[Review loadMore]', e);
+    }
+  }, [worldId, queue, openDelId, queueServerTotal]);
 
   useEffect(() => {
     // Injected files (from a chat "Review all") ARE the queue — show exactly those,
@@ -561,9 +577,8 @@ export function useReview(worldId = 'aom', injected = null) {
       .map((k) => ({ id: k, label: `${CHIP_LABELS[k]} ${chipCounts[k]}`, active: typeFilter === k ? 'on' : 'off' })),
   ];
 
-  // The list = scope + chip filter over the FULL set, newest first, windowed by
-  // `shown` for display. Counts above were computed over the full set, so the chips
-  // and tree stay true no matter which page of rows is on screen.
+  // The list = scope + chip filter over all fetched items, newest first. All matching
+  // items are rendered — pagination is now server-side via loadMore, not a client window.
   const filtered = (typeFilter ? scoped.filter((i) => groupOf(i.type) === typeFilter) : scoped)
     .slice()
     .sort(byNewest);
@@ -573,20 +588,24 @@ export function useReview(worldId = 'aom', injected = null) {
     queue: {
       // WD40-R2: readyCount reflects the current scope (project/mission selection), not the
       // global total, so the "N deliverables waiting" header stays honest when a project is picked.
-      readyCount: scoped.length,
-      // WD40-R2: when a type chip is active, render ALL matching items (no page window).
-      // The full set is already in memory (FULL_LIMIT=500); 107 filtered videos is cheap.
-      // Pagination only makes sense on the raw unfiltered view (up to 500 rows).
-      items: typeFilter ? filtered : filtered.slice(0, shown),
+      // WD40-R5: in all-projects view, show "N of M" when more server pages remain so Patrik
+      // knows the real queue depth at a glance ("40 of 312 deliverables waiting").
+      readyCount: !activeProj && queueServerTotal > allItems.length
+        ? `${allItems.length} of ${queueServerTotal}`
+        : scoped.length,
+      // WD40-R5: all fetched items are rendered (no client-side window). When a type chip is
+      // active all matching items in the fetched set show; on "Load older" the server sends the
+      // next page and those items join the visible set automatically.
+      items: filtered,
       // The FULL unscoped set (not rendered by any template) so hosts can resolve a
       // catch-up / chat target anywhere in the queue, not just the visible window.
       itemsAll: allItems,
       tree,
       filters,
-      // 'yes' / 'no' so the template's data-switch shows the "Load older items" button only
-      // when older rows exist past the display window (and never for an injected-files queue
-      // or a type-filtered view, since those already render the full matching set).
-      hasMore: (!hasInjected && !typeFilter && filtered.length > shown) ? 'yes' : 'no',
+      // 'yes' / 'no' drives the "Load older items" button. Show it only when the server has
+      // more pages (never for injected queues or type-filtered views — those show all fetched
+      // matching items already, and loading more globally is rarely what the user wants mid-filter).
+      hasMore: (!hasInjected && !typeFilter && queueServerTotal > allItems.length) ? 'yes' : 'no',
     },
     deliverable: (() => {
       const open = (queue?.items || []).find((i) => i.id === openDelId);
@@ -672,22 +691,18 @@ export function useReview(worldId = 'aom', injected = null) {
         else if (s.startsWith('p:')) { setProjSel(s.slice(2)); setMissionSel(null); }
         else if (s.startsWith('m:')) setMissionSel(s.slice(2));
         setTypeFilter(null);
-        setShown(PAGE_SIZE); // a new scope starts on page one of ITS OWN set
         setOpenDelId(null);
       },
       setTypeFilter: (id) => {
         setTypeFilter(['image', 'video', 'doc', 'copy', 'code', 'web'].includes(id) ? id : null);
-        setShown(PAGE_SIZE);
         setOpenDelId(null);
       },
       // The empty state's button. Scoped-empty → jump to the full waiting set (clear
-      // room + chip filters, back to page one). Truly empty → a real re-check of the
-      // queue. Either way the click DOES something visible; it was a dead stub.
+      // room + chip filters). Truly empty → a real re-check of the queue.
       browseWaiting: () => {
         setProjSel(null);
         setMissionSel(null);
         setTypeFilter(null);
-        setShown(PAGE_SIZE);
         setOpenDelId(null);
         load();
       },

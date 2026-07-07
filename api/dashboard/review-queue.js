@@ -28,7 +28,7 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const RAG_TUNNEL_URL = process.env.RAG_TUNNEL_URL || 'https://rag.aheadofmarket.com';
 
 const DEFAULT_LIMIT = 40;     // one page of the queue (first load = same cost as before)
-const HARD_CAP = 500;         // ceiling on the total set served, regardless of cache depth
+const HARD_CAP = 5000;        // ceiling on the total set served — raised (R5) so deep queues are reachable
 
 // Kinds that are NOT review material (the canon docs + the agent's own tape).
 const EXCLUDE_KINDS = new Set(['canon', 'tape']);
@@ -111,6 +111,7 @@ const APP_INTERNAL_DIR_NAMES = [
   'app', 'thumbs', 'proxies', 'cache', 'tmp', 'temp',
   'footage-reorg', // analysis/helper scripts — not deliverables (Review R4)
   'critiques',     // internal design critique docs (Review R4)
+  'qa-frames',    // QA frame captures — never real deliverables (Review R5)
 ];
 const EXCLUDED_DIR_NAMES = new Set([...QA_DIR_NAMES, ...APP_INTERNAL_DIR_NAMES]);
 const QA_FILE_RES = [
@@ -332,13 +333,15 @@ export default async function handler(req, res) {
     throw err;
   }
 
-  // Pagination (Review R2): the UI pages through the full set via limit/offset so any
+  // Pagination (Review R2/R5): the UI pages through the full set via limit/offset so any
   // item ever sent is reachable, while the first load stays a single 40-item page.
+  // R5: total is the real cache length (not capped at 500) so the client knows how deep
+  // the queue is and can show an honest "X of Y" count in the header.
   const limit = clampInt(req.query.limit, DEFAULT_LIMIT, 1, HARD_CAP);
   const offset = clampInt(req.query.offset, 0, 0, HARD_CAP);
   const page = (all, source) => {
-    const total = Math.min(all.length, HARD_CAP);
-    const items = all.slice(offset, Math.min(offset + limit, HARD_CAP));
+    const total = all.length;
+    const items = all.slice(offset, offset + limit);
     return res.status(200).json({ items, total, offset, hasMore: offset + items.length < total, source });
   };
 
